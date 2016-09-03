@@ -28,7 +28,7 @@ static uint8_t SPI_rw8bit(const uint8_t data)
 {
 	uint8_t exch = data;
 	wiringPiSPIDataRW(SPICHAN, &exch, 1);
-	printf("\tsent: %x, rcvd: %x\n", data, exch);
+	//printf("\tsent: %x, rcvd: %x\n", data, exch);
 	usleep(500);
 	return exch;
 }
@@ -280,6 +280,38 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor)
 	tsensors[sensor] = SPI_rw8bit(sensor);	// we get LSB first, sent byte is ignored
 	tsensors[sensor] |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 	
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
+		goto out;
+
+	ret = 0;
+out:
+	return ret;
+}
+
+/**
+ * Read a single reference value
+ * @param refval pointer to target reference whose value will be updated
+ * @param refn target reference number to be read (0 or 1)
+ * @return error code
+ */
+int rwchcd_spi_ref_r(uint16_t * const refval, const int refn)
+{
+	int cmd, ret = -1;
+
+	if (1 == refn)
+		cmd = RWCHC_SPIC_REF1;
+	else
+		cmd = RWCHC_SPIC_REF0;
+
+
+	SPI_RESYNC();
+
+	if (!SPI_ASSERT(cmd, RWCHC_SPIC_VALID))	// check we're in sync, otherwise query until we get what we expect
+		goto out;
+
+	*refval = SPI_rw8bit(cmd);	// we get LSB first, sent byte is ignored
+	*refval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;
 

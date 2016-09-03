@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -std=gnu99 -O2 -g -Wno-unused-function
-LDLIBS = -lwiringPi
+LDLIBS = -lwiringPi -lm
 #SYSTEMDUNITDIR = $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR = /etc/dbus-1/system.d
 

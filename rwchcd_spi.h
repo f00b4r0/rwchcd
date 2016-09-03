@@ -22,6 +22,7 @@ int rwchcd_spi_peripherals_w(const union u_outperiphs * const outperiphs);
 int rwchcd_spi_relays_r(union u_relays * const relays);
 int rwchcd_spi_relays_w(const union u_relays * const relays);
 int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor);
+int rwchcd_spi_ref_r(uint16_t * const refval, const int refn);
 int rwchcd_spi_settings_r(struct s_settings * const settings);
 int rwchcd_spi_settings_w(const struct s_settings * const settings);
 int rwchcd_spi_settings_s(void);
