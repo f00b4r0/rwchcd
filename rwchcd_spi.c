@@ -159,7 +159,7 @@ out:
  * @param outperiphs pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int rwchcd_spi_peripherals_r(union u_outperiphs * const outperiphs)
+int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 {
 	int ret = -1;
 	
@@ -183,7 +183,7 @@ out:
  * @param outperiphs pointer to struct whose values are populated with desired states
  * @return error code
  */
-int rwchcd_spi_peripherals_w(const union u_outperiphs * const outperiphs)
+int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 {
 	int ret = -1;
 	
@@ -207,7 +207,7 @@ out:
  * @param relays pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int rwchcd_spi_relays_r(union u_relays * const relays)
+int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 {
 	int ret = -1;
 	
@@ -236,7 +236,7 @@ out:
  * @param relays pointer to struct whose values are populated with desired states
  * @return error code
  */
-int rwchcd_spi_relays_w(const union u_relays * const relays)
+int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 {
 	int ret = -1;
 	
@@ -325,7 +325,7 @@ out:
  * @param settings pointer to struct whose values will be populated to match current settings
  * @return error code
  */
-int rwchcd_spi_settings_r(struct s_settings * const settings)
+int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 {
 	int i, ret = -1;
 	
@@ -350,7 +350,7 @@ out:
  * @param settings pointer to struct whose values are populated with desired settings
  * @return error code
  */
-int rwchcd_spi_settings_w(const struct s_settings * const settings)
+int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 {
 	int i, ret = -1;
 	
