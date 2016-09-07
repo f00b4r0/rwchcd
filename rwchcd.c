@@ -8,178 +8,213 @@
 
 // Setup
 // Computation
-// Control + accounting
+// Control
+// accounting (separate module that periodically polls states and write them to timestamped registry)
+// Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
 // UI + programming
+
+// http://www.energieplus-lesite.be/index.php?id=10963
 
 
 #include <stdio.h>
 #include <unistd.h>	// sleep/usleep
 #include <math.h>
-#include "rwchcd_spi.h"
+#include <time.h>
+#include <sys/time.h>
+#include <stdbool.h>
+#include "rwchcd.h"
 
+static struct s_runtime Runtime;
 
-static uint16_t TSENSORS[RWCHC_NTSENSORS];
-static union u_relays rWCHC_relays;
-static union u_outperiphs rWCHC_peripherals;
-static struct s_settings rWCHC_settings;
-
-static float calib_nodac = 1, calib_dac = 1;
-
-/**
- * Read all sensors
- */
-static int sensors_read(uint16_t tsensors[], const int last)
+inline struct s_runtime * get_runtime(void)
 {
-	int sensor, ret = -1;
-	
-	for (sensor=0; sensor<last; sensor++) {
-		if (rwchcd_spi_sensor_r(tsensors, sensor))
-			goto out;
+	return (&Runtime);
+}
+
+static void parse_temps(void)
+{
+	struct s_runtime * const runtime = get_runtime();
+	int i;
+
+	for (i = 0; i<runtime->config->nsensors; i++) {
+		runtime->temps[i] = ohm_to_temp(sensor_to_ohm(runtime->rWCHC_sensors[i], 1));
 	}
-	
-	if (rwchcd_spi_sensor_r(tsensors, RWCHC_NTSENSORS-1))	// grab reference
-		goto out;
-	
-	ret = 0;
-out:
-	return ret;
 }
 
 /**
- * Write a string to LCD.
- * @warning No boundary checks
- * @param str string to send
- * @return error code
+ * get temp from a given temp id
+ * @return temp if id valid, 0 otherwise
  */
-static int lcd_wstr(const char * str)
+static temp_t get_temp(const tempid_t id)
 {
-	int ret = -1;
-	
-	while (*str != '\0') {
-		if (rwchcd_spi_lcd_data_w(*str))
-			goto out;
-		str++;
-		//usleep(100); DISABLED: SPI_rw8bit() already sleeps
-	}
-	
-	ret = 0;
-out:
-	return ret;
+	const struct s_runtime * const runtime = get_runtime();
+
+	if (id > runtime->config->nsensors)
+		return (0);
+
+	return (runtime->temps[id]);	// XXX REVISIT lock
 }
 
-/*
- * voltage on ADC pin is Vsensor * (1+G) - Vdac * G where G is divider gain on AOP.
- * if value < ~10mv: short. If value = max: open.
+short validate_temp(const temp_t temp)
+{
+	int ret = ALL_OK;
+
+	if (temp == 0)
+		ret = -ESENSORINVAL;
+	else if (temp <= RWCHCD_TEMPMIN)
+		ret = -ESENSORSHORT;
+	else if (temp >= RWCHCD_TEMPMAX)
+		ret = -ESENSORDISCON;
+
+	return (ret);
+}
+
+static inline temp_t celsius_to_temp(const float celsius)
+{
+	return ((temp_t)(celsius + 273.15)*100);
+}
+
+static inline float temp_to_celsius(const temp_t temp)
+{
+	return ((float)((float)temp/100.0 - 273.15));
+}
+
+/**
+ * Implement time-based PI controller in velocity form
+ * Saturation : max = boiler temp, min = return temp
+ * We want to output
+ http://www.plctalk.net/qanda/showthread.php?t=19141
+ // http://www.energieplus-lesite.be/index.php?id=11247
+ // http://www.ferdinandpiette.com/blog/2011/08/implementer-un-pid-sans-faire-de-calculs/
+ // http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
+ // http://controlguru.com/process-gain-is-the-how-far-variable/
+ // http://www.rhaaa.fr/regulation-pid-comment-la-regler-12
+ // http://controlguru.com/the-normal-or-standard-pid-algorithm/
+ // http://www.csimn.com/CSI_pages/PIDforDummies.html
+ // https://en.wikipedia.org/wiki/PID_controller
  */
-static unsigned int sensor_to_ohm(const uint16_t raw, const int calib)
+static float control_PI(const float target, const float actual)
 {
-	const unsigned int dacset[] = {0, 64, 128, 255};
-	unsigned int value, dacoffset;
-	float calibmult;
-
-	dacoffset = (raw >> 12) & 0x3;
-
-	value = raw & RWCHC_ADC_MAXV;		// raw is 10bit, cannot be negative when cast to sint
-	value *= RWCHC_ADC_MVSCALE;		// convert to millivolts
-	value += dacset[dacoffset]*RWCHC_DAC_MVSCALE*RWCHC_ADC_OPGAIN;	// add the initial offset
-
-	/* value is now (1+RWCHC_ADC_OPGAIN) * actual value at sensor. Sensor is fed 0.5mA,
-	 * so sensor resistance is 1/2 actual value in millivolt. 1+RWCHC_ADC_OPGAIN = 4.
-	 * Thus, resistance in ohm is value/2 */
-
-	value /= 2;
-
-	// finally, apply calibration factor
-	if (calib)
-		calibmult = dacoffset ? calib_dac : calib_nodac;
-	else
-		calibmult = 1.0;
-
-	value = ((float)value * calibmult);	// calibrate
-
-	return (value);
-}
-
-static void calibrate(void)
-{
-	int refcalib, ref;
-
-	while (rwchcd_spi_ref_r(&ref, 0));
-
-	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		calib_nodac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
-	}
-
-	while (rwchcd_spi_ref_r(&ref, 1));
-
-	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		calib_dac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
-	}
-}
-
-// http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/platinum-rtd-sensors/resistance-calibration-table
-
-static float ohm_to_temp(const unsigned int ohm)
-{
-	float alpha, beta, delta, A, B, C, temp;
-#define	R0 1000.0
-
-	// manufacturer parameters
-	alpha = 0.003850;	// mean R change referred to 0C
-	//beta = 0.10863;
-	delta = 1.4999;
-
-	// Callendar - Van Dusen parameters
-	A = alpha + (alpha * delta) / 100;
-	B = (-alpha * delta) / (100 * 100);
-	//C = (-alpha * beta) / (100 * 100 * 100 * 100);	// only for t < 0
-
-	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
-	temp = (-R0*A + sqrtf(R0*R0*A*A - 4*R0*B*(R0 - ohm))) / (2*R0*B);
-
-	return temp;
-}
-
-/*
- Loi d'eau linaire: pente + offset
- pente calculee negative puisqu'on conserve l'axe des abscisses dans la bonne orientation
- */
-static float loi_deau(const float ext_temp)
-{
-	float out_temp1 = -5.0, water_temp1 = 50.0, out_temp2 = 15.0, water_temp2 = 30.0; // XXX settings
-	float slope, offset;
-
-	// (Y2 - Y1)/(X2 - X1)
-	slope = (water_temp2 - water_temp1) / (out_temp2 - out_temp1);
-	// reduction par un point connu
-	offset = water_temp2 - (out_temp2 * slope);
-
-	// Y = input*slope + offset
-	return (ext_temp * slope + offset);
-}
-
-// http://www.ferdinandpiette.com/blog/2011/08/implementer-un-pid-sans-faire-de-calculs/
-static float control_PID(const float target, const float actual)
-{
-	float Kp, Ki, Kd;	// XXX PID settings
-	float error, error_prev, error_change, output;
-	static float error_sum;	// XXX will overflow. Implement windowed sum with circular buffer
+	float Kp, Ki;	// XXX PID settings
+	float error, error_prev, error_change, output, iterm;
+	static float iterm_prev, error_prev, output_prev, prev;
 
 	error = target - actual;
-	error_sum += error;
-	error_change = error - error_prev;
 
-	output = Kp * error + Ki * error_sum + Kd * error_change;
-	error_prev = error;
+	// Integral term
+	iterm = Ki * error;
+
+	// Proportional term
+	pterm = Kp * (prev - actual);
+	prev = actual;
+
+	output = iterm + pterm + output_prev;
+	output_prev = output;
 
 	return (output);
 }
 
+static bool overtemp_protection(const struct s_boiler * const boiler,
+				const struct s_valve * const mixer,
+				const struct s_stateful_relay * const pump)
+{
+	static bool tripped = false;
+	float triptemp;
+
+	triptemp = boiler->limit_tmax;
+	if (tripped)
+		triptemp -= boiler->histeresis * 2;	// XXX untrip at histeresis *2
+
+	if (boiler->temp > triptemp) {
+		tripped = true;
+
+		// stop boiler
+		set_relay_state(boiler->burner_1, OFF, 0);
+
+		// start pump
+		set_relay_state(pump, ON, 0);
+
+		// open valve
+		set_mixer_pos(mixer, 100);
+	}
+	else
+		tripped = false;
+
+	return (tripped);
+}
+
+static bool frost_protection(const struct s_config * const config)
+{
+	static bool tripped = false;
+	float triptemp;
+	short percent;
+	struct s_scheme1 * scheme;	// XXX revisit
+/*
+	if (!config->configured)	XXX must be checked before call
+		return (-ENOTCONFIGURED);
+*/
+	if (config->scheme == 1)
+		scheme = (struct s_scheme1 *)(config->scheme_data);
+
+	triptemp = config->limit_tfrostmin;
+	if (tripped)
+		triptemp += config->histeresis;	// XXX untrip with histeresis
+
+	if (t_outdoor < triptemp) {
+		tripped = true;
+
+		// turn water pump on
+		set_relay_state(scheme->circuit->pump, ON, 0);
+
+		// Manage boiler
+		heatsource_request_temp(scheme->heat, scheme->circuit->limit_twatermin + scheme->circuit->temp_inoffset);
+
+		// Manage valve
+		percent = calc_mixer_pos(scheme->circuit->valve, scheme->circuit->limit_twatermin);
+		if (percent >= 0)
+			set_mixer_pos(scheme->circuit->valve, percent);
+	}
+	else
+		tripped = false;
+
+}
+
+/**
+ * Exponentially weighted moving average implementing a trivial LP filter
+ http://www.rowetel.com/blog/?p=1245
+ https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
+ */
+static float expw_mavg(float filtered, float new_sample, time_t tau, time_t dt)
+{
+	float alpha = dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
+
+	return (filtered - (alpha * (filtered - new_sample)));
+}
+
+static void outdoor_temp()
+{
+	static time_t lasttime = time(NULL);
+	const struct s_runtime * const runtime = get_runtime();
+	const time_t dt = time(NULL) - lasttime;
+	lasttime = time(NULL);
+
+	runtime->t_outdoor = get_temp(runtime->config->id_temp_outdoor);	// XXX checks
+	runtime->t_outdoor_mixed = expw_mavg(runtime->t_outdoor_mixed, runtime->t_outdoor, runtime->config->building_tau, dt);
+	runtime->t_outdoor_attenuated = expw_mavg(runtime->t_outdoor_attenuated, runtime->t_outdoor_mixed, runtime->config->building_tau, dt);
+}
+
+static int init_process()
+{
+	t_outdoor = t_outdoor_mixed = t_outdoor_attenuated = *(Config.temp_outdoor);
+
+	// set mixing valve to known start state
+	set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
+
+}
+
 /*
  temp conversion from sensor raw value + calibration
- temp burner: target water temp + hist; ceil and floor
+ temp boiler: target water temp + hist; ceil and floor
  temp water: water curve with outdoor temp + timing (PID?) comp (w/ building constant) + indoor comp
  valve position: PID w/ total run time from C to O
  */
