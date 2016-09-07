@@ -16,23 +16,45 @@
  XXX gestion MIN/MAX par caller. TODO implementer courbure
  https://pompe-a-chaleur.ooreka.fr/astuce/voir/111578/le-regulateur-loi-d-eau-pour-pompe-a-chaleur
  http://www.energieplus-lesite.be/index.php?id=10959
+ http://herve.silve.pagesperso-orange.fr/regul.htm
+ XXX REVISIT FLOATS
+ * @param circuit self
+ * @param source_temp outdoor temperature to consider
+ * @return a target water temperature for this circuit
  */
-static float templaw_linear(const struct * const s_heating_circuit circuit, const float source_temp)
+static temp_t templaw_linear(const struct * const s_heating_circuit circuit, const temp_t source_temp)
 {
 	//const float out_temp1 = -5.0, water_temp1 = 50.0, out_temp2 = 15.0, water_temp2 = 30.0; // XXX settings
-	const float out_temp1 = circuit->tlaw_data->tout1;
-	const float water_temp1 = circuit->tlaw_data->twater1;
-	const float out_temp2 = circuit->tlaw_data->tout2;
-	const float water_temp2 = circuit->tlaw_data->twater2;
-	float slope, offset;
+	const temp_t out_temp1 = circuit->tlaw_data->tout1;
+	const temp_t water_temp1 = circuit->tlaw_data->twater1;
+	const temp_t out_temp2 = circuit->tlaw_data->tout2;
+	const temp_t water_temp2 = circuit->tlaw_data->twater2;
+	float slope;
+	temp_t offset;
+	temp_t ambient_measured, ambient_delta, curve_shift;
+	temp_t t_output;
 
 	// (Y2 - Y1)/(X2 - X1)
 	slope = (water_temp2 - water_temp1) / (out_temp2 - out_temp1);
 	// reduction par un point connu
 	offset = water_temp2 - (out_temp2 * slope);
 
-	// Y = input*slope + offset
-	return (source_temp * slope + offset);
+	// calculate output at nominal 20C: Y = input*slope + offset
+	t_output = source_temp * slope + offset;
+
+	// shift output based on actual target temperature
+	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
+	t_output += curve_shift;
+
+	// shift based on measured ambient temp (if available) influence p.41
+	ambient_measured = get_temp(circuit->id_temp_ambient);
+	if (validate_temp(ambient_measured) == ALL_OK) {
+		ambient_delta = (circuit->set_ambient_factor/10) * (circuit->target_ambient - ambient_measured);
+		curve_shift = ambient_delta * (1 - slope);
+		t_output += curve_shift;
+	}
+
+	return (t_output);
 }
 
 /**
@@ -69,10 +91,38 @@ static short valvelaw_linear(const struct * const s_valve valve, const temp_t ta
 
 	percent = (short)((target_tout - tempin2) / (tempin1 - tempin2) * 100);
 
+	// XXX IMPLEMENT PI to account for actual tempout
+
+
 	// enforce physical limits
 	if (percent > 100)
 		percent = 100;
 	else if (percent < 0)
+		percent = 0;
+
+exit:
+	return (percent);
+}
+
+/**
+ * implement a bang-bang law for valve position:
+ * @param valve self
+ * @param target_tout target valve output temperature
+ * @return valve position in percent or error
+ */
+static short valvelaw_bangbang(const struct * const s_valve valve, const temp_t target_tout)
+{
+	short percent;
+	temp_t tempout;
+
+	tempout = get_temp(mixer->id_tempout);
+	percent = validate_temp(tempout);
+	if (percent != ALL_OK)
+		goto exit;
+
+	if (target_tout < tempout)
+		percent = 100;
+	else
 		percent = 0;
 
 exit:
@@ -154,6 +204,8 @@ static int run_valve(const struct s_valve * const valve)
 	else if (valve->position > 100)
 		valve->position = 100;
 
+	// XXX implement bang-bang valves
+
 	// position is correct
 	if (valve->position == percent) {
 		// if we're going for full open or full close, make absolutely sure we are
@@ -171,9 +223,8 @@ static int run_valve(const struct s_valve * const valve)
 		set_relay_state(valve->close, OFF, 0);
 		valve->action = STOP;
 	}
-
 	// position is too low
-	if (percent - valve->position > 0) {
+	else if (percent - valve->position > 0) {
 		set_relay_state(valve->close, OFF, 0);
 		set_relay_state(valve->open, ON, 0);
 		valve->action = OPEN;
@@ -235,11 +286,39 @@ static int boiler_online(struct s_boiler * const boiler)
 	return (ret);
 }
 
+static int boiler_antifreeze(struct s_boiler * const boiler)
+{
+	int ret;
+	temp_t boilertemp;
+
+	boilertemp = get_temp(boiler->id_temp)
+	ret = validate_temp(boilertemp);
+
+	if (ret)
+		return (ret);
+
+	// trip at set_tfreeze point
+	if (boilertemp <= boiler->set_tfreeze)
+		boiler->antifreeze = true;
+
+	// untrip at limit_tmin + histeresis/2
+	if (boiler->antifreeze) {
+		if (boilertemp > (boiler->limit_tmin + boiler->histeresis/2))
+			boiler->antifreeze = false;
+	}
+
+	return (ALL_OK);
+}
+
 /**
  * Implement basic single allure boiler
  * @param boiler boiler structure
  * @param target_temp desired boiler temp
  * @return status. If error action must be taken (e.g. offline boiler) XXX REVISIT
+ * @todo XXX implmement 2nd allure (p.51)
+ * @todo XXX implemment consummer inhibit signal for cool startup
+ * @todo XXX implement consummer force signal for overtemp cooldown
+ * @todo XXX implement limit on return temp (p.55/56)
  */
 static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_temp)
 {
@@ -252,13 +331,20 @@ static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_t
 	if (!boiler->configured)
 		return (-ENOTCONFIGURED);
 
-	if (!boiler->online)
-		return (-EOFFLINE);
+	// Check if we need antifreeze
+	ret = boiler_antifreeze(boiler);
+	if (ret)
+		return (ret);
 
-	// boiler online
+	if (!boiler->antifreeze) {	// antifreeze takes over offline mode
+		if (!boiler->online)
+			return (-EOFFLINE);	// XXX caller must call boiler_offline() otherwise pump will not stop after antifreeze
+	}
+
+	// boiler online (or antifreeze)
 
 	if (boiler->loadpump)
-		set_pump_state(boiler->loadpump, ON)
+		set_pump_state(boiler->loadpump, ON);
 
 	boiler_temp = get_temp(boiler->id_temp);
 	ret = validate_temp(boiler_temp);
@@ -282,18 +368,22 @@ static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_t
 	// save current target
 	boiler->target_temp = target_temp;
 
+	// bypass target_temp if antifreeze is active
+	if (boiler->antifreeze)
+		target_temp = boiler->limit_tmin;
+
 	// temp control
-	if (boiler_temp < (target_temp - boiler->histeresis/2))
+	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
 		set_relay_state(boiler->burner_1, ON, boiler->min_runtime);
-	else if (boiler_temp > (target_temp + boiler->histeresis/2))
+	else if (boiler_temp > (target_temp + boiler->histeresis/2))	// untrip condition
 		set_relay_state(boiler->burner_1, OFF, boiler->min_runtime);
 
 	return (ALL_OK);
-
 }
 
 static int run_heat_source(const struct s_heat_source * const heat)
 {
+	const struct s_runtime * const runtime = get_runtime();
 	temp_t temp_request;
 
 	if (!heat->configured)
@@ -326,7 +416,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 
 	set_mixer_pos(circuit->valve, 0);	// XXX REVISIT
 
-	circuit->runmode = RM_OFF;
+	circuit->set_runmode = RM_OFF;
 
 	return (ALL_OK);
 }
@@ -349,11 +439,65 @@ int circuit_online(struct s_heating_circuit * const circuit)
 	return (ret);
 }
 
+/**
+ * Conditions for running circuit
+ * Circuit is off in ANY of the following conditions are met:
+ * - t_outdoor > current set_outhoff_MODE
+ * - t_outdoor_mixed > current set_outhoff_MODE
+ * - t_outdoor_attenuated > current set_outhoff_MODE
+ * Circuit is back on if ALL of the following conditions are met:
+ * - t_outdoor < current set_outhoff_MODE - set_outhoff_histeresis
+ * - t_outdoor_mixed < current set_outhoff_MODE - set_outhoff_histeresis
+ * - t_outdoor_attenuated < current set_outhoff_MODE - set_outhoff_histeresis
+ * State is preserved in all other cases
+ */
+static void circuit_outhoff(const struct s_heating_circuit * const circuit)
+{
+	const struct s_runtime * const runtime = get_runtime();
+	temp_t temp_trigger;
 
+	switch (circuit->actual_runmode) {
+		case RM_COMFORT:
+			temp_trigger = circuit->set_outhoff_comfort;
+			break;
+		case RM_ECO:
+			temp_trigger = circuit->set_outhoff_eco;
+			break;
+		case RM_FROSTFREE:
+			temp_trigger = circuit->set_outhoff_frostfree;
+			break;
+		default:
+			return;	// XXX
+	}
+
+	if (!temp_trigger) {	// don't do anything if we have an invalid limit
+		circuit->outhoff = false;
+		return;	// XXX
+	}
+
+	if ((runtime->t_outdoor > temp_trigger) ||
+	    (runtime->t_outdoor_mixed > temp_trigger) ||
+	    (runtime->t_outdoor_attenuated > temp_trigger)) {
+		circuit->outhoff = true;
+	}
+	else {
+		temp_trigger -= circuit->set_outhoff_histeresis;
+		if ((runtime->t_outdoor < temp_trigger) &&
+		    (runtime->t_outdoor_mixed < temp_trigger) &&
+		    (runtime->t_outdoor_attenuated < temp_trigger))
+			circuit->outhoff = false;
+	}
+}
+
+
+/**
+ * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down...)
+ * XXX ADD rate of rise cap
+ */
 static int run_circuit(struct s_heating_circuit * const circuit)
 {
+	const struct s_runtime * const runtime = get_runtime();
 	temp_t target_temp, water_temp;
-	enum e_runmode mode;
 	short percent;
 
 	if (!circuit)
@@ -367,23 +511,28 @@ static int run_circuit(struct s_heating_circuit * const circuit)
 
 	// depending on circuit run mode, assess circuit target temp
 	// set valve based on circuit target temp
-	if (circuit->runmode == RM_AUTO)
-		mode = runtime->runmode;
+	if (circuit->set_runmode == RM_AUTO)
+		circuit->actual_runmode = runtime->set_runmode;
 	else
-		mode = circuit->runmode;
+		circuit->actual_runmode = circuit->set_runmode;
 
-	switch (mode) {
+	// Check if the circuit meets outhoff conditions
+	circuit_outhoff(circuit);
+	if (circuit->outhoff)
+		circuit->actual_runmode = RM_OFF;	// if it does, turn it off
+
+	switch (circuit->actual_runmode) {
 		case RM_OFF:
 			return (circuit_offline(circuit));
 		case RM_COMFORT:
-			target_temp = circuit->target_tcomfort;
+			target_temp = circuit->set_tcomfort;
 			break;
 		case RM_ECO:
-			target_temp = circuit->target_teco;
+			target_temp = circuit->set_teco;
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			target_temp = circuit->target_tfrostfree;
+			target_temp = circuit->set_tfrostfree;
 			break;
 		case RM_MANUAL:
 			set_pump_state(circuit->pump->relay, ON);
@@ -394,28 +543,36 @@ static int run_circuit(struct s_heating_circuit * const circuit)
 
 	// if we reached this point then the circuit is active
 
-	target_temp += circuit->target_toffset;
+	// adjust offset
+	target_temp += circuit->set_toffset;
+
+	// save target ambient temp to circuit
+	circuit->target_ambient = target_temp;
 
 	// circuit is active, ensure pump is running
 	set_pump_state(circuit->pump, ON);
 
 	// calculate water pipe temp
-	water_temp = circuit->templaw(circuit, target_temp);
+	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
+
+	// XXX OPTIM if return temp is known
 
 	// enforce limits
-	if (water_temp < circuit->limit_wtmin)
-		water_temp = circuit->limit_wtmin;
-	else if (water_temp > circuit->limit_wtmax)
-		water_temp = circuit->limit_wtmax;
+	if (water_temp < circuit->set_limit_wtmin)
+		water_temp = circuit->set_limit_wtmin;	// XXX indicator for flooring
+	else if (water_temp > circuit->set_limit_wtmax)
+		water_temp = circuit->set_limit_wtmax;	// XXX indicator for ceiling
+
+	// XXX cap rate of rise if set
 
 	// save current target water temp
 	circuit->target_wtemp = water_temp;
 
 	// apply heat request
-	circuit->heat_request = water_temp + circuit->temp_inoffset;
+	circuit->heat_request = water_temp + circuit->set_temp_inoffset;
 
 	// adjust valve if necessary
-	if (circuit->valve) {
+	if (circuit->valve && circuit->valve->configured) {
 		percent = calc_mixer_pos(circuit->valve, target_temp);
 		if (percent >= 0)
 			set_mixer_pos(circuit->valve, percent);
@@ -461,7 +618,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 
 	dhwt->heat_request = 0;
 	dhwt->target_temp = 0;
-	dhwt->heating_on = false;
+	dhwt->charge_on = false;
 	dhwt->recycle_on = false;
 
 	if (dhwt->feedpump)
@@ -473,15 +630,20 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (dhwt->selfheater)
 		set_relay_state(dhwt->selfheater, OFF, 0);
 
-	dhwt->runmode = RM_OFF;
+	dhwt->set_runmode = RM_OFF;
 
 	return (ALL_OK);
 }
 
+/**
+ * DHW tank control.
+ * XXX TODO implement dhwprio glissante/absolue for heat request
+ */
 static int run_dhwt(struct s_dhw_tank * const dhwt)
 {
-	temp_t target_temp, water_temp, curr_temp;
-	enum e_runmode mode;
+	const struct s_runtime * const runtime = get_runtime();
+	temp_t target_temp, water_temp, top_temp, bottom_temp, curr_temp;
+	bool valid_ttop = true, valid_tbottom = true;
 	int ret = -EGENERIC;
 
 	if (!dhwt)
@@ -494,22 +656,22 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 		return (-EOFFLINE);
 
 	// depending on dhwt run mode, assess dhwt target temp
-	if (dhwt->runmode == RM_AUTO)
-		mode = runtime->dhwmode;
+	if (dhwt->set_runmode == RM_AUTO)
+		dhwt->actual_runmode = runtime->dhwmode;
 	else
-		mode = dhwt->runmode;
+		dhwt->actual_runmode = dhwt->set_runmode;
 
-	switch (mode) {
+	switch (dhwt->actual_runmode) {
 		case RM_OFF:
 			return (dhwt_offline(dhwt));
 		case RM_COMFORT:
-			target_temp = circuit->target_tcomfort;
+			target_temp = circuit->set_tcomfort;
 			break;
 		case RM_ECO:
-			target_temp = circuit->target_teco;
+			target_temp = circuit->set_teco;
 			break;
 		case RM_FROSTFREE:
-			target_temp = circuit->target_tfrostfree;
+			target_temp = circuit->set_tfrostfree;
 			break;
 		case RM_MANUAL:
 			set_pump_state(dhwt->feedpump, ON);
@@ -537,51 +699,71 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 	// save current target dhw temp
 	dhwt->target_temp = target_temp;
 
-	// apply histeresis - XXX REVISIT CURRENTLY ONLY USING A SINGLE SENSOR
-	curr_temp = get_temp(dhwt->id_temp_bottom);
-	ret = validate_temp(boiler_temp);
-	if (ret != ALL_OK) {
-		curr_temp = get_temp(dhwt->id_temp_top);
-		ret = validate_temp(boiler_temp);
-	}
+	// check which sensors are available
+	bottom_temp = get_temp(dhwt->id_temp_bottom);
+	ret = validate_temp(bottom_temp);
 	if (ret != ALL_OK)
-		return (ret):
+		valid_tbottom = false;
+	top_temp = get_temp(dhwt->id_temp_top);
+	ret = validate_temp(top_temp);
+	if (ret != ALL_OK)
+		valid_ttop = false;
 
-	if (dhwt->heating_on) {
-		// if heating in progress, untrip at target temp
+	// no sensor available, give up
+	if (!valid_tbottom && !valid_ttop)
+		return (ret);	// return last error
+
+	// apply histeresis - XXX we enforce sensor position, it SEEMS desirable
+	// trip at target - histeresis, untrip at target
+	if (!dhwt->charge_on) {	// heating off
+		if (valid_tbottom)	// prefer bottom temp if available
+			curr_temp = bottom_temp;
+		else
+			curr_temp = top_temp;
+
+		// if heating not in progress, trip if forced or at (target temp - histeresis)
+		if (dhwt->force_on || (curr_temp < target_temp - dhwt->histeresis)) {
+			if (dhwt->selfheater && dhwt->selfheater->configured && runtime->sleeping) {
+				// we have a configured self heater and the plant is sleeping, use self heating
+				set_relay_state(dhwt->selfheater, ON, 0);
+			}
+			else {	// run from plant heat source
+				// calculate necessary water feed temp
+				water_temp = target_temp + dhwt->set_temp_inoffset;
+
+				// enforce limits
+				if (water_temp < dhwt->limit_wintmin)
+					water_temp = dhwt->limit_wintmin;
+				else if (water_temp > dhwt->limit_wintmax)
+					water_temp = dhwt->limit_wintmax;
+
+				// apply heat request
+				dhwt->heat_request = water_temp;
+			}
+			// mark heating in progress
+			dhwt->charge_on = true;
+		}
+	}
+	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
+		if (valid_ttop)	// prefer top temp if available
+			curr_temp = top_temp;
+		else
+			curr_temp = bottom_temp;
+
+		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
 		if (curr_temp > target_temp) {
-			// stop feedpump
-			set_pump_state(dhwt->feedpump, OFF);
+			// stop self-heater
+			set_relay_state(dhwt->selfheater, OFF, 0);
 
 			// set heat request to minimum
 			dhwt->heat_request = dhwt->limit_wintmin;
 
 			// mark heating as done
-			dhwt->heating_on = false;
+			dhwt->charge_on = false;
 		}
 	}
-	else {	// heating off
-		// if heating not in progress, trip at target temp - histeresis
-		if (curr_temp > target_temp - dhwt->histeresis) {
-			// calculate necessary water feed temp
-			water_temp = target_temp + dhwt->temp_inoffset;
 
-			// enforce limits
-			if (water_temp < dhwt->limit_wintmin)
-				water_temp = dhwt->limit_wintmin;
-			else if (water_temp > dhwt->limit_wintmax)
-				water_temp = dhwt->limit_wintmax;
-
-			// apply heat request
-			dhwt->heat_request = water_temp;
-
-			// start feedpump
-			set_pump_state(dhwt->feedpump, ON);
-
-			// mark heating in progress
-			dhwt->heating_on = true;
-		}
-	}
+	// XXX TODO HANDLE FEEDPUMP
 
 	return (ALL_OK);
 }

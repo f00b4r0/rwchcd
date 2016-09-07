@@ -6,12 +6,15 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+//* TODO
 // Setup
 // Computation
 // Control
 // accounting (separate module that periodically polls states and write them to timestamped registry)
 // Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
 // UI + programming
+// handle summer switchover
+// connection of multiple instances
 
 // http://www.energieplus-lesite.be/index.php?id=10963
 
@@ -141,42 +144,6 @@ static bool overtemp_protection(const struct s_boiler * const boiler,
 		tripped = false;
 
 	return (tripped);
-}
-
-static bool frost_protection(const struct s_config * const config)
-{
-	static bool tripped = false;
-	float triptemp;
-	short percent;
-	struct s_scheme1 * scheme;	// XXX revisit
-/*
-	if (!config->configured)	XXX must be checked before call
-		return (-ENOTCONFIGURED);
-*/
-	if (config->scheme == 1)
-		scheme = (struct s_scheme1 *)(config->scheme_data);
-
-	triptemp = config->limit_tfrostmin;
-	if (tripped)
-		triptemp += config->histeresis;	// XXX untrip with histeresis
-
-	if (t_outdoor < triptemp) {
-		tripped = true;
-
-		// turn water pump on
-		set_relay_state(scheme->circuit->pump, ON, 0);
-
-		// Manage boiler
-		heatsource_request_temp(scheme->heat, scheme->circuit->limit_twatermin + scheme->circuit->temp_inoffset);
-
-		// Manage valve
-		percent = calc_mixer_pos(scheme->circuit->valve, scheme->circuit->limit_twatermin);
-		if (percent >= 0)
-			set_mixer_pos(scheme->circuit->valve, percent);
-	}
-	else
-		tripped = false;
-
 }
 
 /**

@@ -25,7 +25,7 @@ enum {
 	ENOTIMPLEMENTED,
 	EOFFLINE,	///< device is offline
 	EINVALID,	///< invalid argument
-	EINVALIDMODE,	///< invalid runmode
+	EINVALIDMODE,	///< invalid set_runmode
 	ESENSORINVAL,	///< invalid sensor id
 	ESENSORSHORT,	///< sensor is shorted
 	ESENSORDISCON,	///< sensor is disconnected
@@ -42,25 +42,34 @@ typedef temp_t	unsigned short;		// all temps are internally stored in Kelvin * 1
 typedef tempid_t	short;		// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid
 
 
-enum e_runmode { RM_OFF = 0, RM_AUTO, RM_COMFORT, RM_ECO, RM_FROSTFREE, RM_MANUAL, RM_DHWONLY };
+enum e_runmode {
+	RM_OFF = 0,	///< device is fully off, no operation performed (not even frost protection)
+	RM_AUTO,	///< device is running based on global plant set_runmode
+	RM_COMFORT,	///< device is in comfort mode
+	RM_ECO,		///< device is in eco mode
+	RM_FROSTFREE,	///< device is in frostfree mode
+	RM_MANUAL,	///< device is in manual mode (typically all actuators are on)
+	RM_DHWONLY,	///< device is in DHW only mode
+};
+
 enum e_systemmode { OFF = 0, AUTO, COMFORT, ECO, FROSTFREE, MANUAL, DHWONLY };	///< current operation mode
 
 struct s_config {
 	bool configured;
 	short nsensors;		///< number of active sensors (== id of last sensor +1)
 	short scheme_type;		///< hydraulic scheme type - UNUSED
-	enum e_runmode runmode;	///< desired operation mode
+	enum e_runmode set_runmode;	///< desired operation mode
 	temp_t limit_tfrostmin;	///< outdoor temp for frost-protection
 	time_t building_tau;	///< building time constant
-	temp_t histeresis;
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	struct rwchc_s_settings rWCHC_settings;
 };
 
 struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
-	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
+	enum e_runmode set_runmode;	///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
+	bool sleeping;			///< true if no heat request in the past XXX time (plant is asleep)
 	float calib_nodac;
 	float calib_dac;
 	temp_t t_outdoor;

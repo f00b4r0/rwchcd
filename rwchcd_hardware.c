@@ -201,6 +201,6 @@ int set_pump_state(struct s_pump * const pump, bool state)
 	if (!pump->configured)
 		return (-ENOTCONFIGURED);
 
-	cooldown = state ? 0 : pump->cooldown_time;	// apply cooldown for turn off
+	cooldown = state ? 0 : pump->set_cooldown_time;	// apply cooldown for turn off
 	set_relay_state(pump->relay, state, cooldown);
 }
