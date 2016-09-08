@@ -12,7 +12,8 @@
 
 struct s_pump {
 	bool configured;
-	time_t set_cooldown_time;
+	time_t set_cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off
+	time_t actual_cooldown_time;	///< actual cooldown time remaining
 	struct s_stateful_relay relay;
 	char * name;
 };
@@ -123,13 +124,16 @@ struct s_dhw_tank {
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 	enum e_runmode set_runmode;	///< dhwt set_runmode
 	enum e_runmode actual_runmode;	///< dhwt actual (computed) runmode
+	enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };	///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
 	struct s_solar_heater * solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
 	struct s_pump * feedpump;	///< feed pump for this tank
 	struct s_pump * recyclepump;	///< dhw recycle pump for this tank
 	struct s_stateful_relay * selfheater;	///< relay for internal electric heater (if available)
 	time_t limit_chargetime;	///< maximum duration of charge time -- XXX NOT IMPLEMENTED p67
-	tempid_t id_temp_bottom;	///< temp at bottom of dhw tank
-	tempid_t id_temp_top;		///< temp at top of dhw tank
+	tempid_t id_temp_bottom;	///< temp sensor at bottom of dhw tank
+	tempid_t id_temp_top;		///< temp sensor at top of dhw tank
+	tempid_t id_temp_win;		///< temp sensor heatwater inlet
+	tempid_t id_temp_wout;		///< temp sensor heatwater outlet
 	temp_t limit_wintmin;		///< minimum water intake temp when active
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection)
@@ -140,7 +144,7 @@ struct s_dhw_tank {
 	temp_t set_tfrostfree;		///< target temp in frost-free mode - XXX setup ensure > 0C
 	temp_t target_temp;		///< current target temp for this tank
 	temp_t histeresis;		///< histeresis for target temp - XXX setup ensure > 0C
-	temp_t set_temp_inoffset;		///< offset temp for heat source request - XXX setup ensure > 0C
+	temp_t set_temp_inoffset;	///< offset temp for heat source request - XXX setup ensure > 0C
 	temp_t heat_request;		///< current temp request from heat source for this circuit
 	char * name;			///< name for this tank
 };

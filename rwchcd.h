@@ -10,6 +10,7 @@
 #define rwchcd_h
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "rwchc_export.h"
 
 #define testbit(var, bit)	((var) & (1 << (bit)))
@@ -82,6 +83,7 @@ struct s_runtime {
 	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
 	struct s_plant * plant;		///< pointer to scheme structure
 	struct s_config * config;	///< running config
+	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
 };
 
 inline struct s_runtime * get_runtime(void);

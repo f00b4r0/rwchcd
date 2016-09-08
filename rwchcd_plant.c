@@ -69,23 +69,25 @@ static short valvelaw_linear(const struct * const s_valve valve, const temp_t ta
 	short percent;
 	temp_t tempin1, tempin2, tempout;
 
-	// if we don't have a sensor for secondary input, guesstimate it
 	tempin1 = get_temp(mixer->id_temp1);
 	percent = validate_temp(tempin1);
-	if (percent != ALL_OK)
+	if (ALL_OK != percent)
 		goto exit;
 
+	/* if we don't have a sensor for secondary input, guesstimate it
+	 treat the provided id as a delta from valve tempout in Celsius XXX REVISIT,
+	 tempin2 = tempout - delta */
 	if (mixer->id_temp2 < 0) {
 		tempout = get_temp(mixer->id_tempout);
 		percent = validate_temp(tempout);
-		if (percent != ALL_OK)
+		if (ALL_OK != percent)
 			goto exit;
-		tempin2 = tempout - celsius_to_temp(mixer->id_temp2);
+		tempin2 = tempout - celsius_to_temp(-(mixer->id_temp2)); // XXX will need casting
 	}
 	else {
 		tempin2 = get_temp(mixer->id_temp2);
 		percent = validate_temp(tempin2);
-		if (percent != ALL_OK)
+		if (ALL_OK != percent)
 			goto exit;
 	}
 
@@ -106,6 +108,7 @@ exit:
 
 /**
  * implement a bang-bang law for valve position:
+ * If target_tout > current tempout, open the valve, otherwise close it XXX REVISIT
  * @param valve self
  * @param target_tout target valve output temperature
  * @return valve position in percent or error
@@ -117,10 +120,10 @@ static short valvelaw_bangbang(const struct * const s_valve valve, const temp_t 
 
 	tempout = get_temp(mixer->id_tempout);
 	percent = validate_temp(tempout);
-	if (percent != ALL_OK)
+	if (ALL_OK != percent)
 		goto exit;
 
-	if (target_tout < tempout)
+	if (target_tout > tempout)
 		percent = 100;
 	else
 		percent = 0;
@@ -256,7 +259,7 @@ static int boiler_offline(struct s_boiler * const boiler)
 	set_relay_state(boiler->burner_2, OFF, 0);
 
 	if (boiler->loadpump)
-		set_pump_state(boiler->loadpump, OFF);
+		set_pump_state(boiler->loadpump, OFF, FORCE);
 
 	return (ALL_OK);
 }
@@ -344,7 +347,7 @@ static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_t
 	// boiler online (or antifreeze)
 
 	if (boiler->loadpump)
-		set_pump_state(boiler->loadpump, ON);
+		set_pump_state(boiler->loadpump, ON, 0);
 
 	boiler_temp = get_temp(boiler->id_temp);
 	ret = validate_temp(boiler_temp);
@@ -355,7 +358,7 @@ static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_t
 	if (boiler_temp > boiler->limit_tmax) {
 		set_relay_state(boiler->burner_1, OFF, 0);
 		set_relay_state(boiler->burner_2, OFF, 0);
-		set_pump_state(boiler->loadpump, ON);
+		set_pump_state(boiler->loadpump, ON, FORCE);
 		return (-ESAFETY);
 	}
 
@@ -412,7 +415,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	circuit->target_wtemp = 0;
 
 	if (circuit->pump)
-		set_pump_state(dhwt->feedpump, OFF);
+		set_pump_state(dhwt->feedpump, OFF, FORCE);
 
 	set_mixer_pos(circuit->valve, 0);	// XXX REVISIT
 
@@ -535,7 +538,7 @@ static int run_circuit(struct s_heating_circuit * const circuit)
 			target_temp = circuit->set_tfrostfree;
 			break;
 		case RM_MANUAL:
-			set_pump_state(circuit->pump->relay, ON);
+			set_pump_state(circuit->pump->relay, ON, FORCE);
 			return (-1);	//XXX REVISIT
 		default:
 			return (-EINVALIDMODE);
@@ -550,7 +553,7 @@ static int run_circuit(struct s_heating_circuit * const circuit)
 	circuit->target_ambient = target_temp;
 
 	// circuit is active, ensure pump is running
-	set_pump_state(circuit->pump, ON);
+	set_pump_state(circuit->pump, ON, 0);
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
@@ -568,7 +571,7 @@ static int run_circuit(struct s_heating_circuit * const circuit)
 	// save current target water temp
 	circuit->target_wtemp = water_temp;
 
-	// apply heat request
+	// apply heat request: water temp + offset
 	circuit->heat_request = water_temp + circuit->set_temp_inoffset;
 
 	// adjust valve if necessary
@@ -600,7 +603,7 @@ static int dhwt_online(struct s_dhw_tank * const dhwt)
 	// check that mandatory sensors are working
 	testtemp = get_temp(dhwt->id_temp_bottom);
 	ret = validate_temp(testtemp);
-	if (ret != ALL_OK) {
+	if (ALL_OK != ret) {
 		testtemp = get_temp(dhwt->id_temp_top);
 		ret = validate_temp(testtemp);
 	}
@@ -618,14 +621,15 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 
 	dhwt->heat_request = 0;
 	dhwt->target_temp = 0;
+	dhwt->force_on = false;
 	dhwt->charge_on = false;
 	dhwt->recycle_on = false;
 
 	if (dhwt->feedpump)
-		set_pump_state(dhwt->feedpump, OFF);
+		set_pump_state(dhwt->feedpump, OFF, FORCE);
 
 	if (dhwt->recyclepump)
-		set_pump_state(dhwt->recyclepump, OFF);
+		set_pump_state(dhwt->recyclepump, OFF, FORCE);
 
 	if (dhwt->selfheater)
 		set_relay_state(dhwt->selfheater, OFF, 0);
@@ -643,7 +647,7 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 {
 	const struct s_runtime * const runtime = get_runtime();
 	temp_t target_temp, water_temp, top_temp, bottom_temp, curr_temp;
-	bool valid_ttop = true, valid_tbottom = true;
+	bool valid_ttop = false, valid_tbottom = false, test;
 	int ret = -EGENERIC;
 
 	if (!dhwt)
@@ -656,7 +660,7 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 		return (-EOFFLINE);
 
 	// depending on dhwt run mode, assess dhwt target temp
-	if (dhwt->set_runmode == RM_AUTO)
+	if (RM_AUTO == dhwt->set_runmode)
 		dhwt->actual_runmode = runtime->dhwmode;
 	else
 		dhwt->actual_runmode = dhwt->set_runmode;
@@ -674,8 +678,8 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 			target_temp = circuit->set_tfrostfree;
 			break;
 		case RM_MANUAL:
-			set_pump_state(dhwt->feedpump, ON);
-			set_pump_state(dhwt->recyclepump, ON);
+			set_pump_state(dhwt->feedpump, ON, FORCE);
+			set_pump_state(dhwt->recyclepump, ON, FORCE);
 			set_relay_state(dhwt->selfheater, ON, 0);
 			return (ALL_OK);	//XXX REVISIT
 		default:
@@ -686,9 +690,9 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 
 	// handle recycle loop
 	if (dhwt->recycle_on)
-		set_pump_state(dhwt->recyclepump, ON);
+		set_pump_state(dhwt->recyclepump, ON, NOFORCE);
 	else
-		set_pump_state(dhwt->recyclepump, OFF);
+		set_pump_state(dhwt->recyclepump, OFF, NOFORCE);
 
 	// enforce limits on dhw temp
 	if (target_temp < dhwt->limit_tmin)
@@ -702,19 +706,19 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 	// check which sensors are available
 	bottom_temp = get_temp(dhwt->id_temp_bottom);
 	ret = validate_temp(bottom_temp);
-	if (ret != ALL_OK)
-		valid_tbottom = false;
+	if (ALL_OK == ret)
+		valid_tbottom = true;
 	top_temp = get_temp(dhwt->id_temp_top);
 	ret = validate_temp(top_temp);
-	if (ret != ALL_OK)
-		valid_ttop = false;
+	if (ALL_OK == ret)
+		valid_ttop = true;
 
 	// no sensor available, give up
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
-	// apply histeresis - XXX we enforce sensor position, it SEEMS desirable
-	// trip at target - histeresis, untrip at target
+	// handle heat charge - XXX we enforce sensor position, it SEEMS desirable
+	// apply histeresis on logic: trip at target - histeresis, untrip at target
 	if (!dhwt->charge_on) {	// heating off
 		if (valid_tbottom)	// prefer bottom temp if available
 			curr_temp = bottom_temp;
@@ -722,13 +726,13 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 			curr_temp = top_temp;
 
 		// if heating not in progress, trip if forced or at (target temp - histeresis)
-		if (dhwt->force_on || (curr_temp < target_temp - dhwt->histeresis)) {
-			if (dhwt->selfheater && dhwt->selfheater->configured && runtime->sleeping) {
-				// we have a configured self heater and the plant is sleeping, use self heating
+		if (dhwt->force_on || (curr_temp < (target_temp - dhwt->histeresis))) {
+			if (runtime->sleeping && dhwt->selfheater && dhwt->selfheater->configured) {
+				// the plant is sleeping and we have a configured self heater: use it
 				set_relay_state(dhwt->selfheater, ON, 0);
 			}
 			else {	// run from plant heat source
-				// calculate necessary water feed temp
+				// calculate necessary water feed temp: target tank temp + offset
 				water_temp = target_temp + dhwt->set_temp_inoffset;
 
 				// enforce limits
@@ -739,6 +743,9 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 
 				// apply heat request
 				dhwt->heat_request = water_temp;
+
+				// turn feedpump on
+				set_pump_state(dhwt->feedpump, ON, NOFORCE);
 			}
 			// mark heating in progress
 			dhwt->charge_on = true;
@@ -755,15 +762,31 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 			// stop self-heater
 			set_relay_state(dhwt->selfheater, OFF, 0);
 
+			test = FORCE;	// by default, force feedpump immediate turn off
+
+			// if available, test for inlet water temp
+			water_temp = get_temp(dhwt->id_temp_win);
+			ret = validate_temp(water_temp);
+			if (ALL_OK == ret) {
+				// if water feed temp is > dhwt target_temp, we can apply cooldown
+				if (water_temp > dhwt->target_temp)
+					test = NOFORCE;
+			}
+
+			// turn off pump with cooldown
+			set_pump_state(dhwt->feedpump, OFF, test);
+
+
 			// set heat request to minimum
 			dhwt->heat_request = dhwt->limit_wintmin;
+
+			// untrip force charge: XXX force can run only once
+			dhwt->force_on = false;
 
 			// mark heating as done
 			dhwt->charge_on = false;
 		}
 	}
-
-	// XXX TODO HANDLE FEEDPUMP
 
 	return (ALL_OK);
 }
@@ -773,7 +796,7 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
  use return valve temp to compute output
  degraded mode (when sensors are disconnected)
  keep sensor history
- summer run: valve mid position, periodic run of pumps
+ summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  */
 static int run_plant()
 {

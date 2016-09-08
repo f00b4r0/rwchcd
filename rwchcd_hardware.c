@@ -138,11 +138,11 @@ static temp_t ohm_to_temp(const unsigned int ohm)
  * set internal relay state
  * @param relay the internal relay to modify
  * @param state the desired target state
- * @param prevstate_mtime the minimum time the previous running state must be maintained ("cooldown")
- * @return 0 on success, positive number for cooldown wait, negative for error
+ * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
+ * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @todo time management should really be in the routine that writes to the hardware for maximum accuracy
  */
-int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t prevstate_mtime)
+int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay)
 {
 	const struct s_runtime * const runtime = get_runtime();
 	const time_t now = time(NULL);
@@ -157,9 +157,10 @@ int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t prevst
 	// account for state time
 	if (turn_on) {
 		if (!relay->is_on) {
-			if ((now - relay->off_since) < prevstate_mtime)
-				return (now - relay->off_since);	// don't do anything if previous state hasn't been held long enough
+			if ((now - relay->off_since) < change_delay)
+				return (change_delay - (now - relay->off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
 
+			relay->cycles++;	// increment cycle count
 			relay->is_on = true;
 			relay->on_since = now;
 			relay->off_time += now - relay->off_since;
@@ -167,8 +168,8 @@ int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t prevst
 	}
 	else {	// OFF == state
 		if (relay->is_on) {
-			if ((now - relay->on_since) < prevstate_mtime)
-				return (now - relay->on_since);	// don't do anything if previous state hasn't been held long enough
+			if ((now - relay->on_since) < change_delay)
+				return (change_delay - (now - relay->on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
 
 			relay->is_on = false;
 			relay->off_since = now;
@@ -190,10 +191,27 @@ int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t prevst
 	return (ALL_OK);
 }
 
-
-int set_pump_state(struct s_pump * const pump, bool state)
+int get_relay_state(const struct s_stateful_relay * const relay)
 {
-	time_t cooldown;
+	if (!relay)
+		return (-EINVALID);
+
+	if (!relay->configured)
+		return (-ENOTCONFIGURED);
+
+	return (relay->is_on);
+}
+
+/**
+ * Set pump state.
+ * @param pump target pump
+ * @param state target pump state
+ * @param force_state skips cooldown if true
+ * @return error code if any
+ */
+int set_pump_state(struct s_pump * const pump, bool state, bool force_state)
+{
+	time_t cooldown = 0;	// by default, no wait
 
 	if (!pump)
 		return (-EINVALID);
@@ -201,6 +219,23 @@ int set_pump_state(struct s_pump * const pump, bool state)
 	if (!pump->configured)
 		return (-ENOTCONFIGURED);
 
-	cooldown = state ? 0 : pump->set_cooldown_time;	// apply cooldown for turn off
-	set_relay_state(pump->relay, state, cooldown);
+	// apply cooldown to turn off, only if not forced.
+	// If ongoing cooldown, resume it, otherwise restore default value
+	if (!state && !force_state)
+		cooldown = pump->actual_cooldown_time ? pump->actual_cooldown_time : pump->set_cooldown_time;
+
+	// XXX this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
+	pump->actual_cooldown_time = set_relay_state(pump->relay, state, cooldown);
+}
+
+int get_pump_state(const struct s_pump * const pump)
+{
+	if (!pump)
+		return (-EINVALID);
+
+	if (!pump->configured)
+		return (-ENOTCONFIGURED);
+	
+	// XXX we could return remaining cooldown time if necessary
+	return (get_relay_state(pump->relay));
 }
