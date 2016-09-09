@@ -10,6 +10,7 @@
 #define rwchcd_spi_h
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "rwchc_export.h"
 
 int rwchcd_spi_lcd_acquire(void);

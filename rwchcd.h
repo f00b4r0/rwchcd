@@ -39,8 +39,8 @@ enum {
 #define RWCHC_TEMPMIN	XXX
 #define RWCHC_TEMPMAX	XXX
 
-typedef temp_t	unsigned short;		// all temps are internally stored in Kelvin * 100
-typedef tempid_t	short;		// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid
+typedef unsigned short	temp_t;		// all temps are internally stored in Kelvin * 100
+typedef short		tempid_t;	// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid
 
 
 enum e_runmode {
@@ -81,8 +81,8 @@ struct s_runtime {
 	uint16_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
 	union rwchc_u_relays rWCHC_relays;		// XXX locks
 	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
-	struct s_plant * plant;		///< pointer to scheme structure
-	struct s_config * config;	///< running config
+	struct s_plant * restrict plant;		///< pointer to scheme structure
+	struct s_config * restrict config;	///< running config
 	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
 };
 

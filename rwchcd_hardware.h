@@ -9,6 +9,8 @@
 #ifndef rwchcd_hardware_h
 #define rwchcd_hardware_h
 
+#include <stdbool.h>
+
 #define FORCE 1
 #define NOFORCE 0
 
@@ -21,8 +23,10 @@ struct s_stateful_relay {
 	time_t off_since;
 	time_t off_time;
 	unsigned long cycles;	// XXX this should be elswhere (associated with rWCHC_relays) to reflect actual hardware count
-	char * name;
+	char * restrict name;
 };
 
+int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay);
+int get_relay_state(const struct s_stateful_relay * const relay);
 
 #endif /* rwchcd_hardware_h */

@@ -7,8 +7,47 @@
 //
 
 #include <stdio.h>
+#include "rwchcd_hardware.h"
 #include "rwchcd_plant.h"
 
+
+/**
+ * Set pump state.
+ * @param pump target pump
+ * @param state target pump state
+ * @param force_state skips cooldown if true
+ * @return error code if any
+ */
+int set_pump_state(struct s_pump * const pump, bool state, bool force_state)
+{
+	time_t cooldown = 0;	// by default, no wait
+	
+	if (!pump)
+		return (-EINVALID);
+	
+	if (!pump->configured)
+		return (-ENOTCONFIGURED);
+	
+	// apply cooldown to turn off, only if not forced.
+	// If ongoing cooldown, resume it, otherwise restore default value
+	if (!state && !force_state)
+		cooldown = pump->actual_cooldown_time ? pump->actual_cooldown_time : pump->set_cooldown_time;
+	
+	// XXX this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
+	pump->actual_cooldown_time = set_relay_state(pump->relay, state, cooldown);
+}
+
+int get_pump_state(const struct s_pump * const pump)
+{
+	if (!pump)
+		return (-EINVALID);
+	
+	if (!pump->configured)
+		return (-ENOTCONFIGURED);
+	
+	// XXX we could return remaining cooldown time if necessary
+	return (get_relay_state(pump->relay));
+}
 
 /*
  Loi d'eau linaire: pente + offset
@@ -499,7 +538,7 @@ static void circuit_outhoff(const struct s_heating_circuit * const circuit)
  */
 static int run_circuit(struct s_heating_circuit * const circuit)
 {
-	const struct s_runtime * const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp, water_temp;
 	short percent;
 
@@ -645,7 +684,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
  */
 static int run_dhwt(struct s_dhw_tank * const dhwt)
 {
-	const struct s_runtime * const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp, water_temp, top_temp, bottom_temp, curr_temp;
 	bool valid_ttop = false, valid_tbottom = false, test;
 	int ret = -EGENERIC;

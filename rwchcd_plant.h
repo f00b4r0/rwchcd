@@ -9,13 +9,14 @@
 #ifndef rwchcd_plant_h
 #define rwchcd_plant_h
 
+#include "rwchcd.h"
 
 struct s_pump {
 	bool configured;
 	time_t set_cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off
 	time_t actual_cooldown_time;	///< actual cooldown time remaining
-	struct s_stateful_relay relay;
-	char * name;
+	struct s_stateful_relay * restrict relay;
+	char * restrict name;
 };
 
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
@@ -27,13 +28,13 @@ struct s_valve {
 				//	enum { MIXER, ZONE } type;	///< valve type, XXX probably not necessary, can be inferred
 	short ete_time;		///< end-to-end run time
 	enum { STOP, OPEN, CLOSE } action;
-	char * name;
-	struct s_stateful_relay * open;	///< relay for opening the valve
-	struct s_stateful_relay * close;	///< relay for closing the valve (if not set then spring return)
+	char * restrict name;
+	struct s_stateful_relay * restrict open;	///< relay for opening the valve
+	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
 	tempid_t id_temp2;		///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Celsius from temp1
 	tempid_t id_tempout;	///< temp at the output
-	short (*valvelaw)(const struct * const s_valve, temp_t);	///< pointer to valve law
+	short (*valvelaw)(const struct s_valve * const, temp_t);	///< pointer to valve law
 };
 
 struct s_templaw_data20C {
@@ -50,8 +51,8 @@ struct s_heating_circuit {
 	enum e_runmode set_runmode;	///< current circuit set_runmode
 	enum e_runmode actual_runmode;	///< circuit actual (computed) runmode
 //	enum { DIRECT, MIXED } type;	///< probably not necessary, can be inferred from valve type/presence
-	struct s_valve * valve;		///< valve for circuit (if available, otherwise it's direct)
-	struct s_pump * pump;		///< pump for this circuit
+	struct s_valve * restrict valve;	///< valve for circuit (if available, otherwise it's direct)
+	struct s_pump * restrict pump;	///< pump for this circuit
 //	temp_t histeresis;		///< histeresis for target temp
 	temp_t set_limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
 	temp_t set_limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active
@@ -73,8 +74,8 @@ struct s_heating_circuit {
 	temp_t set_temp_inoffset;	///< offset temp for heat source request
 	temp_t heat_request;		///< current temp request from heat source for this circuit
 	struct s_templaw_data20C tlaw_data;
-	temp_t (*templaw)(const struct * const s_heating_circuit, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
-	char * name;			///< name for this circuit
+	temp_t (*templaw)(const struct s_heating_circuit * const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
+	char * restrict name;		///< name for this circuit
 };
 
 struct s_boiler {
@@ -88,10 +89,10 @@ struct s_boiler {
 	temp_t limit_treturnmin;	///< minimum boiler return temp (optional) -- XXX NOT IMPLEMENTED
 	temp_t set_tfreeze;		///< trip point for antifreeze (+5C)
 	time_t min_runtime;
-	char * name;
-	struct s_pump * loadpump;	///< load pump for the boiler, if present
-	struct s_stateful_relay * burner_1;	///< first stage of burner
-	struct s_stateful_relay * burner_2;	///< second stage of burner
+	char * restrict name;
+	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
+	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
+	struct s_stateful_relay * restrict burner_2;	///< second stage of burner
 	tempid_t id_temp;		///< burner temp id
 	tempid_t id_temp_outgoing;	///< burner outflow temp id
 	tempid_t id_temp_return;	///< burner inflow temp id
@@ -105,14 +106,14 @@ struct s_heat_source {
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
 	enum { BOILER, HOTTANK, FIXED } type;
 	temp_t temp_request;		///< current temperature request for heat source (max of all requests)
-	void * source;			///< pointer to related heat source structure
+	void * restrict source;			///< pointer to related heat source structure
 };
 
 struct s_solar_heater {
 	bool configured;
-	struct s_pump * pump;		///< pump for this circuit
+	struct s_pump * restrict pump;	///< pump for this circuit
 	tempid_t id_temp_panel;		///< current panel temp for this circuit
-	char * name;
+	char * restrict name;
 };
 
 struct s_dhw_tank {
@@ -125,10 +126,10 @@ struct s_dhw_tank {
 	enum e_runmode set_runmode;	///< dhwt set_runmode
 	enum e_runmode actual_runmode;	///< dhwt actual (computed) runmode
 	enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };	///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
-	struct s_solar_heater * solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
-	struct s_pump * feedpump;	///< feed pump for this tank
-	struct s_pump * recyclepump;	///< dhw recycle pump for this tank
-	struct s_stateful_relay * selfheater;	///< relay for internal electric heater (if available)
+	struct s_solar_heater * restrict solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
+	struct s_pump * restrict feedpump;	///< feed pump for this tank
+	struct s_pump * restrict recyclepump;	///< dhw recycle pump for this tank
+	struct s_stateful_relay * restrict selfheater;	///< relay for internal electric heater (if available)
 	time_t limit_chargetime;	///< maximum duration of charge time -- XXX NOT IMPLEMENTED p67
 	tempid_t id_temp_bottom;	///< temp sensor at bottom of dhw tank
 	tempid_t id_temp_top;		///< temp sensor at top of dhw tank
@@ -146,25 +147,25 @@ struct s_dhw_tank {
 	temp_t histeresis;		///< histeresis for target temp - XXX setup ensure > 0C
 	temp_t set_temp_inoffset;	///< offset temp for heat source request - XXX setup ensure > 0C
 	temp_t heat_request;		///< current temp request from heat source for this circuit
-	char * name;			///< name for this tank
+	char * restrict name;		///< name for this tank
 };
 
 struct s_heating_circuit_l {
 	short id;
-	struct s_heating_circuit * circuit;
-	struct s_heating_circuit_l * next;
+	struct s_heating_circuit * restrict circuit;
+	struct s_heating_circuit_l * restrict next;
 };
 
 struct s_dhw_tank_l {
 	short id;
-	struct s_dhw_tank * dhwt;
-	struct s_dhw_tank_l * next;
+	struct s_dhw_tank * restrict dhwt;
+	struct s_dhw_tank_l * restrict next;
 };
 
 struct s_heat_source_l {
 	short id;
-	struct s_heat_source * source;
-	struct s_heat_source_l * next;
+	struct s_heat_source * restrict source;
+	struct s_heat_source_l * restrict next;
 };
 
 struct s_plant {
@@ -172,9 +173,12 @@ struct s_plant {
 	unsigned short heat_source_n;	///< number of heat sources in the plant
 	unsigned short heating_circuit_n;	///< number of heating circuits in the plant
 	unsigned short dhw_tank_n;	///< number of dhw tanks in the plant
-	struct s_heat_source_l * heat_head;
-	struct s_mixed_circuit_l * circuit_head;
-	struct s_dhw_tank_l * dhwt_head;
+	struct s_heat_source_l * restrict heat_head;
+	struct s_mixed_circuit_l * restrict circuit_head;
+	struct s_dhw_tank_l * restrict dhwt_head;
 };
+
+int set_pump_state(struct s_pump * const pump, bool state, bool force_state);
+int get_pump_state(const struct s_pump * const pump);
 
 #endif /* rwchcd_plant_h */
