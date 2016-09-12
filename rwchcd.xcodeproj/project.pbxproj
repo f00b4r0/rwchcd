@@ -90,7 +90,8 @@
 			buildConfigurationList = 4FCD54F41D835C0B003BB848 /* Build configuration list for PBXLegacyTarget "rwchcd" */;
 			buildPhases = (
 			);
-			buildToolPath = /usr/bin/make;
+			buildToolPath = /usr/bin/true;
+			buildWorkingDirectory = "";
 			dependencies = (
 			);
 			name = rwchcd;
@@ -311,6 +312,7 @@
 				4FCD550C1D835CF6003BB848 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

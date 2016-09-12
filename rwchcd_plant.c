@@ -105,11 +105,17 @@ static temp_t templaw_linear(const struct * const s_heating_circuit circuit, con
  */
 static short valvelaw_linear(const struct * const s_valve valve, const temp_t target_tout)
 {
-	short percent;
-	temp_t tempin1, tempin2, tempout;
+	short percent, iterm, iterm_prev;
+	temp_t tempin1, tempin2, tempout, error;
 
 	tempin1 = get_temp(mixer->id_temp1);
 	percent = validate_temp(tempin1);
+	if (ALL_OK != percent)
+		goto exit;
+
+	// get current outpout
+	tempout = get_temp(mixer->id_tempout);
+	percent = validate_temp(tempout);
 	if (ALL_OK != percent)
 		goto exit;
 
@@ -117,10 +123,6 @@ static short valvelaw_linear(const struct * const s_valve valve, const temp_t ta
 	 treat the provided id as a delta from valve tempout in Celsius XXX REVISIT,
 	 tempin2 = tempout - delta */
 	if (mixer->id_temp2 < 0) {
-		tempout = get_temp(mixer->id_tempout);
-		percent = validate_temp(tempout);
-		if (ALL_OK != percent)
-			goto exit;
 		tempin2 = tempout - celsius_to_temp(-(mixer->id_temp2)); // XXX will need casting
 	}
 	else {
@@ -130,10 +132,16 @@ static short valvelaw_linear(const struct * const s_valve valve, const temp_t ta
 			goto exit;
 	}
 
-	percent = (short)((target_tout - tempin2) / (tempin1 - tempin2) * 100);
-
 	// XXX IMPLEMENT PI to account for actual tempout
+	error = target_tout - tempout;
+	iterm = Ki * error + iterm_prev;
+	if (iterm > 100)
+		iterm = 100;
+	else if (iterm < 0)
+		iterm = 0;
+	iterm_prev = iterm;
 
+	percent = (short)((target_tout - tempin2) / (tempin1 - tempin2) * 100);
 
 	// enforce physical limits
 	if (percent > 100)
