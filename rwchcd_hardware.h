@@ -11,6 +11,7 @@
 
 #include <stdbool.h>
 #include <time.h>
+#include "rwchcd.h"
 
 #define FORCE 1
 #define NOFORCE 0
@@ -27,6 +28,7 @@ struct s_stateful_relay {
 	char * restrict name;
 };
 
+temp_t sensor_to_temp(const uint16_t raw);
 int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay);
 int get_relay_state(const struct s_stateful_relay * const relay);
 

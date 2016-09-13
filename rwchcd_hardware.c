@@ -11,6 +11,8 @@
 
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
+#include "rwchcd_runtime.h"
+#include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
 
 
@@ -23,13 +25,13 @@ static int sensors_read(uint16_t tsensors[], const int last)
 {
 	int sensor, ret = -1;
 
+	if (last >= RWCHC_NTSENSORS)
+		goto out;
+
 	for (sensor=0; sensor<last; sensor++) {
 		if (rwchcd_spi_sensor_r(tsensors, sensor))
 			goto out;
 	}
-
-	if (rwchcd_spi_sensor_r(tsensors, RWCHC_NTSENSORS-1))	// grab reference
-		goto out;
 
 	ret = 0;
 out:
@@ -58,9 +60,13 @@ out:
 	return (ret);
 }
 
-/*
+/**
+ * Convert sensor value to actual resistance.
  * voltage on ADC pin is Vsensor * (1+G) - Vdac * G where G is divider gain on AOP.
  * if value < ~10mv: short. If value = max: open.
+ * @param raw the raw sensor value
+ * @param calib 1 if calibrated value is required, 0 otherwise
+ * @return the resistance value
  */
 static unsigned int sensor_to_ohm(const uint16_t raw, const int calib)
 {
@@ -94,7 +100,13 @@ static unsigned int sensor_to_ohm(const uint16_t raw, const int calib)
 
 // http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/platinum-rtd-sensors/resistance-calibration-table
 
-static temp_t ohm_to_temp(const unsigned int ohm)
+/**
+ * Convert resistance value to actual temperature.
+ * Use a quadratic fit for simplicity.
+ * @param ohm the resistance value to convert
+ * @return temperature in Celsius
+ */
+static float ohm_to_celsius(const unsigned int ohm)
 {
 	const float R0 = 1000.0;
 	float alpha, delta, A, B, temp;
@@ -112,9 +124,13 @@ static temp_t ohm_to_temp(const unsigned int ohm)
 	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
 	temp = (-R0*A + sqrtf(R0*R0*A*A - 4*R0*B*(R0 - ohm))) / (2*R0*B);
 
-	return (celsius_to_temp(temp));
+	return (temp);
 }
 
+/**
+ * Calibrate hardware readouts.
+ * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
+ */
 static void calibrate(void)
 {
 	struct s_runtime * const runtime = get_runtime();
@@ -137,6 +153,17 @@ static void calibrate(void)
 }
 
 /**
+ * Return a calibrated temp_t value for the given raw sensor data.
+ * @param raw the raw sensor data to convert
+ * @return the temperature in temp_t units
+ * XXX REVISIT calls depth.
+ */
+temp_t sensor_to_temp(const uint16_t raw)
+{
+	return (celsius_to_temp(ohm_to_celsius(sensor_to_ohm(raw, 1))));
+}
+
+/**
  * set internal relay state
  * @param relay the internal relay to modify
  * @param state the desired target state
@@ -144,7 +171,7 @@ static void calibrate(void)
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @todo time management should really be in the routine that writes to the hardware for maximum accuracy
  */
-int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay)
+int set_relay_state(struct s_stateful_relay * const relay, const bool turn_on, const time_t change_delay)
 {
 	struct s_runtime * const runtime = get_runtime();
 	const time_t now = time(NULL);

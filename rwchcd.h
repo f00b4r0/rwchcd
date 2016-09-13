@@ -9,8 +9,10 @@
 #ifndef rwchcd_h
 #define rwchcd_h
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>	// uint_t
+#include <stdbool.h>	// bool
+#include <time.h>	// time_t
 #include "rwchc_export.h"
 
 #define testbit(var, bit)	((var) & (1 << (bit)))
@@ -36,8 +38,8 @@ enum {
 #define ON	true
 #define OFF	false
 
-#define RWCHC_TEMPMIN	XXX
-#define RWCHC_TEMPMAX	XXX
+#define RWCHCD_TEMPMIN	XXX
+#define RWCHCD_TEMPMAX	XXX
 
 typedef unsigned short	temp_t;		// all temps are internally stored in Kelvin * 100
 typedef short		tempid_t;	// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid
@@ -85,7 +87,5 @@ struct s_runtime {
 	struct s_config * restrict config;	///< running config
 	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
 };
-
-inline struct s_runtime * get_runtime(void);
 
 #endif /* rwchcd_h */

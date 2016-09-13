@@ -26,61 +26,7 @@
 #include <sys/time.h>
 #include <stdbool.h>
 #include "rwchcd.h"
-
-static struct s_runtime Runtime;
-
-inline struct s_runtime * get_runtime(void)
-{
-	return (&Runtime);
-}
-
-static void parse_temps(void)
-{
-	struct s_runtime * const runtime = get_runtime();
-	int i;
-
-	for (i = 0; i<runtime->config->nsensors; i++) {
-		runtime->temps[i] = ohm_to_temp(sensor_to_ohm(runtime->rWCHC_sensors[i], 1));
-	}
-}
-
-/**
- * get temp from a given temp id
- * @return temp if id valid, 0 otherwise
- */
-static temp_t get_temp(const tempid_t id)
-{
-	const struct s_runtime * const runtime = get_runtime();
-
-	if (id > runtime->config->nsensors)
-		return (0);
-
-	return (runtime->temps[id]);	// XXX REVISIT lock
-}
-
-short validate_temp(const temp_t temp)
-{
-	int ret = ALL_OK;
-
-	if (temp == 0)
-		ret = -ESENSORINVAL;
-	else if (temp <= RWCHCD_TEMPMIN)
-		ret = -ESENSORSHORT;
-	else if (temp >= RWCHCD_TEMPMAX)
-		ret = -ESENSORDISCON;
-
-	return (ret);
-}
-
-static inline temp_t celsius_to_temp(const float celsius)
-{
-	return ((temp_t)(celsius + 273.15)*100);
-}
-
-static inline float temp_to_celsius(const temp_t temp)
-{
-	return ((float)((float)temp/100.0 - 273.15));
-}
+#include "rwchcd_spi.h"
 
 /**
  * Implement time-based PI controller in velocity form
@@ -96,6 +42,7 @@ static inline float temp_to_celsius(const temp_t temp)
  // http://www.csimn.com/CSI_pages/PIDforDummies.html
  // https://en.wikipedia.org/wiki/PID_controller
  */
+#if 0
 static float control_PI(const float target, const float actual)
 {
 	float Kp, Ki;	// XXX PID settings
@@ -116,68 +63,7 @@ static float control_PI(const float target, const float actual)
 
 	return (output);
 }
-
-static bool overtemp_protection(const struct s_boiler * const boiler,
-				const struct s_valve * const mixer,
-				const struct s_stateful_relay * const pump)
-{
-	static bool tripped = false;
-	float triptemp;
-
-	triptemp = boiler->limit_tmax;
-	if (tripped)
-		triptemp -= boiler->histeresis * 2;	// XXX untrip at histeresis *2
-
-	if (boiler->temp > triptemp) {
-		tripped = true;
-
-		// stop boiler
-		set_relay_state(boiler->burner_1, OFF, 0);
-
-		// start pump
-		set_relay_state(pump, ON, 0);
-
-		// open valve
-		set_mixer_pos(mixer, 100);
-	}
-	else
-		tripped = false;
-
-	return (tripped);
-}
-
-/**
- * Exponentially weighted moving average implementing a trivial LP filter
- http://www.rowetel.com/blog/?p=1245
- https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
- */
-static float expw_mavg(float filtered, float new_sample, time_t tau, time_t dt)
-{
-	float alpha = dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
-
-	return (filtered - (alpha * (filtered - new_sample)));
-}
-
-static void outdoor_temp()
-{
-	static time_t lasttime = time(NULL);
-	const struct s_runtime * const runtime = get_runtime();
-	const time_t dt = time(NULL) - lasttime;
-	lasttime = time(NULL);
-
-	runtime->t_outdoor = get_temp(runtime->config->id_temp_outdoor);	// XXX checks
-	runtime->t_outdoor_mixed = expw_mavg(runtime->t_outdoor_mixed, runtime->t_outdoor, runtime->config->building_tau, dt);
-	runtime->t_outdoor_attenuated = expw_mavg(runtime->t_outdoor_attenuated, runtime->t_outdoor_mixed, runtime->config->building_tau, dt);
-}
-
-static int init_process()
-{
-	t_outdoor = t_outdoor_mixed = t_outdoor_attenuated = *(Config.temp_outdoor);
-
-	// set mixing valve to known start state
-	set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
-
-}
+#endif
 
 /*
  temp conversion from sensor raw value + calibration
@@ -189,7 +75,7 @@ static int init_process()
 int main(void)
 {
 	int i, ret;
-	
+#if 0
 	if (rwchcd_spi_init() < 0)
 		printf("init error\n");
 	
@@ -243,7 +129,7 @@ int main(void)
 			rWCHC_relays.LOWB = i;
 			rWCHC_relays.HIGHB= i;
 		 again:
-			printf("LOWB: %x, HIGHB: %x\n", rWCHC_relays.LOWB, rWCHC_relays.HIGHB);
+			printf("LOWB: %x, HIGHB: %x\n", rWCHC_relays.LOWB, rWCHC_relays.H/Volumes/Old Kanti/Users/varenet/rwchc/software/rwchcd.cIGHB);
 			ret = rwchcd_spi_relays_w(&rWCHC_relays);
 			printf("rwchcd_spi_relays_w: %d\n", ret);
 			if (ret) {
@@ -272,4 +158,5 @@ int main(void)
 		printf("sensor 15 temp: %f\n", ohm_to_temp(sensor_to_ohm(TSENSORS[15], 1)));
 		sleep(5);
 	}
+#endif
 }

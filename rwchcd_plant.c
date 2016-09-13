@@ -7,6 +7,8 @@
 //
 
 #include <stdio.h>
+#include "rwchcd_runtime.h"
+#include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
 #include "rwchcd_plant.h"
 

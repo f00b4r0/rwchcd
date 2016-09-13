@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F3AFBAC1D8873C500D86EE7 /* rwchcd_config.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */; };
+		4F3AFBAF1D8884ED00D86EE7 /* rwchcd_runtime.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */; };
+		4F3AFBB21D88867600D86EE7 /* rwchcd_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */; };
 		4FCD55161D835D04003BB848 /* rwchcd_hardware.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */; };
 		4FCD55171D835D04003BB848 /* rwchcd_plant.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55101D835D04003BB848 /* rwchcd_plant.c */; };
 		4FCD55181D835D04003BB848 /* rwchcd_spi.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55121D835D04003BB848 /* rwchcd_spi.c */; };
@@ -26,6 +29,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_config.c; sourceTree = SOURCE_ROOT; };
+		4F3AFBAB1D8873C500D86EE7 /* rwchcd_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_config.h; sourceTree = SOURCE_ROOT; };
+		4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_runtime.c; sourceTree = SOURCE_ROOT; };
+		4F3AFBAE1D8884ED00D86EE7 /* rwchcd_runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_runtime.h; sourceTree = SOURCE_ROOT; };
+		4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_lib.c; sourceTree = SOURCE_ROOT; };
+		4F3AFBB11D88867600D86EE7 /* rwchcd_lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_lib.h; sourceTree = SOURCE_ROOT; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchc_export.h; sourceTree = SOURCE_ROOT; };
 		4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_hardware.c; sourceTree = SOURCE_ROOT; };
@@ -75,6 +84,12 @@
 				4FCD55111D835D04003BB848 /* rwchcd_plant.h */,
 				4FCD55121D835D04003BB848 /* rwchcd_spi.c */,
 				4FCD55131D835D04003BB848 /* rwchcd_spi.h */,
+				4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */,
+				4F3AFBB11D88867600D86EE7 /* rwchcd_lib.h */,
+				4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */,
+				4F3AFBAB1D8873C500D86EE7 /* rwchcd_config.h */,
+				4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */,
+				4F3AFBAE1D8884ED00D86EE7 /* rwchcd_runtime.h */,
 				4FCD55141D835D04003BB848 /* rwchcd.c */,
 				4FCD55151D835D04003BB848 /* rwchcd.h */,
 			);
@@ -159,9 +174,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				4FCD55161D835D04003BB848 /* rwchcd_hardware.c in Sources */,
+				4F3AFBAC1D8873C500D86EE7 /* rwchcd_config.c in Sources */,
+				4F3AFBB21D88867600D86EE7 /* rwchcd_lib.c in Sources */,
 				4FCD55171D835D04003BB848 /* rwchcd_plant.c in Sources */,
 				4FCD55181D835D04003BB848 /* rwchcd_spi.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
+				4F3AFBAF1D8884ED00D86EE7 /* rwchcd_runtime.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

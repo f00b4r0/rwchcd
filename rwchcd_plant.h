@@ -179,4 +179,7 @@ struct s_plant {
 	struct s_dhw_tank_l * restrict dhwt_head;
 };
 
+int plant_init(const struct s_plant * restrict const plant);
+int plant_run(const struct s_plant * restrict const plant);
+
 #endif /* rwchcd_plant_h */
