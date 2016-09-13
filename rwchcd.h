@@ -20,10 +20,10 @@
 
 enum {
 	ALL_OK,
-	ENOTCONFIGURED,
-	ESAFETY,
-	EDEADZONE,
-	ENOTIMPLEMENTED,
+	ENOTCONFIGURED,	///< element is not configured
+	ESAFETY,	///< safety error
+	EDEADZONE,	///< valve is in deadzone
+	ENOTIMPLEMENTED,///< argument/request/whatever is not implemented
 	EOFFLINE,	///< device is offline
 	EINVALID,	///< invalid argument
 	EINVALIDMODE,	///< invalid set_runmode
@@ -53,7 +53,7 @@ enum e_runmode {
 	RM_DHWONLY,	///< device is in DHW only mode
 };
 
-enum e_systemmode { OFF = 0, AUTO, COMFORT, ECO, FROSTFREE, MANUAL, DHWONLY };	///< current operation mode
+enum e_systemmode { SYS_OFF = 0, SYS_AUTO, SYS_COMFORT, SYS_ECO, SYS_FROSTFREE, SYS_MANUAL, SYS_DHWONLY };	///< current operation mode
 
 struct s_config {
 	bool configured;

@@ -25,7 +25,7 @@ struct s_valve {
 	temp_t deadzone;	///< valve deadzone: no operation when target in deadzone
 	short position;		///< current position in %
 	short target_position;	///< current target position
-				//	enum { MIXER, ZONE } type;	///< valve type, XXX probably not necessary, can be inferred
+//	enum { MIXER, ZONE } type;	///< valve type, XXX probably not necessary, can be inferred
 	short ete_time;		///< end-to-end run time
 	enum { STOP, OPEN, CLOSE } action;
 	char * restrict name;
@@ -51,7 +51,7 @@ struct s_heating_circuit {
 	enum e_runmode set_runmode;	///< current circuit set_runmode
 	enum e_runmode actual_runmode;	///< circuit actual (computed) runmode
 //	enum { DIRECT, MIXED } type;	///< probably not necessary, can be inferred from valve type/presence
-	struct s_valve * restrict valve;	///< valve for circuit (if available, otherwise it's direct)
+	struct s_valve * restrict valve;///< valve for circuit (if available, otherwise it's direct)
 	struct s_pump * restrict pump;	///< pump for this circuit
 //	temp_t histeresis;		///< histeresis for target temp
 	temp_t set_limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
@@ -106,7 +106,7 @@ struct s_heat_source {
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
 	enum { BOILER, HOTTANK, FIXED } type;
 	temp_t temp_request;		///< current temperature request for heat source (max of all requests)
-	void * restrict source;			///< pointer to related heat source structure
+	void * restrict source;		///< pointer to related heat source structure
 };
 
 struct s_solar_heater {
@@ -174,7 +174,7 @@ struct s_plant {
 	unsigned short heating_circuit_n;	///< number of heating circuits in the plant
 	unsigned short dhw_tank_n;	///< number of dhw tanks in the plant
 	struct s_heat_source_l * restrict heat_head;
-	struct s_mixed_circuit_l * restrict circuit_head;
+	struct s_heating_circuit_l * restrict circuit_head;
 	struct s_dhw_tank_l * restrict dhwt_head;
 };
 

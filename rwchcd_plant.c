@@ -18,7 +18,7 @@
  * @param force_state skips cooldown if true
  * @return error code if any
  */
-int set_pump_state(struct s_pump * const pump, bool state, bool force_state)
+static int set_pump_state(struct s_pump * const pump, bool state, bool force_state)
 {
 	time_t cooldown = 0;	// by default, no wait
 	
@@ -37,7 +37,7 @@ int set_pump_state(struct s_pump * const pump, bool state, bool force_state)
 	pump->actual_cooldown_time = set_relay_state(pump->relay, state, cooldown);
 }
 
-int get_pump_state(const struct s_pump * const pump)
+static int get_pump_state(const struct s_pump * const pump)
 {
 	if (!pump)
 		return (-EINVALID);
@@ -132,13 +132,9 @@ static short valvelaw_linear(const struct * const s_valve valve, const temp_t ta
 			goto exit;
 	}
 
-	// XXX IMPLEMENT PI to account for actual tempout
+	// XXX IMPLEMENT (P)I to account for actual tempout
 	error = target_tout - tempout;
 	iterm = Ki * error + iterm_prev;
-	if (iterm > 100)
-		iterm = 100;
-	else if (iterm < 0)
-		iterm = 0;
 	iterm_prev = iterm;
 
 	percent = (short)((target_tout - tempin2) / (tempin1 - tempin2) * 100);
@@ -217,7 +213,7 @@ static inline void set_mixer_pos(struct s_valve * mixer, const short percent)
 	mixer->target_position = percent;
 }
 
-void valve_offline(struct s_valve * const valve)
+static void valve_offline(struct s_valve * const valve)
 {
 	set_relay_state(valve->open, OFF, 0);
 	set_relay_state(valve->close, OFF, 0);
@@ -228,7 +224,7 @@ void valve_offline(struct s_valve * const valve)
  * run valve
  * XXX only handles 3-way valve for now
  */
-static int run_valve(const struct s_valve * const valve)
+static int valve_run(const struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
 	float time_ratio;
@@ -431,15 +427,47 @@ static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_t
 	return (ALL_OK);
 }
 
-static int run_heat_source(const struct s_heat_source * const heat)
+static int heatsource_online(const struct s_heat_source * const heat)
 {
-	const struct s_runtime * const runtime = get_runtime();
-	temp_t temp_request;
+	if (heat->type == BOILER)
+		return (boiler_online(heat->source));
+	else
+		return (-ENOTIMPLEMENTED);
+}
+
+static int heatsource_offline(const struct s_heat_source * const heat)
+{
+	if (heat->type == BOILER)
+		return (boiler_offline(heat->source));
+	else
+		return (-ENOTIMPLEMENTED);
+}
+
+/**
+ * XXX currently supports single heat source, all consummers connected to it
+ */
+static int heatsource_run(const struct s_heat_source * const heat)
+{
+	const struct s_runtime * restrict const runtime = get_runtime();
+	struct s_heating_circuit_l * restrict circuitl;
+	struct s_dhw_tank_l * restrict dhwtl;
+	temp_t temp, temp_request = 0;
 
 	if (!heat->configured)
 		return (-ENOTCONFIGURED);
 
 	// for consummers in runtime scheme, collect heat requests and max them
+	// circuits first
+	for (circuitl = runtime->plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		temp = circuitl->circuit->heat_request;
+		temp_request = temp > temp_request ? temp : temp_request;
+	}
+
+	// then dhwt
+	for (dhwtl = runtime->plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		temp = dhwtl->dhwt->heat_request;
+		temp_request = temp > temp_request ? temp : temp_request;
+	}
 
 	// apply result to heat source
 	heat->temp_request = temp_request;
@@ -471,7 +499,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	return (ALL_OK);
 }
 
-int circuit_online(struct s_heating_circuit * const circuit)
+static int circuit_online(struct s_heating_circuit * const circuit)
 {
 	temp_t testtemp;
 	int ret = -EGENERIC;
@@ -503,7 +531,7 @@ int circuit_online(struct s_heating_circuit * const circuit)
  */
 static void circuit_outhoff(const struct s_heating_circuit * const circuit)
 {
-	const struct s_runtime * const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t temp_trigger;
 
 	switch (circuit->actual_runmode) {
@@ -544,7 +572,7 @@ static void circuit_outhoff(const struct s_heating_circuit * const circuit)
  * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down...)
  * XXX ADD rate of rise cap
  */
-static int run_circuit(struct s_heating_circuit * const circuit)
+static int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp, water_temp;
@@ -630,7 +658,7 @@ static int run_circuit(struct s_heating_circuit * const circuit)
 			valve_offline(circuit->valve);	// XXX REVISIT
 			return (percent);
 		}
-		return (run_valve(circuit->valve));
+		return (valve_run(circuit->valve));
 	}
 
 	return (ALL_OK);
@@ -690,7 +718,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
  * DHW tank control.
  * XXX TODO implement dhwprio glissante/absolue for heat request
  */
-static int run_dhwt(struct s_dhw_tank * const dhwt)
+static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp, water_temp, top_temp, bottom_temp, curr_temp;
@@ -838,22 +866,104 @@ static int run_dhwt(struct s_dhw_tank * const dhwt)
 	return (ALL_OK);
 }
 
+int plant_init(const struct s_plant * restrict const plant)
+{
+	struct s_heating_circuit_l * restrict circuitl;
+	struct s_dhw_tank_l * restrict dhwtl;
+	struct s_heat_source_l * restrict heatsourcel;
+	int ret;
+
+	if (!plant)
+		return (-EINVALID);
+
+	if (!plant->configured)
+		return (-ENOTCONFIGURED);
+	
+	// online the consummers first
+	// circuits first
+	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		ret = circuit_onine(circuitl->circuit);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			circuit_offline(circuitl->circuit);
+			circuitl->circuit->online = false;
+		}
+		else
+			circuitl->circuit->online = true;
+	}
+
+	// then dhwt
+	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		ret = dhwt_online(dhwtl->dhwt);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dhwt_offline(dhwtl->dhwt);
+			dhwtl->dhwt->online = false;
+		}
+		else
+			dhwtl->dhwt->online = true;
+	}
+
+	// finally online the heat source
+	heatsourcel = plant->heat_head;	// XXX single heat source
+	ret = heatsource_online(heatsourcel->source);
+	if (ALL_OK != ret) {
+		// XXX error handling
+		heatsource_offline(heatsourcel->source);
+		heatsourcel-source->online = false;
+	}
+	else
+		heatsourcel->source->online = true;
+}
+
 /**
  reduce valve if boiler too low
  use return valve temp to compute output
  degraded mode (when sensors are disconnected)
  keep sensor history
+ keep running state across power loss?
  summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  */
-static int run_plant()
+int plant_run(const struct s_plant * restrict const plant)
 {
-	run_circuit();
-	run_valve();
+	struct s_heating_circuit_l * restrict circuitl;
+	struct s_dhw_tank_l * restrict dhwtl;
+	struct s_heat_source_l * restrict heatsourcel;
+	int ret;
 
-	if (run_dhw(dhwt) != ALL_OK) {
-		dhwt_offline(dhwt);
-		dhwt->online = false;	// XXX add a last_error element to structs?
+	if (!plant)
+		return (-EINVALID);
+
+	if (!plant->configured)
+		return (-ENOTCONFIGURED);
+
+	// run the consummers first so they can set their requested heat input
+	// circuits first
+	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		ret = circuit_run(circuitl->circuit);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			circuit_offline(circuitl->circuit);
+			circuitl->circuit->online = false;
+		}
 	}
 
-	run_heat_source();
+	// then dhwt
+	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		ret = dhwt_run(dhwtl->dhwt);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dhwt_offline(dhwtl->dhwt);
+			dhwtl->dhwt->online = false;
+		}
+	}
+
+	// finally run the heat source
+	heatsourcel = plant->heat_head;	// XXX single heat source
+	ret = heatsource_run(heatsourcel->source);
+	if (ALL_OK != ret) {
+		// XXX error handling
+		heatsource_offline(heatsourcel->source);
+		heatsourcel-source->online = false;
+	}
 }
