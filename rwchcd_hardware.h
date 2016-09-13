@@ -10,6 +10,7 @@
 #define rwchcd_hardware_h
 
 #include <stdbool.h>
+#include <time.h>
 
 #define FORCE 1
 #define NOFORCE 0

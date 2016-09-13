@@ -7,6 +7,7 @@
 //
 
 #include <time.h>
+#include <math.h>	// sqrtf
 
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
@@ -57,26 +58,6 @@ out:
 	return (ret);
 }
 
-static void calibrate(void)
-{
-	struct s_runtime * const runtime = get_runtime();
-	int refcalib, ref;
-
-	while (rwchcd_spi_ref_r(&ref, 0));
-
-	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_nodac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
-	}
-
-	while (rwchcd_spi_ref_r(&ref, 1));
-
-	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_dac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
-	}
-}
-
 /*
  * voltage on ADC pin is Vsensor * (1+G) - Vdac * G where G is divider gain on AOP.
  * if value < ~10mv: short. If value = max: open.
@@ -116,7 +97,7 @@ static unsigned int sensor_to_ohm(const uint16_t raw, const int calib)
 static temp_t ohm_to_temp(const unsigned int ohm)
 {
 	const float R0 = 1000.0;
-	float alpha, beta, delta, A, B, C, temp;
+	float alpha, delta, A, B, temp;
 
 	// manufacturer parameters
 	alpha = 0.003850;	// mean R change referred to 0C
@@ -131,7 +112,28 @@ static temp_t ohm_to_temp(const unsigned int ohm)
 	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
 	temp = (-R0*A + sqrtf(R0*R0*A*A - 4*R0*B*(R0 - ohm))) / (2*R0*B);
 
-	return (celsius_to_temp(temp));
+	return (celsius_to_temp(temp));
+}
+
+static void calibrate(void)
+{
+	struct s_runtime * const runtime = get_runtime();
+	int refcalib;
+	uint16_t ref;
+
+	while (rwchcd_spi_ref_r(&ref, 0));
+
+	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
+		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
+		runtime->calib_nodac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
+	}
+
+	while (rwchcd_spi_ref_r(&ref, 1));
+
+	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
+		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
+		runtime->calib_dac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
+	}
 }
 
 /**
@@ -144,7 +146,7 @@ static temp_t ohm_to_temp(const unsigned int ohm)
  */
 int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay)
 {
-	const struct s_runtime * const runtime = get_runtime();
+	struct s_runtime * const runtime = get_runtime();
 	const time_t now = time(NULL);
 	unsigned short rid;
 
@@ -184,9 +186,9 @@ int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t change
 
 	// set state for triac control
 	if (turn_on)
-		setbit(runtime->rWCHC_relays->ALL, rid);
+		setbit(runtime->rWCHC_relays.ALL, rid);
 	else
-		clrbit(runtime->rWCHC_relays->ALL, rid);
+		clrbit(runtime->rWCHC_relays.ALL, rid);
 
 	return (ALL_OK);
 }

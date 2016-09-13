@@ -9,6 +9,7 @@
 #ifndef rwchcd_plant_h
 #define rwchcd_plant_h
 
+#include <time.h>
 #include "rwchcd.h"
 
 struct s_pump {
@@ -177,8 +178,5 @@ struct s_plant {
 	struct s_heating_circuit_l * restrict circuit_head;
 	struct s_dhw_tank_l * restrict dhwt_head;
 };
-
-int set_pump_state(struct s_pump * const pump, bool state, bool force_state);
-int get_pump_state(const struct s_pump * const pump);
 
 #endif /* rwchcd_plant_h */

@@ -61,13 +61,13 @@ static int get_pump_state(const struct s_pump * const pump)
  * @param source_temp outdoor temperature to consider
  * @return a target water temperature for this circuit
  */
-static temp_t templaw_linear(const struct * const s_heating_circuit circuit, const temp_t source_temp)
+static temp_t templaw_linear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
 	//const float out_temp1 = -5.0, water_temp1 = 50.0, out_temp2 = 15.0, water_temp2 = 30.0; // XXX settings
-	const temp_t out_temp1 = circuit->tlaw_data->tout1;
-	const temp_t water_temp1 = circuit->tlaw_data->twater1;
-	const temp_t out_temp2 = circuit->tlaw_data->tout2;
-	const temp_t water_temp2 = circuit->tlaw_data->twater2;
+	const temp_t out_temp1 = circuit->tlaw_data.tout1;
+	const temp_t water_temp1 = circuit->tlaw_data.twater1;
+	const temp_t out_temp2 = circuit->tlaw_data.tout2;
+	const temp_t water_temp2 = circuit->tlaw_data.twater2;
 	float slope;
 	temp_t offset;
 	temp_t ambient_measured, ambient_delta, curve_shift;
@@ -103,18 +103,18 @@ static temp_t templaw_linear(const struct * const s_heating_circuit circuit, con
  * @param target_tout target valve output temperature
  * @return valve position in percent or error
  */
-static short valvelaw_linear(const struct * const s_valve valve, const temp_t target_tout)
+static short valvelaw_linear(const struct s_valve * const valve, const temp_t target_tout)
 {
 	short percent, iterm, iterm_prev;
 	temp_t tempin1, tempin2, tempout, error;
 
-	tempin1 = get_temp(mixer->id_temp1);
+	tempin1 = get_temp(valve->id_temp1);
 	percent = validate_temp(tempin1);
 	if (ALL_OK != percent)
 		goto exit;
 
 	// get current outpout
-	tempout = get_temp(mixer->id_tempout);
+	tempout = get_temp(valve->id_tempout);
 	percent = validate_temp(tempout);
 	if (ALL_OK != percent)
 		goto exit;
@@ -122,11 +122,11 @@ static short valvelaw_linear(const struct * const s_valve valve, const temp_t ta
 	/* if we don't have a sensor for secondary input, guesstimate it
 	 treat the provided id as a delta from valve tempout in Celsius XXX REVISIT,
 	 tempin2 = tempout - delta */
-	if (mixer->id_temp2 < 0) {
-		tempin2 = tempout - celsius_to_temp(-(mixer->id_temp2)); // XXX will need casting
+	if (valve->id_temp2 < 0) {
+		tempin2 = tempout - celsius_to_temp(-(valve->id_temp2)); // XXX will need casting
 	}
 	else {
-		tempin2 = get_temp(mixer->id_temp2);
+		tempin2 = get_temp(valve->id_temp2);
 		percent = validate_temp(tempin2);
 		if (ALL_OK != percent)
 			goto exit;
@@ -156,12 +156,12 @@ exit:
  * @param target_tout target valve output temperature
  * @return valve position in percent or error
  */
-static short valvelaw_bangbang(const struct * const s_valve valve, const temp_t target_tout)
+static short valvelaw_bangbang(const struct s_valve * const valve, const temp_t target_tout)
 {
 	short percent;
 	temp_t tempout;
 
-	tempout = get_temp(mixer->id_tempout);
+	tempout = get_temp(valve->id_tempout);
 	percent = validate_temp(tempout);
 	if (ALL_OK != percent)
 		goto exit;
@@ -182,7 +182,7 @@ exit:
 static short calc_mixer_pos(const struct s_valve * const mixer, const temp_t target_tout)
 {
 	short percent;
-	temp_t tempin1, tempin2, tempout;
+	temp_t tempout;
 
 	if (!mixer->configured)
 		return (-ENOTCONFIGURED);
@@ -195,7 +195,7 @@ static short calc_mixer_pos(const struct s_valve * const mixer, const temp_t tar
 	percent = validate_temp(tempout);
 	if (percent != ALL_OK)
 		return (percent);
-	if ((tempout - mixer->deadzone/2) < target_tout) && (target_tout < (tempout + mixer->deadzone/2)))
+	if (((tempout - mixer->deadzone/2) < target_tout) && (target_tout < (tempout + mixer->deadzone/2)))
 		return (-EDEADZONE);
 
 	// apply valve law to determine target position
@@ -224,7 +224,7 @@ static void valve_offline(struct s_valve * const valve)
  * run valve
  * XXX only handles 3-way valve for now
  */
-static int valve_run(const struct s_valve * const valve)
+static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
 	float time_ratio;
@@ -240,9 +240,9 @@ static int valve_run(const struct s_valve * const valve)
 	percent = valve->target_position;
 
 	if (valve->action == OPEN)
-		valve->position += (now - valve->open.on_since) * time_ratio;
+		valve->position += (now - valve->open->on_since) * time_ratio;
 	else if (valve->action == CLOSE)
-		valve->position -= (now - valve->close.on_since) * time_ratio;
+		valve->position -= (now - valve->close->on_since) * time_ratio;
 
 	// enforce physical limits
 	if (valve->position < 0)
@@ -257,11 +257,11 @@ static int valve_run(const struct s_valve * const valve)
 		// if we're going for full open or full close, make absolutely sure we are
 		// XXX REVISIT 2AM CODE
 		if (percent == 0) {
-			if ((now - valve->close.on_since) < valve->ete_time*4)
+			if ((now - valve->close->on_since) < valve->ete_time*4)
 				return (ALL_OK);
 		}
 		else if (percent == 100) {
-			if ((now - valve->open.on_since) < valve->ete_time*4)
+			if ((now - valve->open->on_since) < valve->ete_time*4)
 				return (ALL_OK);
 		}
 
@@ -337,7 +337,7 @@ static int boiler_antifreeze(struct s_boiler * const boiler)
 	int ret;
 	temp_t boilertemp;
 
-	boilertemp = get_temp(boiler->id_temp)
+	boilertemp = get_temp(boiler->id_temp);
 	ret = validate_temp(boilertemp);
 
 	if (ret)
@@ -366,7 +366,7 @@ static int boiler_antifreeze(struct s_boiler * const boiler)
  * @todo XXX implement consummer force signal for overtemp cooldown
  * @todo XXX implement limit on return temp (p.55/56)
  */
-static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_temp)
+static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 {
 	temp_t boiler_temp;
 	int ret;
@@ -395,7 +395,7 @@ static int boiler_run_temp(struct s_boiler * const boiler, const temp_t target_t
 	boiler_temp = get_temp(boiler->id_temp);
 	ret = validate_temp(boiler_temp);
 	if (ret != ALL_OK)
-		return (ret):
+		return (ret);
 
 	// safety checks
 	if (boiler_temp > boiler->limit_tmax) {
@@ -446,7 +446,7 @@ static int heatsource_offline(const struct s_heat_source * const heat)
 /**
  * XXX currently supports single heat source, all consummers connected to it
  */
-static int heatsource_run(const struct s_heat_source * const heat)
+static int heatsource_run(struct s_heat_source * const heat)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
@@ -490,7 +490,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	circuit->target_wtemp = 0;
 
 	if (circuit->pump)
-		set_pump_state(dhwt->feedpump, OFF, FORCE);
+		set_pump_state(circuit->pump, OFF, FORCE);
 
 	set_mixer_pos(circuit->valve, 0);	// XXX REVISIT
 
@@ -529,7 +529,7 @@ static int circuit_online(struct s_heating_circuit * const circuit)
  * - t_outdoor_attenuated < current set_outhoff_MODE - set_outhoff_histeresis
  * State is preserved in all other cases
  */
-static void circuit_outhoff(const struct s_heating_circuit * const circuit)
+static void circuit_outhoff(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t temp_trigger;
@@ -613,7 +613,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 			target_temp = circuit->set_tfrostfree;
 			break;
 		case RM_MANUAL:
-			set_pump_state(circuit->pump->relay, ON, FORCE);
+			set_pump_state(circuit->pump, ON, FORCE);
 			return (-1);	//XXX REVISIT
 		default:
 			return (-EINVALIDMODE);
@@ -744,13 +744,13 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		case RM_OFF:
 			return (dhwt_offline(dhwt));
 		case RM_COMFORT:
-			target_temp = circuit->set_tcomfort;
+			target_temp = dhwt->set_tcomfort;
 			break;
 		case RM_ECO:
-			target_temp = circuit->set_teco;
+			target_temp = dhwt->set_teco;
 			break;
 		case RM_FROSTFREE:
-			target_temp = circuit->set_tfrostfree;
+			target_temp = dhwt->set_tfrostfree;
 			break;
 		case RM_MANUAL:
 			set_pump_state(dhwt->feedpump, ON, FORCE);
@@ -882,7 +882,7 @@ int plant_init(const struct s_plant * restrict const plant)
 	// online the consummers first
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		ret = circuit_onine(circuitl->circuit);
+		ret = circuit_online(circuitl->circuit);
 		if (ALL_OK != ret) {
 			// XXX error handling
 			circuit_offline(circuitl->circuit);
@@ -910,7 +910,7 @@ int plant_init(const struct s_plant * restrict const plant)
 	if (ALL_OK != ret) {
 		// XXX error handling
 		heatsource_offline(heatsourcel->source);
-		heatsourcel-source->online = false;
+		heatsourcel->source->online = false;
 	}
 	else
 		heatsourcel->source->online = true;
@@ -964,6 +964,6 @@ int plant_run(const struct s_plant * restrict const plant)
 	if (ALL_OK != ret) {
 		// XXX error handling
 		heatsource_offline(heatsourcel->source);
-		heatsourcel-source->online = false;
+		heatsourcel->source->online = false;
 	}
 }
