@@ -35,6 +35,7 @@
 		4F3AFBAE1D8884ED00D86EE7 /* rwchcd_runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_runtime.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_lib.c; sourceTree = SOURCE_ROOT; };
 		4F3AFBB11D88867600D86EE7 /* rwchcd_lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_lib.h; sourceTree = SOURCE_ROOT; };
+		4F961F9F1D899D5100E2A8AF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchc_export.h; sourceTree = SOURCE_ROOT; };
 		4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_hardware.c; sourceTree = SOURCE_ROOT; };
@@ -78,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				4FCD550D1D835D04003BB848 /* rwchc_export.h */,
+				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */,
 				4FCD550F1D835D04003BB848 /* rwchcd_hardware.h */,
 				4FCD55101D835D04003BB848 /* rwchcd_plant.c */,

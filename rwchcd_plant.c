@@ -37,6 +37,8 @@ static int set_pump_state(struct s_pump * const pump, bool state, bool force_sta
 	
 	// XXX this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
 	pump->actual_cooldown_time = set_relay_state(pump->relay, state, cooldown);
+
+	return (ALL_OK);
 }
 
 static int get_pump_state(const struct s_pump * const pump)
@@ -109,6 +111,7 @@ static short valvelaw_linear(const struct s_valve * const valve, const temp_t ta
 {
 	short percent, iterm, iterm_prev;
 	temp_t tempin1, tempin2, tempout, error;
+	float Ki;	// XXX REVISIT
 
 	tempin1 = get_temp(valve->id_temp1);
 	percent = validate_temp(tempin1);
@@ -134,7 +137,7 @@ static short valvelaw_linear(const struct s_valve * const valve, const temp_t ta
 			goto exit;
 	}
 
-	// XXX IMPLEMENT (P)I to account for actual tempout
+	// XXX IMPLEMENT (P)I to account for actual tempout - XXX not used yet
 	error = target_tout - tempout;
 	iterm = Ki * error + iterm_prev;
 	iterm_prev = iterm;

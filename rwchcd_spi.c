@@ -328,8 +328,9 @@ out:
  */
 int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 {
-	int i, ret = -ESPI;
-	
+	unsigned int i;
+	int ret = -ESPI;
+
 	SPI_RESYNC();
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_SETTINGSR, RWCHC_SPIC_VALID))
@@ -353,7 +354,8 @@ out:
  */
 int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 {
-	int i, ret = -ESPI;
+	unsigned int i;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	

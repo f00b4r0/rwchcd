@@ -39,8 +39,8 @@ enum {
 #define ON	true
 #define OFF	false
 
-#define RWCHCD_TEMPMIN	XXX
-#define RWCHCD_TEMPMAX	XXX
+#define RWCHCD_TEMPMIN	((-50 + 273) * 100)	///< -50C is the lowest temperature we expect to deal with
+#define RWCHCD_TEMPMAX	((200 + 273) * 100)	///< +200C is the highest temperature we expect to deal with
 
 #define RWCHCD_SPI_MAX_TRIES	10	///< how many times SPI ops should be retried
 

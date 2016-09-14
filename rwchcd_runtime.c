@@ -43,7 +43,7 @@ static float expw_mavg(temp_t filtered, temp_t new_sample, time_t tau, time_t dt
 
 static void outdoor_temp()
 {
-	static time_t lasttime = time(NULL);
+	static time_t lasttime = 0;	// in expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
 	lasttime = time(NULL);
 
@@ -62,27 +62,27 @@ int runtime_set_systemmode(enum e_systemmode sysmode)
 {
 	switch (sysmode) {
 		case SYS_OFF:
-			Runtime.set_runmode = RM_OFF;
+			Runtime.runmode = RM_OFF;
 			Runtime.dhwmode = RM_OFF;
 			break;
 		case SYS_COMFORT:
-			Runtime.set_runmode = RM_COMFORT;
+			Runtime.runmode = RM_COMFORT;
 			Runtime.dhwmode = RM_COMFORT;
 			break;
 		case SYS_ECO:
-			Runtime.set_runmode = RM_ECO;
+			Runtime.runmode = RM_ECO;
 			Runtime.dhwmode = RM_ECO;
 			break;
 		case SYS_FROSTFREE:
-			Runtime.set_runmode = RM_FROSTFREE;
+			Runtime.runmode = RM_FROSTFREE;
 			Runtime.dhwmode = RM_FROSTFREE;
 			break;
 		case SYS_MANUAL:
-			Runtime.set_runmode = RM_MANUAL;
+			Runtime.runmode = RM_MANUAL;
 			Runtime.dhwmode = RM_MANUAL;
 			break;
 		case SYS_DHWONLY:
-			Runtime.set_runmode = RM_FROSTFREE;
+			Runtime.runmode = RM_FROSTFREE;
 			Runtime.dhwmode = RM_COMFORT;	// XXX by default in comfort mode
 			break;
 		default:
@@ -127,7 +127,7 @@ int runtime_set_dhwmode(enum e_runmode dhwmode)
 int runtime_run(void)
 {
 	static uint16_t rawsensors[RWCHC_NTSENSORS];
-	int ret = ALL_OK, i;
+	int ret = ALL_OK;
 
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);

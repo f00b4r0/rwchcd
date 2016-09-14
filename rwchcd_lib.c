@@ -7,6 +7,7 @@
 //
 
 #include "rwchcd.h"
+#include "rwchcd_runtime.h"
 
 short validate_temp(const temp_t temp)
 {
