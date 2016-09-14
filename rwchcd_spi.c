@@ -10,6 +10,7 @@
 #include <unistd.h>	// sleep/usleep
 #include <wiringPiSPI.h>
 #include "rwchcd_spi.h"
+#include "rwchcd.h"	// for error codes
 
 #define SPISPEED	1000000		///< 1MHz
 #define SPICHAN		0
@@ -39,7 +40,7 @@ static uint8_t SPI_rw8bit(const uint8_t data)
  */
 int rwchcd_spi_lcd_acquire(void)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -49,7 +50,7 @@ int rwchcd_spi_lcd_acquire(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_LCDACQR))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -60,7 +61,7 @@ out:
  */
 int rwchcd_spi_lcd_relinquish(void)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -70,7 +71,7 @@ int rwchcd_spi_lcd_relinquish(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_LCDRLQSH))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -82,7 +83,7 @@ out:
  */
 int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -95,7 +96,7 @@ int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -107,7 +108,7 @@ out:
  */
 int rwchcd_spi_lcd_data_w(uint8_t data)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -120,7 +121,7 @@ int rwchcd_spi_lcd_data_w(uint8_t data)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, data))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -133,7 +134,7 @@ out:
  */
 int rwchcd_spi_lcd_bl_w(uint8_t percent)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	if (percent > 100)
 		return -2;
@@ -149,7 +150,7 @@ int rwchcd_spi_lcd_bl_w(uint8_t percent)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, percent))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -161,7 +162,7 @@ out:
  */
 int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -173,7 +174,7 @@ int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -185,7 +186,7 @@ out:
  */
 int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -197,7 +198,7 @@ int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 //	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, outperiphs->BYTE))
 //		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -209,7 +210,7 @@ out:
  */
 int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -226,7 +227,7 @@ int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -238,7 +239,7 @@ out:
  */
 int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -257,7 +258,7 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->HIGHB))
 		goto out;
 	
-	ret = 0;	// all good
+	ret = ALL_OK;	// all good
 out:
 	return ret;
 }
@@ -270,7 +271,7 @@ out:
  */
 int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 
@@ -283,7 +284,7 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;
 
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -296,7 +297,7 @@ out:
  */
 int rwchcd_spi_ref_r(uint16_t * const refval, const int refn)
 {
-	int cmd, ret = -1;
+	int cmd, ret = -ESPI;
 
 	if (1 == refn)
 		cmd = RWCHC_SPIC_REF1;
@@ -315,7 +316,7 @@ int rwchcd_spi_ref_r(uint16_t * const refval, const int refn)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;
 
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -327,7 +328,7 @@ out:
  */
 int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 {
-	int i, ret = -1;
+	int i, ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -340,7 +341,7 @@ int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_SETTINGSR))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -352,7 +353,7 @@ out:
  */
 int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 {
-	int i, ret = -1;
+	int i, ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -366,7 +367,7 @@ int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_SETTINGSW))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }
@@ -377,7 +378,7 @@ out:
  */
 int rwchcd_spi_settings_s(void)
 {
-	int ret = -1;
+	int ret = -ESPI;
 	
 	SPI_RESYNC();
 	
@@ -387,7 +388,7 @@ int rwchcd_spi_settings_s(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_SETTINGSS))
 		goto out;
 	
-	ret = 0;
+	ret = ALL_OK;
 out:
 	return ret;
 }

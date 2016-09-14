@@ -592,7 +592,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// depending on circuit run mode, assess circuit target temp
 	// set valve based on circuit target temp
 	if (circuit->set_runmode == RM_AUTO)
-		circuit->actual_runmode = runtime->set_runmode;
+		circuit->actual_runmode = runtime->runmode;
 	else
 		circuit->actual_runmode = circuit->set_runmode;
 

@@ -65,6 +65,17 @@ static float control_PI(const float target, const float actual)
 }
 #endif
 
+
+static int init_process()
+{
+	struct s_runtime * const runtime = get_runtime();
+
+
+	// set mixing valve to known start state
+	//set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
+
+}
+
 /*
  temp conversion from sensor raw value + calibration
  temp boiler: target water temp + hist; ceil and floor

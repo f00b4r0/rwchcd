@@ -21,19 +21,69 @@
  * @param tsensors the array to populate with current values
  * @param last the id of the last wanted (connected) sensor
  */
-static int sensors_read(uint16_t tsensors[], const int last)
+int hardware_sensors_read(uint16_t tsensors[], const int last)
 {
-	int sensor, ret = -1;
+	int sensor, i, ret = ALL_OK;
 
-	if (last >= RWCHC_NTSENSORS)
-		goto out;
+	if (last > RWCHC_NTSENSORS)
+		return (-EINVALID);
 
 	for (sensor=0; sensor<last; sensor++) {
-		if (rwchcd_spi_sensor_r(tsensors, sensor))
+		i = 0;
+		do {
+			ret = rwchcd_spi_sensor_r(tsensors, sensor);
+		} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+		if (ret)
 			goto out;
 	}
 
-	ret = 0;
+out:
+	return (ret);
+}
+
+/**
+ * Write all relays
+ * @param relays pointer to the harware relay union
+ * @return status
+ */
+int hardware_relays_write(const union rwchc_u_relays * const relays)
+{
+	int i = 0, ret = ALL_OK;
+
+	if (!relays)
+		return (-EINVALID);
+
+	do {
+		ret = rwchcd_spi_relays_w(relays);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	if (ret)
+		goto out;
+
+out:
+	return (ret);
+}
+
+/**
+ * Write all peripherals
+ * @param periphs pointer to the harware periphs union
+ * @return status
+ */
+int hardware_periphs_write(const union rwchc_u_outperiphs * const periphs)
+{
+	int i = 0, ret = ALL_OK;
+
+	if (!periphs)
+		return (-EINVALID);
+
+	do {
+		ret = rwchcd_spi_peripherals_w(periphs);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	if (ret)
+		goto out;
+
 out:
 	return (ret);
 }

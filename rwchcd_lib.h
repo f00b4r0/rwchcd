@@ -12,6 +12,7 @@
 #include "rwchcd.h"
 
 short validate_temp(const temp_t temp);
+temp_t get_temp(const tempid_t id);
 
 inline temp_t celsius_to_temp(const float celsius)
 {

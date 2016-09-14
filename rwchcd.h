@@ -32,6 +32,7 @@ enum {
 	ESENSORINVAL,	///< invalid sensor id
 	ESENSORSHORT,	///< sensor is shorted
 	ESENSORDISCON,	///< sensor is disconnected
+	ESPI,		///< SPI problem
 	EGENERIC,
 };
 
@@ -40,6 +41,8 @@ enum {
 
 #define RWCHCD_TEMPMIN	XXX
 #define RWCHCD_TEMPMAX	XXX
+
+#define RWCHCD_SPI_MAX_TRIES	10	///< how many times SPI ops should be retried
 
 typedef unsigned short	temp_t;		// all temps are internally stored in Kelvin * 100
 typedef short		tempid_t;	// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid
@@ -59,18 +62,17 @@ enum e_systemmode { SYS_OFF = 0, SYS_AUTO, SYS_COMFORT, SYS_ECO, SYS_FROSTFREE, 
 
 struct s_config {
 	bool configured;
-	short nsensors;		///< number of active sensors (== id of last sensor +1)
-	short scheme_type;		///< hydraulic scheme type - UNUSED
 	enum e_runmode set_runmode;	///< desired operation mode
-	temp_t limit_tfrostmin;	///< outdoor temp for frost-protection
-	time_t building_tau;	///< building time constant
+	time_t building_tau;		///< building time constant
+	short nsensors;			///< number of active sensors (== id of last sensor +1)
 	tempid_t id_temp_outdoor;	///< outdoor temp
+	temp_t limit_tfrostmin;		///< outdoor temp for frost-protection
 	struct rwchc_s_settings rWCHC_settings;
 };
 
 struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
-	enum e_runmode set_runmode;	///< CANNOT BE RM_AUTO
+	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
 	bool sleeping;			///< true if no heat request in the past XXX time (plant is asleep)
 	float calib_nodac;
@@ -79,7 +81,7 @@ struct s_runtime {
 	temp_t t_outdoor_mixed;
 	temp_t t_outdoor_attenuated;
 	temp_t external_hrequest;	///< external heat request (for cascading) -- XXX NOT IMPLEMENTED
-	temp_t temps[];				///< array of all the system temperatures
+	temp_t temps[RWCHC_NTSENSORS];			///< array of all the system temperatures
 	uint16_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
 	union rwchc_u_relays rWCHC_relays;		// XXX locks
 	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
