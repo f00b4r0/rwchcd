@@ -26,7 +26,11 @@
 #include <sys/time.h>
 #include <stdbool.h>
 #include "rwchcd.h"
-#include "rwchcd_spi.h"
+#include "rwchcd_lib.h"
+#include "rwchcd_hardware.h"
+#include "rwchcd_plant.h"
+#include "rwchcd_config.h"
+#include "rwchcd_runtime.h"
 
 /**
  * Implement time-based PI controller in velocity form
@@ -68,12 +72,165 @@ static float control_PI(const float target, const float actual)
 
 static int init_process()
 {
-	struct s_runtime * const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_config * restrict config = NULL;
+	struct s_plant * restrict plant = NULL;
+	struct s_heatsource * restrict heatsource = NULL;
+	struct s_heating_circuit * restrict circuit = NULL;
+	struct s_dhw_tank * restrict dhwt = NULL;
+	struct s_boiler * restrict boiler = NULL;
+	int ret;
 
+	/* init hardware */
+	
+	ret = hardware_init();
+	if (ret) {
+		dbgerr("hardware init error: %d", ret);
+		return (ret);
+	}
 
-	// set mixing valve to known start state
+	/* init config */
+
+	config = config_new();
+	ret = config_init(config);
+	if (ret) {
+		dbgerr("config init error: %d", ret);
+		return (ret);
+	}
+	config_set_building_tau(config, 10 * 60 * 60);	// XXX 10 hours
+	config_set_nsensors(config, 4);	// XXX 4 sensors
+	config_set_outdoor_sensorid(config, 1);
+	config_set_frostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
+
+	/* init plant */
+
+	// create a new plant
+	plant = plant_new();
+	if (!plant) {
+		dbgerr("plant creation failed");
+		return (-EOOM);
+	}
+
+	// create a new heat source for the plant
+	heatsource = plant_new_heatsource(plant);
+	if (!heatsource) {
+		dbgerr("heatsource creation failed");
+		return (-EOOM);
+	}
+
+	// configure that source	XXX REVISIT
+	boiler = heatsource->source;
+	boiler->histeresis = delta_to_temp(5);
+	boiler->limit_tmax = celsius_to_temp(90);
+	boiler->limit_tmin = celsius_to_temp(45);
+	boiler->id_temp = 2;	// XXX VALIDATION
+	boiler->id_temp_outgoing = boiler->id_temp;
+	boiler->burner_1 = hardware_relay_new();
+	if (!boiler->burner_1) {
+		dbgerr("burner relay creation failed");
+		return (-EOOM);
+	}
+	hardware_relay_set_id(boiler->burner_1, 13);	// XXX first relay
+	boiler->burner_1->configured = true;
+	boiler->min_runtime = 4 * 60;	// XXX 4 minutes
+	boiler->configured = true;
+	heatsource->configured = true;
+
+	// create a new circuit for the plant
+	circuit = plant_new_circuit(plant);
+	if (!circuit) {
+		dbgerr("circuit creation failed");
+		return (-EOOM);
+	}
+
+	// configure that circuit
+	circuit->set_limit_wtmax = celsius_to_temp(85);
+	circuit->set_limit_wtmin = celsius_to_temp(20);
+	circuit->set_tcomfort = celsius_to_temp(20);
+	circuit->set_teco = celsius_to_temp(16);
+	circuit->set_tfrostfree = celsius_to_temp(7);
+	circuit->set_outhoff_comfort = circuit->set_tcomfort - delta_to_temp(4);
+	circuit->set_outhoff_eco = circuit->set_teco - delta_to_temp(4);
+	circuit->set_outhoff_frostfree = circuit->set_tfrostfree - delta_to_temp(4);
+	circuit->set_outhoff_histeresis = delta_to_temp(1);
+	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
+	circuit->id_temp_return = 4;	// XXX VALIDATION
+	circuit->set_temp_inoffset = delta_to_temp(10);
+	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
+	circuit->tlaw_data.twater1 = celsius_to_temp(70);
+	circuit->tlaw_data.tout2 = celsius_to_temp(15);
+	circuit->tlaw_data.twater2 = celsius_to_temp(35);
+	circuit_make_linear(circuit);
+
+	// create a valve for that circuit
+	circuit->valve = valve_new();
+	if (!circuit->valve) {
+		dbgerr("valve creation failed");
+		return (-EOOM);
+	}
+
+	// configure that valve
+	circuit->valve->deadzone = delta_to_temp(2);
+	circuit->valve->ete_time = 120;	// XXX 120 s
+	circuit->valve->id_temp1 = boiler->id_temp_outgoing;
+	circuit->valve->id_temp2 = circuit->id_temp_return;
+	circuit->valve->id_tempout = circuit->id_temp_outgoing;
+	valve_make_linear(circuit->valve);
+
+	// create and configure two relays for that valve
+	circuit->valve->open = hardware_relay_new();
+	hardware_relay_set_id(circuit->valve->open, 1);
+	circuit->valve->open->configured = true;
+
+	circuit->valve->close = hardware_relay_new();
+	hardware_relay_set_id(circuit->valve->close, 2);
+	circuit->valve->close->configured = true;
+
+	circuit->valve->configured = true;
+
+	// create a pump for that circuit
+	circuit->pump = pump_new();
+	if (!circuit->pump) {
+		dbgerr("pump creation failed");
+		return (-EOOM);
+	}
+
+	// configure that pump
+	circuit->pump->set_cooldown_time = 10 * 60;	// XXX 10 minutes
+
+	// create and configure a relay for that pump
+	circuit->pump->relay = hardware_relay_new();
+	hardware_relay_set_id(circuit->pump->relay, 3);
+	circuit->pump->relay->configured = true;
+
+	circuit->pump->configured = true;
+
+	circuit->configured = true;
+
+	// create a new DHWT for the plant
+	dhwt = plant_new_dhwt(plant);
+	if (!dhwt) {
+		dbgerr("dhwt creation failed");
+		return (-EOOM);
+	}
+
+	// configure that dhwt
+	dhwt->id_temp_bottom = boiler->id_temp;
+	dhwt->limit_tmin = celsius_to_temp(5);
+	dhwt->limit_tmax = celsius_to_temp(60);
+	dhwt->set_tcomfort = celsius_to_temp(50);
+	dhwt->set_teco = celsius_to_temp(40);
+	dhwt->set_tfrostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
+	dhwt->histeresis = delta_to_temp(10);
+	dhwt->set_temp_inoffset = delta_to_temp(0);	// Integrated tank
+	dhwt->configured = true;
+
+	
+	// set valves to known start state
 	//set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
 
+	// finally bring the plant online
+	return (plant_online(plant));
 }
 
 /*
@@ -85,89 +242,24 @@ static int init_process()
 
 int main(void)
 {
-	int i, ret;
+	init_process();
+
 #if 0
-	if (rwchcd_spi_init() < 0)
-		printf("init error\n");
-	
-	 ret = rwchcd_spi_lcd_acquire();
-	 printf("rwchcd_spi_lcd_acquire: %d\n", ret);
-	 
-	 ret = rwchcd_spi_lcd_cmd_w(0x1);	// clear
-	 printf("rwchcd_spi_lcd_cmd_w: %d\n", ret);
-	 sleep(2);
-	 ret = lcd_wstr("Hello!");
-	 printf("lcd_wstr: %d\n", ret);
-	 
-	 ret = rwchcd_spi_lcd_relinquish();
-	 printf("rwchcd_spi_lcd_relinquish: %d\n", ret);
-	
-	rWCHC_peripherals.LCDbl = 0;
-	ret = rwchcd_spi_peripherals_w(&rWCHC_peripherals);
-	printf("rwchcd_spi_peripherals_w: %d\n", ret);
+	ret = rwchcd_spi_lcd_acquire();
+	printf("rwchcd_spi_lcd_acquire: %d\n", ret);
 
-#define S rWCHC_settings
+	ret = rwchcd_spi_lcd_cmd_w(0x1);	// clear
+	printf("rwchcd_spi_lcd_cmd_w: %d\n", ret);
+	sleep(2);
+	ret = lcd_wstr("Hello!");
+	printf("lcd_wstr: %d\n", ret);
+
+	ret = rwchcd_spi_lcd_relinquish();
+	printf("rwchcd_spi_lcd_relinquish: %d\n", ret);
+
 	while (1) {
-		//i = rwchcd_spi_peripherals_r();
-		//printf("periph byte: %d, ret: %d\n", rWCHC_peripherals.BYTE, i);
-		i=0;
-		/*
-		 ret = rwchcd_spi_settings_r(&rWCHC_settings);
-		 printf("rwchcd_spi_settings_r: %d\n", ret);
-		 printf("settings: %d; %d, %d, %d, %d;\n"
-		 "\t%x, %x, %x, %x, %x, %x, %x, %x\n",
-		 S.lcdblpct, S.limits.burner_tmax, S.limits.burner_tmin,
-		 S.limits.water_tmin, S.limits.frost_tmin,
-		 S.addresses.T_burner, S.addresses.T_pump,
-		 S.addresses.T_Vopen, S.addresses.T_Vclose,
-		 S.addresses.S_burner, S.addresses.S_water,
-		 S.addresses.S_outdoor, S.addresses.nsensors);
-		 */
-		//		rWCHC_settings.lcdblpct = 30;
-		
-		/*		do {
-			ret = rwchcd_spi_settings_w(&rWCHC_settings);
-			printf("rwchcd_spi_settings_w: %d\n", ret);
-		 } while (ret);
-		 //ret = rwchcd_spi_settings_s();
-		 //printf("rwchcd_spi_settings_s: %d\n", ret);
-		 */
-
-	/*	 for (i=0; i<128; i++) {
-			 //	ret = rwchcd_spi_lcd_bl_w(i);
-			 //printf("rwchcd_spi_lcd_bl_w: %d\n", ret);
-		 
-			rWCHC_relays.LOWB = i;
-			rWCHC_relays.HIGHB= i;
-		 again:
-			printf("LOWB: %x, HIGHB: %x\n", rWCHC_relays.LOWB, rWCHC_relays.H/Volumes/Old Kanti/Users/varenet/rwchc/software/rwchcd.cIGHB);
-			ret = rwchcd_spi_relays_w(&rWCHC_relays);
-			printf("rwchcd_spi_relays_w: %d\n", ret);
-			if (ret) {
-				printf("TRYING AGAIN!\n");
-				goto again;
-			}
-			 //rWCHC_peripherals.LCDbl = (i&1);
-			 //ret = rwchcd_spi_peripherals_w(&rWCHC_peripherals);
-			 //printf("rwchcd_spi_peripherals_w: %d\n", ret);
-			sleep(1);
-		 } */
-		//for (i=100; i>0; i--)
-		//	rwchcd_spi_lcd_bl_w(i);
-
-		ret = sensors_read(TSENSORS, 0xF);
-		printf("sensors_read: %d\n", ret);
-		if (!ret)
-			for (i=0; i<RWCHC_NTSENSORS; i++)
-				printf("sensor %d: %d\n", i, TSENSORS[i]);
-
-		calibrate();
-		printf("temp_calib 0: %f, 1: %f\n", calib_nodac, calib_dac);
-		printf("sensor 1 ohm: %d\n", sensor_to_ohm(TSENSORS[1], 1));
-		printf("sensor 4 ohm: %d\n", sensor_to_ohm(TSENSORS[4], 1));
-		printf("sensor 7 ohm: %d\n", sensor_to_ohm(TSENSORS[7], 1));
-		printf("sensor 15 temp: %f\n", ohm_to_temp(sensor_to_ohm(TSENSORS[15], 1)));
-		sleep(5);
+		plant_run(plant);
+		sleep(1);
 	}
 #endif
 }

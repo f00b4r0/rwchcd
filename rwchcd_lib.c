@@ -26,14 +26,15 @@ short validate_temp(const temp_t temp)
 
 /**
  * get temp from a given temp id
+ * @param the physical id (counted from 1) of the sensor
  * @return temp if id valid, 0 otherwise
  */
 temp_t get_temp(const tempid_t id)
 {
 	const struct s_runtime * const runtime = get_runtime();
 
-	if (id > runtime->config->nsensors)
+	if (!id || (id > runtime->config->nsensors))
 		return (0);
 
-	return (runtime->temps[id]);	// XXX REVISIT lock
+	return (runtime->temps[id-1]);	// XXX REVISIT lock
 }

@@ -24,4 +24,9 @@ inline float temp_to_celsius(const temp_t temp)
 	return ((float)((float)temp/100.0 - 273.15));
 }
 
+inline temp_t delta_to_temp(const temp_t delta)
+{
+	return (delta * 100);
+}
+
 #endif /* rwchcd_lib_h */

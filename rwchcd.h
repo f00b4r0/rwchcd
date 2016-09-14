@@ -20,6 +20,9 @@
 #define clrbit(var, bit)	((var) &= ~(1 << (bit)))
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
+#define dbgmsg(format, ...)	printf("(%s) " format "\n", __func__, ## __VA_ARGS__)
+#define dbgerr(format, ...)	printf("(%s) " format "\n", __func__, ## __VA_ARGS__)
+
 enum {
 	ALL_OK,
 	ENOTCONFIGURED,	///< element is not configured
@@ -33,6 +36,8 @@ enum {
 	ESENSORSHORT,	///< sensor is shorted
 	ESENSORDISCON,	///< sensor is disconnected
 	ESPI,		///< SPI problem
+	EINIT,		///< initialization problem
+	EOOM,		///< Out of memory
 	EGENERIC,
 };
 
@@ -62,7 +67,6 @@ enum e_systemmode { SYS_OFF = 0, SYS_AUTO, SYS_COMFORT, SYS_ECO, SYS_FROSTFREE, 
 
 struct s_config {
 	bool configured;
-	enum e_runmode set_runmode;	///< desired operation mode
 	time_t building_tau;		///< building time constant
 	short nsensors;			///< number of active sensors (== id of last sensor +1)
 	tempid_t id_temp_outdoor;	///< outdoor temp

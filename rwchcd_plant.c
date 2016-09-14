@@ -6,11 +6,94 @@
 //
 //
 
-#include <stdio.h>
+#include <stdlib.h>	// calloc/free
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
 #include "rwchcd_plant.h"
+
+
+/**
+ * Create a new pump in the plant
+ * @param plant UNUSED
+ * @return pointer to the created pump
+ */
+struct s_pump * pump_new(void)
+{
+	struct s_pump * const pump = calloc(1, sizeof(struct s_pump));
+
+	return (pump);
+}
+
+/**
+ * Delete a pump
+ * @param pump the pump to delete
+ */
+static void pump_del(struct s_pump * pump)
+{
+	if (!pump)
+		return;
+
+	hardware_relay_del(pump->relay);
+	free(pump->name);
+	free(pump);
+}
+
+
+/**
+ * Create a new valve in the plant
+ * @param plant UNUSED
+ * @return pointer to the created valve
+ */
+struct s_valve * valve_new(void)
+{
+	struct s_valve * const valve = calloc(1, sizeof(struct s_valve));
+
+	return (valve);
+}
+
+/**
+ * Delete a valve
+ * @param valve the valve to delete
+ */
+static void valve_del(struct s_valve * valve)
+{
+	if (!valve)
+		return;
+
+	hardware_relay_del(valve->open);
+	hardware_relay_del(valve->close);
+	free(valve->name);
+	free(valve);
+}
+
+
+/**
+ * Create a new solar heater in the plant
+ * @param plant UNUSED
+ * @return pointer to the created solar heater
+ */
+static struct s_solar_heater * solar_new(void)
+{
+	struct s_solar_heater * const solar = calloc(1, sizeof(struct s_solar_heater));
+
+	return (solar);
+}
+
+/**
+ * Delete a solar heater
+ * @param valve the solar heater to delete
+ */
+static void solar_del(struct s_solar_heater * solar)
+{
+	if (!solar)
+		return;
+
+	pump_del(solar->pump);
+	free(solar->name);
+	free(solar);
+}
+
 
 
 /**
@@ -20,7 +103,7 @@
  * @param force_state skips cooldown if true
  * @return error code if any
  */
-static int set_pump_state(struct s_pump * const pump, bool state, bool force_state)
+static int pump_set_state(struct s_pump * const pump, bool state, bool force_state)
 {
 	time_t cooldown = 0;	// by default, no wait
 	
@@ -36,12 +119,12 @@ static int set_pump_state(struct s_pump * const pump, bool state, bool force_sta
 		cooldown = pump->actual_cooldown_time ? pump->actual_cooldown_time : pump->set_cooldown_time;
 	
 	// XXX this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	pump->actual_cooldown_time = set_relay_state(pump->relay, state, cooldown);
+	pump->actual_cooldown_time = hardware_relay_set_state(pump->relay, state, cooldown);
 
 	return (ALL_OK);
 }
 
-static int get_pump_state(const struct s_pump * const pump)
+static int pump_get_state(const struct s_pump * const pump)
 {
 	if (!pump)
 		return (-EINVALID);
@@ -50,7 +133,7 @@ static int get_pump_state(const struct s_pump * const pump)
 		return (-ENOTCONFIGURED);
 	
 	// XXX we could return remaining cooldown time if necessary
-	return (get_relay_state(pump->relay));
+	return (hardware_relay_get_state(pump->relay));
 }
 
 /*
@@ -142,7 +225,7 @@ static short valvelaw_linear(const struct s_valve * const valve, const temp_t ta
 	iterm = Ki * error + iterm_prev;
 	iterm_prev = iterm;
 
-	percent = (short)((target_tout - tempin2) / (tempin1 - tempin2) * 100);
+	percent = ((target_tout - tempin2) / (tempin1 - tempin2) * 100);
 
 	// enforce physical limits
 	if (percent > 100)
@@ -209,6 +292,16 @@ static short calc_mixer_pos(const struct s_valve * const mixer, const temp_t tar
 	return (percent);
 }
 
+int valve_make_linear(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+
+	valve->valvelaw = valvelaw_linear;
+
+	return (ALL_OK);
+}
+
 /**
  * Set 3-way mixing valve position
  * @param percent desired position in percent
@@ -220,8 +313,8 @@ static inline void set_mixer_pos(struct s_valve * mixer, const short percent)
 
 static void valve_offline(struct s_valve * const valve)
 {
-	set_relay_state(valve->open, OFF, 0);
-	set_relay_state(valve->close, OFF, 0);
+	hardware_relay_set_state(valve->open, OFF, 0);
+	hardware_relay_set_state(valve->close, OFF, 0);
 	valve->action = STOP;
 }
 
@@ -270,24 +363,60 @@ static int valve_run(struct s_valve * const valve)
 				return (ALL_OK);
 		}
 
-		set_relay_state(valve->open, OFF, 0);
-		set_relay_state(valve->close, OFF, 0);
+		hardware_relay_set_state(valve->open, OFF, 0);
+		hardware_relay_set_state(valve->close, OFF, 0);
 		valve->action = STOP;
 	}
 	// position is too low
 	else if (percent - valve->position > 0) {
-		set_relay_state(valve->close, OFF, 0);
-		set_relay_state(valve->open, ON, 0);
+		hardware_relay_set_state(valve->close, OFF, 0);
+		hardware_relay_set_state(valve->open, ON, 0);
 		valve->action = OPEN;
 	}
 	// position is too high
 	else if (percent - valve->position < 0) {
-		set_relay_state(valve->open, OFF, 0);
-		set_relay_state(valve->close, ON, 0);
+		hardware_relay_set_state(valve->open, OFF, 0);
+		hardware_relay_set_state(valve->close, ON, 0);
 		valve->action = CLOSE;
 	}
 
 	return (ALL_OK);
+}
+
+/**
+ * Create a new boiler
+ * @return pointer to the created boiler
+ */
+static struct s_boiler * boiler_new(void)
+{
+	struct s_boiler * const boiler = calloc(1, sizeof(struct s_boiler));
+
+	// set some sane defaults
+	if (boiler) {
+		boiler->histeresis = delta_to_temp(8);
+		boiler->limit_tmin = celsius_to_temp(45);
+		boiler->limit_tmax = celsius_to_temp(50);
+		boiler->set_tfreeze = celsius_to_temp(5);
+	}
+
+	return (boiler);
+}
+
+/**
+ * Delete a boiler
+ * @param boiler the boiler to delete
+ */
+static void boiler_del(struct s_boiler * boiler)
+{
+	if (!boiler)
+		return;
+
+	pump_del(boiler->loadpump);
+	hardware_relay_del(boiler->burner_1);
+	hardware_relay_del(boiler->burner_2);
+	free(boiler->name);
+
+	free(boiler);
 }
 
 /**
@@ -303,11 +432,11 @@ static int boiler_offline(struct s_boiler * const boiler)
 	if (!boiler->configured)
 		return (-ENOTCONFIGURED);
 
-	set_relay_state(boiler->burner_1, OFF, 0);
-	set_relay_state(boiler->burner_2, OFF, 0);
+	hardware_relay_set_state(boiler->burner_1, OFF, 0);
+	hardware_relay_set_state(boiler->burner_2, OFF, 0);
 
 	if (boiler->loadpump)
-		set_pump_state(boiler->loadpump, OFF, FORCE);
+		pump_set_state(boiler->loadpump, OFF, FORCE);
 
 	return (ALL_OK);
 }
@@ -395,7 +524,7 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 	// boiler online (or antifreeze)
 
 	if (boiler->loadpump)
-		set_pump_state(boiler->loadpump, ON, 0);
+		pump_set_state(boiler->loadpump, ON, 0);
 
 	boiler_temp = get_temp(boiler->id_temp);
 	ret = validate_temp(boiler_temp);
@@ -404,9 +533,9 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 
 	// safety checks
 	if (boiler_temp > boiler->limit_tmax) {
-		set_relay_state(boiler->burner_1, OFF, 0);
-		set_relay_state(boiler->burner_2, OFF, 0);
-		set_pump_state(boiler->loadpump, ON, FORCE);
+		hardware_relay_set_state(boiler->burner_1, OFF, 0);
+		hardware_relay_set_state(boiler->burner_2, OFF, 0);
+		pump_set_state(boiler->loadpump, ON, FORCE);
 		return (-ESAFETY);
 	}
 
@@ -425,14 +554,14 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 
 	// temp control
 	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
-		set_relay_state(boiler->burner_1, ON, boiler->min_runtime);
+		hardware_relay_set_state(boiler->burner_1, ON, boiler->min_runtime);
 	else if (boiler_temp > (target_temp + boiler->histeresis/2))	// untrip condition
-		set_relay_state(boiler->burner_1, OFF, boiler->min_runtime);
+		hardware_relay_set_state(boiler->burner_1, OFF, boiler->min_runtime);
 
 	return (ALL_OK);
 }
 
-static int heatsource_online(const struct s_heat_source * const heat)
+static int heatsource_online(const struct s_heatsource * const heat)
 {
 	if (heat->type == BOILER)
 		return (boiler_online(heat->source));
@@ -440,7 +569,7 @@ static int heatsource_online(const struct s_heat_source * const heat)
 		return (-ENOTIMPLEMENTED);
 }
 
-static int heatsource_offline(const struct s_heat_source * const heat)
+static int heatsource_offline(const struct s_heatsource * const heat)
 {
 	if (heat->type == BOILER)
 		return (boiler_offline(heat->source));
@@ -451,7 +580,7 @@ static int heatsource_offline(const struct s_heat_source * const heat)
 /**
  * XXX currently supports single heat source, all consummers connected to it
  */
-static int heatsource_run(struct s_heat_source * const heat)
+static int heatsource_run(struct s_heatsource * const heat)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
@@ -495,7 +624,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	circuit->target_wtemp = 0;
 
 	if (circuit->pump)
-		set_pump_state(circuit->pump, OFF, FORCE);
+		pump_set_state(circuit->pump, OFF, FORCE);
 
 	set_mixer_pos(circuit->valve, 0);	// XXX REVISIT
 
@@ -618,7 +747,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 			target_temp = circuit->set_tfrostfree;
 			break;
 		case RM_MANUAL:
-			set_pump_state(circuit->pump, ON, FORCE);
+			pump_set_state(circuit->pump, ON, FORCE);
 			return (-1);	//XXX REVISIT
 		default:
 			return (-EINVALIDMODE);
@@ -633,7 +762,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	circuit->target_ambient = target_temp;
 
 	// circuit is active, ensure pump is running
-	set_pump_state(circuit->pump, ON, 0);
+	pump_set_state(circuit->pump, ON, 0);
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
@@ -665,6 +794,16 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 		}
 		return (valve_run(circuit->valve));
 	}
+
+	return (ALL_OK);
+}
+
+int circuit_make_linear(struct s_heating_circuit * const circuit)
+{
+	if (!circuit)
+		return (-EINVALID);
+
+	circuit->templaw = templaw_linear;
 
 	return (ALL_OK);
 }
@@ -706,13 +845,13 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	dhwt->recycle_on = false;
 
 	if (dhwt->feedpump)
-		set_pump_state(dhwt->feedpump, OFF, FORCE);
+		pump_set_state(dhwt->feedpump, OFF, FORCE);
 
 	if (dhwt->recyclepump)
-		set_pump_state(dhwt->recyclepump, OFF, FORCE);
+		pump_set_state(dhwt->recyclepump, OFF, FORCE);
 
 	if (dhwt->selfheater)
-		set_relay_state(dhwt->selfheater, OFF, 0);
+		hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
 	dhwt->set_runmode = RM_OFF;
 
@@ -722,6 +861,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 /**
  * DHW tank control.
  * XXX TODO implement dhwprio glissante/absolue for heat request
+ * XXX TODO implement working on electric without sensor
  */
 static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
@@ -758,9 +898,9 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			target_temp = dhwt->set_tfrostfree;
 			break;
 		case RM_MANUAL:
-			set_pump_state(dhwt->feedpump, ON, FORCE);
-			set_pump_state(dhwt->recyclepump, ON, FORCE);
-			set_relay_state(dhwt->selfheater, ON, 0);
+			pump_set_state(dhwt->feedpump, ON, FORCE);
+			pump_set_state(dhwt->recyclepump, ON, FORCE);
+			hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			return (ALL_OK);	//XXX REVISIT
 		default:
 			return (-EINVALIDMODE);
@@ -770,9 +910,9 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	// handle recycle loop
 	if (dhwt->recycle_on)
-		set_pump_state(dhwt->recyclepump, ON, NOFORCE);
+		pump_set_state(dhwt->recyclepump, ON, NOFORCE);
 	else
-		set_pump_state(dhwt->recyclepump, OFF, NOFORCE);
+		pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
 
 	// enforce limits on dhw temp
 	if (target_temp < dhwt->limit_tmin)
@@ -809,7 +949,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		if (dhwt->force_on || (curr_temp < (target_temp - dhwt->histeresis))) {
 			if (runtime->sleeping && dhwt->selfheater && dhwt->selfheater->configured) {
 				// the plant is sleeping and we have a configured self heater: use it
-				set_relay_state(dhwt->selfheater, ON, 0);
+				hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			}
 			else {	// run from plant heat source
 				// calculate necessary water feed temp: target tank temp + offset
@@ -825,7 +965,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				dhwt->heat_request = water_temp;
 
 				// turn feedpump on
-				set_pump_state(dhwt->feedpump, ON, NOFORCE);
+				pump_set_state(dhwt->feedpump, ON, NOFORCE);
 			}
 			// mark heating in progress
 			dhwt->charge_on = true;
@@ -840,7 +980,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
 		if (curr_temp > target_temp) {
 			// stop self-heater
-			set_relay_state(dhwt->selfheater, OFF, 0);
+			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
 			test = FORCE;	// by default, force feedpump immediate turn off
 
@@ -854,7 +994,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			}
 
 			// turn off pump with cooldown
-			set_pump_state(dhwt->feedpump, OFF, test);
+			pump_set_state(dhwt->feedpump, OFF, test);
 
 
 			// set heat request to minimum
@@ -871,11 +1011,222 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	return (ALL_OK);
 }
 
-int plant_init(const struct s_plant * restrict const plant)
+
+/**
+ * Create a new heating circuit and attach it to the plant.
+ * @param plant the plant to attach the circuit to
+ * @return pointer to the created heating circuit
+ */
+struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant)
+{
+	struct s_heating_circuit * restrict circuit = NULL;
+	struct s_heating_circuit_l * restrict circuitelement = NULL;
+
+	if (!plant)
+		goto fail;
+
+	// create a new circuit. calloc() sets good defaults
+	circuit = calloc(1, sizeof(struct s_heating_circuit));
+	if (!circuit)
+		goto fail;
+
+	// create a new circuit element
+	circuitelement = calloc(1, sizeof(struct s_heating_circuit_l));
+	if (!circuitelement)
+		goto fail;
+
+	// attach the created circuit to the element
+	circuitelement->circuit = circuit;
+
+	// attach it to the plant
+	circuitelement->next = plant->circuit_head;
+	plant->circuit_head = circuitelement;
+	plant->circuit_n++;
+
+	return (circuit);
+
+fail:
+	free(circuit);
+	free(circuitelement);
+	return (NULL);
+}
+
+static void del_circuit(struct s_heating_circuit * circuit)
+{
+	if (!circuit)
+		return;
+
+	valve_del(circuit->valve);
+	pump_del(circuit->pump);
+	free(circuit->name);
+
+	free(circuit);
+}
+
+/**
+ * Create a new dhw tank and attach it to the plant.
+ * @param plant the plant to attach the tank to
+ * @return pointer to the created tank
+ */
+struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant)
+{
+	struct s_dhw_tank * restrict dhwt = NULL;
+	struct s_dhw_tank_l * restrict dhwtelement = NULL;
+
+	if (!plant)
+		goto fail;
+
+	// create a new tank. calloc() sets good defaults
+	dhwt = calloc(1, sizeof(struct s_dhw_tank));
+	if (!dhwt)
+		goto fail;
+
+	// create a new tank element
+	dhwtelement = calloc(1, sizeof(struct s_dhw_tank_l));
+	if (!dhwtelement)
+		goto fail;
+
+	// attach the created tank to the element
+	dhwtelement->dhwt = dhwt;
+
+	// attach it to the plant
+	dhwtelement->next = plant->dhwt_head;
+	plant->dhwt_head = dhwtelement;
+	plant->dhwt_n++;
+
+	return (dhwt);
+
+fail:
+	free(dhwt);
+	free(dhwtelement);
+	return (NULL);
+}
+
+static void del_dhwt(struct s_dhw_tank * restrict dhwt)
+{
+	if (!dhwt)
+		return;
+
+	solar_del(dhwt->solar);
+	pump_del(dhwt->feedpump);
+	pump_del(dhwt->recyclepump);
+	hardware_relay_del(dhwt->selfheater);
+	free(dhwt->name);
+
+	free(dhwt);
+}
+
+/**
+ * Create a new heatsource
+ * @return pointer to the created source
+ */
+struct s_heatsource * plant_new_heatsource(struct s_plant * const plant)
+{
+	struct s_heatsource * restrict source = NULL;
+	struct s_heatsource_l * restrict sourceelement = NULL;
+	struct s_boiler * const boiler = calloc(1, sizeof(struct s_boiler));
+
+	if (!plant)
+		goto fail;
+
+	// create a new source. calloc() sets good defaults
+	source = calloc(1, sizeof(struct s_heatsource));
+	if (!source)
+		goto fail;
+
+	if (!boiler)
+		goto fail;
+
+	source->type = BOILER;
+	source->source = boiler;	// XXX REVISIT
+
+	// create a new source element
+	sourceelement = calloc(1, sizeof(struct s_heatsource_l));
+	if (!sourceelement)
+		goto fail;
+
+	// attach the created source to the element
+	sourceelement->source = source;
+
+	// attach it to the plant
+	sourceelement->next = plant->heats_head;
+	plant->heats_head = sourceelement;
+	plant->heats_n++;
+
+	return (source);
+
+fail:
+	free(boiler);
+	free(source);
+	return (NULL);
+}
+
+/**
+ * Delete a heatsource
+ * @param source the source to delete
+ */
+static void del_heatsource(struct s_heatsource * source)
+{
+	if (!source)
+		return;
+
+	if (BOILER == source->type)
+		boiler_del(source->source);
+
+	free(source);
+}
+
+struct s_plant * plant_new(void)
+{
+	struct s_plant * const plant = calloc(1, sizeof(struct s_plant));
+
+	return (plant);
+}
+
+void plant_del(struct s_plant * plant)
+{
+	struct s_heating_circuit_l * circuitelement, * circuitlnext;
+	struct s_dhw_tank_l * dhwtelement, * dhwtlnext;
+	struct s_heatsource_l * sourceelement, * sourcenext;
+
+	// clear all registered circuits
+	circuitelement = plant->circuit_head;
+	while (circuitelement) {
+		circuitlnext = circuitelement->next;
+		del_circuit(circuitelement->circuit);
+		free(circuitelement);
+		plant->circuit_n--;
+		circuitelement = circuitlnext;
+	}
+
+	// clear all registered dhwt
+	dhwtelement = plant->dhwt_head;
+	while (dhwtelement) {
+		dhwtlnext = dhwtelement->next;
+		del_dhwt(dhwtelement->dhwt);
+		free(dhwtelement);
+		plant->dhwt_n--;
+		dhwtelement = dhwtlnext;
+	}
+
+	// clear all registered heatsources
+	sourceelement = plant->heats_head;
+	while (sourceelement) {
+		sourcenext = sourceelement->next;
+		del_heatsource(sourceelement->source);
+		free(sourceelement);
+		plant->heats_n--;
+		sourceelement = sourcenext;
+	}
+
+	free(plant);
+}
+
+int plant_online(const struct s_plant * restrict const plant)
 {
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
-	struct s_heat_source_l * restrict heatsourcel;
+	struct s_heatsource_l * restrict heatsourcel;
 	int ret;
 
 	if (!plant)
@@ -910,7 +1261,7 @@ int plant_init(const struct s_plant * restrict const plant)
 	}
 
 	// finally online the heat source
-	heatsourcel = plant->heat_head;	// XXX single heat source
+	heatsourcel = plant->heats_head;	// XXX single heat source
 	ret = heatsource_online(heatsourcel->source);
 	if (ALL_OK != ret) {
 		// XXX error handling
@@ -933,7 +1284,7 @@ int plant_run(const struct s_plant * restrict const plant)
 {
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
-	struct s_heat_source_l * restrict heatsourcel;
+	struct s_heatsource_l * restrict heatsourcel;
 	int ret;
 
 	if (!plant)
@@ -964,7 +1315,7 @@ int plant_run(const struct s_plant * restrict const plant)
 	}
 
 	// finally run the heat source
-	heatsourcel = plant->heat_head;	// XXX single heat source
+	heatsourcel = plant->heats_head;	// XXX single heat source
 	ret = heatsource_run(heatsourcel->source);
 	if (ALL_OK != ret) {
 		// XXX error handling

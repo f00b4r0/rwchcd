@@ -45,16 +45,6 @@ int config_init(struct s_config * const config)
 	return (ALL_OK);
 }
 
-int config_set_runmode(struct s_config * const config, enum e_runmode runmode)
-{
-	if (!config)
-		return (-EINVALID);
-
-	config->set_runmode = runmode;
-
-	return (ALL_OK);
-}
-
 int config_set_building_tau(struct s_config * const config, time_t tau)
 {
 	if (!config)
@@ -93,16 +83,16 @@ int config_set_frostmin(struct s_config * const config, temp_t frostmin)
 	return (ALL_OK);
 }
 
-int config_set_outdoor_sensor(struct s_config * const config, tempid_t sensorid)
+int config_set_outdoor_sensorid(struct s_config * const config, tempid_t sensorid)
 {
 	if (!config)
 		return (-EINVALID);
 
-	if (sensorid > config->nsensors)
+	if (!sensorid || (sensorid > config->nsensors))
 		return (-EINVALID);
 
 	config->id_temp_outdoor = sensorid;
-	config->rWCHC_settings.addresses.S_outdoor = sensorid;
+	config->rWCHC_settings.addresses.S_outdoor = sensorid-1;
 
 	return (ALL_OK);
 }
@@ -116,7 +106,7 @@ int config_save(const struct s_config * const config)
 
 	// XXX TODO save config
 
-	// write hardware config
+	// commit hardware config
 	do {
 		ret = rwchcd_spi_settings_w(&(config->rWCHC_settings));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));

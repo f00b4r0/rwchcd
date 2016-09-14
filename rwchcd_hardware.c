@@ -8,6 +8,7 @@
 
 #include <time.h>
 #include <math.h>	// sqrtf
+#include <stdlib.h>	// calloc/free
 
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
@@ -15,6 +16,25 @@
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
 
+#define RELAY_MAX_ID	14	///< maximum valid relay id
+
+/**
+ * Initialize hardware and ensure connection is set
+ * @return error state
+ */
+int hardware_init(void)
+{
+	int i = 0, ret = ALL_OK;
+
+	if (rwchcd_spi_init() < 0)
+		return (-EINIT);
+
+	do {
+		ret = rwchcd_spi_keepalive_once();
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	return (ret);
+}
 
 /**
  * Read all sensors
@@ -47,7 +67,7 @@ out:
  * @param relays pointer to the harware relay union
  * @return status
  */
-int hardware_relays_write(const union rwchc_u_relays * const relays)
+int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays)
 {
 	int i = 0, ret = ALL_OK;
 
@@ -70,7 +90,7 @@ out:
  * @param periphs pointer to the harware periphs union
  * @return status
  */
-int hardware_periphs_write(const union rwchc_u_outperiphs * const periphs)
+int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs)
 {
 	int i = 0, ret = ALL_OK;
 
@@ -214,6 +234,49 @@ temp_t sensor_to_temp(const uint16_t raw)
 }
 
 /**
+ * Create a new stateful relay
+ * @return pointer to the created relay
+ */
+struct s_stateful_relay * hardware_relay_new(void)
+{
+	struct s_stateful_relay * const relay = calloc(1, sizeof(struct s_stateful_relay));
+
+	return (relay);
+}
+
+/**
+ * Delete a stateful relay
+ * @param relay the relay to delete
+ */
+void hardware_relay_del(struct s_stateful_relay * relay)
+{
+	if (!relay)
+		return;
+
+	free(relay->name);
+	free(relay);
+}
+
+/**
+ * Set a relay's id
+ * @param relay the target relay
+ * @param id the considered id
+ * @return error status
+ */
+int hardware_relay_set_id(struct s_stateful_relay * const relay, const unsigned short id)
+{
+	if (!relay)
+		return (-EINVALID);
+
+	if (!id || id > RELAY_MAX_ID)
+		return (-EINVALID);
+
+	relay->id = id;
+
+	return (ALL_OK);
+}
+
+/**
  * set internal relay state
  * @param relay the internal relay to modify
  * @param state the desired target state
@@ -221,7 +284,7 @@ temp_t sensor_to_temp(const uint16_t raw)
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @todo time management should really be in the routine that writes to the hardware for maximum accuracy
  */
-int set_relay_state(struct s_stateful_relay * const relay, const bool turn_on, const time_t change_delay)
+int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool turn_on, const time_t change_delay)
 {
 	struct s_runtime * const runtime = get_runtime();
 	const time_t now = time(NULL);
@@ -270,7 +333,7 @@ int set_relay_state(struct s_stateful_relay * const relay, const bool turn_on, c
 	return (ALL_OK);
 }
 
-int get_relay_state(const struct s_stateful_relay * const relay)
+int hardware_relay_get_state(const struct s_stateful_relay * const relay)
 {
 	if (!relay)
 		return (-EINVALID);

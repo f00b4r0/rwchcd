@@ -35,6 +35,23 @@ static uint8_t SPI_rw8bit(const uint8_t data)
 }
 
 /**
+ * Send a keepalive and verify the response.
+ * Can be used e.g. at initialization time to ensure that there is a device connected:
+ * if this function fails more than a reasonnable number of tries then there's a good
+ * chance the device is not connected.
+ * @return error status
+ */
+int rwchcd_spi_keepalive_once(void)
+{
+	SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);	// ignore received bit
+
+	if (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_VALID)
+		return (-ESPI);
+	else
+		return (ALL_OK);
+}
+
+/**
  * Acquire control over LCD display
  * @return error code
  */

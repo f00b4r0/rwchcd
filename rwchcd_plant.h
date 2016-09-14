@@ -28,7 +28,7 @@ struct s_valve {
 	short target_position;	///< current target position
 //	enum { MIXER, ZONE } type;	///< valve type, XXX probably not necessary, can be inferred
 	short ete_time;		///< end-to-end run time
-	enum { STOP, OPEN, CLOSE } action;
+	enum { STOP = 0, OPEN, CLOSE } action;
 	char * restrict name;
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
@@ -51,7 +51,6 @@ struct s_heating_circuit {
 	bool outhoff;			///< true if no heating conditions are met
 	enum e_runmode set_runmode;	///< current circuit set_runmode
 	enum e_runmode actual_runmode;	///< circuit actual (computed) runmode
-//	enum { DIRECT, MIXED } type;	///< probably not necessary, can be inferred from valve type/presence
 	struct s_valve * restrict valve;///< valve for circuit (if available, otherwise it's direct)
 	struct s_pump * restrict pump;	///< pump for this circuit
 //	temp_t histeresis;		///< histeresis for target temp
@@ -101,7 +100,7 @@ struct s_boiler {
 };
 
 // XXX cascade
-struct s_heat_source {
+struct s_heatsource {
 	bool configured;
 	bool online;			///< true if source is available for use
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
@@ -163,23 +162,32 @@ struct s_dhw_tank_l {
 	struct s_dhw_tank_l * restrict next;
 };
 
-struct s_heat_source_l {
+struct s_heatsource_l {
 	short id;
-	struct s_heat_source * restrict source;
-	struct s_heat_source_l * restrict next;
+	struct s_heatsource * restrict source;
+	struct s_heatsource_l * restrict next;
 };
 
 struct s_plant {
 	bool configured;
-	unsigned short heat_source_n;	///< number of heat sources in the plant
-	unsigned short heating_circuit_n;	///< number of heating circuits in the plant
-	unsigned short dhw_tank_n;	///< number of dhw tanks in the plant
-	struct s_heat_source_l * restrict heat_head;
+	unsigned short heats_n;		///< number of heat sources in the plant
+	unsigned short circuit_n;	///< number of heating circuits in the plant
+	unsigned short dhwt_n;		///< number of dhw tanks in the plant
+	struct s_heatsource_l * restrict heats_head;
 	struct s_heating_circuit_l * restrict circuit_head;
 	struct s_dhw_tank_l * restrict dhwt_head;
 };
 
-int plant_init(const struct s_plant * restrict const plant);
+struct s_pump * pump_new(void);
+struct s_valve * valve_new(void);
+int plant_online(const struct s_plant * restrict const plant);
 int plant_run(const struct s_plant * restrict const plant);
+struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant);
+struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant);
+struct s_heatsource * plant_new_heatsource(struct s_plant * const plant);
+struct s_plant * plant_new(void);
+void plant_del(struct s_plant * plant);
+int circuit_make_linear(struct s_heating_circuit * const circuit);
+int valve_make_linear(struct s_valve * const valve);
 
 #endif /* rwchcd_plant_h */

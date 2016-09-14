@@ -13,8 +13,8 @@
 #include <time.h>
 #include "rwchcd.h"
 
-#define FORCE 1
-#define NOFORCE 0
+#define FORCE	1
+#define NOFORCE	0
 
 struct s_stateful_relay {
 	bool configured;
@@ -28,11 +28,15 @@ struct s_stateful_relay {
 	char * restrict name;
 };
 
+int hardware_init(void);
 int hardware_sensors_read(uint16_t tsensors[], const int last);
-int hardware_relays_write(const union rwchc_u_relays * const relays);
-int hardware_periphs_write(const union rwchc_u_outperiphs * const periphs);
+int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays);
+int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs);
 temp_t sensor_to_temp(const uint16_t raw);
-int set_relay_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay);
-int get_relay_state(const struct s_stateful_relay * const relay);
+struct s_stateful_relay * hardware_relay_new(void);
+void hardware_relay_del(struct s_stateful_relay * relay);
+int hardware_relay_set_id(struct s_stateful_relay * const relay, const unsigned short id);
+int hardware_relay_set_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay);
+int hardware_relay_get_state(const struct s_stateful_relay * const relay);
 
 #endif /* rwchcd_hardware_h */
