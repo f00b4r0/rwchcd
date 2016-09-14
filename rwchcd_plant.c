@@ -393,10 +393,11 @@ static struct s_boiler * boiler_new(void)
 
 	// set some sane defaults
 	if (boiler) {
-		boiler->histeresis = delta_to_temp(8);
-		boiler->limit_tmin = celsius_to_temp(45);
-		boiler->limit_tmax = celsius_to_temp(50);
+		boiler->histeresis = delta_to_temp(6);
+		boiler->limit_tmin = celsius_to_temp(10);
+		boiler->limit_tmax = celsius_to_temp(95);
 		boiler->set_tfreeze = celsius_to_temp(5);
+		boiler->set_burner_min_time = 60 * 4;	// 4mn
 	}
 
 	return (boiler);
@@ -503,6 +504,7 @@ static int boiler_antifreeze(struct s_boiler * const boiler)
 static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 {
 	temp_t boiler_temp;
+	time_t now;
 	int ret;
 
 	if (!boiler)
@@ -539,6 +541,24 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 		return (-ESAFETY);
 	}
 
+	// keep track of low requests for sleepover, if set
+	if (boiler->set_sleeping_time) {
+		// if target_temp < limit_tmin for a continuous period longer than sleeping_time, trigger sleeping
+		if (target_temp < boiler->limit_tmin) {
+			if (boiler->no_request_since) {
+				now = time(NULL);
+				if ((now - boiler->no_request_since) > boiler->set_sleeping_time)
+					boiler->sleeping = true;
+			}
+			else
+				boiler->no_request_since = time(NULL);	// first trigger
+		}
+		else {
+			boiler->no_request_since = 0;
+			boiler->sleeping = false;
+		}
+	}
+
 	// enforce limits
 	if (target_temp < boiler->limit_tmin)
 		target_temp = boiler->limit_tmin;
@@ -554,9 +574,9 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 
 	// temp control
 	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
-		hardware_relay_set_state(boiler->burner_1, ON, boiler->min_runtime);
+		hardware_relay_set_state(boiler->burner_1, ON, boiler->set_burner_min_time);
 	else if (boiler_temp > (target_temp + boiler->histeresis/2))	// untrip condition
-		hardware_relay_set_state(boiler->burner_1, OFF, boiler->min_runtime);
+		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set_burner_min_time);
 
 	return (ALL_OK);
 }
@@ -586,6 +606,7 @@ static int heatsource_run(struct s_heatsource * const heat)
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	temp_t temp, temp_request = 0;
+	int ret = ALL_OK;
 
 	if (!heat->configured)
 		return (-ENOTCONFIGURED);
@@ -606,8 +627,11 @@ static int heatsource_run(struct s_heatsource * const heat)
 	// apply result to heat source
 	heat->temp_request = temp_request;
 
-	if (heat->type == BOILER)
-		return (boiler_run_temp(heat->source, temp_request));
+	if (heat->type == BOILER) {
+		ret = boiler_run_temp(heat->source, temp_request);
+		heat->sleeping = ((struct s_boiler *)(heat->source))->sleeping;
+		return (ret);
+	}
 	else
 		return (-ENOTIMPLEMENTED);
 }
@@ -1241,6 +1265,7 @@ int plant_online(const struct s_plant * restrict const plant)
 		ret = circuit_online(circuitl->circuit);
 		if (ALL_OK != ret) {
 			// XXX error handling
+			dbgerr("circuit_online failed: %d", ret);
 			circuit_offline(circuitl->circuit);
 			circuitl->circuit->online = false;
 		}
@@ -1253,6 +1278,7 @@ int plant_online(const struct s_plant * restrict const plant)
 		ret = dhwt_online(dhwtl->dhwt);
 		if (ALL_OK != ret) {
 			// XXX error handling
+			dbgerr("dhwt_online failed: %d", ret);
 			dhwt_offline(dhwtl->dhwt);
 			dhwtl->dhwt->online = false;
 		}
@@ -1265,6 +1291,7 @@ int plant_online(const struct s_plant * restrict const plant)
 	ret = heatsource_online(heatsourcel->source);
 	if (ALL_OK != ret) {
 		// XXX error handling
+		dbgerr("heatsource_online failed: %d", ret);
 		heatsource_offline(heatsourcel->source);
 		heatsourcel->source->online = false;
 	}
@@ -1282,10 +1309,12 @@ int plant_online(const struct s_plant * restrict const plant)
  */
 int plant_run(const struct s_plant * restrict const plant)
 {
+	struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	struct s_heatsource_l * restrict heatsourcel;
 	int ret;
+	bool sleeping = false;
 
 	if (!plant)
 		return (-EINVALID);
@@ -1299,6 +1328,7 @@ int plant_run(const struct s_plant * restrict const plant)
 		ret = circuit_run(circuitl->circuit);
 		if (ALL_OK != ret) {
 			// XXX error handling
+			dbgerr("circuit_run failed: %d", ret);
 			circuit_offline(circuitl->circuit);
 			circuitl->circuit->online = false;
 		}
@@ -1309,17 +1339,26 @@ int plant_run(const struct s_plant * restrict const plant)
 		ret = dhwt_run(dhwtl->dhwt);
 		if (ALL_OK != ret) {
 			// XXX error handling
+			dbgerr("dhwt_run failed: %d", ret);
 			dhwt_offline(dhwtl->dhwt);
 			dhwtl->dhwt->online = false;
 		}
 	}
 
 	// finally run the heat source
-	heatsourcel = plant->heats_head;	// XXX single heat source
-	ret = heatsource_run(heatsourcel->source);
-	if (ALL_OK != ret) {
-		// XXX error handling
-		heatsource_offline(heatsourcel->source);
-		heatsourcel->source->online = false;
+	{
+		heatsourcel = plant->heats_head;	// XXX single heat source
+		ret = heatsource_run(heatsourcel->source);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("heatsource_run failed: %d", ret);
+			heatsource_offline(heatsourcel->source);
+			heatsourcel->source->online = false;
+		}
+		if (heatsourcel->source->sleeping)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
+			sleeping = heatsourcel->source->sleeping;
 	}
+
+	// reflect global sleeping state
+	runtime->sleeping = sleeping;
 }

@@ -132,7 +132,8 @@ static int init_process()
 	}
 	hardware_relay_set_id(boiler->burner_1, 13);	// XXX first relay
 	boiler->burner_1->configured = true;
-	boiler->min_runtime = 4 * 60;	// XXX 4 minutes
+	boiler->set_burner_min_time = 2 * 60;	// XXX 2 minutes
+	boiler->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
 	boiler->configured = true;
 	heatsource->configured = true;
 
@@ -225,6 +226,10 @@ static int init_process()
 	dhwt->set_temp_inoffset = delta_to_temp(0);	// Integrated tank
 	dhwt->configured = true;
 
+
+	plant->configured = true;
+
+	runtime->plant = plant;
 	
 	// set valves to known start state
 	//set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
@@ -258,7 +263,7 @@ int main(void)
 	printf("rwchcd_spi_lcd_relinquish: %d\n", ret);
 
 	while (1) {
-		plant_run(plant);
+		runtime_run();
 		sleep(1);
 	}
 #endif

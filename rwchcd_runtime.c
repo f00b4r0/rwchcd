@@ -58,6 +58,35 @@ static void outdoor_temp()
 	Runtime.t_outdoor_attenuated = expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_mixed, Runtime.config->building_tau, dt);
 }
 
+
+/**
+ * Conditions for summer switch
+ * summer mode is set on in ALL of the following conditions are met:
+ * - t_outdoor > limit_tsummer
+ * - t_outdoor_mixed > limit_tsummer
+ * - t_outdoor_attenuated > limit_tsummer
+ * summer mode is back off if ALL of the following conditions are met:
+ * - t_outdoor < limit_tsummer
+ * - t_outdoor_mixed < limit_tsummer
+ * - t_outdoor_attenuated < limit_tsummer
+ * State is preserved in all other cases
+ * @note because we use AND, there's no need for histeresis
+ */
+static void runtime_summer(void)
+{
+	if ((Runtime.t_outdoor > Runtime.config->limit_tsummer)		&&
+	    (Runtime.t_outdoor_mixed > Runtime.config->limit_tsummer)	&&
+	    (Runtime.t_outdoor_attenuated > Runtime.config->limit_tsummer)) {
+		Runtime.summer = true;
+	}
+	else {
+		if ((Runtime.t_outdoor < Runtime.config->limit_tsummer)		&&
+		    (Runtime.t_outdoor_mixed < Runtime.config->limit_tsummer)	&&
+		    (Runtime.t_outdoor_attenuated < Runtime.config->limit_tsummer))
+			Runtime.summer = false;
+	}
+}
+
 void runtime_init(void)
 {
 	// fill the structure with zeroes, which turns everything off and sets sane values
@@ -171,6 +200,7 @@ int runtime_run(void)
 	// process data
 	parse_temps();
 	outdoor_temp();
+	runtime_summer();
 
 	ret = plant_run(Runtime.plant);
 	if (ret)

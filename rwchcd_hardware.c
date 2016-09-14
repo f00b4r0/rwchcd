@@ -19,96 +19,6 @@
 #define RELAY_MAX_ID	14	///< maximum valid relay id
 
 /**
- * Initialize hardware and ensure connection is set
- * @return error state
- */
-int hardware_init(void)
-{
-	int i = 0, ret = ALL_OK;
-
-	if (rwchcd_spi_init() < 0)
-		return (-EINIT);
-
-	do {
-		ret = rwchcd_spi_keepalive_once();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	return (ret);
-}
-
-/**
- * Read all sensors
- * @param tsensors the array to populate with current values
- * @param last the id of the last wanted (connected) sensor
- */
-int hardware_sensors_read(uint16_t tsensors[], const int last)
-{
-	int sensor, i, ret = ALL_OK;
-
-	if (last > RWCHC_NTSENSORS)
-		return (-EINVALID);
-
-	for (sensor=0; sensor<last; sensor++) {
-		i = 0;
-		do {
-			ret = rwchcd_spi_sensor_r(tsensors, sensor);
-		} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-		if (ret)
-			goto out;
-	}
-
-out:
-	return (ret);
-}
-
-/**
- * Write all relays
- * @param relays pointer to the harware relay union
- * @return status
- */
-int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays)
-{
-	int i = 0, ret = ALL_OK;
-
-	if (!relays)
-		return (-EINVALID);
-
-	do {
-		ret = rwchcd_spi_relays_w(relays);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	if (ret)
-		goto out;
-
-out:
-	return (ret);
-}
-
-/**
- * Write all peripherals
- * @param periphs pointer to the harware periphs union
- * @return status
- */
-int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs)
-{
-	int i = 0, ret = ALL_OK;
-
-	if (!periphs)
-		return (-EINVALID);
-
-	do {
-		ret = rwchcd_spi_peripherals_w(periphs);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	if (ret)
-		goto out;
-
-out:
-	return (ret);
-}
-
-/**
  * Write a string to LCD.
  * @warning No boundary checks
  * @param str string to send
@@ -200,26 +110,42 @@ static float ohm_to_celsius(const unsigned int ohm)
 /**
  * Calibrate hardware readouts.
  * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
+ * @return error status
  */
-static void calibrate(void)
+static int calibrate(void)
 {
 	struct s_runtime * const runtime = get_runtime();
-	int refcalib;
+	int refcalib, i, ret = ALL_OK;
 	uint16_t ref;
 
-	while (rwchcd_spi_ref_r(&ref, 0));
+	i = 0;
+	do {
+		ret = rwchcd_spi_ref_r(&ref, 0);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	if (ret)
+		goto out;
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
 		runtime->calib_nodac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
-	while (rwchcd_spi_ref_r(&ref, 1));
+	i = 0;
+	do {
+		ret = rwchcd_spi_ref_r(&ref, 1);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	if (ret)
+		goto out;
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
 		runtime->calib_dac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
 	}
+
+out:
+	return (ret);
 }
 
 /**
@@ -231,6 +157,94 @@ static void calibrate(void)
 temp_t sensor_to_temp(const uint16_t raw)
 {
 	return (celsius_to_temp(ohm_to_celsius(sensor_to_ohm(raw, 1))));
+}
+
+/**
+ * Initialize hardware and ensure connection is set
+ * @return error state
+ */
+int hardware_init(void)
+{
+	int ret = ALL_OK;
+
+	if (rwchcd_spi_init() < 0)
+		return (-EINIT);
+
+	ret = calibrate();
+
+	return (ret);
+}
+
+/**
+ * Read all sensors
+ * @param tsensors the array to populate with current values
+ * @param last the id of the last wanted (connected) sensor
+ */
+int hardware_sensors_read(uint16_t tsensors[], const int last)
+{
+	int sensor, i, ret = ALL_OK;
+
+	if (last > RWCHC_NTSENSORS)
+		return (-EINVALID);
+
+	for (sensor=0; sensor<last; sensor++) {
+		i = 0;
+		do {
+			ret = rwchcd_spi_sensor_r(tsensors, sensor);
+		} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+		if (ret)
+			goto out;
+	}
+
+out:
+	return (ret);
+}
+
+/**
+ * Write all relays
+ * @param relays pointer to the harware relay union
+ * @return status
+ */
+int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays)
+{
+	int i = 0, ret = ALL_OK;
+
+	if (!relays)
+		return (-EINVALID);
+
+	do {
+		ret = rwchcd_spi_relays_w(relays);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	if (ret)
+		goto out;
+
+out:
+	return (ret);
+}
+
+/**
+ * Write all peripherals
+ * @param periphs pointer to the harware periphs union
+ * @return status
+ */
+int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs)
+{
+	int i = 0, ret = ALL_OK;
+
+	if (!periphs)
+		return (-EINVALID);
+
+	do {
+		ret = rwchcd_spi_peripherals_w(periphs);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	if (ret)
+		goto out;
+
+out:
+	return (ret);
 }
 
 /**

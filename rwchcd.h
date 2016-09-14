@@ -13,6 +13,7 @@
 #include <stdint.h>	// uint_t
 #include <stdbool.h>	// bool
 #include <time.h>	// time_t
+#include <stdio.h>	// printf
 #include "rwchc_export.h"
 
 #define testbit(var, bit)	((var) & (1 << (bit)))
@@ -71,6 +72,8 @@ struct s_config {
 	short nsensors;			///< number of active sensors (== id of last sensor +1)
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t limit_tfrostmin;		///< outdoor temp for frost-protection
+	temp_t limit_tsummer;		///< outdoor temp for summer switch over
+	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED
 	struct rwchc_s_settings rWCHC_settings;
 };
 
@@ -78,7 +81,8 @@ struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
 	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
-	bool sleeping;			///< true if no heat request in the past XXX time (plant is asleep)
+	bool sleeping;			///< true if all heat sources are sleeping (plant is asleep)
+	bool summer;			///< outdoor temperature is compatible with summer mode - XXX NOT IMPLEMENTED
 	float calib_nodac;
 	float calib_dac;
 	temp_t t_outdoor;

@@ -82,13 +82,16 @@ struct s_boiler {
 	bool configured;
 	bool online;			///< true if boiler is available for use
 	bool antifreeze;		///< true if anti freeze tripped
+	bool sleeping;			///< true if no heat request in the past set_sleeping_time time (boiler is asleep)
 	//regime de coupure (p.48)
-	temp_t histeresis;
+	temp_t histeresis;		///< boiler temp histeresis
 	temp_t limit_tmax;		///< maximum boiler temp when operating
 	temp_t limit_tmin;		///< minimum boiler temp when operating
 	temp_t limit_treturnmin;	///< minimum boiler return temp (optional) -- XXX NOT IMPLEMENTED
 	temp_t set_tfreeze;		///< trip point for antifreeze (+5C)
-	time_t min_runtime;
+	time_t set_burner_min_time;	///< minimum burner runtime and cooldown time
+	time_t set_sleeping_time;	///< if no request for this much time, then put boiler asleep
+	time_t no_request_since;	///< No heat request on this boiler since this time, 0 if recent request
 	char * restrict name;
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
 	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
@@ -103,6 +106,7 @@ struct s_boiler {
 struct s_heatsource {
 	bool configured;
 	bool online;			///< true if source is available for use
+	bool sleeping;			///< true if source is asleep
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
 	enum { BOILER, HOTTANK, FIXED } type;
 	temp_t temp_request;		///< current temperature request for heat source (max of all requests)
