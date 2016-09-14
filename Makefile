@@ -8,6 +8,8 @@ SRCS = $(wildcard *.c)
 
 OBJS = $(SRCS:.c=.o)
 
+DEPS = $(SRCS:.c=.d)
+
 MAIN = rwchcd
 
 .PHONY:	all clean install uninstall
@@ -19,10 +21,10 @@ $(MAIN): $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDLIBS)
 
 .c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
 clean:
-	$(RM) *.o *~ $(MAIN)
+	$(RM) *.o *.d *~ $(MAIN)
 
 install: $(MAIN) org.slashdirt.rpiloted.conf rpiloted.service
 	install -D -s $(MAIN) -t /usr/sbin/
@@ -36,3 +38,5 @@ uninstall:
 	$(RM) $(DBUSSYSTEMDIR)/org.slashdirt.rpiloted.conf
 	$(RM) $(SYSTEMDUNITDIR)/rpiloted.service
 	@echo Done
+
+-include $(DEPS)
