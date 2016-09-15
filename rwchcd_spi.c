@@ -285,6 +285,7 @@ out:
  * @param tsensors pointer to target sensor array whose value will be updated
  * @param sensor target sensor number to be read
  * @return error code
+ * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  */
 int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor)
 {
@@ -311,6 +312,7 @@ out:
  * @param refval pointer to target reference whose value will be updated
  * @param refn target reference number to be read (0 or 1)
  * @return error code
+ * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  */
 int rwchcd_spi_ref_r(uint16_t * const refval, const int refn)
 {

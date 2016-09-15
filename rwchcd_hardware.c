@@ -48,7 +48,7 @@ out:
  * @param calib 1 if calibrated value is required, 0 otherwise
  * @return the resistance value
  */
-static unsigned int sensor_to_ohm(const uint16_t raw, const int calib)
+static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const int calib)
 {
 	const struct s_runtime * const runtime = get_runtime();
 	const unsigned int dacset[] = {0, 64, 128, 255};
@@ -116,7 +116,7 @@ static int calibrate(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	int refcalib, i, ret = ALL_OK;
-	uint16_t ref;
+	rwchc_sensor_t ref;
 
 	i = 0;
 	do {
@@ -154,7 +154,7 @@ out:
  * @return the temperature in temp_t units
  * XXX REVISIT calls depth.
  */
-temp_t sensor_to_temp(const uint16_t raw)
+temp_t sensor_to_temp(const rwchc_sensor_t raw)
 {
 	return (celsius_to_temp(ohm_to_celsius(sensor_to_ohm(raw, 1))));
 }
@@ -176,7 +176,7 @@ int hardware_init(void)
  * @param tsensors the array to populate with current values
  * @param last the id of the last wanted (connected) sensor
  */
-int hardware_sensors_read(uint16_t tsensors[], const int last)
+int hardware_sensors_read(rwchc_sensor_t tsensors[], const int last)
 {
 	int sensor, i, ret = ALL_OK;
 

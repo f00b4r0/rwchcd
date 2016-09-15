@@ -179,7 +179,7 @@ int runtime_set_dhwmode(enum e_runmode dhwmode)
 
 int runtime_run(void)
 {
-	static uint16_t rawsensors[RWCHC_NTSENSORS];
+	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
 	int ret = ALL_OK;
 
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
@@ -187,11 +187,14 @@ int runtime_run(void)
 
 	// fetch SPI data
 	ret = hardware_sensors_read(rawsensors, Runtime.config->nsensors);
-	if (ret)
-		goto out;
-
-	// copy valid data to runtime environment
-	memcpy(Runtime.rWCHC_sensors, rawsensors, sizeof(Runtime.rWCHC_sensors));
+	if (ret) {
+		// XXX REVISIT: flag the error but do NOT stop processing here
+		dbgerr("hardware_sensors_read failed: %d", ret);
+	}
+	else {
+		// copy valid data to runtime environment
+		memcpy(Runtime.rWCHC_sensors, rawsensors, sizeof(Runtime.rWCHC_sensors));
+	}
 
 	// set init state of outdoor temperatures - XXX REVISIT
 	if (0 == Runtime.t_outdoor_attenuated)
