@@ -80,7 +80,7 @@ struct s_heating_circuit {
 
 struct s_boiler {
 	bool configured;
-	bool online;			///< true if boiler is available for use
+	bool online;			///< true if boiler is available for use (ignored for antifreeze)
 	bool antifreeze;		///< true if anti freeze tripped
 	bool sleeping;			///< true if no heat request in the past set_sleeping_time time (boiler is asleep)
 	//regime de coupure (p.48)

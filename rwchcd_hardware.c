@@ -165,14 +165,10 @@ temp_t sensor_to_temp(const uint16_t raw)
  */
 int hardware_init(void)
 {
-	int ret = ALL_OK;
-
 	if (rwchcd_spi_init() < 0)
 		return (-EINIT);
 
-	ret = calibrate();
-
-	return (ret);
+	return (calibrate());
 }
 
 /**
@@ -259,13 +255,17 @@ struct s_stateful_relay * hardware_relay_new(void)
 }
 
 /**
- * Delete a stateful relay
+ * Delete a stateful relay.
+ * Turns off the relay before removing it from the system.
  * @param relay the relay to delete
  */
 void hardware_relay_del(struct s_stateful_relay * relay)
 {
 	if (!relay)
 		return;
+
+	// turn off the relay first
+	hardware_relay_set_state(relay, OFF, 0);
 
 	free(relay->name);
 	free(relay);

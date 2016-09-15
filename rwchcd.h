@@ -64,7 +64,15 @@ enum e_runmode {
 	RM_DHWONLY,	///< device is in DHW only mode
 };
 
-enum e_systemmode { SYS_OFF = 0, SYS_AUTO, SYS_COMFORT, SYS_ECO, SYS_FROSTFREE, SYS_MANUAL, SYS_DHWONLY };	///< current operation mode
+enum e_systemmode {
+	SYS_OFF = 0,	///< system is fully off
+	SYS_AUTO,	///< system is running in automatic mode
+	SYS_COMFORT,	///< system is running in comfort mode
+	SYS_ECO,	///< system is running in eco mode
+	SYS_FROSTFREE,	///< system is running in frostfree mode
+	SYS_MANUAL,	///< system is running in manual mode
+	SYS_DHWONLY	///< system is running in DHW only mode
+};
 
 struct s_config {
 	bool configured;
@@ -83,19 +91,19 @@ struct s_runtime {
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
 	bool sleeping;			///< true if all heat sources are sleeping (plant is asleep)
 	bool summer;			///< outdoor temperature is compatible with summer mode - XXX NOT IMPLEMENTED
-	float calib_nodac;
-	float calib_dac;
-	temp_t t_outdoor;
-	temp_t t_outdoor_mixed;
-	temp_t t_outdoor_attenuated;
+	float calib_nodac;		///< sensor calibration value without dac offset
+	float calib_dac;		///< sensor calibration value with dac offset
+	temp_t t_outdoor;		///< instantaneous outdoor temperature
+	temp_t t_outdoor_mixed;		///< mixed outdoor temperature (moving average of outdoor temp with building_tau)
+	temp_t t_outdoor_attenuated;	///< attenuated outdoor temperature (moving average of mixed temp with building_tau)
 	temp_t external_hrequest;	///< external heat request (for cascading) -- XXX NOT IMPLEMENTED
+	struct s_plant * restrict plant;	///< running plant
+	struct s_config * restrict config;	///< running config
+	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
 	temp_t temps[RWCHC_NTSENSORS];			///< array of all the system temperatures
 	uint16_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
 	union rwchc_u_relays rWCHC_relays;		// XXX locks
 	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
-	struct s_plant * restrict plant;		///< pointer to scheme structure
-	struct s_config * restrict config;	///< running config
-	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
 };
 
 #endif /* rwchcd_h */

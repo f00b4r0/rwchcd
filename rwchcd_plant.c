@@ -12,10 +12,10 @@
 #include "rwchcd_hardware.h"
 #include "rwchcd_plant.h"
 
+/** PUMP **/
 
 /**
- * Create a new pump in the plant
- * @param plant UNUSED
+ * Create a new pump
  * @return pointer to the created pump
  */
 struct s_pump * pump_new(void)
@@ -38,63 +38,6 @@ static void pump_del(struct s_pump * pump)
 	free(pump->name);
 	free(pump);
 }
-
-
-/**
- * Create a new valve in the plant
- * @param plant UNUSED
- * @return pointer to the created valve
- */
-struct s_valve * valve_new(void)
-{
-	struct s_valve * const valve = calloc(1, sizeof(struct s_valve));
-
-	return (valve);
-}
-
-/**
- * Delete a valve
- * @param valve the valve to delete
- */
-static void valve_del(struct s_valve * valve)
-{
-	if (!valve)
-		return;
-
-	hardware_relay_del(valve->open);
-	hardware_relay_del(valve->close);
-	free(valve->name);
-	free(valve);
-}
-
-
-/**
- * Create a new solar heater in the plant
- * @param plant UNUSED
- * @return pointer to the created solar heater
- */
-static struct s_solar_heater * solar_new(void)
-{
-	struct s_solar_heater * const solar = calloc(1, sizeof(struct s_solar_heater));
-
-	return (solar);
-}
-
-/**
- * Delete a solar heater
- * @param valve the solar heater to delete
- */
-static void solar_del(struct s_solar_heater * solar)
-{
-	if (!solar)
-		return;
-
-	pump_del(solar->pump);
-	free(solar->name);
-	free(solar);
-}
-
-
 
 /**
  * Set pump state.
@@ -124,6 +67,11 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
 	return (ALL_OK);
 }
 
+/**
+ * Get pump state.
+ * @param pump target pump
+ * @return pump state
+ */
 static int pump_get_state(const struct s_pump * const pump)
 {
 	if (!pump)
@@ -136,52 +84,7 @@ static int pump_get_state(const struct s_pump * const pump)
 	return (hardware_relay_get_state(pump->relay));
 }
 
-/*
- Loi d'eau linaire: pente + offset
- pente calculee negative puisqu'on conserve l'axe des abscisses dans la bonne orientation
- XXX gestion MIN/MAX par caller. TODO implementer courbure
- https://pompe-a-chaleur.ooreka.fr/astuce/voir/111578/le-regulateur-loi-d-eau-pour-pompe-a-chaleur
- http://www.energieplus-lesite.be/index.php?id=10959
- http://herve.silve.pagesperso-orange.fr/regul.htm
- XXX REVISIT FLOATS
- * @param circuit self
- * @param source_temp outdoor temperature to consider
- * @return a target water temperature for this circuit
- */
-static temp_t templaw_linear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
-{
-	//const float out_temp1 = -5.0, water_temp1 = 50.0, out_temp2 = 15.0, water_temp2 = 30.0; // XXX settings
-	const temp_t out_temp1 = circuit->tlaw_data.tout1;
-	const temp_t water_temp1 = circuit->tlaw_data.twater1;
-	const temp_t out_temp2 = circuit->tlaw_data.tout2;
-	const temp_t water_temp2 = circuit->tlaw_data.twater2;
-	float slope;
-	temp_t offset;
-	temp_t ambient_measured, ambient_delta, curve_shift;
-	temp_t t_output;
-
-	// (Y2 - Y1)/(X2 - X1)
-	slope = (water_temp2 - water_temp1) / (out_temp2 - out_temp1);
-	// reduction par un point connu
-	offset = water_temp2 - (out_temp2 * slope);
-
-	// calculate output at nominal 20C: Y = input*slope + offset
-	t_output = source_temp * slope + offset;
-
-	// shift output based on actual target temperature
-	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
-	t_output += curve_shift;
-
-	// shift based on measured ambient temp (if available) influence p.41
-	ambient_measured = get_temp(circuit->id_temp_ambient);
-	if (validate_temp(ambient_measured) == ALL_OK) {
-		ambient_delta = (circuit->set_ambient_factor/10) * (circuit->target_ambient - ambient_measured);
-		curve_shift = ambient_delta * (1 - slope);
-		t_output += curve_shift;
-	}
-
-	return (t_output);
-}
+/** VALVE **/
 
 /**
  * implement a linear law for valve position:
@@ -239,7 +142,7 @@ exit:
 
 /**
  * implement a bang-bang law for valve position:
- * If target_tout > current tempout, open the valve, otherwise close it XXX REVISIT
+ * If target_tout > current tempout, open the valve, otherwise close it
  * @param valve self
  * @param target_tout target valve output temperature
  * @return valve position in percent or error
@@ -264,7 +167,9 @@ exit:
 }
 
 /**
- * calculate target valve position:
+ * calculate mixer valve target position:
+ * @param mixer target valve
+ * @param target_tout target temperature at output of mixer
  * @return percent or negative error
  */
 static short calc_mixer_pos(const struct s_valve * const mixer, const temp_t target_tout)
@@ -292,25 +197,36 @@ static short calc_mixer_pos(const struct s_valve * const mixer, const temp_t tar
 	return (percent);
 }
 
-int valve_make_linear(struct s_valve * const valve)
+/**
+ * Create a new valve
+ * @return pointer to the created valve
+ */
+struct s_valve * valve_new(void)
 {
-	if (!valve)
-		return (-EINVALID);
+	struct s_valve * const valve = calloc(1, sizeof(struct s_valve));
 
-	valve->valvelaw = valvelaw_linear;
-
-	return (ALL_OK);
+	return (valve);
 }
 
 /**
- * Set 3-way mixing valve position
- * @param percent desired position in percent
+ * Delete a valve
+ * @param valve the valve to delete
  */
-static inline void set_mixer_pos(struct s_valve * mixer, const short percent)
+static void valve_del(struct s_valve * valve)
 {
-	mixer->target_position = percent;
+	if (!valve)
+		return;
+
+	hardware_relay_del(valve->open);
+	hardware_relay_del(valve->close);
+	free(valve->name);
+	free(valve);
 }
 
+/**
+ * Offline a valve - XXX REVISIT: non permanent, API non consistent with others
+ * @param valve target valve
+ */
 static void valve_offline(struct s_valve * const valve)
 {
 	hardware_relay_set_state(valve->open, OFF, 0);
@@ -320,6 +236,8 @@ static void valve_offline(struct s_valve * const valve)
 
 /**
  * run valve
+ * @param valve target valve
+ * @return error status
  * XXX only handles 3-way valve for now
  */
 static int valve_run(struct s_valve * const valve)
@@ -383,6 +301,45 @@ static int valve_run(struct s_valve * const valve)
 	return (ALL_OK);
 }
 
+int valve_make_linear(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+
+	valve->valvelaw = valvelaw_linear;
+
+	return (ALL_OK);
+}
+
+/** SOLAR **/
+
+/**
+ * Create a new solar heater
+ * @return pointer to the created solar heater
+ */
+static struct s_solar_heater * solar_new(void)
+{
+	struct s_solar_heater * const solar = calloc(1, sizeof(struct s_solar_heater));
+
+	return (solar);
+}
+
+/**
+ * Delete a solar heater
+ * @param solar the solar heater to delete
+ */
+static void solar_del(struct s_solar_heater * solar)
+{
+	if (!solar)
+		return;
+
+	pump_del(solar->pump);
+	free(solar->name);
+	free(solar);
+}
+
+/** BOILER **/
+
 /**
  * Create a new boiler
  * @return pointer to the created boiler
@@ -421,28 +378,6 @@ static void boiler_del(struct s_boiler * boiler)
 }
 
 /**
- * Put boiler offline.
- * Perform all necessary actions to completely shut down the boiler but
- * DO NOT MARK IT AS OFFLINE.
- */
-static int boiler_offline(struct s_boiler * const boiler)
-{
-	if (!boiler)
-		return (-EINVALID);
-
-	if (!boiler->configured)
-		return (-ENOTCONFIGURED);
-
-	hardware_relay_set_state(boiler->burner_1, OFF, 0);
-	hardware_relay_set_state(boiler->burner_2, OFF, 0);
-
-	if (boiler->loadpump)
-		pump_set_state(boiler->loadpump, OFF, FORCE);
-
-	return (ALL_OK);
-}
-
-/**
  * Put boiler online.
  * Perform all necessary actions to prepare the boiler for service but
  * DO NOT MARK IT AS ONLINE.
@@ -467,6 +402,36 @@ static int boiler_online(struct s_boiler * const boiler)
 	return (ret);
 }
 
+/**
+ * Put boiler offline.
+ * Perform all necessary actions to completely shut down the boiler but
+ * DO NOT MARK IT AS OFFLINE.
+ * @param boiler target boiler
+ * @param return error status
+ */
+static int boiler_offline(struct s_boiler * const boiler)
+{
+	if (!boiler)
+		return (-EINVALID);
+
+	if (!boiler->configured)
+		return (-ENOTCONFIGURED);
+
+	hardware_relay_set_state(boiler->burner_1, OFF, 0);
+	hardware_relay_set_state(boiler->burner_2, OFF, 0);
+
+	if (boiler->loadpump)
+		pump_set_state(boiler->loadpump, OFF, FORCE);
+
+	return (ALL_OK);
+}
+
+/**
+ * Boiler self-antifreeze protection.
+ * This ensures that the temperature of the boiler body cannot go below a set point.
+ * @param boiler target boiler
+ * @return error status
+ */
 static int boiler_antifreeze(struct s_boiler * const boiler)
 {
 	int ret;
@@ -581,6 +546,8 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 	return (ALL_OK);
 }
 
+/** HEATSOURCE **/
+
 static int heatsource_online(const struct s_heatsource * const heat)
 {
 	if (heat->type == BOILER)
@@ -636,27 +603,62 @@ static int heatsource_run(struct s_heatsource * const heat)
 		return (-ENOTIMPLEMENTED);
 }
 
-static int circuit_offline(struct s_heating_circuit * const circuit)
+/** CIRCUIT **/
+
+/**
+ Loi d'eau linaire: pente + offset
+ pente calculee negative puisqu'on conserve l'axe des abscisses dans la bonne orientation
+ XXX TODO implementer courbure
+ https://pompe-a-chaleur.ooreka.fr/astuce/voir/111578/le-regulateur-loi-d-eau-pour-pompe-a-chaleur
+ http://www.energieplus-lesite.be/index.php?id=10959
+ http://herve.silve.pagesperso-orange.fr/regul.htm
+ XXX REVISIT FLOATS
+ * @param circuit self
+ * @param source_temp outdoor temperature to consider
+ * @return a target water temperature for this circuit
+ * @warning no parameter check
+ */
+static temp_t templaw_linear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
-	if (!circuit)
-		return (-EINVALID);
+	const temp_t out_temp1 = circuit->tlaw_data.tout1;
+	const temp_t water_temp1 = circuit->tlaw_data.twater1;
+	const temp_t out_temp2 = circuit->tlaw_data.tout2;
+	const temp_t water_temp2 = circuit->tlaw_data.twater2;
+	float slope;
+	temp_t offset;
+	temp_t ambient_measured, ambient_delta, curve_shift;
+	temp_t t_output;
 
-	if (!circuit->configured)
-		return (-ENOTCONFIGURED);
+	// (Y2 - Y1)/(X2 - X1)
+	slope = (water_temp2 - water_temp1) / (out_temp2 - out_temp1);
+	// reduction par un point connu
+	offset = water_temp2 - (out_temp2 * slope);
 
-	circuit->heat_request = 0;
-	circuit->target_wtemp = 0;
+	// calculate output at nominal 20C: Y = input*slope + offset
+	t_output = source_temp * slope + offset;
 
-	if (circuit->pump)
-		pump_set_state(circuit->pump, OFF, FORCE);
+	// shift output based on actual target temperature
+	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
+	t_output += curve_shift;
 
-	set_mixer_pos(circuit->valve, 0);	// XXX REVISIT
+	// shift based on measured ambient temp (if available) influence p.41
+	ambient_measured = get_temp(circuit->id_temp_ambient);
+	if (validate_temp(ambient_measured) == ALL_OK) {
+		ambient_delta = (circuit->set_ambient_factor/10) * (circuit->target_ambient - ambient_measured);
+		curve_shift = ambient_delta * (1 - slope);
+		t_output += curve_shift;
+	}
 
-	circuit->set_runmode = RM_OFF;
-
-	return (ALL_OK);
+	return (t_output);
 }
 
+/**
+ * Put circuit online.
+ * Perform all necessary actions to prepare the circuit for service but
+ * DO NOT MARK IT AS ONLINE.
+ * @param circuit target circuit
+ * @param return exec status
+ */
 static int circuit_online(struct s_heating_circuit * const circuit)
 {
 	temp_t testtemp;
@@ -673,6 +675,34 @@ static int circuit_online(struct s_heating_circuit * const circuit)
 	ret = validate_temp(testtemp);
 
 	return (ret);
+}
+
+/**
+ * Put circuit offline.
+ * Perform all necessary actions to completely shut down the circuit but
+ * DO NOT MARK IT AS OFFLINE.
+ * @param circuit target circuit
+ * @param return error status
+ */
+static int circuit_offline(struct s_heating_circuit * const circuit)
+{
+	if (!circuit)
+		return (-EINVALID);
+
+	if (!circuit->configured)
+		return (-ENOTCONFIGURED);
+
+	circuit->heat_request = 0;
+	circuit->target_wtemp = 0;
+
+	if (circuit->pump)
+		pump_set_state(circuit->pump, OFF, FORCE);
+
+	circuit->valve->target_position = 0;	// XXX REVISIT
+
+	circuit->set_runmode = RM_OFF;
+
+	return (ALL_OK);
 }
 
 /**
@@ -725,8 +755,11 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 	}
 }
 
-
 /**
+ * Circuit control loop.
+ * Controls the circuits elements to achieve the desired target temperature.
+ * @param circuit target circuit
+ * @return error status
  * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down...)
  * XXX ADD rate of rise cap
  */
@@ -754,8 +787,9 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// Check if the circuit meets outhoff conditions
 	circuit_outhoff(circuit);
-	if (circuit->outhoff)
-		circuit->actual_runmode = RM_OFF;	// if it does, turn it off
+	// if runmode isn't MANUAL and the circuit does meet the conditions, turn it off.
+	if ((RM_MANUAL != circuit->actual_runmode) && circuit->outhoff)
+		circuit->actual_runmode = RM_OFF;
 
 	switch (circuit->actual_runmode) {
 		case RM_OFF:
@@ -772,7 +806,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 			break;
 		case RM_MANUAL:
 			pump_set_state(circuit->pump, ON, FORCE);
-			return (-1);	//XXX REVISIT
+			return (ALL_OK);	//XXX REVISIT
 		default:
 			return (-EINVALIDMODE);
 	}
@@ -811,7 +845,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	if (circuit->valve && circuit->valve->configured) {
 		percent = calc_mixer_pos(circuit->valve, target_temp);
 		if (percent >= 0)
-			set_mixer_pos(circuit->valve, percent);
+			circuit->valve->target_position = percent;
 		else {
 			valve_offline(circuit->valve);	// XXX REVISIT
 			return (percent);
@@ -822,6 +856,11 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	return (ALL_OK);
 }
 
+/**
+ * Assign linear temperature law to the circuit.
+ * @param circuit target circuit
+ * @return error status
+ */
 int circuit_make_linear(struct s_heating_circuit * const circuit)
 {
 	if (!circuit)
@@ -832,6 +871,15 @@ int circuit_make_linear(struct s_heating_circuit * const circuit)
 	return (ALL_OK);
 }
 
+/** DHWT **/
+
+/**
+ * Put dhwt online.
+ * Perform all necessary actions to prepare the dhwt for service but
+ * DO NOT MARK IT AS ONLINE.
+ * @param dhwt target dhwt
+ * @param return exec status
+ */
 static int dhwt_online(struct s_dhw_tank * const dhwt)
 {
 	temp_t testtemp;
@@ -854,6 +902,13 @@ static int dhwt_online(struct s_dhw_tank * const dhwt)
 	return (ret);
 }
 
+/**
+ * Put dhwt offline.
+ * Perform all necessary actions to completely shut down the dhwt but
+ * DO NOT MARK IT AS OFFLINE.
+ * @param dhwt target dhwt
+ * @param return error status
+ */
 static int dhwt_offline(struct s_dhw_tank * const dhwt)
 {
 	if (!dhwt)
@@ -883,7 +938,10 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 }
 
 /**
- * DHW tank control.
+ * DHWT control loop.
+ * Controls the dhwt's elements to achieve the desired target temperature.
+ * @param dhwt target dhwt
+ * @return error status
  * XXX TODO implement dhwprio glissante/absolue for heat request
  * XXX TODO implement working on electric without sensor
  */
@@ -961,8 +1019,9 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
-	// handle heat charge - XXX we enforce sensor position, it SEEMS desirable
-	// apply histeresis on logic: trip at target - histeresis, untrip at target
+	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
+	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
+	   untrip at target (preferably on high sensor). */
 	if (!dhwt->charge_on) {	// heating off
 		if (valid_tbottom)	// prefer bottom temp if available
 			curr_temp = bottom_temp;
@@ -1035,6 +1094,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	return (ALL_OK);
 }
 
+/** PLANT **/
 
 /**
  * Create a new heating circuit and attach it to the plant.
@@ -1200,6 +1260,10 @@ static void del_heatsource(struct s_heatsource * source)
 	free(source);
 }
 
+/**
+ * Create a new plant.
+ * @return newly created pointer or NULL if failed
+ */
 struct s_plant * plant_new(void)
 {
 	struct s_plant * const plant = calloc(1, sizeof(struct s_plant));
@@ -1207,6 +1271,11 @@ struct s_plant * plant_new(void)
 	return (plant);
 }
 
+/**
+ * Delete a plant.
+ * Turn everything off, deallocate all resources and free pointer
+ * @param plant the plant to destroy
+ */
 void plant_del(struct s_plant * plant)
 {
 	struct s_heating_circuit_l * circuitelement, * circuitlnext;
@@ -1246,6 +1315,11 @@ void plant_del(struct s_plant * plant)
 	free(plant);
 }
 
+/**
+ * Bring plant online.
+ * @param plant target plant
+ * @return error status
+ */
 int plant_online(const struct s_plant * restrict const plant)
 {
 	struct s_heating_circuit_l * restrict circuitl;
@@ -1300,12 +1374,11 @@ int plant_online(const struct s_plant * restrict const plant)
 }
 
 /**
- reduce valve if boiler too low
- use return valve temp to compute output
- degraded mode (when sensors are disconnected)
- keep sensor history
- keep running state across power loss?
- summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
+ XXX reduce valve if boiler too low
+ XXX degraded mode (when sensors are disconnected)
+ XXX keep sensor history
+ XXX keep running state across power loss?
+ XXX summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  */
 int plant_run(const struct s_plant * restrict const plant)
 {
