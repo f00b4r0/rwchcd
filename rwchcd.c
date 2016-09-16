@@ -249,8 +249,9 @@ static int init_process()
 
 int main(void)
 {
+	int ret;
 	if (init_process() != ALL_OK)
-		exit(1);
+		(0);	//exit(1);
 
 #if 0
 	ret = rwchcd_spi_lcd_acquire();
@@ -267,7 +268,9 @@ int main(void)
 #endif
 
 	while (1) {
-		runtime_run();
+		ret = runtime_run();
+		if (ret)
+			dbgmsg("runtime_run returned: %d", ret);
 		sleep(1);
 	}
 }

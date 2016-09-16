@@ -319,7 +319,8 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 			relay->cycles++;	// increment cycle count
 			relay->is_on = true;
 			relay->on_since = now;
-			relay->off_time += now - relay->off_since;
+			if (relay->off_since)
+				relay->off_time += now - relay->off_since;
 		}
 	}
 	else {	// OFF == state
@@ -329,7 +330,8 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 
 			relay->is_on = false;
 			relay->off_since = now;
-			relay->on_time += now - relay->on_since;
+			if (relay->on_since)
+				relay->on_time += now - relay->on_since;
 		}
 	}
 

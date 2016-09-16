@@ -564,10 +564,16 @@ static int heatsource_online(const struct s_heatsource * const heat)
 
 static int heatsource_offline(const struct s_heatsource * const heat)
 {
-	if (heat->type == BOILER)
-		return (boiler_offline(heat->source));
-	else
-		return (-ENOTIMPLEMENTED);
+	int ret = -ENOTIMPLEMENTED;
+
+	if (heat->type == BOILER) {
+		ret = boiler_offline(heat->source);
+		if (ALL_OK == ret)
+			((struct s_boiler *)(heat->source))->online = false;
+
+	}
+
+	return (ret);
 }
 
 /**
@@ -1236,7 +1242,7 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant)
 		goto fail;
 
 	// attach the created source to the element
-	sourceelement->source = source;
+	sourceelement->heats = source;
 
 	// attach it to the plant
 	sourceelement->next = plant->heats_head;
@@ -1312,7 +1318,7 @@ void plant_del(struct s_plant * plant)
 	sourceelement = plant->heats_head;
 	while (sourceelement) {
 		sourcenext = sourceelement->next;
-		del_heatsource(sourceelement->source);
+		del_heatsource(sourceelement->heats);
 		free(sourceelement);
 		plant->heats_n--;
 		sourceelement = sourcenext;
@@ -1369,15 +1375,15 @@ int plant_online(const struct s_plant * restrict const plant)
 
 	// finally online the heat source
 	heatsourcel = plant->heats_head;	// XXX single heat source
-	ret = heatsource_online(heatsourcel->source);
+	ret = heatsource_online(heatsourcel->heats);
 	if (ALL_OK != ret) {
 		// XXX error handling
 		dbgerr("heatsource_online failed: %d", ret);
-		heatsource_offline(heatsourcel->source);
-		heatsourcel->source->online = false;
+		heatsource_offline(heatsourcel->heats);
+		heatsourcel->heats->online = false;
 	}
 	else
-		heatsourcel->source->online = true;
+		heatsourcel->heats->online = true;
 }
 
 /**
@@ -1386,9 +1392,11 @@ int plant_online(const struct s_plant * restrict const plant)
  XXX keep sensor history
  XXX keep running state across power loss?
  XXX summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
+ XXX error reporting and handling
  */
 int plant_run(const struct s_plant * restrict const plant)
 {
+#warning Does not report errors
 	struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
@@ -1428,17 +1436,19 @@ int plant_run(const struct s_plant * restrict const plant)
 	// finally run the heat source
 	{
 		heatsourcel = plant->heats_head;	// XXX single heat source
-		ret = heatsource_run(heatsourcel->source);
+		ret = heatsource_run(heatsourcel->heats);
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("heatsource_run failed: %d", ret);
-			heatsource_offline(heatsourcel->source);
-			heatsourcel->source->online = false;
+			heatsource_offline(heatsourcel->heats);
+			heatsourcel->heats->online = false;
 		}
-		if (heatsourcel->source->sleeping)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
-			sleeping = heatsourcel->source->sleeping;
+		if (heatsourcel->heats->sleeping)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
+			sleeping = heatsourcel->heats->sleeping;
 	}
 
 	// reflect global sleeping state
 	runtime->sleeping = sleeping;
+
+	return (ALL_OK);	// XXX
 }

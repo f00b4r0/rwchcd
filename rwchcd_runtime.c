@@ -8,6 +8,7 @@
 
 #include <time.h>	// time_t
 #include <string.h>	// memset/memcpy
+#include <math.h>	// roundf
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
 #include "rwchcd_plant.h"
@@ -36,9 +37,13 @@ static inline void parse_temps(void)
  */
 static float expw_mavg(temp_t filtered, temp_t new_sample, time_t tau, time_t dt)
 {
-	float alpha = dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
+	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
 
-	return (filtered - (alpha * (filtered - new_sample)));
+	dbgmsg("%d - (%f * (%d - %d)) = %f, %d", filtered, alpha, filtered, new_sample,
+	       (filtered - (alpha * (filtered - new_sample))),
+	       (temp_t)((filtered - roundf(alpha * (filtered - new_sample)))));
+
+	return (filtered - roundf(alpha * (filtered - new_sample)));
 }
 
 /**
@@ -46,11 +51,17 @@ static float expw_mavg(temp_t filtered, temp_t new_sample, time_t tau, time_t dt
  * Compute the values of mixed and attenuated outdoor temp based on a
  * weighted moving average and the building time constant.
  * @note must run at (ideally) fixed intervals
+ * #warning no "parameter" check
  */
 static void outdoor_temp()
 {
 	static time_t lasttime = 0;	// in expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
+
+	// XXX REVISIT prevent running at less than building_tau/60 interval, otherwise the precision rounding error in expw_mavg becomes too large
+	if (dt < (Runtime.config->building_tau / 60))
+		return;
+
 	lasttime = time(NULL);
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor);	// XXX checks

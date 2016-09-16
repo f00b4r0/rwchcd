@@ -14,17 +14,17 @@
 short validate_temp(const temp_t temp);
 temp_t get_temp(const tempid_t id);
 
-inline temp_t celsius_to_temp(const float celsius)
+static inline temp_t celsius_to_temp(const float celsius)
 {
 	return ((temp_t)((celsius + 273.15)*100));
 }
 
-inline float temp_to_celsius(const temp_t temp)
+static inline float temp_to_celsius(const temp_t temp)
 {
 	return ((float)((float)temp/100.0 - 273.15));
 }
 
-inline temp_t delta_to_temp(const temp_t delta)
+static inline temp_t delta_to_temp(const temp_t delta)
 {
 	return (delta * 100);
 }

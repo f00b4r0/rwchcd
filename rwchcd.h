@@ -21,8 +21,8 @@
 #define clrbit(var, bit)	((var) &= ~(1 << (bit)))
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
-#define dbgmsg(format, ...)	printf("(%s) " format "\n", __func__, ## __VA_ARGS__)
-#define dbgerr(format, ...)	printf("(%s) " format "\n", __func__, ## __VA_ARGS__)
+#define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+#define dbgerr(format, ...)	printf("(%s()) " format "\n", __func__, ## __VA_ARGS__)
 
 enum {
 	ALL_OK,

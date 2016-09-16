@@ -110,7 +110,7 @@ struct s_heatsource {
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
 	enum { BOILER, HOTTANK, FIXED } type;
 	temp_t temp_request;		///< current temperature request for heat source (max of all requests)
-	void * restrict source;		///< pointer to related heat source structure
+	void * restrict source;		///< pointer to related heat source hardware structure XXX
 };
 
 struct s_solar_heater {
@@ -168,7 +168,7 @@ struct s_dhw_tank_l {
 
 struct s_heatsource_l {
 	short id;
-	struct s_heatsource * restrict source;
+	struct s_heatsource * restrict heats;
 	struct s_heatsource_l * restrict next;
 };
 
