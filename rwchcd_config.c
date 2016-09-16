@@ -69,16 +69,29 @@ int config_set_nsensors(struct s_config * const config, short nsensors)
 	return (ALL_OK);
 }
 
-int config_set_frostmin(struct s_config * const config, temp_t frostmin)
+int config_set_tfrostmin(struct s_config * const config, temp_t tfrostmin)
 {
 	if (!config)
 		return (-EINVALID);
 
-	if (validate_temp(frostmin) != ALL_OK)
+	if (validate_temp(tfrostmin) != ALL_OK)
 		return (-EINVALID);
 
-	config->limit_tfrostmin = frostmin;
-	config->rWCHC_settings.limits.frost_tmin = (uint8_t)temp_to_celsius(frostmin);
+	config->limit_tfrostmin = tfrostmin;
+	config->rWCHC_settings.limits.frost_tmin = (uint8_t)temp_to_celsius(tfrostmin);
+
+	return (ALL_OK);
+}
+
+int config_set_tsummer(struct s_config * const config, temp_t tsummer)
+{
+	if (!config)
+		return (-EINVALID);
+
+	if (validate_temp(tsummer) != ALL_OK)
+		return (-EINVALID);
+
+	config->limit_tsummer = tsummer;
 
 	return (ALL_OK);
 }

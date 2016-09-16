@@ -78,11 +78,8 @@ struct s_heating_circuit {
 	char * restrict name;		///< name for this circuit
 };
 
-struct s_boiler {
-	bool configured;
-	bool online;			///< true if boiler is available for use (ignored for antifreeze)
+struct s_boiler_priv {
 	bool antifreeze;		///< true if anti freeze tripped
-	bool sleeping;			///< true if no heat request in the past set_sleeping_time time (boiler is asleep)
 	//regime de coupure (p.48)
 	temp_t histeresis;		///< boiler temp histeresis
 	temp_t limit_tmax;		///< maximum boiler temp when operating
@@ -92,7 +89,6 @@ struct s_boiler {
 	time_t set_burner_min_time;	///< minimum burner runtime and cooldown time
 	time_t set_sleeping_time;	///< if no request for this much time, then put boiler asleep
 	time_t no_request_since;	///< No heat request on this boiler since this time, 0 if recent request
-	char * restrict name;
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
 	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
 	struct s_stateful_relay * restrict burner_2;	///< second stage of burner
@@ -102,15 +98,28 @@ struct s_boiler {
 	temp_t target_temp;		///< current target temp
 };
 
+enum e_heatsource_type {
+	NONE = 0,	///< No heat source (XXX should probably be an error)
+	BOILER,		///< boiler type heatsource
+	HOTTANK,	///< XXX NOT IMPLEMENTED
+};
+
 // XXX cascade
 struct s_heatsource {
 	bool configured;
 	bool online;			///< true if source is available for use
 	bool sleeping;			///< true if source is asleep
+	enum e_runmode set_runmode;	///< current heatsource set_runmode
+	enum e_runmode actual_runmode;	///< heatsource actual (computed) runmode
+	enum e_heatsource_type type;	///< type of heatsource
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
-	enum { BOILER, HOTTANK, FIXED } type;
 	temp_t temp_request;		///< current temperature request for heat source (max of all requests)
-	void * restrict source;		///< pointer to related heat source hardware structure XXX
+	char * restrict name;
+	void * restrict priv;		///< pointer to source private data structure
+	int (*hs_online)(struct s_heatsource * const);	///< pointer to source private online() function
+	int (*hs_offline)(struct s_heatsource * const);	///< pointer to source private offline() function
+	int (*hs_run)(struct s_heatsource * const);	///< pointer to source private run() function
+	void (*hs_del_priv)(void * priv);		///< pointer to source private del() function
 };
 
 struct s_solar_heater {
@@ -184,11 +193,11 @@ struct s_plant {
 
 struct s_pump * pump_new(void);
 struct s_valve * valve_new(void);
-int plant_online(const struct s_plant * restrict const plant);
-int plant_run(const struct s_plant * restrict const plant);
+int plant_online(struct s_plant * restrict const plant);
+int plant_run(struct s_plant * restrict const plant);
 struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant);
 struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant);
-struct s_heatsource * plant_new_heatsource(struct s_plant * const plant);
+struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, enum e_heatsource_type type);
 struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
 int circuit_make_linear(struct s_heating_circuit * const circuit);

@@ -344,9 +344,9 @@ static void solar_del(struct s_solar_heater * solar)
  * Create a new boiler
  * @return pointer to the created boiler
  */
-static struct s_boiler * boiler_new(void)
+static struct s_boiler_priv * boiler_new(void)
 {
-	struct s_boiler * const boiler = calloc(1, sizeof(struct s_boiler));
+	struct s_boiler_priv * const boiler = calloc(1, sizeof(struct s_boiler_priv));
 
 	// set some sane defaults
 	if (boiler) {
@@ -364,36 +364,38 @@ static struct s_boiler * boiler_new(void)
  * Delete a boiler
  * @param boiler the boiler to delete
  */
-static void boiler_del(struct s_boiler * boiler)
+static void boiler_hs_del_priv(void * priv)
 {
+	struct s_boiler_priv * boiler = priv;
+
 	if (!boiler)
 		return;
 
 	pump_del(boiler->loadpump);
 	hardware_relay_del(boiler->burner_1);
 	hardware_relay_del(boiler->burner_2);
-	free(boiler->name);
 
 	free(boiler);
 }
 
 /**
  * Put boiler online.
- * Perform all necessary actions to prepare the boiler for service but
- * DO NOT MARK IT AS ONLINE.
- * @param boiler target boiler
- * @param return exec status
+ * Perform all necessary actions to prepare the boiler for service.
+ * @param heat heatsource parent structure
+ * @return exec status
+ * @warning no parameter check
  */
-static int boiler_online(struct s_boiler * const boiler)
+static int boiler_hs_online(struct s_heatsource * const heat)
 {
+	const struct s_boiler_priv * const boiler = heat->priv;
 	temp_t testtemp;
 	int ret = -EGENERIC;
 
+	if (!heat->configured)
+		return (-ENOTCONFIGURED);
+
 	if (!boiler)
 		return (-EINVALID);
-
-	if (!boiler->configured)
-		return (-ENOTCONFIGURED);
 
 	// check that mandatory sensors are working
 	testtemp = get_temp(boiler->id_temp);
@@ -404,18 +406,20 @@ static int boiler_online(struct s_boiler * const boiler)
 
 /**
  * Put boiler offline.
- * Perform all necessary actions to completely shut down the boiler but
- * DO NOT MARK IT AS OFFLINE.
- * @param boiler target boiler
- * @param return error status
+ * Perform all necessary actions to completely shut down the boiler.
+ * @param heat heatsource parent structure
+ * @return exec status
+ * @warning no parameter check
  */
-static int boiler_offline(struct s_boiler * const boiler)
+static int boiler_hs_offline(struct s_heatsource * const heat)
 {
+	struct s_boiler_priv * const boiler = heat->priv;
+
+	if (!heat->configured)
+		return (-ENOTCONFIGURED);
+
 	if (!boiler)
 		return (-EINVALID);
-
-	if (!boiler->configured)
-		return (-ENOTCONFIGURED);
 
 	hardware_relay_set_state(boiler->burner_1, OFF, 0);
 	hardware_relay_set_state(boiler->burner_2, OFF, 0);
@@ -432,12 +436,11 @@ static int boiler_offline(struct s_boiler * const boiler)
  * @param boiler target boiler
  * @return error status
  */
-static int boiler_antifreeze(struct s_boiler * const boiler)
+static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 {
 	int ret;
-	temp_t boilertemp;
+	const temp_t boilertemp = get_temp(boiler->id_temp);
 
-	boilertemp = get_temp(boiler->id_temp);
 	ret = validate_temp(boilertemp);
 
 	if (ret)
@@ -457,26 +460,29 @@ static int boiler_antifreeze(struct s_boiler * const boiler)
 }
 
 /**
- * Implement basic single allure boiler
- * @param boiler boiler structure
- * @param target_temp desired boiler temp
- * @return status. If error action must be taken (e.g. offline boiler) XXX REVISIT
+ * Implement basic single allure boiler.
+ * As a special case in the plant, antifreeze takes over all states if the boiler is configured. XXX REVIEW
+ * @param heat heatsource parent structure
+ * @return exec status. If error action must be taken (e.g. offline boiler) XXX REVISIT
+ * @warning no parameter check
  * @todo XXX implmement 2nd allure (p.51)
  * @todo XXX implemment consummer inhibit signal for cool startup
  * @todo XXX implement consummer force signal for overtemp cooldown
  * @todo XXX implement limit on return temp (p.55/56)
  */
-static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
+static int boiler_hs_run(struct s_heatsource * const heat)
 {
-	temp_t boiler_temp;
+	const struct s_runtime * restrict const runtime = get_runtime();
+	struct s_boiler_priv * const boiler = heat->priv;
+	temp_t boiler_temp, target_temp;
 	time_t now;
 	int ret;
 
+	if (!heat->configured)
+		return (-ENOTCONFIGURED);
+
 	if (!boiler)
 		return (-EINVALID);
-
-	if (!boiler->configured)
-		return (-ENOTCONFIGURED);
 
 	// Check if we need antifreeze
 	ret = boiler_antifreeze(boiler);
@@ -484,11 +490,34 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 		return (ret);
 
 	if (!boiler->antifreeze) {	// antifreeze takes over offline mode
-		if (!boiler->online)
+		if (!heat->online)
 			return (-EOFFLINE);	// XXX caller must call boiler_offline() otherwise pump will not stop after antifreeze
 	}
 
-	// boiler online (or antifreeze)
+	// assess actual runmode
+	if (RM_AUTO == heat->set_runmode)
+		heat->actual_runmode = runtime->runmode;
+	else
+		heat->actual_runmode = heat->set_runmode;
+
+	switch (heat->actual_runmode) {
+		case RM_OFF:
+			if (!boiler->antifreeze)
+				return (boiler_hs_offline(heat));	// Only if no antifreeze (see above)
+		case RM_COMFORT:
+		case RM_ECO:
+		case RM_DHWONLY:
+		case RM_FROSTFREE:
+			target_temp = heat->temp_request;
+			break;
+		case RM_MANUAL:
+			target_temp = boiler->limit_tmax;	// XXX set max temp to (safely) trigger burner operation
+			break;
+		default:
+			return (-EINVALIDMODE);
+	}
+
+	// if we reached this point then the boiler is active (online or antifreeze)
 
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, 0);
@@ -513,14 +542,14 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 			if (boiler->no_request_since) {
 				now = time(NULL);
 				if ((now - boiler->no_request_since) > boiler->set_sleeping_time)
-					boiler->sleeping = true;
+					heat->sleeping = true;
 			}
 			else
 				boiler->no_request_since = time(NULL);	// first trigger
 		}
 		else {
 			boiler->no_request_since = 0;
-			boiler->sleeping = false;
+			heat->sleeping = false;
 		}
 	}
 
@@ -548,36 +577,49 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 
 /** HEATSOURCE **/
 
-// XXX REVISIT
-static int heatsource_online(const struct s_heatsource * const heat)
+/**
+ * Put heatsource online.
+ * Perform all necessary actions to prepare the heatsource for service but
+ * DO NOT MARK IT AS ONLINE.
+ * @param heat target heatsource
+ * @param return exec status
+ */
+static int heatsource_online(struct s_heatsource * const heat)
 {
 	int ret = -ENOTIMPLEMENTED;
 
-	if (heat->type == BOILER) {
-		ret = boiler_online(heat->source);
-		if (ALL_OK == ret)
-			((struct s_boiler *)(heat->source))->online = true;
-	}
+	if (!heat)
+		return (-EINVALID);
+
+	if (heat->hs_online)
+		ret = heat->hs_online(heat);
 
 	return (ret);
 }
 
-static int heatsource_offline(const struct s_heatsource * const heat)
+/**
+ * Put heatsource offline.
+ * Perform all necessary actions to completely shut down the heatsource but
+ * DO NOT MARK IT AS OFFLINE.
+ * @param heat target heatsource
+ * @param return exec status
+ */
+static int heatsource_offline(struct s_heatsource * const heat)
 {
 	int ret = -ENOTIMPLEMENTED;
 
-	if (heat->type == BOILER) {
-		ret = boiler_offline(heat->source);
-		if (ALL_OK == ret)
-			((struct s_boiler *)(heat->source))->online = false;
+	if (!heat)
+		return (-EINVALID);
 
-	}
+	if (heat->hs_offline)
+		ret = heat->hs_offline(heat);
 
 	return (ret);
 }
 
 /**
  * XXX currently supports single heat source, all consummers connected to it
+ * XXX Honoring SYSMODE and online is left to private routines
  */
 static int heatsource_run(struct s_heatsource * const heat)
 {
@@ -585,7 +627,9 @@ static int heatsource_run(struct s_heatsource * const heat)
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	temp_t temp, temp_request = 0;
-	int ret = ALL_OK;
+
+	if (!heat)
+		return (-EINVALID);
 
 	if (!heat->configured)
 		return (-ENOTCONFIGURED);
@@ -606,11 +650,8 @@ static int heatsource_run(struct s_heatsource * const heat)
 	// apply result to heat source
 	heat->temp_request = temp_request;
 
-	if (heat->type == BOILER) {
-		ret = boiler_run_temp(heat->source, temp_request);
-		heat->sleeping = ((struct s_boiler *)(heat->source))->sleeping;
-		return (ret);
-	}
+	if (heat->hs_run)
+		return (heat->hs_run(heat));
 	else
 		return (-ENOTIMPLEMENTED);
 }
@@ -774,6 +815,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * @return error status
  * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down...)
  * XXX ADD rate of rise cap
+ * XXX safety for heating floor if implementing positive consummer_shift()
  */
 static int circuit_run(struct s_heating_circuit * const circuit)
 {
@@ -1213,14 +1255,15 @@ static void del_dhwt(struct s_dhw_tank * restrict dhwt)
 }
 
 /**
- * Create a new heatsource
+ * Create a new heatsource in the plant
+ * @param plant the target plant
+ * @param type the heatsource type to create
  * @return pointer to the created source
  */
-struct s_heatsource * plant_new_heatsource(struct s_plant * const plant)
+struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const enum e_heatsource_type type)
 {
 	struct s_heatsource * restrict source = NULL;
 	struct s_heatsource_l * restrict sourceelement = NULL;
-	struct s_boiler * const boiler = calloc(1, sizeof(struct s_boiler));
 
 	if (!plant)
 		goto fail;
@@ -1230,11 +1273,22 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant)
 	if (!source)
 		goto fail;
 
-	if (!boiler)
+	switch (type) {
+		case BOILER:
+			source->priv = boiler_new();
+			source->hs_online = boiler_hs_online;
+			source->hs_offline = boiler_hs_offline;
+			source->hs_run = boiler_hs_run;
+			source->hs_del_priv = boiler_hs_del_priv;
+			break;
+		default:
+			break;
+	}
+
+	if (!source->priv)
 		goto fail;
 
-	source->type = BOILER;
-	source->source = boiler;	// XXX REVISIT
+	source->type = type;
 
 	// create a new source element
 	sourceelement = calloc(1, sizeof(struct s_heatsource_l));
@@ -1252,7 +1306,8 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant)
 	return (source);
 
 fail:
-	free(boiler);
+	if (source->hs_del_priv)
+		source->hs_del_priv(source->priv);
 	free(source);
 	return (NULL);
 }
@@ -1266,9 +1321,10 @@ static void del_heatsource(struct s_heatsource * source)
 	if (!source)
 		return;
 
-	if (BOILER == source->type)
-		boiler_del(source->source);
+	if (source->hs_del_priv)
+		source->hs_del_priv(source->priv);
 
+	free(source->name);
 	free(source);
 }
 
@@ -1333,7 +1389,7 @@ void plant_del(struct s_plant * plant)
  * @return error status
  * @note REQUIRES valid sensor values before being called
  */
-int plant_online(const struct s_plant * restrict const plant)
+int plant_online(struct s_plant * restrict const plant)
 {
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
@@ -1394,7 +1450,7 @@ int plant_online(const struct s_plant * restrict const plant)
  XXX summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  XXX error reporting and handling
  */
-int plant_run(const struct s_plant * restrict const plant)
+int plant_run(struct s_plant * restrict const plant)
 {
 #warning Does not report errors
 	struct s_runtime * restrict const runtime = get_runtime();

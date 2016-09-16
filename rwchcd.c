@@ -74,7 +74,7 @@ static int init_process()
 	struct s_heatsource * restrict heatsource = NULL;
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_dhw_tank * restrict dhwt = NULL;
-	struct s_boiler * restrict boiler = NULL;
+	struct s_boiler_priv * restrict boiler = NULL;
 	int ret;
 
 	/* init hardware */
@@ -96,7 +96,8 @@ static int init_process()
 	config_set_building_tau(config, 10 * 60 * 60);	// XXX 10 hours
 	config_set_nsensors(config, 4);	// XXX 4 sensors
 	config_set_outdoor_sensorid(config, 1);
-	config_set_frostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
+	config_set_tfrostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
+	config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 	config->configured = true;
 
 	// attach config to runtime
@@ -112,14 +113,14 @@ static int init_process()
 	}
 
 	// create a new heat source for the plant
-	heatsource = plant_new_heatsource(plant);
+	heatsource = plant_new_heatsource(plant, BOILER);
 	if (!heatsource) {
 		dbgerr("heatsource creation failed");
 		return (-EOOM);
 	}
 
 	// configure that source	XXX REVISIT
-	boiler = heatsource->source;
+	boiler = heatsource->priv;
 	boiler->histeresis = delta_to_temp(5);
 	boiler->limit_tmax = celsius_to_temp(90);
 	boiler->limit_tmin = celsius_to_temp(45);
@@ -134,7 +135,6 @@ static int init_process()
 	boiler->burner_1->configured = true;
 	boiler->set_burner_min_time = 2 * 60;	// XXX 2 minutes
 	boiler->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
-	boiler->configured = true;
 	heatsource->configured = true;
 
 	// create a new circuit for the plant
