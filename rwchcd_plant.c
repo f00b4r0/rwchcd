@@ -548,12 +548,18 @@ static int boiler_run_temp(struct s_boiler * const boiler, temp_t target_temp)
 
 /** HEATSOURCE **/
 
+// XXX REVISIT
 static int heatsource_online(const struct s_heatsource * const heat)
 {
-	if (heat->type == BOILER)
-		return (boiler_online(heat->source));
-	else
-		return (-ENOTIMPLEMENTED);
+	int ret = -ENOTIMPLEMENTED;
+
+	if (heat->type == BOILER) {
+		ret = boiler_online(heat->source);
+		if (ALL_OK == ret)
+			((struct s_boiler *)(heat->source))->online = true;
+	}
+
+	return (ret);
 }
 
 static int heatsource_offline(const struct s_heatsource * const heat)
@@ -1319,6 +1325,7 @@ void plant_del(struct s_plant * plant)
  * Bring plant online.
  * @param plant target plant
  * @return error status
+ * @note REQUIRES valid sensor values before being called
  */
 int plant_online(const struct s_plant * restrict const plant)
 {

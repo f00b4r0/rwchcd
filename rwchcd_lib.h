@@ -16,7 +16,7 @@ temp_t get_temp(const tempid_t id);
 
 inline temp_t celsius_to_temp(const float celsius)
 {
-	return ((temp_t)(celsius + 273.15)*100);
+	return ((temp_t)((celsius + 273.15)*100));
 }
 
 inline float temp_to_celsius(const temp_t temp)

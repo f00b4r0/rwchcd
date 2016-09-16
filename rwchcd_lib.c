@@ -28,6 +28,7 @@ short validate_temp(const temp_t temp)
  * get temp from a given temp id
  * @param the physical id (counted from 1) of the sensor
  * @return temp if id valid, 0 otherwise
+ * @warning no param check
  */
 temp_t get_temp(const tempid_t id)
 {

@@ -12,13 +12,20 @@
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
+#define SPIRESYNCMAX	1000		///< max resync tries
 #define SPISPEED	1000000		///< 1MHz
 #define SPICHAN		0
 #define SPIMODE		3
 // https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
-#define SPI_RESYNC()	while(SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_VALID)
 #define SPI_ASSERT(cmd, expect)	(SPI_rw8bit(cmd) == expect)
+#define SPI_RESYNC()								\
+		({								\
+		spitout = SPIRESYNCMAX;					\
+		while (spitout-- && (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_VALID));	\
+		})
+
+static int spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
 
 /**
  * Exchange 8bit data over SPI.

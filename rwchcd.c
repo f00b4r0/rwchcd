@@ -19,12 +19,8 @@
 // http://www.energieplus-lesite.be/index.php?id=10963
 
 
-#include <stdio.h>
 #include <unistd.h>	// sleep/usleep
-#include <math.h>
-#include <time.h>
-#include <sys/time.h>
-#include <stdbool.h>
+#include <stdlib.h>	// exit
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
@@ -101,6 +97,10 @@ static int init_process()
 	config_set_nsensors(config, 4);	// XXX 4 sensors
 	config_set_outdoor_sensorid(config, 1);
 	config_set_frostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
+	config->configured = true;
+
+	// attach config to runtime
+	runtime->config = config;
 
 	/* init plant */
 
@@ -147,7 +147,7 @@ static int init_process()
 	// configure that circuit
 	circuit->set_limit_wtmax = celsius_to_temp(85);
 	circuit->set_limit_wtmin = celsius_to_temp(20);
-	circuit->set_tcomfort = celsius_to_temp(20);
+	circuit->set_tcomfort = celsius_to_temp(20.5);
 	circuit->set_teco = celsius_to_temp(16);
 	circuit->set_tfrostfree = celsius_to_temp(7);
 	circuit->set_outhoff_comfort = circuit->set_tcomfort - delta_to_temp(4);
@@ -234,6 +234,8 @@ static int init_process()
 	// set valves to known start state
 	//set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
 
+	runtime_run();	// XXX to gather sensors
+
 	// finally bring the plant online
 	return (plant_online(plant));
 }
@@ -247,7 +249,8 @@ static int init_process()
 
 int main(void)
 {
-	init_process();
+	if (init_process() != ALL_OK)
+		exit(1);
 
 #if 0
 	ret = rwchcd_spi_lcd_acquire();
@@ -261,10 +264,10 @@ int main(void)
 
 	ret = rwchcd_spi_lcd_relinquish();
 	printf("rwchcd_spi_lcd_relinquish: %d\n", ret);
+#endif
 
 	while (1) {
 		runtime_run();
 		sleep(1);
 	}
-#endif
 }

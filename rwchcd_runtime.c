@@ -196,12 +196,11 @@ int runtime_run(void)
 		memcpy(Runtime.rWCHC_sensors, rawsensors, sizeof(Runtime.rWCHC_sensors));
 	}
 
+	// process data
+	parse_temps();
 	// set init state of outdoor temperatures - XXX REVISIT
 	if (0 == Runtime.t_outdoor_attenuated)
 		Runtime.t_outdoor = Runtime.t_outdoor_mixed = Runtime.t_outdoor_attenuated = get_temp(Runtime.config->id_temp_outdoor);
-
-	// process data
-	parse_temps();
 	outdoor_temp();
 	runtime_summer();
 
