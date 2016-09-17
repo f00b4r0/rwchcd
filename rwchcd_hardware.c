@@ -303,6 +303,7 @@ int hardware_relay_set_id(struct s_stateful_relay * const relay, const unsigned 
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @todo time management should really be in the routine that writes to the hardware for maximum accuracy
+ XXX REVIEW LATE CODE
  */
 int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool turn_on, const time_t change_delay)
 {
@@ -316,7 +317,7 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 	if (!relay->configured)
 		return (-ENOTCONFIGURED);
 
-	// account for state time
+	// update state counters at state change
 	if (turn_on) {
 		if (!relay->is_on) {
 			if ((now - relay->off_since) < change_delay)
@@ -326,11 +327,11 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 			relay->is_on = true;
 			relay->on_since = now;
 			if (relay->off_since)
-				relay->off_time += now - relay->off_since;
+				relay->off_tottime += now - relay->off_since;
 			relay->off_since = 0;
 		}
 	}
-	else {	// OFF == state
+	else {	// turn off
 		if (relay->is_on) {
 			if ((now - relay->on_since) < change_delay)
 				return (change_delay - (now - relay->on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
@@ -338,10 +339,13 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 			relay->is_on = false;
 			relay->off_since = now;
 			if (relay->on_since)
-				relay->on_time += now - relay->on_since;
+				relay->on_tottime += now - relay->on_since;
 			relay->on_since = 0;
 		}
 	}
+
+	// update state time counter
+	relay->state_time = relay->is_on ? (now - relay->on_since) : (now - relay->off_since);
 
 	// extract relay id XXX REVISIT
 	rid = relay->id - 1;
@@ -357,13 +361,18 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 	return (ALL_OK);
 }
 
-int hardware_relay_get_state(const struct s_stateful_relay * const relay)
+int hardware_relay_get_state(struct s_stateful_relay * const relay)
 {
+	const time_t now = time(NULL);
+
 	if (!relay)
 		return (-EINVALID);
 
 	if (!relay->configured)
 		return (-ENOTCONFIGURED);
+
+	// update state time counter
+	relay->state_time = relay->is_on ? (now - relay->on_since) : (now - relay->off_since);
 
 	return (relay->is_on);
 }

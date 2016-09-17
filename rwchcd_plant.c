@@ -541,8 +541,8 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	// keep track of low requests for sleepover, if set
 	if (boiler->set_sleeping_time) {
-		// if burner hasn't turned on for a continuous period longer than sleeping_time, trigger sleeping
-		if (boiler->burner_1->off_since > boiler->set_sleeping_time)
+		// if burner has been OFF for a continuous period longer than sleeping_time, trigger sleeping
+		if ((hardware_relay_get_state(boiler->burner_1) == OFF) && (boiler->burner_1->state_time > boiler->set_sleeping_time))
 			heat->sleeping = true;
 		else
 			heat->sleeping = false;
