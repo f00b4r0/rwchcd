@@ -6,7 +6,7 @@
 //
 //
 
-#include <time.h>
+#include <time.h>	// time
 #include <math.h>	// sqrtf
 #include <stdlib.h>	// calloc/free
 
@@ -252,6 +252,10 @@ struct s_stateful_relay * hardware_relay_new(void)
 {
 	struct s_stateful_relay * const relay = calloc(1, sizeof(struct s_stateful_relay));
 
+	// at creation relay is off
+	if (relay)
+		relay->off_since = time(NULL);
+
 	return (relay);
 }
 
@@ -277,6 +281,7 @@ void hardware_relay_del(struct s_stateful_relay * relay)
  * @param relay the target relay
  * @param id the considered id
  * @return error status
+ XXX PREVENT ID CONFLICTS. REVISIT RELAY SYSTEM
  */
 int hardware_relay_set_id(struct s_stateful_relay * const relay, const unsigned short id)
 {
@@ -322,6 +327,7 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 			relay->on_since = now;
 			if (relay->off_since)
 				relay->off_time += now - relay->off_since;
+			relay->off_since = 0;
 		}
 	}
 	else {	// OFF == state
@@ -333,6 +339,7 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 			relay->off_since = now;
 			if (relay->on_since)
 				relay->on_time += now - relay->on_since;
+			relay->on_since = 0;
 		}
 	}
 

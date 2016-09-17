@@ -99,6 +99,7 @@ int logic_circuit(struct s_heating_circuit * const circuit)
 		case RM_FROSTFREE:
 			target_temp = circuit->set_tfrostfree;
 			break;
+		case RM_AUTO:
 		default:
 			return (-EINVALIDMODE);
 	}
@@ -108,6 +109,8 @@ int logic_circuit(struct s_heating_circuit * const circuit)
 	// if the circuit does meet the conditions, turn it off: update runmode.
 	if (circuit->outhoff)
 		circuit->actual_runmode = RM_OFF;
+
+	// XXX OPTIM if return temp is known
 
 	// save current ambient request
 	circuit->request_ambient = target_temp;

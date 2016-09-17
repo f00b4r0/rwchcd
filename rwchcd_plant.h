@@ -89,7 +89,6 @@ struct s_boiler_priv {
 	temp_t set_tfreeze;		///< trip point for antifreeze (+5C)
 	time_t set_burner_min_time;	///< minimum burner runtime and cooldown time
 	time_t set_sleeping_time;	///< if no request for this much time, then put boiler asleep
-	time_t no_request_since;	///< No heat request on this boiler since this time, 0 if recent request
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
 	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
 	struct s_stateful_relay * restrict burner_2;	///< second stage of burner

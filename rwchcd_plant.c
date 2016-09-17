@@ -479,7 +479,6 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_boiler_priv * const boiler = heat->priv;
 	temp_t boiler_temp, target_temp;
-	time_t now;
 	int ret;
 
 	if (!heat->configured)
@@ -542,20 +541,11 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	// keep track of low requests for sleepover, if set
 	if (boiler->set_sleeping_time) {
-		// if target_temp < limit_tmin for a continuous period longer than sleeping_time, trigger sleeping
-		if (target_temp < boiler->limit_tmin) {
-			if (boiler->no_request_since) {
-				now = time(NULL);
-				if ((now - boiler->no_request_since) > boiler->set_sleeping_time)
-					heat->sleeping = true;
-			}
-			else
-				boiler->no_request_since = time(NULL);	// first trigger
-		}
-		else {
-			boiler->no_request_since = 0;
+		// if burner hasn't turned on for a continuous period longer than sleeping_time, trigger sleeping
+		if (boiler->burner_1->off_since > boiler->set_sleeping_time)
+			heat->sleeping = true;
+		else
 			heat->sleeping = false;
-		}
 	}
 
 	// enforce limits
@@ -812,8 +802,6 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
-
-	// XXX OPTIM if return temp is known
 
 	// enforce limits
 	if (water_temp < circuit->set_limit_wtmin)

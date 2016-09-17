@@ -95,9 +95,9 @@
 				4F3AFBAB1D8873C500D86EE7 /* rwchcd_config.h */,
 				4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */,
 				4F3AFBAE1D8884ED00D86EE7 /* rwchcd_runtime.h */,
-				4FCD55141D835D04003BB848 /* rwchcd.c */,
 				4F961FA01D8D66BF00E2A8AF /* rwchcd_logic.c */,
 				4F961FA11D8D66BF00E2A8AF /* rwchcd_logic.h */,
+				4FCD55141D835D04003BB848 /* rwchcd.c */,
 				4FCD55151D835D04003BB848 /* rwchcd.h */,
 			);
 			path = daemon;
