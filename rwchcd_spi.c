@@ -389,7 +389,7 @@ int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 		goto out;
 	
 	for (i=0; i<sizeof(*settings); i++)
-		if (SPI_rw8bit(*((uint8_t *)settings+i)) != i)
+		if (SPI_rw8bit(*((const uint8_t *)settings+i)) != i)
 			goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_SETTINGSW))

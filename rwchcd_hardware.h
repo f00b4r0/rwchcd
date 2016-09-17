@@ -28,10 +28,10 @@ struct s_stateful_relay {
 	char * restrict name;
 };
 
-int hardware_init(void);
-int hardware_sensors_read(rwchc_sensor_t tsensors[], const int last);
-int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays);
-int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs);
+int hardware_init(void) __attribute__((warn_unused_result));
+int hardware_sensors_read(rwchc_sensor_t tsensors[], const int last) __attribute__((warn_unused_result));
+int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays) __attribute__((warn_unused_result));
+int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs) __attribute__((warn_unused_result));
 temp_t sensor_to_temp(const rwchc_sensor_t raw);
 struct s_stateful_relay * hardware_relay_new(void);
 void hardware_relay_del(struct s_stateful_relay * relay);

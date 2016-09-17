@@ -16,17 +16,17 @@ temp_t get_temp(const tempid_t id);
 
 static inline temp_t celsius_to_temp(const float celsius)
 {
-	return ((temp_t)((celsius + 273.15)*100));
+	return ((temp_t)((celsius + 273.15F)*100));
 }
 
 static inline float temp_to_celsius(const temp_t temp)
 {
-	return ((float)((float)temp/100.0 - 273.15));
+	return ((float)((float)temp/100.0F - 273.15F));
 }
 
 static inline temp_t delta_to_temp(const temp_t delta)
 {
-	return (delta * 100);
+	return ((temp_t)(delta * 100));
 }
 
 #endif /* rwchcd_lib_h */

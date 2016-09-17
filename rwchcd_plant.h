@@ -60,6 +60,7 @@ struct s_heating_circuit {
 	temp_t set_teco;		///< target ambient temp in eco mode
 	temp_t set_tfrostfree;		///< target ambient temp in frost-free mode
 	temp_t set_toffset;		///< global offset adjustment for ambient targets
+	temp_t request_ambient;		///< current requested ambient target temp
 	temp_t target_ambient;		///< current calculated ambient target temp
 	temp_t set_outhoff_comfort;	///< outdoor temp for no heating in comfort mode
 	temp_t set_outhoff_eco;		///< outdoor temp for no heating in eco mode

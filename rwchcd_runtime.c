@@ -58,15 +58,16 @@ static void outdoor_temp()
 	static time_t lasttime = 0;	// in expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
 
-	// XXX REVISIT prevent running at less than building_tau/60 interval, otherwise the precision rounding error in expw_mavg becomes too large
+	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor);	// XXX checks
+
+	// XXX REVISIT prevent running averages at less than building_tau/60 interval, otherwise the precision rounding error in expw_mavg becomes too large
 	if (dt < (Runtime.config->building_tau / 60))
 		return;
 
 	lasttime = time(NULL);
 
-	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor);	// XXX checks
-	Runtime.t_outdoor_mixed = expw_mavg(Runtime.t_outdoor_mixed, Runtime.t_outdoor, Runtime.config->building_tau, dt);
-	Runtime.t_outdoor_attenuated = expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_mixed, Runtime.config->building_tau, dt);
+	Runtime.t_outdoor_mixed = (temp_t)expw_mavg(Runtime.t_outdoor_mixed, Runtime.t_outdoor, Runtime.config->building_tau, dt);
+	Runtime.t_outdoor_attenuated = (temp_t)expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_mixed, Runtime.config->building_tau, dt);
 }
 
 

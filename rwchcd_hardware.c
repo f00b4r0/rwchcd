@@ -88,13 +88,13 @@ static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const int calib)
  */
 static float ohm_to_celsius(const unsigned int ohm)
 {
-	const float R0 = 1000.0;
+	const float R0 = 1000.0F;
 	float alpha, delta, A, B, temp;
 
 	// manufacturer parameters
-	alpha = 0.003850;	// mean R change referred to 0C
-	//beta = 0.10863;
-	delta = 1.4999;
+	alpha = 0.003850F;	// mean R change referred to 0C
+	//beta = 0.10863F;
+	delta = 1.4999F;
 
 	// Callendar - Van Dusen parameters
 	A = alpha + (alpha * delta) / 100;
@@ -115,7 +115,8 @@ static float ohm_to_celsius(const unsigned int ohm)
 static int calibrate(void)
 {
 	struct s_runtime * const runtime = get_runtime();
-	int refcalib, i, ret = ALL_OK;
+	unsigned int refcalib, i;
+	int ret = ALL_OK;
 	rwchc_sensor_t ref;
 
 	i = 0;
@@ -128,7 +129,7 @@ static int calibrate(void)
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_nodac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
+		runtime->calib_nodac = (1000.0F / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
 	i = 0;
@@ -141,7 +142,7 @@ static int calibrate(void)
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_dac = (1000.0 / (float)refcalib);	// calibrate against 1kohm reference
+		runtime->calib_dac = (1000.0F / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
 out:

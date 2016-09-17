@@ -147,7 +147,7 @@ static int init_process()
 	// configure that circuit
 	circuit->set_limit_wtmax = celsius_to_temp(85);
 	circuit->set_limit_wtmin = celsius_to_temp(20);
-	circuit->set_tcomfort = celsius_to_temp(20.5);
+	circuit->set_tcomfort = celsius_to_temp(20.5F);
 	circuit->set_teco = celsius_to_temp(16);
 	circuit->set_tfrostfree = celsius_to_temp(7);
 	circuit->set_outhoff_comfort = circuit->set_tcomfort - delta_to_temp(4);

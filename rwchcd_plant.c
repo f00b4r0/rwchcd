@@ -6,10 +6,14 @@
 //
 //
 
+// plant basic operation functions.
+// ideally none of these functions should make use of time
+
 #include <stdlib.h>	// calloc/free
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
+#include "rwchcd_logic.h"
 #include "rwchcd_plant.h"
 
 /** PUMP **/
@@ -252,7 +256,7 @@ static int valve_run(struct s_valve * const valve)
 	if (!valve->configured)
 		return (-ENOTCONFIGURED);
 
-	time_ratio = 100.0/valve->ete_time;
+	time_ratio = 100.0F/valve->ete_time;
 	percent = valve->target_position;
 
 	if (valve->action == OPEN)
@@ -513,6 +517,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 		case RM_MANUAL:
 			target_temp = boiler->limit_tmax;	// XXX set max temp to (safely) trigger burner operation
 			break;
+		case RM_AUTO:
 		default:
 			return (-EINVALIDMODE);
 	}
@@ -759,68 +764,16 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 }
 
 /**
- * Conditions for running circuit
- * Circuit is off in ANY of the following conditions are met:
- * - t_outdoor > current set_outhoff_MODE
- * - t_outdoor_mixed > current set_outhoff_MODE
- * - t_outdoor_attenuated > current set_outhoff_MODE
- * Circuit is back on if ALL of the following conditions are met:
- * - t_outdoor < current set_outhoff_MODE - set_outhoff_histeresis
- * - t_outdoor_mixed < current set_outhoff_MODE - set_outhoff_histeresis
- * - t_outdoor_attenuated < current set_outhoff_MODE - set_outhoff_histeresis
- * State is preserved in all other cases
- */
-static void circuit_outhoff(struct s_heating_circuit * const circuit)
-{
-	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t temp_trigger;
-
-	switch (circuit->actual_runmode) {
-		case RM_COMFORT:
-			temp_trigger = circuit->set_outhoff_comfort;
-			break;
-		case RM_ECO:
-			temp_trigger = circuit->set_outhoff_eco;
-			break;
-		case RM_FROSTFREE:
-			temp_trigger = circuit->set_outhoff_frostfree;
-			break;
-		default:
-			return;	// XXX
-	}
-
-	if (!temp_trigger) {	// don't do anything if we have an invalid limit
-		circuit->outhoff = false;
-		return;	// XXX
-	}
-
-	if ((runtime->t_outdoor > temp_trigger) ||
-	    (runtime->t_outdoor_mixed > temp_trigger) ||
-	    (runtime->t_outdoor_attenuated > temp_trigger)) {
-		circuit->outhoff = true;
-	}
-	else {
-		temp_trigger -= circuit->set_outhoff_histeresis;
-		if ((runtime->t_outdoor < temp_trigger) &&
-		    (runtime->t_outdoor_mixed < temp_trigger) &&
-		    (runtime->t_outdoor_attenuated < temp_trigger))
-			circuit->outhoff = false;
-	}
-}
-
-/**
  * Circuit control loop.
  * Controls the circuits elements to achieve the desired target temperature.
  * @param circuit target circuit
- * @return error status
- * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down...)
- * XXX ADD rate of rise cap
+ * @return exec status
  * XXX safety for heating floor if implementing positive consummer_shift()
  */
 static int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t target_temp, water_temp;
+	temp_t water_temp;
 	short percent;
 
 	if (!circuit)
@@ -832,46 +785,27 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	if (!circuit->online)
 		return (-EOFFLINE);
 
-	// depending on circuit run mode, assess circuit target temp
-	// set valve based on circuit target temp
-	if (circuit->set_runmode == RM_AUTO)
-		circuit->actual_runmode = runtime->runmode;
-	else
-		circuit->actual_runmode = circuit->set_runmode;
-
-	// Check if the circuit meets outhoff conditions
-	circuit_outhoff(circuit);
-	// if runmode isn't MANUAL and the circuit does meet the conditions, turn it off.
-	if ((RM_MANUAL != circuit->actual_runmode) && circuit->outhoff)
-		circuit->actual_runmode = RM_OFF;
-
+	// handle special runmode cases
 	switch (circuit->actual_runmode) {
 		case RM_OFF:
 			return (circuit_offline(circuit));
-		case RM_COMFORT:
-			target_temp = circuit->set_tcomfort;
-			break;
-		case RM_ECO:
-			target_temp = circuit->set_teco;
-			break;
-		case RM_DHWONLY:
-		case RM_FROSTFREE:
-			target_temp = circuit->set_tfrostfree;
-			break;
 		case RM_MANUAL:
 			pump_set_state(circuit->pump, ON, FORCE);
 			return (ALL_OK);	//XXX REVISIT
+		case RM_COMFORT:
+		case RM_ECO:
+		case RM_DHWONLY:
+		case RM_FROSTFREE:
+			break;
+		case RM_AUTO:
 		default:
 			return (-EINVALIDMODE);
 	}
 
 	// if we reached this point then the circuit is active
 
-	// adjust offset
-	target_temp += circuit->set_toffset;
-
-	// save target ambient temp to circuit
-	circuit->target_ambient = target_temp;
+	// save calculated target ambient temp to circuit
+	circuit->target_ambient = circuit->request_ambient + circuit->set_toffset;
 
 	// circuit is active, ensure pump is running
 	pump_set_state(circuit->pump, ON, 0);
@@ -887,8 +821,6 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	else if (water_temp > circuit->set_limit_wtmax)
 		water_temp = circuit->set_limit_wtmax;	// XXX indicator for ceiling
 
-	// XXX cap rate of rise if set
-
 	// save current target water temp
 	circuit->target_wtemp = water_temp;
 
@@ -897,7 +829,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// adjust valve if necessary
 	if (circuit->valve && circuit->valve->configured) {
-		percent = calc_mixer_pos(circuit->valve, target_temp);
+		percent = calc_mixer_pos(circuit->valve, circuit->target_ambient);
 		if (percent >= 0)
 			circuit->valve->target_position = percent;
 		else {
@@ -1038,6 +970,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			pump_set_state(dhwt->recyclepump, ON, FORCE);
 			hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			return (ALL_OK);	//XXX REVISIT
+		case RM_AUTO:
+		case RM_DHWONLY:
 		default:
 			return (-EINVALIDMODE);
 	}
@@ -1469,6 +1403,7 @@ int plant_run(struct s_plant * restrict const plant)
 	// run the consummers first so they can set their requested heat input
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		logic_circuit(circuitl->circuit);
 		ret = circuit_run(circuitl->circuit);
 		if (ALL_OK != ret) {
 			// XXX error handling
