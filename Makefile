@@ -1,5 +1,7 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=gnu99 -O2 -g -Wno-unused-function
+#add -Wconversion when ready
+WARNINGS = -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wdouble-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla
+CFLAGS = $(WARNINGS) -std=gnu99 -O0 -g -fstack-protector -Wstack-protector -fstrict-aliasing
 LDLIBS = -lwiringPi -lm
 #SYSTEMDUNITDIR = $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR = /etc/dbus-1/system.d
