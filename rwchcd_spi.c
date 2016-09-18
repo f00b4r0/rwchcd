@@ -300,7 +300,7 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor)
 	
 	SPI_RESYNC();
 
-	if (!SPI_ASSERT(sensor, RWCHC_SPIC_VALID))	// check we're in sync, otherwise query until we get what we expect
+	if (!SPI_ASSERT(sensor, RWCHC_SPIC_VALID))
 		goto out;
 	
 	tsensors[sensor] = SPI_rw8bit(sensor);	// we get LSB first, sent byte is ignored
@@ -333,7 +333,7 @@ int rwchcd_spi_ref_r(uint16_t * const refval, const int refn)
 
 	SPI_RESYNC();
 
-	if (!SPI_ASSERT(cmd, RWCHC_SPIC_VALID))	// check we're in sync, otherwise query until we get what we expect
+	if (!SPI_ASSERT(cmd, RWCHC_SPIC_VALID))
 		goto out;
 
 	*refval = SPI_rw8bit(cmd);	// we get LSB first, sent byte is ignored

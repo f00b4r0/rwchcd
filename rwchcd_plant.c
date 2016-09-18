@@ -404,6 +404,14 @@ static int boiler_hs_online(struct s_heatsource * const heat)
 	// check that mandatory sensors are working
 	testtemp = get_temp(boiler->id_temp);
 	ret = validate_temp(testtemp);
+	if (ret)
+		goto out;
+
+	// check that mandatory settings are set
+	if (!boiler->limit_tmax)
+		ret = -EMISCONFIGURED;
+
+out:
 
 	return (ret);
 }
@@ -539,14 +547,9 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 		return (-ESAFETY);
 	}
 
-	// keep track of low requests for sleepover, if set
-	if (boiler->set_sleeping_time) {
-		// if burner has been OFF for a continuous period longer than sleeping_time, trigger sleeping
-		if ((hardware_relay_get_state(boiler->burner_1) == OFF) && (boiler->burner_1->state_time > boiler->set_sleeping_time))
-			heat->sleeping = true;
-		else
-			heat->sleeping = false;
-	}
+	// bypass target_temp if antifreeze is active
+	if (boiler->antifreeze)
+		target_temp = boiler->set_tfreeze;
 
 	// enforce limits
 	if (target_temp < boiler->limit_tmin)
@@ -557,16 +560,20 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// save current target
 	boiler->target_temp = target_temp;
 
-	// bypass target_temp if antifreeze is active
-	if (boiler->antifreeze)
-		target_temp = boiler->limit_tmin;
-
 	// temp control
 	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
 		hardware_relay_set_state(boiler->burner_1, ON, boiler->set_burner_min_time);
 	else if (boiler_temp > (target_temp + boiler->histeresis/2))	// untrip condition
 		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set_burner_min_time);
 
+	// keep track of low requests for sleepover, if set. XXX antifreeze will reset, is that a bad thing?
+	if (boiler->set_sleeping_time) {
+		// if burner has been OFF for a continuous period longer than sleeping_time, trigger sleeping
+		if ((hardware_relay_get_state(boiler->burner_1) == OFF) && (boiler->burner_1->state_time > boiler->set_sleeping_time))
+			heat->sleeping = true;
+		else
+			heat->sleeping = false;
+	}
 	return (ALL_OK);
 }
 
@@ -721,7 +728,14 @@ static int circuit_online(struct s_heating_circuit * const circuit)
 	// check that mandatory sensors are working
 	testtemp = get_temp(circuit->id_temp_outgoing);
 	ret = validate_temp(testtemp);
+	if (ret)
+		goto out;
 
+	// check that mandatory settings are set
+	if (!circuit->limit_wtmax)
+		ret = -EMISCONFIGURED;
+
+out:
 	return (ret);
 }
 
@@ -804,10 +818,10 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 
 	// enforce limits
-	if (water_temp < circuit->set_limit_wtmin)
-		water_temp = circuit->set_limit_wtmin;	// XXX indicator for flooring
-	else if (water_temp > circuit->set_limit_wtmax)
-		water_temp = circuit->set_limit_wtmax;	// XXX indicator for ceiling
+	if (water_temp < circuit->limit_wtmin)
+		water_temp = circuit->limit_wtmin;	// XXX indicator for flooring
+	else if (water_temp > circuit->limit_wtmax)
+		water_temp = circuit->limit_wtmax;	// XXX indicator for ceiling
 
 	// save current target water temp
 	circuit->target_wtemp = water_temp;
@@ -872,7 +886,14 @@ static int dhwt_online(struct s_dhw_tank * const dhwt)
 		testtemp = get_temp(dhwt->id_temp_top);
 		ret = validate_temp(testtemp);
 	}
+	if (ret)
+		goto out;
 
+	// check that mandatory settings are set
+	if (!dhwt->limit_wintmax || !dhwt->limit_tmax)
+		ret = -EMISCONFIGURED;
+
+out:
 	return (ret);
 }
 

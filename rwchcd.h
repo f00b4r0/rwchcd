@@ -27,6 +27,7 @@
 enum {
 	ALL_OK,
 	ENOTCONFIGURED,	///< element is not configured
+	EMISCONFIGURED,	///< invalid configuration settings
 	ESAFETY,	///< safety error
 	EDEADZONE,	///< valve is in deadzone
 	ENOTIMPLEMENTED,///< argument/request/whatever is not implemented
@@ -46,7 +47,7 @@ enum {
 #define OFF	false
 
 #define RWCHCD_TEMPMIN	((-50 + 273) * 100)	///< -50C is the lowest temperature we expect to deal with
-#define RWCHCD_TEMPMAX	((200 + 273) * 100)	///< +200C is the highest temperature we expect to deal with
+#define RWCHCD_TEMPMAX	((150 + 273) * 100)	///< +150C is the highest temperature we expect to deal with
 
 #define RWCHCD_SPI_MAX_TRIES	10	///< how many times SPI ops should be retried
 

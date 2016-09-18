@@ -54,8 +54,8 @@ struct s_heating_circuit {
 	struct s_valve * restrict valve;///< valve for circuit (if available, otherwise it's direct)
 	struct s_pump * restrict pump;	///< pump for this circuit
 //	temp_t histeresis;		///< histeresis for target temp
-	temp_t set_limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
-	temp_t set_limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active
+	temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
+	temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active
 	temp_t set_tcomfort;		///< target ambient temp in comfort mode
 	temp_t set_teco;		///< target ambient temp in eco mode
 	temp_t set_tfrostfree;		///< target ambient temp in frost-free mode
@@ -193,8 +193,8 @@ struct s_plant {
 
 struct s_pump * pump_new(void);
 struct s_valve * valve_new(void);
-int plant_online(struct s_plant * restrict const plant);
-int plant_run(struct s_plant * restrict const plant);
+int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
+int plant_run(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
 struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant);
 struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant);
 struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, enum e_heatsource_type type);
