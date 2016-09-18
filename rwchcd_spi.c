@@ -425,7 +425,7 @@ out:
  * Reset the device
  * @return exec status (ALL_OK if reset is presumably successful)
  */
-void rwchcd_spi_reset(void)
+int rwchcd_spi_reset(void)
 {
 	const uint8_t trig[] = RWCHC_RESET_TRIGGER;
 	unsigned int i;
