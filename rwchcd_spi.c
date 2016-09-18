@@ -423,11 +423,26 @@ out:
 
 /**
  * Reset the device
+ * @return exec status (ALL_OK if reset is presumably successful)
  */
 void rwchcd_spi_reset(void)
 {
+	const uint8_t trig[] = RWCHC_RESET_TRIGGER;
+	unsigned int i;
+	int ret = -ESPI;
+
 	SPI_RESYNC();
-	SPI_rw8bit(RWCHC_SPIC_RESET);
+
+	if (!SPI_ASSERT(RWCHC_SPIC_RESET, RWCHC_SPIC_VALID))
+		goto out;
+
+	for (i=0; i<ARRAY_SIZE(trig); i++)
+		if (SPI_rw8bit(trig[i]) != i)
+			goto out;
+
+	ret = ALL_OK;	// reset successful
+out:
+	return ret;
 }
 
 /**
