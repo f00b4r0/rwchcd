@@ -40,6 +40,7 @@ enum {
 	ESPI,		///< SPI problem
 	EINIT,		///< initialization problem
 	EOOM,		///< Out of memory
+	EEXISTS,	///< Object already exists (id conflict)
 	EGENERIC,
 };
 

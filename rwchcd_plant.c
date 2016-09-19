@@ -562,9 +562,9 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	// temp control
 	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
-		hardware_relay_set_state(boiler->burner_1, ON, boiler->set_burner_min_time);
+		hardware_relay_set_state(boiler->burner_1, ON, 0);	// immediate start
 	else if (boiler_temp > (target_temp + boiler->histeresis/2))	// untrip condition
-		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set_burner_min_time);
+		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set_burner_min_time);	// delayed stop
 
 	// keep track of low requests for sleepover, if set. XXX antifreeze will reset, is that a bad thing?
 	if (boiler->set_sleeping_time) {

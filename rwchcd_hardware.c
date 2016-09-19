@@ -9,6 +9,7 @@
 #include <time.h>	// time
 #include <math.h>	// sqrtf
 #include <stdlib.h>	// calloc/free
+#include <string.h>	// memset
 
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
@@ -17,6 +18,8 @@
 #include "rwchcd_hardware.h"
 
 #define RELAY_MAX_ID	14	///< maximum valid relay id
+
+static struct s_stateful_relay * Relays[RELAY_MAX_ID];
 
 /**
  * Write a string to LCD.
@@ -169,6 +172,8 @@ int hardware_init(void)
 	if (rwchcd_spi_init() < 0)
 		return (-EINIT);
 
+	memset(Relays, 0x0, ARRAY_SIZE(Relays));
+
 	return (calibrate());
 }
 
@@ -205,7 +210,7 @@ out:
  */
 int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays)
 {
-	int i = 0, ret = ALL_OK;
+	int i = 0, ret;
 
 	if (!relays)
 		return (-EINVALID);
@@ -214,10 +219,6 @@ int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays)
 		ret = rwchcd_spi_relays_w(relays);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
-	if (ret)
-		goto out;
-
-out:
 	return (ret);
 }
 
@@ -228,7 +229,7 @@ out:
  */
 int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs)
 {
-	int i = 0, ret = ALL_OK;
+	int i = 0, ret;
 
 	if (!periphs)
 		return (-EINVALID);
@@ -237,10 +238,25 @@ int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs)
 		ret = rwchcd_spi_peripherals_w(periphs);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
-	if (ret)
-		goto out;
+	return (ret);
+}
 
-out:
+/**
+ * Read all peripherals
+ * @param periphs pointer to the hardware periphs union
+ * @return exec status
+ */
+int hardware_rwchcperiphs_read(union rwchc_u_outperiphs * const periphs)
+{
+	int i = 0, ret;
+
+	if (!periphs)
+		return (-EINVALID);
+
+	do {
+		ret = rwchcd_spi_peripherals_r(periphs);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
 	return (ret);
 }
 
@@ -272,6 +288,8 @@ void hardware_relay_del(struct s_stateful_relay * relay)
 	// turn off the relay first
 	hardware_relay_set_state(relay, OFF, 0);
 
+	Relays[relay->id-1] = NULL;
+
 	free(relay->name);
 	free(relay);
 }
@@ -279,9 +297,8 @@ void hardware_relay_del(struct s_stateful_relay * relay)
 /**
  * Set a relay's id
  * @param relay the target relay
- * @param id the considered id
- * @return error status
- XXX PREVENT ID CONFLICTS. REVISIT RELAY SYSTEM
+ * @param id the considered hardware id (numbered from 1)
+ * @return exec status
  */
 int hardware_relay_set_id(struct s_stateful_relay * const relay, const unsigned short id)
 {
@@ -291,7 +308,11 @@ int hardware_relay_set_id(struct s_stateful_relay * const relay, const unsigned 
 	if (!id || id > RELAY_MAX_ID)
 		return (-EINVALID);
 
+	if (Relays[id-1])
+		return (-EEXISTS);
+
 	relay->id = id;
+	Relays[id-1] = relay;
 
 	return (ALL_OK);
 }
