@@ -218,9 +218,8 @@ int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 	if (!SPI_ASSERT((RWCHC_SPIC_PERIPHSW | (outperiphs->BYTE & 0xF)), RWCHC_SPIC_VALID))
 		goto out;
 
-	// return value is active BYTE, not necessarily == the one we just sent
-//	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, outperiphs->BYTE))
-//		goto out;
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, outperiphs->BYTE))
+		goto out;
 	
 	ret = ALL_OK;
 out:
@@ -289,12 +288,12 @@ out:
 
 /**
  * Read a single sensor value
- * @param tsensors pointer to target sensor array whose value will be updated
+ * @param tsensors pointer to target sensor array whose value will be updated regardless of errors
  * @param sensor target sensor number to be read
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  */
-int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor)
+int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
 	int ret = -ESPI;
 	
@@ -303,8 +302,11 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor)
 	if (!SPI_ASSERT(sensor, RWCHC_SPIC_VALID))
 		goto out;
 	
-	tsensors[sensor] = SPI_rw8bit(sensor);	// we get LSB first, sent byte is ignored
+	tsensors[sensor] = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
 	tsensors[sensor] |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+
+	if (tsensors[sensor] > RWCHC_ADC_MAXV)	// MSB indicates an error
+		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;

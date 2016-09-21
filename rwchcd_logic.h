@@ -2,8 +2,8 @@
 //  rwchcd_logic.h
 //  rwchcd
 //
-//  Created by Thibaut VARENE on 17/09/16.
-//  Copyright © 2016 Slashdirt. All rights reserved.
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 #ifndef rwchcd_logic_h

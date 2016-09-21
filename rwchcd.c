@@ -219,6 +219,7 @@ static int init_process()
 	dhwt->id_temp_bottom = boiler->id_temp;
 	dhwt->limit_tmin = celsius_to_temp(5);
 	dhwt->limit_tmax = celsius_to_temp(60);
+	dhwt->limit_wintmax = celsius_to_temp(90);
 	dhwt->set_tcomfort = celsius_to_temp(50);
 	dhwt->set_teco = celsius_to_temp(40);
 	dhwt->set_tfrostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS

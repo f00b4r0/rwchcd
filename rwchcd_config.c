@@ -2,8 +2,8 @@
 //  rwchcd_config.c
 //  rwchcd
 //
-//  Created by Thibaut VARENE on 13/09/16.
-//
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 #include <stdlib.h>	// alloc/free

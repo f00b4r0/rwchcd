@@ -2,8 +2,8 @@
 //  rwchcd_spi.h
 //  
 //
-//  Created by Thibaut Varene on 25/08/2016.
-//
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 #ifndef rwchcd_spi_h
@@ -23,7 +23,7 @@ int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs) __attr
 int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs) __attribute__((warn_unused_result));
 int rwchcd_spi_relays_r(union rwchc_u_relays * const relays) __attribute__((warn_unused_result));
 int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays) __attribute__((warn_unused_result));
-int rwchcd_spi_sensor_r(uint16_t tsensors[], int sensor) __attribute__((warn_unused_result));
+int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor) __attribute__((warn_unused_result));
 int rwchcd_spi_ref_r(uint16_t * const refval, const int refn) __attribute__((warn_unused_result));
 int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings) __attribute__((warn_unused_result));
 int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings) __attribute__((warn_unused_result));

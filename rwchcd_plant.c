@@ -2,8 +2,8 @@
 //  rwchcd_plant.c
 //  
 //
-//  Created by Thibaut VARENE on 06/09/16.
-//
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 // plant basic operation functions.

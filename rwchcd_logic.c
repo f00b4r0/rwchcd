@@ -2,8 +2,8 @@
 //  rwchcd_logic.c
 //  rwchcd
 //
-//  Created by Thibaut VARENE on 17/09/16.
-//
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 // smarter functions making use of time should be here and act as pre-filter for plant xxx_run() ops.
