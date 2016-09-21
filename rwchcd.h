@@ -52,7 +52,7 @@ enum {
 
 #define RWCHCD_SPI_MAX_TRIES	10	///< how many times SPI ops should be retried
 
-typedef unsigned short	temp_t;		// all temps are internally stored in Kelvin * 100
+typedef unsigned long	temp_t;		// all temps are internally stored in Kelvin * 100 (long avoids overflow with disconnected sensors)
 typedef short		tempid_t;	// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid
 
 
