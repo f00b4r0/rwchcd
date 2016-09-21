@@ -305,7 +305,7 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 	tsensors[sensor] = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
 	tsensors[sensor] |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
-	if (tsensors[sensor] > RWCHC_ADC_MAXV)	// MSB indicates an error
+	if ((tsensors[sensor] & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
