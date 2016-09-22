@@ -35,7 +35,7 @@ static inline void parse_temps(void)
  http://www.rowetel.com/blog/?p=1245
  https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
  */
-static float expw_mavg(temp_t filtered, temp_t new_sample, time_t tau, time_t dt)
+static float expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
 {
 	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
 
@@ -110,7 +110,7 @@ void runtime_init(void)
  * @param sysmode desired operation mode.
  * @return error status
  */
-int runtime_set_systemmode(enum e_systemmode sysmode)
+int runtime_set_systemmode(const enum e_systemmode sysmode)
 {
 	switch (sysmode) {
 		case SYS_OFF:
@@ -153,7 +153,7 @@ int runtime_set_systemmode(enum e_systemmode sysmode)
  * @param runmode desired operation mode, cannot be RM_AUTO.
  * @return error status
  */
-int runtime_set_runmode(enum e_runmode runmode)
+int runtime_set_runmode(const enum e_runmode runmode)
 {
 	// runmode can only be directly modified in SYS_AUTO
 	if (SYS_AUTO != Runtime.systemmode)
@@ -174,7 +174,7 @@ int runtime_set_runmode(enum e_runmode runmode)
  * @param runmode desired operation mode, cannot be RM_AUTO or RM_DHWONLY.
  * @return error status
  */
-int runtime_set_dhwmode(enum e_runmode dhwmode)
+int runtime_set_dhwmode(const enum e_runmode dhwmode)
 {
 	// runmode can only be directly modified in SYS_AUTO
 	if ((SYS_AUTO != Runtime.systemmode) || (SYS_DHWONLY != Runtime.systemmode))

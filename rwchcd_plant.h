@@ -24,18 +24,17 @@ struct s_pump {
 struct s_valve {
 	bool configured;
 	temp_t deadzone;	///< valve deadzone: no operation when target in deadzone
-	short position;		///< current position in %
-	short target_position;	///< current target position
-//	enum { MIXER, ZONE } type;	///< valve type, XXX probably not necessary, can be inferred
-	short ete_time;		///< end-to-end run time
-	enum { STOP = 0, OPEN, CLOSE } action;
+	int_fast8_t position;		///< current position in %
+	int_fast8_t target_position;	///< current target position in %
+	int_fast16_t ete_time;		///< end-to-end run time in seconds
+	enum { STOP = 0, OPEN, CLOSE } action;	///< current valve action
 	char * restrict name;
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
 	tempid_t id_temp2;		///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Celsius from temp1
 	tempid_t id_tempout;	///< temp at the output
-	short (*valvelaw)(const struct s_valve * const, temp_t);	///< pointer to valve law
+	int_fast8_t (*valvelaw)(const struct s_valve * const, temp_t);	///< pointer to valve law
 };
 
 struct s_templaw_data20C {
@@ -164,28 +163,28 @@ struct s_dhw_tank {
 };
 
 struct s_heating_circuit_l {
-	short id;
+	uint_fast8_t id;
 	struct s_heating_circuit * restrict circuit;
 	struct s_heating_circuit_l * restrict next;
 };
 
 struct s_dhw_tank_l {
-	short id;
+	uint_fast8_t id;
 	struct s_dhw_tank * restrict dhwt;
 	struct s_dhw_tank_l * restrict next;
 };
 
 struct s_heatsource_l {
-	short id;
+	uint_fast8_t id;
 	struct s_heatsource * restrict heats;
 	struct s_heatsource_l * restrict next;
 };
 
 struct s_plant {
 	bool configured;
-	unsigned short heats_n;		///< number of heat sources in the plant
-	unsigned short circuit_n;	///< number of heating circuits in the plant
-	unsigned short dhwt_n;		///< number of dhw tanks in the plant
+	uint_fast8_t heats_n;		///< number of heat sources in the plant
+	uint_fast8_t circuit_n;	///< number of heating circuits in the plant
+	uint_fast8_t dhwt_n;		///< number of dhw tanks in the plant
 	struct s_heatsource_l * restrict heats_head;
 	struct s_heating_circuit_l * restrict circuit_head;
 	struct s_dhw_tank_l * restrict dhwt_head;

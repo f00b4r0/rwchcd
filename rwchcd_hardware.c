@@ -51,11 +51,11 @@ out:
  * @param calib 1 if calibrated value is required, 0 otherwise
  * @return the resistance value
  */
-static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const int calib)
+static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 {
 	const struct s_runtime * const runtime = get_runtime();
-	const unsigned int dacset[] = {0, 64, 128, 255};
-	unsigned int value, dacoffset;
+	const uint_fast16_t dacset[] = {0, 64, 128, 255};
+	uint_fast16_t value, dacoffset;
 	float calibmult;
 
 	dacoffset = (raw >> 12) & 0x3;
@@ -89,7 +89,7 @@ static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const int calib)
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-static float ohm_to_celsius(const unsigned int ohm)
+static float ohm_to_celsius(const uint_fast16_t ohm)
 {
 	const float R0 = 1000.0F;
 	float alpha, delta, A, B, temp;
@@ -118,7 +118,7 @@ static float ohm_to_celsius(const unsigned int ohm)
 static int calibrate(void)
 {
 	struct s_runtime * const runtime = get_runtime();
-	unsigned int refcalib, i;
+	uint_fast16_t refcalib, i;
 	int ret = ALL_OK;
 	rwchc_sensor_t ref;
 
@@ -182,9 +182,10 @@ int hardware_init(void)
  * @param tsensors the array to populate with current values
  * @param last the id of the last wanted (connected) sensor
  */
-int hardware_sensors_read(rwchc_sensor_t tsensors[], const int last)
+int hardware_sensors_read(rwchc_sensor_t tsensors[], const int_fast16_t last)
 {
-	int sensor, i, ret = ALL_OK;
+	int_fast8_t sensor;
+	int i, ret = ALL_OK;
 
 	if (last > RWCHC_NTSENSORS)
 		return (-EINVALID);
@@ -300,7 +301,7 @@ void hardware_relay_del(struct s_stateful_relay * relay)
  * @param id the considered hardware id (numbered from 1)
  * @return exec status
  */
-int hardware_relay_set_id(struct s_stateful_relay * const relay, const unsigned short id)
+int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast8_t id)
 {
 	if (!relay)
 		return (-EINVALID);
@@ -330,7 +331,7 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 {
 	struct s_runtime * const runtime = get_runtime();
 	const time_t now = time(NULL);
-	unsigned short rid;
+	uint_fast8_t rid;
 
 	if (!relay)
 		return (-EINVALID);

@@ -97,9 +97,10 @@ static int pump_get_state(const struct s_pump * const pump)
  * @param target_tout target valve output temperature
  * @return valve position in percent or error
  */
-static short valvelaw_linear(const struct s_valve * const valve, const temp_t target_tout)
+static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const temp_t target_tout)
 {
-	short percent, iterm, iterm_prev;
+	int_fast8_t percent;
+	short iterm, iterm_prev;
 	temp_t tempin1, tempin2, tempout, error;
 	float Ki;	// XXX REVISIT
 
@@ -151,9 +152,9 @@ exit:
  * @param target_tout target valve output temperature
  * @return valve position in percent or error
  */
-static short valvelaw_bangbang(const struct s_valve * const valve, const temp_t target_tout)
+static int_fast8_t valvelaw_bangbang(const struct s_valve * const valve, const temp_t target_tout)
 {
-	short percent;
+	int_fast8_t percent;
 	temp_t tempout;
 
 	tempout = get_temp(valve->id_tempout);
@@ -176,9 +177,9 @@ exit:
  * @param target_tout target temperature at output of mixer
  * @return percent or negative error
  */
-static short calc_mixer_pos(const struct s_valve * const mixer, const temp_t target_tout)
+static int_fast8_t calc_mixer_pos(const struct s_valve * const mixer, const temp_t target_tout)
 {
-	short percent;
+	int_fast8_t percent;
 	temp_t tempout;
 
 	if (!mixer->configured)
@@ -248,7 +249,7 @@ static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
 	float time_ratio;
-	short percent;
+	int_fast8_t percent;
 
 	if (!valve)
 		return (-EINVALID);
@@ -778,7 +779,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t water_temp;
-	short percent;
+	int_fast16_t percent;
 
 	if (!circuit)
 		return (-EINVALID);

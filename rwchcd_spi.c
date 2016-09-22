@@ -130,7 +130,7 @@ out:
  * @param data data byte to send
  * @return error code
  */
-int rwchcd_spi_lcd_data_w(uint8_t data)
+int rwchcd_spi_lcd_data_w(const uint8_t data)
 {
 	int ret = -ESPI;
 	
@@ -156,12 +156,12 @@ out:
  * @param percent backlight duty cycle in percent
  * @return error code
  */
-int rwchcd_spi_lcd_bl_w(uint8_t percent)
+int rwchcd_spi_lcd_bl_w(const uint8_t percent)
 {
 	int ret = -ESPI;
 	
 	if (percent > 100)
-		return -2;
+		return -EINVALID;
 	
 	SPI_RESYNC();
 	
@@ -323,22 +323,28 @@ out:
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  */
-int rwchcd_spi_ref_r(uint16_t * const refval, const int refn)
+int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 {
-	int cmd, ret = -ESPI;
+	int ret = -ESPI;
+	uint8_t cmd;
 
-	if (1 == refn)
-		cmd = RWCHC_SPIC_REF1;
-	else
-		cmd = RWCHC_SPIC_REF0;
-
+	switch (refn) {
+		case 0:
+			cmd = RWCHC_SPIC_REF0;
+			break;
+		case 1:
+			cmd = RWCHC_SPIC_REF1;
+			break;
+		default:
+			return (-EINVALID);
+	}
 
 	SPI_RESYNC();
 
 	if (!SPI_ASSERT(cmd, RWCHC_SPIC_VALID))
 		goto out;
 
-	*refval = SPI_rw8bit(cmd);	// we get LSB first, sent byte is ignored
+	*refval = SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
 	*refval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))

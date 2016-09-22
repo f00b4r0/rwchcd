@@ -9,7 +9,7 @@
 #include "rwchcd.h"
 #include "rwchcd_runtime.h"
 
-short validate_temp(const temp_t temp)
+int validate_temp(const temp_t temp)
 {
 	int ret = ALL_OK;
 

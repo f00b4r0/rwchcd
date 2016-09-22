@@ -45,7 +45,7 @@ int config_init(struct s_config * const config)
 	return (ALL_OK);
 }
 
-int config_set_building_tau(struct s_config * const config, time_t tau)
+int config_set_building_tau(struct s_config * const config, const time_t tau)
 {
 	if (!config)
 		return (-EINVALID);
@@ -55,7 +55,7 @@ int config_set_building_tau(struct s_config * const config, time_t tau)
 	return (ALL_OK);
 }
 
-int config_set_nsensors(struct s_config * const config, short nsensors)
+int config_set_nsensors(struct s_config * const config, const int_fast16_t nsensors)
 {
 	if (!config)
 		return (-EINVALID);
@@ -69,7 +69,7 @@ int config_set_nsensors(struct s_config * const config, short nsensors)
 	return (ALL_OK);
 }
 
-int config_set_tfrostmin(struct s_config * const config, temp_t tfrostmin)
+int config_set_tfrostmin(struct s_config * const config, const temp_t tfrostmin)
 {
 	if (!config)
 		return (-EINVALID);
@@ -83,7 +83,7 @@ int config_set_tfrostmin(struct s_config * const config, temp_t tfrostmin)
 	return (ALL_OK);
 }
 
-int config_set_tsummer(struct s_config * const config, temp_t tsummer)
+int config_set_tsummer(struct s_config * const config, const temp_t tsummer)
 {
 	if (!config)
 		return (-EINVALID);
@@ -96,7 +96,7 @@ int config_set_tsummer(struct s_config * const config, temp_t tsummer)
 	return (ALL_OK);
 }
 
-int config_set_outdoor_sensorid(struct s_config * const config, tempid_t sensorid)
+int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
 {
 	if (!config)
 		return (-EINVALID);

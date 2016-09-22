@@ -11,7 +11,7 @@
 
 #include "rwchcd.h"
 
-short validate_temp(const temp_t temp);
+int validate_temp(const temp_t temp);
 temp_t get_temp(const tempid_t id);
 
 /**
