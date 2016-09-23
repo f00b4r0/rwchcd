@@ -29,6 +29,7 @@ struct s_stateful_relay {
 	char * restrict name;
 };
 
+int lcd_wstr(const char * str);
 int hardware_init(void) __attribute__((warn_unused_result));
 int hardware_sensors_read(rwchc_sensor_t tsensors[], const int_fast16_t last) __attribute__((warn_unused_result));
 int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays) __attribute__((warn_unused_result));

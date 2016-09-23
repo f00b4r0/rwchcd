@@ -27,7 +27,7 @@ static struct s_stateful_relay * Relays[RELAY_MAX_ID];
  * @param str string to send
  * @return error code
  */
-static int lcd_wstr(const char * str)
+int lcd_wstr(const char * str)
 {
 	int ret = -1;
 

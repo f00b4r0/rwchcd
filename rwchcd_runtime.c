@@ -225,15 +225,6 @@ int runtime_run(void)
 	if (ret)
 		return (-ESPI);
 
-	// test read peripherals
-	ret = hardware_rwchcperiphs_read(&(Runtime.rWCHC_peripherals));
-	if (ret)
-		return (-ESPI);
-
-/*	ret = hardware_rwchcperiphs_write(&(Runtime.rWCHC_peripherals));
-	if (ret)
-		return (-ESPI);
-*/
 out:
 	return (ret);
 }

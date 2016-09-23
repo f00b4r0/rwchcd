@@ -27,6 +27,7 @@
 #include "rwchcd_plant.h"
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
+#include "rwchcd_spi.h"
 
 /**
  * Implement time-based PI controller in velocity form
@@ -250,28 +251,64 @@ static int init_process()
 
 int main(void)
 {
+	struct s_runtime * restrict const runtime = get_runtime();
+	enum e_systemmode cursysmode;
 	int ret;
+
 	if (init_process() != ALL_OK)
 		(0);	//exit(1);
 
-#if 0
-	ret = rwchcd_spi_lcd_acquire();
-	printf("rwchcd_spi_lcd_acquire: %d\n", ret);
-
-	ret = rwchcd_spi_lcd_cmd_w(0x1);	// clear
-	printf("rwchcd_spi_lcd_cmd_w: %d\n", ret);
-	sleep(2);
-	ret = lcd_wstr("Hello!");
-	printf("lcd_wstr: %d\n", ret);
-
-	ret = rwchcd_spi_lcd_relinquish();
-	printf("rwchcd_spi_lcd_relinquish: %d\n", ret);
-#endif
-
 	while (1) {
+		// test read peripherals
+		ret = hardware_rwchcperiphs_read(&(runtime->rWCHC_peripherals));
+		if (ret)
+			return (-ESPI);
+
+		if (runtime->rWCHC_peripherals.RQ) {
+			cursysmode = runtime->systemmode;
+			cursysmode++;
+			runtime->rWCHC_peripherals.RQ = 0;
+
+			if (cursysmode > SYS_DHWONLY)
+				cursysmode = SYS_OFF;
+
+			rwchcd_spi_lcd_acquire();
+			rwchcd_spi_lcd_cmd_w(0x2);	// home
+			switch (cursysmode) {
+				case SYS_OFF:
+					lcd_wstr("Off      ");
+					break;
+				case SYS_AUTO:
+					lcd_wstr("Auto     ");
+					break;
+				case SYS_COMFORT:
+					lcd_wstr("Comfort  ");
+					break;
+				case SYS_ECO:
+					lcd_wstr("Eco      ");
+					break;
+				case SYS_FROSTFREE:
+					lcd_wstr("Frostfree");
+					break;
+				case SYS_DHWONLY:
+					lcd_wstr("DHW Only ");
+					break;
+				case SYS_MANUAL:
+					lcd_wstr("Manual   ");
+					break;
+			}
+			rwchcd_spi_lcd_relinquish();
+			runtime_set_systemmode(cursysmode);
+		}
+
+		ret = hardware_rwchcperiphs_write(&(runtime->rWCHC_peripherals));
+		if (ret)
+			return (-ESPI);
+
 		ret = runtime_run();
 		if (ret)
 			dbgmsg("runtime_run returned: %d", ret);
+		
 		sleep(1);
 	}
 }
