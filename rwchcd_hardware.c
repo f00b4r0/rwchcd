@@ -22,28 +22,6 @@
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];
 
 /**
- * Write a string to LCD.
- * @warning No boundary checks
- * @param str string to send
- * @return error code
- */
-int lcd_wstr(const char * str)
-{
-	int ret = -1;
-
-	while (*str != '\0') {
-		if (rwchcd_spi_lcd_data_w(*str))
-			goto out;
-		str++;
-		//usleep(100); DISABLED: SPI_rw8bit() already sleeps
-	}
-
-	ret = 0;
-out:
-	return (ret);
-}
-
-/**
  * Convert sensor value to actual resistance.
  * voltage on ADC pin is Vsensor * (1+G) - Vdac * G where G is divider gain on AOP.
  * if value < ~10mv: short. If value = max: open.
@@ -174,7 +152,7 @@ int hardware_init(void)
 
 	memset(Relays, 0x0, ARRAY_SIZE(Relays));
 
-	return (calibrate());
+	return (calibrate());	// XXX REVIEW run only at startup, should run periodically
 }
 
 /**
@@ -292,6 +270,7 @@ void hardware_relay_del(struct s_stateful_relay * relay)
 	Relays[relay->id-1] = NULL;
 
 	free(relay->name);
+	relay->name = NULL;
 	free(relay);
 }
 

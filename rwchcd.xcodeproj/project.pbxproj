@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F2D5F591D97191C00CF842D /* rwchcd_lcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F2D5F571D97191C00CF842D /* rwchcd_lcd.c */; };
 		4F3AFBAC1D8873C500D86EE7 /* rwchcd_config.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */; };
 		4F3AFBAF1D8884ED00D86EE7 /* rwchcd_runtime.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */; };
 		4F3AFBB21D88867600D86EE7 /* rwchcd_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */; };
@@ -30,6 +31,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4F2D5F571D97191C00CF842D /* rwchcd_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_lcd.c; sourceTree = SOURCE_ROOT; };
+		4F2D5F581D97191C00CF842D /* rwchcd_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_lcd.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_config.c; sourceTree = SOURCE_ROOT; };
 		4F3AFBAB1D8873C500D86EE7 /* rwchcd_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_config.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_runtime.c; sourceTree = SOURCE_ROOT; };
@@ -93,6 +96,8 @@
 				4F3AFBB11D88867600D86EE7 /* rwchcd_lib.h */,
 				4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */,
 				4F3AFBAB1D8873C500D86EE7 /* rwchcd_config.h */,
+				4F2D5F571D97191C00CF842D /* rwchcd_lcd.c */,
+				4F2D5F581D97191C00CF842D /* rwchcd_lcd.h */,
 				4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */,
 				4F3AFBAE1D8884ED00D86EE7 /* rwchcd_runtime.h */,
 				4F961FA01D8D66BF00E2A8AF /* rwchcd_logic.c */,
@@ -185,6 +190,7 @@
 				4F3AFBB21D88867600D86EE7 /* rwchcd_lib.c in Sources */,
 				4FCD55171D835D04003BB848 /* rwchcd_plant.c in Sources */,
 				4FCD55181D835D04003BB848 /* rwchcd_spi.c in Sources */,
+				4F2D5F591D97191C00CF842D /* rwchcd_lcd.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
 				4F3AFBAF1D8884ED00D86EE7 /* rwchcd_runtime.c in Sources */,
 				4F961FA21D8D66BF00E2A8AF /* rwchcd_logic.c in Sources */,

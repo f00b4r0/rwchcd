@@ -41,6 +41,7 @@ enum {
 	EINIT,		///< initialization problem
 	EOOM,		///< Out of memory
 	EEXISTS,	///< Object already exists (id conflict)
+	ETRUNC,		///< Truncation occured (LCD output)
 	EGENERIC,
 };
 

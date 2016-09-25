@@ -18,29 +18,14 @@
 
 /** PUMP **/
 
-/**
- * Create a new pump
- * @return pointer to the created pump
- */
-struct s_pump * pump_new(void)
+static int pump_online(struct s_pump * const pump)
 {
-	struct s_pump * const pump = calloc(1, sizeof(struct s_pump));
-
-	return (pump);
+	
 }
 
-/**
- * Delete a pump
- * @param pump the pump to delete
- */
-static void pump_del(struct s_pump * pump)
+static int pump_offline(struct s_pump * const pump)
 {
-	if (!pump)
-		return;
-
-	hardware_relay_del(pump->relay);
-	free(pump->name);
-	free(pump);
+	
 }
 
 /**
@@ -202,30 +187,9 @@ static int_fast8_t calc_mixer_pos(const struct s_valve * const mixer, const temp
 	return (percent);
 }
 
-/**
- * Create a new valve
- * @return pointer to the created valve
- */
-struct s_valve * valve_new(void)
+static int valve_online(struct s_valve * const valve)
 {
-	struct s_valve * const valve = calloc(1, sizeof(struct s_valve));
-
-	return (valve);
-}
-
-/**
- * Delete a valve
- * @param valve the valve to delete
- */
-static void valve_del(struct s_valve * valve)
-{
-	if (!valve)
-		return;
-
-	hardware_relay_del(valve->open);
-	hardware_relay_del(valve->close);
-	free(valve->name);
-	free(valve);
+	
 }
 
 /**
@@ -339,7 +303,9 @@ static void solar_del(struct s_solar_heater * solar)
 		return;
 
 	pump_del(solar->pump);
+	solar->pump = NULL;
 	free(solar->name);
+	solar->name = NULL;
 	free(solar);
 }
 
@@ -377,8 +343,11 @@ static void boiler_hs_del_priv(void * priv)
 		return;
 
 	pump_del(boiler->loadpump);
+	boiler->loadpump = NULL;
 	hardware_relay_del(boiler->burner_1);
+	boiler->burner_1 = NULL;
 	hardware_relay_del(boiler->burner_2);
+	boiler->burner_2 = NULL;
 
 	free(boiler);
 }
@@ -1092,7 +1061,123 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	return (ALL_OK);
 }
 
+
 /** PLANT **/
+
+/**
+ * Create a new pump and attach it to the plant.
+ * @param plant the plant to attach the pump to
+ * @return pointer to the created pump
+ */
+struct s_pump * plant_new_pump(struct s_plant * const plant)
+{
+	struct s_pump * restrict pump = NULL;
+	struct s_pump_l * restrict pumpelmt = NULL;
+	
+	if (!plant)
+		goto fail;
+	
+	// create a new pump. calloc() sets good defaults
+	pump = calloc(1, sizeof(struct s_pump));
+	if (!pump)
+		goto fail;
+	
+	// create pump element
+	pumpelmt = calloc(1, sizeof(struct s_pump_l));
+	if (!pumpelmt)
+		goto fail;
+	
+	// attach created pump to element
+	pumpelmt->pump = pump;
+	
+	// attach it to the plant
+	pumpelmt->id = plant->pump_n;
+	pumpelmt->next = plant->pump_head;
+	plant->pump_head = pumpelmt;
+	plant->pump_n++;
+	
+	return (pump);
+	
+fail:
+	free(pump);
+	free(pumpelmt);
+	return (NULL);
+}
+
+/**
+ * Delete a pump
+ * @param pump the pump to delete
+ */
+static void del_pump(struct s_pump * pump)
+{
+	if (!pump)
+		return;
+	
+	hardware_relay_del(pump->relay);
+	pump->relay = NULL;
+	free(pump->name);
+	pump->name = NULL;
+	free(pump);
+}
+
+/**
+ * Create a new valve and attach it to the plant.
+ * @param plant the plant to attach the valve to
+ * @return pointer to the created valve
+ */
+struct s_valve * plant_new_valve(struct s_plant * const plant)
+{
+	struct s_valve * restrict valve = NULL;
+	struct s_valve_l * restrict valveelmt = NULL;
+	
+	if (!plant)
+		goto fail;
+	
+	// create a new valve. calloc() sets good defaults
+	valve = calloc(1, sizeof(struct s_valve));
+	if (!valve)
+		goto fail;
+	
+	// create valve element
+	valveelmt = calloc(1, sizeof(struct s_valve_l));
+	if (!valveelmt)
+		goto fail;
+	
+	// attach created valve to element
+	valveelmt->valve = valve;
+	
+	// attach it to the plant
+	valveelmt->id = plant->valve_n;
+	valveelmt->next = plant->valve_head;
+	plant->valve_head = valveelmt;
+	plant->valve_n++;
+	
+	return (valve);
+	
+fail:
+	free(valve);
+	free(valveelmt);
+	return (NULL);
+}
+
+/**
+ * Delete a valve
+ * @param valve the valve to delete
+ */
+static void del_valve(struct s_valve * valve)
+{
+	if (!valve)
+		return;
+	
+	hardware_relay_del(valve->open);
+	valve->open = NULL;
+	hardware_relay_del(valve->close);
+	valve->close = NULL;
+	free(valve->name);
+	valve->name = NULL;
+	
+	free(valve);
+}
 
 /**
  * Create a new heating circuit and attach it to the plant.
@@ -1121,6 +1206,7 @@ struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant)
 	circuitelement->circuit = circuit;
 
 	// attach it to the plant
+	circuitelement->id = plant->circuit_n;
 	circuitelement->next = plant->circuit_head;
 	plant->circuit_head = circuitelement;
 	plant->circuit_n++;
@@ -1139,8 +1225,11 @@ static void del_circuit(struct s_heating_circuit * circuit)
 		return;
 
 	valve_del(circuit->valve);
+	circuit->valve = NULL;
 	pump_del(circuit->pump);
+	circuit->pump = NULL;
 	free(circuit->name);
+	circuit->name = NULL;
 
 	free(circuit);
 }
@@ -1172,6 +1261,7 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant)
 	dhwtelement->dhwt = dhwt;
 
 	// attach it to the plant
+	dhwtelement->id = plant->dhwt_n;
 	dhwtelement->next = plant->dhwt_head;
 	plant->dhwt_head = dhwtelement;
 	plant->dhwt_n++;
@@ -1190,10 +1280,15 @@ static void del_dhwt(struct s_dhw_tank * restrict dhwt)
 		return;
 
 	solar_del(dhwt->solar);
+	dhwt->solar = NULL;
 	pump_del(dhwt->feedpump);
+	dhwt->feedpump = NULL;
 	pump_del(dhwt->recyclepump);
+	dhwt->recyclepump = NULL;
 	hardware_relay_del(dhwt->selfheater);
+	dhwt->selfheater = NULL;
 	free(dhwt->name);
+	dhwt->name = NULL;
 
 	free(dhwt);
 }
@@ -1243,6 +1338,7 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 	sourceelement->heats = source;
 
 	// attach it to the plant
+	sourceelement->id = plant->heats_n;
 	sourceelement->next = plant->heats_head;
 	plant->heats_head = sourceelement;
 	plant->heats_n++;
@@ -1267,8 +1363,11 @@ static void del_heatsource(struct s_heatsource * source)
 
 	if (source->hs_del_priv)
 		source->hs_del_priv(source->priv);
+	source->priv = NULL;
 
 	free(source->name);
+	source->name = NULL;
+	
 	free(source);
 }
 
@@ -1290,15 +1389,40 @@ struct s_plant * plant_new(void)
  */
 void plant_del(struct s_plant * plant)
 {
+	struct s_pump_l * pumpelmt, * pumpnext;
+	struct s_valve_l * valveelmt, * valvenext;
 	struct s_heating_circuit_l * circuitelement, * circuitlnext;
 	struct s_dhw_tank_l * dhwtelement, * dhwtlnext;
 	struct s_heatsource_l * sourceelement, * sourcenext;
 
+	// clear all registered pumps
+	pumpelmt = plant->pump_head;
+	while (pumpelmt) {
+		pumpnext = pumpelmt->next;
+		del_pump(pumpelmt->pump);
+		pumpelmt->pump = NULL;
+		free(pumpelmt);
+		plant->pump_n--;
+		pumpelmt = pumpnext;
+	}
+	
+	// clear all registered valves
+	valveelmt = plant->valve_head;
+	while (valveelmt) {
+		valvenext = valveelmt->next;
+		del_valve(valveelmt->valve);
+		valveelmt->valve = NULL;
+		free(valveelmt);
+		plant->valve_n--;
+		valveelmt = valvenext;
+	}
+	
 	// clear all registered circuits
 	circuitelement = plant->circuit_head;
 	while (circuitelement) {
 		circuitlnext = circuitelement->next;
 		del_circuit(circuitelement->circuit);
+		circuitelement->circuit = NULL;
 		free(circuitelement);
 		plant->circuit_n--;
 		circuitelement = circuitlnext;
@@ -1309,6 +1433,7 @@ void plant_del(struct s_plant * plant)
 	while (dhwtelement) {
 		dhwtlnext = dhwtelement->next;
 		del_dhwt(dhwtelement->dhwt);
+		dhwtelement->dhwt = NULL;
 		free(dhwtelement);
 		plant->dhwt_n--;
 		dhwtelement = dhwtlnext;
@@ -1319,6 +1444,7 @@ void plant_del(struct s_plant * plant)
 	while (sourceelement) {
 		sourcenext = sourceelement->next;
 		del_heatsource(sourceelement->heats);
+		sourceelement->heats = NULL;
 		free(sourceelement);
 		plant->heats_n--;
 		sourceelement = sourcenext;

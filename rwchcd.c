@@ -15,6 +15,7 @@
 // UI + programming
 // handle summer switchover
 // connection of multiple instances
+// multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
 
 // http://www.energieplus-lesite.be/index.php?id=10963
 
@@ -27,6 +28,7 @@
 #include "rwchcd_plant.h"
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
+#include "rwchcd_lcd.h"
 #include "rwchcd_spi.h"
 
 /**
@@ -165,7 +167,7 @@ static int init_process()
 	circuit_make_linear(circuit);
 
 	// create a valve for that circuit
-	circuit->valve = valve_new();
+	circuit->valve = plant_new_valve(plant);
 	if (!circuit->valve) {
 		dbgerr("valve creation failed");
 		return (-EOOM);
@@ -191,7 +193,7 @@ static int init_process()
 	circuit->valve->configured = true;
 
 	// create a pump for that circuit
-	circuit->pump = pump_new();
+	circuit->pump = plant_new_pump(plant);
 	if (!circuit->pump) {
 		dbgerr("pump creation failed");
 		return (-EOOM);
@@ -272,34 +274,11 @@ int main(void)
 			if (cursysmode > SYS_DHWONLY)
 				cursysmode = SYS_OFF;
 
-			rwchcd_spi_lcd_acquire();
-			rwchcd_spi_lcd_cmd_w(0x2);	// home
-			switch (cursysmode) {
-				case SYS_OFF:
-					lcd_wstr("Off      ");
-					break;
-				case SYS_AUTO:
-					lcd_wstr("Auto     ");
-					break;
-				case SYS_COMFORT:
-					lcd_wstr("Comfort  ");
-					break;
-				case SYS_ECO:
-					lcd_wstr("Eco      ");
-					break;
-				case SYS_FROSTFREE:
-					lcd_wstr("Frostfree");
-					break;
-				case SYS_DHWONLY:
-					lcd_wstr("DHW Only ");
-					break;
-				case SYS_MANUAL:
-					lcd_wstr("Manual   ");
-					break;
-			}
-			rwchcd_spi_lcd_relinquish();
 			runtime_set_systemmode(cursysmode);
 		}
+		
+		lcd_line1();
+		lcd_update();
 
 		ret = hardware_rwchcperiphs_write(&(runtime->rWCHC_peripherals));
 		if (ret)

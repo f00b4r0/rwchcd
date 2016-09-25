@@ -14,6 +14,7 @@
 
 struct s_pump {
 	bool configured;
+	bool online;			///< true if pump is operational
 	time_t set_cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off
 	time_t actual_cooldown_time;	///< actual cooldown time remaining
 	struct s_stateful_relay * restrict relay;
@@ -23,6 +24,7 @@ struct s_pump {
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
 struct s_valve {
 	bool configured;
+	bool online;		///< true if valve is operational
 	temp_t deadzone;	///< valve deadzone: no operation when target in deadzone
 	int_fast8_t position;		///< current position in %
 	int_fast8_t target_position;	///< current target position in %
@@ -162,6 +164,18 @@ struct s_dhw_tank {
 	char * restrict name;		///< name for this tank
 };
 
+struct s_pump_l {
+	uint_fast8_t id;
+	struct s_pump * restrict pump;
+	struct s_pump_l * restrict next;
+};
+
+struct s_valve_l {
+	uint_fast8_t id;
+	struct s_valve * restrict valve;
+	struct s_valve_l * restrict next;
+};
+
 struct s_heating_circuit_l {
 	uint_fast8_t id;
 	struct s_heating_circuit * restrict circuit;
@@ -182,18 +196,22 @@ struct s_heatsource_l {
 
 struct s_plant {
 	bool configured;
+	uint_fast8_t pump_n;	///< number of pumps in the plant
+	uint_fast8_t valve_n;	///< number of valves in the plant
 	uint_fast8_t heats_n;		///< number of heat sources in the plant
 	uint_fast8_t circuit_n;	///< number of heating circuits in the plant
 	uint_fast8_t dhwt_n;		///< number of dhw tanks in the plant
+	struct s_pump_l * restrict pump_head;
+	struct s_valve_l * restrict valve_head;
 	struct s_heatsource_l * restrict heats_head;
 	struct s_heating_circuit_l * restrict circuit_head;
 	struct s_dhw_tank_l * restrict dhwt_head;
 };
 
-struct s_pump * pump_new(void);
-struct s_valve * valve_new(void);
 int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
 int plant_run(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
+struct s_pump * plant_new_pump(struct s_plant * const plant);
+struct s_valve * plant_new_valve(struct s_plant * const plant);
 struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant);
 struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant);
 struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, enum e_heatsource_type type);
