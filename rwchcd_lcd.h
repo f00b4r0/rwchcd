@@ -11,7 +11,6 @@
 
 #include "rwchcd.h"
 
-int lcd_wstr(const char * str);
 int lcd_subsys_init(void);
 int lcd_buflclear(uint_fast8_t linenb);
 int lcd_wline(const uint8_t * restrict data, const uint_fast8_t len,

@@ -16,8 +16,8 @@
 #define LCD_LINELEN	16
 
 // buffer is one char longer to accomodate for the final '\0'. The rest of the code assumes that this '\0' is always present
-static char Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
-static char Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
+static uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
+static uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
 static bool L2mngd = false;
 
 /**
@@ -86,7 +86,7 @@ static int lcd_dispclear(void)
  * @param linenb target line to clear (from 0)
  * @return exec status
  */
-int lcd_buflclear(uint_fast8_t linenb)
+int lcd_buflclear(const uint_fast8_t linenb)
 {
 	switch (linenb) {
 		case 0:
@@ -119,8 +119,9 @@ int lcd_handle2ndline(const bool on)
  * @warning No boundary checks
  * @param str string to send
  * @return exec status
+ * @note XXX DO NOT USE - TO REMOVE
  */
-int lcd_wstr(const char * str)
+static int lcd_wstr(const char * str)
 {
 	int ret = -ESPI;
 	
@@ -144,12 +145,12 @@ out:
  * @param pos the target character position in the target line (from 0)
  * @return exec status
  */
-int lcd_wline(const uint8_t * restrict data, const uint_fast8_t len,
+int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
 	      const uint_fast8_t linenb, const uint_fast8_t pos)
 {
 	int ret = ALL_OK;
 	uint_fast8_t maxlen, calclen;
-	char * restrict line;
+	uint8_t * restrict line;
 	
 	if ((!data) || (len > LCD_LINELEN))
 		return (-EINVALID);
@@ -199,7 +200,7 @@ int lcd_uline(const uint_fast8_t linenb)
 	int ret = ALL_OK;
 	uint_fast8_t id, i;
 	uint8_t addr;
-	char * restrict buf, * restrict cur;
+	uint8_t * restrict buf, * restrict cur;
 	
 	switch (linenb) {
 		case 0:
@@ -285,7 +286,8 @@ out:
 	return (ret);
 }
 
-static const char * temp_to_str(temp_t temp)
+// XXX quick hack
+static const char * temp_to_str(const temp_t temp)
 {
 	static char snpbuf[7];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
 	float celsius;
@@ -306,6 +308,7 @@ static const char * temp_to_str(temp_t temp)
 	return (&snpbuf);
 }
 
+// XXX quick hack
 static const char * lcd_disp_sysmode(void)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
@@ -340,10 +343,11 @@ static const char * lcd_disp_sysmode(void)
 	return msg;
 }
 
+// XXX quick hack
 int lcd_line1(void)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	char buf[LCD_LINELEN];
+	uint8_t buf[LCD_LINELEN];
 	memset(buf, ' ', LCD_LINELEN);
 	
 	memcpy(buf, lcd_disp_sysmode(), 4);
@@ -355,5 +359,5 @@ int lcd_line1(void)
 	
 	memcpy(buf+9, temp_to_str(runtime->t_outdoor), 6);
 	
-	lcd_wline(buf, 16, 0, 0);
+	return (lcd_wline(buf, 16, 0, 0));
 }
