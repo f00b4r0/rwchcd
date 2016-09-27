@@ -54,7 +54,6 @@ struct s_heating_circuit {
 	enum e_runmode actual_runmode;	///< circuit actual (computed) runmode
 	struct s_valve * restrict valve;///< valve for circuit (if available, otherwise it's direct)
 	struct s_pump * restrict pump;	///< pump for this circuit
-//	temp_t histeresis;		///< histeresis for target temp
 	temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
 	temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active
 	temp_t set_tcomfort;		///< target ambient temp in comfort mode
@@ -102,7 +101,6 @@ struct s_boiler_priv {
 enum e_heatsource_type {
 	NONE = 0,	///< No heat source (XXX should probably be an error)
 	BOILER,		///< boiler type heatsource
-	HOTTANK,	///< XXX NOT IMPLEMENTED
 };
 
 // XXX cascade

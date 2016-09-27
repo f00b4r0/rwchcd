@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "rwchcd_spi.h"
+#include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_lcd.h"
 
@@ -98,7 +99,7 @@ int lcd_buflclear(uint_fast8_t linenb)
 			return (-EINVALID);
 	}
 	
-	ret (ALL_OK);
+	return (ALL_OK);
 }
 
 /**
@@ -179,9 +180,11 @@ int lcd_wline(const uint8_t * restrict data, const uint_fast8_t len,
 	}
 	else
 		calclen = len;
+
+	//dbgmsg("pos: %d, calclen: %d", pos, calclen);
 	
 	// update the buffer from the selected position
-	memcpy(line+pos, data, len);
+	memcpy(line+pos, data, calclen);
 	
 	return (ret);
 }
@@ -216,15 +219,15 @@ int lcd_uline(const uint_fast8_t linenb)
 	}
 	
 	// find the first differing character between buffer and current
-	for (id = 0; i<LCD_LINELEN; id++) {
-		if (buf[i] != cur[i])
+	for (id = 0; id<LCD_LINELEN; id++) {
+		if (buf[id] != cur[id])
 			break;
 	}
 	
 	if (LCD_LINELEN == id)
 		return (ret);	// buffer and current are identical, stop here
 	
-	dbgmsg("update line %d from pos %d", linenb+1, pos+1);
+	//dbgmsg("update line %d from pos %d", linenb+1, id+1);
 	
 	// grab LCD
 	ret = lcd_grab();
@@ -252,6 +255,7 @@ int lcd_uline(const uint_fast8_t linenb)
 		
 		if (ret)
 			return (ret);
+		//dbgmsg("sending: %c", buf[id]);
 		
 		cur[id] = buf[id];
 	}
@@ -281,24 +285,31 @@ out:
 	return (ret);
 }
 
-const char * const temp_to_str(temp_t temp)
+static const char * temp_to_str(temp_t temp)
 {
 	static char snpbuf[7];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
-	float celsius = temp_to_celsius(temp);
-	
+	float celsius;
+
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * 100))
 #error Non representable minimum temperature
 #endif
 
-	snprintf(snpbuf, 6, "%5.1fC", celsius);
+	if (temp > RWCHCD_TEMPMAX)
+		strncpy(snpbuf, "DISCON", 6);
+	else if (temp < RWCHCD_TEMPMIN)
+		strncpy(snpbuf, "SHORT ", 6);	// must be 6 otherwith buf[6] might be garbage
+	else {
+		celsius = temp_to_celsius(temp);
+		snprintf(snpbuf, 7, "%5.1fC", celsius);	// handles rounding
+	}
 
 	return (&snpbuf);
 }
 
-const char * const lcd_disp_sysmode(void)
+static const char * lcd_disp_sysmode(void)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	char * restrict msg;
+	const char * restrict msg;
 
 	switch (runtime->systemmode) {
 		case SYS_OFF:
@@ -322,8 +333,11 @@ const char * const lcd_disp_sysmode(void)
 		case SYS_MANUAL:
 			msg = "Man ";
 			break;
+		default:
+			dbgerr("Unhandled systemmode");
+			msg = NULL;
 	}
-
+	return msg;
 }
 
 int lcd_line1(void)
@@ -332,14 +346,14 @@ int lcd_line1(void)
 	char buf[LCD_LINELEN];
 	memset(buf, ' ', LCD_LINELEN);
 	
-	strncpy(buf, lcd_disp_sysmode(), 4);
+	memcpy(buf, lcd_disp_sysmode(), 4);
 	
 	buf[5] = 'O';
 	buf[6] = 'u';
 	buf[7] = 't';
 	buf[8] = ':';
 	
-	strncpy(buf+9, temp_to_str(runtime->t_outdoor), 6);
+	memcpy(buf+9, temp_to_str(runtime->t_outdoor), 6);
 	
-	lcd_wline(buf, 15, 0, 0);
+	lcd_wline(buf, 16, 0, 0);
 }

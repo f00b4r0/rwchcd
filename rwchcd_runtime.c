@@ -22,28 +22,40 @@ struct s_runtime * get_runtime(void)
 	return (&Runtime);
 }
 
-static inline void parse_temps(void)
-{
-	int i;
-
-	for (i = 0; i<Runtime.config->nsensors; i++)
-		Runtime.temps[i] = sensor_to_temp(Runtime.rWCHC_sensors[i]);
-}
-
 /**
  * Exponentially weighted moving average implementing a trivial LP filter
- http://www.rowetel.com/blog/?p=1245
+ http://www.rowetel.com/?p=1245
  https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
+ http://www.edn.com/design/systems-design/4320010/A-simple-software-lowpass-filter-suits-embedded-system-applications
+ XXX if dt is 0 then the value will never be updated (dt has a 1s resolution)
  */
-static float expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
+static temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
 {
 	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
 
-	dbgmsg("%d - (%f * (%d - %d)) = %f, %d", filtered, alpha, filtered, new_sample,
+	/* dbgmsg("%d - (%f * (%d - %d)) = %f, %d", filtered, alpha, filtered, new_sample,
 	       (filtered - (alpha * (filtered - new_sample))),
-	       (temp_t)((filtered - roundf(alpha * (filtered - new_sample)))));
+	       (temp_t)((filtered - roundf(alpha * (filtered - new_sample))))); */
 
 	return (filtered - roundf(alpha * (filtered - new_sample)));
+}
+
+static void parse_temps(void)
+{
+	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
+	const time_t dt = time(NULL) - lasttime;
+	int i;
+	temp_t previous, current;
+
+	for (i = 0; i<Runtime.config->nsensors; i++) {
+		current = sensor_to_temp(Runtime.rWCHC_sensors[i]);
+		previous = Runtime.temps[i];
+
+		// apply LP filter with 5s time constant
+		Runtime.temps[i] = temp_expw_mavg(previous, current, 5, dt);
+	}
+
+	lasttime = time(NULL);
 }
 
 /**
@@ -55,19 +67,19 @@ static float expw_mavg(const temp_t filtered, const temp_t new_sample, const tim
  */
 static void outdoor_temp()
 {
-	static time_t lasttime = 0;	// in expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
+	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor);	// XXX checks
 
-	// XXX REVISIT prevent running averages at less than building_tau/60 interval, otherwise the precision rounding error in expw_mavg becomes too large
+	// XXX REVISIT prevent running averages at less than building_tau/60 interval, otherwise the precision rounding error in temp_expw_mavg becomes too large
 	if (dt < (Runtime.config->building_tau / 60))
 		return;
 
 	lasttime = time(NULL);
 
-	Runtime.t_outdoor_mixed = (temp_t)expw_mavg(Runtime.t_outdoor_mixed, Runtime.t_outdoor, Runtime.config->building_tau, dt);
-	Runtime.t_outdoor_attenuated = (temp_t)expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_mixed, Runtime.config->building_tau, dt);
+	Runtime.t_outdoor_mixed = temp_expw_mavg(Runtime.t_outdoor_mixed, Runtime.t_outdoor, Runtime.config->building_tau, dt);
+	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_mixed, Runtime.config->building_tau, dt);
 }
 
 

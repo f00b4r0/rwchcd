@@ -10,6 +10,7 @@
 // ideally none of these functions should make use of time
 
 #include <stdlib.h>	// calloc/free
+#include <unistd.h>	// sleep
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
@@ -18,14 +19,35 @@
 
 /** PUMP **/
 
-static int pump_online(struct s_pump * const pump)
+/**
+ * Delete a pump
+ * @param pump the pump to delete
+ */
+static void del_pump(struct s_pump * pump)
 {
-	
+	if (!pump)
+		return;
+
+	hardware_relay_del(pump->relay);
+	pump->relay = NULL;
+	free(pump->name);
+	pump->name = NULL;
+	free(pump);
 }
 
-static int pump_offline(struct s_pump * const pump)
+/**
+ * Put pump online.
+ * Perform all necessary actions to prepare the pump for service.
+ * @param pump target pump
+ * @return exec status
+ * @warning no parameter check
+ */
+static int pump_online(struct s_pump * const pump)
 {
-	
+	if (!pump->configured)
+		return (-ENOTCONFIGURED);
+
+	return (ALL_OK);
 }
 
 /**
@@ -44,6 +66,9 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
 	
 	if (!pump->configured)
 		return (-ENOTCONFIGURED);
+
+	if (!pump->online)
+		return (-EOFFLINE);
 	
 	// apply cooldown to turn off, only if not forced.
 	// If ongoing cooldown, resume it, otherwise restore default value
@@ -54,6 +79,18 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
 	pump->actual_cooldown_time = hardware_relay_set_state(pump->relay, state, cooldown);
 
 	return (ALL_OK);
+}
+
+/**
+ * Put pump offline.
+ * Perform all necessary actions to completely shut down the pump.
+ * @param pump target pump
+ * @return exec status
+ * @warning no parameter check
+ */
+static inline int pump_offline(struct s_pump * const pump)
+{
+	return(pump_set_state(pump, OFF, FORCE));
 }
 
 /**
@@ -74,6 +111,25 @@ static int pump_get_state(const struct s_pump * const pump)
 }
 
 /** VALVE **/
+
+/**
+ * Delete a valve
+ * @param valve the valve to delete
+ */
+static void del_valve(struct s_valve * valve)
+{
+	if (!valve)
+		return;
+
+	hardware_relay_del(valve->open);
+	valve->open = NULL;
+	hardware_relay_del(valve->close);
+	valve->close = NULL;
+	free(valve->name);
+	valve->name = NULL;
+
+	free(valve);
+}
 
 /**
  * implement a linear law for valve position:
@@ -187,20 +243,54 @@ static int_fast8_t calc_mixer_pos(const struct s_valve * const mixer, const temp
 	return (percent);
 }
 
+/**
+ * Put valve online.
+ * Perform all necessary actions to prepare the valve for service.
+ * @param valve target valve
+ * @return exec status
+ * @warning no parameter check
+ * @note no check on temperature sensors because some valves (e.g. zone valves)
+ * do not need a sensor to be operated.
+ */
 static int valve_online(struct s_valve * const valve)
 {
-	
+	if (!valve->configured)
+		return (-ENOTCONFIGURED);
+
+	if (!valve->ete_time)
+		return (-EMISCONFIGURED);
+
+#if 0	// XXX WHEN hardware_rwchcrelays_write runs in its separate thread we can do this
+	// reset the valve actuator
+	// close the valve for 2*ete_time
+	hardware_relay_set_state(valve->open, OFF, 0);
+	hardware_relay_set_state(valve->close, ON, 0);
+	valve->action = CLOSE;
+
+	sleep(2*valve->ete_time);	// XXX will block
+#endif
+	// return to idle
+	hardware_relay_set_state(valve->open, OFF, 0);
+	hardware_relay_set_state(valve->close, OFF, 0);
+	valve->action = STOP;
+
+	return (ALL_OK);
 }
 
 /**
- * Offline a valve - XXX REVISIT: non permanent, API non consistent with others
+ * Put valve offline.
+ * Perform all necessary actions to completely shut down the valve.
  * @param valve target valve
+ * @return exec status
+ * @warning no parameter check
  */
-static void valve_offline(struct s_valve * const valve)
+static int valve_offline(struct s_valve * const valve)
 {
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
 	valve->action = STOP;
+
+	return (ALL_OK);
 }
 
 /**
@@ -220,6 +310,9 @@ static int valve_run(struct s_valve * const valve)
 
 	if (!valve->configured)
 		return (-ENOTCONFIGURED);
+
+	if (!valve->online)
+		return (-EOFFLINE);
 
 	time_ratio = 100.0F/valve->ete_time;
 	percent = valve->target_position;
@@ -302,7 +395,7 @@ static void solar_del(struct s_solar_heater * solar)
 	if (!solar)
 		return;
 
-	pump_del(solar->pump);
+	del_pump(solar->pump);
 	solar->pump = NULL;
 	free(solar->name);
 	solar->name = NULL;
@@ -342,7 +435,7 @@ static void boiler_hs_del_priv(void * priv)
 	if (!boiler)
 		return;
 
-	pump_del(boiler->loadpump);
+	del_pump(boiler->loadpump);
 	boiler->loadpump = NULL;
 	hardware_relay_del(boiler->burner_1);
 	boiler->burner_1 = NULL;
@@ -1105,22 +1198,6 @@ fail:
 }
 
 /**
- * Delete a pump
- * @param pump the pump to delete
- */
-static void del_pump(struct s_pump * pump)
-{
-	if (!pump)
-		return;
-	
-	hardware_relay_del(pump->relay);
-	pump->relay = NULL;
-	free(pump->name);
-	pump->name = NULL;
-	free(pump);
-}
-
-/**
  * Create a new valve and attach it to the plant.
  * @param plant the plant to attach the valve to
  * @return pointer to the created valve
@@ -1158,25 +1235,6 @@ fail:
 	free(valve);
 	free(valveelmt);
 	return (NULL);
-}
-
-/**
- * Delete a valve
- * @param valve the valve to delete
- */
-static void del_valve(struct s_valve * valve)
-{
-	if (!valve)
-		return;
-	
-	hardware_relay_del(valve->open);
-	valve->open = NULL;
-	hardware_relay_del(valve->close);
-	valve->close = NULL;
-	free(valve->name);
-	valve->name = NULL;
-	
-	free(valve);
 }
 
 /**
@@ -1224,9 +1282,9 @@ static void del_circuit(struct s_heating_circuit * circuit)
 	if (!circuit)
 		return;
 
-	valve_del(circuit->valve);
+	del_valve(circuit->valve);
 	circuit->valve = NULL;
-	pump_del(circuit->pump);
+	del_pump(circuit->pump);
 	circuit->pump = NULL;
 	free(circuit->name);
 	circuit->name = NULL;
@@ -1281,9 +1339,9 @@ static void del_dhwt(struct s_dhw_tank * restrict dhwt)
 
 	solar_del(dhwt->solar);
 	dhwt->solar = NULL;
-	pump_del(dhwt->feedpump);
+	del_pump(dhwt->feedpump);
 	dhwt->feedpump = NULL;
-	pump_del(dhwt->recyclepump);
+	del_pump(dhwt->recyclepump);
 	dhwt->recyclepump = NULL;
 	hardware_relay_del(dhwt->selfheater);
 	dhwt->selfheater = NULL;
@@ -1461,6 +1519,8 @@ void plant_del(struct s_plant * plant)
  */
 int plant_online(struct s_plant * restrict const plant)
 {
+	struct s_pump_l * restrict pumpl;
+	struct s_valve_l * restrict valvel;
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	struct s_heatsource_l * restrict heatsourcel;
@@ -1471,14 +1531,41 @@ int plant_online(struct s_plant * restrict const plant)
 
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);
+
+	// online the actuators first
+	// pumps
+	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
+		ret = pump_online(pumpl->pump);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("pump_online failed, id: %d (%d)", pumpl->id, ret);
+			pump_offline(pumpl->pump);
+			pumpl->pump->online = false;
+		}
+		else
+			pumpl->pump->online = true;
+	}
+
+	// valves
+	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
+		ret = valve_online(valvel->valve);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("valve_online failed, id: %d (%d)", valvel->id, ret);
+			valve_offline(valvel->valve);
+			valvel->valve->online = false;
+		}
+		else
+			valvel->valve->online = true;
+	}
 	
-	// online the consummers first
+	// next deal with the consummers
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		ret = circuit_online(circuitl->circuit);
 		if (ALL_OK != ret) {
 			// XXX error handling
-			dbgerr("circuit_online failed: %d", ret);
+			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
 			circuit_offline(circuitl->circuit);
 			circuitl->circuit->online = false;
 		}
@@ -1491,7 +1578,7 @@ int plant_online(struct s_plant * restrict const plant)
 		ret = dhwt_online(dhwtl->dhwt);
 		if (ALL_OK != ret) {
 			// XXX error handling
-			dbgerr("dhwt_online failed: %d", ret);
+			dbgerr("dhwt_online failed, id: %d (%d)", dhwtl->id, ret);
 			dhwt_offline(dhwtl->dhwt);
 			dhwtl->dhwt->online = false;
 		}
@@ -1504,7 +1591,7 @@ int plant_online(struct s_plant * restrict const plant)
 	ret = heatsource_online(heatsourcel->heats);
 	if (ALL_OK != ret) {
 		// XXX error handling
-		dbgerr("heatsource_online failed: %d", ret);
+		dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
 		heatsource_offline(heatsourcel->heats);
 		heatsourcel->heats->online = false;
 	}

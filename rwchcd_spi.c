@@ -347,6 +347,9 @@ int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 	*refval = SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
 	*refval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
+	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
+		goto out;
+
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;
 

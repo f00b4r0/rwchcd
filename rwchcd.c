@@ -102,6 +102,7 @@ static int init_process()
 	config_set_tfrostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
 	config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 	config->configured = true;
+	config_save(config);
 
 	// attach config to runtime
 	runtime->config = config;
@@ -257,14 +258,15 @@ int main(void)
 	enum e_systemmode cursysmode;
 	int ret;
 
-	if (init_process() != ALL_OK)
-		(0);	//exit(1);
+	ret = init_process();
+	if (ret != ALL_OK)
+		dbgerr("init_proccess failed (%d)", ret);	//exit(ret);
 
 	while (1) {
 		// test read peripherals
 		ret = hardware_rwchcperiphs_read(&(runtime->rWCHC_peripherals));
 		if (ret)
-			return (-ESPI);
+			dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
 
 		if (runtime->rWCHC_peripherals.RQ) {
 			cursysmode = runtime->systemmode;
@@ -282,11 +284,11 @@ int main(void)
 
 		ret = hardware_rwchcperiphs_write(&(runtime->rWCHC_peripherals));
 		if (ret)
-			return (-ESPI);
+			dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
 
 		ret = runtime_run();
 		if (ret)
-			dbgmsg("runtime_run returned: %d", ret);
+			dbgerr("runtime_run returned: %d", ret);
 		
 		sleep(1);
 	}

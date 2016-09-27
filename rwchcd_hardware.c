@@ -19,6 +19,9 @@
 
 #define RELAY_MAX_ID	14	///< maximum valid relay id
 
+#define VALID_CALIB_MIN	0.8F
+#define VALID_CALIB_MAX	1.2F
+
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];
 
 /**
@@ -93,7 +96,7 @@ static float ohm_to_celsius(const uint_fast16_t ohm)
  * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
  * @return error status
  */
-static int calibrate(void)
+static int hardware_calibrate(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	uint_fast16_t refcalib, i;
@@ -113,6 +116,11 @@ static int calibrate(void)
 		runtime->calib_nodac = (1000.0F / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
+	if ((runtime->calib_nodac < VALID_CALIB_MIN) || (runtime->calib_nodac > VALID_CALIB_MAX)) {
+		ret = -EGENERIC;
+		goto out;	// XXX should not happen
+	}
+
 	i = 0;
 	do {
 		ret = rwchcd_spi_ref_r(&ref, 1);
@@ -125,6 +133,9 @@ static int calibrate(void)
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
 		runtime->calib_dac = (1000.0F / (float)refcalib);	// calibrate against 1kohm reference
 	}
+
+	if ((runtime->calib_dac < VALID_CALIB_MIN) || (runtime->calib_dac > VALID_CALIB_MAX))
+		ret = -EGENERIC;	// XXX should not happen
 
 out:
 	return (ret);
@@ -152,7 +163,7 @@ int hardware_init(void)
 
 	memset(Relays, 0x0, ARRAY_SIZE(Relays));
 
-	return (calibrate());	// XXX REVIEW run only at startup, should run periodically
+	return (hardware_calibrate());	// XXX REVIEW run only at startup, should run periodically
 }
 
 /**
