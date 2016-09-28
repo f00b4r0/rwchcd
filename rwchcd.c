@@ -265,7 +265,7 @@ int main(void)
 
 	while (1) {
 		// test read peripherals
-		ret = hardware_rwchcperiphs_read(&(runtime->rWCHC_peripherals));
+		ret = hardware_rwchcperiphs_read();
 		if (ret)
 			dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
 
@@ -310,7 +310,7 @@ int main(void)
 		lcd_line1(tempid);
 		lcd_update(false);
 
-		ret = hardware_rwchcperiphs_write(&(runtime->rWCHC_peripherals));
+		ret = hardware_rwchcperiphs_write();
 		if (ret)
 			dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
 

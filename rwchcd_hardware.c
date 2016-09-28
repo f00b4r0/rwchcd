@@ -22,7 +22,7 @@
 #define VALID_CALIB_MIN	0.8F
 #define VALID_CALIB_MAX	1.2F
 
-static struct s_stateful_relay * Relays[RELAY_MAX_ID];
+static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
 
 /**
  * Convert sensor value to actual resistance.
@@ -204,56 +204,106 @@ out:
 
 /**
  * Write all relays
- * @param relays pointer to the harware relay union
+ * This function updates all known hardware relays according to their desired turn_on
+ * state. This function also does time and cycle accounting for the relays.
+ * @note non-configured hardware relays are turned off.
  * @return status
  */
-int hardware_rwchcrelays_write(const union rwchc_u_relays * const relays)
+int hardware_rwchcrelays_write(void)
 {
+	struct s_runtime * const runtime = get_runtime();
+	struct s_stateful_relay * restrict relay;
+	union rwchc_u_relays rWCHC_relays;
+	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
+	uint_fast8_t rid, i;
+	int ret = -EGENERIC;
+
+	// start clean
+	rWCHC_relays.ALL = 0;
+
+	// update each known hardware relay
+	for (i=0; i<RELAY_MAX_ID; i++) {
+		relay = Relays[i];
+
+		if (!relay)
+			continue;
+
+		// update state counters at state change
+		if (relay->turn_on) {	// turn on
+			if (!relay->is_on) {	// relay is currently off
+				relay->cycles++;	// increment cycle count
+				relay->is_on = true;
+				relay->on_since = now;
+				if (relay->off_since)
+					relay->off_tottime += now - relay->off_since;
+				relay->off_since = 0;
+			}
+		}
+		else {	// turn off
+			if (relay->is_on) {	// relay is currently on
+				relay->is_on = false;
+				relay->off_since = now;
+				if (relay->on_since)
+					relay->on_tottime += now - relay->on_since;
+				relay->on_since = 0;
+			}
+		}
+
+		// update state time counter
+		relay->state_time = relay->is_on ? (now - relay->on_since) : (now - relay->off_since);
+
+		// extract relay id XXX REVISIT
+		rid = relay->id - 1;
+		if (rid > 6)
+			rid++;	// skip the hole
+
+		// set state for triac control
+		if (relay->turn_on)
+			setbit(rWCHC_relays.ALL, rid);
+		else
+			clrbit(rWCHC_relays.ALL, rid);
+	}
+
+	// send new state to hardware
+	do {
+		ret = rwchcd_spi_relays_w(&rWCHC_relays.ALL);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	// update internal runtime state on success
+	// XXX NOTE there will be a discrepancy between internal state and Relays[] if the above fails
+	if (ALL_OK == ret)
+		runtime->rWCHC_relays.ALL = rWCHC_relays.ALL;
+
+	return (ret);
+}
+
+/**
+ * Write all peripherals from internal runtime to hardware
+ * @return status
+ */
+int hardware_rwchcperiphs_write(void)
+{
+	const struct s_runtime * const runtime = get_runtime();
 	int i = 0, ret;
 
-	if (!relays)
-		return (-EINVALID);
-
 	do {
-		ret = rwchcd_spi_relays_w(relays);
+		ret = rwchcd_spi_peripherals_w(&(runtime->rWCHC_peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
 }
 
 /**
- * Write all peripherals
- * @param periphs pointer to the harware periphs union
- * @return status
- */
-int hardware_rwchcperiphs_write(const union rwchc_u_outperiphs * const periphs)
-{
-	int i = 0, ret;
-
-	if (!periphs)
-		return (-EINVALID);
-
-	do {
-		ret = rwchcd_spi_peripherals_w(periphs);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	return (ret);
-}
-
-/**
- * Read all peripherals
- * @param periphs pointer to the hardware periphs union
+ * Read all peripherals from hardware into internal runtime
  * @return exec status
  */
-int hardware_rwchcperiphs_read(union rwchc_u_outperiphs * const periphs)
+int hardware_rwchcperiphs_read(void)
 {
+	struct s_runtime * const runtime = get_runtime();
 	int i = 0, ret;
 
-	if (!periphs)
-		return (-EINVALID);
-
 	do {
-		ret = rwchcd_spi_peripherals_r(periphs);
+		ret = rwchcd_spi_peripherals_r(&(runtime->rWCHC_peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -276,16 +326,13 @@ struct s_stateful_relay * hardware_relay_new(void)
 
 /**
  * Delete a stateful relay.
- * Turns off the relay before removing it from the system.
  * @param relay the relay to delete
+ * @note the deleted relay will be turned off by a call to _write()
  */
 void hardware_relay_del(struct s_stateful_relay * relay)
 {
 	if (!relay)
 		return;
-
-	// turn off the relay first
-	hardware_relay_set_state(relay, OFF, 0);
 
 	Relays[relay->id-1] = NULL;
 
@@ -318,19 +365,16 @@ int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast
 }
 
 /**
- * set internal relay state
+ * set internal relay state (request)
  * @param relay the internal relay to modify
  * @param state the desired target state
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
- * @todo time management should really be in the routine that writes to the hardware for maximum accuracy
- XXX REVIEW LATE CODE
+ * @note actual (hardware) relay state will only be updated by a call to hardware_rwchcrelays_write()
  */
 int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool turn_on, const time_t change_delay)
 {
-	struct s_runtime * const runtime = get_runtime();
 	const time_t now = time(NULL);
-	uint_fast8_t rid;
 
 	if (!relay)
 		return (-EINVALID);
@@ -338,18 +382,13 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 	if (!relay->configured)
 		return (-ENOTCONFIGURED);
 
-	// update state counters at state change
+	// update state state request if delay permits
 	if (turn_on) {
 		if (!relay->is_on) {
 			if ((now - relay->off_since) < change_delay)
 				return (change_delay - (now - relay->off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
 
-			relay->cycles++;	// increment cycle count
-			relay->is_on = true;
-			relay->on_since = now;
-			if (relay->off_since)
-				relay->off_tottime += now - relay->off_since;
-			relay->off_since = 0;
+			relay->turn_on = true;
 		}
 	}
 	else {	// turn off
@@ -357,27 +396,9 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 			if ((now - relay->on_since) < change_delay)
 				return (change_delay - (now - relay->on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
 
-			relay->is_on = false;
-			relay->off_since = now;
-			if (relay->on_since)
-				relay->on_tottime += now - relay->on_since;
-			relay->on_since = 0;
+			relay->turn_on = false;
 		}
 	}
-
-	// update state time counter
-	relay->state_time = relay->is_on ? (now - relay->on_since) : (now - relay->off_since);
-
-	// extract relay id XXX REVISIT
-	rid = relay->id - 1;
-	if (rid > 6)
-		rid++;	// skip the hole
-
-	// set state for triac control
-	if (turn_on)
-		setbit(runtime->rWCHC_relays.ALL, rid);
-	else
-		clrbit(runtime->rWCHC_relays.ALL, rid);
 
 	return (ALL_OK);
 }

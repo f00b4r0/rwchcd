@@ -237,7 +237,7 @@ int runtime_run(void)
 		goto out;
 
 	// send SPI data
-	ret = hardware_rwchcrelays_write(&(Runtime.rWCHC_relays));
+	ret = hardware_rwchcrelays_write();
 	if (ret)
 		return (-ESPI);
 
