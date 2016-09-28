@@ -35,7 +35,7 @@ static struct s_stateful_relay * Relays[RELAY_MAX_ID];
 static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 {
 	const struct s_runtime * const runtime = get_runtime();
-	const uint_fast16_t dacset[] = {0, 64, 128, 255};
+	const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
 	uint_fast16_t value, dacoffset;
 	float calibmult;
 
@@ -95,6 +95,7 @@ static float ohm_to_celsius(const uint_fast16_t ohm)
  * Calibrate hardware readouts.
  * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
  * @return error status
+ * @note rwchcd_spi_calibrate() sleeps so this will sleep too, up to RWCHCD_SPI_MAX_TRIES times
  */
 static int hardware_calibrate(void)
 {
@@ -102,6 +103,14 @@ static int hardware_calibrate(void)
 	uint_fast16_t refcalib, i;
 	int ret = ALL_OK;
 	rwchc_sensor_t ref;
+
+	i = 0;
+	do {
+		ret = rwchcd_spi_calibrate();
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	if (ret)
+		goto out;
 
 	i = 0;
 	do {

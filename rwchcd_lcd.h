@@ -15,8 +15,8 @@ int lcd_subsys_init(void);
 int lcd_buflclear(uint_fast8_t linenb);
 int lcd_wline(const uint8_t * restrict data, const uint_fast8_t len,
 	      const uint_fast8_t linenb, const uint_fast8_t pos);
-int lcd_uline(const uint_fast8_t linenb);
-int lcd_update(void);
-int lcd_line1(void);
+int lcd_uline(const uint_fast8_t linenb, const bool force);
+int lcd_update(const bool force);
+int lcd_line1(const tempid_t tempid);
 
 #endif /* rwchcd_lcd_h */

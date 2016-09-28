@@ -193,9 +193,10 @@ int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
 /**
  * Update an LCD line
  * @param linenb the target line to update (from 0)
+ * @param force force refresh of entire line
  * @return exec status
  */
-int lcd_uline(const uint_fast8_t linenb)
+int lcd_uline(const uint_fast8_t linenb, const bool force)
 {
 	int ret = ALL_OK;
 	uint_fast8_t id, i;
@@ -218,16 +219,20 @@ int lcd_uline(const uint_fast8_t linenb)
 		default:
 			return (-EINVALID);
 	}
-	
-	// find the first differing character between buffer and current
-	for (id = 0; id<LCD_LINELEN; id++) {
-		if (buf[id] != cur[id])
-			break;
+
+	if (!force) {
+		// find the first differing character between buffer and current
+		for (id = 0; id<LCD_LINELEN; id++) {
+			if (buf[id] != cur[id])
+				break;
+		}
+		
+		if (LCD_LINELEN == id)
+			return (ret);	// buffer and current are identical, stop here
 	}
-	
-	if (LCD_LINELEN == id)
-		return (ret);	// buffer and current are identical, stop here
-	
+	else
+		id = 0;
+
 	//dbgmsg("update line %d from pos %d", linenb+1, id+1);
 	
 	// grab LCD
@@ -269,40 +274,44 @@ int lcd_uline(const uint_fast8_t linenb)
 
 /**
  * Update LCD display
+ * @param force force refresh of entire display
  * @return exec status
  */
-int lcd_update(void)
+int lcd_update(const bool force)
 {
 	int ret;
 	
-	ret = lcd_uline(0);
+	ret = lcd_uline(0, force);
 	if (ret)
 		goto out;
 	
 	if (L2mngd)
-		ret = lcd_uline(1);
+		ret = lcd_uline(1, force);
 	
 out:
 	return (ret);
 }
 
 // XXX quick hack
-static const char * temp_to_str(const temp_t temp)
+static const char * temp_to_str(const tempid_t tempid)
 {
-	static char snpbuf[7];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
+	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
+	const temp_t temp = get_temp(tempid);
 	float celsius;
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * 100))
 #error Non representable minimum temperature
 #endif
 
+	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
+
 	if (temp > RWCHCD_TEMPMAX)
-		strncpy(snpbuf, "DISCON", 6);
+		strncpy(snpbuf+3, "DISCON", 6);
 	else if (temp < RWCHCD_TEMPMIN)
-		strncpy(snpbuf, "SHORT ", 6);	// must be 6 otherwith buf[6] might be garbage
+		strncpy(snpbuf+3, "SHORT ", 6);	// must be 6 otherwith buf[6] might be garbage
 	else {
 		celsius = temp_to_celsius(temp);
-		snprintf(snpbuf, 7, "%5.1fC", celsius);	// handles rounding
+		snprintf(snpbuf+3, 7, "%5.1fC", celsius);	// handles rounding
 	}
 
 	return (&snpbuf);
@@ -322,7 +331,7 @@ static const char * lcd_disp_sysmode(void)
 			msg = "Auto";
 			break;
 		case SYS_COMFORT:
-			msg = "Comf";
+			msg = "Conf";
 			break;
 		case SYS_ECO:
 			msg = "Eco ";
@@ -331,7 +340,7 @@ static const char * lcd_disp_sysmode(void)
 			msg = "Prot";
 			break;
 		case SYS_DHWONLY:
-			msg = "DHW ";
+			msg = "ECS ";
 			break;
 		case SYS_MANUAL:
 			msg = "Man ";
@@ -344,20 +353,14 @@ static const char * lcd_disp_sysmode(void)
 }
 
 // XXX quick hack
-int lcd_line1(void)
+int lcd_line1(const tempid_t tempid)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
 	uint8_t buf[LCD_LINELEN];
 	memset(buf, ' ', LCD_LINELEN);
 	
 	memcpy(buf, lcd_disp_sysmode(), 4);
 	
-	buf[5] = 'O';
-	buf[6] = 'u';
-	buf[7] = 't';
-	buf[8] = ':';
-	
-	memcpy(buf+9, temp_to_str(runtime->t_outdoor), 6);
+	memcpy(buf+6, temp_to_str(tempid), 9);
 	
 	return (lcd_wline(buf, 16, 0, 0));
 }

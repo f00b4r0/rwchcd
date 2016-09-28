@@ -12,13 +12,13 @@
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
-#define SPIRESYNCMAX	1000		///< max resync tries
+#define SPIRESYNCMAX	100		///< max resync tries
 #define SPISPEED	1000000		///< 1MHz
 #define SPICHAN		0
 #define SPIMODE		3
 // https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
-#define SPI_ASSERT(cmd, expect)	(SPI_rw8bit(cmd) == expect)
+#define SPI_ASSERT(cmd, expect)	(SPI_rw8bit(cmd) == (uint8_t)expect)
 #define SPI_RESYNC()								\
 		({								\
 		spitout = SPIRESYNCMAX;					\
@@ -71,7 +71,7 @@ int rwchcd_spi_lcd_acquire(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_LCDACQR, RWCHC_SPIC_VALID))
 		goto out;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_LCDACQR))
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDACQR))
 		goto out;
 	
 	ret = ALL_OK;
@@ -92,7 +92,7 @@ int rwchcd_spi_lcd_relinquish(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_LCDRLQSH, RWCHC_SPIC_VALID))
 		goto out;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_LCDRLQSH))
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDRLQSH))
 		goto out;
 	
 	ret = ALL_OK;
@@ -114,7 +114,7 @@ int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
 	if (!SPI_ASSERT(RWCHC_SPIC_LCDCMDW, RWCHC_SPIC_VALID))
 		goto out;
 	
-	if (!SPI_ASSERT(cmd, RWCHC_SPIC_LCDCMDW))
+	if (!SPI_ASSERT(cmd, ~RWCHC_SPIC_LCDCMDW))
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
@@ -139,7 +139,7 @@ int rwchcd_spi_lcd_data_w(const uint8_t data)
 	if (!SPI_ASSERT(RWCHC_SPIC_LCDDATW, RWCHC_SPIC_VALID))
 		goto out;
 	
-	if (!SPI_ASSERT(data, RWCHC_SPIC_LCDDATW))
+	if (!SPI_ASSERT(data, ~RWCHC_SPIC_LCDDATW))
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, data))
@@ -168,7 +168,7 @@ int rwchcd_spi_lcd_bl_w(const uint8_t percent)
 	if (!SPI_ASSERT(RWCHC_SPIC_LCDBKLW, RWCHC_SPIC_VALID))
 		goto out;
 
-	if (!SPI_ASSERT(percent, RWCHC_SPIC_LCDBKLW))
+	if (!SPI_ASSERT(percent, ~RWCHC_SPIC_LCDBKLW))
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, percent))
@@ -269,13 +269,13 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 	if (!SPI_ASSERT(RWCHC_SPIC_RELAYWL, RWCHC_SPIC_VALID))
 		goto out;
 	
-	if (!SPI_ASSERT(relays->LOWB, RWCHC_SPIC_RELAYWL))
+	if (!SPI_ASSERT(relays->LOWB, ~RWCHC_SPIC_RELAYWL))
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_RELAYWH, relays->LOWB))
 		goto out;
 	
-	if (!SPI_ASSERT(relays->HIGHB, RWCHC_SPIC_RELAYWH))
+	if (!SPI_ASSERT(relays->HIGHB, ~RWCHC_SPIC_RELAYWH))
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->HIGHB))
@@ -376,7 +376,7 @@ int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 	for (i=0; i<sizeof(*settings); i++)
 		*((uint8_t *)settings+i) = SPI_rw8bit(i);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_SETTINGSR))
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSR))
 		goto out;
 	
 	ret = ALL_OK;
@@ -403,7 +403,7 @@ int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 		if (SPI_rw8bit(*((const uint8_t *)settings+i)) != i)
 			goto out;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_SETTINGSW))
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSW))
 		goto out;
 	
 	ret = ALL_OK;
@@ -424,9 +424,33 @@ int rwchcd_spi_settings_s(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_SETTINGSS, RWCHC_SPIC_VALID))
 		goto out;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_SETTINGSS))
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
 		goto out;
 	
+	ret = ALL_OK;
+out:
+	return ret;
+}
+
+/**
+ * Request sensor calibration
+ * @return error code
+ * @note sleeps
+ */
+int rwchcd_spi_calibrate(void)
+{
+	int ret = -ESPI;
+
+	SPI_RESYNC();
+
+	if (!SPI_ASSERT(RWCHC_SPIC_CALIBRATE, RWCHC_SPIC_VALID))
+		goto out;
+
+	sleep(1);	// XXX must wait for completion
+
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_CALIBRATE))
+		goto out;
+
 	ret = ALL_OK;
 out:
 	return ret;

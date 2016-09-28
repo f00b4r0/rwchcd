@@ -256,7 +256,8 @@ int main(void)
 {
 	struct s_runtime * restrict const runtime = get_runtime();
 	enum e_systemmode cursysmode;
-	int ret;
+	int ret, count = 0;
+	tempid_t tempid = 1;
 
 	ret = init_process();
 	if (ret != ALL_OK)
@@ -268,19 +269,46 @@ int main(void)
 		if (ret)
 			dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
 
-		if (runtime->rWCHC_peripherals.RQ) {
+		if (runtime->rWCHC_peripherals.LED2) {
+			// clear alarm
+			runtime->rWCHC_peripherals.LED2 = 0;
+			runtime->rWCHC_peripherals.buzzer = 0;
+			runtime->rWCHC_peripherals.LCDbl = 0;
+			lcd_update(true);
+		}
+
+		if (runtime->rWCHC_peripherals.RQSW1) {
+			// change system mode
 			cursysmode = runtime->systemmode;
 			cursysmode++;
-			runtime->rWCHC_peripherals.RQ = 0;
+			runtime->rWCHC_peripherals.RQSW1 = 0;
+			count = 5;
 
 			if (cursysmode > SYS_DHWONLY)
 				cursysmode = SYS_OFF;
 
 			runtime_set_systemmode(cursysmode);
 		}
-		
-		lcd_line1();
-		lcd_update();
+
+		if (runtime->rWCHC_peripherals.RQSW2) {
+			// increase displayed tempid
+			tempid++;
+			runtime->rWCHC_peripherals.RQSW2 = 0;
+			count = 5;
+
+			if (tempid > runtime->config->nsensors)
+				tempid = 1;
+		}
+
+		if (count) {
+			runtime->rWCHC_peripherals.LCDbl = 1;
+			count--;
+		}
+		else
+			runtime->rWCHC_peripherals.LCDbl = 0;
+
+		lcd_line1(tempid);
+		lcd_update(false);
 
 		ret = hardware_rwchcperiphs_write(&(runtime->rWCHC_peripherals));
 		if (ret)

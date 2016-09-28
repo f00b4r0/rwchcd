@@ -19,7 +19,15 @@
 #define testbit(var, bit)	((var) & (1 << (bit)))
 #define setbit(var, bit)	((var) |= (1 << (bit)))
 #define clrbit(var, bit)	((var) &= ~(1 << (bit)))
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+#define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
+
+/* i18n stuff */
+#ifdef HAVE_GETTEXT
+ #include <libintl.h>
+ #define _(String)      gettext(String)
+#else
+ #define _(String)      String
+#endif  /* HAVE_GETTEXT */
 
 #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 #define dbgerr(format, ...)	printf("(%s()) " format "\n", __func__, ## __VA_ARGS__)
@@ -51,7 +59,7 @@ enum {
 #define RWCHCD_TEMPMIN	((-50 + 273) * 100)	///< -50C is the lowest temperature we expect to deal with
 #define RWCHCD_TEMPMAX	((150 + 273) * 100)	///< +150C is the highest temperature we expect to deal with
 
-#define RWCHCD_SPI_MAX_TRIES	10	///< how many times SPI ops should be retried
+#define RWCHCD_SPI_MAX_TRIES	5	///< how many times SPI ops should be retried
 
 typedef int_fast32_t	temp_t;		// all temps are internally stored in Kelvin * 100 (32bit avoids overflow with disconnected sensors). Must be signed for maths
 typedef int_fast16_t	tempid_t;	// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid

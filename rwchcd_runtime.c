@@ -40,11 +40,15 @@ static temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, con
 	return (filtered - roundf(alpha * (filtered - new_sample)));
 }
 
+/**
+ * Process raw sensor data and extract temperature values into the runtime temps[] array.
+ * Applies a short-window LP filter on raw data to smooth out noise.
+ */
 static void parse_temps(void)
 {
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
-	int i;
+	uint_fast8_t i;
 	temp_t previous, current;
 
 	for (i = 0; i<Runtime.config->nsensors; i++) {
