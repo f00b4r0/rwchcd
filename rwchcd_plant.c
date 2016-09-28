@@ -349,13 +349,13 @@ static int valve_run(struct s_valve * const valve)
 	}
 	// position is too low
 	else if (percent - valve->position > 0) {
-		hardware_relay_set_state(valve->close, OFF, 0);
+		hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->open, ON, 0);
 		valve->action = OPEN;
 	}
 	// position is too high
 	else if (percent - valve->position < 0) {
-		hardware_relay_set_state(valve->open, OFF, 0);
+		hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->close, ON, 0);
 		valve->action = CLOSE;
 	}

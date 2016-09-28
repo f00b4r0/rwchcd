@@ -10,10 +10,10 @@
 #include <string.h>	// memset/memcpy
 #include <math.h>	// roundf
 #include "rwchcd_lib.h"
-#include "rwchcd_hardware.h"
 #include "rwchcd_plant.h"
 #include "rwchcd_runtime.h"
-
+#include "rwchcd_lcd.h"
+#include "rwchcd_hardware.h"	// sensor_to_temp()
 
 static struct s_runtime Runtime;
 
@@ -44,7 +44,7 @@ static temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, con
  * Process raw sensor data and extract temperature values into the runtime temps[] array.
  * Applies a short-window LP filter on raw data to smooth out noise.
  */
-static void parse_temps(void)
+void parse_temps(void)
 {
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
@@ -207,39 +207,68 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 
 int runtime_run(void)
 {
-	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
-	int ret = ALL_OK;
+	static int count = 0;
+	static tempid_t tempid = 1;
+	enum e_systemmode cursysmode;
+	int ret;
 
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 
-	// fetch SPI data
-	ret = hardware_sensors_read(rawsensors, Runtime.config->nsensors);
-	if (ret) {
-		// XXX REVISIT: flag the error but do NOT stop processing here
-		dbgerr("hardware_sensors_read failed: %d", ret);
-	}
-	else {
-		// copy valid data to runtime environment
-		memcpy(Runtime.rWCHC_sensors, rawsensors, sizeof(Runtime.rWCHC_sensors));
-	}
-
 	// process data
+
 	parse_temps();
 	// set init state of outdoor temperatures - XXX REVISIT
 	if (0 == Runtime.t_outdoor_attenuated)
 		Runtime.t_outdoor = Runtime.t_outdoor_mixed = Runtime.t_outdoor_attenuated = get_temp(Runtime.config->id_temp_outdoor);
+
+	if (Runtime.rWCHC_peripherals.LED2) {
+		// clear alarm
+		Runtime.rWCHC_peripherals.LED2 = 0;
+		Runtime.rWCHC_peripherals.buzzer = 0;
+		Runtime.rWCHC_peripherals.LCDbl = 0;
+		lcd_update(true);
+	}
+
+	if (Runtime.rWCHC_peripherals.RQSW1) {
+		// change system mode
+		cursysmode = Runtime.systemmode;
+		cursysmode++;
+		Runtime.rWCHC_peripherals.RQSW1 = 0;
+		count = 5;
+
+		if (cursysmode > SYS_DHWONLY)
+			cursysmode = SYS_OFF;
+
+		runtime_set_systemmode(cursysmode);
+	}
+
+	if (Runtime.rWCHC_peripherals.RQSW2) {
+		// increase displayed tempid
+		tempid++;
+		Runtime.rWCHC_peripherals.RQSW2 = 0;
+		count = 5;
+
+		if (tempid > Runtime.config->nsensors)
+			tempid = 1;
+	}
+
+	if (count) {
+		Runtime.rWCHC_peripherals.LCDbl = 1;
+		count--;
+	}
+	else
+		Runtime.rWCHC_peripherals.LCDbl = 0;
+
+	lcd_line1(tempid);
+	lcd_update(false);
+
 	outdoor_temp();
 	runtime_summer();
 
 	ret = plant_run(Runtime.plant);
 	if (ret)
 		goto out;
-
-	// send SPI data
-	ret = hardware_rwchcrelays_write();
-	if (ret)
-		return (-ESPI);
 
 out:
 	return (ret);

@@ -10,6 +10,7 @@
 #include <math.h>	// sqrtf
 #include <stdlib.h>	// calloc/free
 #include <string.h>	// memset
+#include <unistd.h>	// sleep
 
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
@@ -172,6 +173,10 @@ int hardware_init(void)
 
 	memset(Relays, 0x0, ARRAY_SIZE(Relays));
 
+#warning this fails often - see comment
+	/* maybe we need delay between rwchcd_spi_init and rest?
+	 * Or disconnect_mode() in hardware generates long SPI delays that make communication fail? */
+
 	return (hardware_calibrate());	// XXX REVIEW run only at startup, should run periodically
 }
 
@@ -266,7 +271,7 @@ int hardware_rwchcrelays_write(void)
 
 	// send new state to hardware
 	do {
-		ret = rwchcd_spi_relays_w(&rWCHC_relays.ALL);
+		ret = rwchcd_spi_relays_w(&rWCHC_relays);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	// update internal runtime state on success
@@ -417,4 +422,54 @@ int hardware_relay_get_state(struct s_stateful_relay * const relay)
 	relay->state_time = relay->is_on ? (now - relay->on_since) : (now - relay->off_since);
 
 	return (relay->is_on);
+}
+
+void hardware_run(void)
+{
+	struct s_runtime * const runtime = get_runtime();
+	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
+	int ret;
+
+	if (!runtime->config || !runtime->config->configured) {
+		dbgerr("not configured");
+		return;	// XXX when this is a while(1){} thread this should be 'continue'
+	}
+
+	// fetch SPI data
+
+#if 0
+	// read peripherals
+	ret = hardware_rwchcperiphs_read();
+	if (ret)
+		dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
+#endif
+
+	// read sensors
+	ret = hardware_sensors_read(rawsensors, runtime->config->nsensors);
+	if (ret) {
+		// XXX REVISIT: flag the error but do NOT stop processing here
+		dbgerr("hardware_sensors_read failed: %d", ret);
+	}
+	else {
+		// copy valid data to runtime environment
+		memcpy(runtime->rWCHC_sensors, rawsensors, sizeof(runtime->rWCHC_sensors));
+	}
+
+	/* we want to release locks and sleep here to reduce contention and
+	 * allow other parts to do their job before writing back */
+	//sleep(1);
+
+	// send SPI data
+
+	// write relays
+	ret = hardware_rwchcrelays_write();
+	if (ret)
+		dbgerr("hardware_rwchcrelays_write failed: %d", ret);
+
+#if 0
+	// write peripherals
+	ret = hardware_rwchcperiphs_write();
+	if (ret)
+		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
+#endif
 }

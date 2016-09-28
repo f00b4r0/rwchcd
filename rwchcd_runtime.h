@@ -17,5 +17,6 @@ int runtime_set_systemmode(const enum e_systemmode sysmode);
 int runtime_set_runmode(const enum e_runmode runmode);
 int runtime_set_dhwmode(const enum e_runmode dhwmode);
 int runtime_run(void);
+void parse_temps(void);
 
 #endif /* rwchcd_runtime_h */

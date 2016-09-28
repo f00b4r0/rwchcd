@@ -41,5 +41,6 @@ void hardware_relay_del(struct s_stateful_relay * relay);
 int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast8_t id) __attribute__((warn_unused_result));
 int hardware_relay_set_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay);
 int hardware_relay_get_state(struct s_stateful_relay * const relay);
+void hardware_run(void);
 
 #endif /* rwchcd_hardware_h */

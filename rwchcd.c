@@ -239,7 +239,8 @@ static int init_process()
 	// set valves to known start state
 	//set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
 
-	runtime_run();	// XXX to gather sensors
+	hardware_run();	// XXX to gather sensors
+	parse_temps();	// XXX necessary for online functions
 
 	// finally bring the plant online
 	return (plant_online(plant));
@@ -254,70 +255,28 @@ static int init_process()
 
 int main(void)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
-	enum e_systemmode cursysmode;
-	int ret, count = 0;
-	tempid_t tempid = 1;
+	int ret;
 
 	ret = init_process();
 	if (ret != ALL_OK)
 		dbgerr("init_proccess failed (%d)", ret);	//exit(ret);
 
 	while (1) {
+		hardware_run();
+
 		// test read peripherals
 		ret = hardware_rwchcperiphs_read();
 		if (ret)
 			dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
 
-		if (runtime->rWCHC_peripherals.LED2) {
-			// clear alarm
-			runtime->rWCHC_peripherals.LED2 = 0;
-			runtime->rWCHC_peripherals.buzzer = 0;
-			runtime->rWCHC_peripherals.LCDbl = 0;
-			lcd_update(true);
-		}
-
-		if (runtime->rWCHC_peripherals.RQSW1) {
-			// change system mode
-			cursysmode = runtime->systemmode;
-			cursysmode++;
-			runtime->rWCHC_peripherals.RQSW1 = 0;
-			count = 5;
-
-			if (cursysmode > SYS_DHWONLY)
-				cursysmode = SYS_OFF;
-
-			runtime_set_systemmode(cursysmode);
-		}
-
-		if (runtime->rWCHC_peripherals.RQSW2) {
-			// increase displayed tempid
-			tempid++;
-			runtime->rWCHC_peripherals.RQSW2 = 0;
-			count = 5;
-
-			if (tempid > runtime->config->nsensors)
-				tempid = 1;
-		}
-
-		if (count) {
-			runtime->rWCHC_peripherals.LCDbl = 1;
-			count--;
-		}
-		else
-			runtime->rWCHC_peripherals.LCDbl = 0;
-
-		lcd_line1(tempid);
-		lcd_update(false);
+		ret = runtime_run();
+		if (ret)
+			dbgerr("runtime_run returned: %d", ret);
 
 		ret = hardware_rwchcperiphs_write();
 		if (ret)
 			dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
 
-		ret = runtime_run();
-		if (ret)
-			dbgerr("runtime_run returned: %d", ret);
-		
 		sleep(1);
 	}
 }
