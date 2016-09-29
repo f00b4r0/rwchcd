@@ -67,6 +67,21 @@ static int lcd_release(void)
 	return (ret);
 }
 
+/**
+ * Request LCD fadeout from firmware.
+ * @return exec status
+ */
+int lcd_fade(void)
+{
+	int ret, i = 0;
+
+	do {
+		ret = rwchcd_spi_lcd_fade();
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+
+	return (ret);
+}
+
 static int lcd_dispclear(void)
 {
 	int ret, i = 0;

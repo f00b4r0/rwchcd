@@ -12,7 +12,7 @@
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
-#define SPIRESYNCMAX	100		///< max resync tries
+#define SPIRESYNCMAX	500		///< max resync tries -> 250ms
 #define SPISPEED	1000000		///< 1MHz
 #define SPICHAN		0
 #define SPIMODE		3
@@ -95,6 +95,27 @@ int rwchcd_spi_lcd_relinquish(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDRLQSH))
 		goto out;
 	
+	ret = ALL_OK;
+out:
+	return ret;
+}
+
+/**
+ * Request LCD backlight fadeout
+ * @return error code
+ */
+int rwchcd_spi_lcd_fade(void)
+{
+	int ret = -ESPI;
+
+	SPI_RESYNC();
+
+	if (!SPI_ASSERT(RWCHC_SPIC_LCDFADE, RWCHC_SPIC_VALID))
+		goto out;
+
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDFADE))
+		goto out;
+
 	ret = ALL_OK;
 out:
 	return ret;

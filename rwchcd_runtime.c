@@ -278,6 +278,8 @@ int runtime_run(void)
 	if (count) {
 		Runtime.rWCHC_peripherals.LCDbl = 1;
 		count--;
+		if (!count)
+			lcd_fade();
 	}
 	else
 		Runtime.rWCHC_peripherals.LCDbl = 0;

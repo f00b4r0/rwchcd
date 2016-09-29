@@ -16,6 +16,7 @@
 int rwchcd_spi_keepalive_once(void) __attribute__((warn_unused_result));
 int rwchcd_spi_lcd_acquire(void) __attribute__((warn_unused_result));
 int rwchcd_spi_lcd_relinquish(void) __attribute__((warn_unused_result));
+int rwchcd_spi_lcd_fade(void) __attribute__((warn_unused_result));
 int rwchcd_spi_lcd_cmd_w(const uint8_t cmd) __attribute__((warn_unused_result));
 int rwchcd_spi_lcd_data_w(const uint8_t data) __attribute__((warn_unused_result));
 int rwchcd_spi_lcd_bl_w(const uint8_t percent) __attribute__((warn_unused_result));
