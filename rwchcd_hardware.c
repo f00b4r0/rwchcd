@@ -93,6 +93,31 @@ static float ohm_to_celsius(const uint_fast16_t ohm)
 }
 
 /**
+ * Return a calibrated temp_t value for the given raw sensor data.
+ * @param raw the raw sensor data to convert
+ * @return the temperature in temp_t units
+ * XXX REVISIT calls depth.
+ */
+temp_t sensor_to_temp(const rwchc_sensor_t raw)
+{
+	return (celsius_to_temp(ohm_to_celsius(sensor_to_ohm(raw, 1))));
+}
+
+/**
+ * Initialize hardware and ensure connection is set
+ * @return error state
+ */
+int hardware_init(void)
+{
+	if (rwchcd_spi_init() < 0)
+		return (-EINIT);
+
+	memset(Relays, 0x0, ARRAY_SIZE(Relays));
+
+	return (ALL_OK);
+}
+
+/**
  * Calibrate hardware readouts.
  * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
  * @return error status
@@ -149,35 +174,6 @@ static int hardware_calibrate(void)
 
 out:
 	return (ret);
-}
-
-/**
- * Return a calibrated temp_t value for the given raw sensor data.
- * @param raw the raw sensor data to convert
- * @return the temperature in temp_t units
- * XXX REVISIT calls depth.
- */
-temp_t sensor_to_temp(const rwchc_sensor_t raw)
-{
-	return (celsius_to_temp(ohm_to_celsius(sensor_to_ohm(raw, 1))));
-}
-
-/**
- * Initialize hardware and ensure connection is set
- * @return error state
- */
-int hardware_init(void)
-{
-	if (rwchcd_spi_init() < 0)
-		return (-EINIT);
-
-	memset(Relays, 0x0, ARRAY_SIZE(Relays));
-
-#warning this fails often - see comment
-	/* maybe we need delay between rwchcd_spi_init and rest?
-	 * Or disconnect_mode() in hardware generates long SPI delays that make communication fail? */
-
-	return (hardware_calibrate());	// XXX REVIEW run only at startup, should run periodically
 }
 
 /**
@@ -424,6 +420,36 @@ int hardware_relay_get_state(struct s_stateful_relay * const relay)
 	return (relay->is_on);
 }
 
+/**
+ * Get the hardware ready for run loop.
+ * Calibrate, then collect and process sensors.
+ * @return exec status
+ */
+int hardware_online(void)
+{
+	struct s_runtime * const runtime = get_runtime();
+	int ret;
+
+	if (!runtime->config || !runtime->config->configured)
+		return (-ENOTCONFIGURED);
+
+	// calibrate
+	ret = hardware_calibrate();
+	if (ret)
+		goto fail;
+
+	// read sensors
+	ret = hardware_sensors_read(runtime->rWCHC_sensors, runtime->config->nsensors);
+	if (ret)
+		goto fail;
+
+fail:
+	return (ret);
+}
+
+/**
+ * Hardware run loop
+ */
 void hardware_run(void)
 {
 	struct s_runtime * const runtime = get_runtime();

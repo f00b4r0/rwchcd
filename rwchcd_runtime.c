@@ -44,7 +44,7 @@ static temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, con
  * Process raw sensor data and extract temperature values into the runtime temps[] array.
  * Applies a short-window LP filter on raw data to smooth out noise.
  */
-void parse_temps(void)
+static void parse_temps(void)
 {
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
@@ -205,6 +205,30 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 	return (ALL_OK);
 }
 
+/**
+ * Prepare runtime for run loop.
+ * Parse sensors and bring the plant online
+ * @return exec status
+ */
+int runtime_online(void)
+{
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+		return (-ENOTCONFIGURED);
+
+	parse_temps();
+
+	outdoor_temp();
+	// set init state of outdoor temperatures - XXX REVISIT
+	if (0 == Runtime.t_outdoor_attenuated)
+		Runtime.t_outdoor = Runtime.t_outdoor_mixed = Runtime.t_outdoor_attenuated = get_temp(Runtime.config->id_temp_outdoor);
+
+	return (plant_online(Runtime.plant));
+}
+
+/**
+ * Runtime run loop
+ * @return exec status
+ */
 int runtime_run(void)
 {
 	static int count = 0;
@@ -218,9 +242,6 @@ int runtime_run(void)
 	// process data
 
 	parse_temps();
-	// set init state of outdoor temperatures - XXX REVISIT
-	if (0 == Runtime.t_outdoor_attenuated)
-		Runtime.t_outdoor = Runtime.t_outdoor_mixed = Runtime.t_outdoor_attenuated = get_temp(Runtime.config->id_temp_outdoor);
 
 	if (Runtime.rWCHC_peripherals.LED2) {
 		// clear alarm
@@ -228,6 +249,7 @@ int runtime_run(void)
 		Runtime.rWCHC_peripherals.buzzer = 0;
 		Runtime.rWCHC_peripherals.LCDbl = 0;
 		lcd_update(true);
+		// XXX reset runtime?
 	}
 
 	if (Runtime.rWCHC_peripherals.RQSW1) {

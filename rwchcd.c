@@ -88,6 +88,9 @@ static int init_process()
 		return (ret);
 	}
 
+	/* init runtime */
+	runtime_init();
+
 	/* init config */
 
 	config = config_new();
@@ -231,19 +234,16 @@ static int init_process()
 	dhwt->set_temp_inoffset = delta_to_temp(0);	// Integrated tank
 	dhwt->configured = true;
 
-
 	plant->configured = true;
 
+	// assign plant to runtime
 	runtime->plant = plant;
+
+	// bring the hardware online
+	hardware_online();
 	
-	// set valves to known start state
-	//set_mixer_pos(&Valve, -1);	// force fully closed during more than normal ete_time
-
-	hardware_run();	// XXX to gather sensors
-	parse_temps();	// XXX necessary for online functions
-
-	// finally bring the plant online
-	return (plant_online(plant));
+	// finally bring the runtime online (resets actuators)
+	return (runtime_online());
 }
 
 /*
@@ -258,8 +258,11 @@ int main(void)
 	int ret;
 
 	ret = init_process();
-	if (ret != ALL_OK)
-		dbgerr("init_proccess failed (%d)", ret);	//exit(ret);
+	if (ret != ALL_OK) {
+		dbgerr("init_proccess failed (%d)", ret);
+		if (ret == -ESPI)	// XXX HACK
+			exit(ret);
+	}
 
 	while (1) {
 		hardware_run();

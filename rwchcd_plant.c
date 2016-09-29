@@ -1514,7 +1514,7 @@ void plant_del(struct s_plant * plant)
 /**
  * Bring plant online.
  * @param plant target plant
- * @return error status
+ * @return error status: if any subops fails this will be set
  * @note REQUIRES valid sensor values before being called
  */
 int plant_online(struct s_plant * restrict const plant)
@@ -1524,7 +1524,7 @@ int plant_online(struct s_plant * restrict const plant)
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	struct s_heatsource_l * restrict heatsourcel;
-	int ret;
+	int ret, finalret = ALL_OK;
 
 	if (!plant)
 		return (-EINVALID);
@@ -1541,6 +1541,7 @@ int plant_online(struct s_plant * restrict const plant)
 			dbgerr("pump_online failed, id: %d (%d)", pumpl->id, ret);
 			pump_offline(pumpl->pump);
 			pumpl->pump->online = false;
+			finalret = ret;
 		}
 		else
 			pumpl->pump->online = true;
@@ -1554,6 +1555,7 @@ int plant_online(struct s_plant * restrict const plant)
 			dbgerr("valve_online failed, id: %d (%d)", valvel->id, ret);
 			valve_offline(valvel->valve);
 			valvel->valve->online = false;
+			finalret = ret;
 		}
 		else
 			valvel->valve->online = true;
@@ -1568,6 +1570,7 @@ int plant_online(struct s_plant * restrict const plant)
 			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
 			circuit_offline(circuitl->circuit);
 			circuitl->circuit->online = false;
+			finalret = ret;
 		}
 		else
 			circuitl->circuit->online = true;
@@ -1581,6 +1584,7 @@ int plant_online(struct s_plant * restrict const plant)
 			dbgerr("dhwt_online failed, id: %d (%d)", dhwtl->id, ret);
 			dhwt_offline(dhwtl->dhwt);
 			dhwtl->dhwt->online = false;
+			finalret = ret;
 		}
 		else
 			dhwtl->dhwt->online = true;
@@ -1594,9 +1598,12 @@ int plant_online(struct s_plant * restrict const plant)
 		dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
 		heatsource_offline(heatsourcel->heats);
 		heatsourcel->heats->online = false;
+		finalret = ret;
 	}
 	else
 		heatsourcel->heats->online = true;
+
+	return (finalret);
 }
 
 /**
