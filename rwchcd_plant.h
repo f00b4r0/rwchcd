@@ -36,7 +36,7 @@ struct s_valve {
 	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
 	tempid_t id_temp2;		///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Celsius from temp1
 	tempid_t id_tempout;	///< temp at the output
-	int_fast8_t (*valvelaw)(const struct s_valve * const, temp_t);	///< pointer to valve law
+	int_fast8_t (*valvelaw)(const struct s_valve * const, const temp_t);	///< pointer to valve law
 };
 
 struct s_templaw_data20C {
@@ -61,7 +61,7 @@ struct s_heating_circuit {
 	temp_t set_tfrostfree;		///< target ambient temp in frost-free mode
 	temp_t set_toffset;		///< global offset adjustment for ambient targets
 	temp_t request_ambient;		///< current requested ambient target temp
-	temp_t target_ambient;		///< current calculated ambient target temp
+	temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
 	temp_t set_outhoff_comfort;	///< outdoor temp for no heating in comfort mode
 	temp_t set_outhoff_eco;		///< outdoor temp for no heating in eco mode
 	temp_t set_outhoff_frostfree;	///< outdoor temp for no heating in frostfree mode
@@ -74,7 +74,7 @@ struct s_heating_circuit {
 	temp_t target_wtemp;		///< current target water temp
 	temp_t set_temp_inoffset;	///< offset temp for heat source request
 	temp_t heat_request;		///< current temp request from heat source for this circuit
-	struct s_templaw_data20C tlaw_data;
+	struct s_templaw_data20C tlaw_data;	///< Reference data for templaw (for 20C ambient target)
 	temp_t (*templaw)(const struct s_heating_circuit * const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
 	char * restrict name;		///< name for this circuit
 };

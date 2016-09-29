@@ -9,6 +9,7 @@
 // smarter functions making use of time should be here and act as pre-filter for plant xxx_run() ops.
 
 #include "rwchcd_runtime.h"
+#include "rwchcd_lib.h"
 #include "rwchcd_logic.h"
 
 /**
@@ -70,13 +71,14 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * Circuit logic.
  * @param circuit target circuit
  * @return exec status
- * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down...)
- * XXX ADD rate of rise cap
+ * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down, max ambient... p36+)
+ * XXX TODO ambient temp model (p37)
  */
 int logic_circuit(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp;
+	temp_t ambient_measured, ambient_delta;
 
 	// handle global/local runmodes
 	if (RM_AUTO == circuit->set_runmode)
@@ -110,10 +112,20 @@ int logic_circuit(struct s_heating_circuit * const circuit)
 	if (circuit->outhoff)
 		circuit->actual_runmode = RM_OFF;
 
-	// XXX OPTIM if return temp is known
-
 	// save current ambient request
 	circuit->request_ambient = target_temp;
+
+	// XXX OPTIM if return temp is known
+
+	// apply offset and save calculated target ambient temp to circuit
+	circuit->target_ambient = circuit->request_ambient + circuit->set_toffset;
+
+	// shift based on measured ambient temp (if available) influence p.41
+	ambient_measured = get_temp(circuit->id_temp_ambient);
+	if (validate_temp(ambient_measured) == ALL_OK) {
+		ambient_delta = (circuit->set_ambient_factor/10) * (circuit->target_ambient - ambient_measured);
+		circuit->target_ambient += ambient_delta;
+	}
 
 	return (ALL_OK);
 }

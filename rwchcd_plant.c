@@ -623,6 +623,8 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// save current target
 	boiler->target_temp = target_temp;
 
+	dbgmsg("boiler_temp: %1.f, target_temp: %.1f", temp_to_celsius(boiler_temp), temp_to_celsius(target_temp));
+
 	// temp control
 	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
 		hardware_relay_set_state(boiler->burner_1, ON, 0);	// immediate start
@@ -732,7 +734,6 @@ static int heatsource_run(struct s_heatsource * const heat)
  https://pompe-a-chaleur.ooreka.fr/astuce/voir/111578/le-regulateur-loi-d-eau-pour-pompe-a-chaleur
  http://www.energieplus-lesite.be/index.php?id=10959
  http://herve.silve.pagesperso-orange.fr/regul.htm
- XXX REVISIT FLOATS
  * @param circuit self
  * @param source_temp outdoor temperature to consider
  * @return a target water temperature for this circuit
@@ -746,8 +747,7 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 	const temp_t water_temp2 = circuit->tlaw_data.twater2;
 	float slope;
 	temp_t offset;
-	temp_t ambient_measured, ambient_delta, curve_shift;
-	temp_t t_output;
+	temp_t t_output, curve_shift;
 
 	// (Y2 - Y1)/(X2 - X1)
 	slope = (water_temp2 - water_temp1) / (out_temp2 - out_temp1);
@@ -760,14 +760,6 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 	// shift output based on actual target temperature
 	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
 	t_output += curve_shift;
-
-	// shift based on measured ambient temp (if available) influence p.41
-	ambient_measured = get_temp(circuit->id_temp_ambient);
-	if (validate_temp(ambient_measured) == ALL_OK) {
-		ambient_delta = (circuit->set_ambient_factor/10) * (circuit->target_ambient - ambient_measured);
-		curve_shift = ambient_delta * (1 - slope);
-		t_output += curve_shift;
-	}
 
 	return (t_output);
 }
@@ -837,7 +829,9 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
  * Controls the circuits elements to achieve the desired target temperature.
  * @param circuit target circuit
  * @return exec status
+ * XXX ADD rate of rise cap
  * XXX safety for heating floor if implementing positive consummer_shift()
+ * @warning circuit->target_ambient must be properly set before this runs
  */
 static int circuit_run(struct s_heating_circuit * const circuit)
 {
@@ -874,14 +868,15 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// if we reached this point then the circuit is active
 
-	// save calculated target ambient temp to circuit
-	circuit->target_ambient = circuit->request_ambient + circuit->set_toffset;
-
 	// circuit is active, ensure pump is running
 	pump_set_state(circuit->pump, ON, 0);
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
+	
+	dbgmsg("request_ambient: %.1f, target_ambient: %.1f, water_temp: %.1f",
+	       temp_to_celsius(circuit->request_ambient), temp_to_celsius(circuit->target_ambient),
+	       temp_to_celsius(water_temp));
 
 	// enforce limits
 	if (water_temp < circuit->limit_wtmin)
@@ -897,7 +892,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// adjust valve if necessary
 	if (circuit->valve && circuit->valve->configured) {
-		percent = calc_mixer_pos(circuit->valve, circuit->target_ambient);
+		percent = calc_mixer_pos(circuit->valve, circuit->target_wtemp);
 		if (percent >= 0)
 			circuit->valve->target_position = percent;
 		else {
@@ -1082,6 +1077,9 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
+	dbgmsg("target_temp: %.1f, bottom_temp: %.1f, top_temp: %.f1",
+	       temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
 	   untrip at target (preferably on high sensor). */
@@ -1093,6 +1091,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// if heating not in progress, trip if forced or at (target temp - histeresis)
 		if (dhwt->force_on || (curr_temp < (target_temp - dhwt->histeresis))) {
+			dbgmsg("trip");
 			if (runtime->sleeping && dhwt->selfheater && dhwt->selfheater->configured) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->selfheater, ON, 0);
@@ -1125,6 +1124,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
 		if (curr_temp > target_temp) {
+			dbgmsg("untrip");
 			// stop self-heater
 			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 

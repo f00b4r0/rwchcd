@@ -66,6 +66,7 @@ static void parse_temps(void)
  * Process outdoor temperature.
  * Compute the values of mixed and attenuated outdoor temp based on a
  * weighted moving average and the building time constant.
+ * t_filtered is t_outdoor filtered by the building time constant
  * @note must run at (ideally) fixed intervals
  * #warning no "parameter" check
  */
@@ -73,6 +74,7 @@ static void outdoor_temp()
 {
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
+	temp_t t_filtered;
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor);	// XXX checks
 
@@ -82,8 +84,9 @@ static void outdoor_temp()
 
 	lasttime = time(NULL);
 
-	Runtime.t_outdoor_mixed = temp_expw_mavg(Runtime.t_outdoor_mixed, Runtime.t_outdoor, Runtime.config->building_tau, dt);
-	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_mixed, Runtime.config->building_tau, dt);
+	t_filtered = temp_expw_mavg(Runtime.t_outdoor_mixed, Runtime.t_outdoor, Runtime.config->building_tau, dt);
+	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + t_filtered)/2;	// other possible calculation: 75% of t_outdoor + 25% of t_filtered - 211p15
+	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, t_filtered, Runtime.config->building_tau, dt);
 }
 
 
@@ -262,7 +265,7 @@ int runtime_run(void)
 		if (cursysmode > SYS_MANUAL)	// XXX last mode
 			cursysmode = SYS_OFF;
 
-		runtime_set_systemmode(cursysmode);
+		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?
 	}
 
 	if (Runtime.rWCHC_peripherals.RQSW2) {
