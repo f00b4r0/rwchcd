@@ -127,8 +127,6 @@ int config_save(const struct s_config * const config)
 	if (ret)
 		return (-ESPI);
 
-	return (ALL_OK);	// XXX DISABLE SAVE TO FLASH FOR NOW
-#warning Save to flash disabled
 	i = 0;
 	// save hardware config
 	do {

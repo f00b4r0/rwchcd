@@ -68,6 +68,14 @@ static float control_PI(const float target, const float actual)
 }
 #endif
 
+static inline uint8_t rid_to_rwchcaddr(unsigned int id)
+{
+	if (id < 8)
+		return (id-1);
+	else
+		return (id);
+}
+
 
 static int init_process()
 {
@@ -104,8 +112,11 @@ static int init_process()
 	config_set_outdoor_sensorid(config, 1);
 	config_set_tfrostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
 	config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
+
+	// XXX add firmware config bits here
+
 	config->configured = true;
-	config_save(config);
+//	config_save(config);
 
 	// attach config to runtime
 	runtime->config = config;
@@ -132,6 +143,7 @@ static int init_process()
 	boiler->limit_tmax = celsius_to_temp(90);
 	boiler->limit_tmin = celsius_to_temp(45);
 	boiler->id_temp = 2;	// XXX VALIDATION
+	config->rWCHC_settings.addresses.S_burner = 2-1;			// XXX INTERNAL CONFIG
 	boiler->id_temp_outgoing = boiler->id_temp;
 	boiler->burner_1 = hardware_relay_new();
 	if (!boiler->burner_1) {
@@ -139,6 +151,7 @@ static int init_process()
 		return (-EOOM);
 	}
 	hardware_relay_set_id(boiler->burner_1, 13);	// XXX first relay
+	config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(13);	// XXX INTERNAL CONFIG
 	boiler->burner_1->configured = true;
 	boiler->set_burner_min_time = 2 * 60;	// XXX 2 minutes
 	boiler->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
@@ -162,6 +175,7 @@ static int init_process()
 	circuit->set_outhoff_frostfree = circuit->set_tfrostfree - delta_to_temp(4);
 	circuit->set_outhoff_histeresis = delta_to_temp(1);
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
+	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
 	circuit->id_temp_return = 4;	// XXX VALIDATION
 	circuit->set_temp_inoffset = delta_to_temp(10);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
@@ -188,10 +202,12 @@ static int init_process()
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
 	hardware_relay_set_id(circuit->valve->open, 1);
+	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(1);		// XXX INTERNAL CONFIG
 	circuit->valve->open->configured = true;
 
 	circuit->valve->close = hardware_relay_new();
 	hardware_relay_set_id(circuit->valve->close, 2);
+	config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(2);	// XXX INTERNAL CONFIG
 	circuit->valve->close->configured = true;
 
 	circuit->valve->configured = true;
@@ -209,6 +225,7 @@ static int init_process()
 	// create and configure a relay for that pump
 	circuit->pump->relay = hardware_relay_new();
 	hardware_relay_set_id(circuit->pump->relay, 3);
+	config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(3);		// XXX INTERNAL CONFIG
 	circuit->pump->relay->configured = true;
 
 	circuit->pump->configured = true;
@@ -235,6 +252,8 @@ static int init_process()
 	dhwt->configured = true;
 
 	plant->configured = true;
+
+	config_save(config);				// XXX HERE BECAUSE OF INTERNAL CONFIG HACKS
 
 	// assign plant to runtime
 	runtime->plant = plant;
