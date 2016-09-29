@@ -155,6 +155,7 @@ static int init_process()
 	boiler->burner_1->configured = true;
 	boiler->set_burner_min_time = 2 * 60;	// XXX 2 minutes
 	boiler->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
+	heatsource->set_runmode = RM_AUTO;	// use global setting
 	heatsource->configured = true;
 
 	// create a new circuit for the plant
@@ -230,6 +231,8 @@ static int init_process()
 
 	circuit->pump->configured = true;
 
+	circuit->set_runmode = RM_AUTO;		// use global setting
+
 	circuit->configured = true;
 
 	// create a new DHWT for the plant
@@ -249,6 +252,7 @@ static int init_process()
 	dhwt->set_tfrostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
 	dhwt->histeresis = delta_to_temp(10);
 	dhwt->set_temp_inoffset = delta_to_temp(0);	// Integrated tank
+	dhwt->set_runmode = RM_AUTO;	// use global setting
 	dhwt->configured = true;
 
 	plant->configured = true;

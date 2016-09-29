@@ -71,8 +71,8 @@ enum e_runmode {
 	RM_COMFORT,	///< device is in comfort mode
 	RM_ECO,		///< device is in eco mode
 	RM_FROSTFREE,	///< device is in frostfree mode
-	RM_MANUAL,	///< device is in manual mode (typically all actuators are on)
 	RM_DHWONLY,	///< device is in DHW only mode
+	RM_MANUAL,	///< device is in manual mode (typically all actuators are on)
 };
 
 enum e_systemmode {
@@ -81,8 +81,8 @@ enum e_systemmode {
 	SYS_COMFORT,	///< system is running in comfort mode
 	SYS_ECO,	///< system is running in eco mode
 	SYS_FROSTFREE,	///< system is running in frostfree mode
+	SYS_DHWONLY,	///< system is running in DHW only mode
 	SYS_MANUAL,	///< system is running in manual mode
-	SYS_DHWONLY	///< system is running in DHW only mode
 };
 
 struct s_config {

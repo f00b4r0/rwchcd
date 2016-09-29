@@ -259,7 +259,7 @@ int runtime_run(void)
 		Runtime.rWCHC_peripherals.RQSW1 = 0;
 		count = 5;
 
-		if (cursysmode > SYS_DHWONLY)
+		if (cursysmode > SYS_MANUAL)	// XXX last mode
 			cursysmode = SYS_OFF;
 
 		runtime_set_systemmode(cursysmode);

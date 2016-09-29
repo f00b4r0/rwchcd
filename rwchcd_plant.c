@@ -140,7 +140,7 @@ static void del_valve(struct s_valve * valve)
  */
 static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const temp_t target_tout)
 {
-	int_fast8_t percent;
+	int_fast16_t percent;
 	short iterm, iterm_prev;
 	temp_t tempin1, tempin2, tempout, error;
 	float Ki;	// XXX REVISIT
@@ -183,7 +183,7 @@ static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const tem
 		percent = 0;
 
 exit:
-	return (percent);
+	return ((int_fast8_t)percent);
 }
 
 /**
@@ -227,7 +227,7 @@ static int_fast8_t calc_mixer_pos(const struct s_valve * const mixer, const temp
 		return (-ENOTCONFIGURED);
 
 	if (!mixer->open || !mixer->close)
-		return (-EGENERIC);	// XXX REVISIT
+		return (-EMISCONFIGURED);
 
 	// apply deadzone
 	tempout = get_temp(mixer->id_tempout);
@@ -456,7 +456,7 @@ static int boiler_hs_online(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
 	temp_t testtemp;
-	int ret = -EGENERIC;
+	int ret;
 
 	if (!heat->configured)
 		return (-ENOTCONFIGURED);
@@ -679,6 +679,8 @@ static int heatsource_offline(struct s_heatsource * const heat)
 	if (heat->hs_offline)
 		ret = heat->hs_offline(heat);
 
+	heat->actual_runmode = RM_OFF;
+
 	return (ret);
 }
 
@@ -780,7 +782,7 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 static int circuit_online(struct s_heating_circuit * const circuit)
 {
 	temp_t testtemp;
-	int ret = -EGENERIC;
+	int ret;
 
 	if (!circuit)
 		return (-EINVALID);
@@ -825,7 +827,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 
 	circuit->valve->target_position = 0;	// XXX REVISIT
 
-	circuit->set_runmode = RM_OFF;
+	circuit->actual_runmode = RM_OFF;
 
 	return (ALL_OK);
 }
@@ -857,7 +859,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 		case RM_OFF:
 			return (circuit_offline(circuit));
 		case RM_MANUAL:
-			pump_set_state(circuit->pump, ON, FORCE);
+			valve_offline(circuit->valve);	// stop valve
+			pump_set_state(circuit->pump, ON, FORCE);	// turn pump on
 			return (ALL_OK);	//XXX REVISIT
 		case RM_COMFORT:
 		case RM_ECO:
@@ -990,7 +993,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (dhwt->selfheater)
 		hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
-	dhwt->set_runmode = RM_OFF;
+	dhwt->actual_runmode = RM_OFF;
 
 	return (ALL_OK);
 }
