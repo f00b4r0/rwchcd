@@ -157,10 +157,13 @@ static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const tem
 		goto exit;
 
 	/* if we don't have a sensor for secondary input, guesstimate it
-	 treat the provided id as a delta from valve tempout in Celsius XXX REVISIT,
+	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
 	 tempin2 = tempout - delta */
-	if (valve->id_temp2 < 0) {
-		tempin2 = tempout - celsius_to_temp(-(valve->id_temp2)); // XXX will need casting
+	if (valve->id_temp2 == 0) {
+		tempin2 = tempout - delta_to_temp(30);	// XXX 30K delta by default
+	}
+	else if (valve->id_temp2 < 0) {
+		tempin2 = tempout - delta_to_temp(-(valve->id_temp2)); // XXX will need casting
 	}
 	else {
 		tempin2 = get_temp(valve->id_temp2);
@@ -169,12 +172,17 @@ static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const tem
 			goto exit;
 	}
 
+	/* Absolute positionning. We don't use actual tempout here.
+	 XXX REVIEW. Should help anticipating variations due to changes in inputs */
+	percent = ((target_tout - tempin2) / (tempin1 - tempin2) * 100);
+
 	// XXX IMPLEMENT (P)I to account for actual tempout - XXX not used yet
 	error = target_tout - tempout;
 	iterm = Ki * error + iterm_prev;
 	iterm_prev = iterm;
 
-	percent = ((target_tout - tempin2) / (tempin1 - tempin2) * 100);
+	dbgmsg("target_tout: %.1f, tempout: %.1f, tempin1: %.1f, tempin2: %.1f, percent: %d",
+	       temp_to_celsius(target_tout), temp_to_celsius(tempout), temp_to_celsius(tempin1), temp_to_celsius(tempin2), percent);
 
 	// enforce physical limits
 	if (percent > 100)
@@ -294,7 +302,8 @@ static int valve_offline(struct s_valve * const valve)
 }
 
 /**
- * run valve
+ * run valve.
+ * Static positionning. XXX REVIEW PWM control?
  * @param valve target valve
  * @return error status
  * XXX only handles 3-way valve for now

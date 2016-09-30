@@ -62,7 +62,7 @@ enum {
 #define RWCHCD_SPI_MAX_TRIES	5	///< how many times SPI ops should be retried
 
 typedef int_fast32_t	temp_t;		// all temps are internally stored in Kelvin * 100 (32bit avoids overflow with disconnected sensors). Must be signed for maths
-typedef int_fast16_t	tempid_t;	// temperature index: if negative, is an offset. If > sizeof(Runtime->temps[]), invalid
+typedef int_fast16_t	tempid_t;	// temperature index: if negative, is an offset in Kelvin. If > sizeof(Runtime->temps[]), invalid
 
 
 enum e_runmode {

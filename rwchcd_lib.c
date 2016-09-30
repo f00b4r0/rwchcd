@@ -34,7 +34,7 @@ temp_t get_temp(const tempid_t id)
 {
 	const struct s_runtime * const runtime = get_runtime();
 
-	if (!id || (id > runtime->config->nsensors))
+	if ((id <= 0) || (id > runtime->config->nsensors))
 		return (0);
 
 	return (runtime->temps[id-1]);	// XXX REVISIT lock
