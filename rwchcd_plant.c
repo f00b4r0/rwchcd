@@ -189,7 +189,8 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	}
 
 	/* Absolute positionning. We don't use actual tempout here.
-	 XXX REVIEW. Should help anticipating variations due to changes in inputs */
+	 XXX REVIEW. Should help anticipating variations due to changes in inputs 
+	 if tempin2 > tempin1 then the valve will close */
 	percent = ((target_tout - tempin2) / (tempin1 - tempin2) * 100);
 
 	// Add a proportional amount to compensate for drift

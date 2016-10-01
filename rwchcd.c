@@ -22,6 +22,7 @@
 
 #include <unistd.h>	// sleep/usleep
 #include <stdlib.h>	// exit
+#include <pthread.h>
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
@@ -31,42 +32,10 @@
 #include "rwchcd_lcd.h"
 #include "rwchcd_spi.h"
 
-/**
- * Implement time-based PI controller in velocity form
- * Saturation : max = boiler temp, min = return temp
- * We want to output
- http://www.plctalk.net/qanda/showthread.php?t=19141
- // http://www.energieplus-lesite.be/index.php?id=11247
- // http://www.ferdinandpiette.com/blog/2011/08/implementer-un-pid-sans-faire-de-calculs/
- // http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
- // http://controlguru.com/process-gain-is-the-how-far-variable/
- // http://www.rhaaa.fr/regulation-pid-comment-la-regler-12
- // http://controlguru.com/the-normal-or-standard-pid-algorithm/
- // http://www.csimn.com/CSI_pages/PIDforDummies.html
- // https://en.wikipedia.org/wiki/PID_controller
- */
-#if 0
-static float control_PI(const float target, const float actual)
+static void * thread_hardware(void *arg)
 {
-	float Kp, Ki;	// XXX PID settings
-	float error, error_prev, error_change, output, iterm;
-	static float iterm_prev, error_prev, output_prev, prev;
-
-	error = target - actual;
-
-	// Integral term
-	iterm = Ki * error;
-
-	// Proportional term
-	pterm = Kp * (prev - actual);
-	prev = actual;
-
-	output = iterm + pterm + output_prev;
-	output_prev = output;
-
-	return (output);
+	
 }
-#endif
 
 static inline uint8_t rid_to_rwchcaddr(unsigned int id)
 {
@@ -177,7 +146,7 @@ static int init_process()
 	circuit->set_outhoff_histeresis = deltaK_to_temp(1);
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
 	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
-	circuit->id_temp_return = 4;	// XXX VALIDATION
+	circuit->id_temp_return = 0; //4;	// XXX VALIDATION
 	circuit->set_temp_inoffset = deltaK_to_temp(10);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
 	circuit->tlaw_data.twater1 = celsius_to_temp(70);
@@ -202,13 +171,13 @@ static int init_process()
 
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
-	hardware_relay_set_id(circuit->valve->open, 1);
-	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(1);		// XXX INTERNAL CONFIG
+	hardware_relay_set_id(circuit->valve->open, 9);
+	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(9);		// XXX INTERNAL CONFIG
 	circuit->valve->open->configured = true;
 
 	circuit->valve->close = hardware_relay_new();
-	hardware_relay_set_id(circuit->valve->close, 2);
-	config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(2);	// XXX INTERNAL CONFIG
+	hardware_relay_set_id(circuit->valve->close, 10);
+	config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(10);	// XXX INTERNAL CONFIG
 	circuit->valve->close->configured = true;
 
 	circuit->valve->configured = true;
@@ -225,8 +194,8 @@ static int init_process()
 
 	// create and configure a relay for that pump
 	circuit->pump->relay = hardware_relay_new();
-	hardware_relay_set_id(circuit->pump->relay, 3);
-	config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(3);		// XXX INTERNAL CONFIG
+	hardware_relay_set_id(circuit->pump->relay, 11);
+	config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(11);		// XXX INTERNAL CONFIG
 	circuit->pump->relay->configured = true;
 
 	circuit->pump->configured = true;
