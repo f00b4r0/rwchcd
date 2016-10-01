@@ -195,7 +195,7 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 
 	// Add a proportional amount to compensate for drift
 	error = target_tout - tempout;	// error is deltaK * 100 (i.e. internal type delta)
-	percent += temp_to_deltaK(error);	// XXX HARDCODED we take Kelvin value as a %offset
+	percent += 2*temp_to_deltaK(error);	// XXX HARDCODED we take 2*Kelvin value as a %offset
 	
 	dbgmsg("target_tout: %.1f, tempout: %.1f, tempin1: %.1f, tempin2: %.1f, percent: %d, error: %.0f",
 	       temp_to_celsius(target_tout), temp_to_celsius(tempout), temp_to_celsius(tempin1), temp_to_celsius(tempin2), percent, temp_to_deltaK(error));
@@ -228,6 +228,14 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
 	if (ALL_OK != ret)
 		return (ret);
 
+	// apply deadzone
+	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
+		valve->in_deadzone = true;
+		return (-EDEADZONE);
+	}
+	
+	valve->in_deadzone = false;
+	
 	if (target_tout > tempout)
 		valve->target_position = 100;
 	else
@@ -405,6 +413,16 @@ int valve_make_linear(struct s_valve * const valve)
 
 	valve->valvelaw = valvelaw_linear;
 
+	return (ALL_OK);
+}
+
+int valve_make_bangbang(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+	
+	valve->valvelaw = valvelaw_bangbang;
+	
 	return (ALL_OK);
 }
 
@@ -911,9 +929,9 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
-	dbgmsg("request_ambient: %.1f, target_ambient: %.1f, water_temp: %.1f, curr_wtemp: %.1f",
+	dbgmsg("request_ambient: %.1f, target_ambient: %.1f, target_wtemp: %.1f, curr_wtemp: %.1f",
 	       temp_to_celsius(circuit->request_ambient), temp_to_celsius(circuit->target_ambient),
-	       temp_to_celsius(water_temp), temp_to_celsius(circuit->id_temp_outgoing));
+	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->id_temp_outgoing)));
 
 	// enforce limits
 	if (water_temp < circuit->limit_wtmin)

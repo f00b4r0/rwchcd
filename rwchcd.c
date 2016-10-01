@@ -108,7 +108,7 @@ static int init_process()
 
 	// configure that source	XXX REVISIT
 	boiler = heatsource->priv;
-	boiler->histeresis = deltaK_to_temp(5);
+	boiler->histeresis = deltaK_to_temp(8);
 	boiler->limit_tmax = celsius_to_temp(90);
 	boiler->limit_tmin = celsius_to_temp(45);
 	boiler->id_temp = 2;	// XXX VALIDATION
@@ -167,7 +167,7 @@ static int init_process()
 	circuit->valve->id_temp1 = boiler->id_temp_outgoing;
 	circuit->valve->id_temp2 = circuit->id_temp_return;
 	circuit->valve->id_tempout = circuit->id_temp_outgoing;
-	valve_make_linear(circuit->valve);
+	valve_make_bangbang(circuit->valve);
 
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
