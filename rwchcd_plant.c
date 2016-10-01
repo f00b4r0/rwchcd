@@ -658,7 +658,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// save current target
 	boiler->target_temp = target_temp;
 
-	dbgmsg("running: %d, boiler_temp: %.1f, target_temp: %.1f", boiler->burner1->is_on, temp_to_celsius(boiler_temp), temp_to_celsius(target_temp));
+	dbgmsg("running: %d, boiler_temp: %.1f, target_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(boiler_temp), temp_to_celsius(target_temp));
 
 	// temp control
 	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
