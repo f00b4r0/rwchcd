@@ -160,6 +160,8 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 		default:
 			return (-EINVALID);
 	}
+	
+	dbgmsg("sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.runmode, Runtime.dhwmode);
 
 	Runtime.systemmode = sysmode;
 
@@ -244,6 +246,8 @@ int runtime_run(void)
 
 	// process data
 
+	dbgmsg("begin.");
+	
 	parse_temps();
 
 	if (Runtime.rWCHC_peripherals.LED2) {

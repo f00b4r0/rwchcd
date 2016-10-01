@@ -30,7 +30,7 @@
 #endif  /* HAVE_GETTEXT */
 
 #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
-#define dbgerr(format, ...)	printf("(%s()) " format "\n", __func__, ## __VA_ARGS__)
+#define dbgerr(format, ...)	printf("ERROR! (%s()) " format "\n", __func__, ## __VA_ARGS__)
 
 enum {
 	ALL_OK,

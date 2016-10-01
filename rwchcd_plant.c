@@ -197,8 +197,8 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	error = target_tout - tempout;	// error is deltaK * 100 (i.e. internal type delta)
 	percent += temp_to_deltaK(error);	// XXX HARDCODED we take Kelvin value as a %offset
 	
-	dbgmsg("target_tout: %.1f, tempout: %.1f, tempin1: %.1f, tempin2: %.1f, percent: %d, error: %d",
-	       temp_to_celsius(target_tout), temp_to_celsius(tempout), temp_to_celsius(tempin1), temp_to_celsius(tempin2), percent, error);
+	dbgmsg("target_tout: %.1f, tempout: %.1f, tempin1: %.1f, tempin2: %.1f, percent: %d, error: %.0f",
+	       temp_to_celsius(target_tout), temp_to_celsius(tempout), temp_to_celsius(tempin1), temp_to_celsius(tempin2), percent, temp_to_deltaK(error));
 
 	// enforce physical limits
 	if (percent > 100)
@@ -276,14 +276,12 @@ static int valve_online(struct s_valve * const valve)
 	// close the valve for 2*ete_time
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, ON, 0);
-	valve->action = CLOSE;
 
 	sleep(2*valve->ete_time);	// XXX will block
 #endif
 	// return to idle
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
-	valve->action = STOP;
 
 	return (ALL_OK);
 }
@@ -299,7 +297,6 @@ static int valve_offline(struct s_valve * const valve)
 {
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
-	valve->action = STOP;
 
 	return (ALL_OK);
 }
@@ -316,6 +313,8 @@ static int valve_run(struct s_valve * const valve)
 	const time_t now = time(NULL);
 	float time_ratio;
 	int_fast8_t percent;
+	int_fast16_t calc_course = 0;	// use internal variable to avoid polluting state and deal with overflow
+	bool state_open, state_close;
 
 	if (!valve)
 		return (-EINVALID);
@@ -328,48 +327,72 @@ static int valve_run(struct s_valve * const valve)
 
 	time_ratio = 100.0F/valve->set_ete_time;
 	percent = valve->target_position;
-
-	if (valve->action == OPEN)
-		valve->actual_position += (now - valve->open->on_since) * time_ratio;
-	else if (valve->action == CLOSE)
-		valve->actual_position -= (now - valve->close->on_since) * time_ratio;
 	
-	dbgmsg("current: %d%%, target: %d%%, in_deadzone: %d", valve->actual_position, percent, valve->in_deadzone);
+	// update actual valve state
+	hardware_relay_get_state(valve->open);
+	hardware_relay_get_state(valve->close);
+	
+	state_open = valve->open->is_on;
+	state_close = valve->close->is_on;
+
+	if (state_open && !state_close)
+		valve->action = OPEN;
+	else if (!state_open && state_close)
+		valve->action = CLOSE;
+	else if (!state_open && !state_close)
+		valve->action = STOP;
+	else {
+		dbgerr("IMPOSSIBLE VALVE STATE!");
+		return (-EGENERIC);
+	}
+	
+	// calculate current course
+	if (OPEN == valve->action)
+		calc_course += ((now - valve->open->on_since) * time_ratio);	// trunc/floor
+	else if (CLOSE == valve->action)
+		calc_course -= ((now - valve->close->on_since) * time_ratio);	// trunc/floor
+	else // valve stopped, update last rest position
+		valve->last_rest_position = valve->actual_position;
+	
+	// update current position
+	calc_course += valve->last_rest_position;
+
+	dbgmsg("action: %d, previous: %d%%, current: %d%%, target: %d%%, in_deadzone: %d",
+	       valve->action, valve->actual_position, calc_course, percent, valve->in_deadzone);
 
 	// enforce physical limits
-	if (valve->actual_position < 0)
+	if (calc_course < 0)
 		valve->actual_position = 0;
-	else if (valve->actual_position > 100)
+	else if (calc_course > 100)
 		valve->actual_position = 100;
+	else
+		valve->actual_position = calc_course;
 
 	// valve in deadzone or position is correct
 	if (valve->in_deadzone || (valve->actual_position == percent)) {
 		// if we're going for full open or full close, make absolutely sure we are
 		// XXX REVISIT 2AM CODE
 		if (percent == 0) {
-			if ((now - valve->close->on_since) < valve->set_ete_time*4)
+			if ((now - valve->close->on_since) < valve->set_ete_time*2)
 				return (ALL_OK);
 		}
 		else if (percent == 100) {
-			if ((now - valve->open->on_since) < valve->set_ete_time*4)
+			if ((now - valve->open->on_since) < valve->set_ete_time*2)
 				return (ALL_OK);
 		}
 
 		hardware_relay_set_state(valve->open, OFF, 0);
 		hardware_relay_set_state(valve->close, OFF, 0);
-		valve->action = STOP;
 	}
 	// position is too low
 	else if (percent - valve->actual_position > 0) {
 		hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->open, ON, 0);
-		valve->action = OPEN;
 	}
 	// position is too high
 	else if (percent - valve->actual_position < 0) {
 		hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->close, ON, 0);
-		valve->action = CLOSE;
 	}
 
 	return (ALL_OK);
@@ -635,7 +658,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// save current target
 	boiler->target_temp = target_temp;
 
-	dbgmsg("boiler_temp: %1.f, target_temp: %.1f", temp_to_celsius(boiler_temp), temp_to_celsius(target_temp));
+	dbgmsg("boiler_temp: %.1f, target_temp: %.1f", temp_to_celsius(boiler_temp), temp_to_celsius(target_temp));
 
 	// temp control
 	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
@@ -772,6 +795,8 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 	// shift output based on actual target temperature
 	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
 	t_output += curve_shift;
+	
+	dbgmsg("source_temp: %.1f, t_output: %.1f", temp_to_celsius(source_temp), temp_to_celsius(t_output));
 
 	return (t_output);
 }
@@ -1084,7 +1109,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
-	dbgmsg("target_temp: %.1f, bottom_temp: %.1f, top_temp: %.f1",
+	dbgmsg("target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
 	       temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable

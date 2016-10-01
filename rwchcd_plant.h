@@ -28,6 +28,7 @@ struct s_valve {
 	bool in_deadzone;	///< true if valve is in deadzone
 	temp_t set_tdeadzone;	///< valve deadzone: no operation when target in deadzone
 	int_fast8_t actual_position;	///< current position in %
+	int_fast8_t last_rest_position;	///< last known resting position ("valve last stopped at")
 	int_fast8_t target_position;	///< current target position in %
 	int_fast16_t set_ete_time;	///< end-to-end run time in seconds
 	enum { STOP = 0, OPEN, CLOSE } action;	///< current valve action
