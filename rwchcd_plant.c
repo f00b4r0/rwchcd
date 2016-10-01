@@ -602,7 +602,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_boiler_priv * const boiler = heat->priv;
-	temp_t boiler_temp, target_temp;
+	temp_t boiler_temp, target_temp, trip_temp, untrip_temp;
 	int ret;
 
 	if (!heat->configured)
@@ -676,12 +676,22 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// save current target
 	boiler->target_temp = target_temp;
 
-	dbgmsg("running: %d, boiler_temp: %.1f, target_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(boiler_temp), temp_to_celsius(target_temp));
+	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(target_temp), temp_to_celsius(boiler_temp));
 
+	// un/trip points
+	if (target_temp == boiler->limit_tmin)
+		trip_temp = boiler->limit_tmin;
+	else
+		trip_temp = (target_temp - boiler->histeresis/2);
+	if (target_temp == boiler->limit_tmax)
+		untrip_temp = boiler->limit_tmax;
+	else
+		untrip_temp = (target_temp + boiler->histeresis/2);
+	
 	// temp control
-	if (boiler_temp < (target_temp - boiler->histeresis/2))		// trip condition
+	if (boiler_temp < trip_temp)		// trip condition
 		hardware_relay_set_state(boiler->burner_1, ON, 0);	// immediate start
-	else if (boiler_temp > (target_temp + boiler->histeresis/2))	// untrip condition
+	else if (boiler_temp > untrip_temp)	// untrip condition
 		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set_burner_min_time);	// delayed stop
 
 	// keep track of low requests for sleepover, if set. XXX antifreeze will reset, is that a bad thing?
@@ -814,7 +824,7 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
 	t_output += curve_shift;
 	
-	dbgmsg("source_temp: %.1f, t_output: %.1f", temp_to_celsius(source_temp), temp_to_celsius(t_output));
+	dbgmsg("source_temp: %.1f, target: %.1f, t_output: %.1f", temp_to_celsius(source_temp), temp_to_celsius(circuit->target_ambient), temp_to_celsius(t_output));
 
 	return (t_output);
 }
@@ -872,7 +882,8 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	if (circuit->pump)
 		pump_set_state(circuit->pump, OFF, FORCE);
 
-	circuit->valve->target_position = 0;	// XXX REVISIT
+	if (circuit->valve)
+		circuit->valve->target_position = 0;	// XXX REVISIT
 
 	circuit->actual_runmode = RM_OFF;
 
@@ -1127,8 +1138,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
-	dbgmsg("target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
-	       temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+	dbgmsg("charge: %d, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
+	       dhwt->charge_on, temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
