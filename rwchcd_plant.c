@@ -134,27 +134,37 @@ static void del_valve(struct s_valve * valve)
 /**
  * implement a linear law for valve position:
  * t_outpout = percent * t_input1 + (1-percent) * t_input2
+ * side effect sets target_position
  * @param valve self
  * @param target_tout target valve output temperature
- * @return valve position in percent or error
+ * @return exec status
  */
-static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const temp_t target_tout)
+static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tout)
 {
 	int_fast16_t percent;
 	short iterm, iterm_prev;
 	temp_t tempin1, tempin2, tempout, error;
 	float Ki;	// XXX REVISIT
+	int ret;
 
 	tempin1 = get_temp(valve->id_temp1);
-	percent = validate_temp(tempin1);
-	if (ALL_OK != percent)
-		goto exit;
+	ret = validate_temp(tempin1);
+	if (ALL_OK != ret)
+		return (ret);
 
 	// get current outpout
 	tempout = get_temp(valve->id_tempout);
-	percent = validate_temp(tempout);
-	if (ALL_OK != percent)
-		goto exit;
+	ret = validate_temp(tempout);
+	if (ALL_OK != ret)
+		return (ret);
+
+	// apply deadzone
+	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
+		valve->in_deadzone = true;
+		return (-EDEADZONE);
+	}
+	
+	valve->in_deadzone = false;
 
 	/* if we don't have a sensor for secondary input, guesstimate it
 	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
@@ -167,9 +177,9 @@ static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const tem
 	}
 	else {
 		tempin2 = get_temp(valve->id_temp2);
-		percent = validate_temp(tempin2);
-		if (ALL_OK != percent)
-			goto exit;
+		ret = validate_temp(tempin2);
+		if (ALL_OK != ret)
+			return (ret);
 	}
 
 	/* Absolute positionning. We don't use actual tempout here.
@@ -189,66 +199,53 @@ static int_fast8_t valvelaw_linear(const struct s_valve * const valve, const tem
 		percent = 100;
 	else if (percent < 0)
 		percent = 0;
+	
+	valve->target_position = percent;
 
-exit:
-	return ((int_fast8_t)percent);
+	return (ALL_OK);
 }
 
 /**
- * implement a bang-bang law for valve position:
+ * implement a bang-bang law for valve position.
  * If target_tout > current tempout, open the valve, otherwise close it
  * @param valve self
  * @param target_tout target valve output temperature
- * @return valve position in percent or error
+ * @return exec status
  */
-static int_fast8_t valvelaw_bangbang(const struct s_valve * const valve, const temp_t target_tout)
+static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_tout)
 {
-	int_fast8_t percent;
+	int ret;
 	temp_t tempout;
 
 	tempout = get_temp(valve->id_tempout);
-	percent = validate_temp(tempout);
-	if (ALL_OK != percent)
-		goto exit;
+	ret = validate_temp(tempout);
+	if (ALL_OK != ret)
+		return (ret);
 
 	if (target_tout > tempout)
-		percent = 100;
+		valve->target_position = 100;
 	else
-		percent = 0;
-
-exit:
-	return (percent);
+		valve->target_position = 0;
+	
+	return (ALL_OK);
 }
 
 /**
- * calculate mixer valve target position:
- * @param mixer target valve
- * @param target_tout target temperature at output of mixer
- * @return percent or negative error
+ * sets valve target position from target temperature.
+ * @param valve target valve
+ * @param target_tout target temperature at output of valve
+ * @return exec status
  */
-static int_fast8_t calc_mixer_pos(const struct s_valve * const mixer, const temp_t target_tout)
+static inline int valve_tposition(struct s_valve * const valve, const temp_t target_tout)
 {
-	int_fast8_t percent;
-	temp_t tempout;
-
-	if (!mixer->configured)
+	if (!valve->configured)
 		return (-ENOTCONFIGURED);
 
-	if (!mixer->open || !mixer->close)
+	if (!valve->open || !valve->close)
 		return (-EMISCONFIGURED);
 
-	// apply deadzone
-	tempout = get_temp(mixer->id_tempout);
-	percent = validate_temp(tempout);
-	if (percent != ALL_OK)
-		return (percent);
-	if (((tempout - mixer->deadzone/2) < target_tout) && (target_tout < (tempout + mixer->deadzone/2)))
-		return (-EDEADZONE);
-
 	// apply valve law to determine target position
-	percent = mixer->valvelaw(mixer, target_tout);
-
-	return (percent);
+	return (valve->valvelaw(valve, target_tout));
 }
 
 /**
@@ -265,7 +262,7 @@ static int valve_online(struct s_valve * const valve)
 	if (!valve->configured)
 		return (-ENOTCONFIGURED);
 
-	if (!valve->ete_time)
+	if (!valve->set_ete_time)
 		return (-EMISCONFIGURED);
 
 #if 0	// XXX WHEN hardware_rwchcrelays_write runs in its separate thread we can do this
@@ -323,32 +320,34 @@ static int valve_run(struct s_valve * const valve)
 	if (!valve->online)
 		return (-EOFFLINE);
 
-	time_ratio = 100.0F/valve->ete_time;
+	time_ratio = 100.0F/valve->set_ete_time;
 	percent = valve->target_position;
 
 	if (valve->action == OPEN)
-		valve->position += (now - valve->open->on_since) * time_ratio;
+		valve->actual_position += (now - valve->open->on_since) * time_ratio;
 	else if (valve->action == CLOSE)
-		valve->position -= (now - valve->close->on_since) * time_ratio;
+		valve->actual_position -= (now - valve->close->on_since) * time_ratio;
+	
+	dbgmsg("current: %d%%, target: %d%%, in_deadzone: %d", valve->actual_position, percent, valve->in_deadzone);
 
 	// enforce physical limits
-	if (valve->position < 0)
-		valve->position = 0;
-	else if (valve->position > 100)
-		valve->position = 100;
+	if (valve->actual_position < 0)
+		valve->actual_position = 0;
+	else if (valve->actual_position > 100)
+		valve->actual_position = 100;
 
 	// XXX implement bang-bang valves
 
-	// position is correct
-	if (valve->position == percent) {
+	// valve in deadzone or position is correct
+	if (valve->in_deadzone || (valve->actual_position == percent)) {
 		// if we're going for full open or full close, make absolutely sure we are
 		// XXX REVISIT 2AM CODE
 		if (percent == 0) {
-			if ((now - valve->close->on_since) < valve->ete_time*4)
+			if ((now - valve->close->on_since) < valve->set_ete_time*4)
 				return (ALL_OK);
 		}
 		else if (percent == 100) {
-			if ((now - valve->open->on_since) < valve->ete_time*4)
+			if ((now - valve->open->on_since) < valve->set_ete_time*4)
 				return (ALL_OK);
 		}
 
@@ -357,13 +356,13 @@ static int valve_run(struct s_valve * const valve)
 		valve->action = STOP;
 	}
 	// position is too low
-	else if (percent - valve->position > 0) {
+	else if (percent - valve->actual_position > 0) {
 		hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->open, ON, 0);
 		valve->action = OPEN;
 	}
 	// position is too high
-	else if (percent - valve->position < 0) {
+	else if (percent - valve->actual_position < 0) {
 		hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->close, ON, 0);
 		valve->action = CLOSE;
@@ -846,7 +845,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t water_temp;
-	int_fast16_t percent;
+	int ret;
 
 	if (!circuit)
 		return (-EINVALID);
@@ -899,16 +898,11 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// apply heat request: water temp + offset
 	circuit->heat_request = water_temp + circuit->set_temp_inoffset;
 
-	// adjust valve if necessary
+	// adjust valve position if necessary
 	if (circuit->valve && circuit->valve->configured) {
-		percent = calc_mixer_pos(circuit->valve, circuit->target_wtemp);
-		if (percent >= 0)
-			circuit->valve->target_position = percent;
-		else {
-			valve_offline(circuit->valve);	// XXX REVISIT
-			return (percent);
-		}
-		return (valve_run(circuit->valve));
+		ret = valve_tposition(circuit->valve, circuit->target_wtemp);
+		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
+			return (ret);
 	}
 
 	return (ALL_OK);
@@ -1633,6 +1627,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	struct s_heatsource_l * restrict heatsourcel;
+	struct s_valve_l * restrict valvel;
 	int ret;
 	bool sleeping = false;
 
@@ -1680,6 +1675,17 @@ int plant_run(struct s_plant * restrict const plant)
 			sleeping = heatsourcel->heats->sleeping;
 	}
 
+	// run the valves
+	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
+		ret = valve_run(valvel->valve);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("valve_run failed: %d", ret);
+			valve_offline(valvel->valve);
+			valvel->valve->online = false;
+		}
+	}
+	
 	// reflect global sleeping state
 	runtime->sleeping = sleeping;
 

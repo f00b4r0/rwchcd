@@ -25,18 +25,19 @@ struct s_pump {
 struct s_valve {
 	bool configured;
 	bool online;		///< true if valve is operational
-	temp_t deadzone;	///< valve deadzone: no operation when target in deadzone
-	int_fast8_t position;		///< current position in %
+	bool in_deadzone;	///< true if valve is in deadzone
+	temp_t set_tdeadzone;	///< valve deadzone: no operation when target in deadzone
+	int_fast8_t actual_position;	///< current position in %
 	int_fast8_t target_position;	///< current target position in %
-	int_fast16_t ete_time;		///< end-to-end run time in seconds
+	int_fast16_t set_ete_time;	///< end-to-end run time in seconds
 	enum { STOP = 0, OPEN, CLOSE } action;	///< current valve action
-	char * restrict name;
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
 	tempid_t id_temp2;		///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Celsius from temp1
 	tempid_t id_tempout;	///< temp at the output
-	int_fast8_t (*valvelaw)(const struct s_valve * const, const temp_t);	///< pointer to valve law
+	char * restrict name;
+	int (*valvelaw)(struct s_valve * const, const temp_t);	///< pointer to valve law
 };
 
 struct s_templaw_data20C {

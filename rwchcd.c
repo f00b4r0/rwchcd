@@ -193,8 +193,8 @@ static int init_process()
 	}
 
 	// configure that valve
-	circuit->valve->deadzone = delta_to_temp(2);
-	circuit->valve->ete_time = 120;	// XXX 120 s
+	circuit->valve->set_tdeadzone = delta_to_temp(2);
+	circuit->valve->set_ete_time = 120;	// XXX 120 s
 	circuit->valve->id_temp1 = boiler->id_temp_outgoing;
 	circuit->valve->id_temp2 = circuit->id_temp_return;
 	circuit->valve->id_tempout = circuit->id_temp_outgoing;
