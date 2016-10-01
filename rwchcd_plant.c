@@ -191,7 +191,7 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	/* Absolute positionning. We don't use actual tempout here.
 	 XXX REVIEW. Should help anticipating variations due to changes in inputs 
 	 if tempin2 > tempin1 then the valve will close */
-	percent = ((target_tout - tempin2) / (tempin1 - tempin2) * 100);
+	percent = ((target_tout - tempin2)*100 / (tempin1 - tempin2));
 
 	// Add a proportional amount to compensate for drift
 	error = target_tout - tempout;	// error is deltaK * 100 (i.e. internal type delta)
@@ -911,9 +911,9 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
-	dbgmsg("request_ambient: %.1f, target_ambient: %.1f, water_temp: %.1f",
+	dbgmsg("request_ambient: %.1f, target_ambient: %.1f, water_temp: %.1f, curr_wtemp: %.1f",
 	       temp_to_celsius(circuit->request_ambient), temp_to_celsius(circuit->target_ambient),
-	       temp_to_celsius(water_temp));
+	       temp_to_celsius(water_temp), temp_to_celsius(circuit->id_temp_outgoing));
 
 	// enforce limits
 	if (water_temp < circuit->limit_wtmin)
