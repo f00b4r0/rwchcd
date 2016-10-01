@@ -34,7 +34,7 @@ struct s_valve {
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
-	tempid_t id_temp2;		///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Celsius from temp1
+	tempid_t id_temp2;		///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Kelvin from temp1
 	tempid_t id_tempout;	///< temp at the output
 	char * restrict name;
 	int (*valvelaw)(struct s_valve * const, const temp_t);	///< pointer to valve law

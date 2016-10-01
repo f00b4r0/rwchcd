@@ -35,13 +35,23 @@ static inline float temp_to_celsius(const temp_t temp)
 }
 
 /**
- * Convert a temperature delta (in Celsius or Kelvin) to internal type.
+ * Convert a temperature delta (in Kelvin) to internal type.
  * @param delta the delta value to be converted
  * @return the corresponding value expressed in internal temperature format.
  */
-static inline temp_t delta_to_temp(const float delta)
+static inline temp_t deltaK_to_temp(const float delta)
 {
 	return ((temp_t)(delta * 100));
+}
+
+/** 
+ * Convert delta from internal to Kelvin value.
+ * @param temp the internal delta value to be converted
+ * @return the value converted to Kelvin
+ */
+static inline float temp_to_deltaK(const temp_t temp)
+{
+	return ((float)((float)temp/100.F));
 }
 
 #endif /* rwchcd_lib_h */

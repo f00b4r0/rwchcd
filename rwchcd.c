@@ -139,7 +139,7 @@ static int init_process()
 
 	// configure that source	XXX REVISIT
 	boiler = heatsource->priv;
-	boiler->histeresis = delta_to_temp(5);
+	boiler->histeresis = deltaK_to_temp(5);
 	boiler->limit_tmax = celsius_to_temp(90);
 	boiler->limit_tmin = celsius_to_temp(45);
 	boiler->id_temp = 2;	// XXX VALIDATION
@@ -171,14 +171,14 @@ static int init_process()
 	circuit->set_tcomfort = celsius_to_temp(20.5F);
 	circuit->set_teco = celsius_to_temp(16);
 	circuit->set_tfrostfree = celsius_to_temp(7);
-	circuit->set_outhoff_comfort = circuit->set_tcomfort - delta_to_temp(4);
-	circuit->set_outhoff_eco = circuit->set_teco - delta_to_temp(4);
-	circuit->set_outhoff_frostfree = circuit->set_tfrostfree - delta_to_temp(4);
-	circuit->set_outhoff_histeresis = delta_to_temp(1);
+	circuit->set_outhoff_comfort = circuit->set_tcomfort - deltaK_to_temp(4);
+	circuit->set_outhoff_eco = circuit->set_teco - deltaK_to_temp(4);
+	circuit->set_outhoff_frostfree = circuit->set_tfrostfree - deltaK_to_temp(4);
+	circuit->set_outhoff_histeresis = deltaK_to_temp(1);
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
 	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
 	circuit->id_temp_return = 4;	// XXX VALIDATION
-	circuit->set_temp_inoffset = delta_to_temp(10);
+	circuit->set_temp_inoffset = deltaK_to_temp(10);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
 	circuit->tlaw_data.twater1 = celsius_to_temp(70);
 	circuit->tlaw_data.tout2 = celsius_to_temp(15);
@@ -193,7 +193,7 @@ static int init_process()
 	}
 
 	// configure that valve
-	circuit->valve->set_tdeadzone = delta_to_temp(2);
+	circuit->valve->set_tdeadzone = deltaK_to_temp(2);
 	circuit->valve->set_ete_time = 120;	// XXX 120 s
 	circuit->valve->id_temp1 = boiler->id_temp_outgoing;
 	circuit->valve->id_temp2 = circuit->id_temp_return;
@@ -250,8 +250,8 @@ static int init_process()
 	dhwt->set_tcomfort = celsius_to_temp(50);
 	dhwt->set_teco = celsius_to_temp(40);
 	dhwt->set_tfrostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
-	dhwt->histeresis = delta_to_temp(10);
-	dhwt->set_temp_inoffset = delta_to_temp(0);	// Integrated tank
+	dhwt->histeresis = deltaK_to_temp(10);
+	dhwt->set_temp_inoffset = deltaK_to_temp(0);	// Integrated tank
 	dhwt->set_runmode = RM_AUTO;	// use global setting
 	dhwt->configured = true;
 

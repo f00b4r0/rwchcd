@@ -132,6 +132,14 @@ static void del_valve(struct s_valve * valve)
 }
 
 /**
+ * Implement a PI valve law for valve position.
+ */
+static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
+{
+	return (-ENOTIMPLEMENTED);
+}
+
+/**
  * implement a linear law for valve position:
  * t_outpout = percent * t_input1 + (1-percent) * t_input2
  * side effect sets target_position
@@ -142,9 +150,7 @@ static void del_valve(struct s_valve * valve)
 static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tout)
 {
 	int_fast16_t percent;
-	short iterm, iterm_prev;
 	temp_t tempin1, tempin2, tempout, error;
-	float Ki;	// XXX REVISIT
 	int ret;
 
 	tempin1 = get_temp(valve->id_temp1);
@@ -170,10 +176,10 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
 	 tempin2 = tempout - delta */
 	if (valve->id_temp2 == 0) {
-		tempin2 = tempout - delta_to_temp(30);	// XXX 30K delta by default
+		tempin2 = tempout - deltaK_to_temp(30);	// XXX 30K delta by default
 	}
 	else if (valve->id_temp2 < 0) {
-		tempin2 = tempout - delta_to_temp(-(valve->id_temp2)); // XXX will need casting
+		tempin2 = tempout - deltaK_to_temp(-(valve->id_temp2)); // XXX will need casting
 	}
 	else {
 		tempin2 = get_temp(valve->id_temp2);
@@ -186,13 +192,12 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	 XXX REVIEW. Should help anticipating variations due to changes in inputs */
 	percent = ((target_tout - tempin2) / (tempin1 - tempin2) * 100);
 
-	// XXX IMPLEMENT (P)I to account for actual tempout - XXX not used yet
-	error = target_tout - tempout;
-	iterm = Ki * error + iterm_prev;
-	iterm_prev = iterm;
-
-	dbgmsg("target_tout: %.1f, tempout: %.1f, tempin1: %.1f, tempin2: %.1f, percent: %d",
-	       temp_to_celsius(target_tout), temp_to_celsius(tempout), temp_to_celsius(tempin1), temp_to_celsius(tempin2), percent);
+	// Add a proportional amount to compensate for drift
+	error = target_tout - tempout;	// error is deltaK * 100 (i.e. internal type delta)
+	percent += temp_to_deltaK(error);	// XXX HARDCODED we take Kelvin value as a %offset
+	
+	dbgmsg("target_tout: %.1f, tempout: %.1f, tempin1: %.1f, tempin2: %.1f, percent: %d, error: %d",
+	       temp_to_celsius(target_tout), temp_to_celsius(tempout), temp_to_celsius(tempin1), temp_to_celsius(tempin2), percent, error);
 
 	// enforce physical limits
 	if (percent > 100)
@@ -200,7 +205,7 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	else if (percent < 0)
 		percent = 0;
 	
-	valve->target_position = percent;
+	valve->target_position = (int_fast8_t)percent;
 
 	return (ALL_OK);
 }
@@ -336,8 +341,6 @@ static int valve_run(struct s_valve * const valve)
 	else if (valve->actual_position > 100)
 		valve->actual_position = 100;
 
-	// XXX implement bang-bang valves
-
 	// valve in deadzone or position is correct
 	if (valve->in_deadzone || (valve->actual_position == percent)) {
 		// if we're going for full open or full close, make absolutely sure we are
@@ -422,7 +425,7 @@ static struct s_boiler_priv * boiler_new(void)
 
 	// set some sane defaults
 	if (boiler) {
-		boiler->histeresis = delta_to_temp(6);
+		boiler->histeresis = deltaK_to_temp(6);
 		boiler->limit_tmin = celsius_to_temp(10);
 		boiler->limit_tmax = celsius_to_temp(95);
 		boiler->set_tfreeze = celsius_to_temp(5);
