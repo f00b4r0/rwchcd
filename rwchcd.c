@@ -119,8 +119,8 @@ static int init_process()
 		dbgerr("burner relay creation failed");
 		return (-EOOM);
 	}
-	hardware_relay_set_id(boiler->burner_1, 13);	// XXX first relay
-	config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(13);	// XXX INTERNAL CONFIG
+	hardware_relay_set_id(boiler->burner_1, 14);	// XXX 2nd relay
+	config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(14);	// XXX INTERNAL CONFIG
 	boiler->burner_1->configured = true;
 	boiler->set_burner_min_time = 2 * 60;	// XXX 2 minutes
 	boiler->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
@@ -146,7 +146,7 @@ static int init_process()
 	circuit->set_outhoff_histeresis = deltaK_to_temp(1);
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
 	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
-	circuit->id_temp_return = 0; //4;	// XXX VALIDATION
+	circuit->id_temp_return = 4;	// XXX VALIDATION
 	circuit->set_temp_inoffset = deltaK_to_temp(10);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
 	circuit->tlaw_data.twater1 = celsius_to_temp(70);
@@ -171,8 +171,8 @@ static int init_process()
 
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
-	hardware_relay_set_id(circuit->valve->open, 9);
-	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(9);		// XXX INTERNAL CONFIG
+	hardware_relay_set_id(circuit->valve->open, 11);
+	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(11);		// XXX INTERNAL CONFIG
 	circuit->valve->open->configured = true;
 
 	circuit->valve->close = hardware_relay_new();
@@ -194,8 +194,8 @@ static int init_process()
 
 	// create and configure a relay for that pump
 	circuit->pump->relay = hardware_relay_new();
-	hardware_relay_set_id(circuit->pump->relay, 11);
-	config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(11);		// XXX INTERNAL CONFIG
+	hardware_relay_set_id(circuit->pump->relay, 9);
+	config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(9);		// XXX INTERNAL CONFIG
 	circuit->pump->relay->configured = true;
 
 	circuit->pump->configured = true;

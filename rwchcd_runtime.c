@@ -246,7 +246,8 @@ int runtime_run(void)
 
 	// process data
 
-	dbgmsg("begin.");
+	dbgmsg("begin.\tt_outdoor: %.1f, t_outmixed: %.1f, t_outatt: %.1f",
+		temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_mixed), temp_to_celsius(Runtime.t_outdoor_attenuated));
 	
 	parse_temps();
 
