@@ -222,5 +222,7 @@ struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
 int circuit_make_linear(struct s_heating_circuit * const circuit);
 int valve_make_linear(struct s_valve * const valve);
+int valve_make_bangbang(struct s_valve * const valve);
+int valve_make_sapprox(struct s_valve * const valve);
 
 #endif /* rwchcd_plant_h */

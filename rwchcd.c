@@ -168,6 +168,7 @@ static int init_process()
 	circuit->valve->id_temp1 = boiler->id_temp_outgoing;
 	circuit->valve->id_temp2 = circuit->id_temp_return;
 	circuit->valve->id_tempout = circuit->id_temp_outgoing;
+	valve_make_sapprox(circuit->valve);
 
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
