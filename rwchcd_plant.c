@@ -371,7 +371,7 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
 
 int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 {
-	const time_t sample_time = 10;	// 10s
+	const time_t sample_time = 20;	// 20s
 	static time_t lasttime = 0;
 
 	const time_t now = time(NULL);
@@ -862,14 +862,12 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(target_temp), temp_to_celsius(boiler_temp));
 
 	// un/trip points
-	if (target_temp == boiler->limit_tmin)
+	trip_temp = (target_temp - boiler->histeresis/2);
+	if (trip_temp < boiler->limit_tmin)
 		trip_temp = boiler->limit_tmin;
-	else
-		trip_temp = (target_temp - boiler->histeresis/2);
-	if (target_temp == boiler->limit_tmax)
+	untrip_temp = (target_temp + boiler->histeresis/2);
+	if (untrip_temp > boiler->limit_tmax)
 		untrip_temp = boiler->limit_tmax;
-	else
-		untrip_temp = (target_temp + boiler->histeresis/2);
 	
 	// temp control
 	if (boiler_temp < trip_temp)		// trip condition
