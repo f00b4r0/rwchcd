@@ -233,7 +233,8 @@ static int init_process()
 	runtime->plant = plant;
 
 	// bring the hardware online
-	hardware_online();
+	while (hardware_online())
+		dbgerr("hardware_online() failed");
 	
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());

@@ -134,35 +134,35 @@ static void del_valve(struct s_valve * valve)
 void valve_reqopen_pct(struct s_valve * const valve, int percent)
 {
 	// calc running time from pct
-	time_t running_time = ((100.0F/valve->set_ete_time)*percent);
+	time_t running_time = ((valve->set_ete_time/100.0F)*percent);
 	
 	// if valve is opening, add running time
 	if (valve->request_action == OPEN)
-		valve->stop_time += running_time;
+		valve->request_runtime += running_time;
 	else {
 		valve->request_action = OPEN;
-		valve->stop_time = time(NULL) + running_time;
+		valve->request_runtime = running_time;
 	}
 }
 
 void valve_reqclose_pct(struct s_valve * const valve, int percent)
 {
 	// calc running time from pct
-	time_t running_time = ((100.0F/valve->set_ete_time)*percent);
+	time_t running_time = ((valve->set_ete_time/100.0F)*percent);
 	
 	// if valve is opening, add running time
 	if (valve->request_action == CLOSE)
-		valve->stop_time += running_time;
+		valve->request_runtime += running_time;
 	else {
 		valve->request_action = CLOSE;
-		valve->stop_time = time(NULL) + running_time;
+		valve->request_runtime = running_time;
 	}
 }
 
 void valve_reqstop(struct s_valve * const valve)
 {
 	valve->request_action = STOP;
-	valve->stop_time = 0;
+	valve->request_runtime = 0;
 }
 
 /**
@@ -380,7 +380,7 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	
 	// sample window
 	if (now - lasttime < sample_time)
-		return;
+		return (ALL_OK);
 	
 	lasttime = now;
 	
@@ -461,7 +461,7 @@ static int valve_online(struct s_valve * const valve)
 	// return to idle
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
-	valve->stop_time = 0;
+	valve->request_runtime = 0;
 	valve->action = valve->request_action = STOP;
 
 	return (ALL_OK);
@@ -478,7 +478,7 @@ static int valve_offline(struct s_valve * const valve)
 {
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
-	valve->stop_time = 0;
+	valve->request_runtime = 0;
 	valve->action = valve->request_action = STOP;
 
 	return (ALL_OK);
@@ -496,7 +496,7 @@ static int valve_offline(struct s_valve * const valve)
 static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
-	time_t deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
+	time_t runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
 	float percent_time;	// time necessary per percent position change
 	int_fast16_t calc_course = 0;	// use internal variable to avoid polluting state and deal with overflow
 
@@ -509,32 +509,47 @@ static int valve_run(struct s_valve * const valve)
 	if (!valve->online)
 		return (-EOFFLINE);
 
-	
 	percent_time = valve->set_ete_time/100.0F;
 	
+	runtime = now - valve->running_since;
+	
+	dbgmsg("req action: %d, req runtime: %d, running since: %d, runtime: %d",
+	       valve->request_action, valve->request_runtime, valve->running_since, runtime);
+
 	// check if stop time is passed if so stop the valve
-	if ((STOP == valve->request_action) || (now > valve->stop_time)) {
-		hardware_relay_set_state(valve->open, OFF, 0);
+	if ((STOP == valve->request_action)) {
+stop:		hardware_relay_set_state(valve->open, OFF, 0);
 		hardware_relay_set_state(valve->close, OFF, 0);
+		valve->running_since = 0;
+		valve->request_runtime = 0;
 		valve->action = STOP;
 		return (ALL_OK);
+	}
+	
+	if (STOP != valve->action) {
+		if (runtime >= valve->request_runtime)
+			goto stop;
 	}
 	
 	deadtime = percent_time * valve->set_deadband;
 
 	// check that requested runtime is past deadband
-	if (now - valve->stop_time > deadtime)
+	if (valve->request_runtime < deadtime)
 		return (-EDEADBAND);
 	
 	// check what is the requested action
 	if (OPEN == valve->request_action) {
 		hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->open, ON, 0);
+		if (!valve->running_since)
+			valve->running_since = now;
 		valve->action = OPEN;
 	}
 	else if (CLOSE == valve->request_action) {
 		hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->close, ON, 0);
+		if (!valve->running_since)
+			valve->running_since = now;
 		valve->action = CLOSE;
 	}
 	
@@ -1051,7 +1066,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 		pump_set_state(circuit->pump, OFF, FORCE);
 
 	if (circuit->valve)
-		circuit->valve->target_position = 0;	// XXX REVISIT
+		valve_reqstop(circuit->valve);	// XXX REVISIT
 
 	circuit->actual_runmode = RM_OFF;
 
@@ -1905,6 +1920,8 @@ int plant_run(struct s_plant * restrict const plant)
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
 		ret = valve_run(valvel->valve);
 		if (ALL_OK != ret) {
+			if (-EDEADBAND == ret)
+				continue;
 			// XXX error handling
 			dbgerr("valve_run failed: %d", ret);
 			valve_offline(valvel->valve);

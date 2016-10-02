@@ -33,7 +33,8 @@ struct s_valve {
 	int_fast8_t target_position;	///< current target position in %
 	int_fast8_t target_course;	///< current target course in % of set_ete_time (positive means open, negative means close)
 	int_fast16_t set_ete_time;	///< end-to-end run time in seconds
-	time_t stop_time;
+	time_t request_runtime;
+	time_t running_since;
 	enum { STOP = 0, OPEN, CLOSE } action, request_action;	///< current valve action
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
