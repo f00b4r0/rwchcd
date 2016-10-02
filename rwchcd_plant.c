@@ -131,12 +131,135 @@ static void del_valve(struct s_valve * valve)
 	free(valve);
 }
 
+void valve_reqopen_pct(struct s_valve * const valve, int percent)
+{
+	// calc running time from pct
+	time_t running_time = ((100.0F/valve->set_ete_time)*percent);
+	
+	// if valve is opening, add running time
+	if (valve->request_action == OPEN)
+		valve->stop_time += running_time;
+	else {
+		valve->request_action = OPEN;
+		valve->stop_time = time(NULL) + running_time;
+	}
+}
+
+void valve_reqclose_pct(struct s_valve * const valve, int percent)
+{
+	// calc running time from pct
+	time_t running_time = ((100.0F/valve->set_ete_time)*percent);
+	
+	// if valve is opening, add running time
+	if (valve->request_action == CLOSE)
+		valve->stop_time += running_time;
+	else {
+		valve->request_action = CLOSE;
+		valve->stop_time = time(NULL) + running_time;
+	}
+}
+
+void valve_reqstop(struct s_valve * const valve)
+{
+	valve->request_action = STOP;
+	valve->stop_time = 0;
+}
+
 /**
- * Implement a PI valve law for valve position.
+ - Current Position is an approximation of the valve's position as it relates to a power level (0 - 100%) where 0% is
+ fully closed and 100% is fully open.
+ - On Time is the amount of time the valve needs to be turned on (either open or close) to eliminate the error be-
+ tween the estimated valve position and the desired power level. A positive On Time value indicates the need to
+ open the valve while a negative value indicates the need to close the valve. On Time = (Input 1 Value - Current
+ Position) / 100 * Valve Travel Time
+ When power is applied to the controller, the valve is closed and time is set to 0
+ 
+ * Implement time-based PI controller in velocity form
+ * Saturation : max = in1 temp, min = in2 temp
+ * We want to output
+ http://www.plctalk.net/qanda/showthread.php?t=19141
+ // http://www.energieplus-lesite.be/index.php?id=11247
+ // http://www.ferdinandpiette.com/blog/2011/08/implementer-un-pid-sans-faire-de-calculs/
+ // http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-introduction/
+ // http://controlguru.com/process-gain-is-the-how-far-variable/
+ // http://www.rhaaa.fr/regulation-pid-comment-la-regler-12
+ // http://controlguru.com/the-normal-or-standard-pid-algorithm/
+ // http://www.csimn.com/CSI_pages/PIDforDummies.html
+ // https://en.wikipedia.org/wiki/PID_controller
  */
 static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
 {
-	return (-ENOTIMPLEMENTED);
+#warning broken
+	int_fast16_t percent;
+	temp_t tempin1, tempin2, tempout, error;
+	temp_t iterm, pterm, output;
+	static temp_t prev, output_prev;
+	float Kp, Ki;	// XXX PID settings
+	int ret;
+	
+	tempin1 = get_temp(valve->id_temp1);
+	ret = validate_temp(tempin1);
+	if (ALL_OK != ret)
+		return (ret);
+	
+	// get current outpout
+	tempout = get_temp(valve->id_tempout);
+	ret = validate_temp(tempout);
+	if (ALL_OK != ret)
+		return (ret);
+
+	// apply deadzone
+	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
+		valve->in_deadzone = true;
+		return (-EDEADZONE);
+	}
+	
+	valve->in_deadzone = false;
+	
+	/* if we don't have a sensor for secondary input, guesstimate it
+	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
+	 tempin2 = tempout - delta */
+	if (valve->id_temp2 == 0) {
+		tempin2 = tempout - deltaK_to_temp(30);	// XXX 30K delta by default
+	}
+	else if (valve->id_temp2 < 0) {
+		tempin2 = tempout - deltaK_to_temp(-(valve->id_temp2)); // XXX will need casting
+	}
+	else {
+		tempin2 = get_temp(valve->id_temp2);
+		ret = validate_temp(tempin2);
+		if (ALL_OK != ret)
+			return (ret);
+	}
+	
+	// calculate error (target - actual)
+	error = target_tout - tempout;	// error is deltaK * 100 (i.e. internal type delta)
+	
+	// Integral term (Ki * error)
+	iterm = Ki * error;
+	
+	// Proportional term (Kp * (previous - actual)
+	pterm = Kp * (prev - tempout);
+	prev = tempout;
+	
+	output = iterm + pterm + output_prev;
+	output_prev = output;
+	
+	// scale result on valve position from 0 to 100%
+	percent = ((output - tempin2)*100 / (tempin1 - tempin2));
+	
+	dbgmsg("error: %.1f, iterm: %.1f, pterm: %.1f, output: %.1f, percent: %d%%",
+	       temp_to_celsius(error), temp_to_celsius(iterm), temp_to_celsius(pterm), temp_to_celsius(output), percent);
+	
+	// enforce physical limits
+	if (percent > 100)
+		percent = 100;
+	else if (percent < 0)
+		percent = 0;
+	
+	valve->target_position = (int_fast8_t)percent;
+	
+	return (ALL_OK);
 }
 
 /**
@@ -149,6 +272,7 @@ static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
  */
 static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tout)
 {
+#warning broken
 	int_fast16_t percent;
 	temp_t tempin1, tempin2, tempout, error;
 	int ret;
@@ -231,15 +355,62 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
 	// apply deadzone
 	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
 		valve->in_deadzone = true;
+		valve_reqstop(valve);
 		return (-EDEADZONE);
 	}
 	
 	valve->in_deadzone = false;
 	
 	if (target_tout > tempout)
-		valve->target_position = 100;
+		valve_reqopen_pct(valve, 100);
 	else
-		valve->target_position = 0;
+		valve_reqclose_pct(valve, 100);
+	
+	return (ALL_OK);
+}
+
+int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
+{
+	const time_t sample_time = 10;	// 10s
+	static time_t lasttime = 0;
+
+	const time_t now = time(NULL);
+	int ret;
+	temp_t tempout;
+	
+	// sample window
+	if (now - lasttime < sample_time)
+		return;
+	
+	lasttime = now;
+	
+	tempout = get_temp(valve->id_tempout);
+	ret = validate_temp(tempout);
+	if (ALL_OK != ret)
+		return (ret);
+	
+	// apply deadzone
+	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
+		valve->in_deadzone = true;
+		valve_reqstop(valve);
+		return (-EDEADZONE);
+	}
+	
+	valve->in_deadzone = false;
+	
+	// every sample window time, check if temp is < or > target
+	// if temp is < target - deadzone/2, open valve for fixed amount
+	if (tempout < target_tout - valve->set_tdeadzone/2) {
+		valve_reqopen_pct(valve, 5);
+	}
+	// if temp is > target + deadzone/2, close valve for fixed amount
+	else if (tempout > target_tout - valve->set_tdeadzone/2) {
+		valve_reqclose_pct(valve, 5);
+	}
+	// else stop valve
+	else {
+		valve_reqstop(valve);
+	}
 	
 	return (ALL_OK);
 }
@@ -290,6 +461,8 @@ static int valve_online(struct s_valve * const valve)
 	// return to idle
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
+	valve->stop_time = 0;
+	valve->action = valve->request_action = STOP;
 
 	return (ALL_OK);
 }
@@ -305,24 +478,28 @@ static int valve_offline(struct s_valve * const valve)
 {
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
+	valve->stop_time = 0;
+	valve->action = valve->request_action = STOP;
 
 	return (ALL_OK);
 }
 
 /**
  * run valve.
- * Static positionning. XXX REVIEW PWM control?
  * @param valve target valve
  * @return error status
  * XXX only handles 3-way valve for now
+ - Dead Time is the minimum on time that the valve will travel once it is turned on in either the closed or open di-
+ rection. Dead Time = Valve Dead Band / 100 * Valve Travel Time.
+
  */
 static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
-	float time_ratio;
-	int_fast8_t percent;
+	time_t deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
+	float percent_time;	// time necessary per percent position change
 	int_fast16_t calc_course = 0;	// use internal variable to avoid polluting state and deal with overflow
-	bool state_open, state_close;
+	bool state_opening, state_closing;
 
 	if (!valve)
 		return (-EINVALID);
@@ -333,32 +510,40 @@ static int valve_run(struct s_valve * const valve)
 	if (!valve->online)
 		return (-EOFFLINE);
 
-	time_ratio = 100.0F/valve->set_ete_time;
-	percent = valve->target_position;
 	
-	// update actual valve state
-	hardware_relay_get_state(valve->open);
-	hardware_relay_get_state(valve->close);
+	percent_time = valve->set_ete_time/100.0F;
 	
-	state_open = valve->open->is_on;
-	state_close = valve->close->is_on;
-
-	if (state_open && !state_close)
-		valve->action = OPEN;
-	else if (!state_open && state_close)
-		valve->action = CLOSE;
-	else if (!state_open && !state_close)
+	// check if stop time is passed if so stop the valve
+	if ((STOP == valve->request_action) || (now > valve->stop_time)) {
+		hardware_relay_set_state(valve->open, OFF, 0);
+		hardware_relay_set_state(valve->close, OFF, 0);
 		valve->action = STOP;
-	else {
-		dbgerr("IMPOSSIBLE VALVE STATE!");
-		return (-EGENERIC);
+		return (ALL_OK);
+	}
+	
+	deadtime = percent_time * valve->set_deadband;
+
+	// check that requested runtime is past deadband
+	if (now - valve->stop_time > deadtime)
+		return (-EDEADBAND);
+	
+	// check what is the requested action
+	if (OPEN == valve->request_action) {
+		hardware_relay_set_state(valve->close, OFF, 0);	// break before make
+		hardware_relay_set_state(valve->open, ON, 0);
+		valve->action = OPEN;
+	}
+	else if (CLOSE == valve->request_action) {
+		hardware_relay_set_state(valve->open, OFF, 0);	// break before make
+		hardware_relay_set_state(valve->close, ON, 0);
+		valve->action = CLOSE;
 	}
 	
 	// calculate current course
 	if (OPEN == valve->action)
-		calc_course += ((now - valve->open->on_since) * time_ratio);	// trunc/floor
+		calc_course = ((now - valve->open->on_since) * 1/percent_time);	// trunc/floor
 	else if (CLOSE == valve->action)
-		calc_course -= ((now - valve->close->on_since) * time_ratio);	// trunc/floor
+		calc_course = ((now - valve->close->on_since) * 1/percent_time);	// trunc/floor
 	else // valve stopped, update last rest position
 		valve->last_rest_position = valve->actual_position;
 	
@@ -367,7 +552,7 @@ static int valve_run(struct s_valve * const valve)
 
 	dbgmsg("action: %d, previous: %d%%, current: %d%%, target: %d%%, in_deadzone: %d",
 	       valve->action, valve->actual_position, calc_course, percent, valve->in_deadzone);
-
+	
 	// enforce physical limits
 	if (calc_course < 0)
 		valve->actual_position = 0;
@@ -375,33 +560,6 @@ static int valve_run(struct s_valve * const valve)
 		valve->actual_position = 100;
 	else
 		valve->actual_position = calc_course;
-
-	// valve in deadzone or position is correct
-	if (valve->in_deadzone || (valve->actual_position == percent)) {
-		// if we're going for full open or full close, make absolutely sure we are
-		// XXX REVISIT 2AM CODE
-		if (percent == 0) {
-			if ((now - valve->close->on_since) < valve->set_ete_time*2)
-				return (ALL_OK);
-		}
-		else if (percent == 100) {
-			if ((now - valve->open->on_since) < valve->set_ete_time*2)
-				return (ALL_OK);
-		}
-
-		hardware_relay_set_state(valve->open, OFF, 0);
-		hardware_relay_set_state(valve->close, OFF, 0);
-	}
-	// position is too low
-	else if (percent - valve->actual_position > 0) {
-		hardware_relay_set_state(valve->close, OFF, 0);	// break before make
-		hardware_relay_set_state(valve->open, ON, 0);
-	}
-	// position is too high
-	else if (percent - valve->actual_position < 0) {
-		hardware_relay_set_state(valve->open, OFF, 0);	// break before make
-		hardware_relay_set_state(valve->close, ON, 0);
-	}
 
 	return (ALL_OK);
 }
@@ -425,6 +583,17 @@ int valve_make_bangbang(struct s_valve * const valve)
 	
 	return (ALL_OK);
 }
+
+int valve_make_sapprox(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+	
+	valve->valvelaw = valvelaw_sapprox;
+	
+	return (ALL_OK);
+}
+
 
 /** SOLAR **/
 

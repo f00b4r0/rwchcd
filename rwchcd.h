@@ -37,7 +37,8 @@ enum {
 	ENOTCONFIGURED,	///< element is not configured
 	EMISCONFIGURED,	///< invalid configuration settings
 	ESAFETY,	///< safety error
-	EDEADZONE,	///< valve is in deadzone
+	EDEADZONE,	///< target is in deadzone
+	EDEADBAND,	///< valve is in deadband
 	ENOTIMPLEMENTED,///< argument/request/whatever is not implemented
 	EOFFLINE,	///< device is offline
 	EINVALID,	///< invalid argument

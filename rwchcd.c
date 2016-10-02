@@ -153,7 +153,7 @@ static int init_process()
 	circuit->tlaw_data.tout2 = celsius_to_temp(15);
 	circuit->tlaw_data.twater2 = celsius_to_temp(35);
 	circuit_make_linear(circuit);
-/*
+
 	// create a valve for that circuit
 	circuit->valve = plant_new_valve(plant);
 	if (!circuit->valve) {
@@ -163,6 +163,7 @@ static int init_process()
 
 	// configure that valve
 	circuit->valve->set_tdeadzone = deltaK_to_temp(2);
+	circuit->valve->set_deadband = 4;	// XXX 4% minimum increments
 	circuit->valve->set_ete_time = 120;	// XXX 120 s
 	circuit->valve->id_temp1 = boiler->id_temp_outgoing;
 	circuit->valve->id_temp2 = circuit->id_temp_return;
@@ -180,7 +181,7 @@ static int init_process()
 	circuit->valve->close->configured = true;
 
 	circuit->valve->configured = true;
-*/
+
 	// create a pump for that circuit
 	circuit->pump = plant_new_pump(plant);
 	if (!circuit->pump) {

@@ -26,12 +26,15 @@ struct s_valve {
 	bool configured;
 	bool online;		///< true if valve is operational
 	bool in_deadzone;	///< true if valve is in deadzone
-	temp_t set_tdeadzone;	///< valve deadzone: no operation when target in deadzone
+	temp_t set_tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
+	int_fast8_t set_deadband;	///< deadband for valve operation in %
 	int_fast8_t actual_position;	///< current position in %
 	int_fast8_t last_rest_position;	///< last known resting position ("valve last stopped at")
 	int_fast8_t target_position;	///< current target position in %
+	int_fast8_t target_course;	///< current target course in % of set_ete_time (positive means open, negative means close)
 	int_fast16_t set_ete_time;	///< end-to-end run time in seconds
-	enum { STOP = 0, OPEN, CLOSE } action;	///< current valve action
+	time_t stop_time;
+	enum { STOP = 0, OPEN, CLOSE } action, request_action;	///< current valve action
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
