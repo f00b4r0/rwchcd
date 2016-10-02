@@ -74,7 +74,7 @@ static void outdoor_temp()
 {
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
-	temp_t t_filtered;
+	static temp_t t_filtered = 0;	// outdoor temp filtered by building_tau
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor);	// XXX checks
 
@@ -84,7 +84,7 @@ static void outdoor_temp()
 
 	lasttime = time(NULL);
 
-	t_filtered = temp_expw_mavg(Runtime.t_outdoor_mixed, Runtime.t_outdoor, Runtime.config->building_tau, dt);
+	t_filtered = temp_expw_mavg(t_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
 	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + t_filtered)/2;	// other possible calculation: 75% of t_outdoor + 25% of t_filtered - 211p15
 	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, t_filtered, Runtime.config->building_tau, dt);
 }
