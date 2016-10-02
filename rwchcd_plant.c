@@ -134,7 +134,7 @@ static void del_valve(struct s_valve * valve)
 void valve_reqopen_pct(struct s_valve * const valve, int percent)
 {
 	// calc running time from pct
-	time_t running_time = ((valve->set_ete_time/100.0F)*percent);
+	const time_t running_time = ((valve->set_ete_time/100.0F)*percent);
 	
 	// if valve is opening, add running time
 	if (valve->request_action == OPEN)
@@ -148,7 +148,7 @@ void valve_reqopen_pct(struct s_valve * const valve, int percent)
 void valve_reqclose_pct(struct s_valve * const valve, int percent)
 {
 	// calc running time from pct
-	time_t running_time = ((valve->set_ete_time/100.0F)*percent);
+	const time_t running_time = ((valve->set_ete_time/100.0F)*percent);
 	
 	// if valve is opening, add running time
 	if (valve->request_action == CLOSE)
@@ -404,7 +404,7 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 		valve_reqopen_pct(valve, 5);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
-	else if (tempout > target_tout - valve->set_tdeadzone/2) {
+	else if (tempout > target_tout + valve->set_tdeadzone/2) {
 		valve_reqclose_pct(valve, 5);
 	}
 	// else stop valve
@@ -513,8 +513,8 @@ static int valve_run(struct s_valve * const valve)
 	
 	runtime = now - valve->running_since;
 	
-	dbgmsg("req action: %d, req runtime: %d, running since: %d, runtime: %d",
-	       valve->request_action, valve->request_runtime, valve->running_since, runtime);
+	dbgmsg("req action: %d, action: %d, req runtime: %d, running since: %d, runtime: %d",
+	       valve->request_action, valve->action, valve->request_runtime, valve->running_since, runtime);
 
 	// check if stop time is passed if so stop the valve
 	if ((STOP == valve->request_action)) {
@@ -1004,8 +1004,6 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 	// shift output based on actual target temperature
 	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
 	t_output += curve_shift;
-	
-	dbgmsg("source_temp: %.1f, target: %.1f, t_output: %.1f", temp_to_celsius(source_temp), temp_to_celsius(circuit->target_ambient), temp_to_celsius(t_output));
 
 	return (t_output);
 }
