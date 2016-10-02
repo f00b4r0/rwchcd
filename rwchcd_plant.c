@@ -462,6 +462,7 @@ static int valve_online(struct s_valve * const valve)
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
 	valve->request_runtime = 0;
+	valve->running_since = 0;
 	valve->actual_action = valve->request_action = STOP;
 
 	return (ALL_OK);
@@ -479,6 +480,7 @@ static int valve_offline(struct s_valve * const valve)
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
 	valve->request_runtime = 0;
+	valve->running_since = 0;
 	valve->actual_action = valve->request_action = STOP;
 
 	return (ALL_OK);
@@ -514,7 +516,7 @@ static int valve_run(struct s_valve * const valve)
 	runtime = now - valve->running_since;
 	
 	dbgmsg("req action: %d, action: %d, req runtime: %d, running since: %d, runtime: %d",
-	       valve->request_action, valve->action, valve->request_runtime, valve->running_since, runtime);
+	       valve->request_action, valve->actual_action, valve->request_runtime, valve->running_since, runtime);
 
 	// check if stop time is passed if so stop the valve
 	if ((STOP == valve->request_action)) {
@@ -555,17 +557,17 @@ stop:		hardware_relay_set_state(valve->open, OFF, 0);
 	
 	// calculate current course
 	if (OPEN == valve->actual_action)
-		calc_course = ((now - valve->open->on_since) * 1/percent_time);	// trunc/floor
+		calc_course = (valve->running_since * 1.0F/percent_time);	// trunc/floor
 	else if (CLOSE == valve->actual_action)
-		calc_course = ((now - valve->close->on_since) * 1/percent_time);	// trunc/floor
+		calc_course = -(valve->running_since * 1.0F/percent_time);	// trunc/floor
 	else // valve stopped, update last rest position
 		valve->last_rest_position = valve->actual_position;
 	
 	// update current position
 	calc_course += valve->last_rest_position;
 
-	dbgmsg("action: %d, previous: %d%%, current: %d%%, target: %d%%, in_deadzone: %d",
-	       valve->action, valve->actual_position, calc_course, valve->target_position, valve->in_deadzone);
+	dbgmsg("previous: %d%%, current: %d%%, target: %d%%, in_deadzone: %d",
+	       valve->actual_position, calc_course, valve->target_position, valve->in_deadzone);
 	
 	// enforce physical limits
 	if (calc_course < 0)
