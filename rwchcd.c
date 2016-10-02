@@ -147,7 +147,7 @@ static int init_process()
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
 	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
 	circuit->id_temp_return = 4;	// XXX VALIDATION
-	circuit->set_temp_inoffset = deltaK_to_temp(10);
+	circuit->set_temp_inoffset = deltaK_to_temp(7);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
 	circuit->tlaw_data.twater1 = celsius_to_temp(70);
 	circuit->tlaw_data.tout2 = celsius_to_temp(15);

@@ -44,6 +44,9 @@ static void del_pump(struct s_pump * pump)
  */
 static int pump_online(struct s_pump * const pump)
 {
+	if (!pump)
+		return (-EINVALID);
+	
 	if (!pump->configured)
 		return (-ENOTCONFIGURED);
 
@@ -90,6 +93,9 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
  */
 static inline int pump_offline(struct s_pump * const pump)
 {
+	if (!pump)
+		return (-EINVALID);
+	
 	return(pump_set_state(pump, OFF, FORCE));
 }
 
@@ -423,6 +429,9 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
  */
 static inline int valve_tposition(struct s_valve * const valve, const temp_t target_tout)
 {
+	if (!valve)
+		return (-EINVALID);
+	
 	if (!valve->configured)
 		return (-ENOTCONFIGURED);
 
@@ -431,6 +440,15 @@ static inline int valve_tposition(struct s_valve * const valve, const temp_t tar
 
 	// apply valve law to determine target position
 	return (valve->valvelaw(valve, target_tout));
+}
+
+static inline void valve_set_idle(struct s_valve * const valve)
+{
+	hardware_relay_set_state(valve->open, OFF, 0);
+	hardware_relay_set_state(valve->close, OFF, 0);
+	valve->request_runtime = 0;
+	valve->running_since = 0;
+	valve->actual_action = valve->request_action = STOP;
 }
 
 /**
@@ -444,6 +462,9 @@ static inline int valve_tposition(struct s_valve * const valve, const temp_t tar
  */
 static int valve_online(struct s_valve * const valve)
 {
+	if (!valve)
+		return (-EINVALID);
+	
 	if (!valve->configured)
 		return (-ENOTCONFIGURED);
 
@@ -459,12 +480,8 @@ static int valve_online(struct s_valve * const valve)
 	sleep(2*valve->ete_time);	// XXX will block
 #endif
 	// return to idle
-	hardware_relay_set_state(valve->open, OFF, 0);
-	hardware_relay_set_state(valve->close, OFF, 0);
-	valve->request_runtime = 0;
-	valve->running_since = 0;
-	valve->actual_action = valve->request_action = STOP;
-
+	valve_set_idle(valve);
+	
 	return (ALL_OK);
 }
 
@@ -477,11 +494,14 @@ static int valve_online(struct s_valve * const valve)
  */
 static int valve_offline(struct s_valve * const valve)
 {
-	hardware_relay_set_state(valve->open, OFF, 0);
-	hardware_relay_set_state(valve->close, OFF, 0);
-	valve->request_runtime = 0;
-	valve->running_since = 0;
-	valve->actual_action = valve->request_action = STOP;
+	if (!valve)
+		return (-EINVALID);
+	
+	if (!valve->configured)
+		return (-ENOTCONFIGURED);
+	
+	// set idle
+	valve_set_idle(valve);
 
 	return (ALL_OK);
 }
@@ -520,17 +540,15 @@ static int valve_run(struct s_valve * const valve)
 
 	// check if stop time is passed if so stop the valve
 	if ((STOP == valve->request_action)) {
-stop:		hardware_relay_set_state(valve->open, OFF, 0);
-		hardware_relay_set_state(valve->close, OFF, 0);
-		valve->running_since = 0;
-		valve->request_runtime = 0;
-		valve->actual_action = STOP;
+		valve_set_idle(valve);
 		return (ALL_OK);
 	}
 	
 	if (STOP != valve->actual_action) {
-		if (runtime >= valve->request_runtime)
-			goto stop;
+		if (runtime >= valve->request_runtime) {
+			valve_set_idle(valve);
+			return (ALL_OK);
+		}
 	}
 	
 	deadtime = percent_time * valve->set_deadband;
@@ -738,7 +756,7 @@ static int boiler_hs_offline(struct s_heatsource * const heat)
 	hardware_relay_set_state(boiler->burner_2, OFF, 0);
 
 	if (boiler->loadpump)
-		pump_set_state(boiler->loadpump, OFF, FORCE);
+		pump_offline(boiler->loadpump);
 
 	return (ALL_OK);
 }
@@ -1061,10 +1079,10 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	circuit->target_wtemp = 0;
 
 	if (circuit->pump)
-		pump_set_state(circuit->pump, OFF, FORCE);
+		pump_offline(circuit->pump);
 
 	if (circuit->valve)
-		valve_reqstop(circuit->valve);	// XXX REVISIT
+		valve_offline(circuit->valve);
 
 	circuit->actual_runmode = RM_OFF;
 
@@ -1222,10 +1240,10 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	dhwt->recycle_on = false;
 
 	if (dhwt->feedpump)
-		pump_set_state(dhwt->feedpump, OFF, FORCE);
+		pump_offline(dhwt->feedpump);
 
 	if (dhwt->recyclepump)
-		pump_set_state(dhwt->recyclepump, OFF, FORCE);
+		pump_offline(dhwt->recyclepump);
 
 	if (dhwt->selfheater)
 		hardware_relay_set_state(dhwt->selfheater, OFF, 0);
