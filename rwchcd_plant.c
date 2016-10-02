@@ -499,7 +499,6 @@ static int valve_run(struct s_valve * const valve)
 	time_t deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
 	float percent_time;	// time necessary per percent position change
 	int_fast16_t calc_course = 0;	// use internal variable to avoid polluting state and deal with overflow
-	bool state_opening, state_closing;
 
 	if (!valve)
 		return (-EINVALID);
@@ -514,7 +513,7 @@ static int valve_run(struct s_valve * const valve)
 	percent_time = valve->set_ete_time/100.0F;
 	
 	// check if stop time is passed if so stop the valve
-	if ((STOP == valve->request_action) || (now > valve->stop_time)) {
+	if ((STOP == valve->request_action) || (now > valve->stop_time)) {
 		hardware_relay_set_state(valve->open, OFF, 0);
 		hardware_relay_set_state(valve->close, OFF, 0);
 		valve->action = STOP;
@@ -551,7 +550,7 @@ static int valve_run(struct s_valve * const valve)
 	calc_course += valve->last_rest_position;
 
 	dbgmsg("action: %d, previous: %d%%, current: %d%%, target: %d%%, in_deadzone: %d",
-	       valve->action, valve->actual_position, calc_course, percent, valve->in_deadzone);
+	       valve->action, valve->actual_position, calc_course, valve->target_position, valve->in_deadzone);
 	
 	// enforce physical limits
 	if (calc_course < 0)

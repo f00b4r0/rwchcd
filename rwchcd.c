@@ -140,8 +140,8 @@ static int init_process()
 	circuit->set_tcomfort = celsius_to_temp(20.5F);
 	circuit->set_teco = celsius_to_temp(16);
 	circuit->set_tfrostfree = celsius_to_temp(7);
-	circuit->set_outhoff_comfort = circuit->set_tcomfort - deltaK_to_temp(4);
-	circuit->set_outhoff_eco = circuit->set_teco - deltaK_to_temp(4);
+	circuit->set_outhoff_comfort = circuit->set_tcomfort - deltaK_to_temp(2);
+	circuit->set_outhoff_eco = circuit->set_teco - deltaK_to_temp(2);
 	circuit->set_outhoff_frostfree = circuit->set_tfrostfree - deltaK_to_temp(4);
 	circuit->set_outhoff_histeresis = deltaK_to_temp(1);
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
