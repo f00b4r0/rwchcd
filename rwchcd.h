@@ -91,6 +91,7 @@ struct s_config {
 	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;			///< number of active sensors (== id of last sensor +1)
 	tempid_t id_temp_outdoor;	///< outdoor temp
+	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
 	temp_t limit_tfrostmin;		///< outdoor temp for frost-protection
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
 	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED

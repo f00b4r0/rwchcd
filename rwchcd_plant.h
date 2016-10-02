@@ -35,7 +35,8 @@ struct s_valve {
 	int_fast16_t set_ete_time;	///< end-to-end run time in seconds
 	time_t request_runtime;
 	time_t running_since;
-	enum { STOP = 0, OPEN, CLOSE } action, request_action;	///< current valve action
+	enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
+				request_action;	///< requested action
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
@@ -88,7 +89,7 @@ struct s_heating_circuit {
 struct s_boiler_priv {
 	bool antifreeze;		///< true if anti freeze tripped
 	//regime de coupure (p.48)
-	temp_t histeresis;		///< boiler temp histeresis
+	temp_t set_histeresis;		///< boiler temp histeresis
 	temp_t limit_tmax;		///< maximum boiler temp when operating
 	temp_t limit_tmin;		///< minimum boiler temp when operating
 	temp_t limit_treturnmin;	///< minimum boiler return temp (optional) -- XXX NOT IMPLEMENTED
@@ -162,7 +163,7 @@ struct s_dhw_tank {
 	temp_t set_teco;		///< target temp in eco mode - XXX setup ensure > tfrostfree
 	temp_t set_tfrostfree;		///< target temp in frost-free mode - XXX setup ensure > 0C
 	temp_t target_temp;		///< current target temp for this tank
-	temp_t histeresis;		///< histeresis for target temp - XXX setup ensure > 0C
+	temp_t set_histeresis;		///< histeresis for target temp - XXX setup ensure > 0C
 	temp_t set_temp_inoffset;	///< offset temp for heat source request - XXX setup ensure > 0C
 	temp_t heat_request;		///< current temp request from heat source for this circuit
 	char * restrict name;		///< name for this tank

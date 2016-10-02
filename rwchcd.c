@@ -108,7 +108,7 @@ static int init_process()
 
 	// configure that source	XXX REVISIT
 	boiler = heatsource->priv;
-	boiler->histeresis = deltaK_to_temp(8);
+	boiler->set_histeresis = deltaK_to_temp(8);
 	boiler->limit_tmax = celsius_to_temp(90);
 	boiler->limit_tmin = celsius_to_temp(45);
 	boiler->id_temp = 2;	// XXX VALIDATION
@@ -173,7 +173,7 @@ static int init_process()
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
 	hardware_relay_set_id(circuit->valve->open, 11);
-	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(11);		// XXX INTERNAL CONFIG
+	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(11);	// XXX INTERNAL CONFIG
 	circuit->valve->open->configured = true;
 
 	circuit->valve->close = hardware_relay_new();
@@ -220,7 +220,7 @@ static int init_process()
 	dhwt->set_tcomfort = celsius_to_temp(50);
 	dhwt->set_teco = celsius_to_temp(40);
 	dhwt->set_tfrostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
-	dhwt->histeresis = deltaK_to_temp(10);
+	dhwt->set_histeresis = deltaK_to_temp(10);
 	dhwt->set_temp_inoffset = deltaK_to_temp(0);	// Integrated tank
 	dhwt->set_runmode = RM_AUTO;	// use global setting
 	dhwt->configured = true;

@@ -462,7 +462,7 @@ static int valve_online(struct s_valve * const valve)
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
 	valve->request_runtime = 0;
-	valve->action = valve->request_action = STOP;
+	valve->actual_action = valve->request_action = STOP;
 
 	return (ALL_OK);
 }
@@ -479,7 +479,7 @@ static int valve_offline(struct s_valve * const valve)
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
 	valve->request_runtime = 0;
-	valve->action = valve->request_action = STOP;
+	valve->actual_action = valve->request_action = STOP;
 
 	return (ALL_OK);
 }
@@ -522,11 +522,11 @@ stop:		hardware_relay_set_state(valve->open, OFF, 0);
 		hardware_relay_set_state(valve->close, OFF, 0);
 		valve->running_since = 0;
 		valve->request_runtime = 0;
-		valve->action = STOP;
+		valve->actual_action = STOP;
 		return (ALL_OK);
 	}
 	
-	if (STOP != valve->action) {
+	if (STOP != valve->actual_action) {
 		if (runtime >= valve->request_runtime)
 			goto stop;
 	}
@@ -543,20 +543,20 @@ stop:		hardware_relay_set_state(valve->open, OFF, 0);
 		hardware_relay_set_state(valve->open, ON, 0);
 		if (!valve->running_since)
 			valve->running_since = now;
-		valve->action = OPEN;
+		valve->actual_action = OPEN;
 	}
 	else if (CLOSE == valve->request_action) {
 		hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 		hardware_relay_set_state(valve->close, ON, 0);
 		if (!valve->running_since)
 			valve->running_since = now;
-		valve->action = CLOSE;
+		valve->actual_action = CLOSE;
 	}
 	
 	// calculate current course
-	if (OPEN == valve->action)
+	if (OPEN == valve->actual_action)
 		calc_course = ((now - valve->open->on_since) * 1/percent_time);	// trunc/floor
-	else if (CLOSE == valve->action)
+	else if (CLOSE == valve->actual_action)
 		calc_course = ((now - valve->close->on_since) * 1/percent_time);	// trunc/floor
 	else // valve stopped, update last rest position
 		valve->last_rest_position = valve->actual_position;
@@ -650,7 +650,7 @@ static struct s_boiler_priv * boiler_new(void)
 
 	// set some sane defaults
 	if (boiler) {
-		boiler->histeresis = deltaK_to_temp(6);
+		boiler->set_histeresis = deltaK_to_temp(6);
 		boiler->limit_tmin = celsius_to_temp(10);
 		boiler->limit_tmax = celsius_to_temp(95);
 		boiler->set_tfreeze = celsius_to_temp(5);
@@ -763,7 +763,7 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 
 	// untrip at limit_tmin + histeresis/2
 	if (boiler->antifreeze) {
-		if (boilertemp > (boiler->limit_tmin + boiler->histeresis/2))
+		if (boilertemp > (boiler->limit_tmin + boiler->set_histeresis/2))
 			boiler->antifreeze = false;
 	}
 
@@ -862,10 +862,10 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(target_temp), temp_to_celsius(boiler_temp));
 
 	// un/trip points
-	trip_temp = (target_temp - boiler->histeresis/2);
+	trip_temp = (target_temp - boiler->set_histeresis/2);
 	if (trip_temp < boiler->limit_tmin)
 		trip_temp = boiler->limit_tmin;
-	untrip_temp = (target_temp + boiler->histeresis/2);
+	untrip_temp = (target_temp + boiler->set_histeresis/2);
 	if (untrip_temp > boiler->limit_tmax)
 		untrip_temp = boiler->limit_tmax;
 	
@@ -1330,7 +1330,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			curr_temp = top_temp;
 
 		// if heating not in progress, trip if forced or at (target temp - histeresis)
-		if (dhwt->force_on || (curr_temp < (target_temp - dhwt->histeresis))) {
+		if (dhwt->force_on || (curr_temp < (target_temp - dhwt->set_histeresis))) {
 			dbgmsg("trip");
 			if (runtime->sleeping && dhwt->selfheater && dhwt->selfheater->configured) {
 				// the plant is sleeping and we have a configured self heater: use it

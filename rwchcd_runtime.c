@@ -76,7 +76,7 @@ static void outdoor_temp()
 	const time_t dt = time(NULL) - lasttime;
 	static temp_t t_filtered = 0;	// outdoor temp filtered by building_tau
 
-	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor);	// XXX checks
+	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor) + Runtime.config->set_temp_outdoor_offset;	// XXX checks
 
 	// XXX REVISIT prevent running averages at less than building_tau/60 interval, otherwise the precision rounding error in temp_expw_mavg becomes too large
 	if (dt < (Runtime.config->building_tau / 60))
@@ -303,5 +303,6 @@ int runtime_run(void)
 		goto out;
 
 out:
+	printf("\n");	// XXX
 	return (ret);
 }

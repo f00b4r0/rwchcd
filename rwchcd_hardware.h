@@ -22,11 +22,11 @@ struct s_stateful_relay {
 	bool turn_on;		///< state requested by software
 	bool is_on;		///< current hardware active state
 	time_t on_since;	///< last time on state was triggered, 0 if off XXX these variable should really be handled by the actual hardware call
-	time_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
 	time_t off_since;	///< last time off state was triggered, 0 if on
-	time_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
 	time_t state_time;	///< time spent in current state
-	uint_fast32_t cycles;	// XXX this should be elswhere (associated with rWCHC_relays) to reflect actual hardware count
+	time_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
+	time_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
+	uint_fast32_t cycles;	///< number of power cycles
 	char * restrict name;
 };
 
