@@ -35,6 +35,8 @@ struct s_valve {
 	int_fast16_t set_ete_time;	///< end-to-end run time in seconds
 	time_t request_runtime;
 	time_t running_since;
+	time_t acc_open_time;
+	time_t acc_close_time;
 	enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 				request_action;	///< requested action
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve

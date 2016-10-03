@@ -139,29 +139,23 @@ static void del_valve(struct s_valve * valve)
 
 void valve_reqopen_pct(struct s_valve * const valve, int percent)
 {
-	// calc running time from pct
-	const time_t running_time = ((valve->set_ete_time/100.0F)*percent);
-	
 	// if valve is opening, add running time
 	if (valve->request_action == OPEN)
-		valve->request_runtime += running_time;
+		valve->target_course += percent;
 	else {
 		valve->request_action = OPEN;
-		valve->request_runtime = running_time;
+		valve->target_course = percent;
 	}
 }
 
 void valve_reqclose_pct(struct s_valve * const valve, int percent)
 {
-	// calc running time from pct
-	const time_t running_time = ((valve->set_ete_time/100.0F)*percent);
-	
 	// if valve is opening, add running time
 	if (valve->request_action == CLOSE)
-		valve->request_runtime += running_time;
+		valve->target_course += percent;
 	else {
 		valve->request_action = CLOSE;
-		valve->request_runtime = running_time;
+		valve->target_course = percent;
 	}
 }
 
@@ -518,7 +512,7 @@ static int valve_offline(struct s_valve * const valve)
 static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
-	time_t runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
+	time_t request_runtime, runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
 	float percent_time;	// time necessary per percent position change
 	int_fast16_t calc_course = 0;	// use internal variable to avoid polluting state and deal with overflow
 
@@ -535,8 +529,11 @@ static int valve_run(struct s_valve * const valve)
 	
 	runtime = now - valve->running_since;
 	
+	// calc running time from pct
+	request_runtime = ((valve->set_ete_time/100.0F)*valve->target_course);
+	
 	dbgmsg("req action: %d, action: %d, req runtime: %d, running since: %d, runtime: %d",
-	       valve->request_action, valve->actual_action, valve->request_runtime, valve->running_since, runtime);
+	       valve->request_action, valve->actual_action, request_runtime, valve->running_since, runtime);
 
 	// check if stop time is passed if so stop the valve
 	if ((STOP == valve->request_action)) {
@@ -544,18 +541,26 @@ static int valve_run(struct s_valve * const valve)
 		return (ALL_OK);
 	}
 	
+	deadtime = percent_time * valve->set_deadband;
+	
+	// check that requested runtime is past deadband
+	if (request_runtime < deadtime)
+		return (-EDEADBAND);
+	
 	if (STOP != valve->actual_action) {
-		if (runtime >= valve->request_runtime) {
+		if (runtime >= request_runtime) {
+			if (OPEN == valve->actual_action) {
+				valve->acc_close_time = 0;
+				valve->acc_open_time += runtime;
+			}
+			else if (CLOSE == valve->actual_action) {
+				valve->acc_open_time = 0;
+				valve->acc_close_time += runtime;
+			}
 			valve_set_idle(valve);
 			return (ALL_OK);
 		}
 	}
-	
-	deadtime = percent_time * valve->set_deadband;
-
-	// check that requested runtime is past deadband
-	if (valve->request_runtime < deadtime)
-		return (-EDEADBAND);
 	
 	// check what is the requested action
 	if (OPEN == valve->request_action) {
