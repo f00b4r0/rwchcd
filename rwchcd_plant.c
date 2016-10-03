@@ -509,7 +509,6 @@ static int valve_run(struct s_valve * const valve)
 	const time_t now = time(NULL);
 	time_t request_runtime, runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
 	float percent_time;	// time necessary per percent position change
-	int_fast16_t calc_course = 0;	// use internal variable to avoid polluting state and deal with overflow
 
 	if (!valve)
 		return (-EINVALID);
@@ -526,6 +525,10 @@ static int valve_run(struct s_valve * const valve)
 	
 	// calc running time from pct
 	request_runtime = ((valve->set_ete_time/100.0F)*valve->target_course);	// XXX trunc/floor REVISIT?
+	
+	// prevent endless run
+	if (request_runtime > valve->set_ete_time*VALVE_MAX_RUNX)
+		request_runtime = valve->set_ete_time*VALVE_MAX_RUNX;
 	
 	deadtime = percent_time * valve->set_deadband;
 	
