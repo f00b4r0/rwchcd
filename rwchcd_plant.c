@@ -536,12 +536,12 @@ static int valve_run(struct s_valve * const valve)
 			if (OPEN == valve->actual_action) {
 				valve->acc_close_time = 0;
 				valve->acc_open_time += runtime; // XXX if > max stop sending signals
-				valve->actual_position += valve->acc_open_time/percent_time;
+				valve->actual_position += runtime/percent_time;
 			}
 			else if (CLOSE == valve->actual_action) {
 				valve->acc_open_time = 0;
 				valve->acc_close_time += runtime;
-				valve->actual_position -= valve->acc_open_time/percent_time;
+				valve->actual_position -= runtime/percent_time;
 			}
 			valve_reqstop(valve);
 		}
@@ -571,8 +571,10 @@ static int valve_run(struct s_valve * const valve)
 
 	// check what is the requested action
 	if (OPEN == valve->request_action) {
-		if (valve->acc_open_time > valve->set_ete_time*VALVE_MAX_RUNX)
+		if (valve->acc_open_time > valve->set_ete_time*VALVE_MAX_RUNX) {
+			valve->acc_open_time = valve->set_ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
+		}
 		else {
 			hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 			hardware_relay_set_state(valve->open, ON, 0);
@@ -582,8 +584,10 @@ static int valve_run(struct s_valve * const valve)
 		}
 	}
 	else if (CLOSE == valve->request_action) {
-		if (valve->acc_close_time > valve->set_ete_time*VALVE_MAX_RUNX)
+		if (valve->acc_close_time > valve->set_ete_time*VALVE_MAX_RUNX) {
+			valve->acc_close_time = valve->set_ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
+		}
 		else {
 			hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 			hardware_relay_set_state(valve->close, ON, 0);
