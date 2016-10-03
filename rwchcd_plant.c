@@ -162,7 +162,7 @@ void valve_reqclose_pct(struct s_valve * const valve, int percent)
 void valve_reqstop(struct s_valve * const valve)
 {
 	valve->request_action = STOP;
-	valve->request_runtime = 0;
+	valve->target_course = 0;
 }
 
 /**
@@ -440,7 +440,7 @@ static inline void valve_set_idle(struct s_valve * const valve)
 {
 	hardware_relay_set_state(valve->open, OFF, 0);
 	hardware_relay_set_state(valve->close, OFF, 0);
-	valve->request_runtime = 0;
+	valve->target_course = 0;
 	valve->running_since = 0;
 	valve->actual_action = valve->request_action = STOP;
 }
