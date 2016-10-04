@@ -62,6 +62,14 @@ static void parse_temps(void)
 	lasttime = time(NULL);
 }
 
+static inline void outdoor_temp_reset(void)
+{
+	// set init state of outdoor temperatures - XXX REVISIT
+	if (0 == Runtime.t_outdoor_attenuated)
+		Runtime.t_outdoor = Runtime.t_outdoor_60 = Runtime.t_outdoor_filtered = Runtime.t_outdoor_mixed = Runtime.t_outdoor_attenuated = get_temp(Runtime.config->id_temp_outdoor);
+
+}
+
 /**
  * Process outdoor temperature.
  * Compute the values of mixed and attenuated outdoor temp based on a
@@ -92,11 +100,11 @@ static void outdoor_temp()
 /**
  * Conditions for summer switch
  * summer mode is set on in ALL of the following conditions are met:
- * - t_outdoor > limit_tsummer
+ * - t_outdoor_60 > limit_tsummer
  * - t_outdoor_mixed > limit_tsummer
  * - t_outdoor_attenuated > limit_tsummer
  * summer mode is back off if ALL of the following conditions are met:
- * - t_outdoor < limit_tsummer
+ * - t_outdoor_60 < limit_tsummer
  * - t_outdoor_mixed < limit_tsummer
  * - t_outdoor_attenuated < limit_tsummer
  * State is preserved in all other cases
@@ -104,13 +112,13 @@ static void outdoor_temp()
  */
 static void runtime_summer(void)
 {
-	if ((Runtime.t_outdoor > Runtime.config->limit_tsummer)		&&
+	if ((Runtime.t_outdoor_60 > Runtime.config->limit_tsummer)	&&
 	    (Runtime.t_outdoor_mixed > Runtime.config->limit_tsummer)	&&
 	    (Runtime.t_outdoor_attenuated > Runtime.config->limit_tsummer)) {
 		Runtime.summer = true;
 	}
 	else {
-		if ((Runtime.t_outdoor < Runtime.config->limit_tsummer)		&&
+		if ((Runtime.t_outdoor_60 < Runtime.config->limit_tsummer)	&&
 		    (Runtime.t_outdoor_mixed < Runtime.config->limit_tsummer)	&&
 		    (Runtime.t_outdoor_attenuated < Runtime.config->limit_tsummer))
 			Runtime.summer = false;
@@ -222,9 +230,7 @@ int runtime_online(void)
 	parse_temps();
 
 	outdoor_temp();
-	// set init state of outdoor temperatures - XXX REVISIT
-	if (0 == Runtime.t_outdoor_attenuated)
-		Runtime.t_outdoor = Runtime.t_outdoor_mixed = Runtime.t_outdoor_attenuated = get_temp(Runtime.config->id_temp_outdoor);
+	outdoor_temp_reset();
 
 	return (plant_online(Runtime.plant));
 }
