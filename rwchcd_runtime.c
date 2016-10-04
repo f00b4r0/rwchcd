@@ -79,17 +79,21 @@ static inline void outdoor_temp_reset(void)
  */
 static void outdoor_temp()
 {
-	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
-	const time_t dt = time(NULL) - lasttime;
+	static time_t lasttime = 0, last60 = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
+	const time_t now = time(NULL);
+	const time_t dt = now - lasttime;
+	const time_t dt60 = now - last60;
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor) + Runtime.config->set_temp_outdoor_offset;	// XXX checks
-	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt);
+	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
 
+	last60 = now;
+	
 	// XXX REVISIT prevent running averages at less than building_tau/60 interval, otherwise the precision rounding error in temp_expw_mavg becomes too large
 	if (dt < (Runtime.config->building_tau / 60))
 		return;
 
-	lasttime = time(NULL);
+	lasttime = now;
 
 	Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
 	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + Runtime.t_outdoor_filtered)/2;	// other possible calculation: 75% of t_outdoor + 25% of t_filtered - 211p15
