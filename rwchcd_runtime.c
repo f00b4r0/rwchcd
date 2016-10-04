@@ -28,14 +28,14 @@ struct s_runtime * get_runtime(void)
  https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
  http://www.edn.com/design/systems-design/4320010/A-simple-software-lowpass-filter-suits-embedded-system-applications
  XXX if dt is 0 then the value will never be updated (dt has a 1s resolution)
+ * @param filtered accumulated average
+ * @param new_sample new sample to average
+ * @param tau time constant over which to average
+ * @param dt time elapsed since last average
  */
 static temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
 {
 	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
-
-	/* dbgmsg("%d - (%f * (%d - %d)) = %f, %d", filtered, alpha, filtered, new_sample,
-	       (filtered - (alpha * (filtered - new_sample))),
-	       (temp_t)((filtered - roundf(alpha * (filtered - new_sample))))); */
 
 	return (filtered - roundf(alpha * (filtered - new_sample)));
 }
@@ -66,7 +66,6 @@ static void parse_temps(void)
  * Process outdoor temperature.
  * Compute the values of mixed and attenuated outdoor temp based on a
  * weighted moving average and the building time constant.
- * t_filtered is t_outdoor filtered by the building time constant
  * @note must run at (ideally) fixed intervals
  * #warning no "parameter" check
  */
@@ -74,9 +73,9 @@ static void outdoor_temp()
 {
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
-	static temp_t t_filtered = 0;	// outdoor temp filtered by building_tau
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor) + Runtime.config->set_temp_outdoor_offset;	// XXX checks
+	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt);
 
 	// XXX REVISIT prevent running averages at less than building_tau/60 interval, otherwise the precision rounding error in temp_expw_mavg becomes too large
 	if (dt < (Runtime.config->building_tau / 60))
@@ -84,9 +83,9 @@ static void outdoor_temp()
 
 	lasttime = time(NULL);
 
-	t_filtered = temp_expw_mavg(t_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
-	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + t_filtered)/2;	// other possible calculation: 75% of t_outdoor + 25% of t_filtered - 211p15
-	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, t_filtered, Runtime.config->building_tau, dt);
+	Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
+	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + Runtime.t_outdoor_filtered)/2;	// other possible calculation: 75% of t_outdoor + 25% of t_filtered - 211p15
+	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_filtered, Runtime.config->building_tau, dt);
 }
 
 
@@ -246,8 +245,9 @@ int runtime_run(void)
 
 	// process data
 
-	dbgmsg("begin.\tt_outdoor: %.1f, t_outmixed: %.1f, t_outatt: %.1f",
-		temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_mixed), temp_to_celsius(Runtime.t_outdoor_attenuated));
+	dbgmsg("begin.\tt_outdoor: %.1f, t_60: %.1f, t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f",
+	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60), temp_to_celsius(Runtime.t_outdoor_filtered),
+	       temp_to_celsius(Runtime.t_outdoor_mixed), temp_to_celsius(Runtime.t_outdoor_attenuated));
 	
 	parse_temps();
 

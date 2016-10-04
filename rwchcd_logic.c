@@ -15,11 +15,11 @@
 /**
  * Conditions for running circuit
  * Circuit is off in ANY of the following conditions are met:
- * - t_outdoor > current set_outhoff_MODE
+ * - t_outdoor_60 > current set_outhoff_MODE
  * - t_outdoor_mixed > current set_outhoff_MODE
  * - t_outdoor_attenuated > current set_outhoff_MODE
  * Circuit is back on if ALL of the following conditions are met:
- * - t_outdoor < current set_outhoff_MODE - set_outhoff_histeresis
+ * - t_outdoor_60 < current set_outhoff_MODE - set_outhoff_histeresis
  * - t_outdoor_mixed < current set_outhoff_MODE - set_outhoff_histeresis
  * - t_outdoor_attenuated < current set_outhoff_MODE - set_outhoff_histeresis
  * State is preserved in all other cases
@@ -52,14 +52,14 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		return;	// XXX
 	}
 
-	if ((runtime->t_outdoor > temp_trigger) ||
+	if ((runtime->t_outdoor_60 > temp_trigger) ||
 	    (runtime->t_outdoor_mixed > temp_trigger) ||
 	    (runtime->t_outdoor_attenuated > temp_trigger)) {
 		circuit->outhoff = true;
 	}
 	else {
 		temp_trigger -= circuit->set_outhoff_histeresis;
-		if ((runtime->t_outdoor < temp_trigger) &&
+		if ((runtime->t_outdoor_60 < temp_trigger) &&
 		    (runtime->t_outdoor_mixed < temp_trigger) &&
 		    (runtime->t_outdoor_attenuated < temp_trigger))
 			circuit->outhoff = false;
