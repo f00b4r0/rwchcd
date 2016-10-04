@@ -159,8 +159,8 @@ void valve_reqclose_pct(struct s_valve * const valve, int_fast16_t percent)
 	}
 }
 
-#define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 500)
-#define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 500)
+#define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 120)
+#define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 120)
 
 void valve_reqstop(struct s_valve * const valve)
 {
@@ -574,7 +574,7 @@ static int valve_run(struct s_valve * const valve)
 
 	// check what is the requested action
 	if (OPEN == valve->request_action) {
-		if (valve->acc_open_time > valve->set_ete_time*VALVE_MAX_RUNX) {
+		if (valve->acc_open_time >= valve->set_ete_time*VALVE_MAX_RUNX) {
 			valve->acc_open_time = valve->set_ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
@@ -587,7 +587,7 @@ static int valve_run(struct s_valve * const valve)
 		}
 	}
 	else if (CLOSE == valve->request_action) {
-		if (valve->acc_close_time > valve->set_ete_time*VALVE_MAX_RUNX) {
+		if (valve->acc_close_time >= valve->set_ete_time*VALVE_MAX_RUNX) {
 			valve->acc_close_time = valve->set_ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
