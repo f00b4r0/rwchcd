@@ -28,17 +28,17 @@ $(MAIN): $(OBJS)
 clean:
 	$(RM) *.o *.d *~ $(MAIN)
 
-install: $(MAIN) org.slashdirt.rpiloted.conf rpiloted.service
+install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
 	install -D -s $(MAIN) -t /usr/sbin/
-	install -m 644 -D org.slashdirt.rpiloted.conf -t $(DBUSSYSTEMDIR)/
-	install -m 644 -D rpiloted.service -t $(SYSTEMDUNITDIR)/
-	systemctl enable rpiloted.service
+	install -m 644 -D org.slashdirt.rwchcd.conf -t $(DBUSSYSTEMDIR)/
+	install -m 644 -D rwchcd.service -t $(SYSTEMDUNITDIR)/
+	systemctl enable rwchcd.service
 	@echo Done
 
 uninstall:
 	$(RM) /usr/sbin/$(MAIN)
-	$(RM) $(DBUSSYSTEMDIR)/org.slashdirt.rpiloted.conf
-	$(RM) $(SYSTEMDUNITDIR)/rpiloted.service
+	$(RM) $(DBUSSYSTEMDIR)/org.slashdirt.rwchcd.conf
+	$(RM) $(SYSTEMDUNITDIR)/rwchcd.service
 	@echo Done
 
 -include $(DEPS)
