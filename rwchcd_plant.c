@@ -459,14 +459,6 @@ static int valve_online(struct s_valve * const valve)
 	if (!valve->set_ete_time)
 		return (-EMISCONFIGURED);
 
-#if 0	// XXX WHEN hardware_rwchcrelays_write runs in its separate thread we can do this
-	// reset the valve actuator
-	// close the valve for 2*ete_time
-	hardware_relay_set_state(valve->open, OFF, 0);
-	hardware_relay_set_state(valve->close, ON, 0);
-
-	sleep(2*valve->ete_time);	// XXX will block
-#endif
 	// return to idle
 	valve_reqstop(valve);
 	
@@ -538,7 +530,7 @@ static int valve_run(struct s_valve * const valve)
 		if ((STOP == valve->request_action) || (runtime >= request_runtime)) {
 			if (OPEN == valve->actual_action) {
 				valve->acc_close_time = 0;
-				valve->acc_open_time += runtime; // XXX if > max stop sending signals
+				valve->acc_open_time += runtime;
 				valve->actual_position += runtime/percent_time;
 			}
 			else if (CLOSE == valve->actual_action) {
