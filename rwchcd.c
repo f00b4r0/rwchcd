@@ -262,6 +262,9 @@ int main(void)
 		if (ret == -ESPI)	// XXX HACK
 			exit(ret);
 	}
+	
+	// start in frostfree by default
+	runtime_set_systemmode(SYS_FROSTFREE);
 
 	while (1) {
 		hardware_run();

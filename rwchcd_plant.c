@@ -151,7 +151,7 @@ static int valve_reqopen_pct(struct s_valve * const valve, uint_fast8_t percent)
 		return (-EINVALID);
 	
 	// if valve is opening, add running time
-	if (valve->request_action == OPEN)
+	if (OPEN == valve->request_action)
 		valve->target_course += percent;
 	else {
 		valve->request_action = OPEN;
@@ -173,7 +173,7 @@ static int valve_reqclose_pct(struct s_valve * const valve, uint_fast8_t percent
 		return (-EINVALID);
 	
 	// if valve is opening, add running time
-	if (valve->request_action == CLOSE)
+	if (CLOSE == valve->request_action)
 		valve->target_course += percent;
 	else {
 		valve->request_action = CLOSE;
@@ -618,7 +618,7 @@ static int valve_run(struct s_valve * const valve)
 		else {
 			hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 			hardware_relay_set_state(valve->open, ON, 0);
-			if (!valve->running_since)
+			if (!valve->running_since || (CLOSE == valve->actual_action))
 				valve->running_since = now;
 			valve->actual_action = OPEN;
 		}
@@ -631,7 +631,7 @@ static int valve_run(struct s_valve * const valve)
 		else {
 			hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 			hardware_relay_set_state(valve->close, ON, 0);
-			if (!valve->running_since)
+			if (!valve->running_since || (OPEN == valve->actual_action))
 				valve->running_since = now;
 			valve->actual_action = CLOSE;
 		}
@@ -1173,7 +1173,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 		case RM_MANUAL:
 			valve_reqstop(circuit->valve);	// stop valve
 			pump_set_state(circuit->pump, ON, FORCE);	// turn pump on
-			return (ALL_OK);	//XXX REVISIT
+			return (ALL_OK);
 		case RM_COMFORT:
 		case RM_ECO:
 		case RM_DHWONLY:
