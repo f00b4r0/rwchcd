@@ -131,14 +131,25 @@ static void del_valve(struct s_valve * valve)
 	valve->open = NULL;
 	hardware_relay_del(valve->close);
 	valve->close = NULL;
+	free(valve->priv);
+	valve->priv = NULL;
 	free(valve->name);
 	valve->name = NULL;
 
 	free(valve);
 }
 
-void valve_reqopen_pct(struct s_valve * const valve, int_fast16_t percent)
+/**
+ * Request valve closing amount
+ * @param valve target valve
+ * @param percent amount to close the valve
+ * @return exec status
+ */
+static int valve_reqopen_pct(struct s_valve * const valve, uint_fast8_t percent)
 {
+	if (!valve)
+		return (-EINVALID);
+	
 	// if valve is opening, add running time
 	if (valve->request_action == OPEN)
 		valve->target_course += percent;
@@ -146,10 +157,21 @@ void valve_reqopen_pct(struct s_valve * const valve, int_fast16_t percent)
 		valve->request_action = OPEN;
 		valve->target_course = percent;
 	}
+	
+	return (ALL_OK);
 }
 
-void valve_reqclose_pct(struct s_valve * const valve, int_fast16_t percent)
+/**
+ * Request valve opening amount.
+ * @param valve target valve
+ * @param percent amount to open the valve
+ * @return exec status
+ */
+static int valve_reqclose_pct(struct s_valve * const valve, uint_fast8_t percent)
 {
+	if (!valve)
+		return (-EINVALID);
+	
 	// if valve is opening, add running time
 	if (valve->request_action == CLOSE)
 		valve->target_course += percent;
@@ -157,15 +179,26 @@ void valve_reqclose_pct(struct s_valve * const valve, int_fast16_t percent)
 		valve->request_action = CLOSE;
 		valve->target_course = percent;
 	}
+	
+	return (ALL_OK);
 }
 
 #define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 120)
 #define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 120)
 
-void valve_reqstop(struct s_valve * const valve)
+/**
+ * Request valve stop
+ * @param valve target valve
+ */
+static void valve_reqstop(struct s_valve * const valve)
 {
+	if (!valve)
+		return (-EINVALID);
+
 	valve->request_action = STOP;
 	valve->target_course = 0;
+
+	return (ALL_OK);
 }
 
 /**
@@ -372,20 +405,32 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
 	return (ALL_OK);
 }
 
+/**
+ * Successive approximations law.
+ * Approximate the target temperature by repeatedly trying to converge toward
+ * the set point. Priv structure contains sample interval, last sample time and
+ * fixed amount of valve course to apply.
+ * @note settings (in particular deadzone, sample time and amount) are crucial
+ * to make this work without too many oscillations.
+ * @param valve the target valve
+ * @param target_tout the target output temperature
+ * @return exec status
+ */
 int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 {
-	const time_t sample_time = 20;	// 20s
-	static time_t lasttime = 0;
-
+	struct s_valve_sapprox_priv * restrict const vpriv = valve->priv;
 	const time_t now = time(NULL);
-	int ret;
 	temp_t tempout;
+	int ret;
+	
+	if (!priv)
+		return (-EMISCONFIGURED);
 	
 	// sample window
-	if (now - lasttime < sample_time)
+	if ((now - vpriv->last_time) < vpriv->sample_intvl)
 		return (ALL_OK);
 	
-	lasttime = now;
+	vpriv->last_time = now;
 	
 	tempout = get_temp(valve->id_tempout);
 	ret = validate_temp(tempout);
@@ -404,11 +449,11 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set_tdeadzone/2) {
-		valve_reqopen_pct(valve, 5);
+		valve_reqopen_pct(valve, vpriv->amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
 	else if (tempout > target_tout + valve->set_tdeadzone/2) {
-		valve_reqclose_pct(valve, 5);
+		valve_reqclose_pct(valve, vpriv->amount);
 	}
 	// else stop valve
 	else {
@@ -513,41 +558,39 @@ static int valve_run(struct s_valve * const valve)
 
 	percent_time = valve->set_ete_time/100.0F;
 	
-	runtime = now - valve->running_since;
-	
 	// calc running time from pct
-	request_runtime = ((valve->set_ete_time/100.0F)*valve->target_course);	// XXX trunc/floor REVISIT?
+	request_runtime = (percent_time*valve->target_course);	// XXX trunc/floor REVISIT?
 	
 	// prevent endless run
 	if (request_runtime > valve->set_ete_time*VALVE_MAX_RUNX)
 		request_runtime = valve->set_ete_time*VALVE_MAX_RUNX;
 	
-	deadtime = percent_time * valve->set_deadband;
-	
 	// check if valve is currently active
 	if (STOP != valve->actual_action) {
+		runtime = now - valve->running_since;
+		
 		// if it is and we have stop request or exceeded request runtime, update counters and stop it
 		if ((STOP == valve->request_action) || (runtime >= request_runtime)) {
 			if (OPEN == valve->actual_action) {
 				valve->acc_close_time = 0;
 				valve->acc_open_time += runtime;
-				valve->actual_position += runtime/percent_time;
+				valve->actual_position += runtime*10/percent_time;
 			}
 			else if (CLOSE == valve->actual_action) {
 				valve->acc_open_time = 0;
 				valve->acc_close_time += runtime;
-				valve->actual_position -= runtime/percent_time;
+				valve->actual_position -= runtime*10/percent_time;
 			}
 			valve_reqstop(valve);
 		}
 	}
 	
-	dbgmsg("req action: %d, action: %d, pos: %d%%, req runtime: %d, running since: %d, runtime: %d",
-	       valve->request_action, valve->actual_action, valve->actual_position, request_runtime, valve->running_since, runtime);
+	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %d, running since: %d, runtime: %d",
+	       valve->request_action, valve->actual_action, (float)valve->actual_position/10.0F, request_runtime, valve->running_since, runtime);
 	
 	// apply physical limits
-	if (valve->actual_position > 100)
-		valve->actual_position = 100;
+	if (valve->actual_position > 1000)
+		valve->actual_position = 1000;
 	else if (valve->actual_position < 0)
 		valve->actual_position = 0;
 	
@@ -561,6 +604,7 @@ static int valve_run(struct s_valve * const valve)
 	}
 	
 	// otherwise check that requested runtime is past deadband
+	deadtime = percent_time * valve->set_deadband;
 	if (request_runtime < deadtime)
 		return (-EDEADBAND);
 
@@ -617,9 +661,20 @@ int valve_make_bangbang(struct s_valve * const valve)
 
 int valve_make_sapprox(struct s_valve * const valve)
 {
+	struct s_valve_sapprox_priv * priv = NULL;
+	
 	if (!valve)
 		return (-EINVALID);
 	
+	// create priv element
+	priv = calloc(1, sizeof(*priv));
+	if (!priv)
+		return (-EOOM);
+	
+	// attach created priv to valve
+	valve->priv = priv;
+	
+	// assign function
 	valve->valvelaw = valvelaw_sapprox;
 	
 	return (ALL_OK);

@@ -21,27 +21,34 @@ struct s_pump {
 	char * restrict name;
 };
 
+struct s_valve_sapprox_priv {
+	time_t sample_intvl;
+	time_t last_time;
+	uint_fast8_t amount;
+};
+
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
 struct s_valve {
 	bool configured;
 	bool online;		///< true if valve is operational
-	bool in_deadzone;	///< true if valve is in deadzone
+	bool in_deadzone;	///< true if valve is in deadzone (XXX USEFUL?)
 	temp_t set_tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
-	int_fast8_t set_deadband;	///< deadband for valve operation in %
-	int_fast16_t actual_position;	///< estimated current position in %
-	int_fast16_t target_course;	///< current target course in % of set_ete_time (positive means open, negative means close)
-	int_fast16_t set_ete_time;	///< end-to-end run time in seconds
-	time_t running_since;
-	time_t acc_open_time;
-	time_t acc_close_time;
+	uint_fast8_t set_deadband;	///< deadband for valve operation in %: no operation if requested move is less than that
+	int_fast16_t actual_position;	///< estimated current position in %*10
+	uint_fast16_t target_course;	///< current target course in % of set_ete_time
+	uint_fast16_t set_ete_time;	///< end-to-end run time in seconds
+	time_t running_since;	///< current operation (OPEN/CLOSE) start time
+	time_t acc_open_time;	///< accumulated open time since last close
+	time_t acc_close_time;	///< accumulated close time since last open
 	enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 				request_action;	///< requested action
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
-	tempid_t id_temp1;		///< temp at the "primary" input: when position is 0% there is 0% flow from this input
-	tempid_t id_temp2;		///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Kelvin from temp1
+	tempid_t id_temp1;	///< temp at the "primary" input: when position is 0% there is 0% flow from this input
+	tempid_t id_temp2;	///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Kelvin from temp1
 	tempid_t id_tempout;	///< temp at the output
 	char * restrict name;
+	void * restrict priv;	///< private data structure for valvelaw
 	int (*valvelaw)(struct s_valve * const, const temp_t);	///< pointer to valve law
 };
 
