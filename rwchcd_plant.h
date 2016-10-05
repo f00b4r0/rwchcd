@@ -22,9 +22,9 @@ struct s_pump {
 };
 
 struct s_valve_sapprox_priv {
-	time_t sample_intvl;
-	time_t last_time;
-	uint_fast8_t amount;
+	uint_fast8_t set_amount;	///< amount to move in %
+	time_t set_sample_intvl;	///< sample interval in seconds
+	time_t last_time;		///< private variable
 };
 
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves

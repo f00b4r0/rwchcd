@@ -169,7 +169,12 @@ static int init_process()
 	circuit->valve->id_temp2 = circuit->id_temp_return;
 	circuit->valve->id_tempout = circuit->id_temp_outgoing;
 	valve_make_sapprox(circuit->valve);
-
+	struct s_valve_sapprox_priv * restrict vpriv = circuit->valve->priv;
+	
+	vpriv->set_sample_intvl = 20;
+	vpriv->set_amount = 5;
+	vpriv = NULL;
+	
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
 	hardware_relay_set_id(circuit->valve->open, 11);
@@ -180,7 +185,7 @@ static int init_process()
 	hardware_relay_set_id(circuit->valve->close, 10);
 	config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(10);	// XXX INTERNAL CONFIG
 	circuit->valve->close->configured = true;
-
+	
 	circuit->valve->configured = true;
 
 	// create a pump for that circuit

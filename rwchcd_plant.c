@@ -428,7 +428,7 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 		return (-EMISCONFIGURED);
 	
 	// sample window
-	if ((now - vpriv->last_time) < vpriv->sample_intvl)
+	if ((now - vpriv->last_time) < vpriv->set_sample_intvl)
 		return (ALL_OK);
 	
 	vpriv->last_time = now;
@@ -450,11 +450,11 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set_tdeadzone/2) {
-		valve_reqopen_pct(valve, vpriv->amount);
+		valve_reqopen_pct(valve, vpriv->set_amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
 	else if (tempout > target_tout + valve->set_tdeadzone/2) {
-		valve_reqclose_pct(valve, vpriv->amount);
+		valve_reqclose_pct(valve, vpriv->set_amount);
 	}
 	// else stop valve
 	else {
