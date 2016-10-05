@@ -36,7 +36,7 @@ struct s_valve {
 	uint_fast8_t set_deadband;	///< deadband for valve operation in %: no operation if requested move is less than that
 	int_fast16_t actual_position;	///< estimated current position in %*10
 	uint_fast16_t target_course;	///< current target course in % of set_ete_time
-	uint_fast16_t set_ete_time;	///< end-to-end run time in seconds
+	time_t set_ete_time;	///< end-to-end run time in seconds
 	time_t running_since;	///< current operation (OPEN/CLOSE) start time
 	time_t acc_open_time;	///< accumulated open time since last close
 	time_t acc_close_time;	///< accumulated close time since last open

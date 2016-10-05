@@ -189,8 +189,9 @@ static int valve_reqclose_pct(struct s_valve * const valve, uint_fast8_t percent
 /**
  * Request valve stop
  * @param valve target valve
+ * @return exec status
  */
-static void valve_reqstop(struct s_valve * const valve)
+static int valve_reqstop(struct s_valve * const valve)
 {
 	if (!valve)
 		return (-EINVALID);
@@ -423,7 +424,7 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	temp_t tempout;
 	int ret;
 	
-	if (!priv)
+	if (!vpriv)
 		return (-EMISCONFIGURED);
 	
 	// sample window
