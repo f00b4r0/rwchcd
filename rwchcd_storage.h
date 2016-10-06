@@ -2,8 +2,8 @@
 //  rwchcd_storage.h
 //  rwchcd
 //
-//  Created by Thibaut Varene on 06/10/2016.
-//  Copyright © 2016 Slashdirt. All rights reserved.
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 #ifndef rwchcd_storage_h

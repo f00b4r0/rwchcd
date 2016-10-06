@@ -133,7 +133,7 @@ static int hardware_restore(void)
 {
 	static uint8_t blob[ARRAY_SIZE(Relays)*sizeof(*Relays[0])];
 	storage_version_t sversion;
-	struct s_stateful_relay * relayptr = (typeof(relayptr))&blob;
+	typeof(Relays[0]) relayptr = (typeof(relayptr))&blob;
 	unsigned int i;
 	
 	// try to restore key elements of hardware
