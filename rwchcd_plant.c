@@ -618,7 +618,7 @@ static int valve_run(struct s_valve * const valve)
 		else {
 			hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 			hardware_relay_set_state(valve->open, ON, 0);
-			if (!valve->running_since || (CLOSE == valve->actual_action))
+			if (!valve->running_since || (CLOSE == valve->actual_action))
 				valve->running_since = now;
 			valve->actual_action = OPEN;
 		}
