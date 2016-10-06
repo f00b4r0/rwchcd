@@ -116,7 +116,7 @@ static int hardware_save(void)
 	
 	for (i=0; i<ARRAY_SIZE(Relays); i++) {
 		if (Relays[i])
-			memccpy(&blob[i*sizeof(*Relays[0])], Relays[i], 1, sizeof(*Relays[i]));
+			memcpy(&blob[i*sizeof(*Relays[0])], Relays[i], sizeof(*Relays[0]));
 		else
 			memset(&blob[i*sizeof(*Relays[0])], 0x00, sizeof(*Relays[0]));
 	}
