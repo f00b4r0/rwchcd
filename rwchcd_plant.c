@@ -1487,12 +1487,12 @@ struct s_pump * plant_new_pump(struct s_plant * const plant)
 		goto fail;
 	
 	// create a new pump. calloc() sets good defaults
-	pump = calloc(1, sizeof(struct s_pump));
+	pump = calloc(1, sizeof(*pump));
 	if (!pump)
 		goto fail;
 	
 	// create pump element
-	pumpelmt = calloc(1, sizeof(struct s_pump_l));
+	pumpelmt = calloc(1, sizeof(*pumpelmt));
 	if (!pumpelmt)
 		goto fail;
 	
@@ -1527,12 +1527,12 @@ struct s_valve * plant_new_valve(struct s_plant * const plant)
 		goto fail;
 	
 	// create a new valve. calloc() sets good defaults
-	valve = calloc(1, sizeof(struct s_valve));
+	valve = calloc(1, sizeof(*valve));
 	if (!valve)
 		goto fail;
 	
 	// create valve element
-	valveelmt = calloc(1, sizeof(struct s_valve_l));
+	valveelmt = calloc(1, sizeof(*valveelmt));
 	if (!valveelmt)
 		goto fail;
 	
@@ -1567,12 +1567,12 @@ struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant)
 		goto fail;
 
 	// create a new circuit. calloc() sets good defaults
-	circuit = calloc(1, sizeof(struct s_heating_circuit));
+	circuit = calloc(1, sizeof(*circuit));
 	if (!circuit)
 		goto fail;
 
 	// create a new circuit element
-	circuitelement = calloc(1, sizeof(struct s_heating_circuit_l));
+	circuitelement = calloc(1, sizeof(*circuitelement));
 	if (!circuitelement)
 		goto fail;
 
@@ -1622,12 +1622,12 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant)
 		goto fail;
 
 	// create a new tank. calloc() sets good defaults
-	dhwt = calloc(1, sizeof(struct s_dhw_tank));
+	dhwt = calloc(1, sizeof(*dhwt));
 	if (!dhwt)
 		goto fail;
 
 	// create a new tank element
-	dhwtelement = calloc(1, sizeof(struct s_dhw_tank_l));
+	dhwtelement = calloc(1, sizeof(*dhwtelement));
 	if (!dhwtelement)
 		goto fail;
 
@@ -1682,7 +1682,7 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 		goto fail;
 
 	// create a new source. calloc() sets good defaults
-	source = calloc(1, sizeof(struct s_heatsource));
+	source = calloc(1, sizeof(*source));
 	if (!source)
 		goto fail;
 
@@ -1704,7 +1704,7 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 	source->type = type;
 
 	// create a new source element
-	sourceelement = calloc(1, sizeof(struct s_heatsource_l));
+	sourceelement = calloc(1, sizeof(*sourceelement));
 	if (!sourceelement)
 		goto fail;
 
