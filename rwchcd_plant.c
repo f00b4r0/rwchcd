@@ -568,7 +568,7 @@ static int valve_run(struct s_valve * const valve)
 	
 	// if we've exceeded request_runtime, request valve stop
 	runtime = now - valve->running_since;
-	if (runtime >= request_runtime)
+	if ((STOP != valve->actual_action) && (runtime >= request_runtime))
 		valve_reqstop(valve);
 
 	// if we have a change of action, update counters
