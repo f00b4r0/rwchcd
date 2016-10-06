@@ -137,17 +137,17 @@ static int hardware_restore(void)
 	unsigned int i;
 	
 	// try to restore key elements of hardware
-	if (storage_fetch("hardware", &sversion, &blob, sizeof(blob)) == ALL_OK) {
+	if (storage_fetch("hardware", &sversion, blob, sizeof(blob)) == ALL_OK) {
 		if (Hardware_sversion != sversion)
 			return (ALL_OK);	// XXX
 
 		for (i=0; i<ARRAY_SIZE(Relays); i++) {
-			relayptr += sizeof(*relayptr);
 			if (Relays[i]) {
 				Relays[i]->on_tottime += relayptr->on_tottime;
 				Relays[i]->off_tottime += relayptr->off_tottime;
 				Relays[i]->cycles += relayptr->cycles;
 			}
+			relayptr++;
 		}
 	}
 	else
