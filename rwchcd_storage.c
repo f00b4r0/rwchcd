@@ -16,17 +16,17 @@
 #define STORAGE_PATH	"/var/lib/rwchcd/"
 
 static const char Storage_magic[] = RWCHCD_STORAGE_MAGIC;
-static const uint32_t Storage_version = RWCHCD_STORAGE_VERSION;
+static const storage_version_t Storage_version = RWCHCD_STORAGE_VERSION;
 
 /**
  * Generic storage backend write call.
  * @param identifier a unique string identifying the object to backup
  * @param version a caller-defined version number
- * @param size size of the object argument
  * @param object the opaque object to store
+ * @param size size of the object argument
  * @todo XXX TODO ERROR HANDLING
  */
-int storage_dump(const char * restrict const identifier, const uint_fast32_t * restrict const version, const size_t size, const void * restrict const object)
+int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size)
 {
 	FILE * restrict file = NULL;
 	
@@ -42,10 +42,11 @@ int storage_dump(const char * restrict const identifier, const uint_fast32_t * r
 	if (!file)
 		return (-ESTORE);
 	
-	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p");
+	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p",
+	       identifier, *version, size, object);
 	
 	// write our global magic first
-	fwrite(Storage_magic, ARRAY_SIZE(Storage_magic), 1, file);
+	fwrite(Storage_magic, sizeof(Storage_magic), 1, file);
 	
 	// then our global version
 	fwrite(&Storage_version, sizeof(Storage_version), 1, file);
@@ -66,15 +67,15 @@ int storage_dump(const char * restrict const identifier, const uint_fast32_t * r
  * Generic storage backend read call.
  * @param identifier a unique string identifying the object to recall
  * @param version a caller-defined version number
- * @param size size of the object argument
  * @param object the opaque object to restore
+ * @param size size of the object argument
  * @todo XXX TODO ERROR HANDLING
  */
-int storage_fetch(const char * restrict const identifier, uint_fast32_t * restrict const version, const size_t size, void * restrict const object)
+int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size)
 {
 	FILE * restrict file = NULL;
 	char magic[ARRAY_SIZE(Storage_magic)];
-	typeof(Storage_version) sversion = 0;
+	storage_version_t sversion = 0;
 	
 	if (!identifier || !version || !object)
 		return (-EINVALID);
@@ -89,10 +90,10 @@ int storage_fetch(const char * restrict const identifier, uint_fast32_t * restri
 		return (-ESTORE);
 	
 	// read our global magic first
-	fread(magic, ARRAY_SIZE(Storage_magic), 1, file);
+	fread(magic, sizeof(Storage_magic), 1, file);
 	
 	// compare with current global magic
-	if (memcmp(magic, Storage_magic, ARRAY_SIZE(Storage_magic)))
+	if (memcmp(magic, Storage_magic, sizeof(Storage_magic)))
 		return (-ESTORE);
 	
 	// then global version
@@ -102,7 +103,8 @@ int storage_fetch(const char * restrict const identifier, uint_fast32_t * restri
 	if (memcmp(&sversion, &Storage_version, sizeof(Storage_version)))
 		return (-ESTORE);
 	
-	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p");
+	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p",
+	       identifier, *version, size, object);
 
 	// then read the local version
 	fread(version, sizeof(*version), 1, file);

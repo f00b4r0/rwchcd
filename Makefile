@@ -29,6 +29,7 @@ clean:
 	$(RM) *.o *.d *~ $(MAIN)
 
 install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
+	install -d /var/lib/rwchcd/
 	install -D -s $(MAIN) -t /usr/sbin/
 	install -m 644 -D org.slashdirt.rwchcd.conf -t $(DBUSSYSTEMDIR)/
 	install -m 644 -D rwchcd.service -t $(SYSTEMDUNITDIR)/

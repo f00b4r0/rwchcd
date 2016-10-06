@@ -16,6 +16,7 @@
 #include "rwchcd_spi.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
+#include "rwchcd_storage.h"
 #include "rwchcd_hardware.h"
 
 #define RELAY_MAX_ID	14	///< maximum valid relay id
@@ -23,6 +24,7 @@
 #define VALID_CALIB_MIN	0.8F
 #define VALID_CALIB_MAX	1.2F
 
+static const storage_version_t Hardware_sversion = 1;
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
 
 /**
@@ -101,6 +103,57 @@ static float ohm_to_celsius(const uint_fast16_t ohm)
 temp_t sensor_to_temp(const rwchc_sensor_t raw)
 {
 	return (celsius_to_temp(ohm_to_celsius(sensor_to_ohm(raw, 1))));
+}
+
+/**
+ * Save hardware state to permanent storage
+ * @return exec status
+ */
+static int hardware_save(void)
+{
+	static uint8_t blob[ARRAY_SIZE(Relays)*sizeof(*Relays[0])];
+	unsigned int i;
+	
+	for (i=0; i<ARRAY_SIZE(Relays); i++) {
+		if (Relays[i])
+			memccpy(&blob[i*sizeof(*Relays[0])], Relays[i], 1, sizeof(*Relays[i]));
+		else
+			memset(&blob[i*sizeof(*Relays[0])], 0x00, sizeof(*Relays[0]));
+	}
+	
+	return (storage_dump("hardware", &Hardware_sversion, &blob, sizeof(blob)));
+}
+
+/**
+ * Restore hardware state from permanent storage
+ * Restores cycles and on/off total time counts for set relays.
+ * @return exec status
+ */
+static int hardware_restore(void)
+{
+	static uint8_t blob[ARRAY_SIZE(Relays)*sizeof(*Relays[0])];
+	storage_version_t sversion;
+	struct s_stateful_relay * relayptr = (typeof(relayptr))&blob;
+	unsigned int i;
+	
+	// try to restore key elements of hardware
+	if (storage_fetch("hardware", &sversion, &blob, sizeof(blob)) == ALL_OK) {
+		if (Hardware_sversion != sversion)
+			return (ALL_OK);	// XXX
+
+		for (i=0; i<ARRAY_SIZE(Relays); i++) {
+			relayptr += sizeof(*relayptr);
+			if (Relays[i]) {
+				Relays[i]->on_tottime += relayptr->on_tottime;
+				Relays[i]->off_tottime += relayptr->off_tottime;
+				Relays[i]->cycles += relayptr->cycles;
+			}
+		}
+	}
+	else
+		dbgmsg("storage_fetch failed");
+
+	return (ALL_OK);
 }
 
 /**
@@ -437,6 +490,11 @@ int hardware_online(void)
 	ret = hardware_calibrate();
 	if (ret)
 		goto fail;
+	
+	// restore previous state
+	ret = hardware_restore();
+	if (ret)
+		goto fail;
 
 	// read sensors
 	ret = hardware_sensors_read(runtime->rWCHC_sensors, runtime->config->nsensors);
@@ -498,4 +556,9 @@ void hardware_run(void)
 	if (ret)
 		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
 #endif
+	
+	// save state
+	ret = hardware_save();
+	if (ret)
+		dbgerr("hardware_save failed (%d)", ret);
 }

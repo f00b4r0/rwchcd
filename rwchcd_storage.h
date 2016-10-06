@@ -11,7 +11,9 @@
 
 #include "rwchcd.h"
 
-int storage_dump(const char * restrict const identifier, const uint_fast32_t * restrict const version, const size_t size, const void * restrict const object);
-int storage_fetch(const char * restrict const identifier, uint_fast32_t * restrict const version, const size_t size, void * restrict const object);
+typedef uint32_t	storage_version_t;
+
+int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size);
+int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size);
 
 #endif /* rwchcd_storage_h */

@@ -14,7 +14,9 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_lcd.h"
 #include "rwchcd_hardware.h"	// sensor_to_temp()
+#include "rwchcd_storage.h"
 
+static const storage_version_t Runtime_sversion = 1;
 static struct s_runtime Runtime;
 
 struct s_runtime * get_runtime(void)
@@ -129,10 +131,51 @@ static void runtime_summer(void)
 	}
 }
 
+/**
+ * Save runtime to permanent storage
+ * @return exec status
+ */
+static int runtime_save(void)
+{
+	return (storage_dump("runtime", &Runtime_sversion, &Runtime, sizeof(Runtime)));
+}
+
+/**
+ * Restore runtime from permanent storage
+ * @return exec status
+ */
+static int runtime_restore(void)
+{
+	struct s_runtime temp_runtime;
+	storage_version_t sversion;
+	
+	// try to restore key elements of last runtime
+	if (storage_fetch("runtime", &sversion, &temp_runtime, sizeof(temp_runtime)) == ALL_OK) {
+		if (Runtime_sversion != sversion)
+			return (ALL_OK);	// XXX
+		
+		Runtime.t_outdoor_filtered = temp_runtime.t_outdoor_filtered;
+		Runtime.t_outdoor_mixed = temp_runtime.t_outdoor_mixed;
+		Runtime.t_outdoor_attenuated = temp_runtime.t_outdoor_attenuated;
+		Runtime.systemmode = temp_runtime.systemmode;
+		Runtime.runmode = temp_runtime.runmode;
+		Runtime.dhwmode = temp_runtime.dhwmode;
+	}
+	else
+		dbgmsg("storage_fetch failed");
+	
+	return (ALL_OK);
+}
+
+/**
+ * Init runtime
+ */
 void runtime_init(void)
 {
 	// fill the structure with zeroes, which turns everything off and sets sane values
 	memset(&Runtime, 0x0, sizeof(Runtime));
+	
+	runtime_restore();
 }
 
 /**
@@ -307,6 +350,8 @@ int runtime_run(void)
 
 	outdoor_temp();
 	runtime_summer();
+	
+	runtime_save();
 
 	ret = plant_run(Runtime.plant);
 	if (ret)
