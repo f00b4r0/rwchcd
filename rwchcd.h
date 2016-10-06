@@ -51,6 +51,7 @@ enum {
 	EOOM,		///< Out of memory
 	EEXISTS,	///< Object already exists (id conflict)
 	ETRUNC,		///< Truncation occured (LCD output)
+	ESTORE,		///< Storage errors
 	EGENERIC,
 };
 
@@ -89,7 +90,7 @@ enum e_systemmode {
 struct s_config {
 	bool configured;
 	time_t building_tau;		///< building time constant
-	int_fast16_t nsensors;			///< number of active sensors (== id of last sensor +1)
+	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor +1)
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
 	temp_t limit_tfrostmin;		///< outdoor temp for frost-protection
