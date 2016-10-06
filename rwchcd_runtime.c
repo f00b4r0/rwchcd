@@ -81,9 +81,9 @@ static inline void outdoor_temp_reset(void)
  */
 static void outdoor_temp()
 {
-	static time_t lasttime = 0, last60 = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
+	static time_t last60 = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t now = time(NULL);
-	const time_t dt = now - lasttime;
+	const time_t dt = now - Runtime.t_outdoor_ltime;
 	const time_t dt60 = now - last60;
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor) + Runtime.config->set_temp_outdoor_offset;	// XXX checks
@@ -95,7 +95,7 @@ static void outdoor_temp()
 	if (dt < (Runtime.config->building_tau / 60))
 		return;
 
-	lasttime = now;
+	Runtime.t_outdoor_ltime = now;
 
 	Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
 	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + Runtime.t_outdoor_filtered)/2;	// other possible calculation: 75% of t_outdoor + 25% of t_filtered - 211p15
@@ -154,6 +154,7 @@ static int runtime_restore(void)
 		if (Runtime_sversion != sversion)
 			return (ALL_OK);	// XXX
 		
+		Runtime.t_outdoor_ltime = temp_runtime.t_outdoor_ltime;
 		Runtime.t_outdoor_filtered = temp_runtime.t_outdoor_filtered;
 		Runtime.t_outdoor_mixed = temp_runtime.t_outdoor_mixed;
 		Runtime.t_outdoor_attenuated = temp_runtime.t_outdoor_attenuated;
@@ -174,8 +175,6 @@ void runtime_init(void)
 {
 	// fill the structure with zeroes, which turns everything off and sets sane values
 	memset(&Runtime, 0x0, sizeof(Runtime));
-	
-	runtime_restore();
 }
 
 /**
@@ -273,6 +272,8 @@ int runtime_online(void)
 {
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
+	
+	runtime_restore();
 
 	parse_temps();
 

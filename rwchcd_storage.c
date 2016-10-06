@@ -103,14 +103,14 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	if (memcmp(&sversion, &Storage_version, sizeof(Storage_version)))
 		return (-ESTORE);
 	
-	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p",
-	       identifier, *version, size, object);
-
 	// then read the local version
 	fread(version, sizeof(*version), 1, file);
 	
 	// then read the object
 	fread(object, size, 1, file);
+	
+	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p",
+	       identifier, *version, size, object);
 	
 	// finally close the file
 	fclose(file);

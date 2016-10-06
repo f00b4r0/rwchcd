@@ -264,7 +264,8 @@ int main(void)
 	}
 	
 	// start in frostfree by default
-	runtime_set_systemmode(SYS_FROSTFREE);
+	if (SYS_OFF == get_runtime()->systemmode)
+		runtime_set_systemmode(SYS_FROSTFREE);
 
 	while (1) {
 		hardware_run();
