@@ -566,23 +566,23 @@ static int valve_run(struct s_valve * const valve)
 	if (request_runtime > valve->set_ete_time*VALVE_MAX_RUNX)
 		request_runtime = valve->set_ete_time*VALVE_MAX_RUNX;
 	
-	// check if valve is currently active
-	if (STOP != valve->actual_action) {
-		runtime = now - valve->running_since;
-		
-		// if it is and we have stop request or exceeded request runtime, update counters and stop it
-		if ((STOP == valve->request_action) || (runtime >= request_runtime)) {
-			if (OPEN == valve->actual_action) {
-				valve->acc_close_time = 0;
-				valve->acc_open_time += runtime;
-				valve->actual_position += runtime*10/percent_time;
-			}
-			else if (CLOSE == valve->actual_action) {
-				valve->acc_open_time = 0;
-				valve->acc_close_time += runtime;
-				valve->actual_position -= runtime*10/percent_time;
-			}
-			valve_reqstop(valve);
+	// if we've exceeded request_runtime, request valve stop
+	runtime = now - valve->running_since;
+	if (runtime >= request_runtime)
+		valve_reqstop(valve);
+
+	// if we have a change of action, update counters
+	if (valve->request_action != valve->actual_action) {
+		// update counters
+		if (OPEN == valve->actual_action) { // valve has been opening till now
+			valve->acc_close_time = 0;
+			valve->acc_open_time += runtime;
+			valve->actual_position += runtime*10/percent_time;
+		}
+		else if (CLOSE == valve->actual_action) {	// valve has been closing till now
+			valve->acc_open_time = 0;
+			valve->acc_close_time += runtime;
+			valve->actual_position -= runtime*10/percent_time;
 		}
 	}
 	
