@@ -543,7 +543,7 @@ static int valve_offline(struct s_valve * const valve)
  */
 static int valve_run(struct s_valve * const valve)
 {
-#define VALVE_MAX_RUNX	5
+#define VALVE_MAX_RUNX	3
 	const time_t now = time(NULL);
 	time_t request_runtime, runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
 	float percent_time;	// time necessary per percent position change
@@ -612,6 +612,7 @@ static int valve_run(struct s_valve * const valve)
 	// check what is the requested action
 	if (OPEN == valve->request_action) {
 		if (valve->acc_open_time >= valve->set_ete_time*VALVE_MAX_RUNX) {
+			valve->true_pos = true;
 			valve->acc_open_time = valve->set_ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
@@ -625,6 +626,7 @@ static int valve_run(struct s_valve * const valve)
 	}
 	else if (CLOSE == valve->request_action) {
 		if (valve->acc_close_time >= valve->set_ete_time*VALVE_MAX_RUNX) {
+			valve->true_pos = true;
 			valve->acc_close_time = valve->set_ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}

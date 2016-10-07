@@ -32,6 +32,7 @@ struct s_valve {
 	bool configured;
 	bool online;		///< true if valve is operational
 	bool in_deadzone;	///< true if valve is in deadzone (XXX USEFUL?)
+	bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
 	temp_t set_tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
 	uint_fast8_t set_deadband;	///< deadband for valve operation in %: no operation if requested move is less than that
 	int_fast16_t actual_position;	///< estimated current position in %*10
