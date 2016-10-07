@@ -1196,9 +1196,10 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
-	dbgmsg("request_ambient: %.1f, target_ambient: %.1f, target_wtemp: %.1f, curr_wtemp: %.1f",
+	dbgmsg("request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f",
 	       temp_to_celsius(circuit->request_ambient), temp_to_celsius(circuit->target_ambient),
-	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->id_temp_outgoing)));
+	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->id_temp_outgoing)),
+	       temp_to_celsius(get_temp(circuit->id_temp_return)));
 
 	// enforce limits
 	if (water_temp < circuit->limit_wtmin)
