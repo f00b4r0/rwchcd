@@ -22,7 +22,7 @@ static gboolean on_handle_toutdoor_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
 				      gpointer user_data)
 {
-	float temp = celsius_to_temp(get_runtime()->t_outdoor_60);
+	float temp = temp_to_celsius(get_runtime()->t_outdoor_60);
 	
 	dbus_rwchcd_control_complete_toutdoor_get(object, invocation, temp);
 	
