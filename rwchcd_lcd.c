@@ -360,6 +360,7 @@ static const char * lcd_disp_sysmode(void)
 		case SYS_MANUAL:
 			msg = "Man ";
 			break;
+		case SYS_UNKNOWN:
 		default:
 			dbgerr("Unhandled systemmode");
 			msg = NULL;

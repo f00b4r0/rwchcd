@@ -899,6 +899,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 			target_temp = boiler->limit_tmax;	// XXX set max temp to (safely) trigger burner operation
 			break;
 		case RM_AUTO:
+		case RM_UNKNOWN:
 		default:
 			return (-EINVALIDMODE);
 	}
@@ -1182,6 +1183,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 		case RM_FROSTFREE:
 			break;
 		case RM_AUTO:
+		case RM_UNKNOWN:
 		default:
 			return (-EINVALIDMODE);
 	}
@@ -1357,6 +1359,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			return (ALL_OK);	//XXX REVISIT
 		case RM_AUTO:
 		case RM_DHWONLY:
+		case RM_UNKNOWN:
 		default:
 			return (-EINVALIDMODE);
 	}

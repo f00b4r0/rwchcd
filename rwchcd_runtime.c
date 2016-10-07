@@ -210,6 +210,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			Runtime.runmode = RM_FROSTFREE;
 			Runtime.dhwmode = RM_COMFORT;	// XXX by default in comfort mode until further settings
 			break;
+		case SYS_UNKNOWN:
 		default:
 			return (-EINVALID);
 	}
@@ -323,7 +324,7 @@ int runtime_run(void)
 		Runtime.rWCHC_peripherals.RQSW1 = 0;
 		count = 5;
 
-		if (cursysmode > SYS_MANUAL)	// XXX last mode
+		if (cursysmode >= SYS_UNKNOWN)	// XXX last mode
 			cursysmode = SYS_OFF;
 
 		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?

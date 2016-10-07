@@ -43,6 +43,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		case RM_AUTO:
 		case RM_DHWONLY:
 		case RM_MANUAL:
+		case RM_UNKNOWN:
 		default:
 			return;	// XXX
 	}
@@ -102,6 +103,7 @@ int logic_circuit(struct s_heating_circuit * const circuit)
 			target_temp = circuit->set_tfrostfree;
 			break;
 		case RM_AUTO:
+		case RM_UNKNOWN:
 		default:
 			return (-EINVALIDMODE);
 	}

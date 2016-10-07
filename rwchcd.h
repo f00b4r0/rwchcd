@@ -75,6 +75,7 @@ enum e_runmode {
 	RM_FROSTFREE,	///< device is in frostfree mode
 	RM_DHWONLY,	///< device is in DHW only mode
 	RM_MANUAL,	///< device is in manual mode (typically all actuators are on)
+	RM_UNKNOWN,	///< invalid past this value
 };
 
 enum e_systemmode {
@@ -85,6 +86,7 @@ enum e_systemmode {
 	SYS_FROSTFREE,	///< system is running in frostfree mode
 	SYS_DHWONLY,	///< system is running in DHW only mode
 	SYS_MANUAL,	///< system is running in manual mode
+	SYS_UNKNOWN,	///< invalid past this value
 };
 
 struct s_config {
