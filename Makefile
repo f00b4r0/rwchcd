@@ -28,7 +28,7 @@ $(MAIN): $(OBJS)
 clean:
 	$(RM) *.o *.d *~ $(MAIN)
 
-rwchcd_dbus-generated.h:	rwchcd_introspection.xml
+rwchcd_dbus-generated.c:	rwchcd_introspection.xml
 	gdbus-codegen --generate-c-code rwchcd_dbus-generated --c-namespace dbus --interface-prefix org.slashdirt. rwchcd_introspection.xml
 
 install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service

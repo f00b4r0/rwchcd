@@ -66,7 +66,7 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 		return FALSE;
 
 	//	pthread_rwlock_wrlock();
-	get_runtime()->systemmode = newsysmode;
+	runtime_set_systemmode(newsysmode);
 	//	pthread_rwlock_unlock();
 	
 	dbus_rwchcd_control_complete_sysmode_set(object, invocation);
@@ -85,6 +85,7 @@ static void on_name_acquired(GDBusConnection *connection,
 	dbusRwchcdControl *skeleton = dbus_rwchcd_control_skeleton_new();
 	g_signal_connect(skeleton, "handle-sysmode-set", G_CALLBACK(on_handle_sysmode_set), NULL);
 	g_signal_connect(skeleton, "handle-sysmode-get", G_CALLBACK(on_handle_sysmode_get), NULL);
+	g_signal_connect(skeleton, "handle-toutdoor-get", G_CALLBACK(on_handle_toutdoor_get), NULL);
 	g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(skeleton),
 					 connection,
 					 "/org/slashdirt/rwchcd",
