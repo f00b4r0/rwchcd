@@ -1,9 +1,9 @@
 CC = gcc
 #add -Wconversion when ready - -Wdouble-promotion should be checked but triggers warnings with printf
 WARNINGS = -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wno-double-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla
-CFLAGS = $(WARNINGS) -std=gnu99 -O0 -g -fstack-protector -Wstack-protector -fstrict-aliasing
-LDLIBS = -lwiringPi -lm
-#SYSTEMDUNITDIR = $(shell pkg-config --variable=systemdsystemunitdir systemd)
+CFLAGS = $(WARNINGS) $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 -O0 -g -fstack-protector -Wstack-protector -fstrict-aliasing
+LDLIBS = $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
+SYSTEMDUNITDIR = $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR = /etc/dbus-1/system.d
 
 SRCS = $(wildcard *.c)
@@ -16,7 +16,7 @@ MAIN = rwchcd
 
 .PHONY:	all clean install uninstall
 
-all:	$(MAIN)
+all:	rwchcd_dbus-generated.h $(MAIN)
 	@echo	Done
 
 $(MAIN): $(OBJS)
@@ -27,6 +27,9 @@ $(MAIN): $(OBJS)
 
 clean:
 	$(RM) *.o *.d *~ $(MAIN)
+
+rwchcd_dbus-generated.h:	rwchcd_introspection.xml
+	gdbus-codegen --generate-c-code rwchcd_dbus-generated --c-namespace dbus --interface-prefix org.slashdirt. rwchcd_introspection.xml
 
 install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
 	install -d /var/lib/rwchcd/
