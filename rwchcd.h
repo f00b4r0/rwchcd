@@ -114,6 +114,7 @@ struct s_runtime {
 	temp_t t_outdoor_mixed;		///< mixed outdoor temperature (average of t_outdoor and t_filtered: the moving average of t_outdoor with building_tau)
 	temp_t t_outdoor_attenuated;	///< attenuated outdoor temperature (moving average of t_filtered with building_tau: double filter on t_outdoor)
 	temp_t external_hrequest;	///< external heat request (for cascading) -- XXX NOT IMPLEMENTED
+	time_t start_time;		///< system start time
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
 	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests

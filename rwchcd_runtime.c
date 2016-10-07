@@ -273,6 +273,8 @@ int runtime_online(void)
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 	
+	Runtime.start_time = time(NULL);
+	
 	runtime_restore();
 
 	parse_temps();
