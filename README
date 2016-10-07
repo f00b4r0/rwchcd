@@ -1,0 +1,24 @@
+Licence: GPLv2
+Copyright: (C) 2016 Thibaut VARENE
+
+Dependencies: libglib2.0-dev wiringpi pkg-config
+
+To build, run 'make dbus-gen' then 'make'
+To install, as root run 'make install'
+To uninstall, as root run 'make uninstall'
+
+A systemd service file is provided that will be installed when running
+'make install'. The daemon will be started at next reboot unless manually
+started with systemctl start rwchcd.service
+
+The D-Bus interface exposed by the daemon are presented in the
+rwchcd_introspection.xml file.
+
+Examples:
+dbus-send --system --dest=org.slashdirt.rwchcd \
+        --type=method_call /org/slashdirt/rwchcd 
+        org.slashdirt.rwchcd.Control.SysmodeSet byte:2
+
+dbus-send --print-reply --system --dest=org.slashdirt.rwchcd \
+        --type=method_call /org/slashdirt/rwchcd \
+        org.slashdirt.rwchcd.Control.ToutdoorGet

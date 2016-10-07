@@ -14,9 +14,9 @@ DEPS = $(SRCS:.c=.d)
 
 MAIN = rwchcd
 
-.PHONY:	all clean install uninstall
+.PHONY:	all clean install uninstall dbus-gen
 
-all:	rwchcd_dbus-generated.h $(MAIN)
+all:	$(MAIN)
 	@echo	Done
 
 $(MAIN): $(OBJS)
@@ -28,7 +28,7 @@ $(MAIN): $(OBJS)
 clean:
 	$(RM) *.o *.d *~ $(MAIN)
 
-rwchcd_dbus-generated.c:	rwchcd_introspection.xml
+dbus-gen:	rwchcd_introspection.xml
 	gdbus-codegen --generate-c-code rwchcd_dbus-generated --c-namespace dbus --interface-prefix org.slashdirt. rwchcd_introspection.xml
 
 install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
