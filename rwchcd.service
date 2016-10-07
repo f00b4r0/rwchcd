@@ -1,0 +1,13 @@
+[Unit]
+Description=rWCHC Simple Daemon
+
+[Service]
+Type=dbus
+BusName=org.slashdirt.rwchcd
+ExecStart=/usr/sbin/rwchcd
+KillMode=process
+Restart=on-abort
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

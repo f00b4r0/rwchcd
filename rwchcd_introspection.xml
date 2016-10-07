@@ -1,0 +1,35 @@
+<node>
+  <!--
+      org.slashdirt.rwchcd.Control:
+      @short_description: Simple control interface for rwchcd
+  -->
+  <interface name="org.slashdirt.rwchcd.Control">
+    <!--
+        SysmodeSet:
+        @value: desired running mode: 0 = OFF, 1 = AUTO, 2 = COMFORT, 3 = ECO, 4 = FROSTFREE, 5 = DHWONLY, 6 = MANUAL
+
+	Sets system mode for rwchcd.
+    -->
+    <method name="SysmodeSet">
+      <arg name="Sysmode" direction="in" type="y"/>
+    </method>
+    <!--
+        SysmodeGet:
+        @value: current sysmode mode
+
+	Gets current system mode for rwchcd.
+    -->
+    <method name="SysmodeGet">
+      <arg name="CurSysmode" direction="out" type="y"/>
+    </method>
+    <!--
+     ToutdoorGet:
+     @value: current outdoor temperature
+     
+     Gets current outdoor temperature in celsius
+     -->
+    <method name="ToutdoorGet">
+	    <arg name="CurToutdoor" direction="out" type="d"/>
+    </method>
+  </interface>
+</node>

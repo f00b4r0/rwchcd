@@ -20,9 +20,11 @@
 // http://www.energieplus-lesite.be/index.php?id=10963
 
 
-#include <unistd.h>	// sleep/usleep
+#include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// exit
+#include <signal.h>
 #include <pthread.h>
+#include <err.h>
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
@@ -31,10 +33,27 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_lcd.h"
 #include "rwchcd_spi.h"
+#include "rwchcd_dbus.h"
 
-static void * thread_hardware(void *arg)
+#define RWCHCD_PRIO	20	///< Desired run priority
+#define RWCHCD_UID	65534	///< Desired run uid
+#define RWCHCD_GID	65534	///< Desired run gid
+
+/**
+ * Daemon signal handler.
+ * Handles SIGINT and SIGTERM for graceful shutdown.
+ * @param signum signal to handle.
+ */
+static void sig_handler(int signum)
 {
-	
+	switch (signum) {
+		case SIGINT:
+		case SIGTERM:
+			dbus_quit();
+			break;
+		default:
+			break;
+	}
 }
 
 static inline uint8_t rid_to_rwchcaddr(unsigned int id)
@@ -252,37 +271,79 @@ static int init_process()
  valve position: PID w/ total run time from C to O
  */
 
-int main(void)
+static void * thread_master(void *arg)
 {
 	int ret;
-
 	ret = init_process();
 	if (ret != ALL_OK) {
 		dbgerr("init_proccess failed (%d)", ret);
 		if (ret == -ESPI)	// XXX HACK
-			exit(ret);
+			pthread_exit(&ret);
 	}
 	
 	// start in frostfree by default
 	if (SYS_OFF == get_runtime()->systemmode)
 		runtime_set_systemmode(SYS_FROSTFREE);
-
+	
 	while (1) {
 		hardware_run();
-
+		
 		// test read peripherals
 		ret = hardware_rwchcperiphs_read();
 		if (ret)
 			dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
-
+		
 		ret = runtime_run();
 		if (ret)
 			dbgerr("runtime_run returned: %d", ret);
-
+		
 		ret = hardware_rwchcperiphs_write();
 		if (ret)
 			dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
-
+		
 		sleep(1);
 	}
+}
+
+int main(void)
+{
+	struct sigaction saction;
+	pthread_t master_thr;
+	pthread_attr_t attr;
+	const struct sched_param sparam = { RWCHCD_PRIO };
+	int ret;
+
+	// setup threads
+	pthread_attr_init(&attr);
+	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+	pthread_attr_setschedparam(&attr, &sparam);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	
+	ret = pthread_create(&master_thr, &attr, thread_master, NULL);
+	if (ret)
+		errx(ret, "failed to create thread!");
+
+	// XXX Dropping priviledges here because we need root to set
+	// SCHED_FIFO during pthread_create(). The thread will run with
+	// root credentials for "a little while". REVISIT
+	// note: setuid() sends SIG_RT1 to thread
+	ret = setgid(RWCHCD_GID);
+	if (ret)
+		err(ret, "failed to setgid()");
+	ret = setuid(RWCHCD_UID);
+	if (ret)
+		err(ret, "failed to setuid()");
+
+	// signal handler for cleanup.
+	// No error checking because it's no big deal if it fails
+	saction.sa_handler = sig_handler;
+	sigemptyset(&saction.sa_mask);
+	saction.sa_flags = SA_RESETHAND; // reset default handler after first call
+	sigaction(SIGINT, &saction, NULL);
+	sigaction(SIGTERM, &saction, NULL);
+	
+	dbus_main();	// launch dbus main loop, blocks execution until termination
+	
+	return (0);
 }
