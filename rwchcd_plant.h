@@ -85,6 +85,8 @@ struct s_heating_circuit {
 	tempid_t id_temp_ambient;	///< ambient temp related to this circuit
 	short set_ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 	temp_t set_wtemp_rorh;		///< water temp rate of rise in temp per hour -- XXX NOT IMPLEMENTED
+	temp_t rorh_last_target;	///< previous set point target for rorh control
+	time_t rorh_update_time;	///< last time output was updated with respect to rorh
 	temp_t target_wtemp;		///< current target water temp
 	temp_t set_temp_inoffset;	///< offset temp for heat source request
 	temp_t heat_request;		///< current temp request from heat source for this circuit

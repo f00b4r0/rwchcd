@@ -1150,14 +1150,14 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
  * Controls the circuits elements to achieve the desired target temperature.
  * @param circuit target circuit
  * @return exec status
- * XXX ADD rate of rise cap
  * XXX safety for heating floor if implementing positive consummer_shift()
  * @warning circuit->target_ambient must be properly set before this runs
  */
 static int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t water_temp;
+	const time_t now = time(NULL);
+	temp_t water_temp, curr_temp;
 	int ret;
 
 	if (!circuit)
@@ -1196,6 +1196,26 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
+	// apply rate of rise limitation if any: update temp every minute
+	if (circuit->set_wtemp_rorh) {
+		curr_temp = get_temp(circuit->id_temp_outgoing);
+		if (!circuit->rorh_update_time) {	// first sample: init to current
+			water_temp = curr_temp;
+			circuit->rorh_last_target = water_temp;
+			circuit->rorh_update_time = now;
+		}
+		else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise XXX SHOULD WE APPLY TO FALL TOO?
+			if (now - circuit->rorh_update_time >= 60) {	// 1mn has past, update target
+				curr_temp = temp_expw_mavg(circuit->rorh_last_target, circuit->rorh_last_target+circuit->set_wtemp_rorh, 3600, now - circuit->rorh_update_time);	// we hijack curr_temp here to save a variable
+				water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
+				circuit->rorh_last_target = water_temp;
+				circuit->rorh_update_time = now;
+			}
+		}
+		else	// request for cooler or same temp
+			circuit->rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
+	}
+
 	dbgmsg("request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f",
 	       temp_to_celsius(circuit->request_ambient), temp_to_celsius(circuit->target_ambient),
 	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->id_temp_outgoing)),

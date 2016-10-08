@@ -39,3 +39,21 @@ temp_t get_temp(const tempid_t id)
 
 	return (runtime->temps[id-1]);	// XXX REVISIT lock
 }
+
+/**
+ * Exponentially weighted moving average implementing a trivial LP filter
+ http://www.rowetel.com/?p=1245
+ https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
+ http://www.edn.com/design/systems-design/4320010/A-simple-software-lowpass-filter-suits-embedded-system-applications
+ XXX if dt is 0 then the value will never be updated (dt has a 1s resolution)
+ * @param filtered accumulated average
+ * @param new_sample new sample to average
+ * @param tau time constant over which to average
+ * @param dt time elapsed since last average
+ */
+temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
+{
+	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
+	
+	return (filtered - roundf(alpha * (filtered - new_sample)));
+}
