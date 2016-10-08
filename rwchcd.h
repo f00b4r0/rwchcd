@@ -32,6 +32,7 @@
 #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 #define dbgerr(format, ...)	printf("ERROR! (%s()) " format "\n", __func__, ## __VA_ARGS__)
 
+/** Valid return values */
 enum {
 	ALL_OK,
 	ENOTCONFIGURED,	///< element is not configured
@@ -63,10 +64,10 @@ enum {
 
 #define RWCHCD_SPI_MAX_TRIES	5	///< how many times SPI ops should be retried
 
-typedef int_fast32_t	temp_t;		// all temps are internally stored in Kelvin * 100 (32bit avoids overflow with disconnected sensors). Must be signed for maths
-typedef int_fast16_t	tempid_t;	// temperature index: if negative, is an offset in Kelvin. If > sizeof(Runtime->temps[]), invalid
+typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * 100 (32bit avoids overflow with disconnected sensors). Must be signed for maths
+typedef int_fast16_t	tempid_t;	///< temperature index: if negative, is an offset in Kelvin. If > sizeof(Runtime->temps[]), invalid
 
-
+/** Valid run modes */
 enum e_runmode {
 	RM_OFF = 0,	///< device is fully off, no operation performed (not even frost protection)
 	RM_AUTO,	///< device is running based on global plant set_runmode
@@ -78,6 +79,7 @@ enum e_runmode {
 	RM_UNKNOWN,	///< invalid past this value
 };
 
+/** Valid system modes */
 enum e_systemmode {
 	SYS_OFF = 0,	///< system is fully off
 	SYS_AUTO,	///< system is running in automatic mode
@@ -89,8 +91,9 @@ enum e_systemmode {
 	SYS_UNKNOWN,	///< invalid past this value
 };
 
+/** Config structure */
 struct s_config {
-	bool configured;
+	bool configured;		///< true if properly configured
 	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor +1)
 	tempid_t id_temp_outdoor;	///< outdoor temp
@@ -101,6 +104,7 @@ struct s_config {
 	struct rwchc_s_settings rWCHC_settings;
 };
 
+/** Runtime environment structure */
 struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
 	enum e_runmode runmode;		///< CANNOT BE RM_AUTO

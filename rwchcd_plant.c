@@ -539,7 +539,6 @@ static int valve_offline(struct s_valve * const valve)
  * XXX only handles 3-way valve for now
  - Dead Time is the minimum on time that the valve will travel once it is turned on in either the closed or open di-
  rection. Dead Time = Valve Dead Band / 100 * Valve Travel Time.
-
  */
 static int valve_run(struct s_valve * const valve)
 {
@@ -652,6 +651,11 @@ int valve_make_linear(struct s_valve * const valve)
 	return (ALL_OK);
 }
 
+/**
+ * Constructor for bangbang valve control
+ * @param valve target valve
+ * @return exec status
+ */
 int valve_make_bangbang(struct s_valve * const valve)
 {
 	if (!valve)
@@ -662,6 +666,11 @@ int valve_make_bangbang(struct s_valve * const valve)
 	return (ALL_OK);
 }
 
+/** 
+ * Constructor for sapprox valve control
+ * @param valve target valve
+ * @return exec status
+ */
 int valve_make_sapprox(struct s_valve * const valve)
 {
 	struct s_valve_sapprox_priv * priv = NULL;
@@ -1632,6 +1641,10 @@ fail:
 	return (NULL);
 }
 
+/**
+ * Circuit destructor
+ * @param circuit the circuit to delete
+ */
 static void del_circuit(struct s_heating_circuit * circuit)
 {
 	if (!circuit)
@@ -1687,6 +1700,10 @@ fail:
 	return (NULL);
 }
 
+/**
+ * DHWT destructor
+ * @param dhwt the dhwt to delete
+ */
 static void del_dhwt(struct s_dhw_tank * restrict dhwt)
 {
 	if (!dhwt)

@@ -12,12 +12,13 @@
 #include <time.h>
 #include "rwchcd.h"
 
+/** Pump element structure */
 struct s_pump {
-	bool configured;
+	bool configured;		///< true if properly configured
 	bool online;			///< true if pump is operational
 	time_t set_cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
 	time_t actual_cooldown_time;	///< actual cooldown time remaining
-	struct s_stateful_relay * restrict relay;
+	struct s_stateful_relay * restrict relay;	///< Hardware relay controlling that pump
 	char * restrict name;
 };
 
@@ -28,8 +29,9 @@ struct s_valve_sapprox_priv {
 };
 
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
+/** Valve element structure */
 struct s_valve {
-	bool configured;
+	bool configured;	///< true if properly configured
 	bool online;		///< true if valve is operational
 	bool in_deadzone;	///< true if valve is in deadzone (XXX USEFUL?)
 	bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
@@ -60,6 +62,7 @@ struct s_templaw_data20C {
 	temp_t twater2;		///< corresponding target water temp2
 };
 
+/** Heating circuit element structure */
 struct s_heating_circuit {
 	bool configured;		///< true if circuit is configured
 	bool online;			///< true if circuit is operational
@@ -98,6 +101,7 @@ struct s_heating_circuit {
 	char * restrict name;		///< name for this circuit
 };
 
+/** Boiler heatsource private structure */
 struct s_boiler_priv {
 	bool antifreeze;		///< true if anti freeze tripped
 	//regime de coupure (p.48)
@@ -123,8 +127,9 @@ enum e_heatsource_type {
 };
 
 // XXX cascade
+/** Heat source element structure */
 struct s_heatsource {
-	bool configured;
+	bool configured;		///< true if properly configured
 	bool online;			///< true if source is available for use
 	bool sleeping;			///< true if source is asleep
 	enum e_runmode set_runmode;	///< current heatsource set_runmode
@@ -147,8 +152,9 @@ struct s_solar_heater {
 	char * restrict name;
 };
 
+/** DHWT element structure */
 struct s_dhw_tank {
-	bool configured;
+	bool configured;		///< true if properly configured
 	bool online;			///< true if tank is available for use
 	bool recycle_on;		///< true if recycle pump should be running
 	bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
@@ -181,48 +187,54 @@ struct s_dhw_tank {
 	char * restrict name;		///< name for this tank
 };
 
+/** List of pumps */
 struct s_pump_l {
 	uint_fast8_t id;
 	struct s_pump * restrict pump;
 	struct s_pump_l * restrict next;
 };
 
+/** List of valves */
 struct s_valve_l {
 	uint_fast8_t id;
 	struct s_valve * restrict valve;
 	struct s_valve_l * restrict next;
 };
 
+/** List of heating circuits */
 struct s_heating_circuit_l {
 	uint_fast8_t id;
 	struct s_heating_circuit * restrict circuit;
 	struct s_heating_circuit_l * restrict next;
 };
 
+/** List of DHWT */
 struct s_dhw_tank_l {
 	uint_fast8_t id;
 	struct s_dhw_tank * restrict dhwt;
 	struct s_dhw_tank_l * restrict next;
 };
 
+/** List of heat sources */
 struct s_heatsource_l {
 	uint_fast8_t id;
 	struct s_heatsource * restrict heats;
 	struct s_heatsource_l * restrict next;
 };
 
+/** Plant structure */
 struct s_plant {
-	bool configured;
+	bool configured;	///< true if properly configured
 	uint_fast8_t pump_n;	///< number of pumps in the plant
 	uint_fast8_t valve_n;	///< number of valves in the plant
 	uint_fast8_t heats_n;		///< number of heat sources in the plant
 	uint_fast8_t circuit_n;	///< number of heating circuits in the plant
 	uint_fast8_t dhwt_n;		///< number of dhw tanks in the plant
-	struct s_pump_l * restrict pump_head;
-	struct s_valve_l * restrict valve_head;
-	struct s_heatsource_l * restrict heats_head;
-	struct s_heating_circuit_l * restrict circuit_head;
-	struct s_dhw_tank_l * restrict dhwt_head;
+	struct s_pump_l * restrict pump_head;	///< list of pumps in the plant
+	struct s_valve_l * restrict valve_head;	///< list of valves in the plant
+	struct s_heatsource_l * restrict heats_head;	///< list of heatsources in the plant
+	struct s_heating_circuit_l * restrict circuit_head;	///< list of heating circuits in the plant
+	struct s_dhw_tank_l * restrict dhwt_head;	///< list of DHWT in the plant
 };
 
 int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
