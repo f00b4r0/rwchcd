@@ -141,8 +141,14 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	return (ALL_OK);
 }
 
+/**
+ * DHWT logic.
+ * @param dhwt target dhwt
+ * @return exec status
+ */
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 {
+	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp;
 
 	if (!dhwt)
