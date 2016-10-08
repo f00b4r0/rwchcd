@@ -15,7 +15,7 @@
 struct s_pump {
 	bool configured;
 	bool online;			///< true if pump is operational
-	time_t set_cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off
+	time_t set_cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
 	time_t actual_cooldown_time;	///< actual cooldown time remaining
 	struct s_stateful_relay * restrict relay;
 	char * restrict name;
@@ -64,6 +64,7 @@ struct s_heating_circuit {
 	bool configured;		///< true if circuit is configured
 	bool online;			///< true if circuit is operational
 	bool outhoff;			///< true if no heating conditions are met
+	time_t last_run_time;		///< last time circuit_run() was invoked
 	enum e_runmode set_runmode;	///< current circuit set_runmode
 	enum e_runmode actual_runmode;	///< circuit actual (computed) runmode
 	struct s_valve * restrict valve;///< valve for circuit (if available, otherwise it's direct)
@@ -74,12 +75,11 @@ struct s_heating_circuit {
 	temp_t set_teco;		///< target ambient temp in eco mode
 	temp_t set_tfrostfree;		///< target ambient temp in frost-free mode
 	temp_t set_toffset;		///< global offset adjustment for ambient targets
-	temp_t request_ambient;		///< current requested ambient target temp
-	temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
 	temp_t set_outhoff_comfort;	///< outdoor temp for no heating in comfort mode
 	temp_t set_outhoff_eco;		///< outdoor temp for no heating in eco mode
 	temp_t set_outhoff_frostfree;	///< outdoor temp for no heating in frostfree mode
 	temp_t set_outhoff_histeresis;	///< histeresis for no heating condition
+	time_t set_cooldown_time;	///< circuit cooldown time: at turn off, offlining will be delayed by this amount
 	tempid_t id_temp_outgoing;	///< current temp for this circuit
 	tempid_t id_temp_return;	///< current return temp for this circuit
 	tempid_t id_temp_ambient;	///< ambient temp related to this circuit
@@ -87,6 +87,9 @@ struct s_heating_circuit {
 	temp_t set_wtemp_rorh;		///< water temp rate of rise in temp per hour -- XXX NOT IMPLEMENTED
 	temp_t rorh_last_target;	///< previous set point target for rorh control
 	time_t rorh_update_time;	///< last time output was updated with respect to rorh
+	time_t actual_cooldown_time;	///< actual turn off cooldown time remaining
+	temp_t request_ambient;		///< current requested ambient target temp
+	temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
 	temp_t target_wtemp;		///< current target water temp
 	temp_t set_temp_inoffset;	///< offset temp for heat source request
 	temp_t heat_request;		///< current temp request from heat source for this circuit

@@ -1133,6 +1133,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 
 	circuit->heat_request = 0;
 	circuit->target_wtemp = 0;
+	circuit->actual_cooldown_time = 0;
 
 	if (circuit->pump)
 		pump_offline(circuit->pump);
@@ -1168,14 +1169,23 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	if (!circuit->online)
 		return (-EOFFLINE);
-
+	
 	// handle special runmode cases
 	switch (circuit->actual_runmode) {
 		case RM_OFF:
-			return (circuit_offline(circuit));
+			if (circuit->actual_cooldown_time > 0) {	// delay offlining
+				// disable heat request from this circuit
+				circuit->heat_request = 0;
+				// decrement counter
+				circuit->actual_cooldown_time -= (now - circuit->last_run_time);
+				// stop processing: maintain current wtemp
+				goto valve;
+			}
+			else
+				return (circuit_offline(circuit));
 		case RM_MANUAL:
-			valve_reqstop(circuit->valve);	// stop valve
-			pump_set_state(circuit->pump, ON, FORCE);	// turn pump on
+			valve_reqstop(circuit->valve);
+			pump_set_state(circuit->pump, ON, FORCE);
 			return (ALL_OK);
 		case RM_COMFORT:
 		case RM_ECO:
@@ -1189,6 +1199,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	}
 
 	// if we reached this point then the circuit is active
+	
+	circuit->actual_cooldown_time = circuit->set_cooldown_time;
 
 	// circuit is active, ensure pump is running
 	pump_set_state(circuit->pump, ON, 0);
@@ -1233,14 +1245,18 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// apply heat request: water temp + offset
 	circuit->heat_request = water_temp + circuit->set_temp_inoffset;
 
+valve:
 	// adjust valve position if necessary
 	if (circuit->valve && circuit->valve->configured) {
 		ret = valve_tposition(circuit->valve, circuit->target_wtemp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
-			return (ret);
+			goto out;
 	}
 
-	return (ALL_OK);
+	ret = ALL_OK;
+out:
+	circuit->last_run_time = now;
+	return (ret);
 }
 
 /**
@@ -1430,7 +1446,6 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// if heating not in progress, trip if forced or at (target temp - histeresis)
 		if (dhwt->force_on || (curr_temp < (target_temp - dhwt->set_histeresis))) {
-			dbgmsg("trip");
 			if (runtime->sleeping && dhwt->selfheater && dhwt->selfheater->configured) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->selfheater, ON, 0);
@@ -1463,7 +1478,6 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
 		if (curr_temp > target_temp) {
-			dbgmsg("untrip");
 			// stop self-heater
 			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
@@ -1480,7 +1494,6 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 			// turn off pump with cooldown
 			pump_set_state(dhwt->feedpump, OFF, test);
-
 
 			// set heat request to minimum
 			dhwt->heat_request = dhwt->limit_wintmin;

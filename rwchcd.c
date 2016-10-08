@@ -163,6 +163,7 @@ static int init_process()
 	circuit->set_outhoff_eco = circuit->set_teco - deltaK_to_temp(2);
 	circuit->set_outhoff_frostfree = circuit->set_tfrostfree - deltaK_to_temp(4);
 	circuit->set_outhoff_histeresis = deltaK_to_temp(1);
+	circuit->set_cooldown_time = 120;	// 2mn
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
 	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
 	circuit->id_temp_return = 4;	// XXX VALIDATION
