@@ -1027,13 +1027,13 @@ static int heatsource_run(struct s_heatsource * const heat)
 	// circuits first
 	for (circuitl = runtime->plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		temp = circuitl->circuit->heat_request;
-		temp_request = temp > temp_request ? temp : temp_request;
+		temp_request = (temp > temp_request) ? temp : temp_request;
 	}
 
 	// then dhwt
 	for (dhwtl = runtime->plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		temp = dhwtl->dhwt->heat_request;
-		temp_request = temp > temp_request ? temp : temp_request;
+		temp_request = (temp > temp_request) ? temp : temp_request;
 	}
 
 	// apply result to heat source

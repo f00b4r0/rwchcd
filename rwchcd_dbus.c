@@ -103,11 +103,18 @@ static void on_name_lost(GDBusConnection *connection,
 	dbgerr("Could not acquire name %s, connection is %p", name, connection);
 }
 
+/**
+ * Gracefully quit D-Bus subsystem.
+ */
 void dbus_quit(void)
 {
 	g_main_loop_quit(Mainloop);
 }
 
+/**
+ * D-Bus subsystem main thread.
+ * @note Blocking
+ */
 int dbus_main(void)
 {
 	guint owner_id;

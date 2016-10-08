@@ -6,9 +6,16 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+#include <math.h>	// roundf
+
 #include "rwchcd.h"
 #include "rwchcd_runtime.h"
 
+/**
+ * Validate a temperature value
+ * @param temp the value to validate
+ * @return validation result
+ */
 int validate_temp(const temp_t temp)
 {
 	int ret = ALL_OK;

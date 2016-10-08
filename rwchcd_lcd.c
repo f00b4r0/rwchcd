@@ -18,7 +18,7 @@
 // buffer is one char longer to accomodate for the final '\0'. The rest of the code assumes that this '\0' is always present
 static uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
 static uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
-static bool L2mngd = false;
+static bool L2mngd = false;	///< true if 2nd line is managed by software
 
 /**
  * LCD subsystem initialization.
@@ -82,6 +82,10 @@ int lcd_fade(void)
 	return (ret);
 }
 
+/**
+ * Clear LCD display
+ * @return exec status
+ */
 static int lcd_dispclear(void)
 {
 	int ret, i = 0;

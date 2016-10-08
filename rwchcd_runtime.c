@@ -8,7 +8,6 @@
 
 #include <time.h>	// time_t
 #include <string.h>	// memset/memcpy
-#include <math.h>	// roundf
 #include "rwchcd_lib.h"
 #include "rwchcd_plant.h"
 #include "rwchcd_runtime.h"
@@ -46,6 +45,9 @@ static void parse_temps(void)
 	lasttime = time(NULL);
 }
 
+/**
+ * Reset runtime outdoor temperatures to sane values
+ */
 static inline void outdoor_temp_reset(void)
 {
 	// set init state of outdoor temperatures - XXX REVISIT
@@ -284,7 +286,7 @@ int runtime_run(void)
 
 	// process data
 
-	dbgmsg("begin.\tt_outdoor: %.1f, t_60: %.1f, t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f",
+	dbgmsg("t_outdoor: %.1f, t_60: %.1f, t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f",
 	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60), temp_to_celsius(Runtime.t_outdoor_filtered),
 	       temp_to_celsius(Runtime.t_outdoor_mixed), temp_to_celsius(Runtime.t_outdoor_attenuated));
 	
@@ -344,6 +346,5 @@ int runtime_run(void)
 		goto out;
 
 out:
-	printf("\n");	// XXX
 	return (ret);
 }
