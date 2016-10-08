@@ -12,6 +12,7 @@
 #include "rwchcd.h"
 #include "rwchcd_plant.h"
 
-int logic_circuit(struct s_heating_circuit * const circuit);
+int logic_circuit(struct s_heating_circuit * restrict const circuit);
+int logic_dhwt(struct s_dhw_tank * restrict const dhwt);
 
 #endif /* rwchcd_logic_h */

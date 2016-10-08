@@ -75,11 +75,20 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down, max ambient... p36+)
  * XXX TODO ambient temp model (p37)
  */
-int logic_circuit(struct s_heating_circuit * const circuit)
+int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp;
 	temp_t ambient_measured, ambient_delta;
+	
+	if (!circuit)
+		return (-EINVALID);
+	
+	if (!circuit->configured)
+		return (-ENOTCONFIGURED);
+	
+	if (!circuit->online)
+		return (-EOFFLINE);
 
 	// handle global/local runmodes
 	if (RM_AUTO == circuit->set_runmode)
@@ -130,4 +139,54 @@ int logic_circuit(struct s_heating_circuit * const circuit)
 	}
 
 	return (ALL_OK);
+}
+
+int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
+{
+	temp_t target_temp;
+
+	if (!dhwt)
+		return (-EINVALID);
+	
+	if (!dhwt->configured)
+		return (-ENOTCONFIGURED);
+	
+	if (!dhwt->online)
+		return (-EOFFLINE);
+	
+	// handle global/local runmodes
+	if (RM_AUTO == dhwt->set_runmode)
+		dhwt->actual_runmode = runtime->dhwmode;
+	else
+		dhwt->actual_runmode = dhwt->set_runmode;
+	
+	// depending on dhwt run mode, assess dhwt target temp
+	switch (dhwt->actual_runmode) {
+		case RM_OFF:
+		case RM_MANUAL:
+			return (ALL_OK);	// No further processing
+		case RM_COMFORT:
+			target_temp = dhwt->set_tcomfort;
+			break;
+		case RM_ECO:
+			target_temp = dhwt->set_teco;
+			break;
+		case RM_FROSTFREE:
+			target_temp = dhwt->set_tfrostfree;
+			break;
+		case RM_AUTO:
+		case RM_DHWONLY:
+		case RM_UNKNOWN:
+		default:
+			return (-EINVALIDMODE);
+	}
+	
+	// enforce limits on dhw temp
+	if (target_temp < dhwt->limit_tmin)
+		target_temp = dhwt->limit_tmin;
+	else if (target_temp > dhwt->limit_tmax)
+		target_temp = dhwt->limit_tmax;
+	
+	// save current target dhw temp
+	dhwt->target_temp = target_temp;
 }

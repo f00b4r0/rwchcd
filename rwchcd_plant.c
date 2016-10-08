@@ -1367,7 +1367,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t target_temp, water_temp, top_temp, bottom_temp, curr_temp;
+	temp_t water_temp, top_temp, bottom_temp, curr_temp;
 	bool valid_ttop = false, valid_tbottom = false, test;
 	int ret = -EGENERIC;
 
@@ -1380,23 +1380,12 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!dhwt->online)
 		return (-EOFFLINE);
 
-	// depending on dhwt run mode, assess dhwt target temp
-	if (RM_AUTO == dhwt->set_runmode)
-		dhwt->actual_runmode = runtime->dhwmode;
-	else
-		dhwt->actual_runmode = dhwt->set_runmode;
-
 	switch (dhwt->actual_runmode) {
 		case RM_OFF:
 			return (dhwt_offline(dhwt));
 		case RM_COMFORT:
-			target_temp = dhwt->set_tcomfort;
-			break;
 		case RM_ECO:
-			target_temp = dhwt->set_teco;
-			break;
 		case RM_FROSTFREE:
-			target_temp = dhwt->set_tfrostfree;
 			break;
 		case RM_MANUAL:
 			pump_set_state(dhwt->feedpump, ON, FORCE);
@@ -1418,15 +1407,6 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	else
 		pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
 
-	// enforce limits on dhw temp
-	if (target_temp < dhwt->limit_tmin)
-		target_temp = dhwt->limit_tmin;
-	else if (target_temp > dhwt->limit_tmax)
-		target_temp = dhwt->limit_tmax;
-
-	// save current target dhw temp
-	dhwt->target_temp = target_temp;
-
 	// check which sensors are available
 	bottom_temp = get_temp(dhwt->id_temp_bottom);
 	ret = validate_temp(bottom_temp);
@@ -1442,7 +1422,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		return (ret);	// return last error
 
 	dbgmsg("charge: %d, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
-	       dhwt->charge_on, temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+	       dhwt->charge_on, temp_to_celsius(dhwt->target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
@@ -1454,14 +1434,14 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			curr_temp = top_temp;
 
 		// if heating not in progress, trip if forced or at (target temp - histeresis)
-		if (dhwt->force_on || (curr_temp < (target_temp - dhwt->set_histeresis))) {
+		if (dhwt->force_on || (curr_temp < (dhwt->target_temp - dhwt->set_histeresis))) {
 			if (runtime->sleeping && dhwt->selfheater && dhwt->selfheater->configured) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			}
 			else {	// run from plant heat source
 				// calculate necessary water feed temp: target tank temp + offset
-				water_temp = target_temp + dhwt->set_temp_inoffset;
+				water_temp = dhwt->target_temp + dhwt->set_temp_inoffset;
 
 				// enforce limits
 				if (water_temp < dhwt->limit_wintmin)
@@ -1486,7 +1466,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			curr_temp = bottom_temp;
 
 		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
-		if (curr_temp > target_temp) {
+		if (curr_temp > dhwt->target_temp) {
 			// stop self-heater
 			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
@@ -2018,6 +1998,7 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		logic_dhwt(dhwtl->dhwt);
 		ret = dhwt_run(dhwtl->dhwt);
 		if (ALL_OK != ret) {
 			// XXX error handling
