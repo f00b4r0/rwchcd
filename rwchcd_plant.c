@@ -989,9 +989,14 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(boiler->target_temp), temp_to_celsius(boiler_temp));
 
 	// un/trip points - XXX histeresis/2 assuming sensor will always be significantly cooler than actual output
-	trip_temp = (boiler->target_temp - boiler->set_histeresis/2);
-	if (trip_temp < boiler->limit_tmin)
-		trip_temp = boiler->limit_tmin;
+	if (boiler->target_temp) {	// apply trip_temp only if we have a heat request
+		trip_temp = (boiler->target_temp - boiler->set_histeresis/2);
+		if (trip_temp < boiler->limit_tmin)
+			trip_temp = boiler->limit_tmin;
+	}
+	else
+		trip_temp = 0;
+	
 	untrip_temp = (boiler->target_temp + boiler->set_histeresis/2);
 	if (untrip_temp > boiler->limit_tmax)
 		untrip_temp = boiler->limit_tmax;
