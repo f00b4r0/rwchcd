@@ -1007,14 +1007,6 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	else if (boiler_temp > untrip_temp)	// untrip condition
 		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set_burner_min_time);	// delayed stop
 
-	// keep track of low requests for sleepover, if set. XXX antifreeze will reset, is that a bad thing?
-	if (boiler->set_sleeping_time) {
-		// if burner has been OFF for a continuous period longer than sleeping_time, trigger sleeping
-		if ((hardware_relay_get_state(boiler->burner_1) == OFF) && (boiler->burner_1->state_time > boiler->set_sleeping_time))
-			heat->sleeping = true;
-		else
-			heat->sleeping = false;
-	}
 	return (ALL_OK);
 }
 
