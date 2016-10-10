@@ -115,9 +115,9 @@ struct s_boiler_priv {
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
 	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
 	struct s_stateful_relay * restrict burner_2;	///< second stage of burner
-	tempid_t id_temp;		///< burner temp id
-	tempid_t id_temp_outgoing;	///< burner outflow temp id
-	tempid_t id_temp_return;	///< burner inflow temp id
+	tempid_t id_temp;		///< boiler temp id
+	tempid_t id_temp_outgoing;	///< boiler outflow temp id
+	tempid_t id_temp_return;	///< boiler inflow temp id
 	temp_t target_temp;		///< current target temp
 };
 

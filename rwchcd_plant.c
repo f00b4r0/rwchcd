@@ -934,19 +934,21 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// bypass target_temp if antifreeze is active
 	if (boiler->antifreeze)
 		target_temp = boiler->set_tfreeze;
-
+	
 	// enforce limits
-	if (target_temp < boiler->limit_tmin)
-		target_temp = boiler->limit_tmin;
-	else if (target_temp > boiler->limit_tmax)
-		target_temp = boiler->limit_tmax;
-
+	if (target_temp) {	// enforce limits only if we have an actual heat request
+		if (target_temp < boiler->limit_tmin)
+			target_temp = boiler->limit_tmin;
+		else if (target_temp > boiler->limit_tmax)
+			target_temp = boiler->limit_tmax;
+	}
+	
 	// save current target
 	boiler->target_temp = target_temp;
 
 	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(target_temp), temp_to_celsius(boiler_temp));
 
-	// un/trip points
+	// un/trip points - XXX histeresis/2 assuming sensor will always be significantly cooler than actual output
 	trip_temp = (target_temp - boiler->set_histeresis/2);
 	if (trip_temp < boiler->limit_tmin)
 		trip_temp = boiler->limit_tmin;
@@ -1225,7 +1227,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 			circuit->rorh_last_target = water_temp;
 			circuit->rorh_update_time = now;
 		}
-		else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise XXX SHOULD WE APPLY TO FALL TOO?
+		else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
 			if (now - circuit->rorh_update_time >= 60) {	// 1mn has past, update target
 				curr_temp = temp_expw_mavg(circuit->rorh_last_target, circuit->rorh_last_target+circuit->set_wtemp_rorh, 3600, now - circuit->rorh_update_time);	// we hijack curr_temp here to save a variable
 				water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
