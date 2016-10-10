@@ -14,5 +14,6 @@
 
 int logic_circuit(struct s_heating_circuit * restrict const circuit);
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt);
+int logic_heatsource(struct s_heatsource * restrict const heat);
 
 #endif /* rwchcd_logic_h */

@@ -127,6 +127,7 @@ static int init_process()
 
 	// configure that source	XXX REVISIT
 	boiler = heatsource->priv;
+	boiler->idle_mode = IDLE_ALWAYS;
 	boiler->set_histeresis = deltaK_to_temp(8);
 	boiler->limit_tmax = celsius_to_temp(90);
 	boiler->limit_tmin = celsius_to_temp(45);

@@ -104,7 +104,7 @@ struct s_heating_circuit {
 /** Boiler heatsource private structure */
 struct s_boiler_priv {
 	bool antifreeze;		///< true if anti freeze tripped
-	//regime de coupure (p.48)
+	enum { IDLE_NEVER = 0, IDLE_FROSTONLY, IDLE_ALWAYS } idle_mode; ///< boiler off regime: NEVER: boiler runs always at least at limit_tmin, FROSTFREE: boiler turns off only in frost free, ALWAYS: boiler turns off any time there's no heat request (p.48)
 	temp_t set_histeresis;		///< boiler temp histeresis
 	temp_t limit_tmax;		///< maximum boiler temp when operating
 	temp_t limit_tmin;		///< minimum boiler temp when operating
@@ -141,6 +141,7 @@ struct s_heatsource {
 	void * restrict priv;		///< pointer to source private data structure
 	int (*hs_online)(struct s_heatsource * const);	///< pointer to source private online() function
 	int (*hs_offline)(struct s_heatsource * const);	///< pointer to source private offline() function
+	int (*hs_logic)(struct s_heatsource * const);	///< pointer to source private logic() function
 	int (*hs_run)(struct s_heatsource * const);	///< pointer to source private run() function
 	void (*hs_del_priv)(void * priv);		///< pointer to source private del() function
 };
@@ -172,7 +173,7 @@ struct s_dhw_tank {
 	tempid_t id_temp_top;		///< temp sensor at top of dhw tank
 	tempid_t id_temp_win;		///< temp sensor heatwater inlet
 	tempid_t id_temp_wout;		///< temp sensor heatwater outlet
-	temp_t limit_wintmin;		///< minimum water intake temp when active
+	temp_t limit_wintmin;		///< minimum water intake temp when active @note if set will permanently trigger a heat request
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection)
 	temp_t limit_tmax;		///< maximum allowed dhwt temp when active

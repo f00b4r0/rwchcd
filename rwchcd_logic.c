@@ -195,4 +195,38 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	
 	// save current target dhw temp
 	dhwt->target_temp = target_temp;
+	
+	return (ALL_OK);
+}
+
+/**
+ * Heat source logic.
+ * @param heat target heat source
+ * @return exec status
+ */
+int logic_heatsource(struct s_heatsource * restrict const heat)
+{
+	const struct s_runtime * restrict const runtime = get_runtime();
+
+	int ret = -ENOTIMPLEMENTED;
+	
+	if (!heat)
+		return (-EINVALID);
+	
+	if (!heat->configured)
+		return (-ENOTCONFIGURED);
+	
+	if (!heat->online)
+		return (-EOFFLINE);
+
+	// handle global/local runmodes
+	if (RM_AUTO == heat->set_runmode)
+		heat->actual_runmode = runtime->runmode;
+	else
+		heat->actual_runmode = heat->set_runmode;
+	
+	if (heat->hs_logic)
+		ret = heat->hs_logic(heat);
+	
+	return (ret);
 }

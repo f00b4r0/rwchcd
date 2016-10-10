@@ -845,11 +845,84 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 	if (boilertemp <= boiler->set_tfreeze)
 		boiler->antifreeze = true;
 
-	// untrip at limit_tmin + histeresis/2
+	// untrip when boiler reaches limit_tmin + histeresis/2
 	if (boiler->antifreeze) {
 		if (boilertemp > (boiler->limit_tmin + boiler->set_histeresis/2))
 			boiler->antifreeze = false;
 	}
+
+	return (ALL_OK);
+}
+
+/**
+ * Boiler logic
+ * As a special case in the plant, antifreeze takes over all states if the boiler is configured. XXX REVIEW
+ * @param heat heatsource parent structure
+ * @return exec status. If error action must be taken (e.g. offline boiler) XXX REVISIT
+ */
+static int boiler_hs_logic(struct s_heatsource * restrict const heat)
+{
+	const struct s_runtime * restrict const runtime = get_runtime();
+	struct s_boiler_priv * restrict const boiler = heat->priv;
+	temp_t target_temp = 0;
+	int ret;
+
+	if (!heat->configured)
+		return (-ENOTCONFIGURED);
+	
+	if (!boiler)
+		return (-EINVALID);
+	
+	// Check if we need antifreeze
+	ret = boiler_antifreeze(boiler);
+	if (ret)
+		return (ret);
+	
+	if (!boiler->antifreeze) {	// antifreeze takes over offline mode
+		if (!heat->online)
+			return (-EOFFLINE);	// XXX caller must call boiler_offline() otherwise pump will not stop after antifreeze
+	}
+	
+	switch (heat->actual_runmode) {
+		case RM_OFF:
+			break;
+		case RM_COMFORT:
+		case RM_ECO:
+		case RM_DHWONLY:
+		case RM_FROSTFREE:
+			target_temp = heat->temp_request;
+			break;
+		case RM_MANUAL:
+			target_temp = boiler->limit_tmax;	// XXX set max temp to (safely) trigger burner operation
+			break;
+		case RM_AUTO:
+		case RM_UNKNOWN:
+		default:
+			return (-EINVALIDMODE);
+	}
+	
+	// bypass target_temp if antifreeze is active
+	if (boiler->antifreeze)
+		target_temp = (target_temp < boiler->limit_tmin) ? boiler->limit_tmin : target_temp;	// max of the two
+	
+	// enforce limits
+	if (target_temp) {	// only if we have an actual heat request
+		if (target_temp < boiler->limit_tmin)
+			target_temp = boiler->limit_tmin;
+		else if (target_temp > boiler->limit_tmax)
+			target_temp = boiler->limit_tmax;
+	}
+	else {	// we don't have a temp request
+		// if IDLE_NEVER, boiler always runs at min temp
+		if (IDLE_NEVER == boiler->idle_mode)
+			target_temp = boiler->limit_tmin;
+		// if IDLE_FROSTONLY, boiler runs at min temp unless RM_FROSTFREE
+		else if ((IDLE_FROSTONLY == boiler->idle_mode) && (RM_FROSTFREE != heat->actual_runmode))
+			target_temp = boiler->limit_tmin;
+		// in all other cases the boiler will not be issued a heat request
+	}
+	
+	boiler->target_temp = target_temp;
 
 	return (ALL_OK);
 }
@@ -868,8 +941,8 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 static int boiler_hs_run(struct s_heatsource * const heat)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	struct s_boiler_priv * const boiler = heat->priv;
-	temp_t boiler_temp, target_temp, trip_temp, untrip_temp;
+	struct s_boiler_priv * restrict const boiler = heat->priv;
+	temp_t boiler_temp, trip_temp, untrip_temp;
 	int ret;
 
 	if (!heat->configured)
@@ -877,23 +950,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	if (!boiler)
 		return (-EINVALID);
-
-	// Check if we need antifreeze
-	ret = boiler_antifreeze(boiler);
-	if (ret)
-		return (ret);
-
-	if (!boiler->antifreeze) {	// antifreeze takes over offline mode
-		if (!heat->online)
-			return (-EOFFLINE);	// XXX caller must call boiler_offline() otherwise pump will not stop after antifreeze
-	}
-
-	// assess actual runmode
-	if (RM_AUTO == heat->set_runmode)
-		heat->actual_runmode = runtime->runmode;
-	else
-		heat->actual_runmode = heat->set_runmode;
-
+	
 	switch (heat->actual_runmode) {
 		case RM_OFF:
 			if (!boiler->antifreeze)
@@ -902,19 +959,17 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 		case RM_ECO:
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			target_temp = heat->temp_request;
-			break;
 		case RM_MANUAL:
-			target_temp = boiler->limit_tmax;	// XXX set max temp to (safely) trigger burner operation
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
 		default:
 			return (-EINVALIDMODE);
 	}
-
+	
 	// if we reached this point then the boiler is active (online or antifreeze)
 
+	// turn pump on if any
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, 0);
 
@@ -931,32 +986,17 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 		return (-ESAFETY);
 	}
 
-	// bypass target_temp if antifreeze is active
-	if (boiler->antifreeze)
-		target_temp = boiler->set_tfreeze;
-	
-	// enforce limits
-	if (target_temp) {	// enforce limits only if we have an actual heat request
-		if (target_temp < boiler->limit_tmin)
-			target_temp = boiler->limit_tmin;
-		else if (target_temp > boiler->limit_tmax)
-			target_temp = boiler->limit_tmax;
-	}
-	
-	// save current target
-	boiler->target_temp = target_temp;
-
-	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(target_temp), temp_to_celsius(boiler_temp));
+	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(boiler->target_temp), temp_to_celsius(boiler_temp));
 
 	// un/trip points - XXX histeresis/2 assuming sensor will always be significantly cooler than actual output
-	trip_temp = (target_temp - boiler->set_histeresis/2);
+	trip_temp = (boiler->target_temp - boiler->set_histeresis/2);
 	if (trip_temp < boiler->limit_tmin)
 		trip_temp = boiler->limit_tmin;
-	untrip_temp = (target_temp + boiler->set_histeresis/2);
+	untrip_temp = (boiler->target_temp + boiler->set_histeresis/2);
 	if (untrip_temp > boiler->limit_tmax)
 		untrip_temp = boiler->limit_tmax;
 	
-	// temp control
+	// burner control
 	if (boiler_temp < trip_temp)		// trip condition
 		hardware_relay_set_state(boiler->burner_1, ON, 0);	// immediate start
 	else if (boiler_temp > untrip_temp)	// untrip condition
@@ -1729,6 +1769,7 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 			source->priv = boiler_new();
 			source->hs_online = boiler_hs_online;
 			source->hs_offline = boiler_hs_offline;
+			source->hs_logic = boiler_hs_logic;
 			source->hs_run = boiler_hs_run;
 			source->hs_del_priv = boiler_hs_del_priv;
 			break;
@@ -2013,6 +2054,7 @@ int plant_run(struct s_plant * restrict const plant)
 	// finally run the heat source
 	{
 		heatsourcel = plant->heats_head;	// XXX single heat source
+		logic_heatsource(heatsourcel->heats);
 		ret = heatsource_run(heatsourcel->heats);
 		if (ALL_OK != ret) {
 			// XXX error handling
