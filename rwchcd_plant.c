@@ -919,7 +919,9 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 		// if IDLE_FROSTONLY, boiler runs at min temp unless RM_FROSTFREE
 		else if ((IDLE_FROSTONLY == boiler->idle_mode) && (RM_FROSTFREE != heat->actual_runmode))
 			target_temp = boiler->limit_tmin;
-		// in all other cases the boiler will not be issued a heat request
+		// in all other cases the boiler will not be issued a heat request and will be stopped
+		else
+			heat->actual_runmode = RM_OFF;
 	}
 	
 	boiler->target_temp = target_temp;
