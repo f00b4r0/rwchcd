@@ -5,6 +5,7 @@ CFLAGS = $(WARNINGS) $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 -O0 -g
 LDLIBS = $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR = $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR = /etc/dbus-1/system.d
+VARLIBDIR = /var/lib/rwchcd
 
 SRCS = $(wildcard *.c)
 
@@ -35,7 +36,7 @@ dbus-gen:	rwchcd_introspection.xml
 	gdbus-codegen --generate-c-code rwchcd_dbus-generated --c-namespace dbus --interface-prefix org.slashdirt. rwchcd_introspection.xml
 
 install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
-	install -d /var/lib/rwchcd/
+	install -m 755 -o nobody -g nogroup -d $(VARLIBDIR)/
 	install -D -s $(MAIN) -t /usr/sbin/
 	install -m 644 -D org.slashdirt.rwchcd.conf -t $(DBUSSYSTEMDIR)/
 	install -m 644 -D rwchcd.service -t $(SYSTEMDUNITDIR)/
@@ -44,6 +45,7 @@ install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
 
 uninstall:
 	$(RM) /usr/sbin/$(MAIN)
+	$(RM) -r $(VARLIBDIR)
 	$(RM) $(DBUSSYSTEMDIR)/org.slashdirt.rwchcd.conf
 	$(RM) $(SYSTEMDUNITDIR)/rwchcd.service
 	@echo Done

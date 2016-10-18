@@ -207,6 +207,9 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 int logic_heatsource(struct s_heatsource * restrict const heat)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
+	struct s_heating_circuit_l * restrict circuitl;
+	struct s_dhw_tank_l * restrict dhwtl;
+	temp_t temp, temp_request = 0;
 
 	int ret = -ENOTIMPLEMENTED;
 	
@@ -225,6 +228,22 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	else
 		heat->actual_runmode = heat->set_runmode;
 	
+	// for consummers in runtime scheme, collect heat requests and max them
+	// circuits first
+	for (circuitl = runtime->plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		temp = circuitl->circuit->heat_request;
+		temp_request = (temp > temp_request) ? temp : temp_request;
+	}
+	
+	// then dhwt
+	for (dhwtl = runtime->plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		temp = dhwtl->dhwt->heat_request;
+		temp_request = (temp > temp_request) ? temp : temp_request;
+	}
+	
+	// apply result to heat source
+	heat->temp_request = temp_request;
+
 	if (heat->hs_logic)
 		ret = heat->hs_logic(heat);
 	

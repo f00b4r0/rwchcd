@@ -130,7 +130,7 @@ static int init_process()
 	boiler->idle_mode = IDLE_ALWAYS;
 	boiler->set_histeresis = deltaK_to_temp(8);
 	boiler->limit_tmax = celsius_to_temp(90);
-	boiler->limit_tmin = celsius_to_temp(55);
+	boiler->limit_tmin = celsius_to_temp(50);
 	boiler->id_temp = 2;	// XXX VALIDATION
 	config->rWCHC_settings.addresses.S_burner = 2-1;			// XXX INTERNAL CONFIG
 	boiler->id_temp_outgoing = boiler->id_temp;
@@ -240,7 +240,7 @@ static int init_process()
 	dhwt->limit_tmin = celsius_to_temp(5);
 	dhwt->limit_tmax = celsius_to_temp(60);
 	dhwt->limit_wintmax = celsius_to_temp(90);
-	dhwt->set_tcomfort = celsius_to_temp(60);
+	dhwt->set_tcomfort = celsius_to_temp(55);
 	dhwt->set_teco = celsius_to_temp(40);
 	dhwt->set_tfrostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
 	dhwt->set_histeresis = deltaK_to_temp(10);

@@ -1028,6 +1028,9 @@ static int heatsource_online(struct s_heatsource * const heat)
 	if (!heat)
 		return (-EINVALID);
 
+	if (NONE == heat->type)	// type NONE, nothing to do
+		return (ALL_OK);
+	
 	if (heat->hs_online)
 		ret = heat->hs_online(heat);
 
@@ -1048,10 +1051,13 @@ static int heatsource_offline(struct s_heatsource * const heat)
 	if (!heat)
 		return (-EINVALID);
 
+	heat->actual_runmode = RM_OFF;
+
+	if (NONE == heat->type)	// type NONE, nothing to do
+		return (ALL_OK);
+	
 	if (heat->hs_offline)
 		ret = heat->hs_offline(heat);
-
-	heat->actual_runmode = RM_OFF;
 
 	return (ret);
 }
@@ -1062,33 +1068,15 @@ static int heatsource_offline(struct s_heatsource * const heat)
  */
 static int heatsource_run(struct s_heatsource * const heat)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
-	struct s_heating_circuit_l * restrict circuitl;
-	struct s_dhw_tank_l * restrict dhwtl;
-	temp_t temp, temp_request = 0;
-
 	if (!heat)
 		return (-EINVALID);
 
 	if (!heat->configured)
 		return (-ENOTCONFIGURED);
 
-	// for consummers in runtime scheme, collect heat requests and max them
-	// circuits first
-	for (circuitl = runtime->plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		temp = circuitl->circuit->heat_request;
-		temp_request = (temp > temp_request) ? temp : temp_request;
-	}
-
-	// then dhwt
-	for (dhwtl = runtime->plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		temp = dhwtl->dhwt->heat_request;
-		temp_request = (temp > temp_request) ? temp : temp_request;
-	}
-
-	// apply result to heat source
-	heat->temp_request = temp_request;
-
+	if (NONE == heat->type)	// type NONE, nothing to do
+		return (ALL_OK);
+	
 	if (heat->hs_run)
 		return (heat->hs_run(heat));
 	else
