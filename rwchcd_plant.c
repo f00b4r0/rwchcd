@@ -864,7 +864,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t target_temp = 0;
+	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
 	int ret;
 
 	if (!heat->configured)
@@ -991,7 +991,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(boiler->target_temp), temp_to_celsius(boiler_temp));
 
 	// un/trip points - XXX histeresis/2 assuming sensor will always be significantly cooler than actual output
-	if (boiler->target_temp) {	// apply trip_temp only if we have a heat request
+	if (RWCHCD_TEMP_NOREQUEST != boiler->target_temp) {	// apply trip_temp only if we have a heat request
 		trip_temp = (boiler->target_temp - boiler->set_histeresis/2);
 		if (trip_temp < boiler->limit_tmin)
 			trip_temp = boiler->limit_tmin;
@@ -1169,7 +1169,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	if (!circuit->configured)
 		return (-ENOTCONFIGURED);
 
-	circuit->heat_request = 0;
+	circuit->heat_request = RWCHCD_TEMP_NOREQUEST;
 	circuit->target_wtemp = 0;
 	circuit->actual_cooldown_time = 0;
 
@@ -1213,7 +1213,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 		case RM_OFF:
 			if (circuit->actual_cooldown_time > 0) {	// delay offlining
 				// disable heat request from this circuit
-				circuit->heat_request = 0;
+				circuit->heat_request = RWCHCD_TEMP_NOREQUEST;
 				// decrement counter
 				circuit->actual_cooldown_time -= (now - circuit->last_run_time);
 				// stop processing: maintain current wtemp
@@ -1365,7 +1365,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (!dhwt->configured)
 		return (-ENOTCONFIGURED);
 
-	dhwt->heat_request = 0;
+	dhwt->heat_request = RWCHCD_TEMP_NOREQUEST;
 	dhwt->target_temp = 0;
 	dhwt->force_on = false;
 	dhwt->charge_on = false;
@@ -1456,15 +1456,15 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
 	   untrip at target (preferably on high sensor). */
-	if (!dhwt->charge_on) {	// heating off
+	if (!dhwt->charge_on) {	// no charge in progress
 		if (valid_tbottom)	// prefer bottom temp if available
 			curr_temp = bottom_temp;
 		else
 			curr_temp = top_temp;
 
-		// if heating not in progress, trip if forced or at (target temp - histeresis)
+		// if charge not in progress, trip if forced or at (target temp - histeresis)
 		if (dhwt->force_on || (curr_temp < (dhwt->target_temp - dhwt->set_histeresis))) {
-			if (runtime->sleeping && dhwt->selfheater && dhwt->selfheater->configured) {
+			if (runtime->plant_could_sleep && dhwt->selfheater && dhwt->selfheater->configured) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			}
@@ -1473,9 +1473,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				water_temp = dhwt->target_temp + dhwt->set_temp_inoffset;
 
 				// enforce limits
-				if (water_temp < dhwt->limit_wintmin)
-					water_temp = dhwt->limit_wintmin;
-				else if (water_temp > dhwt->limit_wintmax)
+				if (water_temp > dhwt->limit_wintmax)
 					water_temp = dhwt->limit_wintmax;
 
 				// apply heat request
@@ -1496,7 +1494,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
 		if (curr_temp > dhwt->target_temp) {
-			// stop self-heater
+			// stop self-heater (if any)
 			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
 			test = FORCE;	// by default, force feedpump immediate turn off
@@ -1513,8 +1511,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			// turn off pump with cooldown
 			pump_set_state(dhwt->feedpump, OFF, test);
 
-			// set heat request to minimum
-			dhwt->heat_request = dhwt->limit_wintmin;
+			// clear heat request
+			dhwt->heat_request = RWCHCD_TEMP_NOREQUEST;
 
 			// untrip force charge: XXX force can run only once
 			dhwt->force_on = false;
@@ -2049,8 +2047,8 @@ int plant_run(struct s_plant * restrict const plant)
 			heatsource_offline(heatsourcel->heats);
 			heatsourcel->heats->online = false;
 		}
-		if (heatsourcel->heats->sleeping)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
-			sleeping = heatsourcel->heats->sleeping;
+		if (heatsourcel->heats->could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
+			sleeping = heatsourcel->heats->could_sleep;
 	}
 
 	// run the valves
@@ -2067,7 +2065,7 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 	
 	// reflect global sleeping state
-	runtime->sleeping = sleeping;
+	runtime->plant_could_sleep = sleeping;
 
 	return (ALL_OK);	// XXX
 }

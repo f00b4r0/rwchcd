@@ -109,7 +109,7 @@ struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
 	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
-	bool sleeping;			///< true if all heat sources are sleeping (plant is asleep)
+	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	bool summer;			///< outdoor temperature is compatible with summer mode - XXX NOT IMPLEMENTED
 	float calib_nodac;		///< sensor calibration value without dac offset
 	float calib_dac;		///< sensor calibration value with dac offset

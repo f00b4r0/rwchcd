@@ -12,6 +12,8 @@
 #include <time.h>
 #include "rwchcd.h"
 
+#define RWCHCD_TEMP_NOREQUEST	0
+
 /** Pump element structure */
 struct s_pump {
 	bool configured;		///< true if properly configured
@@ -110,8 +112,7 @@ struct s_boiler_priv {
 	temp_t limit_tmin;		///< minimum boiler temp when operating
 	temp_t limit_treturnmin;	///< minimum boiler return temp (optional) -- XXX NOT IMPLEMENTED
 	temp_t set_tfreeze;		///< trip point for antifreeze (+5C)
-	time_t set_burner_min_time;	///< minimum burner runtime and cooldown time
-	time_t set_sleeping_time;	///< if no request for this much time, then put boiler asleep
+	time_t set_burner_min_time;	///< minimum burner runtime
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
 	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
 	struct s_stateful_relay * restrict burner_2;	///< second stage of burner
@@ -131,12 +132,14 @@ enum e_heatsource_type {
 struct s_heatsource {
 	bool configured;		///< true if properly configured
 	bool online;			///< true if source is available for use
-	bool sleeping;			///< true if source is asleep
+	bool could_sleep;		///< true if source is could be sleeping (no recent heat request from circuits)
 	enum e_runmode set_runmode;	///< current heatsource set_runmode
 	enum e_runmode actual_runmode;	///< heatsource actual (computed) runmode
 	enum e_heatsource_type type;	///< type of heatsource
 	unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
 	temp_t temp_request;		///< current temperature request for heat source (max of all requests)
+	time_t set_sleeping_time;	///< if no request for this much time, then mark heat source as can sleep
+	time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
 	char * restrict name;
 	void * restrict priv;		///< pointer to source private data structure
 	int (*hs_online)(struct s_heatsource * const);	///< pointer to source private online() function
@@ -173,7 +176,6 @@ struct s_dhw_tank {
 	tempid_t id_temp_top;		///< temp sensor at top of dhw tank
 	tempid_t id_temp_win;		///< temp sensor heatwater inlet
 	tempid_t id_temp_wout;		///< temp sensor heatwater outlet
-	temp_t limit_wintmin;		///< minimum water intake temp when active @note if set will permanently trigger a heat request
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection)
 	temp_t limit_tmax;		///< maximum allowed dhwt temp when active

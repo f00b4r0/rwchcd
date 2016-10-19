@@ -127,7 +127,7 @@ static int init_process()
 
 	// configure that source	XXX REVISIT
 	boiler = heatsource->priv;
-	boiler->idle_mode = IDLE_ALWAYS;
+	boiler->idle_mode = IDLE_FROSTONLY;
 	boiler->set_histeresis = deltaK_to_temp(8);
 	boiler->limit_tmax = celsius_to_temp(90);
 	boiler->limit_tmin = celsius_to_temp(50);
@@ -143,7 +143,7 @@ static int init_process()
 	config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(14);	// XXX INTERNAL CONFIG
 	boiler->burner_1->configured = true;
 	boiler->set_burner_min_time = 2 * 60;	// XXX 2 minutes
-	boiler->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
+	heatsource->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
 	heatsource->set_runmode = RM_AUTO;	// use global setting
 	heatsource->configured = true;
 

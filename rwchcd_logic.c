@@ -8,6 +8,8 @@
 
 // smarter functions making use of time should be here and act as pre-filter for plant xxx_run() ops.
 
+#include <time.h>
+
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_logic.h"
@@ -209,7 +211,8 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
-	temp_t temp, temp_request = 0;
+	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST;
+	const time_t now = time(NULL);
 
 	int ret = -ENOTIMPLEMENTED;
 	
@@ -233,7 +236,15 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	for (circuitl = runtime->plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		temp = circuitl->circuit->heat_request;
 		temp_request = (temp > temp_request) ? temp : temp_request;
+		if (RWCHCD_TEMP_NOREQUEST != temp)
+			heat->last_circuit_reqtime = now;
 	}
+	
+	// check if last request exceeds timeout
+	if ((heat->last_circuit_reqtime - now) > heat->set_sleeping_time)
+		heat->could_sleep = true;
+	else
+		heat->could_sleep = false;
 	
 	// then dhwt
 	for (dhwtl = runtime->plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
