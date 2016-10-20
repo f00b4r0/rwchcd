@@ -16,7 +16,7 @@ rwchcd_introspection.xml file.
 
 Examples:
 dbus-send --system --dest=org.slashdirt.rwchcd \
-        --type=method_call /org/slashdirt/rwchcd 
+        --type=method_call /org/slashdirt/rwchcd \
         org.slashdirt.rwchcd.Control.SysmodeSet byte:2
 
 dbus-send --print-reply --system --dest=org.slashdirt.rwchcd \
