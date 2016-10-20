@@ -15,7 +15,7 @@ The D-Bus interface exposed by the daemon are presented in the
 rwchcd_introspection.xml file.
 
 Examples:
-dbus-send --system --dest=org.slashdirt.rwchcd \
+dbus-send --print-reply --system --dest=org.slashdirt.rwchcd \
         --type=method_call /org/slashdirt/rwchcd \
         org.slashdirt.rwchcd.Control.SysmodeSet byte:2
 
