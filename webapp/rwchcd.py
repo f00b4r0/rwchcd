@@ -26,14 +26,13 @@ class rwchcd:
 		currmode = rwchcd_Control.SysmodeGet()
 		fm = formMode()
 		fm.sysmode.value = currmode
-		return render.rwchcd(fm, temp, currmode)
+		return render.rwchcd(fm, temp)
 	def POST(self):
 		i = web.input()
 		mode = int(i['sysmode'])
 		rwchcd_Control.SysmodeSet(mode)
-		raise web.found('.')
+		raise web.found(web.url())
 		
-
 
 if __name__ == "__main__":
 	app = web.application(urls, globals())
