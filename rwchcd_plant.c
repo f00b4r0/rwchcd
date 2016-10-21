@@ -1216,6 +1216,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 				circuit->heat_request = RWCHCD_TEMP_NOREQUEST;
 				// decrement counter
 				circuit->actual_cooldown_time -= (now - circuit->last_run_time);
+				dbgmsg("in cooldown, remaining: %d", circuit->actual_cooldown_time);
 				// stop processing: maintain current wtemp
 				goto valve;
 			}
