@@ -17,10 +17,12 @@
 /**
  * Conditions for running circuit
  * Circuit is off in ANY of the following conditions are met:
+ * - runtime->summer is true
  * - t_outdoor_60 > current set_outhoff_MODE
  * - t_outdoor_mixed > current set_outhoff_MODE
  * - t_outdoor_attenuated > current set_outhoff_MODE
  * Circuit is back on if ALL of the following conditions are met:
+ * - runtime->summer is false
  * - t_outdoor_60 < current set_outhoff_MODE - set_outhoff_histeresis
  * - t_outdoor_mixed < current set_outhoff_MODE - set_outhoff_histeresis
  * - t_outdoor_attenuated < current set_outhoff_MODE - set_outhoff_histeresis
@@ -31,6 +33,12 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t temp_trigger;
 
+	// check for global summer switch off first
+	if (runtime->summer) {
+		circuit->outhoff = true;
+		return;
+	}
+	
 	switch (circuit->actual_runmode) {
 		case RM_COMFORT:
 			temp_trigger = circuit->set_outhoff_comfort;
