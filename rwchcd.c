@@ -39,6 +39,8 @@
 #define RWCHCD_UID	65534	///< Desired run uid
 #define RWCHCD_GID	65534	///< Desired run gid
 
+static int master_thread_sem = 0;
+
 /**
  * Daemon signal handler.
  * Handles SIGINT and SIGTERM for graceful shutdown.
@@ -157,7 +159,7 @@ static int init_process()
 	// configure that circuit
 	circuit->limit_wtmax = celsius_to_temp(85);
 	circuit->limit_wtmin = celsius_to_temp(20);
-	circuit->set_tcomfort = celsius_to_temp(20.5F);
+	circuit->set_tcomfort = celsius_to_temp(20.0F);
 	circuit->set_teco = celsius_to_temp(16);
 	circuit->set_tfrostfree = celsius_to_temp(7);
 	circuit->set_outhoff_comfort = circuit->set_tcomfort - deltaK_to_temp(2);
@@ -273,18 +275,20 @@ static int init_process()
 static void * thread_master(void *arg)
 {
 	int ret;
+	struct s_runtime * restrict const runtime = get_runtime();
+	
 	ret = init_process();
 	if (ret != ALL_OK) {
 		dbgerr("init_proccess failed (%d)", ret);
 		if (ret == -ESPI)	// XXX HACK
-			pthread_exit(&ret);
+			goto thread_end;
 	}
 	
 	// start in frostfree by default
 	if (SYS_OFF == get_runtime()->systemmode)
 		runtime_set_systemmode(SYS_FROSTFREE);
 	
-	while (1) {
+	while (master_thread_sem) {
 		hardware_run();
 		
 		// test read peripherals
@@ -303,6 +307,13 @@ static void * thread_master(void *arg)
 		printf("\n");	// XXX DEBUG
 		sleep(1);
 	}
+	
+thread_end:
+	// cleanup
+	dbgmsg("thread exiting!");
+	plant_del(runtime->plant);
+	config_del(runtime->config);
+	pthread_exit(&ret);
 }
 
 int main(void)
@@ -318,8 +329,10 @@ int main(void)
 	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
 	pthread_attr_setschedparam(&attr, &sparam);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	
+	master_thread_sem = 1;
+
 	ret = pthread_create(&master_thr, &attr, thread_master, NULL);
 	if (ret)
 		errx(ret, "failed to create thread!");
@@ -344,6 +357,9 @@ int main(void)
 	sigaction(SIGTERM, &saction, NULL);
 	
 	dbus_main();	// launch dbus main loop, blocks execution until termination
+	
+	master_thread_sem = 0;	// signal end of work
+	pthread_join(&master_thr, NULL);	// wait for cleanup
 	
 	return (0);
 }

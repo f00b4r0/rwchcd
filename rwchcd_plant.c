@@ -23,7 +23,7 @@
  * Delete a pump
  * @param pump the pump to delete
  */
-static void del_pump(struct s_pump * pump)
+static void pump_del(struct s_pump * pump)
 {
 	if (!pump)
 		return;
@@ -122,7 +122,7 @@ static int pump_get_state(const struct s_pump * const pump)
  * Delete a valve
  * @param valve the valve to delete
  */
-static void del_valve(struct s_valve * valve)
+static void valve_del(struct s_valve * valve)
 {
 	if (!valve)
 		return;
@@ -715,7 +715,7 @@ static void solar_del(struct s_solar_heater * solar)
 	if (!solar)
 		return;
 
-	del_pump(solar->pump);
+	pump_del(solar->pump);
 	solar->pump = NULL;
 	free(solar->name);
 	solar->name = NULL;
@@ -755,7 +755,7 @@ static void boiler_hs_del_priv(void * priv)
 	if (!boiler)
 		return;
 
-	del_pump(boiler->loadpump);
+	pump_del(boiler->loadpump);
 	boiler->loadpump = NULL;
 	hardware_relay_del(boiler->burner_1);
 	boiler->burner_1 = NULL;
@@ -906,7 +906,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 		target_temp = (target_temp < boiler->limit_tmin) ? boiler->limit_tmin : target_temp;	// max of the two
 	
 	// enforce limits
-	if (target_temp) {	// only if we have an actual heat request
+	if (RWCHCD_TEMP_NOREQUEST != target_temp) {	// only if we have an actual heat request
 		if (target_temp < boiler->limit_tmin)
 			target_temp = boiler->limit_tmin;
 		else if (target_temp > boiler->limit_tmax)
@@ -1653,14 +1653,14 @@ fail:
  * Circuit destructor
  * @param circuit the circuit to delete
  */
-static void del_circuit(struct s_heating_circuit * circuit)
+static void circuit_del(struct s_heating_circuit * circuit)
 {
 	if (!circuit)
 		return;
 
-	del_valve(circuit->valve);
+	valve_del(circuit->valve);
 	circuit->valve = NULL;
-	del_pump(circuit->pump);
+	pump_del(circuit->pump);
 	circuit->pump = NULL;
 	free(circuit->name);
 	circuit->name = NULL;
@@ -1712,16 +1712,16 @@ fail:
  * DHWT destructor
  * @param dhwt the dhwt to delete
  */
-static void del_dhwt(struct s_dhw_tank * restrict dhwt)
+static void dhwt_del(struct s_dhw_tank * restrict dhwt)
 {
 	if (!dhwt)
 		return;
 
 	solar_del(dhwt->solar);
 	dhwt->solar = NULL;
-	del_pump(dhwt->feedpump);
+	pump_del(dhwt->feedpump);
 	dhwt->feedpump = NULL;
-	del_pump(dhwt->recyclepump);
+	pump_del(dhwt->recyclepump);
 	dhwt->recyclepump = NULL;
 	hardware_relay_del(dhwt->selfheater);
 	dhwt->selfheater = NULL;
@@ -1759,11 +1759,13 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 			source->hs_run = boiler_hs_run;
 			source->hs_del_priv = boiler_hs_del_priv;
 			break;
+		case NONE:
 		default:
 			break;
 	}
 
-	if (!source->priv)
+	// check we have a priv element except for type NONE
+	if (!source->priv && (NONE != type))
 		goto fail;
 
 	source->type = type;
@@ -1795,7 +1797,7 @@ fail:
  * Delete a heatsource
  * @param source the source to delete
  */
-static void del_heatsource(struct s_heatsource * source)
+static void heatsource_del(struct s_heatsource * source)
 {
 	if (!source)
 		return;
@@ -1838,7 +1840,7 @@ void plant_del(struct s_plant * plant)
 	pumpelmt = plant->pump_head;
 	while (pumpelmt) {
 		pumpnext = pumpelmt->next;
-		del_pump(pumpelmt->pump);
+		pump_del(pumpelmt->pump);
 		pumpelmt->pump = NULL;
 		free(pumpelmt);
 		plant->pump_n--;
@@ -1849,7 +1851,7 @@ void plant_del(struct s_plant * plant)
 	valveelmt = plant->valve_head;
 	while (valveelmt) {
 		valvenext = valveelmt->next;
-		del_valve(valveelmt->valve);
+		valve_del(valveelmt->valve);
 		valveelmt->valve = NULL;
 		free(valveelmt);
 		plant->valve_n--;
@@ -1860,7 +1862,7 @@ void plant_del(struct s_plant * plant)
 	circuitelement = plant->circuit_head;
 	while (circuitelement) {
 		circuitlnext = circuitelement->next;
-		del_circuit(circuitelement->circuit);
+		circuit_del(circuitelement->circuit);
 		circuitelement->circuit = NULL;
 		free(circuitelement);
 		plant->circuit_n--;
@@ -1871,7 +1873,7 @@ void plant_del(struct s_plant * plant)
 	dhwtelement = plant->dhwt_head;
 	while (dhwtelement) {
 		dhwtlnext = dhwtelement->next;
-		del_dhwt(dhwtelement->dhwt);
+		dhwt_del(dhwtelement->dhwt);
 		dhwtelement->dhwt = NULL;
 		free(dhwtelement);
 		plant->dhwt_n--;
@@ -1882,7 +1884,7 @@ void plant_del(struct s_plant * plant)
 	sourceelement = plant->heats_head;
 	while (sourceelement) {
 		sourcenext = sourceelement->next;
-		del_heatsource(sourceelement->heats);
+		heatsource_del(sourceelement->heats);
 		sourceelement->heats = NULL;
 		free(sourceelement);
 		plant->heats_n--;
