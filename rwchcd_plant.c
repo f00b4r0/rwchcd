@@ -862,7 +862,6 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
  */
 static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
 	int ret;
@@ -942,7 +941,6 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
  */
 static int boiler_hs_run(struct s_heatsource * const heat)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp;
 	int ret;

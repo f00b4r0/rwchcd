@@ -359,7 +359,7 @@ int main(void)
 	dbus_main();	// launch dbus main loop, blocks execution until termination
 	
 	master_thread_sem = 0;	// signal end of work
-	pthread_join(&master_thr, NULL);	// wait for cleanup
+	pthread_join(master_thr, NULL);	// wait for cleanup
 	
 	return (0);
 }
