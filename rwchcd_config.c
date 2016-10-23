@@ -7,14 +7,48 @@
 //
 
 #include <stdlib.h>	// alloc/free
+#include <string.h>	// memcpy
+
 #include "rwchcd_lib.h"
 #include "rwchcd_spi.h"
+#include "rwchcd_storage.h"
 #include "rwchcd_config.h"
 
-// Save and restore config to permanent storage
+static const storage_version_t Config_sversion = 1;
+
 // XXX review handling of rWCHC_settings
 
+/**
+ * Commit and save hardware config.
+ * @param config current system configuration, containing hardware config elements
+ * @return exec status
+ */
+static int config_hardware_save(const struct s_config * const config)
+{
+	int ret, i = 0;
+	
+	// commit hardware config
+	do {
+		ret = rwchcd_spi_settings_w(&(config->rWCHC_settings));
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+	if (ret)
+		goto out;
+	
+	i = 0;
+	// save hardware config
+	do {
+		ret = rwchcd_spi_settings_s();
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+out:
+	return (ret);
+}
 
+/**
+ * Allocate new config.
+ * @return pointer to config
+ */
 struct s_config * config_new(void)
 {
 	struct s_config * const config = calloc(1, sizeof(struct s_config));
@@ -22,11 +56,50 @@ struct s_config * config_new(void)
 	return (config);
 }
 
+/**
+ * Delete config
+ * @param config pointer to config
+ */
 void config_del(struct s_config * config)
 {
 	free(config);
 }
 
+/**
+ * Restore config from permanent storage.
+ * @param config config that will be populated with restored elements if possible,
+ * left untouched otherwise
+ * @return exec status
+ */
+static int config_restore(struct s_config * const config)
+{
+	struct s_config temp_config;
+	storage_version_t sversion;
+	int ret;
+	
+	// try to restore last config
+	ret = storage_fetch("config", &sversion, &temp_config, sizeof(temp_config));
+	if (ALL_OK == ret) {
+		if (Config_sversion != sversion)
+			return (-EMISMATCH);
+		
+		dbgmsg("config restored");
+		
+		memcpy(config, &temp_config, sizeof(*config));
+	}
+	else
+		dbgerr("storage_fetch failed (%d)", ret);
+	
+	return (ret);
+}
+
+/**
+ * Init config.
+ * Tries to restore config from permanent storage, otherwise will get current
+ * hardware config
+ * @param config config
+ * @return exec status
+ */
 int config_init(struct s_config * const config)
 {
 	int ret, i = 0;
@@ -34,17 +107,27 @@ int config_init(struct s_config * const config)
 	if (!config)
 		return (-EINVALID);
 
-	// grab current config on the hardware
+	// see if we can restore previous config
+	ret = config_restore(config);
+	if (ALL_OK == ret) {
+		config_hardware_save(config);	// commit to hardware to ensure consistency
+		return (ALL_OK);
+	}
+	
+	// if we couldn't, grab current config from the hardware
 	do {
 		ret = rwchcd_spi_settings_r(&(config->rWCHC_settings));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
-	if (ret)
-		return (-ESPI);
-
-	return (ALL_OK);
+	return (ret);
 }
 
+/**
+ * Set building constant.
+ * @param config target config
+ * @param tau building time constant
+ * @return exec status
+ */
 int config_set_building_tau(struct s_config * const config, const time_t tau)
 {
 	if (!config)
@@ -55,6 +138,13 @@ int config_set_building_tau(struct s_config * const config, const time_t tau)
 	return (ALL_OK);
 }
 
+/**
+ * Set number of active sensors.
+ * @param config target config
+ * @param nsensors number of active sensors
+ * @return exec status
+ * @note nsensors will be treated as the id of the last active sensor.
+ */
 int config_set_nsensors(struct s_config * const config, const int_fast16_t nsensors)
 {
 	if (!config)
@@ -69,6 +159,12 @@ int config_set_nsensors(struct s_config * const config, const int_fast16_t nsens
 	return (ALL_OK);
 }
 
+/**
+ * Set outdoor temperature for frost protection activation.
+ * @param config target config
+ * @param tfrostmin target outdoor temp for activation
+ * @return exec status
+ */
 int config_set_tfrostmin(struct s_config * const config, const temp_t tfrostmin)
 {
 	if (!config)
@@ -83,6 +179,13 @@ int config_set_tfrostmin(struct s_config * const config, const temp_t tfrostmin)
 	return (ALL_OK);
 }
 
+/**
+ * Set outdoor temperature for summer switchover.
+ * Defines the temperature at which all heating circuits will be unconditionally stopped.
+ * @param config target config
+ * @param tsummer target outdoor temp for switchover
+ * @return exec status
+ */
 int config_set_tsummer(struct s_config * const config, const temp_t tsummer)
 {
 	if (!config)
@@ -96,6 +199,12 @@ int config_set_tsummer(struct s_config * const config, const temp_t tsummer)
 	return (ALL_OK);
 }
 
+/**
+ * Set outdoor sensor id.
+ * @param config target config
+ * @param sensorid id of outdoor temperature sensor
+ * @return exec status
+ */
 int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
 {
 	if (!config)
@@ -110,30 +219,28 @@ int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t s
 	return (ALL_OK);
 }
 
+/**
+ * Save config.
+ * @param config target config
+ * @return exec status
+ */
 int config_save(const struct s_config * const config)
 {
-	int ret, i = 0;
+	int ret;
 
 	if (!config)
 		return (-EINVALID);
 
-	// XXX TODO save config
+	// save config
+	ret = storage_dump("config", &Config_sversion, config, sizeof(*config));
+	if (ALL_OK != ret) {
+		dbgerr("storage_dump failed (%d)", ret);
+		goto out;
+	}
+	
+	// save to hardware
+	ret = config_hardware_save(config);
 
-	// commit hardware config
-	do {
-		ret = rwchcd_spi_settings_w(&(config->rWCHC_settings));
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	if (ret)
-		return (-ESPI);
-
-	i = 0;
-	// save hardware config
-	do {
-		ret = rwchcd_spi_settings_s();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	if (ret)
-		return (-ESPI);
-	return (ALL_OK);
+out:
+	return (ret);
 }

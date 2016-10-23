@@ -34,7 +34,7 @@
 
 /** Valid return values */
 enum {
-	ALL_OK,
+	ALL_OK = 0,	///< no error (must be 0)
 	ENOTCONFIGURED,	///< element is not configured
 	EMISCONFIGURED,	///< invalid configuration settings
 	ESAFETY,	///< safety error
@@ -53,6 +53,7 @@ enum {
 	EEXISTS,	///< Object already exists (id conflict)
 	ETRUNC,		///< Truncation occured (LCD output)
 	ESTORE,		///< Storage errors
+	EMISMATCH,	///< version mismatch
 	EGENERIC,
 };
 
@@ -95,7 +96,7 @@ enum e_systemmode {
 struct s_config {
 	bool configured;		///< true if properly configured
 	time_t building_tau;		///< building time constant
-	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor +1)
+	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
 	temp_t limit_tfrostmin;		///< outdoor temp for frost-protection

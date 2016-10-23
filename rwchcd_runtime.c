@@ -102,6 +102,9 @@ static void outdoor_temp()
  */
 static void runtime_summer(void)
 {
+	if (!Runtime.config->limit_tsummer)
+		return;	// invalid limit, don't do anything
+	
 	if ((Runtime.t_outdoor_60 > Runtime.config->limit_tsummer)	&&
 	    (Runtime.t_outdoor_mixed > Runtime.config->limit_tsummer)	&&
 	    (Runtime.t_outdoor_attenuated > Runtime.config->limit_tsummer)) {
@@ -121,6 +124,14 @@ static void runtime_summer(void)
  */
 static int runtime_save(void)
 {
+	static time_t last = 0;
+	
+	// XXX quick hack to reduce disk load
+	if ((time(NULL) - last) < 60)
+		return (ALL_OK);
+
+	last = time(NULL);
+	
 	return (storage_dump("runtime", &Runtime_sversion, &Runtime, sizeof(Runtime)));
 }
 
