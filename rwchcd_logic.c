@@ -9,6 +9,7 @@
 // smarter functions making use of time should be here and act as pre-filter for plant xxx_run() ops.
 
 #include <time.h>
+#include <math.h>
 
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
@@ -82,14 +83,17 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * Circuit logic.
  * @param circuit target circuit
  * @return exec status
- * XXX ADD optimizations (anticipated turn on/off, boost at turn on, accelerated cool down, max ambient... p36+)
- * XXX TODO ambient temp model (p37)
+ * XXX ADD optimizations (anticipated turn on/off, max ambient... p36+)
+ * XXX TODO ambient max delta shutdown; optim based on return temp
  */
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t target_temp;
-	temp_t ambient_measured, ambient_delta;
+	enum e_runmode prev_runmode;
+	temp_t request_temp, low_temp;
+	temp_t ambient_temp = 0, ambient_delta = 0;
+	time_t elapsed_time;
+	const time_t now = time(NULL);
 	
 	if (!circuit)
 		return (-EINVALID);
@@ -100,6 +104,9 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	if (!circuit->online)
 		return (-EOFFLINE);
 
+	// store current status for transition detection
+	prev_runmode = circuit->actual_runmode;
+	
 	// handle global/local runmodes
 	if (RM_AUTO == circuit->set_runmode)
 		circuit->actual_runmode = runtime->runmode;
@@ -112,14 +119,14 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		case RM_MANUAL:
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
-			target_temp = circuit->set_tcomfort;
+			request_temp = circuit->set_tcomfort;
 			break;
 		case RM_ECO:
-			target_temp = circuit->set_teco;
+			request_temp = circuit->set_teco;
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			target_temp = circuit->set_tfrostfree;
+			request_temp = circuit->set_tfrostfree;
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
@@ -132,21 +139,87 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// if the circuit does meet the conditions, turn it off: update runmode.
 	if (circuit->outhoff)
 		circuit->actual_runmode = RM_OFF;
+	
+	// transition detection
+	if (prev_runmode != circuit->actual_runmode) {	// we have a transition
+		circuit->transition = (circuit->actual_ambient > request_temp) ? TRANS_DOWN : TRANS_UP;
+		circuit->transition_update_time = now;
+	}
 
 	// save current ambient request
-	circuit->request_ambient = target_temp;
+	circuit->request_ambient = request_temp;
 
 	// XXX OPTIM if return temp is known
 
 	// apply offset and save calculated target ambient temp to circuit
 	circuit->target_ambient = circuit->request_ambient + circuit->set_toffset;
 
-	// shift based on measured ambient temp (if available) influence p.41
-	ambient_measured = get_temp(circuit->id_temp_ambient);
-	if (validate_temp(ambient_measured) == ALL_OK) {
-		ambient_delta = (circuit->set_ambient_factor/10) * (circuit->target_ambient - ambient_measured);
-		circuit->target_ambient += ambient_delta;
+	ambient_temp = get_temp(circuit->id_temp_ambient);
+	if (validate_temp(ambient_temp) == ALL_OK) {	// we have an ambient sensor
+		// calculate ambient shift based on measured ambient temp influence p.41
+		ambient_delta = (circuit->set_ambient_factor/10) * (circuit->target_ambient - ambient_temp);
 	}
+	else {	// no sensor, apply ambient model for transitions
+		elapsed_time = now - circuit->transition_update_time;
+		switch (circuit->transition) {
+			case TRANS_DOWN:
+				if (circuit->set_fast_cooldown)
+					low_temp = runtime->t_outdoor_mixed;
+				else
+					low_temp = request_temp;
+				// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
+				if (elapsed_time >= 600) {	// every 10mn
+					ambient_temp = (circuit->actual_ambient - low_temp) * expf(-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
+					circuit->transition_update_time = now;
+				}
+				break;
+			case TRANS_UP:
+				// transition up, apply linear model
+				if (circuit->set_model_tambient_tK) {
+					if (elapsed_time >= 600) {	// every 10mn
+						// current + (elapsed_time * 1/tperK) * (tboost / treq)
+						ambient_temp = circuit->actual_ambient + (elapsed_time * 1/circuit->set_model_tambient_tK)*(1+circuit->set_tambient_boostdelta/request_temp);	// works even if boostdelta is not set
+						circuit->transition_update_time = now;
+					}
+					break;
+				}
+				// if settings are insufficient, model can't run, fallback to no transition
+			case TRANS_NONE:
+				// no transition, ambient temp assumed to be request temp
+				ambient_temp = circuit->request_ambient;
+				circuit->transition_update_time = 0;
+				break;
+			default:
+				break;
+		}
+	}
+	
+	circuit->actual_ambient = ambient_temp;
+
+	// handle transitions
+	switch (circuit->transition) {
+		case TRANS_DOWN:
+			if (ambient_temp > circuit->request_ambient) {
+				if (circuit->set_fast_cooldown)	// if fast cooldown, turn off circuit
+					circuit->actual_runmode = RM_OFF;
+			}
+			else
+				circuit->transition = TRANS_NONE;	// transition completed
+			break;
+		case TRANS_UP:
+			if (ambient_temp < circuit->request_ambient - deltaK_to_temp(0.5F)) {	// boost if ambient temp is < to target - 0.5K - XXX
+				// boost is max of set boost (if any) and measured delta (if any)
+				ambient_delta = (circuit->set_tambient_boostdelta > ambient_delta) ? circuit->set_tambient_boostdelta : ambient_delta;
+			}
+			else
+				circuit->transition = TRANS_NONE;	// transition completed
+			break;
+		case TRANS_NONE:
+		default:
+			break;
+	}
+
+	circuit->target_ambient += ambient_delta;
 
 	return (ALL_OK);
 }
@@ -262,6 +335,9 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	
 	// apply result to heat source
 	heat->temp_request = temp_request;
+	
+	// XXX TODO: consumer stop delay should only be applied when heatsource temp is rising
+	heat->target_consumer_stop_delay = heat->set_consumer_stop_delay;
 
 	if (heat->hs_logic)
 		ret = heat->hs_logic(heat);

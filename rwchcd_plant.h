@@ -72,8 +72,6 @@ struct s_heating_circuit {
 	time_t last_run_time;		///< last time circuit_run() was invoked
 	enum e_runmode set_runmode;	///< current circuit set_runmode
 	enum e_runmode actual_runmode;	///< circuit actual (computed) runmode
-	struct s_valve * restrict valve;///< valve for circuit (if available, otherwise it's direct)
-	struct s_pump * restrict pump;	///< pump for this circuit
 	temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
 	temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active
 	temp_t set_tcomfort;		///< target ambient temp in comfort mode
@@ -84,10 +82,9 @@ struct s_heating_circuit {
 	temp_t set_outhoff_eco;		///< outdoor temp for no heating in eco mode
 	temp_t set_outhoff_frostfree;	///< outdoor temp for no heating in frostfree mode
 	temp_t set_outhoff_histeresis;	///< histeresis for no heating condition
-	time_t set_cooldown_time;	///< circuit cooldown time: at turn off, offlining will be delayed by this amount
-	tempid_t id_temp_outgoing;	///< current temp for this circuit
-	tempid_t id_temp_return;	///< current return temp for this circuit
-	tempid_t id_temp_ambient;	///< ambient temp related to this circuit
+	tempid_t id_temp_outgoing;	///< outgoing temp sensor for this circuit
+	tempid_t id_temp_return;	///< return temp sensor for this circuit
+	tempid_t id_temp_ambient;	///< ambient temp sensor related to this circuit
 	short set_ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 	temp_t set_wtemp_rorh;		///< water temp rate of rise in temp per hour -- XXX NOT IMPLEMENTED
 	temp_t rorh_last_target;	///< previous set point target for rorh control
@@ -95,15 +92,24 @@ struct s_heating_circuit {
 	time_t actual_cooldown_time;	///< actual turn off cooldown time remaining
 	temp_t request_ambient;		///< current requested ambient target temp
 	temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
+	enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;
+	time_t transition_update_time;
+	temp_t actual_ambient;
+	bool set_fast_cooldown;
+	time_t set_model_tambient_tK;	///< time per Kelvin rise (seconds)
+	temp_t set_tambient_boostdelta;
 	temp_t target_wtemp;		///< current target water temp
 	temp_t set_temp_inoffset;	///< offset temp for heat source request
 	temp_t heat_request;		///< current temp request from heat source for this circuit
 	struct s_templaw_data20C tlaw_data;	///< Reference data for templaw (for 20C ambient target)
 	temp_t (*templaw)(const struct s_heating_circuit * const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
+	struct s_valve * restrict valve;///< valve for circuit (if available, otherwise it's direct)
+	struct s_pump * restrict pump;	///< pump for this circuit
 	char * restrict name;		///< name for this circuit
 };
 
 /** Boiler heatsource private structure */
+// XXX TODO: return mixing valve / isolation valve / modulating burner
 struct s_boiler_priv {
 	bool antifreeze;		///< true if anti freeze tripped
 	enum { IDLE_NEVER = 0, IDLE_FROSTONLY, IDLE_ALWAYS } idle_mode; ///< boiler off regime: NEVER: boiler runs always at least at limit_tmin, FROSTFREE: boiler turns off only in frost free, ALWAYS: boiler turns off any time there's no heat request (p.48)
@@ -140,6 +146,8 @@ struct s_heatsource {
 	temp_t temp_request;		///< current temperature request for heat source (max of all requests)
 	time_t set_sleeping_time;	///< if no request for this much time, then mark heat source as can sleep
 	time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
+	time_t set_consumer_stop_delay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
+	time_t target_consumer_stop_delay;	///< calculated stop delay
 	char * restrict name;
 	void * restrict priv;		///< pointer to source private data structure
 	int (*hs_online)(struct s_heatsource * const);	///< pointer to source private online() function

@@ -859,6 +859,7 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
  * As a special case in the plant, antifreeze takes over all states if the boiler is configured. XXX REVIEW
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler) XXX REVISIT
+ * @todo burner turn-on anticipation
  */
 static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 {
@@ -1237,7 +1238,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// if we reached this point then the circuit is active
 	
-	circuit->actual_cooldown_time = circuit->set_cooldown_time;
+	circuit->actual_cooldown_time = runtime->consumer_stop_delay;
 
 	// circuit is active, ensure pump is running
 	pump_set_state(circuit->pump, ON, 0);
@@ -1254,7 +1255,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 			circuit->rorh_update_time = now;
 		}
 		else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
-			if (now - circuit->rorh_update_time >= 60) {	// 1mn has past, update target
+			if (now - circuit->rorh_update_time >= 60) {	// 1mn has past, update target - XXX 60s resolution
 				curr_temp = temp_expw_mavg(circuit->rorh_last_target, circuit->rorh_last_target+circuit->set_wtemp_rorh, 3600, now - circuit->rorh_update_time);	// we hijack curr_temp here to save a variable
 				water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
 				circuit->rorh_last_target = water_temp;
@@ -2005,6 +2006,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_valve_l * restrict valvel;
 	int ret;
 	bool sleeping = false;
+	time_t stop_delay = 0;
 
 	if (!plant)
 		return (-EINVALID);
@@ -2050,6 +2052,9 @@ int plant_run(struct s_plant * restrict const plant)
 		}
 		if (heatsourcel->heats->could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
 			sleeping = heatsourcel->heats->could_sleep;
+		
+		// max stop delay
+		stop_delay = (heatsourcel->heats->target_consumer_stop_delay > stop_delay) ? heatsourcel->heats->target_consumer_stop_delay : stop_delay;
 	}
 
 	// run the valves
@@ -2068,5 +2073,8 @@ int plant_run(struct s_plant * restrict const plant)
 	// reflect global sleeping state
 	runtime->plant_could_sleep = sleeping;
 
+	// reflect global stop delay
+	runtime->consumer_stop_delay = stop_delay;
+	
 	return (ALL_OK);	// XXX
 }

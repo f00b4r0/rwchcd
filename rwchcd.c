@@ -146,6 +146,7 @@ static int init_process()
 	boiler->burner_1->configured = true;
 	boiler->set_burner_min_time = 2 * 60;	// XXX 2 minutes
 	heatsource->set_sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
+	heatsource->set_consumer_stop_delay = 10 * 60;	// 10mn
 	heatsource->set_runmode = RM_AUTO;	// use global setting
 	heatsource->configured = true;
 
@@ -162,11 +163,10 @@ static int init_process()
 	circuit->set_tcomfort = celsius_to_temp(20.0F);
 	circuit->set_teco = celsius_to_temp(16);
 	circuit->set_tfrostfree = celsius_to_temp(7);
-	circuit->set_outhoff_comfort = circuit->set_tcomfort - deltaK_to_temp(2);
+	circuit->set_outhoff_comfort = circuit->set_tcomfort - deltaK_to_temp(2);	// XXX should be deltas and not temps
 	circuit->set_outhoff_eco = circuit->set_teco - deltaK_to_temp(2);
 	circuit->set_outhoff_frostfree = circuit->set_tfrostfree - deltaK_to_temp(4);
 	circuit->set_outhoff_histeresis = deltaK_to_temp(1);
-	circuit->set_cooldown_time = 10 * 60;	// 10mn
 	circuit->id_temp_outgoing = 3;	// XXX VALIDATION
 	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
 	circuit->id_temp_return = 4;	// XXX VALIDATION
@@ -174,7 +174,7 @@ static int init_process()
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
 	circuit->tlaw_data.twater1 = celsius_to_temp(65);
 	circuit->tlaw_data.tout2 = celsius_to_temp(15);
-	circuit->tlaw_data.twater2 = celsius_to_temp(35);
+	circuit->tlaw_data.twater2 = celsius_to_temp(34);
 	circuit_make_linear(circuit);
 
 	// create a valve for that circuit

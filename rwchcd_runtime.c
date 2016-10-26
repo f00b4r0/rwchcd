@@ -82,7 +82,7 @@ static void outdoor_temp()
 	Runtime.t_outdoor_ltime = now;
 
 	Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
-	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + Runtime.t_outdoor_filtered)/2;	// other possible calculation: 75% of t_outdoor + 25% of t_filtered - 211p15
+	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + Runtime.t_outdoor_filtered)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_filtered, Runtime.config->building_tau, dt);
 }
 
