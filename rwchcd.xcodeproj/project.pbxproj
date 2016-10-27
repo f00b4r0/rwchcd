@@ -33,34 +33,34 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4F2D5F571D97191C00CF842D /* rwchcd_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_lcd.c; sourceTree = SOURCE_ROOT; };
+		4F2D5F571D97191C00CF842D /* rwchcd_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_lcd.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F2D5F581D97191C00CF842D /* rwchcd_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_lcd.h; sourceTree = SOURCE_ROOT; };
-		4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_config.c; sourceTree = SOURCE_ROOT; };
+		4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_config.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBAB1D8873C500D86EE7 /* rwchcd_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_config.h; sourceTree = SOURCE_ROOT; };
-		4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_runtime.c; sourceTree = SOURCE_ROOT; };
+		4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_runtime.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBAE1D8884ED00D86EE7 /* rwchcd_runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_runtime.h; sourceTree = SOURCE_ROOT; };
-		4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_lib.c; sourceTree = SOURCE_ROOT; };
-		4F3AFBB11D88867600D86EE7 /* rwchcd_lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_lib.h; sourceTree = SOURCE_ROOT; };
+		4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_lib.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		4F3AFBB11D88867600D86EE7 /* rwchcd_lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchcd_lib.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4F961F9F1D899D5100E2A8AF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
-		4F961FA01D8D66BF00E2A8AF /* rwchcd_logic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_logic.c; sourceTree = SOURCE_ROOT; };
+		4F961FA01D8D66BF00E2A8AF /* rwchcd_logic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_logic.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F961FA11D8D66BF00E2A8AF /* rwchcd_logic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_logic.h; sourceTree = SOURCE_ROOT; };
 		4FC184791DA6809E000E514B /* rwchcd_storage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_storage.c; sourceTree = SOURCE_ROOT; };
 		4FC1847A1DA6809E000E514B /* rwchcd_storage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_storage.h; sourceTree = SOURCE_ROOT; };
 		4FC1847C1DA7B2F9000E514B /* rwchcd_dbus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_dbus.c; sourceTree = SOURCE_ROOT; };
 		4FC1847D1DA7B2F9000E514B /* rwchcd_dbus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_dbus.h; sourceTree = SOURCE_ROOT; };
-		4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = rwchcd_introspection.xml; sourceTree = SOURCE_ROOT; };
+		4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; lineEnding = 0; path = rwchcd_introspection.xml; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.xml; };
 		4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = org.slashdirt.rwchcd.conf; sourceTree = SOURCE_ROOT; };
 		4FC184831DA7D19D000E514B /* rwchcd.service */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rwchcd.service; sourceTree = SOURCE_ROOT; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
-		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchc_export.h; sourceTree = SOURCE_ROOT; };
-		4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_hardware.c; sourceTree = SOURCE_ROOT; };
-		4FCD550F1D835D04003BB848 /* rwchcd_hardware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_hardware.h; sourceTree = SOURCE_ROOT; };
-		4FCD55101D835D04003BB848 /* rwchcd_plant.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_plant.c; sourceTree = SOURCE_ROOT; };
-		4FCD55111D835D04003BB848 /* rwchcd_plant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_plant.h; sourceTree = SOURCE_ROOT; };
-		4FCD55121D835D04003BB848 /* rwchcd_spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_spi.c; sourceTree = SOURCE_ROOT; };
+		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchc_export.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_hardware.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		4FCD550F1D835D04003BB848 /* rwchcd_hardware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchcd_hardware.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4FCD55101D835D04003BB848 /* rwchcd_plant.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_plant.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		4FCD55111D835D04003BB848 /* rwchcd_plant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchcd_plant.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4FCD55121D835D04003BB848 /* rwchcd_spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_spi.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4FCD55131D835D04003BB848 /* rwchcd_spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_spi.h; sourceTree = SOURCE_ROOT; };
-		4FCD55141D835D04003BB848 /* rwchcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd.c; sourceTree = SOURCE_ROOT; };
-		4FCD55151D835D04003BB848 /* rwchcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd.h; sourceTree = SOURCE_ROOT; };
+		4FCD55141D835D04003BB848 /* rwchcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		4FCD55151D835D04003BB848 /* rwchcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchcd.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

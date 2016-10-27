@@ -47,7 +47,7 @@ static int pump_online(struct s_pump * const pump)
 	if (!pump)
 		return (-EINVALID);
 	
-	if (!pump->configured)
+	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
 	return (ALL_OK);
@@ -67,19 +67,19 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
 	if (!pump)
 		return (-EINVALID);
 	
-	if (!pump->configured)
+	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!pump->online)
+	if (!pump->run.online)
 		return (-EOFFLINE);
 	
 	// apply cooldown to turn off, only if not forced.
 	// If ongoing cooldown, resume it, otherwise restore default value
 	if (!state && !force_state)
-		cooldown = pump->actual_cooldown_time ? pump->actual_cooldown_time : pump->set_cooldown_time;
+		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
 	
 	// XXX this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	pump->actual_cooldown_time = hardware_relay_set_state(pump->relay, state, cooldown);
+	pump->run.actual_cooldown_time = hardware_relay_set_state(pump->relay, state, cooldown);
 
 	return (ALL_OK);
 }
@@ -109,7 +109,7 @@ static int pump_get_state(const struct s_pump * const pump)
 	if (!pump)
 		return (-EINVALID);
 	
-	if (!pump->configured)
+	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 	
 	// XXX we could return remaining cooldown time if necessary
@@ -151,11 +151,11 @@ static int valve_reqopen_pct(struct s_valve * const valve, uint_fast8_t percent)
 		return (-EINVALID);
 	
 	// if valve is opening, add running time
-	if (OPEN == valve->request_action)
-		valve->target_course += percent;
+	if (OPEN == valve->run.request_action)
+		valve->run.target_course += percent;
 	else {
-		valve->request_action = OPEN;
-		valve->target_course = percent;
+		valve->run.request_action = OPEN;
+		valve->run.target_course = percent;
 	}
 	
 	return (ALL_OK);
@@ -173,11 +173,11 @@ static int valve_reqclose_pct(struct s_valve * const valve, uint_fast8_t percent
 		return (-EINVALID);
 	
 	// if valve is opening, add running time
-	if (CLOSE == valve->request_action)
-		valve->target_course += percent;
+	if (CLOSE == valve->run.request_action)
+		valve->run.target_course += percent;
 	else {
-		valve->request_action = CLOSE;
-		valve->target_course = percent;
+		valve->run.request_action = CLOSE;
+		valve->run.target_course = percent;
 	}
 	
 	return (ALL_OK);
@@ -196,8 +196,8 @@ static int valve_reqstop(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	valve->request_action = STOP;
-	valve->target_course = 0;
+	valve->run.request_action = STOP;
+	valve->run.target_course = 0;
 
 	return (ALL_OK);
 }
@@ -234,36 +234,36 @@ static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
 	float Kp, Ki;	// XXX PID settings
 	int ret;
 	
-	tempin1 = get_temp(valve->id_temp1);
+	tempin1 = get_temp(valve->set.id_temp1);
 	ret = validate_temp(tempin1);
 	if (ALL_OK != ret)
 		return (ret);
 	
 	// get current outpout
-	tempout = get_temp(valve->id_tempout);
+	tempout = get_temp(valve->set.id_tempout);
 	ret = validate_temp(tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
-		valve->in_deadzone = true;
+	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
+		valve->run.in_deadzone = true;
 		return (-EDEADZONE);
 	}
 	
-	valve->in_deadzone = false;
+	valve->run.in_deadzone = false;
 	
 	/* if we don't have a sensor for secondary input, guesstimate it
 	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
 	 tempin2 = tempout - delta */
-	if (valve->id_temp2 == 0) {
+	if (valve->set.id_temp2 == 0) {
 		tempin2 = tempout - deltaK_to_temp(30);	// XXX 30K delta by default
 	}
-	else if (valve->id_temp2 < 0) {
-		tempin2 = tempout - deltaK_to_temp(-(valve->id_temp2)); // XXX will need casting
+	else if (valve->set.id_temp2 < 0) {
+		tempin2 = tempout - deltaK_to_temp(-(valve->set.id_temp2)); // XXX will need casting
 	}
 	else {
-		tempin2 = get_temp(valve->id_temp2);
+		tempin2 = get_temp(valve->set.id_temp2);
 		ret = validate_temp(tempin2);
 		if (ALL_OK != ret)
 			return (ret);
@@ -314,36 +314,36 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	temp_t tempin1, tempin2, tempout, error;
 	int ret;
 
-	tempin1 = get_temp(valve->id_temp1);
+	tempin1 = get_temp(valve->set.id_temp1);
 	ret = validate_temp(tempin1);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// get current outpout
-	tempout = get_temp(valve->id_tempout);
+	tempout = get_temp(valve->set.id_tempout);
 	ret = validate_temp(tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
-		valve->in_deadzone = true;
+	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
+		valve->run.in_deadzone = true;
 		return (-EDEADZONE);
 	}
 	
-	valve->in_deadzone = false;
+	valve->run.in_deadzone = false;
 
 	/* if we don't have a sensor for secondary input, guesstimate it
 	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
 	 tempin2 = tempout - delta */
-	if (valve->id_temp2 == 0) {
+	if (valve->set.id_temp2 == 0) {
 		tempin2 = tempout - deltaK_to_temp(30);	// XXX 30K delta by default
 	}
-	else if (valve->id_temp2 < 0) {
-		tempin2 = tempout - deltaK_to_temp(-(valve->id_temp2)); // XXX will need casting
+	else if (valve->set.id_temp2 < 0) {
+		tempin2 = tempout - deltaK_to_temp(-(valve->set.id_temp2)); // XXX will need casting
 	}
 	else {
-		tempin2 = get_temp(valve->id_temp2);
+		tempin2 = get_temp(valve->set.id_temp2);
 		ret = validate_temp(tempin2);
 		if (ALL_OK != ret)
 			return (ret);
@@ -384,19 +384,19 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
 	int ret;
 	temp_t tempout;
 
-	tempout = get_temp(valve->id_tempout);
+	tempout = get_temp(valve->set.id_tempout);
 	ret = validate_temp(tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
-		valve->in_deadzone = true;
+	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
+		valve->run.in_deadzone = true;
 		valve_reqstop(valve);
 		return (-EDEADZONE);
 	}
 	
-	valve->in_deadzone = false;
+	valve->run.in_deadzone = false;
 	
 	if (target_tout > tempout)
 		valve_reqopen_full(valve);
@@ -433,27 +433,27 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	
 	vpriv->last_time = now;
 	
-	tempout = get_temp(valve->id_tempout);
+	tempout = get_temp(valve->set.id_tempout);
 	ret = validate_temp(tempout);
 	if (ALL_OK != ret)
 		return (ret);
 	
 	// apply deadzone
-	if (((tempout - valve->set_tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set_tdeadzone/2))) {
-		valve->in_deadzone = true;
+	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
+		valve->run.in_deadzone = true;
 		valve_reqstop(valve);
 		return (-EDEADZONE);
 	}
 	
-	valve->in_deadzone = false;
+	valve->run.in_deadzone = false;
 	
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
-	if (tempout < target_tout - valve->set_tdeadzone/2) {
+	if (tempout < target_tout - valve->set.tdeadzone/2) {
 		valve_reqopen_pct(valve, vpriv->set_amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
-	else if (tempout > target_tout + valve->set_tdeadzone/2) {
+	else if (tempout > target_tout + valve->set.tdeadzone/2) {
 		valve_reqclose_pct(valve, vpriv->set_amount);
 	}
 	// else stop valve
@@ -475,7 +475,7 @@ static inline int valve_tposition(struct s_valve * const valve, const temp_t tar
 	if (!valve)
 		return (-EINVALID);
 	
-	if (!valve->configured)
+	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (!valve->open || !valve->close)
@@ -499,10 +499,10 @@ static int valve_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 	
-	if (!valve->configured)
+	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!valve->set_ete_time)
+	if (!valve->set.ete_time)
 		return (-EMISCONFIGURED);
 
 	// return to idle
@@ -523,7 +523,7 @@ static int valve_offline(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 	
-	if (!valve->configured)
+	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 	
 	// close valve
@@ -550,91 +550,91 @@ static int valve_run(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (!valve->configured)
+	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!valve->online)
+	if (!valve->run.online)
 		return (-EOFFLINE);
 
-	percent_time = valve->set_ete_time/100.0F;
+	percent_time = valve->set.ete_time/100.0F;
 	
 	// calc running time from pct
-	request_runtime = (percent_time*valve->target_course);	// XXX trunc/floor REVISIT?
+	request_runtime = (percent_time*valve->run.target_course);	// XXX trunc/floor REVISIT?
 	
 	// prevent endless run
-	if (request_runtime > valve->set_ete_time*VALVE_MAX_RUNX)
-		request_runtime = valve->set_ete_time*VALVE_MAX_RUNX;
+	if (request_runtime > valve->set.ete_time*VALVE_MAX_RUNX)
+		request_runtime = valve->set.ete_time*VALVE_MAX_RUNX;
 	
 	// if we've exceeded request_runtime, request valve stop
-	runtime = now - valve->running_since;
-	if ((STOP != valve->actual_action) && (runtime >= request_runtime))
+	runtime = now - valve->run.running_since;
+	if ((STOP != valve->run.actual_action) && (runtime >= request_runtime))
 		valve_reqstop(valve);
 
 	// if we have a change of action, update counters
-	if (valve->request_action != valve->actual_action) {
+	if (valve->run.request_action != valve->run.actual_action) {
 		// update counters
-		if (OPEN == valve->actual_action) { // valve has been opening till now
-			valve->acc_close_time = 0;
-			valve->acc_open_time += runtime;
-			valve->actual_position += runtime*10/percent_time;
+		if (OPEN == valve->run.actual_action) { // valve has been opening till now
+			valve->run.acc_close_time = 0;
+			valve->run.acc_open_time += runtime;
+			valve->run.actual_position += runtime*10/percent_time;
 		}
-		else if (CLOSE == valve->actual_action) {	// valve has been closing till now
-			valve->acc_open_time = 0;
-			valve->acc_close_time += runtime;
-			valve->actual_position -= runtime*10/percent_time;
+		else if (CLOSE == valve->run.actual_action) {	// valve has been closing till now
+			valve->run.acc_open_time = 0;
+			valve->run.acc_close_time += runtime;
+			valve->run.actual_position -= runtime*10/percent_time;
 		}
 	}
 	
 	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %d, running since: %d, runtime: %d",
-	       valve->request_action, valve->actual_action, (float)valve->actual_position/10.0F, request_runtime, valve->running_since, runtime);
+	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, valve->run.running_since, runtime);
 	
 	// apply physical limits
-	if (valve->actual_position > 1000)
-		valve->actual_position = 1000;
-	else if (valve->actual_position < 0)
-		valve->actual_position = 0;
+	if (valve->run.actual_position > 1000)
+		valve->run.actual_position = 1000;
+	else if (valve->run.actual_position < 0)
+		valve->run.actual_position = 0;
 	
 	// check if stop is requested
-	if ((STOP == valve->request_action)) {
+	if ((STOP == valve->run.request_action)) {
 		hardware_relay_set_state(valve->open, OFF, 0);
 		hardware_relay_set_state(valve->close, OFF, 0);
-		valve->running_since = 0;
-		valve->actual_action = STOP;
+		valve->run.running_since = 0;
+		valve->run.actual_action = STOP;
 		return (ALL_OK);
 	}
 	
 	// otherwise check that requested runtime is past deadband
-	deadtime = percent_time * valve->set_deadband;
+	deadtime = percent_time * valve->set.deadband;
 	if (request_runtime < deadtime)
 		return (-EDEADBAND);
 
 	// check what is the requested action
-	if (OPEN == valve->request_action) {
-		if (valve->acc_open_time >= valve->set_ete_time*VALVE_MAX_RUNX) {
-			valve->true_pos = true;
-			valve->acc_open_time = valve->set_ete_time*VALVE_MAX_RUNX;
+	if (OPEN == valve->run.request_action) {
+		if (valve->run.acc_open_time >= valve->set.ete_time*VALVE_MAX_RUNX) {
+			valve->run.true_pos = true;
+			valve->run.acc_open_time = valve->set.ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
 		else {
 			hardware_relay_set_state(valve->close, OFF, 0);	// break before make
 			hardware_relay_set_state(valve->open, ON, 0);
-			if (!valve->running_since || (CLOSE == valve->actual_action))
-				valve->running_since = now;
-			valve->actual_action = OPEN;
+			if (!valve->run.running_since || (CLOSE == valve->run.actual_action))
+				valve->run.running_since = now;
+			valve->run.actual_action = OPEN;
 		}
 	}
-	else if (CLOSE == valve->request_action) {
-		if (valve->acc_close_time >= valve->set_ete_time*VALVE_MAX_RUNX) {
-			valve->true_pos = true;
-			valve->acc_close_time = valve->set_ete_time*VALVE_MAX_RUNX;
+	else if (CLOSE == valve->run.request_action) {
+		if (valve->run.acc_close_time >= valve->set.ete_time*VALVE_MAX_RUNX) {
+			valve->run.true_pos = true;
+			valve->run.acc_close_time = valve->set.ete_time*VALVE_MAX_RUNX;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
 		else {
 			hardware_relay_set_state(valve->open, OFF, 0);	// break before make
 			hardware_relay_set_state(valve->close, ON, 0);
-			if (!valve->running_since || (OPEN == valve->actual_action))
-				valve->running_since = now;
-			valve->actual_action = CLOSE;
+			if (!valve->run.running_since || (OPEN == valve->run.actual_action))
+				valve->run.running_since = now;
+			valve->run.actual_action = CLOSE;
 		}
 	}
 	
@@ -734,11 +734,11 @@ static struct s_boiler_priv * boiler_new(void)
 
 	// set some sane defaults
 	if (boiler) {
-		boiler->set_histeresis = deltaK_to_temp(6);
-		boiler->limit_tmin = celsius_to_temp(10);
-		boiler->limit_tmax = celsius_to_temp(95);
-		boiler->set_tfreeze = celsius_to_temp(5);
-		boiler->set_burner_min_time = 60 * 4;	// 4mn
+		boiler->set.histeresis = deltaK_to_temp(6);
+		boiler->set.limit_tmin = celsius_to_temp(10);
+		boiler->set.limit_tmax = celsius_to_temp(95);
+		boiler->set.t_freeze = celsius_to_temp(5);
+		boiler->set.burner_min_time = 60 * 4;	// 4mn
 	}
 
 	return (boiler);
@@ -778,20 +778,20 @@ static int boiler_hs_online(struct s_heatsource * const heat)
 	temp_t testtemp;
 	int ret;
 
-	if (!heat->configured)
+	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (!boiler)
 		return (-EINVALID);
 
 	// check that mandatory sensors are working
-	testtemp = get_temp(boiler->id_temp);
+	testtemp = get_temp(boiler->set.id_temp);
 	ret = validate_temp(testtemp);
 	if (ret)
 		goto out;
 
 	// check that mandatory settings are set
-	if (!boiler->limit_tmax)
+	if (!boiler->set.limit_tmax)
 		ret = -EMISCONFIGURED;
 
 out:
@@ -810,7 +810,7 @@ static int boiler_hs_offline(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * const boiler = heat->priv;
 
-	if (!heat->configured)
+	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (!boiler)
@@ -834,21 +834,21 @@ static int boiler_hs_offline(struct s_heatsource * const heat)
 static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 {
 	int ret;
-	const temp_t boilertemp = get_temp(boiler->id_temp);
+	const temp_t boilertemp = get_temp(boiler->set.id_temp);
 
 	ret = validate_temp(boilertemp);
 
 	if (ret)
 		return (ret);
 
-	// trip at set_tfreeze point
-	if (boilertemp <= boiler->set_tfreeze)
-		boiler->antifreeze = true;
+	// trip at set.t_freeze point
+	if (boilertemp <= boiler->set.t_freeze)
+		boiler->run.antifreeze = true;
 
-	// untrip when boiler reaches limit_tmin + histeresis/2
-	if (boiler->antifreeze) {
-		if (boilertemp > (boiler->limit_tmin + boiler->set_histeresis/2))
-			boiler->antifreeze = false;
+	// untrip when boiler reaches set.limit_tmin + histeresis/2
+	if (boiler->run.antifreeze) {
+		if (boilertemp > (boiler->set.limit_tmin + boiler->set.histeresis/2))
+			boiler->run.antifreeze = false;
 	}
 
 	return (ALL_OK);
@@ -867,7 +867,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
 	int ret;
 
-	if (!heat->configured)
+	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 	
 	if (!boiler)
@@ -878,22 +878,22 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	if (ret)
 		return (ret);
 	
-	if (!boiler->antifreeze) {	// antifreeze takes over offline mode
-		if (!heat->online)
+	if (!boiler->run.antifreeze) {	// antifreeze takes over offline mode
+		if (!heat->run.online)
 			return (-EOFFLINE);	// XXX caller must call boiler_offline() otherwise pump will not stop after antifreeze
 	}
 	
-	switch (heat->actual_runmode) {
+	switch (heat->run.runmode) {
 		case RM_OFF:
 			break;
 		case RM_COMFORT:
 		case RM_ECO:
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			target_temp = heat->temp_request;
+			target_temp = heat->run.temp_request;
 			break;
 		case RM_MANUAL:
-			target_temp = boiler->limit_tmax;	// XXX set max temp to (safely) trigger burner operation
+			target_temp = boiler->set.limit_tmax;	// XXX set max temp to (safely) trigger burner operation
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
@@ -902,29 +902,29 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	}
 	
 	// bypass target_temp if antifreeze is active
-	if (boiler->antifreeze)
-		target_temp = (target_temp < boiler->limit_tmin) ? boiler->limit_tmin : target_temp;	// max of the two
+	if (boiler->run.antifreeze)
+		target_temp = (target_temp < boiler->set.limit_tmin) ? boiler->set.limit_tmin : target_temp;	// max of the two
 	
 	// enforce limits
 	if (RWCHCD_TEMP_NOREQUEST != target_temp) {	// only if we have an actual heat request
-		if (target_temp < boiler->limit_tmin)
-			target_temp = boiler->limit_tmin;
-		else if (target_temp > boiler->limit_tmax)
-			target_temp = boiler->limit_tmax;
+		if (target_temp < boiler->set.limit_tmin)
+			target_temp = boiler->set.limit_tmin;
+		else if (target_temp > boiler->set.limit_tmax)
+			target_temp = boiler->set.limit_tmax;
 	}
 	else {	// we don't have a temp request
 		// if IDLE_NEVER, boiler always runs at min temp
-		if (IDLE_NEVER == boiler->idle_mode)
-			target_temp = boiler->limit_tmin;
+		if (IDLE_NEVER == boiler->set.idle_mode)
+			target_temp = boiler->set.limit_tmin;
 		// if IDLE_FROSTONLY, boiler runs at min temp unless RM_FROSTFREE
-		else if ((IDLE_FROSTONLY == boiler->idle_mode) && (RM_FROSTFREE != heat->actual_runmode))
-			target_temp = boiler->limit_tmin;
+		else if ((IDLE_FROSTONLY == boiler->set.idle_mode) && (RM_FROSTFREE != heat->run.runmode))
+			target_temp = boiler->set.limit_tmin;
 		// in all other cases the boiler will not be issued a heat request and will be stopped
 		else
-			heat->actual_runmode = RM_OFF;
+			heat->run.runmode = RM_OFF;
 	}
 	
-	boiler->target_temp = target_temp;
+	boiler->run.target_temp = target_temp;
 
 	return (ALL_OK);
 }
@@ -946,15 +946,15 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	temp_t boiler_temp, trip_temp, untrip_temp;
 	int ret;
 
-	if (!heat->configured)
+	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (!boiler)
 		return (-EINVALID);
 	
-	switch (heat->actual_runmode) {
+	switch (heat->run.runmode) {
 		case RM_OFF:
-			if (!boiler->antifreeze)
+			if (!boiler->run.antifreeze)
 				return (boiler_hs_offline(heat));	// Only if no antifreeze (see above)
 		case RM_COMFORT:
 		case RM_ECO:
@@ -974,39 +974,39 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, 0);
 
-	boiler_temp = get_temp(boiler->id_temp);
+	boiler_temp = get_temp(boiler->set.id_temp);
 	ret = validate_temp(boiler_temp);
 	if (ret != ALL_OK)
 		return (ret);
 
 	// safety checks
-	if (boiler_temp > boiler->limit_tmax) {
+	if (boiler_temp > boiler->set.limit_tmax) {
 		hardware_relay_set_state(boiler->burner_1, OFF, 0);
 		hardware_relay_set_state(boiler->burner_2, OFF, 0);
 		pump_set_state(boiler->loadpump, ON, FORCE);
 		return (-ESAFETY);
 	}
 
-	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->is_on, temp_to_celsius(boiler->target_temp), temp_to_celsius(boiler_temp));
+	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->run.is_on, temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
 
 	// un/trip points - XXX histeresis/2 assuming sensor will always be significantly cooler than actual output
-	if (RWCHCD_TEMP_NOREQUEST != boiler->target_temp) {	// apply trip_temp only if we have a heat request
-		trip_temp = (boiler->target_temp - boiler->set_histeresis/2);
-		if (trip_temp < boiler->limit_tmin)
-			trip_temp = boiler->limit_tmin;
+	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {	// apply trip_temp only if we have a heat request
+		trip_temp = (boiler->run.target_temp - boiler->set.histeresis/2);
+		if (trip_temp < boiler->set.limit_tmin)
+			trip_temp = boiler->set.limit_tmin;
 	}
 	else
 		trip_temp = 0;
 	
-	untrip_temp = (boiler->target_temp + boiler->set_histeresis/2);
-	if (untrip_temp > boiler->limit_tmax)
-		untrip_temp = boiler->limit_tmax;
+	untrip_temp = (boiler->run.target_temp + boiler->set.histeresis/2);
+	if (untrip_temp > boiler->set.limit_tmax)
+		untrip_temp = boiler->set.limit_tmax;
 	
 	// burner control
 	if (boiler_temp < trip_temp)		// trip condition
 		hardware_relay_set_state(boiler->burner_1, ON, 0);	// immediate start
 	else if (boiler_temp > untrip_temp)	// untrip condition
-		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set_burner_min_time);	// delayed stop
+		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
 
 	return (ALL_OK);
 }
@@ -1027,7 +1027,7 @@ static int heatsource_online(struct s_heatsource * const heat)
 	if (!heat)
 		return (-EINVALID);
 
-	if (NONE == heat->type)	// type NONE, nothing to do
+	if (NONE == heat->set.type)	// type NONE, nothing to do
 		return (ALL_OK);
 	
 	if (heat->hs_online)
@@ -1050,9 +1050,9 @@ static int heatsource_offline(struct s_heatsource * const heat)
 	if (!heat)
 		return (-EINVALID);
 
-	heat->actual_runmode = RM_OFF;
+	heat->run.runmode = RM_OFF;
 
-	if (NONE == heat->type)	// type NONE, nothing to do
+	if (NONE == heat->set.type)	// type NONE, nothing to do
 		return (ALL_OK);
 	
 	if (heat->hs_offline)
@@ -1070,10 +1070,10 @@ static int heatsource_run(struct s_heatsource * const heat)
 	if (!heat)
 		return (-EINVALID);
 
-	if (!heat->configured)
+	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (NONE == heat->type)	// type NONE, nothing to do
+	if (NONE == heat->set.type)	// type NONE, nothing to do
 		return (ALL_OK);
 	
 	if (heat->hs_run)
@@ -1115,7 +1115,7 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 	t_output = source_temp * slope + offset;
 
 	// shift output based on actual target temperature
-	curve_shift = (circuit->target_ambient - celsius_to_temp(20)) * (1 - slope);
+	curve_shift = (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - slope);
 	t_output += curve_shift;
 
 	return (t_output);
@@ -1136,17 +1136,17 @@ static int circuit_online(struct s_heating_circuit * const circuit)
 	if (!circuit)
 		return (-EINVALID);
 
-	if (!circuit->configured)
+	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
 	// check that mandatory sensors are working
-	testtemp = get_temp(circuit->id_temp_outgoing);
+	testtemp = get_temp(circuit->set.id_temp_outgoing);
 	ret = validate_temp(testtemp);
 	if (ret)
 		goto out;
 
 	// check that mandatory settings are set
-	if (!circuit->limit_wtmax)
+	if (!circuit->set.limit_wtmax)
 		ret = -EMISCONFIGURED;
 
 out:
@@ -1165,12 +1165,12 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	if (!circuit)
 		return (-EINVALID);
 
-	if (!circuit->configured)
+	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	circuit->heat_request = RWCHCD_TEMP_NOREQUEST;
-	circuit->target_wtemp = 0;
-	circuit->actual_cooldown_time = 0;
+	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+	circuit->run.target_wtemp = 0;
+	circuit->run.actual_cooldown_time = 0;
 
 	if (circuit->pump)
 		pump_offline(circuit->pump);
@@ -1178,7 +1178,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 	if (circuit->valve)
 		valve_offline(circuit->valve);
 
-	circuit->actual_runmode = RM_OFF;
+	circuit->run.runmode = RM_OFF;
 
 	return (ALL_OK);
 }
@@ -1189,7 +1189,7 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
  * @param circuit target circuit
  * @return exec status
  * XXX safety for heating floor if implementing positive consummer_shift()
- * @warning circuit->target_ambient must be properly set before this runs
+ * @warning circuit->run.target_ambient must be properly set before this runs
  */
 static int circuit_run(struct s_heating_circuit * const circuit)
 {
@@ -1201,21 +1201,21 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	if (!circuit)
 		return (-EINVALID);
 
-	if (!circuit->configured)
+	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!circuit->online)
+	if (!circuit->run.online)
 		return (-EOFFLINE);
 	
 	// handle special runmode cases
-	switch (circuit->actual_runmode) {
+	switch (circuit->run.runmode) {
 		case RM_OFF:
-			if (circuit->actual_cooldown_time > 0) {	// delay offlining
+			if (circuit->run.actual_cooldown_time > 0) {	// delay offlining
 				// disable heat request from this circuit
-				circuit->heat_request = RWCHCD_TEMP_NOREQUEST;
+				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				// decrement counter
-				circuit->actual_cooldown_time -= (now - circuit->last_run_time);
-				dbgmsg("in cooldown, remaining: %d", circuit->actual_cooldown_time);
+				circuit->run.actual_cooldown_time -= (now - circuit->run.last_run_time);
+				dbgmsg("in cooldown, remaining: %d", circuit->run.actual_cooldown_time);
 				// stop processing: maintain current wtemp
 				goto valve;
 			}
@@ -1238,7 +1238,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// if we reached this point then the circuit is active
 	
-	circuit->actual_cooldown_time = runtime->consumer_stop_delay;
+	circuit->run.actual_cooldown_time = runtime->consumer_stop_delay;
 
 	// circuit is active, ensure pump is running
 	pump_set_state(circuit->pump, ON, 0);
@@ -1247,53 +1247,53 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
 	// apply rate of rise limitation if any: update temp every minute
-	if (circuit->set_wtemp_rorh) {
-		curr_temp = get_temp(circuit->id_temp_outgoing);
-		if (!circuit->rorh_update_time) {	// first sample: init to current
+	if (circuit->set.wtemp_rorh) {
+		curr_temp = get_temp(circuit->set.id_temp_outgoing);
+		if (!circuit->run.rorh_update_time) {	// first sample: init to current
 			water_temp = curr_temp;
-			circuit->rorh_last_target = water_temp;
-			circuit->rorh_update_time = now;
+			circuit->run.rorh_last_target = water_temp;
+			circuit->run.rorh_update_time = now;
 		}
 		else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
-			if (now - circuit->rorh_update_time >= 60) {	// 1mn has past, update target - XXX 60s resolution
-				curr_temp = temp_expw_mavg(circuit->rorh_last_target, circuit->rorh_last_target+circuit->set_wtemp_rorh, 3600, now - circuit->rorh_update_time);	// we hijack curr_temp here to save a variable
+			if (now - circuit->run.rorh_update_time >= 60) {	// 1mn has past, update target - XXX 60s resolution
+				curr_temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);	// we hijack curr_temp here to save a variable
 				water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
-				circuit->rorh_last_target = water_temp;
-				circuit->rorh_update_time = now;
+				circuit->run.rorh_last_target = water_temp;
+				circuit->run.rorh_update_time = now;
 			}
 		}
 		else	// request for cooler or same temp
-			circuit->rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
+			circuit->run.rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
 	}
 
 	dbgmsg("request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f",
-	       temp_to_celsius(circuit->request_ambient), temp_to_celsius(circuit->target_ambient),
-	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->id_temp_outgoing)),
-	       temp_to_celsius(get_temp(circuit->id_temp_return)));
+	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
+	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
+	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
 
 	// enforce limits
-	if (water_temp < circuit->limit_wtmin)
-		water_temp = circuit->limit_wtmin;	// XXX indicator for flooring
-	else if (water_temp > circuit->limit_wtmax)
-		water_temp = circuit->limit_wtmax;	// XXX indicator for ceiling
+	if (water_temp < circuit->set.limit_wtmin)
+		water_temp = circuit->set.limit_wtmin;	// XXX indicator for flooring
+	else if (water_temp > circuit->set.limit_wtmax)
+		water_temp = circuit->set.limit_wtmax;	// XXX indicator for ceiling
 
 	// save current target water temp
-	circuit->target_wtemp = water_temp;
+	circuit->run.target_wtemp = water_temp;
 
 	// apply heat request: water temp + offset
-	circuit->heat_request = water_temp + circuit->set_temp_inoffset;
+	circuit->run.heat_request = water_temp + circuit->set.temp_inoffset;
 
 valve:
 	// adjust valve position if necessary
-	if (circuit->valve && circuit->valve->configured) {
-		ret = valve_tposition(circuit->valve, circuit->target_wtemp);
+	if (circuit->valve && circuit->valve->set.configured) {
+		ret = valve_tposition(circuit->valve, circuit->run.target_wtemp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
 			goto out;
 	}
 
 	ret = ALL_OK;
 out:
-	circuit->last_run_time = now;
+	circuit->run.last_run_time = now;
 	return (ret);
 }
 
@@ -1329,21 +1329,21 @@ static int dhwt_online(struct s_dhw_tank * const dhwt)
 	if (!dhwt)
 		return (-EINVALID);
 
-	if (!dhwt->configured)
+	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
 	// check that mandatory sensors are working
-	testtemp = get_temp(dhwt->id_temp_bottom);
+	testtemp = get_temp(dhwt->set.id_temp_bottom);
 	ret = validate_temp(testtemp);
 	if (ALL_OK != ret) {
-		testtemp = get_temp(dhwt->id_temp_top);
+		testtemp = get_temp(dhwt->set.id_temp_top);
 		ret = validate_temp(testtemp);
 	}
 	if (ret)
 		goto out;
 
 	// check that mandatory settings are set
-	if (!dhwt->limit_wintmax || !dhwt->limit_tmax)
+	if (!dhwt->set.limit_wintmax || !dhwt->set.limit_tmax)
 		ret = -EMISCONFIGURED;
 
 out:
@@ -1362,14 +1362,14 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (!dhwt)
 		return (-EINVALID);
 
-	if (!dhwt->configured)
+	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
-	dhwt->heat_request = RWCHCD_TEMP_NOREQUEST;
-	dhwt->target_temp = 0;
-	dhwt->force_on = false;
-	dhwt->charge_on = false;
-	dhwt->recycle_on = false;
+	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+	dhwt->run.target_temp = 0;
+	dhwt->run.force_on = false;
+	dhwt->run.charge_on = false;
+	dhwt->run.recycle_on = false;
 
 	if (dhwt->feedpump)
 		pump_offline(dhwt->feedpump);
@@ -1380,7 +1380,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (dhwt->selfheater)
 		hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
-	dhwt->actual_runmode = RM_OFF;
+	dhwt->run.runmode = RM_OFF;
 
 	return (ALL_OK);
 }
@@ -1403,13 +1403,13 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!dhwt)
 		return (-EINVALID);
 
-	if (!dhwt->configured)
+	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!dhwt->online)
+	if (!dhwt->run.online)
 		return (-EOFFLINE);
 
-	switch (dhwt->actual_runmode) {
+	switch (dhwt->run.runmode) {
 		case RM_OFF:
 			return (dhwt_offline(dhwt));
 		case RM_COMFORT:
@@ -1431,17 +1431,17 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	// if we reached this point then the dhwt is active
 
 	// handle recycle loop
-	if (dhwt->recycle_on)
+	if (dhwt->run.recycle_on)
 		pump_set_state(dhwt->recyclepump, ON, NOFORCE);
 	else
 		pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
 
 	// check which sensors are available
-	bottom_temp = get_temp(dhwt->id_temp_bottom);
+	bottom_temp = get_temp(dhwt->set.id_temp_bottom);
 	ret = validate_temp(bottom_temp);
 	if (ALL_OK == ret)
 		valid_tbottom = true;
-	top_temp = get_temp(dhwt->id_temp_top);
+	top_temp = get_temp(dhwt->set.id_temp_top);
 	ret = validate_temp(top_temp);
 	if (ALL_OK == ret)
 		valid_ttop = true;
@@ -1451,39 +1451,39 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		return (ret);	// return last error
 
 	dbgmsg("charge: %d, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
-	       dhwt->charge_on, temp_to_celsius(dhwt->target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+	       dhwt->run.charge_on, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
 	   untrip at target (preferably on high sensor). */
-	if (!dhwt->charge_on) {	// no charge in progress
+	if (!dhwt->run.charge_on) {	// no charge in progress
 		if (valid_tbottom)	// prefer bottom temp if available
 			curr_temp = bottom_temp;
 		else
 			curr_temp = top_temp;
 
 		// if charge not in progress, trip if forced or at (target temp - histeresis)
-		if (dhwt->force_on || (curr_temp < (dhwt->target_temp - dhwt->set_histeresis))) {
-			if (runtime->plant_could_sleep && dhwt->selfheater && dhwt->selfheater->configured) {
+		if (dhwt->run.force_on || (curr_temp < (dhwt->run.target_temp - dhwt->set.histeresis))) {
+			if (runtime->plant_could_sleep && dhwt->selfheater && dhwt->selfheater->set.configured) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			}
 			else {	// run from plant heat source
 				// calculate necessary water feed temp: target tank temp + offset
-				water_temp = dhwt->target_temp + dhwt->set_temp_inoffset;
+				water_temp = dhwt->run.target_temp + dhwt->set.temp_inoffset;
 
 				// enforce limits
-				if (water_temp > dhwt->limit_wintmax)
-					water_temp = dhwt->limit_wintmax;
+				if (water_temp > dhwt->set.limit_wintmax)
+					water_temp = dhwt->set.limit_wintmax;
 
 				// apply heat request
-				dhwt->heat_request = water_temp;
+				dhwt->run.heat_request = water_temp;
 
 				// turn feedpump on
 				pump_set_state(dhwt->feedpump, ON, NOFORCE);
 			}
 			// mark heating in progress
-			dhwt->charge_on = true;
+			dhwt->run.charge_on = true;
 		}
 	}
 	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
@@ -1493,18 +1493,18 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			curr_temp = bottom_temp;
 
 		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
-		if (curr_temp > dhwt->target_temp) {
+		if (curr_temp > dhwt->run.target_temp) {
 			// stop self-heater (if any)
 			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
 			test = FORCE;	// by default, force feedpump immediate turn off
 
 			// if available, test for inlet water temp
-			water_temp = get_temp(dhwt->id_temp_win);
+			water_temp = get_temp(dhwt->set.id_temp_win);
 			ret = validate_temp(water_temp);
 			if (ALL_OK == ret) {
 				// if water feed temp is > dhwt target_temp, we can apply cooldown
-				if (water_temp > dhwt->target_temp)
+				if (water_temp > dhwt->run.target_temp)
 					test = NOFORCE;
 			}
 
@@ -1512,13 +1512,13 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			pump_set_state(dhwt->feedpump, OFF, test);
 
 			// clear heat request
-			dhwt->heat_request = RWCHCD_TEMP_NOREQUEST;
+			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 
 			// untrip force charge: XXX force can run only once
-			dhwt->force_on = false;
+			dhwt->run.force_on = false;
 
 			// mark heating as done
-			dhwt->charge_on = false;
+			dhwt->run.charge_on = false;
 		}
 	}
 
@@ -1767,7 +1767,7 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 	if (!source->priv && (NONE != type))
 		goto fail;
 
-	source->type = type;
+	source->set.type = type;
 
 	// create a new source element
 	sourceelement = calloc(1, sizeof(*sourceelement));
@@ -1922,11 +1922,11 @@ int plant_online(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("pump_online failed, id: %d (%d)", pumpl->id, ret);
 			pump_offline(pumpl->pump);
-			pumpl->pump->online = false;
+			pumpl->pump->run.online = false;
 			finalret = ret;
 		}
 		else
-			pumpl->pump->online = true;
+			pumpl->pump->run.online = true;
 	}
 
 	// valves
@@ -1936,11 +1936,11 @@ int plant_online(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("valve_online failed, id: %d (%d)", valvel->id, ret);
 			valve_offline(valvel->valve);
-			valvel->valve->online = false;
+			valvel->valve->run.online = false;
 			finalret = ret;
 		}
 		else
-			valvel->valve->online = true;
+			valvel->valve->run.online = true;
 	}
 	
 	// next deal with the consummers
@@ -1951,11 +1951,11 @@ int plant_online(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
 			circuit_offline(circuitl->circuit);
-			circuitl->circuit->online = false;
+			circuitl->circuit->run.online = false;
 			finalret = ret;
 		}
 		else
-			circuitl->circuit->online = true;
+			circuitl->circuit->run.online = true;
 	}
 
 	// then dhwt
@@ -1965,11 +1965,11 @@ int plant_online(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("dhwt_online failed, id: %d (%d)", dhwtl->id, ret);
 			dhwt_offline(dhwtl->dhwt);
-			dhwtl->dhwt->online = false;
+			dhwtl->dhwt->run.online = false;
 			finalret = ret;
 		}
 		else
-			dhwtl->dhwt->online = true;
+			dhwtl->dhwt->run.online = true;
 	}
 
 	// finally online the heat source
@@ -1979,11 +1979,11 @@ int plant_online(struct s_plant * restrict const plant)
 		// XXX error handling
 		dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
 		heatsource_offline(heatsourcel->heats);
-		heatsourcel->heats->online = false;
+		heatsourcel->heats->run.online = false;
 		finalret = ret;
 	}
 	else
-		heatsourcel->heats->online = true;
+		heatsourcel->heats->run.online = true;
 
 	return (finalret);
 }
@@ -2023,7 +2023,7 @@ int plant_run(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("circuit_run failed: %d", ret);
 			circuit_offline(circuitl->circuit);
-			circuitl->circuit->online = false;
+			circuitl->circuit->run.online = false;
 		}
 	}
 
@@ -2035,7 +2035,7 @@ int plant_run(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("dhwt_run failed: %d", ret);
 			dhwt_offline(dhwtl->dhwt);
-			dhwtl->dhwt->online = false;
+			dhwtl->dhwt->run.online = false;
 		}
 	}
 
@@ -2048,13 +2048,13 @@ int plant_run(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("heatsource_run failed: %d", ret);
 			heatsource_offline(heatsourcel->heats);
-			heatsourcel->heats->online = false;
+			heatsourcel->heats->run.online = false;
 		}
-		if (heatsourcel->heats->could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
-			sleeping = heatsourcel->heats->could_sleep;
+		if (heatsourcel->heats->run.could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
+			sleeping = heatsourcel->heats->run.could_sleep;
 		
 		// max stop delay
-		stop_delay = (heatsourcel->heats->target_consumer_stop_delay > stop_delay) ? heatsourcel->heats->target_consumer_stop_delay : stop_delay;
+		stop_delay = (heatsourcel->heats->run.target_consumer_stop_delay > stop_delay) ? heatsourcel->heats->run.target_consumer_stop_delay : stop_delay;
 	}
 
 	// run the valves
@@ -2066,7 +2066,7 @@ int plant_run(struct s_plant * restrict const plant)
 			// XXX error handling
 			dbgerr("valve_run failed: %d", ret);
 			valve_offline(valvel->valve);
-			valvel->valve->online = false;
+			valvel->valve->run.online = false;
 		}
 	}
 	

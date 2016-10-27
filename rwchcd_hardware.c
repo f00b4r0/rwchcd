@@ -143,9 +143,9 @@ static int hardware_restore(void)
 
 		for (i=0; i<ARRAY_SIZE(Relays); i++) {
 			if (Relays[i]) {
-				Relays[i]->on_tottime += relayptr->on_tottime;
-				Relays[i]->off_tottime += relayptr->off_tottime;
-				Relays[i]->cycles += relayptr->cycles;
+				Relays[i]->run.on_tottime += relayptr->run.on_tottime;
+				Relays[i]->run.off_tottime += relayptr->run.off_tottime;
+				Relays[i]->run.cycles += relayptr->run.cycles;
 			}
 			relayptr++;
 		}
@@ -283,36 +283,36 @@ int hardware_rwchcrelays_write(void)
 			continue;
 
 		// update state counters at state change
-		if (relay->turn_on) {	// turn on
-			if (!relay->is_on) {	// relay is currently off
-				relay->cycles++;	// increment cycle count
-				relay->is_on = true;
-				relay->on_since = now;
-				if (relay->off_since)
-					relay->off_tottime += now - relay->off_since;
-				relay->off_since = 0;
+		if (relay->run.turn_on) {	// turn on
+			if (!relay->run.is_on) {	// relay is currently off
+				relay->run.cycles++;	// increment cycle count
+				relay->run.is_on = true;
+				relay->run.on_since = now;
+				if (relay->run.off_since)
+					relay->run.off_tottime += now - relay->run.off_since;
+				relay->run.off_since = 0;
 			}
 		}
 		else {	// turn off
-			if (relay->is_on) {	// relay is currently on
-				relay->is_on = false;
-				relay->off_since = now;
-				if (relay->on_since)
-					relay->on_tottime += now - relay->on_since;
-				relay->on_since = 0;
+			if (relay->run.is_on) {	// relay is currently on
+				relay->run.is_on = false;
+				relay->run.off_since = now;
+				if (relay->run.on_since)
+					relay->run.on_tottime += now - relay->run.on_since;
+				relay->run.on_since = 0;
 			}
 		}
 
 		// update state time counter
-		relay->state_time = relay->is_on ? (now - relay->on_since) : (now - relay->off_since);
+		relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 		// extract relay id XXX REVISIT
-		rid = relay->id - 1;
+		rid = relay->set.id - 1;
 		if (rid > 6)
 			rid++;	// skip the hole
 
 		// set state for triac control
-		if (relay->turn_on)
+		if (relay->run.turn_on)
 			setbit(rWCHC_relays.ALL, rid);
 		else
 			clrbit(rWCHC_relays.ALL, rid);
@@ -373,7 +373,7 @@ struct s_stateful_relay * hardware_relay_new(void)
 
 	// at creation relay is off
 	if (relay)
-		relay->off_since = time(NULL);
+		relay->run.off_since = time(NULL);
 
 	return (relay);
 }
@@ -388,7 +388,7 @@ void hardware_relay_del(struct s_stateful_relay * relay)
 	if (!relay)
 		return;
 
-	Relays[relay->id-1] = NULL;
+	Relays[relay->set.id-1] = NULL;
 
 	free(relay->name);
 	relay->name = NULL;
@@ -412,7 +412,7 @@ int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast
 	if (Relays[id-1])
 		return (-EEXISTS);
 
-	relay->id = id;
+	relay->set.id = id;
 	Relays[id-1] = relay;
 
 	return (ALL_OK);
@@ -433,24 +433,24 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 	if (!relay)
 		return (-EINVALID);
 
-	if (!relay->configured)
+	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
 
 	// update state state request if delay permits
 	if (turn_on) {
-		if (!relay->is_on) {
-			if ((now - relay->off_since) < change_delay)
-				return (change_delay - (now - relay->off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+		if (!relay->run.is_on) {
+			if ((now - relay->run.off_since) < change_delay)
+				return (change_delay - (now - relay->run.off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
 
-			relay->turn_on = true;
+			relay->run.turn_on = true;
 		}
 	}
 	else {	// turn off
-		if (relay->is_on) {
-			if ((now - relay->on_since) < change_delay)
-				return (change_delay - (now - relay->on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+		if (relay->run.is_on) {
+			if ((now - relay->run.on_since) < change_delay)
+				return (change_delay - (now - relay->run.on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
 
-			relay->turn_on = false;
+			relay->run.turn_on = false;
 		}
 	}
 
@@ -464,13 +464,13 @@ int hardware_relay_get_state(struct s_stateful_relay * const relay)
 	if (!relay)
 		return (-EINVALID);
 
-	if (!relay->configured)
+	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
 
 	// update state time counter
-	relay->state_time = relay->is_on ? (now - relay->on_since) : (now - relay->off_since);
+	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
-	return (relay->is_on);
+	return (relay->run.is_on);
 }
 
 /**
