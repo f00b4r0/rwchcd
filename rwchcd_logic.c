@@ -174,6 +174,8 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 					ambient_temp = (circuit->run.actual_ambient - low_temp) * expf(-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
 					circuit->run.am_update_time = now;
 				}
+				else
+					ambient_temp = circuit->run.actual_ambient;
 				break;
 			case TRANS_UP:
 				// transition up, apply linear model
@@ -183,6 +185,8 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 						ambient_temp = circuit->run.actual_ambient + (elapsed_time * 1/circuit->set.am_tambient_tK)*(1+circuit->set.tambient_boostdelta/request_temp);	// works even if boostdelta is not set
 						circuit->run.am_update_time = now;
 					}
+					else
+						ambient_temp = circuit->run.actual_ambient;
 					break;
 				}
 				// if settings are insufficient, model can't run, fallback to no transition
