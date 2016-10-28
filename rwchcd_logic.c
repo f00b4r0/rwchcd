@@ -47,12 +47,12 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		case RM_ECO:
 			temp_trigger = circuit->set.outhoff_eco;
 			break;
+		case RM_DHWONLY:
 		case RM_FROSTFREE:
 			temp_trigger = circuit->set.outhoff_frostfree;
 			break;
 		case RM_OFF:
 		case RM_AUTO:
-		case RM_DHWONLY:
 		case RM_MANUAL:
 		case RM_UNKNOWN:
 		default:
