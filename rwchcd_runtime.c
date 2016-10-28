@@ -194,7 +194,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			Runtime.dhwmode = RM_MANUAL;
 			break;
 		case SYS_DHWONLY:
-			Runtime.runmode = RM_FROSTFREE;
+			Runtime.runmode = RM_DHWONLY;
 			Runtime.dhwmode = RM_COMFORT;	// XXX by default in comfort mode until further settings
 			break;
 		case SYS_UNKNOWN:
