@@ -41,6 +41,8 @@
 
 static int master_thread_sem = 0;
 
+static const char[] Version = SVN_REV;	///< SVN_REV is defined in makefile
+
 /**
  * Daemon signal handler.
  * Handles SIGINT and SIGTERM for graceful shutdown.
@@ -323,6 +325,8 @@ int main(void)
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	int ret;
+
+	dbgmsg("Revision %s starting", Version);
 
 	// setup threads
 	pthread_attr_init(&attr);
