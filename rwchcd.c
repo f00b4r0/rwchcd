@@ -41,7 +41,7 @@
 
 static int master_thread_sem = 0;
 
-static const char[] Version = SVN_REV;	///< SVN_REV is defined in makefile
+static const char Version[] = SVN_REV;	///< SVN_REV is defined in makefile
 
 /**
  * Daemon signal handler.
