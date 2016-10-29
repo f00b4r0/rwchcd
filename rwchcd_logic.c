@@ -171,7 +171,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 				// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 				// all necessary data is _always_ available, no need to special case here
 				if (elapsed_time >= 600) {	// XXX every 10mn
-					ambient_temp = (float)(circuit->run.actual_ambient - low_temp) * expf(-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
+					ambient_temp = (circuit->run.actual_ambient - low_temp) * expf((float)-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
 					circuit->run.am_update_time = now;
 				}
 				else
