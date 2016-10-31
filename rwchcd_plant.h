@@ -91,7 +91,7 @@ struct s_heating_circuit {
 		tempid_t id_temp_return;	///< return temp sensor for this circuit
 		tempid_t id_temp_ambient;	///< ambient temp sensor related to this circuit
 		short ambient_factor;		///< influence of ambient temp on templaw calculations, in percent
-		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour -- XXX NOT IMPLEMENTED
+		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour
 		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target)
 		time_t am_tambient_tK;		///< ambient model: time necessary for 1 Kelvin temperature rise (seconds)
 		temp_t tambient_boostdelta;	///< temperature delta applied during boost turn-on
@@ -212,10 +212,11 @@ struct s_dhw_tank {
 		bool online;			///< true if tank is available for use (under software management)
 		bool recycle_on;		///< true if recycle pump should be running
 		bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
-		bool charge_on;			///< true if a charge cycle is in progress
+		bool legionella_on;		///< true if anti-legionella charge is required
 		enum e_runmode runmode;		///< dhwt actual (computed) runmode
 		temp_t target_temp;		///< current target temp for this tank
 		temp_t heat_request;		///< current temp request from heat source for this circuit
+		time_t charge_since;		///< starting time of current charge, 0 if no charge in progress
 	} run;
 	struct s_solar_heater * restrict solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
 	struct s_pump * restrict feedpump;	///< feed pump for this tank

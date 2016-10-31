@@ -917,14 +917,15 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 
 /**
  * Implement basic single allure boiler.
- * As a special case in the plant, antifreeze takes over all states if the boiler is configured. XXX REVIEW
+ * @note As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
+ * @note the boiler trip/untrip points are target +/- histeresis/2
  * @param heat heatsource parent structure
- * @return exec status. If error action must be taken (e.g. offline boiler) XXX REVISIT
+ * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
- * @todo XXX implmement 2nd allure (p.51)
- * @todo XXX implemment consummer inhibit signal for cool startup
- * @todo XXX implement consummer force signal for overtemp cooldown
- * @todo XXX implement limit on return temp (p.55/56)
+ * @todo XXX TODO: implement 2nd allure (p.51)
+ * @todo XXX TODO: implement consummer inhibit signal for cool startup
+ * @todo XXX TODO: implement consummer force signal for overtemp cooldown
+ * @todo XXX TODO: implement limit on return temp (p.55/56)
  */
 static int boiler_hs_run(struct s_heatsource * const heat)
 {
@@ -972,7 +973,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->run.is_on, temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
 
-	// un/trip points - XXX histeresis/2 assuming sensor will always be significantly cooler than actual output
+	// un/trip points - histeresis/2 (common practice), assuming sensor will always be significantly cooler than actual output
 	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {	// apply trip_temp only if we have a heat request
 		trip_temp = (boiler->run.target_temp - boiler->set.histeresis/2);
 		if (trip_temp < boiler->set.limit_tmin)
@@ -1051,8 +1052,11 @@ static int heatsource_offline(struct s_heatsource * const heat)
 }
 
 /**
- * XXX currently supports single heat source, all consummers connected to it
- * XXX Honoring SYSMODE and online is left to private routines
+ * Run heatsource.
+ * XXX TODO: currently supports single heat source, all consummers connected to it
+ * @note Honoring SYSMODE is left to private routines
+ * @param heat target heatsource
+ * @return exec status
  */
 static int heatsource_run(struct s_heatsource * const heat)
 {
@@ -1262,9 +1266,9 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// enforce limits
 	if (water_temp < circuit->set.limit_wtmin)
-		water_temp = circuit->set.limit_wtmin;	// XXX indicator for flooring
+		water_temp = circuit->set.limit_wtmin;
 	else if (water_temp > circuit->set.limit_wtmax)
-		water_temp = circuit->set.limit_wtmax;	// XXX indicator for ceiling
+		water_temp = circuit->set.limit_wtmax;
 
 	// save current target water temp
 	circuit->run.target_wtemp = water_temp;
@@ -1357,8 +1361,9 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	dhwt->run.target_temp = 0;
 	dhwt->run.force_on = false;
-	dhwt->run.charge_on = false;
 	dhwt->run.recycle_on = false;
+	dhwt->run.legionella_on = false;
+	dhwt->run.charge_since = 0;
 
 	if (dhwt->feedpump)
 		pump_offline(dhwt->feedpump);
@@ -1387,6 +1392,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t water_temp, top_temp, bottom_temp, curr_temp;
 	bool valid_ttop = false, valid_tbottom = false, test;
+	const time_t now = time(NULL);
 	int ret = -EGENERIC;
 
 	if (!dhwt)
@@ -1409,7 +1415,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			pump_set_state(dhwt->feedpump, ON, FORCE);
 			pump_set_state(dhwt->recyclepump, ON, FORCE);
 			hardware_relay_set_state(dhwt->selfheater, ON, 0);
-			return (ALL_OK);	//XXX REVISIT
+			return (ALL_OK);
 		case RM_AUTO:
 		case RM_DHWONLY:
 		case RM_UNKNOWN:
@@ -1439,13 +1445,13 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
-	dbgmsg("charge: %d, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
-	       dhwt->run.charge_on, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+	dbgmsg("charge since: %d, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
+	       dhwt->run.charge_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
 	   untrip at target (preferably on high sensor). */
-	if (!dhwt->run.charge_on) {	// no charge in progress
+	if (!dhwt->run.charge_since) {	// no charge in progress
 		if (valid_tbottom)	// prefer bottom temp if available
 			curr_temp = bottom_temp;
 		else
@@ -1471,8 +1477,9 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				// turn feedpump on
 				pump_set_state(dhwt->feedpump, ON, NOFORCE);
 			}
+			
 			// mark heating in progress
-			dhwt->run.charge_on = true;
+			dhwt->run.charge_since = now;
 		}
 	}
 	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
@@ -1481,8 +1488,19 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		else
 			curr_temp = bottom_temp;
 
-		// if heating in progress, untrip at target temp: stop all heat input (ensures they're all off at switchover)
-		if (curr_temp > dhwt->run.target_temp) {
+		// untrip conditions
+		test = false;
+
+		// if heating gone overtime, untrip
+		if ((dhwt->set.limit_chargetime) && ((now - dhwt->run.charge_since) > dhwt->set.limit_chargetime))
+			test = true;
+
+		// if heating in progress, untrip at target temp
+		if (curr_temp > dhwt->run.target_temp)
+			test = true;
+
+		// stop all heat input (ensures they're all off at switchover)
+		if (test) {
 			// stop self-heater (if any)
 			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
@@ -1507,7 +1525,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			dhwt->run.force_on = false;
 
 			// mark heating as done
-			dhwt->run.charge_on = false;
+			dhwt->run.charge_since = 0;
 		}
 	}
 
@@ -1979,11 +1997,10 @@ int plant_online(struct s_plant * restrict const plant)
 
 /**
  XXX reduce valve if boiler too low
- XXX degraded mode (when sensors are disconnected)
- XXX keep sensor history
- XXX keep running state across power loss?
- XXX summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
- XXX error reporting and handling
+ XXX TODO: degraded mode (when sensors are disconnected)
+ XXX TODO: keep sensor history
+ XXX TODO: summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
+ XXX TODO: error reporting and handling
  */
 int plant_run(struct s_plant * restrict const plant)
 {

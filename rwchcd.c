@@ -164,7 +164,7 @@ static int init_process()
 	circuit->set.t_comfort = celsius_to_temp(20.0F);
 	circuit->set.t_eco = celsius_to_temp(16);
 	circuit->set.t_frostfree = celsius_to_temp(7);
-	circuit->set.outhoff_comfort = circuit->set.t_comfort - deltaK_to_temp(2);	// XXX should be deltas and not temps
+	circuit->set.outhoff_comfort = circuit->set.t_comfort - deltaK_to_temp(2);	// XXX should be deltas and not temps ?
 	circuit->set.outhoff_eco = circuit->set.t_eco - deltaK_to_temp(2);
 	circuit->set.outhoff_frostfree = circuit->set.t_frostfree - deltaK_to_temp(4);
 	circuit->set.outhoff_histeresis = deltaK_to_temp(1);

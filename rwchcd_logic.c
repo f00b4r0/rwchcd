@@ -279,7 +279,11 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 		default:
 			return (-EINVALIDMODE);
 	}
-	
+
+	// if anti-legionella charge is requested, enforce temp
+	if (dhwt->run.legionella_on)	// XXX TODO: handle untrip
+		target_temp = dhwt->set.t_legionella;
+
 	// enforce limits on dhw temp
 	if (target_temp < dhwt->set.limit_tmin)
 		target_temp = dhwt->set.limit_tmin;
