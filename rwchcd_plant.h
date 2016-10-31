@@ -21,7 +21,7 @@ struct s_pump {
 		time_t cooldown_time;		///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
 	} set;
 	struct {
-		bool online;			///< true if pump is operational
+		bool online;			///< true if pump is operational (under software management)
 		time_t actual_cooldown_time;	///< actual cooldown time remaining
 	} run;
 	struct s_stateful_relay * restrict relay;	///< Hardware relay controlling that pump
@@ -47,7 +47,7 @@ struct s_valve {
 		tempid_t id_tempout;	///< temp at the output
 	} set;
 	struct {
-		bool online;		///< true if valve is operational
+		bool online;		///< true if valve is operational (under software management)
 		bool in_deadzone;	///< true if valve is in deadzone (XXX USEFUL?)
 		bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
 		int_fast16_t actual_position;	///< estimated current position in %*10
@@ -98,7 +98,7 @@ struct s_heating_circuit {
 		temp_t temp_inoffset;		///< offset temp for heat source request
 	} set;
 	struct {
-		bool online;			///< true if circuit is operational
+		bool online;			///< true if circuit is operational (under software management)
 		bool outhoff;			///< true if no heating conditions are met
 		time_t last_run_time;		///< last time circuit_run() was invoked
 		enum e_runmode runmode;		///< circuit actual (computed) runmode
@@ -161,7 +161,7 @@ struct s_heatsource {
 		time_t consumer_stop_delay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
 	} set;
 	struct {
-		bool online;			///< true if source is available for use
+		bool online;			///< true if source is available for use (under software management)
 		bool could_sleep;		///< true if source is could be sleeping (no recent heat request from circuits)
 		enum e_runmode runmode;		///< heatsource actual (computed) runmode
 		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
@@ -209,7 +209,7 @@ struct s_dhw_tank {
 		temp_t temp_inoffset;		///< offset temp for heat source request - XXX setup ensure > 0C
 	} set;
 	struct {
-		bool online;			///< true if tank is available for use
+		bool online;			///< true if tank is available for use (under software management)
 		bool recycle_on;		///< true if recycle pump should be running
 		bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
 		bool charge_on;			///< true if a charge cycle is in progress

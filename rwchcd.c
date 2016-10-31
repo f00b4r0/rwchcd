@@ -13,7 +13,6 @@
 // accounting (separate module that periodically polls states and write them to timestamped registry)
 // Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
 // UI + programming
-// handle summer switchover
 // connection of multiple instances
 // multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
 

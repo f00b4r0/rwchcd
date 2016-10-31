@@ -68,12 +68,12 @@ static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 // http://www.mosaic-industries.com/embedded-systems/microcontroller-projects/temperature-measurement/platinum-rtd-sensors/resistance-calibration-table
 
 /**
- * Convert resistance value to actual temperature.
+ * Convert Pt1000 resistance value to actual temperature.
  * Use a quadratic fit for simplicity.
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-static float ohm_to_celsius(const uint_fast16_t ohm)
+static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
 {
 	const float R0 = 1000.0F;
 	float alpha, delta, A, B, temp;
@@ -102,7 +102,7 @@ static float ohm_to_celsius(const uint_fast16_t ohm)
  */
 temp_t sensor_to_temp(const rwchc_sensor_t raw)
 {
-	return (celsius_to_temp(ohm_to_celsius(sensor_to_ohm(raw, 1))));
+	return (celsius_to_temp(pt1000_ohm_to_celsius(sensor_to_ohm(raw, 1))));
 }
 
 /**

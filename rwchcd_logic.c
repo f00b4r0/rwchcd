@@ -56,12 +56,12 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		case RM_MANUAL:
 		case RM_UNKNOWN:
 		default:
-			return;	// XXX
+			return;
 	}
 
 	if (!temp_trigger) {	// don't do anything if we have an invalid limit
 		circuit->run.outhoff = false;
-		return;	// XXX
+		return;
 	}
 
 	if ((runtime->t_outdoor_60 > temp_trigger) ||

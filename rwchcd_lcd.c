@@ -134,29 +134,6 @@ int lcd_handle2ndline(const bool on)
 }
 
 /**
- * Write a string to LCD.
- * @warning No boundary checks
- * @param str string to send
- * @return exec status
- * @note XXX DO NOT USE - TO REMOVE
- */
-static int lcd_wstr(const char * str)
-{
-	int ret = -ESPI;
-	
-	while (*str != '\0') {
-		if (rwchcd_spi_lcd_data_w(*str))
-			goto out;
-		str++;
-		//usleep(100); DISABLED: SPI_rw8bit() already sleeps
-	}
-	
-	ret = ALL_OK;
-out:
-	return (ret);
-}
-
-/**
  * Write lcd data to a line buffer
  * @param data the data to write
  * @param len the data length

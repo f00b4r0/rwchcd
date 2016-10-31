@@ -78,7 +78,7 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
 	if (!state && !force_state)
 		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
 	
-	// XXX this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
+	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
 	pump->run.actual_cooldown_time = hardware_relay_set_state(pump->relay, state, cooldown);
 
 	return (ALL_OK);
@@ -778,9 +778,6 @@ static int boiler_hs_online(struct s_heatsource * const heat)
 	temp_t testtemp;
 	int ret;
 
-	if (!heat->set.configured)
-		return (-ENOTCONFIGURED);
-
 	if (!boiler)
 		return (-EINVALID);
 
@@ -809,9 +806,6 @@ out:
 static int boiler_hs_offline(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * const boiler = heat->priv;
-
-	if (!heat->set.configured)
-		return (-ENOTCONFIGURED);
 
 	if (!boiler)
 		return (-EINVALID);
@@ -856,9 +850,9 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 
 /**
  * Boiler logic
- * As a special case in the plant, antifreeze takes over all states if the boiler is configured. XXX REVIEW
+ * As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online). XXX REVIEW
  * @param heat heatsource parent structure
- * @return exec status. If error action must be taken (e.g. offline boiler) XXX REVISIT
+ * @return exec status. If error action must be taken (e.g. offline boiler)
  * @todo burner turn-on anticipation
  */
 static int boiler_hs_logic(struct s_heatsource * restrict const heat)
@@ -867,9 +861,6 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
 	int ret;
 
-	if (!heat->set.configured)
-		return (-ENOTCONFIGURED);
-	
 	if (!boiler)
 		return (-EINVALID);
 	
@@ -877,12 +868,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	ret = boiler_antifreeze(boiler);
 	if (ret)
 		return (ret);
-	
-	if (!boiler->run.antifreeze) {	// antifreeze takes over offline mode
-		if (!heat->run.online)
-			return (-EOFFLINE);	// XXX caller must call boiler_offline() otherwise pump will not stop after antifreeze
-	}
-	
+
 	switch (heat->run.runmode) {
 		case RM_OFF:
 			break;
@@ -893,7 +879,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 			target_temp = heat->run.temp_request;
 			break;
 		case RM_MANUAL:
-			target_temp = boiler->set.limit_tmax;	// XXX set max temp to (safely) trigger burner operation
+			target_temp = boiler->set.limit_tmax;	// set max temp to (safely) trigger burner operation
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
@@ -945,9 +931,6 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp;
 	int ret;
-
-	if (!heat->set.configured)
-		return (-ENOTCONFIGURED);
 
 	if (!boiler)
 		return (-EINVALID);
@@ -1027,6 +1010,9 @@ static int heatsource_online(struct s_heatsource * const heat)
 	if (!heat)
 		return (-EINVALID);
 
+	if (!heat->set.configured)
+		return (-ENOTCONFIGURED);
+
 	if (NONE == heat->set.type)	// type NONE, nothing to do
 		return (ALL_OK);
 	
@@ -1049,6 +1035,9 @@ static int heatsource_offline(struct s_heatsource * const heat)
 
 	if (!heat)
 		return (-EINVALID);
+
+	if (!heat->set.configured)
+		return (-ENOTCONFIGURED);
 
 	heat->run.runmode = RM_OFF;
 
@@ -1390,8 +1379,8 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
  * Controls the dhwt's elements to achieve the desired target temperature.
  * @param dhwt target dhwt
  * @return error status
- * XXX TODO implement dhwprio glissante/absolue for heat request
- * XXX TODO implement working on electric without sensor
+ * XXX TODO: implement dhwprio glissante/absolue for heat request
+ * XXX TODO: implement working on electric without sensor
  */
 static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
