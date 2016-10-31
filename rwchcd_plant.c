@@ -1479,11 +1479,11 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				test = ON;	// by default, turn on pump
 
 				// if available, test for inlet water temp
-				water_temp = get_temp(dhwt->set.id_temp_win);
+				water_temp = get_temp(dhwt->set.id_temp_win);	// XXX REVIEW: if this sensor relies on pump running for accurate read, then this can be a problem
 				ret = validate_temp(water_temp);
 				if (ALL_OK == ret) {
-					// discharge protection: if water feed temp is < dhwt target_temp, stop the pump
-					if (water_temp < dhwt->run.target_temp)	// XXX REVIEW: no histeresis
+					// discharge protection: if water feed temp is < dhwt current temp, stop the pump
+					if (water_temp < curr_temp)	// XXX REVIEW: no histeresis
 						test = OFF;
 				}
 
@@ -1525,8 +1525,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			water_temp = get_temp(dhwt->set.id_temp_win);
 			ret = validate_temp(water_temp);
 			if (ALL_OK == ret) {
-				// discharge protection: if water feed temp is > dhwt target_temp, we can apply cooldown
-				if (water_temp > dhwt->run.target_temp)
+				// discharge protection: if water feed temp is > dhwt current temp, we can apply cooldown
+				if (water_temp > curr_temp)
 					test = NOFORCE;
 			}
 
