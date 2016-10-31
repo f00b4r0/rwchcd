@@ -1474,8 +1474,21 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				// apply heat request
 				dhwt->run.heat_request = water_temp;
 
+				/* feedpump management */
+
+				test = ON;	// by default, turn on pump
+
+				// if available, test for inlet water temp
+				water_temp = get_temp(dhwt->set.id_temp_win);
+				ret = validate_temp(water_temp);
+				if (ALL_OK == ret) {
+					// discharge protection: if water feed temp is < dhwt target_temp, stop the pump
+					if (water_temp < dhwt->run.target_temp)	// XXX REVIEW: no histeresis
+						test = OFF;
+				}
+
 				// turn feedpump on
-				pump_set_state(dhwt->feedpump, ON, NOFORCE);
+				pump_set_state(dhwt->feedpump, test, NOFORCE);
 			}
 			
 			// mark heating in progress
@@ -1504,19 +1517,23 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			// stop self-heater (if any)
 			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
 
+			/* feedpump management */
+
 			test = FORCE;	// by default, force feedpump immediate turn off
 
 			// if available, test for inlet water temp
 			water_temp = get_temp(dhwt->set.id_temp_win);
 			ret = validate_temp(water_temp);
 			if (ALL_OK == ret) {
-				// if water feed temp is > dhwt target_temp, we can apply cooldown
+				// discharge protection: if water feed temp is > dhwt target_temp, we can apply cooldown
 				if (water_temp > dhwt->run.target_temp)
 					test = NOFORCE;
 			}
 
-			// turn off pump with cooldown
+			// turn off pump with conditional cooldown
 			pump_set_state(dhwt->feedpump, OFF, test);
+
+			/* end feedpump management */
 
 			// clear heat request
 			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
