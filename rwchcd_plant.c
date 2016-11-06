@@ -11,6 +11,8 @@
 
 #include <stdlib.h>	// calloc/free
 #include <unistd.h>	// sleep
+#include <math.h>	// roundf
+
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
@@ -1091,6 +1093,7 @@ static int heatsource_run(struct s_heatsource * const heat)
  */
 static temp_t templaw_linear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
+	const struct s_templaw_data20C tld = circuit->tlaw_data;
 	const temp_t out_temp1 = circuit->tlaw_data.tout1;
 	const temp_t water_temp1 = circuit->tlaw_data.twater1;
 	const temp_t out_temp2 = circuit->tlaw_data.tout2;
@@ -1100,12 +1103,12 @@ static temp_t templaw_linear(const struct s_heating_circuit * const circuit, con
 	temp_t t_output, curve_shift;
 
 	// (Y2 - Y1)/(X2 - X1)
-	slope = (water_temp2 - water_temp1) / (out_temp2 - out_temp1);
+	slope = ((float)(water_temp2 - water_temp1)) / (out_temp2 - out_temp1);
 	// reduction par un point connu
 	offset = water_temp2 - (out_temp2 * slope);
 
 	// calculate output at nominal 20C: Y = input*slope + offset
-	t_output = source_temp * slope + offset;
+	t_output = roundf(source_temp * slope) + offset;
 
 	// shift output based on actual target temperature
 	curve_shift = (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - slope);
