@@ -34,6 +34,8 @@
 #include "rwchcd_spi.h"
 #include "rwchcd_dbus.h"
 
+#include "svn_version.h"
+
 #define RWCHCD_PRIO	20	///< Desired run priority
 #define RWCHCD_UID	65534	///< Desired run uid
 #define RWCHCD_GID	65534	///< Desired run gid

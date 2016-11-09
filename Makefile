@@ -1,8 +1,7 @@
-SVNREV := -D'SVN_REV="$(shell svnversion -n .)"'
 CC := gcc
 #add -Wconversion when ready - -Wdouble-promotion should be checked but triggers warnings with printf
 WARNINGS := -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wno-double-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla
-CFLAGS := $(SVNREV) $(WARNINGS) $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 -O0 -g -fstack-protector -Wstack-protector -fstrict-aliasing
+CFLAGS := -DDEBUG $(WARNINGS) $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 -O0 -g -fstack-protector -Wstack-protector -fstrict-aliasing
 LDLIBS := $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d
@@ -16,9 +15,9 @@ DEPS := $(SRCS:.c=.d)
 
 MAIN := rwchcd
 
-.PHONY:	all clean distclean install uninstall dbus-gen
+.PHONY:	all clean distclean install uninstall dbus-gen svn_version.h
 
-all:	$(MAIN)
+all:	svn_version.h $(MAIN)
 	@echo	Done
 
 $(MAIN): $(OBJS)
@@ -26,6 +25,11 @@ $(MAIN): $(OBJS)
 
 .c.o:
 	$(CC) $(CFLAGS) -MMD -c $< -o $@
+
+svn_version.h:
+	echo -n '#define SVN_REV "'	> $@
+	svnversion -n .			>> $@
+	echo '"'			>> $@
 
 clean:
 	$(RM) *.o *.d *~ $(MAIN)
