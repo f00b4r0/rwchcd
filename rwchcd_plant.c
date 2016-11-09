@@ -12,6 +12,7 @@
 #include <stdlib.h>	// calloc/free
 #include <unistd.h>	// sleep
 #include <math.h>	// roundf
+#include <assert.h>
 
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
@@ -149,8 +150,7 @@ static void valve_del(struct s_valve * valve)
  */
 static int valve_reqopen_pct(struct s_valve * const valve, uint_fast8_t percent)
 {
-	if (!valve)
-		return (-EINVALID);
+	assert(valve);
 	
 	// if valve is opening, add running time
 	if (OPEN == valve->run.request_action)
@@ -171,8 +171,7 @@ static int valve_reqopen_pct(struct s_valve * const valve, uint_fast8_t percent)
  */
 static int valve_reqclose_pct(struct s_valve * const valve, uint_fast8_t percent)
 {
-	if (!valve)
-		return (-EINVALID);
+	assert(valve);
 	
 	// if valve is opening, add running time
 	if (CLOSE == valve->run.request_action)
@@ -426,8 +425,7 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	temp_t tempout;
 	int ret;
 	
-	if (!vpriv)
-		return (-EMISCONFIGURED);
+	assert(vpriv);
 	
 	// sample window
 	if ((now - vpriv->last_time) < vpriv->set_sample_intvl)
@@ -474,11 +472,8 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
  */
 static inline int valve_tposition(struct s_valve * const valve, const temp_t target_tout)
 {
-	if (!valve)
-		return (-EINVALID);
-	
-	if (!valve->set.configured)
-		return (-ENOTCONFIGURED);
+	assert(valve);
+	assert(valve->set.configured);
 
 	if (!valve->open || !valve->close)
 		return (-EMISCONFIGURED);
@@ -549,9 +544,8 @@ static int valve_run(struct s_valve * const valve)
 	time_t request_runtime, runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
 	float percent_time;	// time necessary per percent position change
 
-	if (!valve)
-		return (-EINVALID);
-
+	assert(valve);
+	
 	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
@@ -863,8 +857,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
 	int ret;
 
-	if (!boiler)
-		return (-EINVALID);
+	assert(boiler);
 	
 	// Check if we need antifreeze
 	ret = boiler_antifreeze(boiler);
@@ -935,8 +928,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	temp_t boiler_temp, trip_temp, untrip_temp;
 	int ret;
 
-	if (!boiler)
-		return (-EINVALID);
+	assert(boiler);
 	
 	switch (heat->run.runmode) {
 		case RM_OFF:
@@ -1062,9 +1054,8 @@ static int heatsource_offline(struct s_heatsource * const heat)
  */
 static int heatsource_run(struct s_heatsource * const heat)
 {
-	if (!heat)
-		return (-EINVALID);
-
+	assert(heat);
+	
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
@@ -1190,9 +1181,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	temp_t water_temp, curr_temp;
 	int ret;
 
-	if (!circuit)
-		return (-EINVALID);
-
+	assert(circuit);
+	
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
@@ -1394,9 +1384,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	const time_t now = time(NULL);
 	int ret = -EGENERIC;
 
-	if (!dhwt)
-		return (-EINVALID);
-
+	assert(dhwt);
+	
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
@@ -2030,9 +2019,8 @@ int plant_run(struct s_plant * restrict const plant)
 	bool sleeping = false;
 	time_t stop_delay = 0;
 
-	if (!plant)
-		return (-EINVALID);
-
+	assert(plant);
+	
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);
 
