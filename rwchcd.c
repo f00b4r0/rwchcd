@@ -173,7 +173,7 @@ static int init_process()
 	circuit->set.id_temp_return = 4;	// XXX VALIDATION
 	circuit->set.temp_inoffset = deltaK_to_temp(7);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
-	circuit->tlaw_data.twater1 = celsius_to_temp(60);
+	circuit->tlaw_data.twater1 = celsius_to_temp(61);
 	circuit->tlaw_data.tout2 = celsius_to_temp(15);
 	circuit->tlaw_data.twater2 = celsius_to_temp(30);
 	circuit_make_linear(circuit);

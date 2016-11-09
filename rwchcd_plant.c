@@ -1094,18 +1094,14 @@ static int heatsource_run(struct s_heatsource * const heat)
 static temp_t templaw_linear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
 	const struct s_templaw_data20C tld = circuit->tlaw_data;
-	const temp_t out_temp1 = circuit->tlaw_data.tout1;
-	const temp_t water_temp1 = circuit->tlaw_data.twater1;
-	const temp_t out_temp2 = circuit->tlaw_data.tout2;
-	const temp_t water_temp2 = circuit->tlaw_data.twater2;
 	float slope;
 	temp_t offset;
 	temp_t t_output, curve_shift;
 
-	// (Y2 - Y1)/(X2 - X1)
-	slope = ((float)(water_temp2 - water_temp1)) / (out_temp2 - out_temp1);
-	// reduction par un point connu
-	offset = water_temp2 - (out_temp2 * slope);
+	// pente = (Y2 - Y1)/(X2 - X1)
+	slope = ((float)(tld.twater2 - tld.twater1)) / (tld.tout2 - tld.tout1);
+	// offset: reduction par un point connu
+	offset = tld.twater2 - (tld.tout2 * slope);
 
 	// calculate output at nominal 20C: Y = input*slope + offset
 	t_output = roundf(source_temp * slope) + offset;
