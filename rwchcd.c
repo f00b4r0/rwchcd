@@ -342,6 +342,10 @@ int main(void)
 	if (ret)
 		errx(ret, "failed to create thread!");
 
+#ifdef _GNU_SOURCE
+	pthread_setname_np(master_thr, "master");	// failure ignored
+#endif
+
 	// XXX Dropping priviledges here because we need root to set
 	// SCHED_FIFO during pthread_create(). The thread will run with
 	// root credentials for "a little while". REVISIT
@@ -353,10 +357,6 @@ int main(void)
 	if (ret)
 		err(ret, "failed to setuid()");
 	
-#ifdef _GNU_SOURCE
-	pthread_setname_np(master_thr, "master");	// failure ignored
-#endif
-
 	// signal handler for cleanup.
 	// No error checking because it's no big deal if it fails
 	saction.sa_handler = sig_handler;
