@@ -13,7 +13,7 @@
 #include <stdint.h>	// uint_t
 #include <stdbool.h>	// bool
 #include <time.h>	// time_t
-#include <stdio.h>	// printf
+#include <stdio.h>	// (f)printf
 #include "rwchc_export.h"
 
 #define testbit(var, bit)	((var) & (1 << (bit)))
@@ -29,8 +29,13 @@
  #define _(String)      String
 #endif  /* HAVE_GETTEXT */
 
-#define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
-#define dbgerr(format, ...)	printf("ERROR! (%s()) " format "\n", __func__, ## __VA_ARGS__)
+#ifdef DEBUG
+ #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+#else
+ #define dbgmsg(format, ...)	/* nothing */
+#endif
+
+#define dbgerr(format, ...)	fprintf(stderr, "ERROR! (%s()) " format "\n", __func__, ## __VA_ARGS__)
 
 /** Valid return values */
 enum {

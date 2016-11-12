@@ -1,7 +1,7 @@
 CC := gcc
 #add -Wconversion when ready - -Wdouble-promotion should be checked but triggers warnings with printf
 WARNINGS := -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wno-double-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla
-CFLAGS := -DDEBUG $(WARNINGS) $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 -O0 -g -fstack-protector -Wstack-protector -fstrict-aliasing
+CFLAGS := -DDEBUG -D_GNU_SOURCE $(WARNINGS) $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 -O0 -g -fstack-protector -Wstack-protector -fstrict-aliasing
 LDLIBS := $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d
