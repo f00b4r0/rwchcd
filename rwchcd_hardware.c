@@ -319,6 +319,7 @@ int hardware_rwchcrelays_write(void)
 	}
 
 	// send new state to hardware
+	i = 0;
 	do {
 		ret = rwchcd_spi_relays_w(&rWCHC_relays);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));

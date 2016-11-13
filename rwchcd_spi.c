@@ -14,7 +14,7 @@
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
-#define SPIRESYNCMAX	500		///< max resync tries -> 250ms
+#define SPIRESYNCMAX	200		///< max resync tries -> 100ms
 #define SPISPEED	1000000		///< 1MHz
 #define SPICHAN		0
 #define SPIMODE		3
