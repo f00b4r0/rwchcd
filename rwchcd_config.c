@@ -8,6 +8,7 @@
 
 #include <stdlib.h>	// alloc/free
 #include <string.h>	// memcpy
+#include <assert.h>
 
 #include "rwchcd_lib.h"
 #include "rwchcd_spi.h"
@@ -17,33 +18,6 @@
 static const storage_version_t Config_sversion = 1;
 
 // XXX review handling of rWCHC_settings
-
-/**
- * Commit and save hardware config.
- * @param config current system configuration, containing hardware config elements
- * @return exec status
- */
-static int config_hardware_save(const struct s_config * const config)
-{
-	int ret, i = 0;
-	
-	// commit hardware config
-	do {
-		ret = rwchcd_spi_settings_w(&(config->rWCHC_settings));
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	if (ret)
-		goto out;
-	
-	i = 0;
-	// save hardware config
-	do {
-		ret = rwchcd_spi_settings_s();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-out:
-	return (ret);
-}
 
 /**
  * Allocate new config.
@@ -77,15 +51,21 @@ static int config_restore(struct s_config * const config)
 	storage_version_t sversion;
 	int ret;
 	
+	assert(config);
+	
+	config->restored = false;
+	
 	// try to restore last config
 	ret = storage_fetch("config", &sversion, &temp_config, sizeof(temp_config));
 	if (ALL_OK == ret) {
 		if (Config_sversion != sversion)
 			return (-EMISMATCH);
-		
+
 		dbgmsg("config restored");
 		
 		memcpy(config, &temp_config, sizeof(*config));
+		
+		config->restored = true;
 	}
 	else
 		dbgerr("storage_fetch failed (%d)", ret);
@@ -102,6 +82,7 @@ static int config_restore(struct s_config * const config)
  */
 int config_init(struct s_config * const config)
 {
+	struct rwchc_s_settings hw_set;
 	int ret, i = 0;
 
 	if (!config)
@@ -110,14 +91,12 @@ int config_init(struct s_config * const config)
 	// see if we can restore previous config
 	ret = config_restore(config);
 	if (ALL_OK == ret) {
-		config_hardware_save(config);	// commit to hardware to ensure consistency
-		return (ALL_OK);
+		ret = hardware_config_set(&(config->rWCHC_settings));	// update hardware if inconsistent
+		return (ret);
 	}
 	
-	// if we couldn't, grab current config from the hardware
-	do {
-		ret = rwchcd_spi_settings_r(&(config->rWCHC_settings));
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	// if we couldn't, copy current hardware settings to config
+	hardware_config_get(&(config->rWCHC_settings));
 
 	return (ret);
 }
@@ -239,7 +218,7 @@ int config_save(const struct s_config * const config)
 	}
 	
 	// save to hardware
-	ret = config_hardware_save(config);
+	ret = hardware_config_set(&(config->rWCHC_settings));
 
 out:
 	return (ret);

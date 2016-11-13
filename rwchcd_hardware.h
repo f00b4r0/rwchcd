@@ -35,6 +35,8 @@ struct s_stateful_relay {
 };
 
 int hardware_init(void) __attribute__((warn_unused_result));
+int hardware_config_set(const struct rwchc_s_settings * const settings);
+int hardware_config_get(struct rwchc_s_settings * const settings);
 int hardware_sensors_read(rwchc_sensor_t tsensors[], const int_fast16_t last) __attribute__((warn_unused_result));
 int hardware_rwchcrelays_write(void) __attribute__((warn_unused_result));
 int hardware_rwchcperiphs_write(void) __attribute__((warn_unused_result));

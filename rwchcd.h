@@ -100,6 +100,7 @@ enum e_systemmode {
 /** Config structure */
 struct s_config {
 	bool configured;		///< true if properly configured
+	bool restored;			///< true if config has been restored from storage
 	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp

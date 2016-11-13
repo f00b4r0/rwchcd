@@ -230,6 +230,59 @@ out:
 }
 
 /**
+ * Read hardware config.
+ * @param settings target hardware configuration
+ * @return exec status
+ */
+int hardware_config_get(struct rwchc_s_settings * const settings)
+{
+	int ret, i = 0;
+	
+	// grab current config from the hardware
+	do {
+		ret = rwchcd_spi_settings_r(settings);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+	return (ret);
+}
+
+/**
+ * Commit and save hardware config.
+ * @param settings target hardware configuration
+ * @return exec status
+ */
+int hardware_config_set(const struct rwchc_s_settings * const settings)
+{
+	struct rwchc_s_settings hw_set;
+	int ret, i = 0;
+	
+	// grab current config from the hardware
+	hardware_config_get(&hw_set);
+	
+	if (!memcmp(&hw_set, settings, sizeof(hw_set)))
+		return (ALL_OK); // don't wear flash down if unnecessary
+
+	// commit hardware config
+	do {
+		ret = rwchcd_spi_settings_w(settings);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+	if (ret)
+		goto out;
+	
+	i = 0;
+	// save hardware config
+	do {
+		ret = rwchcd_spi_settings_s();
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+	dbgmsg("HW Config saved.");
+	
+out:
+	return (ret);
+}
+
+/**
  * Read all sensors
  * @param tsensors the array to populate with current values
  * @param last the id of the last wanted (connected) sensor

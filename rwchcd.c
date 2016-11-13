@@ -100,16 +100,25 @@ static int init_process()
 		dbgerr("config init error: %d", ret);
 		return (ret);
 	}
-	config_set_building_tau(config, 10 * 60 * 60);	// XXX 10 hours
-	config_set_nsensors(config, 4);	// XXX 4 sensors
-	config_set_outdoor_sensorid(config, 1);
-	config_set_tfrostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
-	config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
+	
+	if (!config->restored) {
+		config_set_building_tau(config, 10 * 60 * 60);	// XXX 10 hours
+		config_set_nsensors(config, 4);	// XXX 4 sensors
+		config_set_outdoor_sensorid(config, 1);
+		config_set_tfrostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
+		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
+		config->configured = true;
 
-	// XXX add firmware config bits here
-
-	config->configured = true;
-//	config_save(config);
+		// XXX firmware config bits here
+		config->rWCHC_settings.addresses.S_burner = 2-1;			// XXX INTERNAL CONFIG
+		config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(14);	// XXX INTERNAL CONFIG
+		config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
+		config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(11);	// XXX INTERNAL CONFIG
+		config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(10);	// XXX INTERNAL CONFIG
+		config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(9);		// XXX INTERNAL CONFIG
+		
+		config_save(config);
+	}
 
 	// attach config to runtime
 	runtime->config = config;
@@ -137,7 +146,6 @@ static int init_process()
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
 	boiler->set.id_temp = 2;	// XXX VALIDATION
-	config->rWCHC_settings.addresses.S_burner = 2-1;			// XXX INTERNAL CONFIG
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
 	boiler->burner_1 = hardware_relay_new();
 	if (!boiler->burner_1) {
@@ -145,7 +153,6 @@ static int init_process()
 		return (-EOOM);
 	}
 	hardware_relay_set_id(boiler->burner_1, 14);	// XXX 2nd relay
-	config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(14);	// XXX INTERNAL CONFIG
 	boiler->burner_1->set.configured = true;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
 	heatsource->set.sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
@@ -171,7 +178,6 @@ static int init_process()
 	circuit->set.outhoff_frostfree = circuit->set.t_frostfree - deltaK_to_temp(4);
 	circuit->set.outhoff_histeresis = deltaK_to_temp(1);
 	circuit->set.id_temp_outgoing = 3;	// XXX VALIDATION
-	config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
 	circuit->set.id_temp_return = 4;	// XXX VALIDATION
 	circuit->set.temp_inoffset = deltaK_to_temp(7);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
@@ -204,12 +210,10 @@ static int init_process()
 	// create and configure two relays for that valve
 	circuit->valve->open = hardware_relay_new();
 	hardware_relay_set_id(circuit->valve->open, 11);
-	config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(11);	// XXX INTERNAL CONFIG
 	circuit->valve->open->set.configured = true;
 
 	circuit->valve->close = hardware_relay_new();
 	hardware_relay_set_id(circuit->valve->close, 10);
-	config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(10);	// XXX INTERNAL CONFIG
 	circuit->valve->close->set.configured = true;
 	
 	circuit->valve->set.configured = true;
@@ -224,7 +228,6 @@ static int init_process()
 	// create and configure a relay for that pump
 	circuit->pump->relay = hardware_relay_new();
 	hardware_relay_set_id(circuit->pump->relay, 9);
-	config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(9);		// XXX INTERNAL CONFIG
 	circuit->pump->relay->set.configured = true;
 
 	circuit->pump->set.configured = true;
@@ -254,8 +257,6 @@ static int init_process()
 	dhwt->set.configured = true;
 
 	plant->configured = true;
-
-	config_save(config);				// XXX HERE BECAUSE OF INTERNAL CONFIG HACKS
 
 	// assign plant to runtime
 	runtime->plant = plant;
