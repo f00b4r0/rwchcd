@@ -24,6 +24,7 @@
 
 /**
  * Delete a pump
+ * Frees all pump-local resources
  * @param pump the pump to delete
  */
 static void pump_del(struct s_pump * pump)
@@ -123,6 +124,7 @@ static int pump_get_state(const struct s_pump * const pump)
 
 /**
  * Delete a valve
+ * Frees all valve-local resources
  * @param valve the valve to delete
  */
 static void valve_del(struct s_valve * valve)
@@ -704,6 +706,7 @@ static struct s_solar_heater * solar_new(void)
 
 /**
  * Delete a solar heater
+ * Frees all solar-local resources
  * @param solar the solar heater to delete
  */
 static void solar_del(struct s_solar_heater * solar)
@@ -711,8 +714,6 @@ static void solar_del(struct s_solar_heater * solar)
 	if (!solar)
 		return;
 
-	pump_del(solar->pump);
-	solar->pump = NULL;
 	free(solar->name);
 	solar->name = NULL;
 	free(solar);
@@ -742,6 +743,7 @@ static struct s_boiler_priv * boiler_new(void)
 
 /**
  * Delete a boiler
+ * Frees all boiler-local resources
  * @param boiler the boiler to delete
  */
 static void boiler_hs_del_priv(void * priv)
@@ -751,8 +753,6 @@ static void boiler_hs_del_priv(void * priv)
 	if (!boiler)
 		return;
 
-	pump_del(boiler->loadpump);
-	boiler->loadpump = NULL;
 	hardware_relay_del(boiler->burner_1);
 	boiler->burner_1 = NULL;
 	hardware_relay_del(boiler->burner_2);
@@ -1661,7 +1661,8 @@ fail:
 }
 
 /**
- * Circuit destructor
+ * Circuit destructor.
+ * Frees all circuit-local resources
  * @param circuit the circuit to delete
  */
 static void circuit_del(struct s_heating_circuit * circuit)
@@ -1669,10 +1670,6 @@ static void circuit_del(struct s_heating_circuit * circuit)
 	if (!circuit)
 		return;
 
-	valve_del(circuit->valve);
-	circuit->valve = NULL;
-	pump_del(circuit->pump);
-	circuit->pump = NULL;
 	free(circuit->name);
 	circuit->name = NULL;
 
@@ -1721,6 +1718,7 @@ fail:
 
 /**
  * DHWT destructor
+ * Frees all dhwt-local resources
  * @param dhwt the dhwt to delete
  */
 static void dhwt_del(struct s_dhw_tank * restrict dhwt)
@@ -1730,10 +1728,6 @@ static void dhwt_del(struct s_dhw_tank * restrict dhwt)
 
 	solar_del(dhwt->solar);
 	dhwt->solar = NULL;
-	pump_del(dhwt->feedpump);
-	dhwt->feedpump = NULL;
-	pump_del(dhwt->recyclepump);
-	dhwt->recyclepump = NULL;
 	hardware_relay_del(dhwt->selfheater);
 	dhwt->selfheater = NULL;
 	free(dhwt->name);
@@ -1852,7 +1846,6 @@ void plant_del(struct s_plant * plant)
 	while (pumpelmt) {
 		pumpnext = pumpelmt->next;
 		pump_del(pumpelmt->pump);
-		pumpelmt->pump = NULL;
 		free(pumpelmt);
 		plant->pump_n--;
 		pumpelmt = pumpnext;
@@ -1863,7 +1856,6 @@ void plant_del(struct s_plant * plant)
 	while (valveelmt) {
 		valvenext = valveelmt->next;
 		valve_del(valveelmt->valve);
-		valveelmt->valve = NULL;
 		free(valveelmt);
 		plant->valve_n--;
 		valveelmt = valvenext;
@@ -1874,7 +1866,6 @@ void plant_del(struct s_plant * plant)
 	while (circuitelement) {
 		circuitlnext = circuitelement->next;
 		circuit_del(circuitelement->circuit);
-		circuitelement->circuit = NULL;
 		free(circuitelement);
 		plant->circuit_n--;
 		circuitelement = circuitlnext;
@@ -1885,7 +1876,6 @@ void plant_del(struct s_plant * plant)
 	while (dhwtelement) {
 		dhwtlnext = dhwtelement->next;
 		dhwt_del(dhwtelement->dhwt);
-		dhwtelement->dhwt = NULL;
 		free(dhwtelement);
 		plant->dhwt_n--;
 		dhwtelement = dhwtlnext;
@@ -1896,7 +1886,6 @@ void plant_del(struct s_plant * plant)
 	while (sourceelement) {
 		sourcenext = sourceelement->next;
 		heatsource_del(sourceelement->heats);
-		sourceelement->heats = NULL;
 		free(sourceelement);
 		plant->heats_n--;
 		sourceelement = sourcenext;
