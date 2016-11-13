@@ -347,9 +347,9 @@ int main(void)
 #endif
 
 	// XXX Dropping priviledges here because we need root to set
-	// SCHED_FIFO during pthread_create(). The thread will run with
-	// root credentials for "a little while". REVISIT
-	// note: setuid() sends SIG_RT1 to thread
+	// SCHED_FIFO during pthread_create(), and for setname().
+	// The thread will run with root credentials for "a little while". REVISIT
+	// note: setuid() sends SIG_RT1 to thread due to NPTL implementation
 	ret = setgid(RWCHCD_GID);
 	if (ret)
 		err(ret, "failed to setgid()");

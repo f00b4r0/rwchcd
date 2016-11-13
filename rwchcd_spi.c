@@ -8,7 +8,9 @@
 
 #include <stdio.h>
 #include <unistd.h>	// sleep/usleep
+#include <assert.h>
 #include <wiringPiSPI.h>
+
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
@@ -21,7 +23,7 @@
 #define SPI_ASSERT(cmd, expect)	(SPI_rw8bit(cmd) == (uint8_t)expect)
 #define SPI_RESYNC()								\
 		({								\
-		spitout = SPIRESYNCMAX;					\
+		spitout = SPIRESYNCMAX;						\
 		while (spitout-- && (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_VALID));	\
 		})
 
@@ -209,6 +211,8 @@ int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 {
 	int ret = -ESPI;
 	
+	assert(outperiphs);
+	
 	SPI_RESYNC();
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_PERIPHSR, RWCHC_SPIC_VALID))
@@ -233,9 +237,11 @@ int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 {
 	int ret = -ESPI;
 	
+	assert(outperiphs);
+	
 	SPI_RESYNC();
 	
-	// XXX REVISIT
+	// XXX TODO: REVISIT
 	if (!SPI_ASSERT((RWCHC_SPIC_PERIPHSW | (outperiphs->BYTE & 0xF)), RWCHC_SPIC_VALID))
 		goto out;
 
@@ -256,12 +262,19 @@ int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 {
 	int ret = -ESPI;
 	
+	assert(relays);
+	
 	SPI_RESYNC();
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_RELAYRL, RWCHC_SPIC_VALID))
 		goto out;
 	
 	relays->LOWB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
+		goto out;
+	
+	SPI_RESYNC();	// resync since we have exited the atomic section in firmware
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_RELAYRH, RWCHC_SPIC_VALID))
 		goto out;
@@ -285,6 +298,8 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 {
 	int ret = -ESPI;
 	
+	assert(relays);
+	
 	SPI_RESYNC();
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_RELAYWL, RWCHC_SPIC_VALID))
@@ -293,7 +308,12 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 	if (!SPI_ASSERT(relays->LOWB, ~RWCHC_SPIC_RELAYWL))
 		goto out;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_RELAYWH, relays->LOWB))
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->LOWB))
+		goto out;
+	
+	SPI_RESYNC();	// resync since we have exited the atomic section in firmware
+	
+	if (!SPI_ASSERT(RWCHC_SPIC_RELAYWH, RWCHC_SPIC_VALID))
 		goto out;
 	
 	if (!SPI_ASSERT(relays->HIGHB, ~RWCHC_SPIC_RELAYWH))
@@ -317,6 +337,8 @@ out:
 int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
 	int ret = -ESPI;
+	
+	assert(tsensors);
 	
 	SPI_RESYNC();
 
@@ -349,6 +371,8 @@ int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 	int ret = -ESPI;
 	uint8_t cmd;
 
+	assert(refval);
+	
 	switch (refn) {
 		case 0:
 			cmd = RWCHC_SPIC_REF0;
@@ -388,6 +412,8 @@ int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = -ESPI;
+	
+	assert(settings);
 
 	SPI_RESYNC();
 	
@@ -414,6 +440,8 @@ int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = -ESPI;
+	
+	assert(settings);
 	
 	SPI_RESYNC();
 	
