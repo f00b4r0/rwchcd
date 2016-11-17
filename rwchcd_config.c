@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Configuration functions implementation.
+ */
+
 #include <stdlib.h>	// alloc/free
 #include <string.h>	// memcpy
 #include <assert.h>

@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Hardware interface API.
+ */
+
 #ifndef rwchcd_hardware_h
 #define rwchcd_hardware_h
 
@@ -18,9 +23,9 @@
 
 struct s_stateful_relay {
 	struct {
-		bool configured;
+		bool configured;	///< true if properly configured
 		uint_fast8_t id;	///< id matching hardware: 1 to 14, with 13==RL1 and 14==RL2
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool turn_on;		///< state requested by software
 		bool is_on;		///< current hardware active state
@@ -30,7 +35,7 @@ struct s_stateful_relay {
 		time_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
 		time_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
 		uint_fast32_t cycles;	///< number of power cycles
-	} run;
+	} run;		///< private runtime (internally handled)
 	char * restrict name;
 };
 

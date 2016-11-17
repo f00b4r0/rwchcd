@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Persistent storage implementation.
+ */
+
 #include <unistd.h>	// chdir
 #include <stdio.h>	// fopen...
 #include <string.h>	// memcmp

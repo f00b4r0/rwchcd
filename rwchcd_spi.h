@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * SPI backend API.
+ */
+
 #ifndef rwchcd_spi_h
 #define rwchcd_spi_h
 

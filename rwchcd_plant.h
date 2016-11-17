@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Plant basic operation API.
+ */
+
 #ifndef rwchcd_plant_h
 #define rwchcd_plant_h
 
@@ -19,11 +24,11 @@ struct s_pump {
 	struct {
 		bool configured;		///< true if properly configured
 		time_t cooldown_time;		///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)
 		time_t actual_cooldown_time;	///< actual cooldown time remaining
-	} run;
+	} run;		///< private runtime (internally handled)
 	struct s_stateful_relay * restrict relay;	///< Hardware relay controlling that pump
 	char * restrict name;
 };
@@ -45,7 +50,7 @@ struct s_valve {
 		tempid_t id_temp1;	///< temp at the "primary" input: when position is 0% there is 0% flow from this input
 		tempid_t id_temp2;	///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Kelvin from temp1
 		tempid_t id_tempout;	///< temp at the output
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
 		bool in_deadzone;	///< true if valve is in deadzone (XXX USEFUL?)
@@ -57,7 +62,7 @@ struct s_valve {
 		time_t acc_close_time;	///< accumulated close time since last open
 		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 						request_action;	///< requested action
-	} run;
+	} run;		///< private runtime (internally handled)
 	struct s_stateful_relay * restrict open;	///< relay for opening the valve
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	char * restrict name;
@@ -86,7 +91,7 @@ struct s_heating_circuit {
 		tempid_t id_temp_outgoing;	///< outgoing temp sensor for this circuit
 		tempid_t id_temp_return;	///< return temp sensor for this circuit
 		tempid_t id_temp_ambient;	///< ambient temp sensor related to this circuit
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if circuit is operational (under software management)
 		bool outhoff;			///< true if no heating conditions are met
@@ -102,7 +107,7 @@ struct s_heating_circuit {
 		temp_t actual_ambient;		///< actual ambient temperature (either from sensor, or modelled)
 		temp_t target_wtemp;		///< current target water temp
 		temp_t heat_request;		///< current temp request from heat source for this circuit
-	} run;
+	} run;		///< private runtime (internally handled)
 	struct s_templaw_data20C tlaw_data;	///< Reference data for templaw (for 20C ambient target)
 	temp_t (*templaw)(const struct s_heating_circuit * const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
 	struct s_valve * restrict valve;	///< valve for circuit (if available, otherwise it's direct)
@@ -124,11 +129,11 @@ struct s_boiler_priv {
 		tempid_t id_temp;		///< boiler temp id
 		tempid_t id_temp_outgoing;	///< boiler outflow temp id
 		tempid_t id_temp_return;	///< boiler inflow temp id
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool antifreeze;		///< true if anti freeze tripped
 		temp_t target_temp;		///< current target temp
-	} run;
+	} run;		///< private runtime (internally handled)
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
 	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
 	struct s_stateful_relay * restrict burner_2;	///< second stage of burner
@@ -149,7 +154,7 @@ struct s_heatsource {
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
 		time_t sleeping_time;	///< if no request for this much time, then mark heat source as can sleep
 		time_t consumer_stop_delay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if source is available for use (under software management)
 		bool could_sleep;		///< true if source is could be sleeping (no recent heat request from circuits)
@@ -157,7 +162,7 @@ struct s_heatsource {
 		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
 		time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
 		time_t target_consumer_stop_delay;	///< calculated stop delay
-	} run;
+	} run;		///< private runtime (internally handled)
 	char * restrict name;
 	void * restrict priv;			///< pointer to source private data structure
 	int (*hs_online)(struct s_heatsource * const);	///< pointer to source private online() function
@@ -171,7 +176,7 @@ struct s_solar_heater {
 	struct {
 		bool configured;
 		tempid_t id_temp_panel;		///< current panel temp for this circuit
-	} set;
+	} set;		///< settings (externally set)
 	struct s_pump * restrict pump;		///< pump for this circuit
 	char * restrict name;
 };
@@ -189,7 +194,7 @@ struct s_dhw_tank {
 		tempid_t id_temp_win;		///< temp sensor heatwater inlet
 		tempid_t id_temp_wout;		///< temp sensor heatwater outlet
 		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if tank is available for use (under software management)
 		bool recycle_on;		///< true if recycle pump should be running
@@ -199,7 +204,7 @@ struct s_dhw_tank {
 		temp_t target_temp;		///< current target temp for this tank
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 		time_t charge_since;		///< starting time of current charge, 0 if no charge in progress
-	} run;
+	} run;		///< private runtime (internally handled)
 	struct s_solar_heater * restrict solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
 	struct s_pump * restrict feedpump;	///< feed pump for this tank
 	struct s_pump * restrict recyclepump;	///< dhw recycle pump for this tank

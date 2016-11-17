@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * D-Bus implementation.
+ */
+
 #include "rwchcd_lib.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_dbus.h"

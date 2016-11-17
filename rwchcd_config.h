@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Configuration functions API.
+ */
+
 #ifndef rwchcd_config_h
 #define rwchcd_config_h
 

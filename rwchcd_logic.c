@@ -6,7 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
-// smarter functions making use of time should be here and act as pre-filter for plant xxx_run() ops.
+/**
+ * @file
+ * Logic functions implementation for smart operation.
+ * Smarter functions making use of time should be here and act as pre-filter for plant xxx_run() ops.
+ */
 
 #include <time.h>
 #include <math.h>

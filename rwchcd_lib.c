@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Basic functions used throughout the program.
+ */
+
 #include <math.h>	// roundf
 
 #include "rwchcd.h"
@@ -33,7 +38,7 @@ int validate_temp(const temp_t temp)
 
 /**
  * get temp from a given temp id
- * @param the physical id (counted from 1) of the sensor
+ * @param id the physical id (counted from 1) of the sensor
  * @return temp if id valid, 0 otherwise
  * @warning no param check
  */

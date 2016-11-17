@@ -6,18 +6,21 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
-//* TODO
-// Setup
-// Computation
-// Control
-// accounting (separate module that periodically polls states and write them to timestamped registry)
-// Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
-// UI + programming
-// connection of multiple instances
-// multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
+/**
+ * @file
+ * Main program.
+ * @todo:
+ * Setup
+ * Computation
+ * Control
+ * accounting (separate module that periodically polls states and write them to timestamped registry)
+ * Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
+ * UI + programming
+ * connection of multiple instances
+ * multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
+ */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
-
 
 #include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// exit

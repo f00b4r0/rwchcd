@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Basic API.
+ */
+
 #ifndef rwchcd_lib_h
 #define rwchcd_lib_h
 

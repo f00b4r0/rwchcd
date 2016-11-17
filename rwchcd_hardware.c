@@ -1,10 +1,15 @@
 //
 //  rwchcd_hardware.c
-//  
+//  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
+
+/**
+ * @file
+ * Hardware interface implementation.
+ */
 
 #include <time.h>	// time
 #include <math.h>	// sqrtf
@@ -21,8 +26,8 @@
 
 #define RELAY_MAX_ID	14	///< maximum valid relay id
 
-#define VALID_CALIB_MIN	0.8F
-#define VALID_CALIB_MAX	1.2F
+#define VALID_CALIB_MIN	0.8F	///< minimum valid calibration value
+#define VALID_CALIB_MAX	1.2F	///< maximum valid calibration value
 
 static const storage_version_t Hardware_sversion = 1;
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
@@ -475,7 +480,7 @@ int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast
 /**
  * set internal relay state (request)
  * @param relay the internal relay to modify
- * @param state the desired target state
+ * @param turn_on true if relay is meant to be turned on
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @note actual (hardware) relay state will only be updated by a call to hardware_rwchcrelays_write()
@@ -511,6 +516,12 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 	return (ALL_OK);
 }
 
+/**
+ * Get internal relay state (request).
+ * Updates run.state_time and returns current state
+ * @param relay the internal relay to modify
+ * @return run.is_on
+ */
 int hardware_relay_get_state(struct s_stateful_relay * const relay)
 {
 	const time_t now = time(NULL);

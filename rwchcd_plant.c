@@ -1,13 +1,18 @@
 //
 //  rwchcd_plant.c
-//  
+//  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
-// plant basic operation functions.
-// ideally none of these functions should make use of time
+/**
+ * @file
+ * Plant basic operation implementation.
+ * @todo degraded mode (when sensors are disconnected)
+ * @todo keep sensor history
+ * @todo summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
+ */
 
 #include <stdlib.h>	// calloc/free
 #include <unistd.h>	// sleep
@@ -186,8 +191,8 @@ static int valve_reqclose_pct(struct s_valve * const valve, uint_fast8_t percent
 	return (ALL_OK);
 }
 
-#define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 120)
-#define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 120)
+#define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 120)	///< request valve full open
+#define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 120)	///< request valve full close
 
 /**
  * Request valve stop
@@ -1987,11 +1992,10 @@ int plant_online(struct s_plant * restrict const plant)
 }
 
 /**
- XXX reduce valve if boiler too low
- XXX TODO: degraded mode (when sensors are disconnected)
- XXX TODO: keep sensor history
- XXX TODO: summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
- XXX TODO: error reporting and handling
+ * Run the plant.
+ * This function operates all plant elements in turn by enumerating through each list.
+ * @param plant the target plant to run
+ * @todo error reporting (return status)
  */
 int plant_run(struct s_plant * restrict const plant)
 {

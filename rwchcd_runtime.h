@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Runtime API.
+ */
+
 #ifndef rwchcd_runtime_h
 #define rwchcd_runtime_h
 

@@ -6,6 +6,11 @@
 //  Copyright © 2016 Slashdirt. All rights reserved.
 //
 
+/**
+ * @file
+ * LCD API.
+ */
+
 #ifndef rwchcd_lcd_h
 #define rwchcd_lcd_h
 

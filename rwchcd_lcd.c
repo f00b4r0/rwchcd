@@ -6,6 +6,11 @@
 //  Copyright © 2016 Slashdirt. All rights reserved.
 //
 
+/**
+ * @file
+ * LCD implementation.
+ */
+
 #include <string.h>
 
 #include "rwchcd_spi.h"
@@ -13,7 +18,7 @@
 #include "rwchcd_lib.h"
 #include "rwchcd_lcd.h"
 
-#define LCD_LINELEN	16
+#define LCD_LINELEN	16	///< width of LCD display line
 
 // buffer is one char longer to accomodate for the final '\0'. The rest of the code assumes that this '\0' is always present
 static uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];

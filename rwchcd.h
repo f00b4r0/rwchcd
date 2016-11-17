@@ -9,6 +9,11 @@
 #ifndef rwchcd_h
 #define rwchcd_h
 
+/**
+ * @file
+ * Main API.
+ */
+
 #include <stddef.h>
 #include <stdint.h>	// uint_t
 #include <stdbool.h>	// bool

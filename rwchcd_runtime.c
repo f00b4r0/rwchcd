@@ -6,6 +6,11 @@
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
+/**
+ * @file
+ * Runtime implementation.
+ */
+
 #include <time.h>	// time_t
 #include <string.h>	// memset/memcpy
 #include "rwchcd_lib.h"
@@ -18,6 +23,10 @@
 static const storage_version_t Runtime_sversion = 1;
 static struct s_runtime Runtime;
 
+/**
+ * Get current program runtime
+ * @return pointer to current runtime.
+ */
 struct s_runtime * get_runtime(void)
 {
 	return (&Runtime);
@@ -233,7 +242,7 @@ int runtime_set_runmode(const enum e_runmode runmode)
 /**
  * Set the global dhw mode.
  * @note This function is only valid to call when the global system mode is SYS_AUTO or SYS_DHWONLY.
- * @param runmode desired operation mode, cannot be RM_AUTO or RM_DHWONLY.
+ * @param dhwmode desired operation mode, cannot be RM_AUTO or RM_DHWONLY.
  * @return error status
  */
 int runtime_set_dhwmode(const enum e_runmode dhwmode)
