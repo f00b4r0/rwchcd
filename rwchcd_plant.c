@@ -583,7 +583,7 @@ static int valve_run(struct s_valve * const valve)
 		}
 	}
 	
-	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %d, running since: %d, runtime: %d",
+	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, running since: %ld, runtime: %ld",
 	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, valve->run.running_since, runtime);
 	
 	// apply physical limits
@@ -1128,10 +1128,6 @@ static int circuit_online(struct s_heating_circuit * const circuit)
 	if (ret)
 		goto out;
 
-	// check that mandatory settings are set
-	if (!circuit->set.limit_wtmax)
-		ret = -EMISCONFIGURED;
-
 out:
 	return (ret);
 }
@@ -1178,7 +1174,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const time_t now = time(NULL);
-	temp_t water_temp, curr_temp;
+	temp_t water_temp, curr_temp, lwtmin, lwtmax;
 	int ret;
 
 	assert(circuit);
@@ -1197,7 +1193,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				// decrement counter
 				circuit->run.actual_cooldown_time -= (now - circuit->run.last_run_time);
-				dbgmsg("in cooldown, remaining: %d", circuit->run.actual_cooldown_time);
+				dbgmsg("in cooldown, remaining: %ld", circuit->run.actual_cooldown_time);
 				// stop processing: maintain current wtemp
 				goto valve;
 			}
@@ -1254,16 +1250,18 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
 
 	// enforce limits
-	if (water_temp < circuit->set.limit_wtmin)
-		water_temp = circuit->set.limit_wtmin;
-	else if (water_temp > circuit->set.limit_wtmax)
-		water_temp = circuit->set.limit_wtmax;
+	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_circuit.limit_wtmin);
+	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_circuit.limit_wtmax);
+	if (water_temp < lwtmin)
+		water_temp = lwtmin;
+	else if (water_temp > lwtmax)
+		water_temp = lwtmax;
 
 	// save current target water temp
 	circuit->run.target_wtemp = water_temp;
 
 	// apply heat request: water temp + offset
-	circuit->run.heat_request = water_temp + circuit->set.temp_inoffset;
+	circuit->run.heat_request = water_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_circuit.temp_inoffset);
 
 valve:
 	// adjust valve position if necessary
@@ -1324,10 +1322,6 @@ static int dhwt_online(struct s_dhw_tank * const dhwt)
 	if (ret)
 		goto out;
 
-	// check that mandatory settings are set
-	if (!dhwt->set.limit_wintmax || !dhwt->set.limit_tmax)
-		ret = -EMISCONFIGURED;
-
 out:
 	return (ret);
 }
@@ -1379,9 +1373,10 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t water_temp, top_temp, bottom_temp, curr_temp;
+	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax;
 	bool valid_ttop = false, valid_tbottom = false, test;
 	const time_t now = time(NULL);
+	time_t limit;
 	int ret = -EGENERIC;
 
 	assert(dhwt);
@@ -1433,7 +1428,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
-	dbgmsg("charge since: %d, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
+	dbgmsg("charge since: %ld, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
 	       dhwt->run.charge_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
@@ -1444,20 +1439,21 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			curr_temp = bottom_temp;
 		else
 			curr_temp = top_temp;
-
+		
 		// if charge not in progress, trip if forced or at (target temp - histeresis)
-		if (dhwt->run.force_on || (curr_temp < (dhwt->run.target_temp - dhwt->set.histeresis))) {
+		if (dhwt->run.force_on || (curr_temp < (dhwt->run.target_temp - SETorDEF(dhwt->set.params.histeresis, runtime->config->def_dhwt.histeresis)))) {
 			if (runtime->plant_could_sleep && dhwt->selfheater && dhwt->selfheater->set.configured) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			}
 			else {	// run from plant heat source
 				// calculate necessary water feed temp: target tank temp + offset
-				water_temp = dhwt->run.target_temp + dhwt->set.temp_inoffset;
+				water_temp = dhwt->run.target_temp + SETorDEF(dhwt->set.params.temp_inoffset, runtime->config->def_dhwt.temp_inoffset);
 
 				// enforce limits
-				if (water_temp > dhwt->set.limit_wintmax)
-					water_temp = dhwt->set.limit_wintmax;
+				wintmax = SETorDEF(dhwt->set.params.limit_wintmax, runtime->config->def_dhwt.limit_wintmax);
+				if (water_temp > wintmax)
+					water_temp = wintmax;
 
 				// apply heat request
 				dhwt->run.heat_request = water_temp;
@@ -1493,7 +1489,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		test = false;
 
 		// if heating gone overtime, untrip
-		if ((dhwt->set.limit_chargetime) && ((now - dhwt->run.charge_since) > dhwt->set.limit_chargetime))
+		limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
+		if ((limit) && ((now - dhwt->run.charge_since) > limit))
 			test = true;
 
 		// if heating in progress, untrip at target temp

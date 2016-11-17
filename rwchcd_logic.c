@@ -17,17 +17,19 @@
 
 /**
  * Conditions for running circuit
+ * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
  * Circuit is off in ANY of the following conditions are met:
  * - runtime->summer is true
- * - t_outdoor_60 > current set_outhoff_MODE
- * - t_outdoor_mixed > current set_outhoff_MODE
- * - t_outdoor_attenuated > current set_outhoff_MODE
+ * - t_outdoor_60 > current temp_trigger
+ * - t_outdoor_mixed > current temp_trigger
+ * - t_outdoor_attenuated > current temp_trigger
  * Circuit is back on if ALL of the following conditions are met:
  * - runtime->summer is false
- * - t_outdoor_60 < current set_outhoff_MODE - set.outhoff_histeresis
- * - t_outdoor_mixed < current set_outhoff_MODE - set.outhoff_histeresis
- * - t_outdoor_attenuated < current set_outhoff_MODE - set.outhoff_histeresis
+ * - t_outdoor_60 < current temp_trigger - outhoff_histeresis
+ * - t_outdoor_mixed < current temp_trigger - outhoff_histeresis
+ * - t_outdoor_attenuated < current temp_trigger - outhoff_histeresis
  * State is preserved in all other cases
+ * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
 static void circuit_outhoff(struct s_heating_circuit * const circuit)
 {
@@ -42,14 +44,14 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 	
 	switch (circuit->run.runmode) {
 		case RM_COMFORT:
-			temp_trigger = circuit->set.outhoff_comfort;
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, runtime->config->def_circuit.outhoff_comfort);
 			break;
 		case RM_ECO:
-			temp_trigger = circuit->set.outhoff_eco;
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_eco, runtime->config->def_circuit.outhoff_eco);
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			temp_trigger = circuit->set.outhoff_frostfree;
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_frostfree, runtime->config->def_circuit.outhoff_frostfree);
 			break;
 		case RM_OFF:
 		case RM_AUTO:
@@ -58,6 +60,9 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		default:
 			return;
 	}
+	
+	// min of setting and current ambient request
+	temp_trigger = (circuit->run.request_ambient < temp_trigger) ? circuit->run.request_ambient : temp_trigger;
 
 	if (!temp_trigger) {	// don't do anything if we have an invalid limit
 		circuit->run.outhoff = false;
@@ -70,7 +75,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		circuit->run.outhoff = true;
 	}
 	else {
-		temp_trigger -= circuit->set.outhoff_histeresis;
+		temp_trigger -= SETorDEF(circuit->set.params.outhoff_histeresis, runtime->config->def_circuit.outhoff_histeresis);
 		if ((runtime->t_outdoor_60 < temp_trigger) &&
 		    (runtime->t_outdoor_mixed < temp_trigger) &&
 		    (runtime->t_outdoor_attenuated < temp_trigger))
@@ -119,20 +124,23 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		case RM_MANUAL:
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
-			request_temp = circuit->set.t_comfort;
+			request_temp = SETorDEF(circuit->set.params.t_comfort, runtime->config->def_circuit.t_comfort);
 			break;
 		case RM_ECO:
-			request_temp = circuit->set.t_eco;
+			request_temp = SETorDEF(circuit->set.params.t_eco, runtime->config->def_circuit.t_eco);
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			request_temp = circuit->set.t_frostfree;
+			request_temp = SETorDEF(circuit->set.params.t_frostfree, runtime->config->def_circuit.t_frostfree);
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
 		default:
 			return (-EINVALIDMODE);
 	}
+	
+	// save current ambient request
+	circuit->run.request_ambient = request_temp;
 
 	// Check if the circuit meets run.outhoff conditions
 	circuit_outhoff(circuit);
@@ -142,17 +150,14 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	
 	// transition detection
 	if (prev_runmode != circuit->run.runmode) {
-		circuit->run.transition = (circuit->run.actual_ambient > request_temp) ? TRANS_DOWN : TRANS_UP;
+		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
 		circuit->run.am_update_time = now;
 	}
-
-	// save current ambient request
-	circuit->run.request_ambient = request_temp;
 
 	// XXX OPTIM if return temp is known
 
 	// apply offset and save calculated target ambient temp to circuit
-	circuit->run.target_ambient = circuit->run.request_ambient + circuit->set.t_offset;
+	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, runtime->config->def_circuit.t_offset);
 
 	// Ambient temperature is either read or modelled
 	ambient_temp = get_temp(circuit->set.id_temp_ambient);
@@ -242,7 +247,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t target_temp;
+	temp_t target_temp, ltmin, ltmax;
 
 	if (!dhwt)
 		return (-EINVALID);
@@ -265,13 +270,13 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 		case RM_MANUAL:
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
-			target_temp = dhwt->set.t_comfort;
+			target_temp = SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort);
 			break;
 		case RM_ECO:
-			target_temp = dhwt->set.t_eco;
+			target_temp = SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco);
 			break;
 		case RM_FROSTFREE:
-			target_temp = dhwt->set.t_frostfree;
+			target_temp = SETorDEF(dhwt->set.params.t_frostfree, runtime->config->def_dhwt.t_frostfree);
 			break;
 		case RM_AUTO:
 		case RM_DHWONLY:
@@ -282,13 +287,15 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 
 	// if anti-legionella charge is requested, enforce temp
 	if (dhwt->run.legionella_on)	// XXX TODO: handle untrip
-		target_temp = dhwt->set.t_legionella;
+		target_temp = SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella);
 
 	// enforce limits on dhw temp
-	if (target_temp < dhwt->set.limit_tmin)
-		target_temp = dhwt->set.limit_tmin;
-	else if (target_temp > dhwt->set.limit_tmax)
-		target_temp = dhwt->set.limit_tmax;
+	ltmin = SETorDEF(dhwt->set.params.limit_tmin, runtime->config->def_dhwt.limit_tmin);
+	ltmax = SETorDEF(dhwt->set.params.limit_tmax, runtime->config->def_dhwt.limit_tmax);
+	if (target_temp < ltmin)
+		target_temp = ltmin;
+	else if (target_temp > ltmax)
+		target_temp = ltmax;
 	
 	// save current target dhw temp
 	dhwt->run.target_temp = target_temp;

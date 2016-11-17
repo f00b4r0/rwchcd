@@ -77,25 +77,15 @@ struct s_heating_circuit {
 	struct {
 		bool configured;		///< true if circuit is configured
 		enum e_runmode runmode;		///< current circuit set_runmode
-		temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
-		temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active
-		temp_t t_comfort;		///< target ambient temp in comfort mode
-		temp_t t_eco;			///< target ambient temp in eco mode
-		temp_t t_frostfree;		///< target ambient temp in frost-free mode
-		temp_t t_offset;		///< global offset adjustment for ambient targets
-		temp_t outhoff_comfort;		///< outdoor temp for no heating in comfort mode
-		temp_t outhoff_eco;		///< outdoor temp for no heating in eco mode
-		temp_t outhoff_frostfree;	///< outdoor temp for no heating in frostfree mode
-		temp_t outhoff_histeresis;	///< histeresis for no heating condition
-		tempid_t id_temp_outgoing;	///< outgoing temp sensor for this circuit
-		tempid_t id_temp_return;	///< return temp sensor for this circuit
-		tempid_t id_temp_ambient;	///< ambient temp sensor related to this circuit
-		short ambient_factor;		///< influence of ambient temp on templaw calculations, in percent
+		struct s_circuit_params params;	///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
+		short ambient_factor;		///< influence of ambient temp on templaw calculations, in percent - XXX REVIEW TYPE
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour
 		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target)
 		time_t am_tambient_tK;		///< ambient model: time necessary for 1 Kelvin temperature rise (seconds)
 		temp_t tambient_boostdelta;	///< temperature delta applied during boost turn-on
-		temp_t temp_inoffset;		///< offset temp for heat source request
+		tempid_t id_temp_outgoing;	///< outgoing temp sensor for this circuit
+		tempid_t id_temp_return;	///< return temp sensor for this circuit
+		tempid_t id_temp_ambient;	///< ambient temp sensor related to this circuit
 	} set;
 	struct {
 		bool online;			///< true if circuit is operational (under software management)
@@ -124,7 +114,7 @@ struct s_heating_circuit {
 // XXX TODO: return mixing valve / isolation valve / modulating burner
 struct s_boiler_priv {
 	struct {
-		enum { IDLE_NEVER = 0, IDLE_FROSTONLY, IDLE_ALWAYS } idle_mode; ///< boiler off regime: NEVER: boiler runs always at least at set.limit_tmin, FROSTFREE: boiler turns off only in frost free, ALWAYS: boiler turns off any time there's no heat request (p.48)
+		enum { IDLE_NEVER = 0, IDLE_FROSTONLY, IDLE_ALWAYS } idle_mode; ///< boiler off regime: NEVER: boiler runs always at least at limit_tmin, FROSTFREE: boiler turns off only in frost free, ALWAYS: boiler turns off any time there's no heat request (p.48)
 		temp_t histeresis;		///< boiler temp histeresis
 		temp_t limit_tmax;		///< maximum boiler temp when operating
 		temp_t limit_tmin;		///< minimum boiler temp when operating
@@ -186,6 +176,7 @@ struct s_solar_heater {
 	char * restrict name;
 };
 
+
 /** DHWT element structure */
 struct s_dhw_tank {
 	struct {
@@ -193,20 +184,11 @@ struct s_dhw_tank {
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
 		enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };	///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
-		time_t limit_chargetime;	///< maximum duration of charge time -- XXX NOT IMPLEMENTED p67
 		tempid_t id_temp_bottom;	///< temp sensor at bottom of dhw tank
 		tempid_t id_temp_top;		///< temp sensor at top of dhw tank
 		tempid_t id_temp_win;		///< temp sensor heatwater inlet
 		tempid_t id_temp_wout;		///< temp sensor heatwater outlet
-		temp_t limit_wintmax;		///< maximum allowed water intake temp when active
-		temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection)
-		temp_t limit_tmax;		///< maximum allowed dhwt temp when active
-		temp_t t_legionella;		///< target temp for legionella prevention - XXX NOT IMPLEMENTED
-		temp_t t_comfort;		///< target temp in comfort mode - XXX setup ensure > tfrostfree
-		temp_t t_eco;			///< target temp in eco mode - XXX setup ensure > tfrostfree
-		temp_t t_frostfree;		///< target temp in frost-free mode - XXX setup ensure > 0C
-		temp_t histeresis;		///< histeresis for target temp - XXX setup ensure > 0C
-		temp_t temp_inoffset;		///< offset temp for heat source request - XXX setup ensure > 0C
+		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 	} set;
 	struct {
 		bool online;			///< true if tank is available for use (under software management)

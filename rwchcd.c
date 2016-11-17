@@ -109,6 +109,28 @@ static int init_process()
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config->configured = true;
 
+		// circuit defaults
+		config->def_circuit.t_comfort = celsius_to_temp(20.0F);
+		config->def_circuit.t_eco = celsius_to_temp(16);
+		config->def_circuit.t_frostfree = celsius_to_temp(7);
+		config->def_circuit.outhoff_comfort = config->def_circuit.t_comfort - deltaK_to_temp(2);	// XXX should be deltas and not temps ?
+		config->def_circuit.outhoff_eco = config->def_circuit.t_eco - deltaK_to_temp(2);
+		config->def_circuit.outhoff_frostfree = config->def_circuit.t_frostfree - deltaK_to_temp(4);
+		config->def_circuit.outhoff_histeresis = deltaK_to_temp(1);
+		config->def_circuit.limit_wtmax = celsius_to_temp(85);
+		config->def_circuit.limit_wtmin = celsius_to_temp(20);
+		config->def_circuit.temp_inoffset = deltaK_to_temp(7);
+		
+		// DHWT defaults
+		config->def_dhwt.limit_wintmax = celsius_to_temp(90);
+		config->def_dhwt.limit_tmin = celsius_to_temp(5);
+		config->def_dhwt.limit_tmax = celsius_to_temp(60);
+		config->def_dhwt.t_comfort = celsius_to_temp(55);
+		config->def_dhwt.t_eco = celsius_to_temp(40);
+		config->def_dhwt.t_frostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
+		config->def_dhwt.histeresis = deltaK_to_temp(10);
+		config->def_dhwt.temp_inoffset = deltaK_to_temp(10);
+		
 		// XXX firmware config bits here
 		config->rWCHC_settings.addresses.S_burner = 2-1;			// XXX INTERNAL CONFIG
 		config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(14);	// XXX INTERNAL CONFIG
@@ -168,22 +190,12 @@ static int init_process()
 	}
 
 	// configure that circuit
-	circuit->set.limit_wtmax = celsius_to_temp(85);
-	circuit->set.limit_wtmin = celsius_to_temp(20);
-	circuit->set.t_comfort = celsius_to_temp(20.0F);
-	circuit->set.t_eco = celsius_to_temp(16);
-	circuit->set.t_frostfree = celsius_to_temp(7);
-	circuit->set.outhoff_comfort = circuit->set.t_comfort - deltaK_to_temp(2);	// XXX should be deltas and not temps ?
-	circuit->set.outhoff_eco = circuit->set.t_eco - deltaK_to_temp(2);
-	circuit->set.outhoff_frostfree = circuit->set.t_frostfree - deltaK_to_temp(4);
-	circuit->set.outhoff_histeresis = deltaK_to_temp(1);
 	circuit->set.id_temp_outgoing = 3;	// XXX VALIDATION
 	circuit->set.id_temp_return = 4;	// XXX VALIDATION
-	circuit->set.temp_inoffset = deltaK_to_temp(7);
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
-	circuit->tlaw_data.twater1 = celsius_to_temp(65);
+	circuit->tlaw_data.twater1 = celsius_to_temp(67);
 	circuit->tlaw_data.tout2 = celsius_to_temp(15);
-	circuit->tlaw_data.twater2 = celsius_to_temp(28);
+	circuit->tlaw_data.twater2 = celsius_to_temp(27);
 	circuit_make_linear(circuit);
 
 	// create a valve for that circuit
@@ -245,14 +257,7 @@ static int init_process()
 
 	// configure that dhwt
 	dhwt->set.id_temp_bottom = boiler->set.id_temp;
-	dhwt->set.limit_tmin = celsius_to_temp(5);
-	dhwt->set.limit_tmax = celsius_to_temp(60);
-	dhwt->set.limit_wintmax = celsius_to_temp(90);
-	dhwt->set.t_comfort = celsius_to_temp(55);
-	dhwt->set.t_eco = celsius_to_temp(40);
-	dhwt->set.t_frostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
-	dhwt->set.histeresis = deltaK_to_temp(10);
-	dhwt->set.temp_inoffset = deltaK_to_temp(0);	// Integrated tank
+	dhwt->set.params.temp_inoffset = deltaK_to_temp(0);	// Integrated tank
 	dhwt->set.runmode = RM_AUTO;	// use global setting
 	dhwt->set.configured = true;
 

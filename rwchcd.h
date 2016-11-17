@@ -21,6 +21,8 @@
 #define clrbit(var, bit)	((var) &= ~(1 << (bit)))
 #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 
+#define SETorDEF(set, def)	(set ? set : def)
+
 /* i18n stuff */
 #ifdef HAVE_GETTEXT
  #include <libintl.h>
@@ -97,10 +99,39 @@ enum e_systemmode {
 	SYS_UNKNOWN,	///< invalid past this value
 };
 
+/** Circuit common parameters */
+struct s_circuit_params {
+	temp_t t_comfort;		///< target ambient temp in comfort mode
+	temp_t t_eco;			///< target ambient temp in eco mode
+	temp_t t_frostfree;		///< target ambient temp in frost-free mode
+	temp_t t_offset;		///< global offset adjustment for ambient targets
+	temp_t outhoff_comfort;		///< outdoor temp for no heating in comfort mode
+	temp_t outhoff_eco;		///< outdoor temp for no heating in eco mode
+	temp_t outhoff_frostfree;	///< outdoor temp for no heating in frostfree mode
+	temp_t outhoff_histeresis;	///< histeresis for no heating condition
+	temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
+	temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active. @warning MUST be set either globally or locally otherwise circuit won't heat
+	temp_t temp_inoffset;		///< offset temp for heat source request
+};
+
+/** DHWT common parameters */
+struct s_dhwt_params {
+	time_t limit_chargetime;	///< maximum duration of charge time
+	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
+	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection). @warning MUST be set either globally or locally otherwise dhwt won't heat
+	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. @warning MUST be set either globally or locally otherwise dhwt won't heat
+	temp_t t_legionella;		///< target temp for legionella prevention - XXX NOT IMPLEMENTED
+	temp_t t_comfort;		///< target temp in comfort mode - XXX setup ensure > tfrostfree
+	temp_t t_eco;			///< target temp in eco mode - XXX setup ensure > tfrostfree
+	temp_t t_frostfree;		///< target temp in frost-free mode - XXX setup ensure > 0C
+	temp_t histeresis;		///< histeresis for target temp - XXX setup ensure > 0C
+	temp_t temp_inoffset;		///< offset temp for heat source request - XXX setup ensure > 0C
+};
+
 /** Config structure */
 struct s_config {
-	bool configured;		///< true if properly configured
 	bool restored;			///< true if config has been restored from storage
+	bool configured;		///< true if properly configured
 	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp
@@ -108,6 +139,8 @@ struct s_config {
 	temp_t limit_tfrostmin;		///< outdoor temp for frost-protection
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
 	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED
+	struct s_circuit_params def_circuit;	///< circuit defaults: if individual circuits don't set these values, these defaults will be used
+	struct s_dhwt_params def_dhwt;		///< DHWT defaults: if individual dhwts don't set these values, these defaults will be used
 	struct rwchc_s_settings rWCHC_settings;
 };
 
