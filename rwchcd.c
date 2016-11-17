@@ -323,6 +323,7 @@ static void * thread_master(void *arg)
 thread_end:
 	// cleanup
 	dbgmsg("thread exiting!");
+	config_save(runtime->config);	// save running config before exiting
 	plant_del(runtime->plant);
 	config_del(runtime->config);
 	pthread_exit(&ret);
