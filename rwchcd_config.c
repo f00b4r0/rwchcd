@@ -101,7 +101,7 @@ int config_init(struct s_config * const config)
 	}
 	
 	// if we couldn't, copy current hardware settings to config
-	hardware_config_get(&(config->rWCHC_settings));
+	ret = hardware_config_get(&(config->rWCHC_settings));
 
 	return (ret);
 }

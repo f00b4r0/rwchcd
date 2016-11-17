@@ -9,6 +9,8 @@
 /**
  * @file
  * SPI backend implementation for rWCHC hardware.
+ * @bug The code can go out of sync right after SPI_RESYNC():
+ * I must rewrite the SPI protocol so that the sync is part of the ioctl that's being called.
  */
 
 #include <stdio.h>

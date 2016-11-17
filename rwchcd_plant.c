@@ -1842,6 +1842,9 @@ void plant_del(struct s_plant * plant)
 	struct s_heating_circuit_l * circuitelement, * circuitlnext;
 	struct s_dhw_tank_l * dhwtelement, * dhwtlnext;
 	struct s_heatsource_l * sourceelement, * sourcenext;
+	
+	if (!plant)
+		return;
 
 	// clear all registered pumps
 	pumpelmt = plant->pump_head;
