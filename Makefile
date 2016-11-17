@@ -6,6 +6,7 @@ LDLIBS := $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d
 VARLIBDIR := /var/lib/rwchcd
+SVNVER := $(shell svnversion -n .)
 
 SRCS := $(wildcard *.c)
 
@@ -15,7 +16,7 @@ DEPS := $(SRCS:.c=.d)
 
 MAIN := rwchcd
 
-.PHONY:	all clean distclean install uninstall dbus-gen svn_version.h
+.PHONY:	all clean distclean install uninstall dbus-gen doc svn_version.h
 
 all:	svn_version.h $(MAIN)
 	@echo	Done
@@ -28,7 +29,7 @@ $(MAIN): $(OBJS)
 
 svn_version.h:
 	echo -n '#define SVN_REV "'	> $@
-	svnversion -n .			>> $@
+	echo -n $(SVNVER)		>> $@
 	echo '"'			>> $@
 
 clean:
@@ -36,6 +37,7 @@ clean:
 
 distclean:	clean
 	$(RM) *-generated.[ch]
+	$(RM) -r doc
 
 dbus-gen:	rwchcd_introspection.xml
 	gdbus-codegen --generate-c-code rwchcd_dbus-generated --c-namespace dbus --interface-prefix org.slashdirt. rwchcd_introspection.xml
@@ -55,4 +57,7 @@ uninstall:
 	$(RM) $(SYSTEMDUNITDIR)/rwchcd.service
 	@echo Done
 
+doc:	Doxyfile
+	( cat Doxyfile; echo "PROJECT_NUMBER=r$(SVNVER)" ) | doxygen -
+	
 -include $(DEPS)
