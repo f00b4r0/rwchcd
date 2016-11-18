@@ -138,13 +138,13 @@ static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
  */
 static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
-				      gfloat temp,
+				      gdouble NewTemp,
 				      gpointer user_data)
 {
-	temp_t newtemp = celsius_to_temp(temp);
+	temp_t newtemp = celsius_to_temp(NewTemp);
 	const enum e_systemmode cursys = get_runtime()->systemmode;
-	
-	if (validate_temp(newtemp))
+
+	if (validate_temp(newtemp) != ALL_OK)
 		return false;
 
 	switch (cursys) {
@@ -161,7 +161,7 @@ static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 			return false;
 			break;
 	}
-	
+
 	dbus_rwchcd_control_complete_config_temp_set(object, invocation);
 	
 	return true;
