@@ -31,5 +31,19 @@
     <method name="ToutdoorGet">
 	    <arg name="CurToutdoor" direction="out" type="d"/>
     </method>
+    <!--
+     ConfigTempGet:
+     @value: current config temperature
+     -->
+    <method name="ConfigTempGet">
+	    <arg name="CurTemp" direction="out" type="d"/>
+    </method>
+    <!--
+     ConfigTempSet:
+     @value: desired config temperature
+     -->
+    <method name="ConfigTempSet">
+	    <arg name="NewTemp" direction="in" type="d"/>
+    </method>
   </interface>
 </node>
