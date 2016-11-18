@@ -47,7 +47,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	if (!file)
 		return (-ESTORE);
 	
-	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p",
+	dbgmsg("identifier: %s, v: %d, sz: %zu, ptr: %p",
 	       identifier, *version, size, object);
 	
 	// write our global magic first
@@ -114,7 +114,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	// then read the object
 	fread(object, size, 1, file);
 	
-	dbgmsg("identifier: %s, v: %d, sz: %d, ptr: %p",
+	dbgmsg("identifier: %s, v: %d, sz: %zu, ptr: %p",
 	       identifier, *version, size, object);
 	
 	// finally close the file

@@ -16,7 +16,7 @@
 #include <assert.h>
 
 #include "rwchcd_lib.h"
-#include "rwchcd_spi.h"
+#include "rwchcd_hardware.h"
 #include "rwchcd_storage.h"
 #include "rwchcd_config.h"
 
@@ -87,8 +87,7 @@ static int config_restore(struct s_config * const config)
  */
 int config_init(struct s_config * const config)
 {
-	struct rwchc_s_settings hw_set;
-	int ret, i = 0;
+	int ret;
 
 	if (!config)
 		return (-EINVALID);
