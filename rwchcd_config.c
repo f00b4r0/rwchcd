@@ -20,7 +20,7 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_config.h"
 
-static const storage_version_t Config_sversion = 2;
+static const storage_version_t Config_sversion = 3;
 
 // XXX review handling of rWCHC_settings
 
