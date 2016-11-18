@@ -134,6 +134,7 @@ static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
  * @param temp new temperature value
  * @note only handles default circuit comfort temp for now.
  * @todo make it generic to set any config temp
+ * @todo save config: cannot do for now because config_save() calls hardware
  */
 static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
@@ -178,8 +179,8 @@ static void on_name_acquired(GDBusConnection *connection,
 	g_signal_connect(skeleton, "handle-sysmode-set", G_CALLBACK(on_handle_sysmode_set), NULL);
 	g_signal_connect(skeleton, "handle-sysmode-get", G_CALLBACK(on_handle_sysmode_get), NULL);
 	g_signal_connect(skeleton, "handle-toutdoor-get", G_CALLBACK(on_handle_toutdoor_get), NULL);
-	g_signal_connect(skeleton, "handle-conftemp-get", G_CALLBACK(on_handle_config_temp_get), NULL);
-	g_signal_connect(skeleton, "handle-conftemp-set", G_CALLBACK(on_handle_config_temp_set), NULL);
+	g_signal_connect(skeleton, "handle-config-temp-get", G_CALLBACK(on_handle_config_temp_get), NULL);
+	g_signal_connect(skeleton, "handle-config-temp-set", G_CALLBACK(on_handle_config_temp_set), NULL);
 	g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(skeleton),
 					 connection,
 					 "/org/slashdirt/rwchcd",
