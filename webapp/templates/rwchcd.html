@@ -1,4 +1,4 @@
-$def with (formmode, temp)
+$def with (formmode, outtemp)
 <html>
  <head>
     <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
@@ -8,8 +8,9 @@ $def with (formmode, temp)
   </head>
   <body>
     <h1>Contrôle chauffage maison</h1>
-    <h2>Température extérieure: $temp °C</h2>
+    <h2>Température extérieure: $outtemp °C</h2>
     <form method="post">
+	$if not formmode.valid: <p>Erreur!</p>
 	$:formmode.render()
 	<input type="submit" />
     </form>
