@@ -40,7 +40,7 @@ class rwchcd:
 			mode = int(form.sysmode.value)
 			rwchcd_Control.SysmodeSet(mode)
 			newtemp = float(form.systemp.value)
-			rwchcd_Control.ConfigTempSet(systemp)
+			rwchcd_Control.ConfigTempSet(newtemp)
 			raise web.found(web.url())
 		
 
