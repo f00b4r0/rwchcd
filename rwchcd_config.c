@@ -144,26 +144,6 @@ int config_set_nsensors(struct s_config * const config, const int_fast16_t nsens
 }
 
 /**
- * Set outdoor temperature for frost protection activation.
- * @param config target config
- * @param tfrostmin target outdoor temp for activation
- * @return exec status
- */
-int config_set_tfrostmin(struct s_config * const config, const temp_t tfrostmin)
-{
-	if (!config)
-		return (-EINVALID);
-
-	if (validate_temp(tfrostmin) != ALL_OK)
-		return (-EINVALID);
-
-	config->limit_tfrostmin = tfrostmin;
-	config->rWCHC_settings.limits.frost_tmin = (uint8_t)temp_to_celsius(tfrostmin);
-
-	return (ALL_OK);
-}
-
-/**
  * Set outdoor temperature for summer switchover.
  * Defines the temperature at which all heating circuits will be unconditionally stopped.
  * @param config target config

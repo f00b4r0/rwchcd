@@ -19,6 +19,7 @@
 #include <stdbool.h>	// bool
 #include <time.h>	// time_t
 #include <stdio.h>	// (f)printf
+
 #include "rwchc_export.h"
 
 #define testbit(var, bit)	((var) & (1 << (bit)))
@@ -141,7 +142,6 @@ struct s_config {
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
-	temp_t limit_tfrostmin;		///< outdoor temp for frost-protection
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
 	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED
 	struct s_circuit_params def_circuit;	///< circuit defaults: if individual circuits don't set these values, these defaults will be used

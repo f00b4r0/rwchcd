@@ -1,11 +1,15 @@
 Licence: GPLv2
 Copyright: (C) 2016 Thibaut VARENE
 
+rwchcd: a central heating controller daemon for rWCHC
+
 Dependencies: libglib2.0-dev wiringpi pkg-config
+Documentation deps: doxygen graphviz
 
 To build, run 'make dbus-gen' then 'make'
 To install, as root run 'make install'
 To uninstall, as root run 'make uninstall'
+To generate documentation, run 'make doc'
 
 A systemd service file is provided that will be installed when running
 'make install'. The daemon will be started at next reboot unless manually

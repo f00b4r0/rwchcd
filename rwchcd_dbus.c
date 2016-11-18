@@ -9,6 +9,13 @@
 /**
  * @file
  * D-Bus implementation.
+ *
+ * @note the D-Bus handler lives in a separate thread: beware of synchronisation.
+ * Currently no locking is being used based on the fact that the minor inconsistency
+ * triggered by a concurrent modification will not have nefarious effects and will
+ * only last for 1s at most (between two consecutive runs of the master thread),
+ * and thus does not warranty the performance penalty of using locks everywhere.
+ * XXX REVIEW
  */
 
 #include "rwchcd_lib.h"

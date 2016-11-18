@@ -206,7 +206,7 @@ static int hardware_calibrate(void)
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_nodac = (1000.0F / (float)refcalib);	// calibrate against 1kohm reference
+		runtime->calib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
 	if ((runtime->calib_nodac < VALID_CALIB_MIN) || (runtime->calib_nodac > VALID_CALIB_MAX)) {
@@ -224,7 +224,7 @@ static int hardware_calibrate(void)
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_dac = (1000.0F / (float)refcalib);	// calibrate against 1kohm reference
+		runtime->calib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
 	if ((runtime->calib_dac < VALID_CALIB_MIN) || (runtime->calib_dac > VALID_CALIB_MAX))

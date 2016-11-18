@@ -35,6 +35,7 @@
 /* Begin PBXFileReference section */
 		4F2D5F571D97191C00CF842D /* rwchcd_lcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_lcd.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F2D5F581D97191C00CF842D /* rwchcd_lcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_lcd.h; sourceTree = SOURCE_ROOT; };
+		4F2F7F6A1DDF1DD80095AAEE /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = SOURCE_ROOT; };
 		4F3AFBAA1D8873C500D86EE7 /* rwchcd_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_config.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBAB1D8873C500D86EE7 /* rwchcd_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_config.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBAD1D8884ED00D86EE7 /* rwchcd_runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_runtime.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -93,6 +94,7 @@
 		4FCD55071D835CF6003BB848 /* daemon */ = {
 			isa = PBXGroup;
 			children = (
+				4F2F7F6A1DDF1DD80095AAEE /* README */,
 				4FCD550D1D835D04003BB848 /* rwchc_export.h */,
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */,

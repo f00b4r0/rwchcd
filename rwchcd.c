@@ -7,6 +7,18 @@
 //
 
 /**
+ @mainpage
+
+ rwchcd: a central heating controller daemon for rWCHC
+ 
+ Licence: GPLv2
+ 
+ Copyright: (C) 2016 Thibaut VARENE
+ 
+ Home page: http://hacks.slashdirt.org/hw/rwchc/
+ */
+
+/**
  * @file
  * Main program.
  * @todo:
@@ -27,6 +39,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <err.h>
+
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
@@ -108,9 +121,7 @@ static int init_process()
 		config_set_building_tau(config, 10 * 60 * 60);	// XXX 10 hours
 		config_set_nsensors(config, 4);	// XXX 4 sensors
 		config_set_outdoor_sensorid(config, 1);
-		config_set_tfrostmin(config, celsius_to_temp(5));	// XXX frost protect at 5C
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
-		config->configured = true;
 
 		// circuit defaults
 		config->def_circuit.t_comfort = celsius_to_temp(20.0F);
@@ -135,6 +146,9 @@ static int init_process()
 		config->def_dhwt.temp_inoffset = deltaK_to_temp(10);
 		
 		// XXX firmware config bits here
+		config->rWCHC_settings.limits.frost_tmin = 3;
+		config->rWCHC_settings.limits.burner_tmax = 70;
+		config->rWCHC_settings.limits.burner_tmin = 50;
 		config->rWCHC_settings.addresses.S_burner = 2-1;			// XXX INTERNAL CONFIG
 		config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(14);	// XXX INTERNAL CONFIG
 		config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
@@ -142,6 +156,7 @@ static int init_process()
 		config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(10);	// XXX INTERNAL CONFIG
 		config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(9);		// XXX INTERNAL CONFIG
 		
+		config->configured = true;
 		config_save(config);
 	}
 
