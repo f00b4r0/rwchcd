@@ -8,8 +8,7 @@
 
 /**
  @mainpage
-
- rwchcd: a central heating controller daemon for rWCHC
+ rwchcd: a central heating controller daemon for rWCHC.
  
  Licence: GPLv2
  
