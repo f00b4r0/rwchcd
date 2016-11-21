@@ -22,6 +22,7 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_storage.h"
+#include "rwchcd_lcd.h"
 #include "rwchcd_hardware.h"
 
 #define RELAY_MAX_ID	14	///< maximum valid relay id
@@ -31,6 +32,12 @@
 
 static const storage_version_t Hardware_sversion = 1;
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
+
+static struct {
+	rwchc_sensor_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
+	union rwchc_u_relays rWCHC_relays;		// XXX locks
+	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
+} Hardware;
 
 /**
  * Convert sensor value to actual resistance.
@@ -108,6 +115,29 @@ static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
 temp_t sensor_to_temp(const rwchc_sensor_t raw)
 {
 	return (celsius_to_temp(pt1000_ohm_to_celsius(sensor_to_ohm(raw, 1))));
+}
+
+/**
+ * Process raw sensor data and extract temperature values into the runtime temps[] array.
+ * Applies a short-window LP filter on raw data to smooth out noise.
+ */
+static void parse_temps(void)
+{
+	struct s_runtime * const runtime = get_runtime();
+	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
+	const time_t dt = time(NULL) - lasttime;
+	uint_fast8_t i;
+	temp_t previous, current;
+	
+	for (i = 0; i<runtime->config->nsensors; i++) {
+		current = sensor_to_temp(Hardware.rWCHC_sensors[i]);
+		previous = runtime->temps[i];
+		
+		// apply LP filter with 5s time constant
+		runtime->temps[i] = temp_expw_mavg(previous, current, 5, dt);
+	}
+	
+	lasttime = time(NULL);
 }
 
 /**
@@ -323,7 +353,6 @@ out:
  */
 int hardware_rwchcrelays_write(void)
 {
-	struct s_runtime * const runtime = get_runtime();
 	struct s_stateful_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
@@ -385,7 +414,7 @@ int hardware_rwchcrelays_write(void)
 	// update internal runtime state on success
 	// XXX NOTE there will be a discrepancy between internal state and Relays[] if the above fails
 	if (ALL_OK == ret)
-		runtime->rWCHC_relays.ALL = rWCHC_relays.ALL;
+		Hardware.rWCHC_relays.ALL = rWCHC_relays.ALL;
 
 	return (ret);
 }
@@ -396,11 +425,10 @@ int hardware_rwchcrelays_write(void)
  */
 int hardware_rwchcperiphs_write(void)
 {
-	const struct s_runtime * const runtime = get_runtime();
 	int i = 0, ret;
 
 	do {
-		ret = rwchcd_spi_peripherals_w(&(runtime->rWCHC_peripherals));
+		ret = rwchcd_spi_peripherals_w(&(Hardware.rWCHC_peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -412,11 +440,10 @@ int hardware_rwchcperiphs_write(void)
  */
 int hardware_rwchcperiphs_read(void)
 {
-	struct s_runtime * const runtime = get_runtime();
 	int i = 0, ret;
 
 	do {
-		ret = rwchcd_spi_peripherals_r(&(runtime->rWCHC_peripherals));
+		ret = rwchcd_spi_peripherals_r(&(Hardware.rWCHC_peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -562,9 +589,11 @@ int hardware_online(void)
 		goto fail;
 
 	// read sensors
-	ret = hardware_sensors_read(runtime->rWCHC_sensors, runtime->config->nsensors);
+	ret = hardware_sensors_read(Hardware.rWCHC_sensors, runtime->config->nsensors);
 	if (ret)
 		goto fail;
+
+	parse_temps();
 
 fail:
 	return (ret);
@@ -577,6 +606,9 @@ void hardware_run(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
+	static int count = 0;
+	static tempid_t tempid = 1;
+	enum e_systemmode cursysmode;
 	int ret;
 
 	if (!runtime->config || !runtime->config->configured) {
@@ -586,13 +618,55 @@ void hardware_run(void)
 
 	// fetch SPI data
 
-#if 0
 	// read peripherals
 	ret = hardware_rwchcperiphs_read();
 	if (ret)
 		dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
-#endif
 
+	if (Hardware.rWCHC_peripherals.LED2) {
+		// clear alarm
+		Hardware.rWCHC_peripherals.LED2 = 0;
+		Hardware.rWCHC_peripherals.buzzer = 0;
+		Hardware.rWCHC_peripherals.LCDbl = 0;
+		lcd_update(true);
+		// XXX reset runtime?
+	}
+	
+	if (Hardware.rWCHC_peripherals.RQSW1) {
+		// change system mode
+		cursysmode = runtime->systemmode;
+		cursysmode++;
+		Hardware.rWCHC_peripherals.RQSW1 = 0;
+		count = 5;
+		
+		if (cursysmode >= SYS_UNKNOWN)	// XXX last mode
+			cursysmode = SYS_OFF;
+		
+		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?
+	}
+	
+	if (Hardware.rWCHC_peripherals.RQSW2) {
+		// increase displayed tempid
+		tempid++;
+		Hardware.rWCHC_peripherals.RQSW2 = 0;
+		count = 5;
+		
+		if (tempid > runtime->config->nsensors)
+			tempid = 1;
+	}
+	
+	if (count) {
+		Hardware.rWCHC_peripherals.LCDbl = 1;
+		count--;
+		if (!count)
+			lcd_fade();
+	}
+	else
+		Hardware.rWCHC_peripherals.LCDbl = 0;
+	
+	lcd_line1(tempid);
+	lcd_update(false);
+	
 	// read sensors
 	ret = hardware_sensors_read(rawsensors, runtime->config->nsensors);
 	if (ret) {
@@ -601,9 +675,11 @@ void hardware_run(void)
 	}
 	else {
 		// copy valid data to runtime environment
-		memcpy(runtime->rWCHC_sensors, rawsensors, sizeof(runtime->rWCHC_sensors));
+		memcpy(Hardware.rWCHC_sensors, rawsensors, sizeof(Hardware.rWCHC_sensors));
 	}
 
+	parse_temps();
+	
 	/* we want to release locks and sleep here to reduce contention and
 	 * allow other parts to do their job before writing back */
 	//sleep(1);
@@ -615,12 +691,10 @@ void hardware_run(void)
 	if (ret)
 		dbgerr("hardware_rwchcrelays_write failed: %d", ret);
 
-#if 0
 	// write peripherals
 	ret = hardware_rwchcperiphs_write();
 	if (ret)
 		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
-#endif
 	
 	// save state
 	ret = hardware_save();

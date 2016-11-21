@@ -45,8 +45,6 @@
 #include "rwchcd_plant.h"
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
-#include "rwchcd_lcd.h"
-#include "rwchcd_spi.h"
 #include "rwchcd_dbus.h"
 
 #include "svn_version.h"
@@ -317,18 +315,9 @@ static void * thread_master(void *arg)
 	while (master_thread_sem) {
 		hardware_run();
 		
-		// test read peripherals
-		ret = hardware_rwchcperiphs_read();
-		if (ret)
-			dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
-		
 		ret = runtime_run();
 		if (ret)
 			dbgerr("runtime_run returned: %d", ret);
-		
-		ret = hardware_rwchcperiphs_write();
-		if (ret)
-			dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
 		
 		printf("\n");	// XXX DEBUG
 		sleep(1);

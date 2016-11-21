@@ -16,8 +16,6 @@
 #include "rwchcd_lib.h"
 #include "rwchcd_plant.h"
 #include "rwchcd_runtime.h"
-#include "rwchcd_lcd.h"
-#include "rwchcd_hardware.h"	// sensor_to_temp()
 #include "rwchcd_storage.h"
 
 static const storage_version_t Runtime_sversion = 1;
@@ -30,28 +28,6 @@ static struct s_runtime Runtime;
 struct s_runtime * get_runtime(void)
 {
 	return (&Runtime);
-}
-
-/**
- * Process raw sensor data and extract temperature values into the runtime temps[] array.
- * Applies a short-window LP filter on raw data to smooth out noise.
- */
-static void parse_temps(void)
-{
-	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
-	const time_t dt = time(NULL) - lasttime;
-	uint_fast8_t i;
-	temp_t previous, current;
-
-	for (i = 0; i<Runtime.config->nsensors; i++) {
-		current = sensor_to_temp(Runtime.rWCHC_sensors[i]);
-		previous = Runtime.temps[i];
-
-		// apply LP filter with 5s time constant
-		Runtime.temps[i] = temp_expw_mavg(previous, current, 5, dt);
-	}
-
-	lasttime = time(NULL);
 }
 
 /**
@@ -274,8 +250,6 @@ int runtime_online(void)
 	
 	runtime_restore();
 
-	parse_temps();
-
 	outdoor_temp();
 	outdoor_temp_reset();
 
@@ -288,9 +262,6 @@ int runtime_online(void)
  */
 int runtime_run(void)
 {
-	static int count = 0;
-	static tempid_t tempid = 1;
-	enum e_systemmode cursysmode;
 	int ret;
 
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
@@ -301,52 +272,6 @@ int runtime_run(void)
 	dbgmsg("t_outdoor: %.1f, t_60: %.1f, t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f",
 	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60), temp_to_celsius(Runtime.t_outdoor_filtered),
 	       temp_to_celsius(Runtime.t_outdoor_mixed), temp_to_celsius(Runtime.t_outdoor_attenuated));
-	
-	parse_temps();
-
-	if (Runtime.rWCHC_peripherals.LED2) {
-		// clear alarm
-		Runtime.rWCHC_peripherals.LED2 = 0;
-		Runtime.rWCHC_peripherals.buzzer = 0;
-		Runtime.rWCHC_peripherals.LCDbl = 0;
-		lcd_update(true);
-		// XXX reset runtime?
-	}
-
-	if (Runtime.rWCHC_peripherals.RQSW1) {
-		// change system mode
-		cursysmode = Runtime.systemmode;
-		cursysmode++;
-		Runtime.rWCHC_peripherals.RQSW1 = 0;
-		count = 5;
-
-		if (cursysmode >= SYS_UNKNOWN)	// XXX last mode
-			cursysmode = SYS_OFF;
-
-		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?
-	}
-
-	if (Runtime.rWCHC_peripherals.RQSW2) {
-		// increase displayed tempid
-		tempid++;
-		Runtime.rWCHC_peripherals.RQSW2 = 0;
-		count = 5;
-
-		if (tempid > Runtime.config->nsensors)
-			tempid = 1;
-	}
-
-	if (count) {
-		Runtime.rWCHC_peripherals.LCDbl = 1;
-		count--;
-		if (!count)
-			lcd_fade();
-	}
-	else
-		Runtime.rWCHC_peripherals.LCDbl = 0;
-
-	lcd_line1(tempid);
-	lcd_update(false);
 
 	outdoor_temp();
 	runtime_summer();

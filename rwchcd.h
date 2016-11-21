@@ -171,9 +171,6 @@ struct s_runtime {
 	struct s_config * restrict config;	///< running config
 	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
 	temp_t temps[RWCHC_NTSENSORS];			///< array of all the system temperatures
-	rwchc_sensor_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
-	union rwchc_u_relays rWCHC_relays;		// XXX locks
-	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
 };
 
 #endif /* rwchcd_h */
