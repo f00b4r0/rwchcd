@@ -132,6 +132,8 @@ struct s_dhwt_params {
 	temp_t temp_inoffset;		///< offset temp for heat source request - XXX setup ensure > 0C
 };
 
+#include "rwchc_export.h"
+
 /** Config structure */
 struct s_config {
 	bool restored;			///< true if config has been restored from storage
@@ -147,7 +149,7 @@ struct s_config {
 	struct rwchc_s_settings rWCHC_settings;
 };
 
-#define	RWCHCD_NSENSORS	15	///< number of available sensors
+#define	RWCHCD_NTEMPS	15	///< number of available sensors
 
 /** Runtime environment structure */
 struct s_runtime {
@@ -168,7 +170,7 @@ struct s_runtime {
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
 	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
-	temp_t temps[RWCHCD_NSENSORS];			///< array of all the system temperatures
+	temp_t temps[RWCHCD_NTEMPS];			///< array of all the system temperatures
 };
 
 #endif /* rwchcd_h */

@@ -17,8 +17,6 @@
 #include <string.h>	// memset
 #include <unistd.h>	// sleep
 
-#include "rwchc_export.h"
-
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
 #include "rwchcd_runtime.h"
@@ -27,7 +25,7 @@
 #include "rwchcd_lcd.h"
 #include "rwchcd_hardware.h"
 
-#if RWCHC_NTSENSORS != RWCHCD_SENSORS
+#if RWCHC_NTSENSORS != RWCHCD_NTEMPS
 #error Discrepancy in number of hardware sensors
 #endif
 
@@ -42,9 +40,9 @@ static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
 static struct {
 	float calib_nodac;		///< sensor calibration value without dac offset
 	float calib_dac;		///< sensor calibration value with dac offset
-	rwchc_sensor_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
 	union rwchc_u_relays rWCHC_relays;		// XXX locks
 	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
+	rwchc_sensor_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
 } Hardware;
 
 /**

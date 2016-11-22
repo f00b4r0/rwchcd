@@ -18,6 +18,8 @@
 #include <time.h>
 #include "rwchcd.h"
 
+#include "rwchc_export.h"
+
 #define FORCE	1
 #define NOFORCE	0
 
