@@ -19,6 +19,7 @@ urls = (
 formMode = form.Form(
 	form.Dropdown('sysmode', [(0, 'Off'), (2, 'Confort'), (3, 'Eco'), (4, 'Hors-Gel'), (5, 'ECS')]),
 	form.Textbox('systemp', form.regexp('^\d+\.?\d*$', 'decimal number: xx.x')),
+	form.Checkbox('chgtmp', value='yes'),
 	)
 
 class rwchcd:
@@ -37,10 +38,12 @@ class rwchcd:
 			form.sysmode.value = int(form.sysmode.value)
 			return render.rwchcd(form, temp)
 		else:
-			mode = int(form.sysmode.value)
-			rwchcd_Control.SysmodeSet(mode)
-			newtemp = float(form.systemp.value)
-			rwchcd_Control.ConfigTempSet(newtemp)
+			if not form.chgtmp.checked:
+				mode = int(form.sysmode.value)
+				rwchcd_Control.SysmodeSet(mode)
+			else:
+				newtemp = float(form.systemp.value)
+				rwchcd_Control.ConfigTempSet(newtemp)
 			raise web.found(web.url())
 		
 
