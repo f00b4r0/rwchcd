@@ -10,7 +10,9 @@
  @mainpage
  rwchcd: a central heating controller daemon for rWCHC.
  
- Licence: GPLv2
+ @author Thibaut VARENE
+ @date 2016
+ @copyright GPLv2
  
  Copyright: (C) 2016 Thibaut VARENE
  

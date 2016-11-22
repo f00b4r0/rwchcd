@@ -46,7 +46,6 @@ int hardware_sensors_read(rwchc_sensor_t tsensors[], const int_fast16_t last) __
 int hardware_rwchcrelays_write(void) __attribute__((warn_unused_result));
 int hardware_rwchcperiphs_write(void) __attribute__((warn_unused_result));
 int hardware_rwchcperiphs_read(void) __attribute__((warn_unused_result));
-temp_t sensor_to_temp(const rwchc_sensor_t raw);
 struct s_stateful_relay * hardware_relay_new(void);
 void hardware_relay_del(struct s_stateful_relay * relay);
 int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast8_t id) __attribute__((warn_unused_result));

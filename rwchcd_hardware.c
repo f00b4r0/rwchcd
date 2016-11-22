@@ -112,7 +112,7 @@ static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
  * @return the temperature in temp_t units
  * XXX REVISIT calls depth.
  */
-temp_t sensor_to_temp(const rwchc_sensor_t raw)
+static inline temp_t sensor_to_temp(const rwchc_sensor_t raw)
 {
 	return (celsius_to_temp(pt1000_ohm_to_celsius(sensor_to_ohm(raw, 1))));
 }
