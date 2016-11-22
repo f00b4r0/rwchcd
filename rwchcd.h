@@ -20,8 +20,6 @@
 #include <time.h>	// time_t
 #include <stdio.h>	// (f)printf
 
-#include "rwchc_export.h"
-
 #define testbit(var, bit)	((var) & (1 << (bit)))
 #define setbit(var, bit)	((var) |= (1 << (bit)))
 #define clrbit(var, bit)	((var) &= ~(1 << (bit)))
@@ -149,6 +147,8 @@ struct s_config {
 	struct rwchc_s_settings rWCHC_settings;
 };
 
+#define	RWCHCD_NSENSORS	15	///< number of available sensors
+
 /** Runtime environment structure */
 struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
@@ -156,8 +156,6 @@ struct s_runtime {
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
 	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	bool summer;			///< outdoor temperature is compatible with summer mode
-	float calib_nodac;		///< sensor calibration value without dac offset
-	float calib_dac;		///< sensor calibration value with dac offset
 	temp_t t_outdoor;		///< instantaneous outdoor temperature
 	temp_t t_outdoor_60;		///< t_outdoor filtered over a 60s window
 	time_t t_outdoor_ltime;		///< time at which the following t_outdoor_* were last updated
@@ -170,7 +168,7 @@ struct s_runtime {
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
 	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
-	temp_t temps[RWCHC_NTSENSORS];			///< array of all the system temperatures
+	temp_t temps[RWCHCD_NSENSORS];			///< array of all the system temperatures
 };
 
 #endif /* rwchcd_h */

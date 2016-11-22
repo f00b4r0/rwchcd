@@ -17,6 +17,8 @@
 #include <string.h>	// memset
 #include <unistd.h>	// sleep
 
+#include "rwchc_export.h"
+
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
 #include "rwchcd_runtime.h"
@@ -24,6 +26,10 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_lcd.h"
 #include "rwchcd_hardware.h"
+
+#if RWCHC_NTSENSORS != RWCHCD_SENSORS
+#error Discrepancy in number of hardware sensors
+#endif
 
 #define RELAY_MAX_ID	14	///< maximum valid relay id
 
@@ -34,6 +40,8 @@ static const storage_version_t Hardware_sversion = 1;
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
 
 static struct {
+	float calib_nodac;		///< sensor calibration value without dac offset
+	float calib_dac;		///< sensor calibration value with dac offset
 	rwchc_sensor_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
 	union rwchc_u_relays rWCHC_relays;		// XXX locks
 	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
@@ -68,7 +76,7 @@ static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 
 	// finally, apply calibration factor
 	if (calib)
-		calibmult = dacoffset ? runtime->calib_dac : runtime->calib_nodac;
+		calibmult = dacoffset ? Hardware.calib_dac : Hardware.calib_nodac;
 	else
 		calibmult = 1.0;
 
@@ -236,10 +244,10 @@ static int hardware_calibrate(void)
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
+		Hardware.calib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
-	if ((runtime->calib_nodac < VALID_CALIB_MIN) || (runtime->calib_nodac > VALID_CALIB_MAX)) {
+	if ((Hardware.calib_nodac < VALID_CALIB_MIN) || (Hardware.calib_nodac > VALID_CALIB_MAX)) {
 		ret = -EGENERIC;
 		goto out;	// XXX should not happen
 	}
@@ -254,10 +262,10 @@ static int hardware_calibrate(void)
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		runtime->calib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
+		Hardware.calib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
 	}
 
-	if ((runtime->calib_dac < VALID_CALIB_MIN) || (runtime->calib_dac > VALID_CALIB_MAX))
+	if ((Hardware.calib_dac < VALID_CALIB_MIN) || (Hardware.calib_dac > VALID_CALIB_MAX))
 		ret = -EGENERIC;	// XXX should not happen
 
 out:

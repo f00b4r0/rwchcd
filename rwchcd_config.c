@@ -133,7 +133,7 @@ int config_set_nsensors(struct s_config * const config, const int_fast16_t nsens
 	if (!config)
 		return (-EINVALID);
 
-	if (nsensors > RWCHC_NTSENSORS)
+	if (nsensors > RWCHCD_NSENSORS)
 		return (-EINVALID);
 
 	config->nsensors = nsensors;

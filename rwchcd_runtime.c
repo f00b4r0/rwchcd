@@ -18,7 +18,7 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
 
-static const storage_version_t Runtime_sversion = 1;
+static const storage_version_t Runtime_sversion = 2;
 static struct s_runtime Runtime;
 
 /**
