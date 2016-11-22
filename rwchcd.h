@@ -160,7 +160,7 @@ struct s_runtime {
 	bool summer;			///< outdoor temperature is compatible with summer mode
 	temp_t t_outdoor;		///< instantaneous outdoor temperature
 	temp_t t_outdoor_60;		///< t_outdoor filtered over a 60s window
-	time_t t_outdoor_ltime;		///< time at which the following t_outdoor_* were last updated
+	time_t t_outdoor_ltime;		///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
 	temp_t t_outdoor_filtered;	///< t_outdoor filtered by building time constant
 	temp_t t_outdoor_mixed;		///< mixed outdoor temperature (average of t_outdoor and t_filtered: the moving average of t_outdoor with building_tau)
 	temp_t t_outdoor_attenuated;	///< attenuated outdoor temperature (moving average of t_filtered with building_tau: double filter on t_outdoor)

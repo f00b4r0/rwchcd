@@ -56,7 +56,9 @@ static void outdoor_temp()
 	const time_t dt60 = now - last60;
 
 	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor) + Runtime.config->set_temp_outdoor_offset;	// XXX checks
+	
 	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
+	Runtime.t_outdoor_mixed = (Runtime.t_outdoor_60 + Runtime.t_outdoor_filtered)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 
 	last60 = now;
 	
@@ -67,7 +69,6 @@ static void outdoor_temp()
 	Runtime.t_outdoor_ltime = now;
 
 	Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
-	Runtime.t_outdoor_mixed = (Runtime.t_outdoor + Runtime.t_outdoor_filtered)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_filtered, Runtime.config->building_tau, dt);
 }
 
@@ -128,7 +129,6 @@ static int runtime_restore(void)
 		
 		Runtime.t_outdoor_ltime = temp_runtime.t_outdoor_ltime;
 		Runtime.t_outdoor_filtered = temp_runtime.t_outdoor_filtered;
-		Runtime.t_outdoor_mixed = temp_runtime.t_outdoor_mixed;
 		Runtime.t_outdoor_attenuated = temp_runtime.t_outdoor_attenuated;
 		Runtime.systemmode = temp_runtime.systemmode;
 		Runtime.runmode = temp_runtime.runmode;
