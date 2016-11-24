@@ -381,13 +381,10 @@ int hardware_init(void)
 	
 	// fetch hardware config
 	ret = hardware_config_fetch(&(Hardware.settings));
-	if (ret) {
+	if (ret)
 		dbgerr("hardware_config_fetch failed");
-		return (ret);
-	}
 
-	// restore previous state
-	return (hardware_restore());
+	return (ret);
 }
 
 /**
@@ -713,6 +710,11 @@ int hardware_online(void)
 	if (ret)
 		goto fail;
 
+	// restore previous state
+	ret = hardware_restore();
+	if (ret)
+		goto fail;
+	
 	// read sensors
 	ret = hardware_sensors_read(Hardware.sensors);
 	if (ret)
