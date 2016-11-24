@@ -25,6 +25,8 @@
 #include "rwchcd_lcd.h"
 #include "rwchcd_hardware.h"
 
+#include "rwchc_export.h"
+
 #if RWCHC_NTSENSORS != RWCHCD_NTEMPS
 #error Discrepancy in number of hardware sensors
 #endif
@@ -35,14 +37,16 @@
 #define VALID_CALIB_MAX	1.2F	///< maximum valid calibration value
 
 static const storage_version_t Hardware_sversion = 1;
+
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
 
 static struct {
 	float calib_nodac;		///< sensor calibration value without dac offset
 	float calib_dac;		///< sensor calibration value with dac offset
-	union rwchc_u_relays rWCHC_relays;		// XXX locks
-	union rwchc_u_outperiphs rWCHC_peripherals;	// XXX locks
-	rwchc_sensor_t rWCHC_sensors[RWCHC_NTSENSORS];	// XXX locks
+	struct rwchc_s_settings settings;
+	union rwchc_u_relays relays;		// XXX locks
+	union rwchc_u_outperiphs peripherals;	// XXX locks
+	rwchc_sensor_t sensors[RWCHC_NTSENSORS];	// XXX locks
 } Hardware;
 
 /**
@@ -55,7 +59,6 @@ static struct {
  */
 static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 {
-	const struct s_runtime * const runtime = get_runtime();
 	const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
 	uint_fast16_t value, dacoffset;
 	float calibmult;
@@ -136,7 +139,7 @@ static void parse_temps(void)
 	temp_t previous, current;
 	
 	for (i = 0; i<runtime->config->nsensors; i++) {
-		current = sensor_to_temp(Hardware.rWCHC_sensors[i]);
+		current = sensor_to_temp(Hardware.sensors[i]);
 		previous = runtime->temps[i];
 		
 		// apply LP filter with 5s time constant
@@ -162,7 +165,7 @@ static int hardware_save(void)
 			memset(&blob[i*sizeof(*Relays[0])], 0x00, sizeof(*Relays[0]));
 	}
 	
-	return (storage_dump("hardware", &Hardware_sversion, &blob, sizeof(blob)));
+	return (storage_dump("hardware", &Hardware_sversion, blob, sizeof(blob)));
 }
 
 /**
@@ -197,18 +200,194 @@ static int hardware_restore(void)
 	return (ALL_OK);
 }
 
+static inline uint8_t rid_to_rwchcaddr(const int_fast8_t id)
+{
+	if (id < 8)
+		return (id-1);
+	else
+		return (id);
+}
+
+/**
+ * Set hardware config addresses.
+ * @param address target hardware address
+ * @param id target id
+ * @return exec status
+ * @warning minimal sanity check. HADDR_SLAST must be set first.
+ */
+int hardware_config_addr_set(enum e_hw_address address, const int_fast8_t id)
+{
+	uint8_t rid;
+	
+	// sanity checks
+	if (id <= 0)
+		return (-EINVALID);
+	
+	switch (address) {
+		case HADDR_SLAST:
+			if (id > RWCHCD_NTEMPS)
+				return (-EINVALID);
+			break;
+		case HADDR_SBURNER:
+		case HADDR_SWATER:
+		case HADDR_SOUTDOOR:
+			if (id > Hardware.settings.addresses.nsensors)
+				return (-EINVALID);
+			break;
+		case HADDR_TBURNER:
+		case HADDR_TPUMP:
+		case HADDR_TVOPEN:
+		case HADDR_TVCLOSE:
+			if (id > RELAY_MAX_ID)
+				return (-EINVALID);
+			break;
+		default:
+			return (-EINVALID);
+	}
+
+	rid = rid_to_rwchcaddr(id);
+	
+	// apply setting
+	switch (address) {
+		case HADDR_SLAST:
+			if (id > RWCHCD_NTEMPS)
+				return (-EINVALID);
+			Hardware.settings.addresses.nsensors = id;
+			break;
+		case HADDR_SBURNER:
+			if (id > Hardware.settings.addresses.nsensors)
+				return (-EINVALID);
+			Hardware.settings.addresses.S_burner = id-1;
+			break;
+		case HADDR_SWATER:
+			if (id > Hardware.settings.addresses.nsensors)
+				return (-EINVALID);
+			Hardware.settings.addresses.S_water = id-1;
+			break;
+		case HADDR_SOUTDOOR:
+			if (id > Hardware.settings.addresses.nsensors)
+				return (-EINVALID);
+			Hardware.settings.addresses.S_outdoor = id-1;
+			break;
+		case HADDR_TBURNER:
+			Hardware.settings.addresses.T_burner = rid;
+			break;
+		case HADDR_TPUMP:
+			Hardware.settings.addresses.T_pump = rid;
+			break;
+		case HADDR_TVOPEN:
+			Hardware.settings.addresses.T_Vopen = rid;
+			break;
+		case HADDR_TVCLOSE:
+			Hardware.settings.addresses.T_Vclose = rid;
+			break;
+	}
+	
+	return (ALL_OK);
+}
+
+/**
+ * Set hardware limit.
+ * @param limit target hardware limit
+ * @param value target limit value
+ * @return exec status
+ * @warning minimal sanity check.
+ */
+int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value)
+{
+	switch (limit) {
+		case HLIM_FROSTMIN:
+			Hardware.settings.limits.frost_tmin = value;
+			break;
+		case HLIM_BOILERMIN:
+			Hardware.settings.limits.burner_tmin = value;
+			break;
+		case HLIM_BOILERMAX:
+			Hardware.settings.limits.burner_tmax = value;
+			break;
+		default:
+			return (-EINVALID);
+	}
+	
+	return (ALL_OK);
+}
+
+/**
+ * Read hardware config.
+ * @param settings target hardware configuration
+ * @return exec status
+ */
+static int hardware_config_fetch(struct rwchc_s_settings * const settings)
+{
+	int ret, i = 0;
+	
+	// grab current config from the hardware
+	do {
+		ret = rwchcd_spi_settings_r(settings);
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+	return (ret);
+}
+
+/**
+ * Commit and save hardware config.
+ * @param settings target hardware configuration
+ * @return exec status
+ */
+int hardware_config_store(void)
+{
+	struct rwchc_s_settings hw_set;
+	int ret, i = 0;
+	
+	// grab current config from the hardware
+	hardware_config_fetch(&hw_set);
+	
+	if (!memcmp(&hw_set, &(Hardware.settings), sizeof(hw_set)))
+		return (ALL_OK); // don't wear flash down if unnecessary
+	
+	// commit hardware config
+	do {
+		ret = rwchcd_spi_settings_w(&(Hardware.settings));
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+	if (ret)
+		goto out;
+	
+	i = 0;
+	// save hardware config
+	do {
+		ret = rwchcd_spi_settings_s();
+	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	
+	dbgmsg("HW Config saved.");
+	
+out:
+	return (ret);
+}
+
 /**
  * Initialize hardware and ensure connection is set
  * @return error state
  */
 int hardware_init(void)
 {
+	int ret;
+	
 	if (rwchcd_spi_init() < 0)
 		return (-EINIT);
 
 	memset(Relays, 0x0, ARRAY_SIZE(Relays));
+	memset(&Hardware, 0x0, sizeof(Hardware));
+	
+	// fetch hardware config
+	ret = hardware_config_fetch(&(Hardware.settings));
+	if (ret) {
+		dbgerr("hardware_config_fetch failed");
+		return (ret);
+	}
 
-	return (ALL_OK);
+	// restore previous state
+	return (hardware_restore());
 }
 
 /**
@@ -219,7 +398,6 @@ int hardware_init(void)
  */
 static int hardware_calibrate(void)
 {
-	struct s_runtime * const runtime = get_runtime();
 	uint_fast16_t refcalib, i;
 	int ret = ALL_OK;
 	rwchc_sensor_t ref;
@@ -271,72 +449,18 @@ out:
 }
 
 /**
- * Read hardware config.
- * @param settings target hardware configuration
- * @return exec status
- */
-int hardware_config_get(struct rwchc_s_settings * const settings)
-{
-	int ret, i = 0;
-	
-	// grab current config from the hardware
-	do {
-		ret = rwchcd_spi_settings_r(settings);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	return (ret);
-}
-
-/**
- * Commit and save hardware config.
- * @param settings target hardware configuration
- * @return exec status
- */
-int hardware_config_set(const struct rwchc_s_settings * const settings)
-{
-	struct rwchc_s_settings hw_set;
-	int ret, i = 0;
-	
-	// grab current config from the hardware
-	hardware_config_get(&hw_set);
-	
-	if (!memcmp(&hw_set, settings, sizeof(hw_set)))
-		return (ALL_OK); // don't wear flash down if unnecessary
-
-	// commit hardware config
-	do {
-		ret = rwchcd_spi_settings_w(settings);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	if (ret)
-		goto out;
-	
-	i = 0;
-	// save hardware config
-	do {
-		ret = rwchcd_spi_settings_s();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	dbgmsg("HW Config saved.");
-	
-out:
-	return (ret);
-}
-
-/**
  * Read all sensors
  * @param tsensors the array to populate with current values
  * @param last the id of the last wanted (connected) sensor
+ * @return exec status
+ * @warning Hardware.settings.addresses.nsensors must be set prior to calling this function
  */
-int hardware_sensors_read(rwchc_sensor_t tsensors[], const int_fast16_t last)
+static int hardware_sensors_read(rwchc_sensor_t tsensors[])
 {
 	int_fast8_t sensor;
 	int i, ret = ALL_OK;
 
-	if (last > RWCHC_NTSENSORS)
-		return (-EINVALID);
-
-	for (sensor=0; sensor<last; sensor++) {
+	for (sensor=0; sensor<Hardware.settings.addresses.nsensors; sensor++) {
 		i = 0;
 		do {
 			ret = rwchcd_spi_sensor_r(tsensors, sensor);
@@ -420,7 +544,7 @@ int hardware_rwchcrelays_write(void)
 	// update internal runtime state on success
 	// XXX NOTE there will be a discrepancy between internal state and Relays[] if the above fails
 	if (ALL_OK == ret)
-		Hardware.rWCHC_relays.ALL = rWCHC_relays.ALL;
+		Hardware.relays.ALL = rWCHC_relays.ALL;
 
 	return (ret);
 }
@@ -434,7 +558,7 @@ int hardware_rwchcperiphs_write(void)
 	int i = 0, ret;
 
 	do {
-		ret = rwchcd_spi_peripherals_w(&(Hardware.rWCHC_peripherals));
+		ret = rwchcd_spi_peripherals_w(&(Hardware.peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -449,7 +573,7 @@ int hardware_rwchcperiphs_read(void)
 	int i = 0, ret;
 
 	do {
-		ret = rwchcd_spi_peripherals_r(&(Hardware.rWCHC_peripherals));
+		ret = rwchcd_spi_peripherals_r(&(Hardware.peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -581,21 +705,16 @@ int hardware_online(void)
 	struct s_runtime * const runtime = get_runtime();
 	int ret;
 
-	if (!runtime->config || !runtime->config->configured)
+	if (!runtime->config || !runtime->config->configured)	// for parse_temps()
 		return (-ENOTCONFIGURED);
 
 	// calibrate
 	ret = hardware_calibrate();
 	if (ret)
 		goto fail;
-	
-	// restore previous state
-	ret = hardware_restore();
-	if (ret)
-		goto fail;
 
 	// read sensors
-	ret = hardware_sensors_read(Hardware.rWCHC_sensors, runtime->config->nsensors);
+	ret = hardware_sensors_read(Hardware.sensors);
 	if (ret)
 		goto fail;
 
@@ -629,20 +748,20 @@ void hardware_run(void)
 	if (ret)
 		dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
 
-	if (Hardware.rWCHC_peripherals.LED2) {
+	if (Hardware.peripherals.LED2) {
 		// clear alarm
-		Hardware.rWCHC_peripherals.LED2 = 0;
-		Hardware.rWCHC_peripherals.buzzer = 0;
-		Hardware.rWCHC_peripherals.LCDbl = 0;
+		Hardware.peripherals.LED2 = 0;
+		Hardware.peripherals.buzzer = 0;
+		Hardware.peripherals.LCDbl = 0;
 		lcd_update(true);
 		// XXX reset runtime?
 	}
 	
-	if (Hardware.rWCHC_peripherals.RQSW1) {
+	if (Hardware.peripherals.RQSW1) {
 		// change system mode
 		cursysmode = runtime->systemmode;
 		cursysmode++;
-		Hardware.rWCHC_peripherals.RQSW1 = 0;
+		Hardware.peripherals.RQSW1 = 0;
 		count = 5;
 		
 		if (cursysmode >= SYS_UNKNOWN)	// XXX last mode
@@ -651,10 +770,10 @@ void hardware_run(void)
 		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?
 	}
 	
-	if (Hardware.rWCHC_peripherals.RQSW2) {
+	if (Hardware.peripherals.RQSW2) {
 		// increase displayed tempid
 		tempid++;
-		Hardware.rWCHC_peripherals.RQSW2 = 0;
+		Hardware.peripherals.RQSW2 = 0;
 		count = 5;
 		
 		if (tempid > runtime->config->nsensors)
@@ -662,26 +781,26 @@ void hardware_run(void)
 	}
 	
 	if (count) {
-		Hardware.rWCHC_peripherals.LCDbl = 1;
+		Hardware.peripherals.LCDbl = 1;
 		count--;
 		if (!count)
 			lcd_fade();
 	}
 	else
-		Hardware.rWCHC_peripherals.LCDbl = 0;
+		Hardware.peripherals.LCDbl = 0;
 	
 	lcd_line1(tempid);
 	lcd_update(false);
 	
 	// read sensors
-	ret = hardware_sensors_read(rawsensors, runtime->config->nsensors);
+	ret = hardware_sensors_read(rawsensors);
 	if (ret) {
 		// XXX REVISIT: flag the error but do NOT stop processing here
 		dbgerr("hardware_sensors_read failed: %d", ret);
 	}
 	else {
 		// copy valid data to runtime environment
-		memcpy(Hardware.rWCHC_sensors, rawsensors, sizeof(Hardware.rWCHC_sensors));
+		memcpy(Hardware.sensors, rawsensors, sizeof(Hardware.sensors));
 	}
 
 	parse_temps();

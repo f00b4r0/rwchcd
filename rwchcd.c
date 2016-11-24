@@ -76,14 +76,6 @@ static void sig_handler(int signum)
 	}
 }
 
-static inline uint8_t rid_to_rwchcaddr(unsigned int id)
-{
-	if (id < 8)
-		return (id-1);
-	else
-		return (id);
-}
-
 
 static int init_process()
 {
@@ -103,6 +95,18 @@ static int init_process()
 		dbgerr("hardware init error: %d", ret);
 		return (ret);
 	}
+	
+	// XXX firmware config bits here
+	hardware_config_limit_set(HLIM_FROSTMIN, 3);
+	hardware_config_limit_set(HLIM_BOILERMIN, 50);
+	hardware_config_limit_set(HLIM_BOILERMAX, 70);
+	hardware_config_addr_set(HADDR_SBURNER, 2);
+	hardware_config_addr_set(HADDR_TBURNER, 14);
+	hardware_config_addr_set(HADDR_SWATER, 3);
+	hardware_config_addr_set(HADDR_TVOPEN, 11);
+	hardware_config_addr_set(HADDR_TVCLOSE, 10);
+	hardware_config_addr_set(HADDR_TPUMP, 9);
+	hardware_config_store();
 
 	/* init runtime */
 	runtime_init();
@@ -143,17 +147,6 @@ static int init_process()
 		config->def_dhwt.t_frostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
 		config->def_dhwt.histeresis = deltaK_to_temp(10);
 		config->def_dhwt.temp_inoffset = deltaK_to_temp(10);
-		
-		// XXX firmware config bits here
-		config->rWCHC_settings.limits.frost_tmin = 3;
-		config->rWCHC_settings.limits.burner_tmax = 70;
-		config->rWCHC_settings.limits.burner_tmin = 50;
-		config->rWCHC_settings.addresses.S_burner = 2-1;			// XXX INTERNAL CONFIG
-		config->rWCHC_settings.addresses.T_burner = rid_to_rwchcaddr(14);	// XXX INTERNAL CONFIG
-		config->rWCHC_settings.addresses.S_water = 3-1;				// XXX INTERNAL CONFIG
-		config->rWCHC_settings.addresses.T_Vopen = rid_to_rwchcaddr(11);	// XXX INTERNAL CONFIG
-		config->rWCHC_settings.addresses.T_Vclose = rid_to_rwchcaddr(10);	// XXX INTERNAL CONFIG
-		config->rWCHC_settings.addresses.T_pump = rid_to_rwchcaddr(9);		// XXX INTERNAL CONFIG
 		
 		config->configured = true;
 		config_save(config);

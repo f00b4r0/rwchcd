@@ -132,8 +132,6 @@ struct s_dhwt_params {
 	temp_t temp_inoffset;		///< offset temp for heat source request - XXX setup ensure > 0C
 };
 
-#include "rwchc_export.h"
-
 /** Config structure */
 struct s_config {
 	bool restored;			///< true if config has been restored from storage
@@ -146,7 +144,6 @@ struct s_config {
 	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED
 	struct s_circuit_params def_circuit;	///< circuit defaults: if individual circuits don't set these values, these defaults will be used
 	struct s_dhwt_params def_dhwt;		///< DHWT defaults: if individual dhwts don't set these values, these defaults will be used
-	struct rwchc_s_settings rWCHC_settings;
 };
 
 #define	RWCHCD_NTEMPS	15	///< number of available sensors

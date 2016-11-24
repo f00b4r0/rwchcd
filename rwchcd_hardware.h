@@ -18,8 +18,6 @@
 #include <time.h>
 #include "rwchcd.h"
 
-#include "rwchc_export.h"
-
 #define FORCE	1
 #define NOFORCE	0
 
@@ -41,10 +39,29 @@ struct s_stateful_relay {
 	char * restrict name;
 };
 
+/** Hardware addresses available in hw config */
+enum e_hw_address {
+	HADDR_TBURNER = 1,	///< Burner relay
+	HADDR_TPUMP,		///< Pump relay
+	HADDR_TVOPEN,		///< Valve open relay
+	HADDR_TVCLOSE,		///< Valve close relay
+	HADDR_SOUTDOOR,		///< outdoor sensor
+	HADDR_SBURNER,		///< burner sensor
+	HADDR_SWATER,		///< water sensor
+	HADDR_SLAST,		///< last sensor (== number of connected sensors)
+};
+
+/** Hardware limits available in hw config */
+enum e_hw_limit {
+	HLIM_FROSTMIN = 1,	///< Temperature for frost protection
+	HLIM_BOILERMAX,		///< Maximum boiler temp
+	HLIM_BOILERMIN,		///< Minimum boiler temp
+};
+
 int hardware_init(void) __attribute__((warn_unused_result));
-int hardware_config_set(const struct rwchc_s_settings * const settings);
-int hardware_config_get(struct rwchc_s_settings * const settings);
-int hardware_sensors_read(rwchc_sensor_t tsensors[], const int_fast16_t last) __attribute__((warn_unused_result));
+int hardware_config_addr_set(enum e_hw_address address, const int_fast8_t id);
+int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value);
+int hardware_config_store(void);
 int hardware_rwchcrelays_write(void) __attribute__((warn_unused_result));
 int hardware_rwchcperiphs_write(void) __attribute__((warn_unused_result));
 int hardware_rwchcperiphs_read(void) __attribute__((warn_unused_result));

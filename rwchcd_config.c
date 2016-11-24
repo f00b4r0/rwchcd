@@ -22,8 +22,6 @@
 
 static const storage_version_t Config_sversion = 3;
 
-// XXX review handling of rWCHC_settings
-
 /**
  * Allocate new config.
  * @return pointer to config
@@ -66,9 +64,13 @@ static int config_restore(struct s_config * const config)
 		if (Config_sversion != sversion)
 			return (-EMISMATCH);
 
-		dbgmsg("config restored");
-		
 		memcpy(config, &temp_config, sizeof(*config));
+		
+		// restore hardware bits
+		hardware_config_addr_set(HADDR_SLAST, config->nsensors);
+		hardware_config_addr_set(HADDR_SOUTDOOR, config->id_temp_outdoor);
+		
+		dbgmsg("config restored");
 		
 		config->restored = true;
 	}
@@ -94,14 +96,9 @@ int config_init(struct s_config * const config)
 
 	// see if we can restore previous config
 	ret = config_restore(config);
-	if (ALL_OK == ret) {
-		ret = hardware_config_set(&(config->rWCHC_settings));	// update hardware if inconsistent
-		return (ret);
-	}
+	if (ALL_OK == ret)
+		ret = hardware_config_store();	// update hardware if inconsistent
 	
-	// if we couldn't, copy current hardware settings to config
-	ret = hardware_config_get(&(config->rWCHC_settings));
-
 	return (ret);
 }
 
@@ -128,7 +125,7 @@ int config_set_building_tau(struct s_config * const config, const time_t tau)
  * @return exec status
  * @note nsensors will be treated as the id of the last active sensor.
  */
-int config_set_nsensors(struct s_config * const config, const int_fast16_t nsensors)
+int config_set_nsensors(struct s_config * const config, const int_fast8_t nsensors)
 {
 	if (!config)
 		return (-EINVALID);
@@ -137,9 +134,8 @@ int config_set_nsensors(struct s_config * const config, const int_fast16_t nsens
 		return (-EINVALID);
 
 	config->nsensors = nsensors;
-	config->rWCHC_settings.addresses.nsensors = nsensors;
 
-	return (ALL_OK);
+	return (hardware_config_addr_set(HADDR_SLAST, nsensors));
 }
 
 /**
@@ -167,6 +163,7 @@ int config_set_tsummer(struct s_config * const config, const temp_t tsummer)
  * @param config target config
  * @param sensorid id of outdoor temperature sensor
  * @return exec status
+ * @warning must be called *AFTER* config_set_nsensors()
  */
 int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
 {
@@ -177,9 +174,8 @@ int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t s
 		return (-EINVALID);
 
 	config->id_temp_outdoor = sensorid;
-	config->rWCHC_settings.addresses.S_outdoor = sensorid-1;
 
-	return (ALL_OK);
+	return (hardware_config_addr_set(HADDR_SOUTDOOR, sensorid));
 }
 
 /**
@@ -202,7 +198,7 @@ int config_save(const struct s_config * const config)
 	}
 	
 	// save to hardware
-	ret = hardware_config_set(&(config->rWCHC_settings));
+	ret = hardware_config_store();
 
 out:
 	return (ret);
