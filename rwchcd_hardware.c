@@ -36,11 +36,14 @@
 #define VALID_CALIB_MIN	0.8F	///< minimum valid calibration value
 #define VALID_CALIB_MAX	1.2F	///< maximum valid calibration value
 
+#define CALIBRATION_PERIOD	1800	///< calibration period in seconds: every half hour
+
 static const storage_version_t Hardware_sversion = 1;
 
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
 
 static struct {
+	time_t last_calib;		///< time of last calibration
 	float calib_nodac;		///< sensor calibration value without dac offset
 	float calib_dac;		///< sensor calibration value with dac offset
 	struct rwchc_s_settings settings;
@@ -390,56 +393,57 @@ int hardware_init(void)
 /**
  * Calibrate hardware readouts.
  * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
+ * This function uses a hardcoded moving average for all but the first calibration attempt,
+ * to smooth out sudden bumps in calibration reads that could be due to noise.
  * @return error status
- * @note rwchcd_spi_calibrate() sleeps so this will sleep too, up to RWCHCD_SPI_MAX_TRIES times
+ * @note rwchcd_spi_calibrate() sleeps so this will sleep too
  */
 static int hardware_calibrate(void)
 {
-	uint_fast16_t refcalib, i;
+	float newcalib;
+	uint_fast16_t refcalib;
 	int ret = ALL_OK;
 	rwchc_sensor_t ref;
+	time_t now = time(NULL);
+	
+	if ((now - Hardware.last_calib) < CALIBRATION_PERIOD)
+		return (ALL_OK);
 
-	i = 0;
-	do {
-		ret = rwchcd_spi_calibrate();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
 
+	ret = rwchcd_spi_calibrate();
 	if (ret)
 		goto out;
 
-	i = 0;
-	do {
-		ret = rwchcd_spi_ref_r(&ref, 0);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	if (ret)
-		goto out;
-
-	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		Hardware.calib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
-	}
-
-	if ((Hardware.calib_nodac < VALID_CALIB_MIN) || (Hardware.calib_nodac > VALID_CALIB_MAX)) {
-		ret = -EGENERIC;
-		goto out;	// XXX should not happen
-	}
-
-	i = 0;
-	do {
-		ret = rwchcd_spi_ref_r(&ref, 1);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
+	ret = rwchcd_spi_ref_r(&ref, 0);
 	if (ret)
 		goto out;
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		Hardware.calib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);	// calibrate against 1kohm reference
+		newcalib = ((float)RWCHC_CALIB_OHM / (float)refcalib);
+		if ((newcalib < VALID_CALIB_MIN) || (newcalib > VALID_CALIB_MAX))	// don't store invalid values
+			ret = -EGENERIC;	// XXX should not happen
+		else
+		Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.33F * (Hardware.calib_nodac - newcalib))) : newcalib;	// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
 	}
 
-	if ((Hardware.calib_dac < VALID_CALIB_MIN) || (Hardware.calib_dac > VALID_CALIB_MAX))
-		ret = -EGENERIC;	// XXX should not happen
+	ret = rwchcd_spi_ref_r(&ref, 1);
+	if (ret)
+		goto out;
+
+	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
+		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
+		newcalib = ((float)RWCHC_CALIB_OHM / (float)refcalib);
+		if ((newcalib < VALID_CALIB_MIN) || (newcalib > VALID_CALIB_MAX))	// don't store invalid values
+			ret = -EGENERIC;	// XXX should not happen
+		else
+			Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.33F * (Hardware.calib_dac - newcalib))) : newcalib;		// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
+	}
+
+	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
+	
+	Hardware.last_calib = now;
 
 out:
 	return (ret);
@@ -815,6 +819,11 @@ void hardware_run(void)
 	}
 
 	parse_temps();
+
+	// calibrate
+	ret = hardware_calibrate();
+	if (ret)
+		dbgerr("hardware_calibrate failed (%d)", ret);
 	
 	/* we want to release locks and sleep here to reduce contention and
 	 * allow other parts to do their job before writing back */

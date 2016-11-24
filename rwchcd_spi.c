@@ -504,7 +504,7 @@ int rwchcd_spi_calibrate(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_CALIBRATE, RWCHC_SPIC_VALID))
 		goto out;
 
-	sleep(1);	// must wait for completion
+	usleep(500*1000);	// must wait for completion (500ms)
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_CALIBRATE))
 		goto out;
