@@ -150,10 +150,10 @@ static void parse_temps(void)
 }
 
 /**
- * Save hardware state to permanent storage
+ * Save hardware relays state to permanent storage
  * @return exec status
  */
-static int hardware_save(void)
+static int hardware_save_relays(void)
 {
 	static uint8_t blob[ARRAY_SIZE(Relays)*sizeof(*Relays[0])];
 	unsigned int i;
@@ -165,15 +165,15 @@ static int hardware_save(void)
 			memset(&blob[i*sizeof(*Relays[0])], 0x00, sizeof(*Relays[0]));
 	}
 	
-	return (storage_dump("hardware", &Hardware_sversion, blob, sizeof(blob)));
+	return (storage_dump("hardware_relays", &Hardware_sversion, blob, sizeof(blob)));
 }
 
 /**
- * Restore hardware state from permanent storage
+ * Restore hardware relays state from permanent storage
  * Restores cycles and on/off total time counts for set relays.
  * @return exec status
  */
-static int hardware_restore(void)
+static int hardware_restore_relays(void)
 {
 	static uint8_t blob[ARRAY_SIZE(Relays)*sizeof(*Relays[0])];
 	storage_version_t sversion;
@@ -181,7 +181,7 @@ static int hardware_restore(void)
 	unsigned int i;
 	
 	// try to restore key elements of hardware
-	if (storage_fetch("hardware", &sversion, blob, sizeof(blob)) == ALL_OK) {
+	if (storage_fetch("hardware_relays", &sversion, blob, sizeof(blob)) == ALL_OK) {
 		if (Hardware_sversion != sversion)
 			return (ALL_OK);	// XXX
 
@@ -484,6 +484,7 @@ int hardware_rwchcrelays_write(void)
 	union rwchc_u_relays rWCHC_relays;
 	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
 	uint_fast8_t rid, i;
+	bool change = false;
 	int ret = -EGENERIC;
 
 	// start clean
@@ -505,6 +506,7 @@ int hardware_rwchcrelays_write(void)
 				if (relay->run.off_since)
 					relay->run.off_tottime += now - relay->run.off_since;
 				relay->run.off_since = 0;
+				change = true;
 			}
 		}
 		else {	// turn off
@@ -514,6 +516,7 @@ int hardware_rwchcrelays_write(void)
 				if (relay->run.on_since)
 					relay->run.on_tottime += now - relay->run.on_since;
 				relay->run.on_since = 0;
+				change = true;
 			}
 		}
 
@@ -532,6 +535,13 @@ int hardware_rwchcrelays_write(void)
 			clrbit(rWCHC_relays.ALL, rid);
 	}
 
+	// save relays state if there was a change
+	if (change) {
+		ret = hardware_save_relays();
+		if (ret)
+			dbgerr("hardware_save failed (%d)", ret);
+	}
+	
 	// send new state to hardware
 	i = 0;
 	do {
@@ -711,7 +721,7 @@ int hardware_online(void)
 		goto fail;
 
 	// restore previous state
-	ret = hardware_restore();
+	ret = hardware_restore_relays();
 	if (ret)
 		goto fail;
 	
@@ -822,9 +832,4 @@ void hardware_run(void)
 	ret = hardware_rwchcperiphs_write();
 	if (ret)
 		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
-	
-	// save state
-	ret = hardware_save();
-	if (ret)
-		dbgerr("hardware_save failed (%d)", ret);
 }
