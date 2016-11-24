@@ -263,6 +263,7 @@ struct s_plant {
 };
 
 int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
+int plant_offline(struct s_plant * restrict const plant);
 int plant_run(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
 struct s_pump * plant_new_pump(struct s_plant * const plant);
 struct s_valve * plant_new_valve(struct s_plant * const plant);

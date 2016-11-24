@@ -284,12 +284,6 @@ static int init_process()
 	return (runtime_online());
 }
 
-/*
- temp conversion from sensor raw value + calibration
- temp boiler: target water temp + hist; ceil and floor
- temp water: water curve with outdoor temp + timing (PID?) comp (w/ building constant) + indoor comp
- valve position: PID w/ total run time from C to O
- */
 
 static void * thread_master(void *arg)
 {
@@ -321,10 +315,12 @@ static void * thread_master(void *arg)
 thread_end:
 	// cleanup
 	dbgmsg("thread exiting!");
+	plant_offline(runtime->plant);	// take the plant offline
 	config_save(runtime->config);	// save running config before exiting
-	plant_del(runtime->plant);
-	config_del(runtime->config);
-	pthread_exit(&ret);
+	hardware_exit();		// stop the hardware - NOTE: this resets the hardware
+	plant_del(runtime->plant);	// delete the plant
+	config_del(runtime->config);	// delete the config
+	pthread_exit(&ret);		// exit
 }
 
 int main(void)

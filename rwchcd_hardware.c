@@ -506,7 +506,6 @@ int hardware_rwchcrelays_write(void)
 				if (relay->run.off_since)
 					relay->run.off_tottime += now - relay->run.off_since;
 				relay->run.off_since = 0;
-				change = true;
 			}
 		}
 		else {	// turn off
@@ -516,7 +515,7 @@ int hardware_rwchcrelays_write(void)
 				if (relay->run.on_since)
 					relay->run.on_tottime += now - relay->run.on_since;
 				relay->run.on_since = 0;
-				change = true;
+				change = true;	// only update permanent storage on full cycles (at turn off)
 			}
 		}
 
@@ -808,7 +807,7 @@ void hardware_run(void)
 	ret = hardware_sensors_read(rawsensors);
 	if (ret) {
 		// XXX REVISIT: flag the error but do NOT stop processing here
-		dbgerr("hardware_sensors_read failed: %d", ret);
+		dbgerr("hardware_sensors_read failed (%d)", ret);
 	}
 	else {
 		// copy valid data to runtime environment
@@ -826,10 +825,46 @@ void hardware_run(void)
 	// write relays
 	ret = hardware_rwchcrelays_write();
 	if (ret)
-		dbgerr("hardware_rwchcrelays_write failed: %d", ret);
+		dbgerr("hardware_rwchcrelays_write failed (%d)", ret);
 
 	// write peripherals
 	ret = hardware_rwchcperiphs_write();
 	if (ret)
 		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
+}
+
+/**
+ * Hardware shutdown routine.
+ * Forcefully turns all relays off, saves final counters to permanent storage
+ * and resets the hardware.
+ * @warning RESETS THE HARDWARE: no hardware operation after that call.
+ */
+void hardware_exit(void)
+{
+	struct s_stateful_relay * restrict relay;
+	uint_fast8_t i;
+	int ret;
+	
+	// turn off each known hardware relay
+	for (i=0; i<RELAY_MAX_ID; i++) {
+		relay = Relays[i];
+		
+		if (!relay)
+			continue;
+		
+		relay->run.turn_on = false;
+	}
+	
+	// update the hardware
+	ret = hardware_rwchcrelays_write();
+	if (ret)
+		dbgerr("hardware_rwchcrelays_write failed (%d)", ret);
+	
+	// update permanent storage with final count
+	hardware_save_relays();
+	
+	// reset the hardware
+	ret = rwchcd_spi_reset();
+	if (ret)
+		dbgerr("reset failed (%d)", ret);
 }

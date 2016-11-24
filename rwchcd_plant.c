@@ -1979,7 +1979,7 @@ int plant_online(struct s_plant * restrict const plant)
 	}
 
 	// finally online the heat source
-	heatsourcel = plant->heats_head;	// XXX single heat source
+	heatsourcel = plant->heats_head;	// XXX TODO: single heat source
 	ret = heatsource_online(heatsourcel->heats);
 	if (ALL_OK != ret) {
 		// XXX error handling
@@ -1991,6 +1991,85 @@ int plant_online(struct s_plant * restrict const plant)
 	else
 		heatsourcel->heats->run.online = true;
 
+	return (finalret);
+}
+
+/**
+ * Take plant offline.
+ * @param plant target plant
+ * @return error status: if any subops fails this will be set
+ */
+int plant_offline(struct s_plant * restrict const plant)
+{
+	struct s_pump_l * restrict pumpl;
+	struct s_valve_l * restrict valvel;
+	struct s_heating_circuit_l * restrict circuitl;
+	struct s_dhw_tank_l * restrict dhwtl;
+	struct s_heatsource_l * restrict heatsourcel;
+	int ret, finalret = ALL_OK;
+	
+	if (!plant)
+		return (-EINVALID);
+	
+	if (!plant->configured)
+		return (-ENOTCONFIGURED);
+	
+	// offline the consummers first
+	// circuits first
+	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		ret = circuit_offline(circuitl->circuit);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("circuit_offline failed, id: %d (%d)", circuitl->id, ret);
+			finalret = ret;
+		}
+		circuitl->circuit->run.online = false;
+	}
+	
+	// then dhwt
+	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		ret = dhwt_offline(dhwtl->dhwt);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("dhwt_offline failed, id: %d (%d)", dhwtl->id, ret);
+			finalret = ret;
+		}
+		dhwtl->dhwt->run.online = false;
+	}
+	
+	// next deal with the heat source
+	heatsourcel = plant->heats_head;	// XXX TODO: single heat source
+	ret = heatsource_offline(heatsourcel->heats);
+	if (ALL_OK != ret) {
+		// XXX error handling
+		dbgerr("heatsource_offline failed, id: %d (%d)", heatsourcel->id, ret);
+		finalret = ret;
+	}
+	heatsourcel->heats->run.online = false;
+	
+	// finally offline the actuators
+	// valves
+	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
+		ret = valve_offline(valvel->valve);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("valve_offline failed, id: %d (%d)", valvel->id, ret);
+			finalret = ret;
+		}
+		valvel->valve->run.online = false;
+	}
+	
+	// pumps
+	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
+		ret = pump_offline(pumpl->pump);
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("pump_offline failed, id: %d (%d)", pumpl->id, ret);
+			finalret = ret;
+		}
+		pumpl->pump->run.online = false;
+	}
+	
 	return (finalret);
 }
 
