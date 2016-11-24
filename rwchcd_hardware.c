@@ -16,6 +16,7 @@
 #include <stdlib.h>	// calloc/free
 #include <string.h>	// memset
 #include <unistd.h>	// sleep
+#include <assert.h>
 
 #include "rwchcd.h"
 #include "rwchcd_spi.h"
@@ -43,6 +44,7 @@ static const storage_version_t Hardware_sversion = 1;
 static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
 
 static struct {
+	bool ready;			///< hardware is ready
 	time_t last_calib;		///< time of last calibration
 	float calib_nodac;		///< sensor calibration value without dac offset
 	float calib_dac;		///< sensor calibration value with dac offset
@@ -141,6 +143,8 @@ static void parse_temps(void)
 	uint_fast8_t i;
 	temp_t previous, current;
 	
+	assert(Hardware.ready && runtime);
+	
 	for (i = 0; i<runtime->config->nsensors; i++) {
 		current = sensor_to_temp(Hardware.sensors[i]);
 		previous = runtime->temps[i];
@@ -222,6 +226,9 @@ int hardware_config_addr_set(enum e_hw_address address, const int_fast8_t id)
 {
 	uint8_t rid;
 	
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+	
 	// sanity checks
 	if (id <= 0)
 		return (-EINVALID);
@@ -284,6 +291,7 @@ int hardware_config_addr_set(enum e_hw_address address, const int_fast8_t id)
 		case HADDR_TVCLOSE:
 			Hardware.settings.addresses.T_Vclose = rid;
 			break;
+		default: ;
 	}
 	
 	return (ALL_OK);
@@ -298,6 +306,9 @@ int hardware_config_addr_set(enum e_hw_address address, const int_fast8_t id)
  */
 int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value)
 {
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+	
 	switch (limit) {
 		case HLIM_FROSTMIN:
 			Hardware.settings.limits.frost_tmin = value;
@@ -342,6 +353,9 @@ int hardware_config_store(void)
 	struct rwchc_s_settings hw_set;
 	int ret, i = 0;
 	
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+	
 	// grab current config from the hardware
 	hardware_config_fetch(&hw_set);
 	
@@ -382,6 +396,8 @@ int hardware_init(void)
 	memset(Relays, 0x0, ARRAY_SIZE(Relays));
 	memset(&Hardware, 0x0, sizeof(Hardware));
 	
+	Hardware.ready = true;
+	
 	// fetch hardware config
 	ret = hardware_config_fetch(&(Hardware.settings));
 	if (ret)
@@ -405,6 +421,8 @@ static int hardware_calibrate(void)
 	int ret = ALL_OK;
 	rwchc_sensor_t ref;
 	time_t now = time(NULL);
+	
+	assert(Hardware.ready);
 	
 	if ((now - Hardware.last_calib) < CALIBRATION_PERIOD)
 		return (ALL_OK);
@@ -460,6 +478,8 @@ static int hardware_sensors_read(rwchc_sensor_t tsensors[])
 {
 	int_fast8_t sensor;
 	int i, ret = ALL_OK;
+	
+	assert(Hardware.ready);
 
 	for (sensor=0; sensor<Hardware.settings.addresses.nsensors; sensor++) {
 		i = 0;
@@ -491,6 +511,9 @@ int hardware_rwchcrelays_write(void)
 	bool change = false;
 	int ret = -EGENERIC;
 
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+	
 	// start clean
 	rWCHC_relays.ALL = 0;
 
@@ -567,6 +590,9 @@ int hardware_rwchcperiphs_write(void)
 {
 	int i = 0, ret;
 
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+	
 	do {
 		ret = rwchcd_spi_peripherals_w(&(Hardware.peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
@@ -582,6 +608,9 @@ int hardware_rwchcperiphs_read(void)
 {
 	int i = 0, ret;
 
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+	
 	do {
 		ret = rwchcd_spi_peripherals_r(&(Hardware.peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
@@ -607,7 +636,6 @@ struct s_stateful_relay * hardware_relay_new(void)
 /**
  * Delete a stateful relay.
  * @param relay the relay to delete
- * @note the deleted relay will be turned off by a call to _write()
  */
 void hardware_relay_del(struct s_stateful_relay * relay)
 {
@@ -718,6 +746,9 @@ int hardware_online(void)
 	if (!runtime->config || !runtime->config->configured)	// for parse_temps()
 		return (-ENOTCONFIGURED);
 
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+	
 	// calibrate
 	ret = hardware_calibrate();
 	if (ret)
@@ -751,7 +782,7 @@ void hardware_run(void)
 	enum e_systemmode cursysmode;
 	int ret;
 
-	if (!runtime->config || !runtime->config->configured) {
+	if (!runtime->config || !runtime->config->configured || !Hardware.ready) {
 		dbgerr("not configured");
 		return;	// XXX when this is a while(1){} thread this should be 'continue'
 	}
@@ -871,6 +902,8 @@ void hardware_exit(void)
 	
 	// update permanent storage with final count
 	hardware_save_relays();
+	
+	Hardware.ready = false;
 	
 	// reset the hardware
 	ret = rwchcd_spi_reset();
