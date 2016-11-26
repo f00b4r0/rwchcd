@@ -29,7 +29,7 @@
 #define SPIMODE		3
 // https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
-#define SPI_ASSERT(cmd, expect)	(SPI_rw8bit(cmd) == (uint8_t)expect)
+#define SPI_ASSERT(emit, expect)	(SPI_rw8bit(emit) == (uint8_t)expect)
 #define SPI_RESYNC()								\
 		({								\
 		spitout = SPIRESYNCMAX;						\
@@ -45,7 +45,7 @@ static int spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
  */
 static uint8_t SPI_rw8bit(const uint8_t data)
 {
-	uint8_t exch = data;
+	static uint8_t exch = data;
 	wiringPiSPIDataRW(SPICHAN, &exch, 1);
 	//printf("\tsent: %x, rcvd: %x\n", data, exch);
 	usleep(500);
@@ -251,7 +251,7 @@ int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 	SPI_RESYNC();
 	
 	// XXX TODO: REVISIT
-	if (!SPI_ASSERT((RWCHC_SPIC_PERIPHSW | (outperiphs->BYTE & 0xF)), RWCHC_SPIC_VALID))
+	if (!SPI_ASSERT((RWCHC_SPIC_PERIPHSW | (outperiphs->BYTE & RWCHC_OUTPERIPHMASK)), RWCHC_SPIC_VALID))
 		goto out;
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, outperiphs->BYTE))
