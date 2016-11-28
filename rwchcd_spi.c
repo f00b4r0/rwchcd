@@ -23,20 +23,21 @@
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
-#define SPIRESYNCMAX	200		///< max resync tries -> 100ms
-#define SPISPEED	1000000		///< 1MHz
+#define SPIDELAYUS	500		///< 500us
+#define SPIRESYNCMAX	200		///< max resync tries -> 100ms @500us delay
+#define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0
-#define SPIMODE		3
-// https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
+#define SPIMODE		3	///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
 #define SPI_ASSERT(emit, expect)	(SPI_rw8bit(emit) == (uint8_t)expect)
-#define SPI_RESYNC()								\
+#define SPI_RESYNC(cmd)								\
 		({								\
 		spitout = SPIRESYNCMAX;						\
-		while (spitout-- && (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_VALID));	\
+		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && --spitout);	\
+		if (spitout) SPI_rw8bit(cmd);	/* consumes the last SYNCACK */	\
 		})
 
-static int spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
+static int_fast16_t spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
 
 /**
  * Exchange 8bit data over SPI.
@@ -45,10 +46,11 @@ static int spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
  */
 static uint8_t SPI_rw8bit(const uint8_t data)
 {
-	static uint8_t exch = data;
+	static uint8_t exch;
+	exch = data;
 	wiringPiSPIDataRW(SPICHAN, &exch, 1);
 	//printf("\tsent: %x, rcvd: %x\n", data, exch);
-	usleep(500);
+	usleep(SPIDELAYUS);
 	return exch;
 }
 
@@ -61,9 +63,9 @@ static uint8_t SPI_rw8bit(const uint8_t data)
  */
 int rwchcd_spi_keepalive_once(void)
 {
-	SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);	// ignore received bit
+	SPI_RESYNC(RWCHC_SPIC_KEEPALIVE);
 
-	if (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_VALID)
+	if (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_ALIVE)
 		return (-ESPI);
 	else
 		return (ALL_OK);
@@ -77,9 +79,9 @@ int rwchcd_spi_lcd_acquire(void)
 {
 	int ret = -ESPI;
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_LCDACQR);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_LCDACQR, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDACQR))
@@ -98,9 +100,9 @@ int rwchcd_spi_lcd_relinquish(void)
 {
 	int ret = -ESPI;
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_LCDRLQSH);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_LCDRLQSH, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDRLQSH))
@@ -119,11 +121,11 @@ int rwchcd_spi_lcd_fade(void)
 {
 	int ret = -ESPI;
 
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_LCDFADE);
 
-	if (!SPI_ASSERT(RWCHC_SPIC_LCDFADE, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
-
+	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDFADE))
 		goto out;
 
@@ -141,9 +143,9 @@ int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
 {
 	int ret = -ESPI;
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_LCDCMDW);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_LCDCMDW, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	if (!SPI_ASSERT(cmd, ~RWCHC_SPIC_LCDCMDW))
@@ -166,9 +168,9 @@ int rwchcd_spi_lcd_data_w(const uint8_t data)
 {
 	int ret = -ESPI;
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_LCDDATW);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_LCDDATW, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	if (!SPI_ASSERT(data, ~RWCHC_SPIC_LCDDATW))
@@ -195,11 +197,11 @@ int rwchcd_spi_lcd_bl_w(const uint8_t percent)
 	if (percent > 100)
 		return -EINVALID;
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_LCDBKLW);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_LCDBKLW, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
-
+	
 	if (!SPI_ASSERT(percent, ~RWCHC_SPIC_LCDBKLW))
 		goto out;
 	
@@ -222,16 +224,13 @@ int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 	
 	assert(outperiphs);
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_PERIPHSR);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_PERIPHSR, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	outperiphs->BYTE = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
 
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
-		goto out;
-	
 	ret = ALL_OK;
 out:
 	return ret;
@@ -248,12 +247,12 @@ int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 	
 	assert(outperiphs);
 	
-	SPI_RESYNC();
-	
 	// XXX TODO: REVISIT
-	if (!SPI_ASSERT((RWCHC_SPIC_PERIPHSW | (outperiphs->BYTE & RWCHC_OUTPERIPHMASK)), RWCHC_SPIC_VALID))
+	SPI_RESYNC((RWCHC_SPIC_PERIPHSW | (outperiphs->BYTE & RWCHC_OUTPERIPHMASK)));
+	
+	if (!spitout)
 		goto out;
-
+	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, outperiphs->BYTE))
 		goto out;
 	
@@ -273,25 +272,19 @@ int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 	
 	assert(relays);
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_RELAYRL);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_RELAYRL, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	relays->LOWB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
+	SPI_RESYNC(RWCHC_SPIC_RELAYRH);	// resync since we have exited the atomic section in firmware
+	
+	if (!spitout)
 		goto out;
 	
-	SPI_RESYNC();	// resync since we have exited the atomic section in firmware
-	
-	if (!SPI_ASSERT(RWCHC_SPIC_RELAYRH, RWCHC_SPIC_VALID))
-		goto out;
-
 	relays->HIGHB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
-	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
-		goto out;
 	
 	ret = ALL_OK;
 out:
@@ -309,9 +302,9 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 	
 	assert(relays);
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_RELAYWL);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_RELAYWL, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	if (!SPI_ASSERT(relays->LOWB, ~RWCHC_SPIC_RELAYWL))
@@ -320,9 +313,9 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->LOWB))
 		goto out;
 	
-	SPI_RESYNC();	// resync since we have exited the atomic section in firmware
+	SPI_RESYNC(RWCHC_SPIC_RELAYWH);	// resync since we have exited the atomic section in firmware
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_RELAYWH, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	if (!SPI_ASSERT(relays->HIGHB, ~RWCHC_SPIC_RELAYWH))
@@ -349,9 +342,9 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 	
 	assert(tsensors);
 	
-	SPI_RESYNC();
+	SPI_RESYNC(sensor);
 
-	if (!SPI_ASSERT(sensor, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	tsensors[sensor] = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
@@ -360,9 +353,6 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 	if ((tsensors[sensor] & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
 		goto out;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
-		goto out;
-
 	ret = ALL_OK;
 out:
 	return ret;
@@ -393,18 +383,15 @@ int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 			return (-EINVALID);
 	}
 
-	SPI_RESYNC();
+	SPI_RESYNC(cmd);
 
-	if (!SPI_ASSERT(cmd, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
-
+	
 	*refval = SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
 	*refval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
-		goto out;
-
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_VALID))
 		goto out;
 
 	ret = ALL_OK;
@@ -424,9 +411,9 @@ int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 	
 	assert(settings);
 
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_SETTINGSR);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_SETTINGSR, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	for (i=0; i<sizeof(*settings); i++)
@@ -452,9 +439,9 @@ int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 	
 	assert(settings);
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_SETTINGSW);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_SETTINGSW, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	for (i=0; i<sizeof(*settings); i++)
@@ -477,9 +464,9 @@ int rwchcd_spi_settings_s(void)
 {
 	int ret = -ESPI;
 	
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_SETTINGSS);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_SETTINGSS, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
@@ -499,11 +486,11 @@ int rwchcd_spi_calibrate(void)
 {
 	int ret = -ESPI;
 
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_CALIBRATE);
 
-	if (!SPI_ASSERT(RWCHC_SPIC_CALIBRATE, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
-
+	
 	usleep(500*1000);	// must wait for completion (500ms)
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_CALIBRATE))
@@ -524,11 +511,11 @@ int rwchcd_spi_reset(void)
 	unsigned int i;
 	int ret = -ESPI;
 
-	SPI_RESYNC();
+	SPI_RESYNC(RWCHC_SPIC_RESET);
 
-	if (!SPI_ASSERT(RWCHC_SPIC_RESET, RWCHC_SPIC_VALID))
+	if (!spitout)
 		goto out;
-
+	
 	for (i=0; i<ARRAY_SIZE(trig); i++)
 		if (SPI_rw8bit(trig[i]) != i)
 			goto out;
@@ -544,5 +531,5 @@ out:
  */
 int rwchcd_spi_init(void)
 {
-	return (wiringPiSPISetupMode(SPICHAN, SPISPEED, SPIMODE));
+	return (wiringPiSPISetupMode(SPICHAN, SPICLOCK, SPIMODE));
 }
