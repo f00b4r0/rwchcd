@@ -775,9 +775,11 @@ fail:
 }
 
 /**
- * Hardware run loop
+ * Collect inputs from hardware.
+ * @note Will process switch inputs.
+ * @return exec status
  */
-void hardware_run(void)
+int hardware_input(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
@@ -785,19 +787,15 @@ void hardware_run(void)
 	static tempid_t tempid = 1;
 	enum e_systemmode cursysmode;
 	int ret;
-
-	if (!runtime->config || !runtime->config->configured || !Hardware.ready) {
-		dbgerr("not configured");
-		return;	// XXX when this is a while(1){} thread this should be 'continue'
-	}
-
-	// fetch SPI data
-
+	
 	// read peripherals
 	ret = hardware_rwchcperiphs_read();
-	if (ret)
+	if (ALL_OK != ret) {
 		dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
-
+		goto out;
+	}
+	
+	// detect alarm condition - XXX HACK
 	if (Hardware.peripherals.LED2) {
 		// clear alarm
 		Hardware.peripherals.LED2 = 0;
@@ -807,6 +805,7 @@ void hardware_run(void)
 		// XXX reset runtime?
 	}
 	
+	// handle switch 1
 	if (Hardware.peripherals.RQSW1) {
 		// change system mode
 		cursysmode = runtime->systemmode;
@@ -820,6 +819,7 @@ void hardware_run(void)
 		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?
 	}
 	
+	// handle switch 2
 	if (Hardware.peripherals.RQSW2) {
 		// increase displayed tempid
 		tempid++;
@@ -830,21 +830,24 @@ void hardware_run(void)
 			tempid = 1;
 	}
 	
+	// trigger timed backlight
 	if (count) {
 		Hardware.peripherals.LCDbl = 1;
 		count--;
 		if (!count)
-			lcd_fade();
+			lcd_fade();	// apply fadeout
 	}
 	else
 		Hardware.peripherals.LCDbl = 0;
 	
-	lcd_line1(tempid);
-	lcd_update(false);
+	// calibrate
+	ret = hardware_calibrate();
+	if (ALL_OK != ret)
+		dbgerr("hardware_calibrate failed (%d)", ret);	// flag only: calibrate() will not store invalid values
 	
 	// read sensors
 	ret = hardware_sensors_read(rawsensors);
-	if (ret) {
+	if (ALL_OK != ret) {
 		// XXX REVISIT: flag the error but do NOT stop processing here
 		dbgerr("hardware_sensors_read failed (%d)", ret);
 	}
@@ -852,29 +855,68 @@ void hardware_run(void)
 		// copy valid data to runtime environment
 		memcpy(Hardware.sensors, rawsensors, sizeof(Hardware.sensors));
 	}
-
+	
 	parse_temps();
+	
+	lcd_line1(tempid);
+	lcd_update(false);
+	
+	ret = ALL_OK;
+	
+out:
+	return (ret);
+}
 
-	// calibrate
-	ret = hardware_calibrate();
-	if (ret)
-		dbgerr("hardware_calibrate failed (%d)", ret);
+/**
+ * Apply commands to hardware.
+ * @return exec status
+ */
+int hardware_output(void)
+{
+	int ret;
+	
+	// write relays
+	ret = hardware_rwchcrelays_write();
+	if (ALL_OK != ret) {
+		dbgerr("hardware_rwchcrelays_write failed (%d)", ret);
+		goto out;
+	}
+	
+	// write peripherals
+	ret = hardware_rwchcperiphs_write();
+	if (ALL_OK != ret)
+		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
+	
+out:
+	return (ret);
+}
+
+/**
+ * Hardware run loop
+ */
+int hardware_run(void)
+{
+	struct s_runtime * const runtime = get_runtime();
+	int ret;
+	
+	if (!runtime->config || !runtime->config->configured || !Hardware.ready) {
+		dbgerr("not configured");
+		return (-ENOTCONFIGURED);
+	}
+	
+	ret = hardware_input();
+	if (ALL_OK != ret)
+		goto out;
 	
 	/* we want to release locks and sleep here to reduce contention and
 	 * allow other parts to do their job before writing back */
 	//sleep(1);
 
 	// send SPI data
-
-	// write relays
-	ret = hardware_rwchcrelays_write();
-	if (ret)
-		dbgerr("hardware_rwchcrelays_write failed (%d)", ret);
-
-	// write peripherals
-	ret = hardware_rwchcperiphs_write();
-	if (ret)
-		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
+	ret = hardware_output();
+	
+out:
+	return (ret);
 }
 
 /**

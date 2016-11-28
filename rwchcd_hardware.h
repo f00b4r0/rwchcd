@@ -71,7 +71,7 @@ int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast
 int hardware_relay_set_state(struct s_stateful_relay * relay, bool turn_on, time_t change_delay);
 int hardware_relay_get_state(struct s_stateful_relay * const relay);
 int hardware_online(void);
-void hardware_run(void);
+int hardware_run(void);
 void hardware_exit(void);
 
 #endif /* rwchcd_hardware_h */
