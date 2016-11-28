@@ -301,11 +301,17 @@ static void * thread_master(void *arg)
 		runtime_set_systemmode(SYS_FROSTFREE);
 	
 	while (master_thread_sem) {
-		hardware_run();
+		ret = hardware_input();
+		if (ret)
+			dbgerr("hardware_input returned: %d", ret);
 		
 		ret = runtime_run();
 		if (ret)
 			dbgerr("runtime_run returned: %d", ret);
+		
+		ret = hardware_output();
+		if (ret)
+			dbgerr("hardware_output returned: %d", ret);
 		
 		printf("\n");	// XXX DEBUG
 		sleep(1);
