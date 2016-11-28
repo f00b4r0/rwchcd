@@ -31,6 +31,42 @@ struct s_runtime * get_runtime(void)
 }
 
 /**
+ * Save runtime to permanent storage
+ * @return exec status
+ */
+static int runtime_save(void)
+{
+	return (storage_dump("runtime", &Runtime_sversion, &Runtime, sizeof(Runtime)));
+}
+
+/**
+ * Restore runtime from permanent storage
+ * @return exec status
+ */
+static int runtime_restore(void)
+{
+	struct s_runtime temp_runtime;
+	storage_version_t sversion;
+	
+	// try to restore key elements of last runtime
+	if (storage_fetch("runtime", &sversion, &temp_runtime, sizeof(temp_runtime)) == ALL_OK) {
+		if (Runtime_sversion != sversion)
+			return (ALL_OK);	// XXX
+		
+		Runtime.t_outdoor_ltime = temp_runtime.t_outdoor_ltime;
+		Runtime.t_outdoor_filtered = temp_runtime.t_outdoor_filtered;
+		Runtime.t_outdoor_attenuated = temp_runtime.t_outdoor_attenuated;
+		Runtime.systemmode = temp_runtime.systemmode;
+		Runtime.runmode = temp_runtime.runmode;
+		Runtime.dhwmode = temp_runtime.dhwmode;
+	}
+	else
+		dbgmsg("storage_fetch failed");
+	
+	return (ALL_OK);
+}
+
+/**
  * Reset runtime outdoor temperatures to sane values
  */
 static inline void outdoor_temp_reset(void)
@@ -70,6 +106,8 @@ static void outdoor_temp()
 
 	Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
 	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_filtered, Runtime.config->building_tau, dt);
+	
+	runtime_save();
 }
 
 
@@ -102,42 +140,6 @@ static void runtime_summer(void)
 		    (Runtime.t_outdoor_attenuated < Runtime.config->limit_tsummer))
 			Runtime.summer = false;
 	}
-}
-
-/**
- * Save runtime to permanent storage
- * @return exec status
- */
-static int runtime_save(void)
-{
-	return (storage_dump("runtime", &Runtime_sversion, &Runtime, sizeof(Runtime)));
-}
-
-/**
- * Restore runtime from permanent storage
- * @return exec status
- */
-static int runtime_restore(void)
-{
-	struct s_runtime temp_runtime;
-	storage_version_t sversion;
-	
-	// try to restore key elements of last runtime
-	if (storage_fetch("runtime", &sversion, &temp_runtime, sizeof(temp_runtime)) == ALL_OK) {
-		if (Runtime_sversion != sversion)
-			return (ALL_OK);	// XXX
-		
-		Runtime.t_outdoor_ltime = temp_runtime.t_outdoor_ltime;
-		Runtime.t_outdoor_filtered = temp_runtime.t_outdoor_filtered;
-		Runtime.t_outdoor_attenuated = temp_runtime.t_outdoor_attenuated;
-		Runtime.systemmode = temp_runtime.systemmode;
-		Runtime.runmode = temp_runtime.runmode;
-		Runtime.dhwmode = temp_runtime.dhwmode;
-	}
-	else
-		dbgmsg("storage_fetch failed");
-	
-	return (ALL_OK);
 }
 
 /**
@@ -190,6 +192,8 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 	dbgmsg("sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.runmode, Runtime.dhwmode);
 
 	Runtime.systemmode = sysmode;
+	
+	runtime_save();
 
 	return (ALL_OK);
 }
@@ -212,6 +216,8 @@ int runtime_set_runmode(const enum e_runmode runmode)
 
 	Runtime.runmode = runmode;
 
+	runtime_save();
+	
 	return (ALL_OK);
 }
 
@@ -233,6 +239,8 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 
 	Runtime.dhwmode = dhwmode;
 
+	runtime_save();
+	
 	return (ALL_OK);
 }
 
@@ -276,8 +284,6 @@ int runtime_run(void)
 	outdoor_temp();
 	runtime_summer();
 	
-	runtime_save();
-
 	ret = plant_run(Runtime.plant);
 	if (ret)
 		goto out;

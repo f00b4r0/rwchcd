@@ -175,7 +175,7 @@ static int init_process()
 	boiler = heatsource->priv;
 	boiler->set.idle_mode = IDLE_FROSTONLY;
 	boiler->set.histeresis = deltaK_to_temp(8);
-	boiler->set.limit_tmax = celsius_to_temp(90);
+	boiler->set.limit_tmax = celsius_to_temp(85);
 	boiler->set.limit_tmin = celsius_to_temp(50);
 	boiler->set.id_temp = 2;	// XXX VALIDATION
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
