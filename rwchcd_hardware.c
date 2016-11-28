@@ -194,6 +194,10 @@ static int hardware_restore_relays(void)
 
 		for (i=0; i<ARRAY_SIZE(Relays); i++) {
 			if (Relays[i]) {
+				if (relayptr->run.is_on)	// account for last known state_time
+					Relays[i]->run.on_tottime += relayptr->run.state_time;
+				else
+					Relays[i]->run.off_tottime += relayptr->run.state_time;
 				Relays[i]->run.on_tottime += relayptr->run.on_tottime;
 				Relays[i]->run.off_tottime += relayptr->run.off_tottime;
 				Relays[i]->run.cycles += relayptr->run.cycles;

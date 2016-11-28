@@ -135,6 +135,7 @@ static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
  * @note only handles default circuit comfort temp for now.
  * @todo make it generic to set any config temp
  * @todo save config: cannot do for now because config_save() calls hardware
+ * @warning doesn't save runtime after set
  */
 static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,

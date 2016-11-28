@@ -293,8 +293,7 @@ static void * thread_master(void *arg)
 	ret = init_process();
 	if (ret != ALL_OK) {
 		dbgerr("init_proccess failed (%d)", ret);
-		if (ret == -ESPI)	// XXX HACK
-			goto thread_end;
+		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
 	
 	// start in frostfree by default
