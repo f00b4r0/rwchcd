@@ -23,17 +23,31 @@
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
-#define SPIDELAYUS	500		///< 500us
-#define SPIRESYNCMAX	200		///< max resync tries -> 100ms @500us delay
+#define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate
+#define SPIRESYNCMAX	200		///< max resync tries -> terminal delay ~120ms including 100us SPIDELAYUS for each exchange
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0
 #define SPIMODE		3	///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
+#define USLEEPLCDFAST	50		///< expected completion time (us) for most LCD ops
+#define USLEEPLCDSLOW	2000		///< expected completion time (us) for clear/home cmds
+
 #define SPI_ASSERT(emit, expect)	(SPI_rw8bit(emit) == (uint8_t)expect)
+
+/**
+ * SPI resync routine.
+ * This routine ensure we enter the atomic SPI ops in firmware.
+ * It uses an exponential back-off delay after each retry, starting from 0
+ * (and thus only applying the embedded delay of SPI_rw8bit()), up to a terminal
+ * delay of 1ms (5*SPIRESYNCMAX microseconds) on the last run.
+ * With SPIRESYNCMAX=200, this translates to a standalone accumulated delay of
+ * approximately 100ms. Adding the embedded delay of SPI_rw8bit (100us), this adds
+ * 20ms to this number.
+ */
 #define SPI_RESYNC(cmd)								\
 		({								\
 		spitout = SPIRESYNCMAX;						\
-		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && --spitout);	\
+		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && usleep(5*SPIRESYNCMAX-5*spitout) && --spitout);	\
 		if (spitout) SPI_rw8bit(cmd);	/* consumes the last SYNCACK */	\
 		})
 
@@ -60,6 +74,7 @@ static uint8_t SPI_rw8bit(const uint8_t data)
  * if this function fails more than a reasonnable number of tries then there's a good
  * chance the device is not connected.
  * @return error status
+ * Delay: none
  */
 int rwchcd_spi_keepalive_once(void)
 {
@@ -74,6 +89,7 @@ int rwchcd_spi_keepalive_once(void)
 /**
  * Acquire control over LCD display
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_lcd_acquire(void)
 {
@@ -95,6 +111,7 @@ out:
 /**
  * Relinquish control over LCD display (to embedded firmware).
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_lcd_relinquish(void)
 {
@@ -116,6 +133,7 @@ out:
 /**
  * Request LCD backlight fadeout
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_lcd_fade(void)
 {
@@ -138,6 +156,7 @@ out:
  * Write LCD command byte
  * @param cmd command byte to send
  * @return error code
+ * Delay: LCD op execution time after command is sent
  */
 int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
 {
@@ -151,6 +170,11 @@ int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
 	if (!SPI_ASSERT(cmd, ~RWCHC_SPIC_LCDCMDW))
 		goto out;
 	
+	if (cmd & 0xFC)	// quick commands
+		usleep(USLEEPLCDFAST);
+	else	// clear/home
+		usleep(USLEEPLCDSLOW);
+	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
 		goto out;
 	
@@ -163,6 +187,7 @@ out:
  * Write LCD data byte
  * @param data data byte to send
  * @return error code
+ * Delay: LCD op execution time after data is sent
  */
 int rwchcd_spi_lcd_data_w(const uint8_t data)
 {
@@ -175,6 +200,8 @@ int rwchcd_spi_lcd_data_w(const uint8_t data)
 	
 	if (!SPI_ASSERT(data, ~RWCHC_SPIC_LCDDATW))
 		goto out;
+	
+	usleep(USLEEPLCDFAST);	// wait for completion
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, data))
 		goto out;
@@ -189,6 +216,7 @@ out:
  * to eeprom.
  * @param percent backlight duty cycle in percent
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_lcd_bl_w(const uint8_t percent)
 {
@@ -217,6 +245,7 @@ out:
  * Read peripheral states
  * @param outperiphs pointer to struct whose values will be populated to match current states
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 {
@@ -240,6 +269,7 @@ out:
  * Write peripheral states
  * @param outperiphs pointer to struct whose values are populated with desired states
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 {
@@ -265,6 +295,7 @@ out:
  * Read relay states
  * @param relays pointer to struct whose values will be populated to match current states
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 {
@@ -295,6 +326,7 @@ out:
  * Write relay states
  * @param relays pointer to struct whose values are populated with desired states
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 {
@@ -335,6 +367,7 @@ out:
  * @param sensor target sensor number to be read
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
+ * Delay: none
  */
 int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
@@ -364,6 +397,7 @@ out:
  * @param refn target reference number to be read (0 or 1)
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
+ * Delay: none
  */
 int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 {
@@ -403,6 +437,7 @@ out:
  * Read current ram settings
  * @param settings pointer to struct whose values will be populated to match current settings
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 {
@@ -431,6 +466,7 @@ out:
  * Write current ram settings
  * @param settings pointer to struct whose values are populated with desired settings
  * @return error code
+ * Delay: none
  */
 int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 {
@@ -459,6 +495,7 @@ out:
 /**
  * Save current ram settings to eeprom
  * @return error code
+ * Delay: none (eeprom write is faster than a SPI cycle)
  */
 int rwchcd_spi_settings_s(void)
 {
@@ -481,6 +518,7 @@ out:
  * Request sensor calibration
  * @return error code
  * @note sleeps
+ * Delay: sensor calibration requires about 400ms to complete
  */
 int rwchcd_spi_calibrate(void)
 {
@@ -504,6 +542,7 @@ out:
 /**
  * Reset the device
  * @return exec status (ALL_OK if reset is presumably successful)
+ * Delay: none (device unavailable until fully restarted: 1-2s delay would be reasonable)
  */
 int rwchcd_spi_reset(void)
 {

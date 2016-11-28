@@ -34,7 +34,7 @@ int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn) __attribute__(
 int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings) __attribute__((warn_unused_result));
 int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings) __attribute__((warn_unused_result));
 int rwchcd_spi_settings_s(void) __attribute__((warn_unused_result));
-int rwchcd_spi_calibrate(void);
+int rwchcd_spi_calibrate(void) __attribute__((warn_unused_result));
 int rwchcd_spi_reset(void);
 int rwchcd_spi_init(void) __attribute__((warn_unused_result));
 
