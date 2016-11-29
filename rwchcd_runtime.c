@@ -18,7 +18,7 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
 
-static const storage_version_t Runtime_sversion = 2;
+static const storage_version_t Runtime_sversion = 3;
 static struct s_runtime Runtime;
 
 /**
@@ -90,8 +90,12 @@ static void outdoor_temp()
 	const time_t now = time(NULL);
 	const time_t dt = now - Runtime.t_outdoor_ltime;
 	const time_t dt60 = now - last60;
-
-	Runtime.t_outdoor = get_temp(Runtime.config->id_temp_outdoor) + Runtime.config->set_temp_outdoor_offset;	// XXX checks
+	const temp_t toutdoor = get_temp(Runtime.config->id_temp_outdoor);
+	
+	if (validate_temp(toutdoor) != ALL_OK)
+		Runtime.t_outdoor = Runtime.config->limit_tfrost-1;	// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
+	else
+		Runtime.t_outdoor = toutdoor + Runtime.config->set_temp_outdoor_offset;
 	
 	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
 	Runtime.t_outdoor_mixed = (Runtime.t_outdoor_60 + Runtime.t_outdoor_filtered)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
@@ -112,7 +116,7 @@ static void outdoor_temp()
 
 
 /**
- * Conditions for summer switch
+ * Conditions for summer switch.
  * summer mode is set on in ALL of the following conditions are met:
  * - t_outdoor_60 > limit_tsummer
  * - t_outdoor_mixed > limit_tsummer
@@ -140,6 +144,22 @@ static void runtime_summer(void)
 		    (Runtime.t_outdoor_attenuated < Runtime.config->limit_tsummer))
 			Runtime.summer = false;
 	}
+}
+
+/**
+ * Conditions for frost switch.
+ * Trigger frost protection flag when t_outdoor_60 < limit_tfrost.
+ * @note there is no histeresis
+ */
+static void runtime_frost(void)
+{
+	if (!Runtime.config->limit_tfrost)
+		return;	// invalid limit, don't do anything
+	
+	if ((Runtime.t_outdoor_60 < Runtime.config->limit_tfrost))
+		Runtime.frost = true;
+	else
+		Runtime.frost = false;
 }
 
 /**
@@ -283,6 +303,7 @@ int runtime_run(void)
 
 	outdoor_temp();
 	runtime_summer();
+	runtime_frost();
 	
 	ret = plant_run(Runtime.plant);
 	if (ret)

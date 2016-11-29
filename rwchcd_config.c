@@ -20,7 +20,7 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_config.h"
 
-static const storage_version_t Config_sversion = 3;
+static const storage_version_t Config_sversion = 4;
 
 /**
  * Allocate new config.
@@ -155,6 +155,26 @@ int config_set_tsummer(struct s_config * const config, const temp_t tsummer)
 
 	config->limit_tsummer = tsummer;
 
+	return (ALL_OK);
+}
+
+/**
+ * Set outdoor temperature for frost protection.
+ * Defines the temperature at which frost protection will be required active.
+ * @param config target config
+ * @param tfrost target outdoor temp for switchover
+ * @return exec status
+ */
+int config_set_tfrost(struct s_config * const config, const temp_t tfrost)
+{
+	if (!config)
+		return (-EINVALID);
+	
+	if (validate_temp(tfrost) != ALL_OK)
+		return (-EINVALID);
+	
+	config->limit_tfrost = tfrost;
+	
 	return (ALL_OK);
 }
 

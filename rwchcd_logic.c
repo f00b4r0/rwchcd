@@ -218,7 +218,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
 			if (ambient_temp > circuit->run.request_ambient) {
-				if (circuit->set.fast_cooldown)	// if fast cooldown, turn off circuit
+				if (circuit->set.fast_cooldown && !runtime->frost)	// if fast cooldown, turn off circuit, except if frost condition is met
 					circuit->run.runmode = RM_OFF;
 			}
 			else

@@ -136,12 +136,13 @@ struct s_dhwt_params {
 struct s_config {
 	bool restored;			///< true if config has been restored from storage
 	bool configured;		///< true if properly configured
+	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED
 	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
-	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED
+	temp_t limit_tfrost;		///< outdoor temp for plant frost protection
 	struct s_circuit_params def_circuit;	///< circuit defaults: if individual circuits don't set these values, these defaults will be used
 	struct s_dhwt_params def_dhwt;		///< DHWT defaults: if individual dhwts don't set these values, these defaults will be used
 };
@@ -155,6 +156,7 @@ struct s_runtime {
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
 	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	bool summer;			///< outdoor temperature is compatible with summer mode
+	bool frost;			///< outdoor temperature requires frost protection
 	temp_t t_outdoor;		///< instantaneous outdoor temperature
 	temp_t t_outdoor_60;		///< t_outdoor filtered over a 60s window
 	time_t t_outdoor_ltime;		///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
