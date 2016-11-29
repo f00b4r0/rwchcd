@@ -249,8 +249,8 @@ int runtime_set_runmode(const enum e_runmode runmode)
  */
 int runtime_set_dhwmode(const enum e_runmode dhwmode)
 {
-	// runmode can only be directly modified in SYS_AUTO
-	if ((SYS_AUTO != Runtime.systemmode) || (SYS_DHWONLY != Runtime.systemmode))
+	// dhwmode can only be directly modified in SYS_AUTO or SYS_DHWONLY
+	if (!((SYS_AUTO == Runtime.systemmode) || (SYS_DHWONLY == Runtime.systemmode)))
 		return (-EINVALID);
 
 	// if set, dhwmode cannot be RM_AUTO or RM_DHWONLY
