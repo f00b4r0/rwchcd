@@ -920,12 +920,11 @@ out:
 }
 
 /**
- * Hardware shutdown routine.
- * Forcefully turns all relays off, saves final counters to permanent storage
- * and resets the hardware.
- * @warning RESETS THE HARDWARE: no hardware operation after that call.
+ * Hardware offline routine.
+ * Forcefully turns all relays off and saves final counters to permanent storage.
+ * @return exec status
  */
-void hardware_exit(void)
+int hardware_offline(void)
 {
 	struct s_stateful_relay * restrict relay;
 	uint_fast8_t i;
@@ -950,6 +949,18 @@ void hardware_exit(void)
 	hardware_save_relays();
 	
 	Hardware.ready = false;
+	
+	return (ret);
+}
+
+/**
+ * Hardware exit routine.
+ * Resets the hardware.
+ * @warning RESETS THE HARDWARE: no hardware operation after that call.
+ */
+void hardware_exit(void)
+{
+	int ret;
 	
 	// reset the hardware
 	ret = rwchcd_spi_reset();

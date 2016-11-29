@@ -26,5 +26,6 @@ int config_set_tsummer(struct s_config * const config, const temp_t tsummer);
 int config_set_tfrost(struct s_config * const config, const temp_t tfrost);
 int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid);
 int config_save(const struct s_config * const config);
+void config_exit(struct s_config * const config);
 
 #endif /* rwchcd_config_h */

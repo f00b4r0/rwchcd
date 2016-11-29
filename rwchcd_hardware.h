@@ -74,6 +74,7 @@ int hardware_online(void);
 int hardware_input(void);
 int hardware_output(void);
 int hardware_run(void);
+int hardware_offline(void);
 void hardware_exit(void);
 
 #endif /* rwchcd_hardware_h */

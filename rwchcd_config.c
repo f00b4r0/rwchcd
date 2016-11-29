@@ -89,17 +89,28 @@ static int config_restore(struct s_config * const config)
  */
 int config_init(struct s_config * const config)
 {
-	int ret;
-
 	if (!config)
 		return (-EINVALID);
 
 	// see if we can restore previous config
-	ret = config_restore(config);
-	if (ALL_OK == ret)
-		ret = hardware_config_store();	// update hardware if inconsistent
+	if (config_restore(config) == ALL_OK)
+		hardware_config_store();	// update hardware if inconsistent
 	
-	return (ret);
+	return (ALL_OK);
+}
+
+/**
+ * Config exit.
+ * Saves current config
+ * @param config config
+ */
+void config_exit(struct s_config * const config)
+{
+	if (!config)
+		return;
+	
+	// save current config
+	config_save(config);
 }
 
 /**

@@ -21,7 +21,7 @@
 #include "rwchcd_spi.h"
 #include "rwchcd.h"	// for error codes
 
-#define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate
+#define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate, allows 800 ISNS on the PIC
 #define SPIRESYNCMAX	200		///< max resync tries -> terminal delay ~120ms including 100us SPIDELAYUS for each exchange
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0

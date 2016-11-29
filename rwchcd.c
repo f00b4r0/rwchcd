@@ -268,7 +268,7 @@ static int init_process()
 
 	// configure that dhwt
 	dhwt->set.id_temp_bottom = boiler->set.id_temp;
-	dhwt->set.params.temp_inoffset = deltaK_to_temp(0);	// Integrated tank
+	dhwt->set.params.temp_inoffset = deltaK_to_temp(0.01F);	// Integrated tank - non-zero because default would take over otherwise
 	dhwt->set.runmode = RM_AUTO;	// use global setting
 	dhwt->set.configured = true;
 
@@ -285,11 +285,22 @@ static int init_process()
 	return (runtime_online());
 }
 
+static void exit_process(void)
+{
+	struct s_runtime * restrict const runtime = get_runtime();
+
+	runtime_offline();
+	hardware_offline();
+	plant_del(runtime->plant);
+	config_exit(runtime->config);
+	config_del(runtime->config);
+	runtime_exit();
+	hardware_exit();
+}
 
 static void * thread_master(void *arg)
 {
 	int ret;
-	struct s_runtime * restrict const runtime = get_runtime();
 	
 	ret = init_process();
 	if (ret != ALL_OK) {
@@ -321,11 +332,7 @@ static void * thread_master(void *arg)
 thread_end:
 	// cleanup
 	dbgmsg("thread exiting!");
-	plant_offline(runtime->plant);	// take the plant offline
-	config_save(runtime->config);	// save running config before exiting
-	hardware_exit();		// stop the hardware - NOTE: this resets the hardware
-	plant_del(runtime->plant);	// delete the plant
-	config_del(runtime->config);	// delete the config
+	exit_process();
 	pthread_exit(&ret);		// exit
 }
 

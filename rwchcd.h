@@ -41,7 +41,7 @@
  #define dbgmsg(format, ...)	/* nothing */
 #endif
 
-#define dbgerr(format, ...)	fprintf(stderr, "ERROR! (%s()) " format "\n", __func__, ## __VA_ARGS__)
+#define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 
 /** Valid return values */
 enum {

@@ -312,3 +312,22 @@ int runtime_run(void)
 out:
 	return (ret);
 }
+
+/**
+ * Offline runtime.
+ * @return exec status
+ */
+int runtime_offline(void)
+{
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+		return (-ENOTCONFIGURED);
+
+	runtime_save();
+	
+	return (plant_offline(Runtime.plant));
+}
+
+void runtime_exit(void)
+{
+	runtime_init();		// clear runtime
+}

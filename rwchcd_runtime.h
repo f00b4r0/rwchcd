@@ -23,5 +23,7 @@ int runtime_set_runmode(const enum e_runmode runmode);
 int runtime_set_dhwmode(const enum e_runmode dhwmode);
 int runtime_online(void);
 int runtime_run(void);
+int runtime_offline(void);
+void runtime_exit(void);
 
 #endif /* rwchcd_runtime_h */
