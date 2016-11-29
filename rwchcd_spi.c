@@ -39,7 +39,7 @@
  * (and thus only applying the embedded delay of SPI_rw8bit()), up to a terminal
  * delay of 1ms (5*SPIRESYNCMAX microseconds) on the last run.
  * With SPIRESYNCMAX=200, this translates to a standalone accumulated delay of
- * approximately 100ms. Adding the embedded delay of SPI_rw8bit (100us), this adds
+ * approximately 100ms. Adding the embedded delay of SPI_rw8bit() (100us), this adds
  * 20ms to this number.
  */
 #define SPI_RESYNC(cmd)								\
@@ -71,8 +71,8 @@ static uint8_t SPI_rw8bit(const uint8_t data)
  * Can be used e.g. at initialization time to ensure that there is a device connected:
  * if this function fails more than a reasonnable number of tries then there's a good
  * chance the device is not connected.
- * @return error status
  * Delay: none
+ * @return error status
  */
 int rwchcd_spi_keepalive_once(void)
 {
@@ -85,9 +85,9 @@ int rwchcd_spi_keepalive_once(void)
 }
 
 /**
- * Acquire control over LCD display
- * @return error code
+ * Acquire control over LCD display.
  * Delay: none
+ * @return error code
  */
 int rwchcd_spi_lcd_acquire(void)
 {
@@ -108,8 +108,8 @@ out:
 
 /**
  * Relinquish control over LCD display (to embedded firmware).
- * @return error code
  * Delay: none
+ * @return error code
  */
 int rwchcd_spi_lcd_relinquish(void)
 {
@@ -129,9 +129,9 @@ out:
 }
 
 /**
- * Request LCD backlight fadeout
- * @return error code
+ * Request LCD backlight fadeout.
  * Delay: none
+ * @return error code
  */
 int rwchcd_spi_lcd_fade(void)
 {
@@ -151,10 +151,10 @@ out:
 }
 
 /**
- * Write LCD command byte
+ * Write LCD command byte.
+ * Delay: LCD op execution time after command is sent
  * @param cmd command byte to send
  * @return error code
- * Delay: LCD op execution time after command is sent
  */
 int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
 {
@@ -182,10 +182,10 @@ out:
 }
 
 /**
- * Write LCD data byte
+ * Write LCD data byte.
+ * Delay: LCD op execution time after data is sent
  * @param data data byte to send
  * @return error code
- * Delay: LCD op execution time after data is sent
  */
 int rwchcd_spi_lcd_data_w(const uint8_t data)
 {
@@ -212,9 +212,9 @@ out:
 /**
  * Write LCD backlight duty cycle. Will not be committed
  * to eeprom.
+ * Delay: none
  * @param percent backlight duty cycle in percent
  * @return error code
- * Delay: none
  */
 int rwchcd_spi_lcd_bl_w(const uint8_t percent)
 {
@@ -240,10 +240,10 @@ out:
 }
 
 /**
- * Read peripheral states
+ * Read peripheral states.
+ * Delay: none
  * @param outperiphs pointer to struct whose values will be populated to match current states
  * @return error code
- * Delay: none
  */
 int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 {
@@ -264,10 +264,10 @@ out:
 }
 
 /**
- * Write peripheral states
+ * Write peripheral states.
+ * Delay: none
  * @param outperiphs pointer to struct whose values are populated with desired states
  * @return error code
- * Delay: none
  */
 int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 {
@@ -290,10 +290,10 @@ out:
 }
 
 /**
- * Read relay states
+ * Read relay states.
+ * Delay: none
  * @param relays pointer to struct whose values will be populated to match current states
  * @return error code
- * Delay: none
  */
 int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 {
@@ -321,10 +321,10 @@ out:
 }
 
 /**
- * Write relay states
+ * Write relay states.
+ * Delay: none
  * @param relays pointer to struct whose values are populated with desired states
  * @return error code
- * Delay: none
  */
 int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 {
@@ -360,12 +360,12 @@ out:
 }
 
 /**
- * Read a single sensor value
+ * Read a single sensor value.
+ * Delay: none
  * @param tsensors pointer to target sensor array whose value will be updated regardless of errors
  * @param sensor target sensor number to be read
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
- * Delay: none
  */
 int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
@@ -390,12 +390,12 @@ out:
 }
 
 /**
- * Read a single reference value
+ * Read a single reference value.
+ * Delay: none
  * @param refval pointer to target reference whose value will be updated
  * @param refn target reference number to be read (0 or 1)
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
- * Delay: none
  */
 int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 {
@@ -432,10 +432,10 @@ out:
 }
 
 /**
- * Read current ram settings
+ * Read current ram settings.
+ * Delay: none
  * @param settings pointer to struct whose values will be populated to match current settings
  * @return error code
- * Delay: none
  */
 int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
 {
@@ -461,10 +461,10 @@ out:
 }
 
 /**
- * Write current ram settings
+ * Write current ram settings.
+ * Delay: none
  * @param settings pointer to struct whose values are populated with desired settings
  * @return error code
- * Delay: none
  */
 int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 {
@@ -491,9 +491,9 @@ out:
 }
 
 /**
- * Save current ram settings to eeprom
- * @return error code
+ * Save current ram settings to eeprom.
  * Delay: none (eeprom write is faster than a SPI cycle)
+ * @return error code
  */
 int rwchcd_spi_settings_s(void)
 {
@@ -513,10 +513,10 @@ out:
 }
 
 /**
- * Request sensor calibration
+ * Request sensor calibration.
+ * Delay: sensor calibration requires about 400ms to complete
  * @return error code
  * @note sleeps
- * Delay: sensor calibration requires about 400ms to complete
  */
 int rwchcd_spi_calibrate(void)
 {
@@ -538,9 +538,9 @@ out:
 }
 
 /**
- * Reset the device
- * @return exec status (ALL_OK if reset is presumably successful)
+ * Reset the device.
  * Delay: none (device unavailable until fully restarted: 1-2s delay would be reasonable)
+ * @return exec status (ALL_OK if reset is presumably successful)
  */
 int rwchcd_spi_reset(void)
 {
