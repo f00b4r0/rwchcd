@@ -29,8 +29,6 @@ all:	svn_version.h $(MAIN)
 	@echo	Done
 
 $(MAIN): $(OBJS) $(DBUSGEN_OBJS)
-	@echo $(OJBS)
-	@echo $(DBUSGEN_OJBS)
 	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
 
 .c.o:
