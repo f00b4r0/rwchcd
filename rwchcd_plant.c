@@ -1921,8 +1921,9 @@ void plant_del(struct s_plant * plant)
 /**
  * Bring plant online.
  * @param plant target plant
- * @return error status: if any subops fails this will be set
+ * @return exec status (-EGENERIC if any sub call returned an error)
  * @note REQUIRES valid sensor values before being called
+ * @todo error handling
  */
 int plant_online(struct s_plant * restrict const plant)
 {
@@ -1931,7 +1932,8 @@ int plant_online(struct s_plant * restrict const plant)
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	struct s_heatsource_l * restrict heatsourcel;
-	int ret, finalret = ALL_OK;
+	bool suberror = false;
+	int ret;
 
 	if (!plant)
 		return (-EINVALID);
@@ -1943,12 +1945,14 @@ int plant_online(struct s_plant * restrict const plant)
 	// pumps
 	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
 		ret = pump_online(pumpl->pump);
+		pumpl->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("pump_online failed, id: %d (%d)", pumpl->id, ret);
 			pump_offline(pumpl->pump);
 			pumpl->pump->run.online = false;
-			finalret = ret;
+			suberror = true;
 		}
 		else
 			pumpl->pump->run.online = true;
@@ -1957,12 +1961,14 @@ int plant_online(struct s_plant * restrict const plant)
 	// valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
 		ret = valve_online(valvel->valve);
+		valvel->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("valve_online failed, id: %d (%d)", valvel->id, ret);
 			valve_offline(valvel->valve);
 			valvel->valve->run.online = false;
-			finalret = ret;
+			suberror = true;
 		}
 		else
 			valvel->valve->run.online = true;
@@ -1972,12 +1978,14 @@ int plant_online(struct s_plant * restrict const plant)
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		ret = circuit_online(circuitl->circuit);
+		circuitl->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
 			circuit_offline(circuitl->circuit);
 			circuitl->circuit->run.online = false;
-			finalret = ret;
+			suberror = true;
 		}
 		else
 			circuitl->circuit->run.online = true;
@@ -1986,37 +1994,47 @@ int plant_online(struct s_plant * restrict const plant)
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		ret = dhwt_online(dhwtl->dhwt);
+		dhwtl->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("dhwt_online failed, id: %d (%d)", dhwtl->id, ret);
 			dhwt_offline(dhwtl->dhwt);
 			dhwtl->dhwt->run.online = false;
-			finalret = ret;
+			suberror = true;
 		}
 		else
 			dhwtl->dhwt->run.online = true;
 	}
 
 	// finally online the heat source
-	heatsourcel = plant->heats_head;	// XXX TODO: single heat source
-	ret = heatsource_online(heatsourcel->heats);
-	if (ALL_OK != ret) {
-		// XXX error handling
-		dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
-		heatsource_offline(heatsourcel->heats);
-		heatsourcel->heats->run.online = false;
-		finalret = ret;
+	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
+	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
+		ret = heatsource_online(heatsourcel->heats);
+		heatsourcel->status = ret;
+		
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
+			heatsource_offline(heatsourcel->heats);
+			heatsourcel->heats->run.online = false;
+			suberror = true;
+		}
+		else
+			heatsourcel->heats->run.online = true;
 	}
-	else
-		heatsourcel->heats->run.online = true;
 
-	return (finalret);
+	if (suberror)
+		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
+	else
+		return (ALL_OK);
 }
 
 /**
  * Take plant offline.
  * @param plant target plant
- * @return error status: if any subops fails this will be set
+ * @return exec status (-EGENERIC if any sub call returned an error)
+ * @todo error handling
  */
 int plant_offline(struct s_plant * restrict const plant)
 {
@@ -2025,7 +2043,8 @@ int plant_offline(struct s_plant * restrict const plant)
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	struct s_heatsource_l * restrict heatsourcel;
-	int ret, finalret = ALL_OK;
+	bool suberror = false;
+	int ret;
 	
 	if (!plant)
 		return (-EINVALID);
@@ -2037,10 +2056,12 @@ int plant_offline(struct s_plant * restrict const plant)
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		ret = circuit_offline(circuitl->circuit);
+		circuitl->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("circuit_offline failed, id: %d (%d)", circuitl->id, ret);
-			finalret = ret;
+			suberror = true;
 		}
 		circuitl->circuit->run.online = false;
 	}
@@ -2048,32 +2069,40 @@ int plant_offline(struct s_plant * restrict const plant)
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		ret = dhwt_offline(dhwtl->dhwt);
+		dhwtl->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("dhwt_offline failed, id: %d (%d)", dhwtl->id, ret);
-			finalret = ret;
+			suberror = true;
 		}
 		dhwtl->dhwt->run.online = false;
 	}
 	
 	// next deal with the heat source
-	heatsourcel = plant->heats_head;	// XXX TODO: single heat source
-	ret = heatsource_offline(heatsourcel->heats);
-	if (ALL_OK != ret) {
-		// XXX error handling
-		dbgerr("heatsource_offline failed, id: %d (%d)", heatsourcel->id, ret);
-		finalret = ret;
+	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
+	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
+		ret = heatsource_offline(heatsourcel->heats);
+		heatsourcel->status = ret;
+		
+		if (ALL_OK != ret) {
+			// XXX error handling
+			dbgerr("heatsource_offline failed, id: %d (%d)", heatsourcel->id, ret);
+			suberror = true;
+		}
+		heatsourcel->heats->run.online = false;
 	}
-	heatsourcel->heats->run.online = false;
 	
 	// finally offline the actuators
 	// valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
 		ret = valve_offline(valvel->valve);
+		valvel->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("valve_offline failed, id: %d (%d)", valvel->id, ret);
-			finalret = ret;
+			suberror = true;
 		}
 		valvel->valve->run.online = false;
 	}
@@ -2081,15 +2110,20 @@ int plant_offline(struct s_plant * restrict const plant)
 	// pumps
 	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
 		ret = pump_offline(pumpl->pump);
+		pumpl->status = ret;
+		
 		if (ALL_OK != ret) {
 			// XXX error handling
 			dbgerr("pump_offline failed, id: %d (%d)", pumpl->id, ret);
-			finalret = ret;
+			suberror = true;
 		}
 		pumpl->pump->run.online = false;
 	}
 	
-	return (finalret);
+	if (suberror)
+		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
+	else
+		return (ALL_OK);
 }
 
 /**
@@ -2164,7 +2198,7 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 
 	// finally run the heat source
-	assert(plant->heats_n <= 1);	// XXX only one source supported at the moment
+	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
 	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
 		ret = logic_heatsource(heatsourcel->heats);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
