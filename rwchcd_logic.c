@@ -14,6 +14,7 @@
 
 #include <time.h>
 #include <math.h>
+#include <assert.h>
 
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
@@ -104,8 +105,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	time_t elapsed_time;
 	const time_t now = time(NULL);
 	
-	if (!circuit)
-		return (-EINVALID);
+	assert(circuit);
 	
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
@@ -253,8 +253,7 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t target_temp, ltmin, ltmax;
 
-	if (!dhwt)
-		return (-EINVALID);
+	assert(dhwt);
 	
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
@@ -322,8 +321,7 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 
 	int ret = -ENOTIMPLEMENTED;
 	
-	if (!heat)
-		return (-EINVALID);
+	assert(heat);
 	
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);

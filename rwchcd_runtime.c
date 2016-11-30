@@ -149,7 +149,7 @@ static void runtime_summer(void)
 /**
  * Conditions for frost switch.
  * Trigger frost protection flag when t_outdoor_60 < limit_tfrost.
- * @note there is no histeresis
+ * @note there is a fixed 1K positive histeresis (on untrip)
  */
 static void runtime_frost(void)
 {
@@ -158,7 +158,7 @@ static void runtime_frost(void)
 	
 	if ((Runtime.t_outdoor_60 < Runtime.config->limit_tfrost))
 		Runtime.frost = true;
-	else
+	else if ((Runtime.t_outdoor_60 > (Runtime.config->limit_tfrost + deltaK_to_temp(1))))
 		Runtime.frost = false;
 }
 

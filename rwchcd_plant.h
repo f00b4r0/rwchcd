@@ -215,6 +215,7 @@ struct s_dhw_tank {
 /** List of pumps */
 struct s_pump_l {
 	uint_fast8_t id;
+	enum e_execs status;		///< pump actual status (this flag will signal the last run error). @note UNUSED
 	struct s_pump * restrict pump;
 	struct s_pump_l * restrict next;
 };
@@ -222,6 +223,7 @@ struct s_pump_l {
 /** List of valves */
 struct s_valve_l {
 	uint_fast8_t id;
+	enum e_execs status;		///< valve actual status (this flag will signal the last run error)
 	struct s_valve * restrict valve;
 	struct s_valve_l * restrict next;
 };
@@ -229,6 +231,7 @@ struct s_valve_l {
 /** List of heating circuits */
 struct s_heating_circuit_l {
 	uint_fast8_t id;
+	enum e_execs status;		///< circuit actual status (this flag will signal the last run error)
 	struct s_heating_circuit * restrict circuit;
 	struct s_heating_circuit_l * restrict next;
 };
@@ -236,6 +239,7 @@ struct s_heating_circuit_l {
 /** List of DHWT */
 struct s_dhw_tank_l {
 	uint_fast8_t id;
+	enum e_execs status;		///< dhwt actual status (this flag will signal the last run error)
 	struct s_dhw_tank * restrict dhwt;
 	struct s_dhw_tank_l * restrict next;
 };
@@ -243,6 +247,7 @@ struct s_dhw_tank_l {
 /** List of heat sources */
 struct s_heatsource_l {
 	uint_fast8_t id;
+	enum e_execs status;		///< heatsource actual status (this flag will signal the last run error)
 	struct s_heatsource * restrict heats;
 	struct s_heatsource_l * restrict next;
 };

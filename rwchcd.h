@@ -43,8 +43,8 @@
 
 #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 
-/** Valid return values */
-enum {
+/** Valid execution status (return values) */
+enum e_execs {
 	ALL_OK = 0,	///< no error (must be 0)
 	ENOTCONFIGURED,	///< element is not configured
 	EMISCONFIGURED,	///< invalid configuration settings

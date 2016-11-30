@@ -821,6 +821,17 @@ static int boiler_hs_offline(struct s_heatsource * const heat)
 }
 
 /**
+ * Safety routine to apply to boiler in case of emergency.
+ * @param boiler target boiler
+ */
+static void boiler_failsafe(struct s_boiler_priv * const boiler)
+{
+	hardware_relay_set_state(boiler->burner_1, OFF, 0);
+	hardware_relay_set_state(boiler->burner_2, OFF, 0);
+	pump_set_state(boiler->loadpump, ON, FORCE);
+}
+
+/**
  * Boiler self-antifreeze protection.
  * This ensures that the temperature of the boiler body cannot go below a set point.
  * @param boiler target boiler
@@ -832,7 +843,6 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 	const temp_t boilertemp = get_temp(boiler->set.id_temp);
 
 	ret = validate_temp(boilertemp);
-
 	if (ret)
 		return (ret);
 
@@ -866,8 +876,10 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	
 	// Check if we need antifreeze
 	ret = boiler_antifreeze(boiler);
-	if (ret)
+	if (ret) {
+		boiler_failsafe(boiler);
 		return (ret);
+	}
 
 	switch (heat->run.runmode) {
 		case RM_OFF:
@@ -953,25 +965,30 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	
 	// if we reached this point then the boiler is active (online or antifreeze)
 
+	// Ensure safety first
+
+	// check mandatory sensor
+	boiler_temp = get_temp(boiler->set.id_temp);
+	ret = validate_temp(boiler_temp);
+	if (ret != ALL_OK) {
+		boiler_failsafe(boiler);
+		return (ret);
+	}
+
+	// ensure boiler is within safety limits
+	if (boiler_temp > boiler->set.limit_tmax) {
+		boiler_failsafe(boiler);
+		return (-ESAFETY);
+	}
+	
+	// we're good to go
+
+	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->run.is_on, temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
+	
 	// turn pump on if any
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, 0);
-
-	boiler_temp = get_temp(boiler->set.id_temp);
-	ret = validate_temp(boiler_temp);
-	if (ret != ALL_OK)
-		return (ret);
-
-	// safety checks
-	if (boiler_temp > boiler->set.limit_tmax) {
-		hardware_relay_set_state(boiler->burner_1, OFF, 0);
-		hardware_relay_set_state(boiler->burner_2, OFF, 0);
-		pump_set_state(boiler->loadpump, ON, FORCE);
-		return (-ESAFETY);
-	}
-
-	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->run.is_on, temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
-
+	
 	// un/trip points - histeresis/2 (common practice), assuming sensor will always be significantly cooler than actual output
 	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {	// apply trip_temp only if we have a heat request
 		trip_temp = (boiler->run.target_temp - boiler->set.histeresis/2);
@@ -1382,7 +1399,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	bool valid_ttop = false, valid_tbottom = false, test;
 	const time_t now = time(NULL);
 	time_t limit;
-	int ret = -EGENERIC;
+	int ret;
 
 	assert(dhwt);
 	
@@ -1413,12 +1430,6 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	// if we reached this point then the dhwt is active
 
-	// handle recycle loop
-	if (dhwt->run.recycle_on)
-		pump_set_state(dhwt->recyclepump, ON, NOFORCE);
-	else
-		pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
-
 	// check which sensors are available
 	bottom_temp = get_temp(dhwt->set.id_temp_bottom);
 	ret = validate_temp(bottom_temp);
@@ -1433,9 +1444,17 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!valid_tbottom && !valid_ttop)
 		return (ret);	// return last error
 
+	// We're good to go
+	
 	dbgmsg("charge since: %ld, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
 	       dhwt->run.charge_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
-
+	
+	// handle recycle loop
+	if (dhwt->run.recycle_on)
+		pump_set_state(dhwt->recyclepump, ON, NOFORCE);
+	else
+		pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
+	
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
 	   untrip at target (preferably on high sensor). */
@@ -2077,18 +2096,19 @@ int plant_offline(struct s_plant * restrict const plant)
  * Run the plant.
  * This function operates all plant elements in turn by enumerating through each list.
  * @param plant the target plant to run
- * @todo error reporting (return status)
+ * @return exec status (-EGENERIC if any sub call returned an error)
+ * @todo separate error handler
+ * @todo integrate pumps to this scheme?
  */
 int plant_run(struct s_plant * restrict const plant)
 {
-#warning Does not report errors
 	struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
 	struct s_heatsource_l * restrict heatsourcel;
 	struct s_valve_l * restrict valvel;
 	int ret;
-	bool sleeping = false;
+	bool sleeping = false, suberror = false;
 	time_t stop_delay = 0;
 
 	assert(plant);
@@ -2099,39 +2119,75 @@ int plant_run(struct s_plant * restrict const plant)
 	// run the consummers first so they can set their requested heat input
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		logic_circuit(circuitl->circuit);
-		ret = circuit_run(circuitl->circuit);
-		if (ALL_OK != ret) {
-			// XXX error handling
-			dbgerr("circuit_run failed: %d", ret);
-			circuit_offline(circuitl->circuit);
-			circuitl->circuit->run.online = false;
+		ret = logic_circuit(circuitl->circuit);
+		if (ALL_OK == ret)	// run() only if logic() succeeds
+			ret = circuit_run(circuitl->circuit);
+		
+		circuitl->status = ret;
+		
+		switch (ret) {
+			case ALL_OK:
+				break;
+			default:
+				circuit_offline(circuitl->circuit);
+			case -EINVALIDMODE:
+				circuitl->circuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+			case -ENOTCONFIGURED:
+			case -EOFFLINE:
+				suberror = true;
+				dbgerr("circuit_logic/run failed on %d (%d)", circuitl->id, ret);
+				continue;
 		}
 	}
 
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		logic_dhwt(dhwtl->dhwt);
-		ret = dhwt_run(dhwtl->dhwt);
-		if (ALL_OK != ret) {
-			// XXX error handling
-			dbgerr("dhwt_run failed: %d", ret);
-			dhwt_offline(dhwtl->dhwt);
-			dhwtl->dhwt->run.online = false;
+		ret = logic_dhwt(dhwtl->dhwt);
+		if (ALL_OK == ret)	// run() only if logic() succeeds
+			ret = dhwt_run(dhwtl->dhwt);
+		
+		dhwtl->status = ret;
+		
+		switch (ret) {
+			case ALL_OK:
+				break;
+			default:
+				dhwt_offline(dhwtl->dhwt);
+			case -EINVALIDMODE:
+				dhwtl->dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+			case -ENOTCONFIGURED:
+			case -EOFFLINE:
+				suberror = true;
+				dbgerr("dhwt_logic/run failed on %d (%d)", dhwtl->id, ret);
+				continue;
 		}
 	}
 
 	// finally run the heat source
-	{
-		heatsourcel = plant->heats_head;	// XXX single heat source
-		logic_heatsource(heatsourcel->heats);
-		ret = heatsource_run(heatsourcel->heats);
-		if (ALL_OK != ret) {
-			// XXX error handling
-			dbgerr("heatsource_run failed: %d", ret);
-			heatsource_offline(heatsourcel->heats);
-			heatsourcel->heats->run.online = false;
+	assert(plant->heats_n <= 1);	// XXX only one source supported at the moment
+	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
+		ret = logic_heatsource(heatsourcel->heats);
+		if (ALL_OK == ret)	// run() only if logic() succeeds
+			ret = heatsource_run(heatsourcel->heats);
+
+		heatsourcel->status = ret;
+		
+		switch (ret) {
+			case ALL_OK:
+				break;
+			default:	// offline the source if anything happens
+				heatsource_offline(heatsourcel->heats);
+			case -ENOTCONFIGURED:
+			case -EOFFLINE:
+			case -ESENSORINVAL:
+			case -ESENSORSHORT:
+			case -ESENSORDISCON:
+			case -ESAFETY:	// don't do anything, SAFETY procedure handled by logic()/run()
+				suberror = true;
+				dbgerr("heatsource_logic/run failed on %d (%d)", heatsourcel->id, ret);
+				continue;	// no further processing for this source
 		}
+		
 		if (heatsourcel->heats->run.could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
 			sleeping = heatsourcel->heats->run.could_sleep;
 		
@@ -2142,13 +2198,20 @@ int plant_run(struct s_plant * restrict const plant)
 	// run the valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
 		ret = valve_run(valvel->valve);
-		if (ALL_OK != ret) {
-			if (-EDEADBAND == ret)
-				continue;
-			// XXX error handling
-			dbgerr("valve_run failed: %d", ret);
-			valve_offline(valvel->valve);
-			valvel->valve->run.online = false;
+
+		valvel->status = ret;
+		
+		switch (ret) {
+			case ALL_OK:
+			case -EDEADBAND:	// not an error
+				break;
+			default:	// offline the valve if anything happens
+				valve_offline(valvel->valve);
+			case -ENOTCONFIGURED:
+			case -EOFFLINE:
+				suberror = true;
+				dbgerr("valve_run failed on %d (%d)", valvel->id, ret);
+				continue;	// no further processing for this valve
 		}
 	}
 	
@@ -2158,5 +2221,8 @@ int plant_run(struct s_plant * restrict const plant)
 	// reflect global stop delay
 	runtime->consumer_stop_delay = stop_delay;
 	
-	return (ALL_OK);	// XXX
+	if (suberror)
+		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
+	else
+		return (ALL_OK);
 }
