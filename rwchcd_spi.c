@@ -30,7 +30,7 @@
 #define USLEEPLCDFAST	50		///< expected completion time (us) for most LCD ops
 #define USLEEPLCDSLOW	2000		///< expected completion time (us) for clear/home cmds
 
-#define SPI_ASSERT(emit, expect)	(SPI_rw8bit(emit) == (uint8_t)expect)
+#define SPI_ASSERT(emit, expect)	(SPI_rw8bit(emit) == (uint8_t)expect)	///< send emit and ensure we received expect
 
 /**
  * SPI resync routine.
@@ -78,10 +78,10 @@ int rwchcd_spi_keepalive_once(void)
 {
 	SPI_RESYNC(RWCHC_SPIC_KEEPALIVE);
 
-	if (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) != RWCHC_SPIC_ALIVE)
-		return (-ESPI);
+	if (SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_ALIVE))
+	    return (ALL_OK);
 	else
-		return (ALL_OK);
+	    return (-ESPI);
 }
 
 /**
@@ -258,6 +258,9 @@ int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 	
 	outperiphs->BYTE = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
 
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
+		goto out;
+
 	ret = ALL_OK;
 out:
 	return ret;
@@ -275,13 +278,18 @@ int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 	
 	assert(outperiphs);
 	
-	// XXX TODO: REVISIT
-	SPI_RESYNC((RWCHC_SPIC_PERIPHSW | (outperiphs->BYTE & RWCHC_OUTPERIPHMASK)));
+	SPI_RESYNC(RWCHC_SPIC_PERIPHSW);
 	
 	if (!spitout)
 		goto out;
 	
+	if (!SPI_ASSERT(outperiphs->BYTE, ~RWCHC_SPIC_PERIPHSW))
+		goto out;
+	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, outperiphs->BYTE))
+		goto out;
+	
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSW))
 		goto out;
 	
 	ret = ALL_OK;
@@ -308,12 +316,18 @@ int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
 	
 	relays->LOWB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
 	
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRL))
+		goto out;
+	
 	SPI_RESYNC(RWCHC_SPIC_RELAYRH);	// resync since we have exited the atomic section in firmware
 	
 	if (!spitout)
 		goto out;
 	
 	relays->HIGHB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRH))
+		goto out;
 	
 	ret = ALL_OK;
 out:
@@ -343,6 +357,9 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->LOWB))
 		goto out;
 	
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWL))
+		goto out;
+	
 	SPI_RESYNC(RWCHC_SPIC_RELAYWH);	// resync since we have exited the atomic section in firmware
 	
 	if (!spitout)
@@ -352,6 +369,9 @@ int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
 		goto out;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->HIGHB))
+		goto out;
+	
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWH))
 		goto out;
 	
 	ret = ALL_OK;	// all good
