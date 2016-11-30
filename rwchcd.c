@@ -333,7 +333,7 @@ thread_end:
 	// cleanup
 	dbgmsg("thread exiting!");
 	exit_process();
-	pthread_exit(&ret);		// exit
+	pthread_exit(NULL);		// exit
 }
 
 int main(void)
