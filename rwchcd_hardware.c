@@ -418,11 +418,10 @@ int hardware_init(void)
  * This function uses a hardcoded moving average for all but the first calibration attempt,
  * to smooth out sudden bumps in calibration reads that could be due to noise.
  * @return error status
- * @note rwchcd_spi_calibrate() sleeps so this will sleep too
  */
 static int hardware_calibrate(void)
 {
-	float newcalib;
+	float newcalib_nodac, newcalib_dac;
 	uint_fast16_t refcalib;
 	int ret;
 	rwchc_sensor_t ref;
@@ -437,37 +436,38 @@ static int hardware_calibrate(void)
 	
 	ret = rwchcd_spi_ref_r(&ref, 0);
 	if (ret)
-		goto out;
+		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		newcalib = ((float)RWCHC_CALIB_OHM / (float)refcalib);
-		if ((newcalib < VALID_CALIB_MIN) || (newcalib > VALID_CALIB_MAX))	// don't store invalid values
+		newcalib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
+		if ((newcalib_nodac < VALID_CALIB_MIN) || (newcalib_nodac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// XXX should not happen
-		else
-			Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.33F * (Hardware.calib_nodac - newcalib))) : newcalib;	// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
 	}
+	else
+		return (-EINVALID);
 
 	ret = rwchcd_spi_ref_r(&ref, 1);
 	if (ret)
-		goto out;
+		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
-		newcalib = ((float)RWCHC_CALIB_OHM / (float)refcalib);
-		if ((newcalib < VALID_CALIB_MIN) || (newcalib > VALID_CALIB_MAX))	// don't store invalid values
+		newcalib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
+		if ((newcalib_dac < VALID_CALIB_MIN) || (newcalib_dac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// XXX should not happen
-		else
-			Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.33F * (Hardware.calib_dac - newcalib))) : newcalib;		// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
 	}
+	else
+		return (-EINVALID);
+
+	// everything went fine, we can update both calibration values and time
+	Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.33F * (Hardware.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
+	Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.33F * (Hardware.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
+	Hardware.last_calib = now;
 
 	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
 	
-	// everything went fine we can update calibration time
-	Hardware.last_calib = now;
-
-out:
-	return (ret);
+	return (ALL_OK);
 }
 
 /**
