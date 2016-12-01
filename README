@@ -6,7 +6,7 @@ rwchcd: a central heating controller daemon for rWCHC
 Dependencies: libglib2.0-dev wiringpi pkg-config
 Documentation deps: doxygen graphviz
 
-To build, run 'make dbus-gen' then 'make'
+To build, run 'make'
 To install, as root run 'make install'
 To uninstall, as root run 'make uninstall'
 To generate documentation, run 'make doc'
