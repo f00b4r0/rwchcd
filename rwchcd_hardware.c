@@ -39,7 +39,7 @@
 #define VALID_CALIB_MIN	0.8F	///< minimum valid calibration value
 #define VALID_CALIB_MAX	1.2F	///< maximum valid calibration value
 
-#define CALIBRATION_PERIOD	1800	///< calibration period in seconds: every half hour
+#define CALIBRATION_PERIOD	600	///< calibration period in seconds: every 10mn
 
 static const storage_version_t Hardware_sversion = 1;
 
@@ -461,8 +461,8 @@ static int hardware_calibrate(void)
 		return (-EINVALID);
 
 	// everything went fine, we can update both calibration values and time
-	Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.33F * (Hardware.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
-	Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.33F * (Hardware.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
+	Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.10F * (Hardware.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (10% ponderation to new sample) to smooth out sudden bumps
+	Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.10F * (Hardware.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (10% ponderation to new sample) to smooth out sudden bumps
 	Hardware.last_calib = now;
 
 	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
