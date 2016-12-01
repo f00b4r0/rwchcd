@@ -422,7 +422,7 @@ static int hardware_calibrate(void)
 {
 	float newcalib;
 	uint_fast16_t refcalib;
-	int ret = ALL_OK;
+	int ret;
 	rwchc_sensor_t ref;
 	time_t now = time(NULL);
 	
@@ -432,11 +432,7 @@ static int hardware_calibrate(void)
 		return (ALL_OK);
 
 	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
-
-	ret = rwchcd_spi_calibrate();
-	if (ret)
-		goto out;
-
+	
 	ret = rwchcd_spi_ref_r(&ref, 0);
 	if (ret)
 		goto out;
@@ -445,9 +441,9 @@ static int hardware_calibrate(void)
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
 		newcalib = ((float)RWCHC_CALIB_OHM / (float)refcalib);
 		if ((newcalib < VALID_CALIB_MIN) || (newcalib > VALID_CALIB_MAX))	// don't store invalid values
-			ret = -EGENERIC;	// XXX should not happen
+			return (-EINVALID);	// XXX should not happen
 		else
-		Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.33F * (Hardware.calib_nodac - newcalib))) : newcalib;	// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
+			Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.33F * (Hardware.calib_nodac - newcalib))) : newcalib;	// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
 	}
 
 	ret = rwchcd_spi_ref_r(&ref, 1);
@@ -458,13 +454,14 @@ static int hardware_calibrate(void)
 		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
 		newcalib = ((float)RWCHC_CALIB_OHM / (float)refcalib);
 		if ((newcalib < VALID_CALIB_MIN) || (newcalib > VALID_CALIB_MAX))	// don't store invalid values
-			ret = -EGENERIC;	// XXX should not happen
+			return (-EINVALID);	// XXX should not happen
 		else
 			Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.33F * (Hardware.calib_dac - newcalib))) : newcalib;		// hardcoded moving average (33% ponderation to new sample) to smooth out sudden bumps
 	}
 
 	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
 	
+	// everything went fine we can update calibration time
 	Hardware.last_calib = now;
 
 out:
@@ -754,7 +751,9 @@ int hardware_online(void)
 		return (-EOFFLINE);
 	
 	// calibrate
-	ret = hardware_calibrate();
+	do {
+		ret = hardware_calibrate();
+	} while (-EINVALID == ret);	// wait until calibration values are correct - XXX can loop forever
 	if (ret)
 		goto fail;
 

@@ -396,16 +396,19 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 	SPI_RESYNC(sensor);
 
 	if (!spitout)
-		goto out;
+		return (-ESPI);
+	
+	ret = ALL_OK;
 	
 	tsensors[sensor] = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
 	tsensors[sensor] |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if ((tsensors[sensor] & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
-		goto out;
+		ret = -ESPI;
 	
-	ret = ALL_OK;
-out:
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, sensor))
+		ret = -ESPI;
+	
 	return ret;
 }
 
@@ -527,31 +530,6 @@ int rwchcd_spi_settings_s(void)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
 		goto out;
 	
-	ret = ALL_OK;
-out:
-	return ret;
-}
-
-/**
- * Request sensor calibration.
- * Delay: sensor calibration requires about 400ms to complete
- * @return error code
- * @note sleeps
- */
-int rwchcd_spi_calibrate(void)
-{
-	int ret = -ESPI;
-
-	SPI_RESYNC(RWCHC_SPIC_CALIBRATE);
-
-	if (!spitout)
-		goto out;
-	
-	usleep(500*1000);	// must wait for completion (500ms)
-
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_CALIBRATE))
-		goto out;
-
 	ret = ALL_OK;
 out:
 	return ret;
