@@ -173,7 +173,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		// calculate ambient shift based on measured ambient temp influence p.41
 		ambient_delta = (circuit->set.ambient_factor/10) * (circuit->run.target_ambient - ambient_temp);
 	}
-	else {	// no sensor, apply ambient model for transitions
+	else {	// no sensor (or faulty), apply ambient model for transitions
 		elapsed_time = now - circuit->run.am_update_time;
 		switch (circuit->run.transition) {
 			case TRANS_DOWN:
@@ -211,9 +211,9 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 			default:
 				break;
 		}
+		if (circuit->run.transition)
+			dbgmsg("Trans: %d, prev amb: %d, new amb: %d, elapsed: %ld", circuit->run.transition, circuit->run.actual_ambient, ambient_temp, elapsed_time);
 	}
-	
-	dbgmsg("Trans: %d, prev amb: %d, new amb: %d, elapsed: %ld", circuit->run.transition, circuit->run.actual_ambient, ambient_temp, elapsed_time);
 	
 	// store current ambient temp
 	circuit->run.actual_ambient = ambient_temp;

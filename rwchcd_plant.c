@@ -383,6 +383,7 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 /**
  * implement a bang-bang law for valve position.
  * If target_tout > current tempout, open the valve, otherwise close it
+ * @warning in case of sensor failure, NO ACTION is performed
  * @param valve self
  * @param target_tout target valve output temperature
  * @return exec status
@@ -421,6 +422,7 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
  * fixed amount of valve course to apply.
  * @note settings (in particular deadzone, sample time and amount) are crucial
  * to make this work without too many oscillations.
+ * @warning in case of sensor failure, NO ACTION is performed
  * @param valve the target valve
  * @param target_tout the target output temperature
  * @return exec status
@@ -970,7 +972,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// check mandatory sensor
 	boiler_temp = get_temp(boiler->set.id_temp);
 	ret = validate_temp(boiler_temp);
-	if (ret != ALL_OK) {
+	if (ALL_OK != ret) {
 		boiler_failsafe(boiler);
 		return (ret);
 	}
@@ -1185,6 +1187,20 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 }
 
 /**
+ * Circuit failsafe routine.
+ * By default we close the valve (if any) and start the pump (if any).
+ * The logic being that we cannot make any assumption as to whether or not it is
+ * safe to open the valve, whereas closing it will always be safe.
+ * Turning on the pump mitigates frost risks.
+ * @param circuit target circuit
+ */
+static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
+{
+	valve_reqclose_full(circuit->valve);
+	pump_set_state(circuit->pump, ON, FORCE);
+}
+
+/**
  * Circuit control loop.
  * Controls the circuits elements to achieve the desired target temperature.
  * @param circuit target circuit
@@ -1238,6 +1254,16 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// if we reached this point then the circuit is active
 	
+	// safety checks
+	curr_temp = get_temp(circuit->set.id_temp_outgoing);
+	ret = validate_temp(curr_temp);
+	if (ALL_OK != ret) {
+		circuit_failsafe(circuit);
+		return (ret);
+	}
+	
+	// we're good to go
+	
 	circuit->run.actual_cooldown_time = runtime->consumer_stop_delay;
 
 	// circuit is active, ensure pump is running
@@ -1248,7 +1274,6 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	
 	// apply rate of rise limitation if any: update temp every minute
 	if (circuit->set.wtemp_rorh) {
-		curr_temp = get_temp(circuit->set.id_temp_outgoing);
 		if (!circuit->run.rorh_update_time) {	// first sample: init to current
 			water_temp = curr_temp;
 			circuit->run.rorh_last_target = water_temp;
@@ -1389,8 +1414,10 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
  * Controls the dhwt's elements to achieve the desired target temperature.
  * @param dhwt target dhwt
  * @return error status
- * XXX TODO: implement dhwprio glissante/absolue for heat request
- * XXX TODO: implement working on electric without sensor
+ * @warning no failsafe in case of sensor failure
+ * @bug pump management for discharge protection needs review
+ * @todo XXX TODO: implement dhwprio glissante/absolue for heat request
+ * @todo XXX TODO: implement working on electric without sensor
  */
 static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
