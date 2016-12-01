@@ -43,7 +43,7 @@
 
 #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 
-/** Valid execution status (return values) */
+/** Valid execution status (used as negative return values) */
 enum e_execs {
 	ALL_OK = 0,	///< no error (must be 0)
 	ENOTCONFIGURED,	///< element is not configured
@@ -124,19 +124,19 @@ struct s_dhwt_params {
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection). @warning MUST be set either globally or locally otherwise dhwt won't heat
 	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. @warning MUST be set either globally or locally otherwise dhwt won't heat
-	temp_t t_legionella;		///< target temp for legionella prevention - XXX NOT IMPLEMENTED
-	temp_t t_comfort;		///< target temp in comfort mode - XXX setup ensure > tfrostfree
-	temp_t t_eco;			///< target temp in eco mode - XXX setup ensure > tfrostfree
-	temp_t t_frostfree;		///< target temp in frost-free mode - XXX setup ensure > 0C
-	temp_t histeresis;		///< histeresis for target temp - XXX setup ensure > 0C
-	temp_t temp_inoffset;		///< offset temp for heat source request - XXX setup ensure > 0C
+	temp_t t_legionella;		///< target temp for legionella prevention. @todo XXX NOT IMPLEMENTED
+	temp_t t_comfort;		///< target temp in comfort mode. - XXX setup ensure > tfrostfree
+	temp_t t_eco;			///< target temp in eco mode. - XXX setup ensure > tfrostfree
+	temp_t t_frostfree;		///< target temp in frost-free mode. - XXX setup ensure > 0C
+	temp_t histeresis;		///< histeresis for target temp. - XXX setup ensure > 0C
+	temp_t temp_inoffset;		///< offset temp for heat source request. - XXX setup ensure > 0C
 };
 
 /** Config structure */
 struct s_config {
 	bool restored;			///< true if config has been restored from storage
 	bool configured;		///< true if properly configured
-	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer - XXX NOT IMPLEMENTED
+	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer. @todo XXX NOT IMPLEMENTED
 	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp
@@ -163,12 +163,12 @@ struct s_runtime {
 	temp_t t_outdoor_filtered;	///< t_outdoor filtered by building time constant
 	temp_t t_outdoor_mixed;		///< mixed outdoor temperature (average of t_outdoor and t_filtered: the moving average of t_outdoor with building_tau)
 	temp_t t_outdoor_attenuated;	///< attenuated outdoor temperature (moving average of t_filtered with building_tau: double filter on t_outdoor)
-	temp_t external_hrequest;	///< external heat request (for cascading) -- XXX NOT IMPLEMENTED
+	temp_t external_hrequest;	///< external heat request (for cascading). @todo XXX NOT IMPLEMENTED
 	time_t start_time;		///< system start time
 	time_t consumer_stop_delay;	///< minimum time consumers should keep their current consumption before turning off
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
-	short (*consumer_shift)(void);	///< XXX returns a factor to inhibit (negative) or increase (positive) consummers' heat requests
+	short (*consumer_shift)(void);	///< returns a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX NOT IMPLEMENTED
 	temp_t temps[RWCHCD_NTEMPS];			///< array of all the system temperatures
 };
 

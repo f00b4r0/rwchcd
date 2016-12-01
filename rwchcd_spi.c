@@ -398,6 +398,10 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 	if (!spitout)
 		return (-ESPI);
 	
+	/* From here we invert the expectancy logic: we expect things to go well
+	 * and we'll flag if they don't. The point is that we must not interrupt
+	 * the loop even if there is a mistransfer, since the firmware expects
+	 * a full transfer regardless of errors. */
 	ret = ALL_OK;
 	
 	tsensors[sensor] = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
@@ -501,14 +505,19 @@ int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
 	if (!spitout)
 		goto out;
 	
+	/* From here we invert the expectancy logic: we expect things to go well
+	 * and we'll flag if they don't. The point is that we must not interrupt
+	 * the loop even if there is a mistransfer, since the firmware expects
+	 * a full transfer regardless of errors. */
+	ret = ALL_OK;
+	
 	for (i=0; i<sizeof(*settings); i++)
 		if (SPI_rw8bit(*((const uint8_t *)settings+i)) != i)
-			goto out;
+			ret = -ESPI;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSW))
-		goto out;
-	
-	ret = ALL_OK;
+		ret = -ESPI;
+
 out:
 	return ret;
 }
@@ -551,11 +560,16 @@ int rwchcd_spi_reset(void)
 	if (!spitout)
 		goto out;
 	
+	/* From here we invert the expectancy logic: we expect things to go well
+	 * and we'll flag if they don't. The point is that we must not interrupt
+	 * the loop even if there is a mistransfer, since the firmware expects
+	 * a full transfer regardless of errors. */
+	ret = ALL_OK;
+	
 	for (i=0; i<ARRAY_SIZE(trig); i++)
 		if (SPI_rw8bit(trig[i]) != i)
-			goto out;
+			ret = -ESPI;
 
-	ret = ALL_OK;	// reset successful
 out:
 	return ret;
 }

@@ -9,6 +9,8 @@
 /**
  * @file
  * Hardware interface implementation.
+ *
+ * @todo support other RTD types (ni1000, lg-ni1000, etc)
  */
 
 #include <time.h>	// time
