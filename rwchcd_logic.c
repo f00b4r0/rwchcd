@@ -104,6 +104,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	temp_t ambient_temp = 0, ambient_delta = 0;
 	time_t elapsed_time;
 	const time_t now = time(NULL);
+	bool can_fastcool;
 	
 	assert(circuit);
 	
@@ -112,6 +113,9 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	
 	if (!circuit->run.online)
 		return (-EOFFLINE);
+	
+	// fast cooldown can only be applied if set AND not in frost condition
+	can_fastcool = (circuit->set.fast_cooldown && !runtime->frost);
 
 	// store current status for transition detection
 	prev_runmode = circuit->run.runmode;
@@ -173,7 +177,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		elapsed_time = now - circuit->run.am_update_time;
 		switch (circuit->run.transition) {
 			case TRANS_DOWN:
-				if (circuit->set.fast_cooldown)
+				if (can_fastcool)
 					low_temp = runtime->t_outdoor_mixed;
 				else
 					low_temp = request_temp;
@@ -218,7 +222,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
 			if (ambient_temp > circuit->run.request_ambient) {
-				if (circuit->set.fast_cooldown && !runtime->frost)	// if fast cooldown, turn off circuit, except if frost condition is met
+				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					circuit->run.runmode = RM_OFF;
 			}
 			else
