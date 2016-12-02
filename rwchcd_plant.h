@@ -168,7 +168,7 @@ struct s_heatsource {
 		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
 		time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
 		time_t target_consumer_stop_delay;	///< calculated stop delay
-		int_fast16_t consumer_shift;	///< factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX NOT IMPLEMENTED
+		int_fast16_t consumer_shift;	///< factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
 	void * restrict priv;			///< pointer to source private data structure

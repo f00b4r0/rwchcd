@@ -166,9 +166,9 @@ struct s_runtime {
 	temp_t external_hrequest;	///< external heat request (for cascading). @todo XXX NOT IMPLEMENTED
 	time_t start_time;		///< system start time
 	time_t consumer_stop_delay;	///< minimum time consumers should keep their current consumption before turning off
+	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
-	short (*consumer_shift)(void);	///< returns a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX NOT IMPLEMENTED
 	temp_t temps[RWCHCD_NTEMPS];			///< array of all the system temperatures
 };
 

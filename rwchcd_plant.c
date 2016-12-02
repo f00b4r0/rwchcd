@@ -1002,6 +1002,12 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->run.is_on, temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
 	
+	// form consumer shift request if necessary
+	if (boiler_temp < boiler->set.limit_tmin) {
+		// percentage of shift is formed by the difference between current temp and expected temp in K * 10: 1K down means -10% shift
+		heat->run.consumer_shift = (boiler_temp-boiler->set.limit_tmin)/10;
+	}
+		
 	// turn pump on if any
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, 0);
@@ -1291,6 +1297,9 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
+	
+	// apply global shift - XXX FORMULA
+	water_temp += (0.5F * runtime->consumer_shift);
 	
 	// apply rate of rise limitation if any: update temp every minute
 	if (circuit->set.wtemp_rorh) {
@@ -2198,6 +2207,7 @@ int plant_run(struct s_plant * restrict const plant)
 	int ret;
 	bool sleeping = false, suberror = false;
 	time_t stop_delay = 0;
+	int_fast16_t shift = 0;
 
 	assert(plant);
 	
@@ -2281,6 +2291,7 @@ int plant_run(struct s_plant * restrict const plant)
 		
 		// max stop delay
 		stop_delay = (heatsourcel->heats->run.target_consumer_stop_delay > stop_delay) ? heatsourcel->heats->run.target_consumer_stop_delay : stop_delay;
+		shift = heatsourcel->heats->run.consumer_shift;	// XXX
 	}
 
 	// run the valves
