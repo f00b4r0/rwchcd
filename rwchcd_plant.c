@@ -614,9 +614,6 @@ static int valve_run(struct s_valve * const valve)
 		}
 	}
 	
-	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, running since: %ld, runtime: %ld",
-	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, valve->run.running_since, runtime);
-	
 	// apply physical limits
 	if (valve->run.actual_position > 1000)
 		valve->run.actual_position = 1000;
@@ -637,6 +634,9 @@ static int valve_run(struct s_valve * const valve)
 	if (request_runtime < deadtime)
 		return (-EDEADBAND);
 
+	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, running since: %ld, runtime: %ld",
+	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, valve->run.running_since, runtime);
+	
 	// check what is the requested action
 	if (OPEN == valve->run.request_action) {
 		if (valve->run.acc_open_time >= valve->set.ete_time*VALVE_MAX_RUNX) {
@@ -934,8 +934,8 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 		// if IDLE_FROSTONLY, boiler runs at min temp unless RM_FROSTFREE
 		else if ((IDLE_FROSTONLY == boiler->set.idle_mode) && (RM_FROSTFREE != heat->run.runmode))
 			target_temp = boiler->set.limit_tmin;
-		// in all other cases the boiler will not be issued a heat request and will be stopped
-		else
+		// in all other cases the boiler will not be issued a heat request and will be stopped if enough time has passed
+		else if (heat->run.could_sleep)
 			heat->run.runmode = RM_OFF;
 	}
 	

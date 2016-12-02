@@ -135,7 +135,7 @@ static int init_process()
 		config->def_circuit.outhoff_eco = config->def_circuit.t_eco - deltaK_to_temp(2);
 		config->def_circuit.outhoff_frostfree = config->def_circuit.t_frostfree - deltaK_to_temp(4);
 		config->def_circuit.outhoff_histeresis = deltaK_to_temp(1);
-		config->def_circuit.limit_wtmax = celsius_to_temp(85);
+		config->def_circuit.limit_wtmax = celsius_to_temp(80);
 		config->def_circuit.limit_wtmin = celsius_to_temp(20);
 		config->def_circuit.temp_inoffset = deltaK_to_temp(7);
 		
@@ -176,7 +176,7 @@ static int init_process()
 	boiler = heatsource->priv;
 	boiler->set.idle_mode = IDLE_FROSTONLY;
 	boiler->set.histeresis = deltaK_to_temp(8);
-	boiler->set.limit_tmax = celsius_to_temp(85);
+	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
 	boiler->set.id_temp = 2;	// XXX VALIDATION
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
@@ -188,7 +188,7 @@ static int init_process()
 	hardware_relay_set_id(boiler->burner_1, 14);	// XXX 2nd relay
 	boiler->burner_1->set.configured = true;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
-	heatsource->set.sleeping_time = 2 * 24 * 60 * 60;	// XXX 2 days
+	heatsource->set.sleeping_time = 1 * 24 * 60 * 60;	// XXX 1 day
 	heatsource->set.consumer_stop_delay = 10 * 60;	// 10mn
 	heatsource->set.runmode = RM_AUTO;	// use global setting
 	heatsource->set.configured = true;
@@ -204,7 +204,7 @@ static int init_process()
 	circuit->set.id_temp_outgoing = 3;	// XXX VALIDATION
 	circuit->set.id_temp_return = 4;	// XXX VALIDATION
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);
-	circuit->tlaw_data.twater1 = celsius_to_temp(67);
+	circuit->tlaw_data.twater1 = celsius_to_temp(66.5F);
 	circuit->tlaw_data.tout2 = celsius_to_temp(15);
 	circuit->tlaw_data.twater2 = celsius_to_temp(27);
 	circuit_make_linear(circuit);
@@ -308,7 +308,7 @@ static void * thread_master(void *arg)
 		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
 	
-	// start in frostfree by default
+	// XXX start in frostfree by default
 	if (SYS_OFF == get_runtime()->systemmode)
 		runtime_set_systemmode(SYS_FROSTFREE);
 	

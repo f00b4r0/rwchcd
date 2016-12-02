@@ -69,7 +69,7 @@ struct s_valve {
 	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	char * restrict name;
 	void * restrict priv;	///< private data structure for valvelaw
-	int (*valvelaw)(struct s_valve * const, const temp_t);	///< pointer to valve law
+	int (*valvelaw)(struct s_valve * restrict const, const temp_t);	///< pointer to valve law
 };
 
 struct s_templaw_data20C {
@@ -111,7 +111,7 @@ struct s_heating_circuit {
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 	} run;		///< private runtime (internally handled)
 	struct s_templaw_data20C tlaw_data;	///< Reference data for templaw (for 20C ambient target)
-	temp_t (*templaw)(const struct s_heating_circuit * const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
+	temp_t (*templaw)(const struct s_heating_circuit * restrict const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
 	struct s_valve * restrict valve;	///< valve for circuit (if available, otherwise it's direct)
 	struct s_pump * restrict pump;		///< pump for this circuit
 	char * restrict name;			///< name for this circuit
@@ -121,13 +121,17 @@ struct s_heating_circuit {
 // XXX TODO: return mixing valve / isolation valve / modulating burner
 struct s_boiler_priv {
 	struct {
-		enum { IDLE_NEVER = 0, IDLE_FROSTONLY, IDLE_ALWAYS } idle_mode; ///< boiler off regime: NEVER: boiler runs always at least at limit_tmin, FROSTFREE: boiler turns off only in frost free, ALWAYS: boiler turns off any time there's no heat request (p.48)
+		enum {
+			IDLE_NEVER = 0,		///< boiler runs always at least at limit_tmin
+			IDLE_FROSTONLY,		///< boiler turns off only in frost free
+			IDLE_ALWAYS,		///< boiler turns off any time there's no heat request
+		} idle_mode;		///< boiler off regime (p.48)
 		temp_t histeresis;		///< boiler temp histeresis
 		temp_t limit_tmax;		///< maximum boiler temp when operating
 		temp_t limit_tmin;		///< minimum boiler temp when operating
 		temp_t limit_treturnmin;	///< minimum boiler return temp (optional) -- XXX NOT IMPLEMENTED
 		temp_t t_freeze;		///< boiler temp trip point for antifreeze (+5C)
-		time_t burner_min_time;	///< minimum burner runtime
+		time_t burner_min_time;		///< minimum burner runtime
 		tempid_t id_temp;		///< boiler temp id
 		tempid_t id_temp_outgoing;	///< boiler outflow temp id
 		tempid_t id_temp_return;	///< boiler inflow temp id
@@ -164,6 +168,7 @@ struct s_heatsource {
 		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
 		time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
 		time_t target_consumer_stop_delay;	///< calculated stop delay
+		int_fast16_t consumer_shift;	///< factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX NOT IMPLEMENTED
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
 	void * restrict priv;			///< pointer to source private data structure
