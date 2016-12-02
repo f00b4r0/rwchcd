@@ -1299,7 +1299,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
 	// apply global shift - XXX FORMULA
-	water_temp += (0.5F * runtime->consumer_shift);
+	water_temp += deltaK_to_temp((0.5F * runtime->consumer_shift));
 	
 	// apply rate of rise limitation if any: update temp every minute
 	if (circuit->set.wtemp_rorh) {
@@ -2207,7 +2207,6 @@ int plant_run(struct s_plant * restrict const plant)
 	int ret;
 	bool sleeping = false, suberror = false;
 	time_t stop_delay = 0;
-	int_fast16_t shift = 0;
 
 	assert(plant);
 	
@@ -2291,7 +2290,7 @@ int plant_run(struct s_plant * restrict const plant)
 		
 		// max stop delay
 		stop_delay = (heatsourcel->heats->run.target_consumer_stop_delay > stop_delay) ? heatsourcel->heats->run.target_consumer_stop_delay : stop_delay;
-		shift = heatsourcel->heats->run.consumer_shift;	// XXX
+		runtime->consumer_shift = heatsourcel->heats->run.consumer_shift;	// XXX
 	}
 
 	// run the valves
