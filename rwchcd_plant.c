@@ -9,7 +9,7 @@
 /**
  * @file
  * Plant basic operation implementation.
- * @todo degraded mode (when sensors are disconnected)
+ * @todo valve PI(D) controller
  * @todo keep sensor history
  * @todo summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  */
@@ -32,7 +32,7 @@
  * Frees all pump-local resources
  * @param pump the pump to delete
  */
-static void pump_del(struct s_pump * pump)
+static void pump_del(struct s_pump * restrict pump)
 {
 	if (!pump)
 		return;
@@ -51,7 +51,7 @@ static void pump_del(struct s_pump * pump)
  * @return exec status
  * @warning no parameter check
  */
-static int pump_online(struct s_pump * const pump)
+static int pump_online(struct s_pump * restrict const pump)
 {
 	if (!pump)
 		return (-EINVALID);
@@ -65,16 +65,13 @@ static int pump_online(struct s_pump * const pump)
 /**
  * Set pump state.
  * @param pump target pump
- * @param state target pump state
+ * @param req_on request pump on if true
  * @param force_state skips cooldown if true
  * @return error code if any
  */
-static int pump_set_state(struct s_pump * const pump, bool state, bool force_state)
+static int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state)
 {
-	time_t cooldown = 0;	// by default, no wait
-	
-	if (!pump)
-		return (-EINVALID);
+	assert(pump);
 	
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
@@ -82,15 +79,26 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
 	if (!pump->run.online)
 		return (-EOFFLINE);
 	
-	// apply cooldown to turn off, only if not forced.
-	// If ongoing cooldown, resume it, otherwise restore default value
-	if (!state && !force_state)
-		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
+	pump->run.req_on = req_on;
+	pump->run.force_state = force_state;
 	
-	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	pump->run.actual_cooldown_time = hardware_relay_set_state(pump->relay, state, cooldown);
-
 	return (ALL_OK);
+}
+
+/**
+ * Get pump state.
+ * @param pump target pump
+ * @return pump state
+ */
+static int pump_get_state(const struct s_pump * restrict const pump)
+{
+	assert(pump);
+	
+	if (!pump->set.configured)
+		return (-ENOTCONFIGURED);
+	
+	// XXX we could return remaining cooldown time if necessary
+	return (hardware_relay_get_state(pump->relay));
 }
 
 /**
@@ -100,20 +108,7 @@ static int pump_set_state(struct s_pump * const pump, bool state, bool force_sta
  * @return exec status
  * @warning no parameter check
  */
-static inline int pump_offline(struct s_pump * const pump)
-{
-	if (!pump)
-		return (-EINVALID);
-	
-	return(pump_set_state(pump, OFF, FORCE));
-}
-
-/**
- * Get pump state.
- * @param pump target pump
- * @return pump state
- */
-static int pump_get_state(const struct s_pump * const pump)
+static int pump_offline(struct s_pump * restrict const pump)
 {
 	if (!pump)
 		return (-EINVALID);
@@ -121,8 +116,35 @@ static int pump_get_state(const struct s_pump * const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 	
-	// XXX we could return remaining cooldown time if necessary
-	return (hardware_relay_get_state(pump->relay));
+	return(pump_set_state(pump, OFF, FORCE));
+}
+
+/**
+ * Run pump.
+ * @param pump target pump
+ * @return exec status
+ */
+static int pump_run(struct s_pump * restrict const pump)
+{
+	time_t cooldown = 0;	// by default, no wait
+	
+	assert(pump);
+	
+	if (!pump->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!pump->run.online)
+		return (-EOFFLINE);
+
+	// apply cooldown to turn off, only if not forced.
+	// If ongoing cooldown, resume it, otherwise restore default value
+	if (!pump->run.req_on && !pump->run.force_state)
+		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
+	
+	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
+	pump->run.actual_cooldown_time = hardware_relay_set_state(pump->relay, pump->run.req_on, cooldown);
+
+	return (ALL_OK);
 }
 
 /** VALVE **/
@@ -210,6 +232,7 @@ static int valve_reqstop(struct s_valve * const valve)
 	return (ALL_OK);
 }
 
+#if 0
 /**
  - Current Position is an approximation of the valve's position as it relates to a power level (0 - 100%) where 0% is
  fully closed and 100% is fully open.
@@ -379,6 +402,7 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 
 	return (ALL_OK);
 }
+#endif
 
 /**
  * implement a bang-bang law for valve position.
@@ -646,16 +670,6 @@ static int valve_run(struct s_valve * const valve)
 	return (ALL_OK);
 }
 
-int valve_make_linear(struct s_valve * const valve)
-{
-	if (!valve)
-		return (-EINVALID);
-
-	valve->valvelaw = valvelaw_linear;
-
-	return (ALL_OK);
-}
-
 /**
  * Constructor for bangbang valve control
  * @param valve target valve
@@ -830,7 +844,8 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 {
 	hardware_relay_set_state(boiler->burner_1, OFF, 0);
 	hardware_relay_set_state(boiler->burner_2, OFF, 0);
-	pump_set_state(boiler->loadpump, ON, FORCE);
+	if (boiler->loadpump)
+		pump_set_state(boiler->loadpump, ON, FORCE);
 }
 
 /**
@@ -1071,7 +1086,6 @@ static int heatsource_offline(struct s_heatsource * const heat)
 
 /**
  * Run heatsource.
- * XXX TODO: currently supports single heat source, all consummers connected to it
  * @note Honoring SYSMODE is left to private routines
  * @param heat target heatsource
  * @return exec status
@@ -1082,6 +1096,9 @@ static int heatsource_run(struct s_heatsource * const heat)
 	
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
+	
+	if (!heat->run.online)
+		return (-EOFFLINE);
 
 	if (NONE == heat->set.type)	// type NONE, nothing to do
 		return (ALL_OK);
@@ -1197,7 +1214,8 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
 {
 	valve_reqclose_full(circuit->valve);
-	pump_set_state(circuit->pump, ON, FORCE);
+	if (circuit->pump)
+		pump_set_state(circuit->pump, ON, FORCE);
 }
 
 /**
@@ -1239,7 +1257,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 				return (circuit_offline(circuit));
 		case RM_MANUAL:
 			valve_reqstop(circuit->valve);
-			pump_set_state(circuit->pump, ON, FORCE);
+			if (circuit->pump)
+				pump_set_state(circuit->pump, ON, FORCE);
 			return (ALL_OK);
 		case RM_COMFORT:
 		case RM_ECO:
@@ -1267,7 +1286,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	circuit->run.actual_cooldown_time = runtime->consumer_stop_delay;
 
 	// circuit is active, ensure pump is running
-	pump_set_state(circuit->pump, ON, 0);
+	if (circuit->pump)
+		pump_set_state(circuit->pump, ON, 0);
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
@@ -1444,8 +1464,10 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		case RM_FROSTFREE:
 			break;
 		case RM_MANUAL:
-			pump_set_state(dhwt->feedpump, ON, FORCE);
-			pump_set_state(dhwt->recyclepump, ON, FORCE);
+			if (dhwt->feedpump)
+				pump_set_state(dhwt->feedpump, ON, FORCE);
+			if (dhwt->recyclepump)
+				pump_set_state(dhwt->recyclepump, ON, FORCE);
 			hardware_relay_set_state(dhwt->selfheater, ON, 0);
 			return (ALL_OK);
 		case RM_AUTO:
@@ -1477,10 +1499,12 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	       dhwt->run.charge_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 	
 	// handle recycle loop
-	if (dhwt->run.recycle_on)
-		pump_set_state(dhwt->recyclepump, ON, NOFORCE);
-	else
-		pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
+	if (dhwt->recyclepump) {
+		if (dhwt->run.recycle_on)
+			pump_set_state(dhwt->recyclepump, ON, NOFORCE);
+		else
+			pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
+	}
 	
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
@@ -1523,7 +1547,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				}
 
 				// turn feedpump on
-				pump_set_state(dhwt->feedpump, test, NOFORCE);
+				if (dhwt->feedpump)
+					pump_set_state(dhwt->feedpump, test, NOFORCE);
 			}
 			
 			// mark heating in progress
@@ -1567,7 +1592,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			}
 
 			// turn off pump with conditional cooldown
-			pump_set_state(dhwt->feedpump, OFF, test);
+			if (dhwt->feedpump)
+				pump_set_state(dhwt->feedpump, OFF, test);
 
 			/* end feedpump management */
 
@@ -2159,10 +2185,11 @@ int plant_offline(struct s_plant * restrict const plant)
  * @param plant the target plant to run
  * @return exec status (-EGENERIC if any sub call returned an error)
  * @todo separate error handler
- * @todo integrate pumps to this scheme?
+ * @todo XXX TODO: currently supports single heat source, all consummers connected to it
  */
 int plant_run(struct s_plant * restrict const plant)
 {
+	struct s_pump_l * restrict pumpl;
 	struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
@@ -2272,6 +2299,25 @@ int plant_run(struct s_plant * restrict const plant)
 			case -EOFFLINE:
 				suberror = true;
 				dbgerr("valve_run failed on %d (%d)", valvel->id, ret);
+				continue;	// no further processing for this valve
+		}
+	}
+	
+	// run the pumps
+	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
+		ret = pump_run(pumpl->pump);
+		
+		pumpl->status = ret;
+		
+		switch (ret) {
+			case ALL_OK:
+				break;
+			default:	// offline the pump if anything happens
+				pump_offline(pumpl->pump);
+			case -ENOTCONFIGURED:
+			case -EOFFLINE:
+				suberror = true;
+				dbgerr("pump_run failed on %d (%d)", pumpl->id, ret);
 				continue;	// no further processing for this valve
 		}
 	}

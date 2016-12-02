@@ -28,6 +28,8 @@ struct s_pump {
 	struct {
 		bool online;			///< true if pump is operational (under software management)
 		time_t actual_cooldown_time;	///< actual cooldown time remaining
+		bool req_on;			///< request pump on
+		bool force_state;		///< true if req_state should be forced (no cooldown)
 	} run;		///< private runtime (internally handled)
 	struct s_stateful_relay * restrict relay;	///< Hardware relay controlling that pump
 	char * restrict name;
@@ -278,7 +280,6 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, enum e_
 struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
 int circuit_make_linear(struct s_heating_circuit * const circuit);
-int valve_make_linear(struct s_valve * const valve);
 int valve_make_bangbang(struct s_valve * const valve);
 int valve_make_sapprox(struct s_valve * const valve);
 
