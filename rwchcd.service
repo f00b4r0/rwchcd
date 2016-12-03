@@ -6,7 +6,7 @@ Type=dbus
 BusName=org.slashdirt.rwchcd
 ExecStart=/usr/sbin/rwchcd
 KillMode=process
-Restart=on-abort
+Restart=on-failure
 RestartSec=10
 
 [Install]
