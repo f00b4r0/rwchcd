@@ -349,7 +349,7 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	}
 	
 	// check if last request exceeds timeout
-	if ((heat->run.last_circuit_reqtime - now) > heat->set.sleeping_time)
+	if ((now - heat->run.last_circuit_reqtime) > heat->set.sleeping_time)
 		heat->run.could_sleep = true;
 	else
 		heat->run.could_sleep = false;
