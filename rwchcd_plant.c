@@ -1299,7 +1299,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
 	// apply global shift - XXX FORMULA
-	water_temp += deltaK_to_temp((0.5F * runtime->consumer_shift));
+	water_temp += deltaK_to_temp((0.25F * runtime->consumer_shift));
 	
 	// apply rate of rise limitation if any: update temp every minute
 	if (circuit->set.wtemp_rorh) {

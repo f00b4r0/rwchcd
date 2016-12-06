@@ -152,8 +152,8 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 
 	// Check if the circuit meets run.outhoff conditions
 	circuit_outhoff(circuit);
-	// if the circuit does meet the conditions, turn it off: update runmode.
-	if (circuit->run.outhoff)
+	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
+	if (circuit->run.outhoff && !runtime->frost)
 		circuit->run.runmode = RM_OFF;
 	
 	// transition detection
