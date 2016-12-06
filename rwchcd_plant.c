@@ -937,6 +937,8 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 		// in all other cases the boiler will not be issued a heat request and will be stopped if enough time has passed
 		else if (heat->run.could_sleep)
 			heat->run.runmode = RM_OFF;
+		else
+			target_temp = boiler->set.limit_tmin;
 	}
 	
 	boiler->run.target_temp = target_temp;
