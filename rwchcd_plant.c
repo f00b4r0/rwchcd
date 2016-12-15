@@ -1380,7 +1380,7 @@ int circuit_make_linear(struct s_heating_circuit * const circuit)
 		return (-EOOM);
 	
 	// attach created priv to valve
-	circuit->priv = priv;
+	circuit->tlaw_data_priv = priv;
 	
 	circuit->templaw = templaw_linear;
 
