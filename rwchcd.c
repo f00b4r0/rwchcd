@@ -201,6 +201,9 @@ static int init_process()
 	}
 
 	// configure that circuit
+	circuit->set.am_tambient_tK = 60 * 60;	// 1h
+	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
+	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +3K
 	circuit->set.id_temp_outgoing = 3;	// XXX VALIDATION
 	circuit->set.id_temp_return = 4;	// XXX VALIDATION
 	circuit->tlaw_data.tout1 = celsius_to_temp(-5);

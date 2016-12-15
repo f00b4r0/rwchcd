@@ -954,7 +954,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd allure (p.51)
- * @todo XXX TODO: implement consummer inhibit signal for cool startup
+ * @todo XXX TODO: review consummer inhibit signal formula for cool startup
  * @todo XXX TODO: implement consummer force signal for overtemp cooldown
  * @todo XXX TODO: implement limit on return temp (p.55/56)
  */
@@ -1233,6 +1233,7 @@ static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
  * @return exec status
  * XXX safety for heating floor if implementing positive consummer_shift()
  * @warning circuit->run.target_ambient must be properly set before this runs
+ * @todo review consumer shift formula
  */
 static int circuit_run(struct s_heating_circuit * const circuit)
 {
@@ -1300,9 +1301,6 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
 	
-	// apply global shift - XXX FORMULA
-	water_temp += deltaK_to_temp((0.25F * runtime->consumer_shift));
-	
 	// apply rate of rise limitation if any: update temp every minute
 	if (circuit->set.wtemp_rorh) {
 		if (!circuit->run.rorh_update_time) {	// first sample: init to current
@@ -1330,9 +1328,14 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// enforce limits
 	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_circuit.limit_wtmin);
 	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_circuit.limit_wtmax);
+	
 	if (water_temp < lwtmin)
 		water_temp = lwtmin;
-	else if (water_temp > lwtmax)
+	
+	// apply global shift - can override lwtmin - XXX FORMULA - XXX will impact heat request
+	water_temp += deltaK_to_temp((0.25F * runtime->consumer_shift));
+	
+	if (water_temp > lwtmax)
 		water_temp = lwtmax;
 
 	// save current target water temp

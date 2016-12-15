@@ -90,6 +90,7 @@ struct s_heating_circuit {
 		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target)
 		time_t am_tambient_tK;		///< ambient model: time necessary for 1 Kelvin temperature rise (seconds)
 		temp_t tambient_boostdelta;	///< temperature delta applied during boost turn-on
+		time_t max_boost_time;		///< maximum duration of transition boost
 		tempid_t id_temp_outgoing;	///< outgoing temp sensor for this circuit
 		tempid_t id_temp_return;	///< return temp sensor for this circuit
 		tempid_t id_temp_ambient;	///< ambient temp sensor related to this circuit
@@ -105,6 +106,7 @@ struct s_heating_circuit {
 		temp_t request_ambient;		///< current requested ambient target temp
 		temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
 		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current transition underwent by the circuit
+		time_t trans_since;		///< transition start time
 		time_t am_update_time;		///< last time the ambient model has been updated
 		temp_t actual_ambient;		///< actual ambient temperature (either from sensor, or modelled)
 		temp_t target_wtemp;		///< current target water temp

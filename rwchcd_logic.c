@@ -159,7 +159,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// transition detection
 	if (prev_runmode != circuit->run.runmode) {
 		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
-		circuit->run.am_update_time = now;
+		circuit->run.trans_since = circuit->run.am_update_time = now;
 	}
 
 	// XXX OPTIM if return temp is known
@@ -225,16 +225,21 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					circuit->run.runmode = RM_OFF;
 			}
-			else
+			else {
 				circuit->run.transition = TRANS_NONE;	// transition completed
+				circuit->run.trans_since = 0;
+			}
 			break;
 		case TRANS_UP:
 			if (ambient_temp < circuit->run.request_ambient - deltaK_to_temp(0.5F)) {	// boost if ambient temp is < to target - 0.5K - XXX
 				// boost is max of set boost (if any) and measured delta (if any)
-				ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;
+				if ((now - circuit->run.trans_since) < circuit->set.max_boost_time)
+					ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;
 			}
-			else
+			else {
 				circuit->run.transition = TRANS_NONE;	// transition completed
+				circuit->run.trans_since = 0;
+			}
 			break;
 		case TRANS_NONE:
 		default:

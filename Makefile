@@ -68,6 +68,7 @@ uninstall:
 	$(RM) /usr/sbin/$(MAIN)
 	$(RM) -r $(VARLIBDIR)
 	$(RM) $(DBUSSYSTEMDIR)/org.slashdirt.rwchcd.conf
+	systemctl disable rwchcd.service
 	$(RM) $(SYSTEMDUNITDIR)/rwchcd.service
 	@echo Done
 
