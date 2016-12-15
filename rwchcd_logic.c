@@ -156,8 +156,8 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	if (circuit->run.outhoff && !runtime->frost)
 		circuit->run.runmode = RM_OFF;
 	
-	// transition detection
-	if (prev_runmode != circuit->run.runmode) {
+	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
+	if ((prev_runmode != circuit->run.runmode) && circuit->run.actual_ambient) {
 		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
 		circuit->run.trans_since = circuit->run.am_update_time = now;
 	}
