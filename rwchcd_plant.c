@@ -1133,15 +1133,17 @@ static int heatsource_run(struct s_heatsource * const heat)
  */
 static temp_t templaw_linear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
-	const struct s_templaw_data20C tld = circuit->tlaw_data;
+	const struct s_tlaw_lin20C_priv * tld = circuit->tlaw_data_priv;
 	float slope;
 	temp_t offset;
 	temp_t t_output, curve_shift;
+	
+	assert(tld);
 
 	// pente = (Y2 - Y1)/(X2 - X1)
-	slope = ((float)(tld.twater2 - tld.twater1)) / (tld.tout2 - tld.tout1);
+	slope = ((float)(tld->twater2 - tld->twater1)) / (tld->tout2 - tld->tout1);
 	// offset: reduction par un point connu
-	offset = tld.twater2 - (tld.tout2 * slope);
+	offset = tld->twater2 - (tld->tout2 * slope);
 
 	// calculate output at nominal 20C: Y = input*slope + offset
 	t_output = roundf(source_temp * slope) + offset;
@@ -1316,14 +1318,11 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 				circuit->run.rorh_update_time = now;
 			}
 		}
-		else	// request for cooler or same temp
+		else {	// request for cooler or same temp
 			circuit->run.rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
+			circuit->run.rorh_update_time = now;
+		}
 	}
-
-	dbgmsg("request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f",
-	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
-	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
-	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
 
 	// enforce limits
 	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_circuit.limit_wtmin);
@@ -1338,6 +1337,11 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	if (water_temp > lwtmax)
 		water_temp = lwtmax;
 
+	dbgmsg("request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f",
+	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
+	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
+	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
+	
 	// save current target water temp
 	circuit->run.target_wtemp = water_temp;
 
@@ -1365,9 +1369,19 @@ out:
  */
 int circuit_make_linear(struct s_heating_circuit * const circuit)
 {
+	struct s_tlaw_lin20C_priv * priv = NULL;
+	
 	if (!circuit)
 		return (-EINVALID);
 
+	// create priv element
+	priv = calloc(1, sizeof(*priv));
+	if (!priv)
+		return (-EOOM);
+	
+	// attach created priv to valve
+	circuit->priv = priv;
+	
 	circuit->templaw = templaw_linear;
 
 	return (ALL_OK);
