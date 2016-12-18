@@ -9,6 +9,7 @@
 #include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// calloc
 #include <assert.h>
+#include <pthread.h>	// rwlock
 
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
@@ -20,6 +21,8 @@
 #include "rwchcd_logger.h"
 
 static struct s_logger_callback * Log_cb_head = NULL;
+static time_t Log_period_min = 0;
+static pthread_rwlock_t Log_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 /**
  * Simple logger thread.
@@ -28,32 +31,28 @@ static struct s_logger_callback * Log_cb_head = NULL;
  */
 void * logger_thread(void * arg)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_logger_callback * lcb = NULL;
-	static time_t min;
 	time_t now;
 	
-	// wait for system to be configured
-	while (!runtime->config || !runtime->config->configured)
+	// wait for first callback to be configured
+	while (!Log_cb_head)	// lockless due to proper ordering in logger_add_callback()
 		sleep(1);
-	
-	min = time(NULL);	// this makes a good max to start from
 	
 	// start logging
 	while (Threads_master_sem) {
 		now = time(NULL);
 		
+		pthread_rwlock_rdlock(&Log_rwlock);
 		for (lcb = Log_cb_head; lcb != NULL; lcb = lcb->next) {
-			min = lcb->period < min ? lcb->period : min;	// find the minimum period
-			
 			if ((now % lcb->period))
 				continue;
 			
 			if (lcb->cb())
 				dbgerr("cb failed");
 		}
+		pthread_rwlock_unlock(&Log_rwlock);
 		
-		sleep(min);	// sleep for the shortest required log period
+		sleep(Log_period_min);	// sleep for the shortest required log period
 	}
 	
 	pthread_exit(NULL);
@@ -76,11 +75,17 @@ int logger_add_callback(time_t period, int (* cb)(void))
 	if (!lcb)
 		return (-EOOM);
 	
+	pthread_rwlock_wrlock(&Log_rwlock);
+	if (!Log_period_min)
+		Log_period_min = period;
+	else
+		Log_period_min = period < Log_period_min ? period : Log_period_min;	// find the minimum period
+	
 	lcb->period = period;
 	lcb->cb = cb;
-	lcb->next = Log_cb_head;
-	
+	lcb->next = Log_cb_head;	// this could cause a loop if we didn't lock
 	Log_cb_head = lcb;
+	pthread_rwlock_unlock(&Log_rwlock);
 	
 	return (ALL_OK);
 }

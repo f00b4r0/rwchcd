@@ -109,7 +109,7 @@ static int runtime_log_temps(void)
 {
 	const storage_version_t version = 1;
 	static storage_keys_t keys[] = {
-		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "R1", "R2",
+		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
 	};
 	static storage_values_t values[ARRAY_SIZE(keys)];
 	int i = 0;
@@ -121,7 +121,7 @@ static int runtime_log_temps(void)
 		values[i] = Runtime.temps[i];
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
 	
-	return (storage_log("log_temps", &version, keys, values, i+1));
+	return (storage_log("log_temps", &version, keys, values, i));
 }
 
 /**

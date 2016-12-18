@@ -9,6 +9,7 @@
 /**
  * @file
  * Persistent storage implementation.
+ * Currently a buggy quick hack based on files.
  */
 
 #include <unistd.h>	// chdir
@@ -33,6 +34,7 @@ static const storage_version_t Storage_version = RWCHCD_STORAGE_VERSION;
  * @param object the opaque object to store
  * @param size size of the object argument
  * @todo XXX TODO ERROR HANDLING
+ * @todo add CRC
  */
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size)
 {
@@ -78,6 +80,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
  * @param object the opaque object to restore
  * @param size size of the object argument
  * @todo XXX TODO ERROR HANDLING
+ * @todo add CRC check
  */
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size)
 {
@@ -180,10 +183,13 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		// compare with current global version
 		if (memcmp(&lversion, version, sizeof(*version)))
 			fcreate = true;
+		
+		if (fcreate)
+			fclose(file);
 	}
 	
 	if (fcreate) {
-		file = freopen(identifier, "w", file);	// create/truncate
+		file = fopen(identifier, "w");	// create/truncate
 		if (!file)
 			return (-ESTORE);
 
@@ -196,8 +202,7 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		fprintf(file, "\n");
 	}
 	else {
-		file = freopen(identifier, "a", file);	// append
-		if (!file)
+		if(fseek(file, 0, SEEK_END))	// append
 			return (-ESTORE);
 	}
 

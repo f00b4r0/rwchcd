@@ -65,7 +65,7 @@ static void hardware_relays_log(void)
 {
 	const storage_version_t version = 1;
 	static storage_keys_t keys[] = {
-		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
+		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "R1", "R2",
 	};
 	static storage_values_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
@@ -83,7 +83,7 @@ static void hardware_relays_log(void)
 			values[i] = -1;
 	}
 	
-	storage_log("log_hw_relays", &version, keys, values, i+1);
+	storage_log("log_hw_relays", &version, keys, values, i);
 }
 
 /**
