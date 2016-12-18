@@ -14,6 +14,9 @@
 #include <unistd.h>	// chdir
 #include <stdio.h>	// fopen...
 #include <string.h>	// memcmp
+#include <time.h>	// time
+#include <errno.h>	// errno
+
 #include "rwchcd_storage.h"
 
 #define RWCHCD_STORAGE_MAGIC "rwchcd"
@@ -117,6 +120,93 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	dbgmsg("identifier: %s, v: %d, sz: %zu, ptr: %p",
 	       identifier, *version, size, object);
 	
+	// finally close the file
+	fclose(file);
+	
+	return (ALL_OK);
+}
+
+/**
+ * Generic storage backend keys/values log call.
+ * @param identifier a unique string identifying the data to log
+ * @param version a caller-defined version number
+ * @param keys the keys to log
+ * @param values the values to log (1 per key)
+ * @param npairs the number of key/value pairs
+ * @todo XXX TODO ERROR HANDLING
+ */
+int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, storage_keys_t keys[], storage_values_t values[], unsigned int npairs)
+{
+	FILE * restrict file = NULL;
+	char magic[ARRAY_SIZE(Storage_magic)];
+	storage_version_t sversion = 0, lversion = 0;
+	const char fmt[] = "%%%us - %%u - %%u\n";
+	char headformat[ARRAY_SIZE(fmt)+1];
+	bool fcreate = false;
+	unsigned int i;
+	
+	if (!identifier || !version)
+		return (-EINVALID);
+	
+	// make sure we're in target wd
+	if (chdir(STORAGE_PATH))
+		return (-ESTORE);
+	
+	// open stream
+	file = fopen(identifier, "r+");
+	if (!file) {
+		if (ENOENT == errno)
+			fcreate = true;
+		else
+			return (-ESTORE);
+	}
+
+	// build header format
+	sprintf(headformat, fmt, ARRAY_SIZE(magic));
+	
+	if (!fcreate) {	// we have a file, does it work for us?
+		// read top line first
+		if (fscanf(file, headformat, magic, &sversion, &lversion) != 3)
+			fcreate = true;
+		
+		// compare with current global magic
+		if (memcmp(magic, Storage_magic, sizeof(Storage_magic)))
+			fcreate = true;
+		
+		// compare with current global version
+		if (memcmp(&sversion, &Storage_version, sizeof(Storage_version)))
+			fcreate = true;
+		
+		// compare with current global version
+		if (memcmp(&lversion, version, sizeof(*version)))
+			fcreate = true;
+	}
+	
+	if (fcreate) {
+		file = freopen(identifier, "w", file);	// create/truncate
+		if (!file)
+			return (-ESTORE);
+
+		// write our header first
+		fprintf(file, headformat, Storage_magic, Storage_version, *version);
+		// write csv header
+		fprintf(file, "time;");
+		for (i = 0; i < npairs; i++)
+			fprintf(file, "%s;", keys[i]);
+		fprintf(file, "\n");
+	}
+	else {
+		file = freopen(identifier, "a", file);	// append
+		if (!file)
+			return (-ESTORE);
+	}
+
+	// write csv data
+	fprintf(file, "%ld;", time(NULL));
+	for (i = 0; i < npairs; i++)
+		fprintf(file, "%d;", values[i]);
+	fprintf(file, "\n");
+
 	// finally close the file
 	fclose(file);
 	

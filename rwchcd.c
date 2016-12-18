@@ -26,11 +26,11 @@
  * Setup
  * Computation
  * Control
- * accounting (separate module that periodically polls states and write them to timestamped registry)
  * Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
  * UI + programming
  * connection of multiple instances
  * multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
+ * scheduler
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
@@ -47,6 +47,7 @@
 #include "rwchcd_plant.h"
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
+#include "rwchcd_logger.h"
 #include "rwchcd_dbus.h"
 
 #include "svn_version.h"
@@ -55,7 +56,7 @@
 #define RWCHCD_UID	65534	///< Desired run uid
 #define RWCHCD_GID	65534	///< Desired run gid
 
-static int master_thread_sem = 0;
+int Threads_master_sem = 0;
 
 static const char Version[] = SVN_REV;	///< SVN_REV is defined in makefile
 
@@ -109,7 +110,11 @@ static int init_process()
 	hardware_config_store();
 
 	/* init runtime */
-	runtime_init();
+	ret = runtime_init();
+	if (ret) {
+		dbgerr("runtime init error: %d", ret);
+		return (ret);
+	}
 
 	/* init config */
 
@@ -305,6 +310,7 @@ static void exit_process(void)
 
 static void * thread_master(void *arg)
 {
+	struct s_runtime * restrict const runtime = get_runtime();
 	int ret;
 	
 	ret = init_process();
@@ -313,18 +319,28 @@ static void * thread_master(void *arg)
 		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
 	
-	// XXX start in frostfree by default
-	if (SYS_OFF == get_runtime()->systemmode)
+	// XXX force start in frostfree if OFF by default
+	if (SYS_OFF == runtime->systemmode)
 		runtime_set_systemmode(SYS_FROSTFREE);
 	
-	while (master_thread_sem) {
+	while (Threads_master_sem) {
 		ret = hardware_input();
 		if (ret)
 			dbgerr("hardware_input returned: %d", ret);
 		
+		// we lock globally here in this thread. Saves headaches and reduces heavy pressure on the lock
+		ret = pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+		if (ret)
+			dbgerr("wrlock failed: %d", ret);
+		
 		ret = runtime_run();
 		if (ret)
 			dbgerr("runtime_run returned: %d", ret);
+		
+		// we can unlock here
+		ret = pthread_rwlock_unlock(&runtime->runtime_rwlock);
+		if (ret)
+			dbgerr("unlock failed: %d", ret);
 		
 		ret = hardware_output();
 		if (ret)
@@ -344,7 +360,7 @@ thread_end:
 int main(void)
 {
 	struct sigaction saction;
-	pthread_t master_thr;
+	pthread_t master_thr, logger_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	int ret;
@@ -358,14 +374,19 @@ int main(void)
 	pthread_attr_setschedparam(&attr, &sparam);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	
-	master_thread_sem = 1;
+	Threads_master_sem = 1;
 
 	ret = pthread_create(&master_thr, &attr, thread_master, NULL);
 	if (ret)
-		errx(ret, "failed to create thread!");
+		errx(ret, "failed to create master thread!");
 
+	ret = pthread_create(&logger_thr, NULL, logger_thread, NULL);
+	if (ret)
+		errx(ret, "failed to create logger thread!");
+	
 #ifdef _GNU_SOURCE
 	pthread_setname_np(master_thr, "master");	// failure ignored
+	pthread_setname_np(logger_thr, "logger");
 #endif
 
 	// XXX Dropping priviledges here because we need root to set
@@ -389,8 +410,9 @@ int main(void)
 	
 	dbus_main();	// launch dbus main loop, blocks execution until termination
 	
-	master_thread_sem = 0;	// signal end of work
+	Threads_master_sem = 0;	// signal end of work
 	pthread_join(master_thr, NULL);	// wait for cleanup
+	pthread_join(logger_thr, NULL);
 	
 	return (0);
 }

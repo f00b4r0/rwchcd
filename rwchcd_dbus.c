@@ -35,6 +35,7 @@ static GMainLoop *Mainloop = NULL;
 /**
  * D-Bus method ToutdoorGet handler.
  * Replies with current outdoor temperature.
+ * @bug we don't lock because we don't care
  */
 static gboolean on_handle_toutdoor_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
@@ -55,11 +56,12 @@ static gboolean on_handle_sysmode_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
 				      gpointer user_data)
 {
+	struct s_runtime * restrict const runtime = get_runtime();
 	enum e_systemmode cursys;
 	
-	//	pthread_rwlock_rdlock();
-	cursys = get_runtime()->systemmode;
-	//	pthread_rwlock_unlock();
+	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
+	cursys = runtime->systemmode;
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	dbus_rwchcd_control_complete_sysmode_get(object, invocation, (guchar)cursys);
 	
@@ -76,6 +78,7 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 				      guchar Sysmode,
 				      gpointer user_data)
 {
+	struct s_runtime * restrict const runtime = get_runtime();
 	enum e_systemmode newsysmode;
 	
 	if (Sysmode < SYS_UNKNOWN)
@@ -83,9 +86,9 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 	else
 		return FALSE;
 
-	//	pthread_rwlock_wrlock();
+	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	runtime_set_systemmode(newsysmode);
-	//	pthread_rwlock_unlock();
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	dbus_rwchcd_control_complete_sysmode_set(object, invocation);
 	
@@ -102,24 +105,28 @@ static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
 				       GDBusMethodInvocation *invocation,
 				       gpointer user_data)
 {
-	const enum e_systemmode cursys = get_runtime()->systemmode;
+	struct s_runtime * restrict const runtime = get_runtime();
+	enum e_systemmode cursys;
 	temp_t systemp;
 	float temp;
 	
+	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
+	cursys = runtime->systemmode;
 	switch (cursys) {
 		case SYS_COMFORT:
-			systemp = get_runtime()->config->def_circuit.t_comfort;
+			systemp = runtime->config->def_circuit.t_comfort;
 			break;
 		case SYS_ECO:
-			systemp = get_runtime()->config->def_circuit.t_eco;
+			systemp = runtime->config->def_circuit.t_eco;
 			break;
 		case SYS_FROSTFREE:
-			systemp = get_runtime()->config->def_circuit.t_frostfree;
+			systemp = runtime->config->def_circuit.t_frostfree;
 			break;
 		default:
 			return false;
 			break;
 	}
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	temp = temp_to_celsius(systemp);
 	
@@ -142,12 +149,15 @@ static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 				      gdouble NewTemp,
 				      gpointer user_data)
 {
+	struct s_runtime * restrict const runtime = get_runtime();
 	temp_t newtemp = celsius_to_temp(NewTemp);
-	const enum e_systemmode cursys = get_runtime()->systemmode;
+	enum e_systemmode cursys;
 
 	if (validate_temp(newtemp) != ALL_OK)
 		return false;
 
+	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+	cursys = runtime->systemmode;
 	switch (cursys) {
 		case SYS_COMFORT:
 			get_runtime()->config->def_circuit.t_comfort = newtemp;
@@ -162,6 +172,7 @@ static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 			return false;
 			break;
 	}
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 
 	dbus_rwchcd_control_complete_config_temp_set(object, invocation);
 	

@@ -19,6 +19,7 @@
 #include <stdbool.h>	// bool
 #include <time.h>	// time_t
 #include <stdio.h>	// (f)printf
+#include <pthread.h>	// rwlocks
 
 #define testbit(var, bit)	((var) & (1 << (bit)))
 #define setbit(var, bit)	((var) |= (1 << (bit)))
@@ -151,6 +152,7 @@ struct s_config {
 
 /** Runtime environment structure */
 struct s_runtime {
+	pthread_rwlock_t runtime_rwlock;
 	enum e_systemmode systemmode;	///< current operation mode
 	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
@@ -169,7 +171,9 @@ struct s_runtime {
 	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
-	temp_t temps[RWCHCD_NTEMPS];			///< array of all the system temperatures
+	temp_t temps[RWCHCD_NTEMPS];		///< array of all the system temperatures
 };
+
+extern int Threads_master_sem;
 
 #endif /* rwchcd_h */

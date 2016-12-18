@@ -13,10 +13,13 @@
 
 #include <time.h>	// time_t
 #include <string.h>	// memset/memcpy
+#include <assert.h>
+
 #include "rwchcd_lib.h"
 #include "rwchcd_plant.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
+#include "rwchcd_logger.h"
 
 static const storage_version_t Runtime_sversion = 3;
 static struct s_runtime Runtime;
@@ -64,6 +67,61 @@ static int runtime_restore(void)
 		dbgmsg("storage_fetch failed");
 	
 	return (ALL_OK);
+}
+
+/**
+ * Log key runtime variables.
+ * @return exec status
+ */
+static int runtime_log(void)
+{
+	const storage_version_t version = 1;
+	static storage_keys_t keys[] = {
+		"systemmode",
+		"summer",
+		"frost",
+		"t_outdoor_60",
+		"t_outdoor_filtered",
+		"t_outdoor_attenuated",
+	};
+	static storage_values_t values[ARRAY_SIZE(keys)];
+	unsigned int i = 0;
+	
+	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
+	values[i++] = Runtime.systemmode;
+	values[i++] = Runtime.summer;
+	values[i++] = Runtime.frost;
+	values[i++] = Runtime.t_outdoor_60;
+	values[i++] = Runtime.t_outdoor_filtered;
+	values[i++] = Runtime.t_outdoor_attenuated;
+	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
+	
+	assert(i < ARRAY_SIZE(keys));
+	
+	return (storage_log("log_runtime", &version, keys, values, i));
+}
+
+/**
+ * Log internal temperatures.
+ * @return exec status
+ */
+static int runtime_log_temps(void)
+{
+	const storage_version_t version = 1;
+	static storage_keys_t keys[] = {
+		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "R1", "R2",
+	};
+	static storage_values_t values[ARRAY_SIZE(keys)];
+	int i = 0;
+	
+	assert(ARRAY_SIZE(keys) >= RWCHCD_NTEMPS);
+	
+	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
+	for (i = 0; i < Runtime.config->nsensors; i++)
+		values[i] = Runtime.temps[i];
+	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
+	
+	return (storage_log("log_temps", &version, keys, values, i+1));
 }
 
 /**
@@ -164,10 +222,12 @@ static void runtime_frost(void)
 /**
  * Init runtime
  */
-void runtime_init(void)
+int runtime_init(void)
 {
 	// fill the structure with zeroes, which turns everything off and sets sane values
 	memset(&Runtime, 0x0, sizeof(Runtime));
+	
+	return (pthread_rwlock_init(&Runtime.runtime_rwlock, NULL));
 }
 
 /**
@@ -280,6 +340,9 @@ int runtime_online(void)
 	outdoor_temp();
 	outdoor_temp_reset();
 
+	logger_add_callback((Runtime.config->building_tau / 60), runtime_log);
+	logger_add_callback(60, runtime_log_temps);
+	
 	return (plant_online(Runtime.plant));
 }
 

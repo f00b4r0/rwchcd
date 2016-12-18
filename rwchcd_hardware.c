@@ -58,6 +58,35 @@ static struct {
 } Hardware;
 
 /**
+ * Log relays change.
+ * @note This function isn't part of the logger system since it's asynchronous.
+ */
+static void hardware_relays_log(void)
+{
+	const storage_version_t version = 1;
+	static storage_keys_t keys[] = {
+		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
+	};
+	static storage_values_t values[ARRAY_SIZE(keys)];
+	unsigned int i = 0;
+	
+	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(Relays));
+	
+	for (i=0; i<ARRAY_SIZE(Relays); i++) {
+		if (Relays[i]) {
+			if (Relays[i]->run.is_on)
+				values[i] = 1;
+			else
+				values[i] = 0;
+		}
+		else
+			values[i] = -1;
+	}
+	
+	storage_log("log_hw_relays", &version, keys, values, i+1);
+}
+
+/**
  * Convert sensor value to actual resistance.
  * voltage on ADC pin is Vsensor * (1+G) - Vdac * G where G is divider gain on AOP.
  * if value < ~10mv: short. If value = max: open.
@@ -148,6 +177,7 @@ static void parse_temps(void)
 	
 	assert(Hardware.ready && runtime);
 	
+	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	for (i = 0; i<runtime->config->nsensors; i++) {
 		current = sensor_to_temp(Hardware.sensors[i]);
 		previous = runtime->temps[i];
@@ -155,6 +185,7 @@ static void parse_temps(void)
 		// apply LP filter with 5s time constant
 		runtime->temps[i] = temp_expw_mavg(previous, current, 5, dt);
 	}
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	lasttime = time(NULL);
 }
@@ -512,7 +543,7 @@ int hardware_rwchcrelays_write(void)
 	union rwchc_u_relays rWCHC_relays;
 	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
 	uint_fast8_t rid, i;
-	bool change = false;
+	enum {CHNONE = 0, CHTURNON, CHTURNOFF } change = CHNONE;
 	int ret = -EGENERIC;
 
 	if (!Hardware.ready)
@@ -537,6 +568,7 @@ int hardware_rwchcrelays_write(void)
 				if (relay->run.off_since)
 					relay->run.off_tottime += now - relay->run.off_since;
 				relay->run.off_since = 0;
+				change = CHTURNON;
 			}
 		}
 		else {	// turn off
@@ -546,7 +578,7 @@ int hardware_rwchcrelays_write(void)
 				if (relay->run.on_since)
 					relay->run.on_tottime += now - relay->run.on_since;
 				relay->run.on_since = 0;
-				change = true;	// only update permanent storage on full cycles (at turn off)
+				change = CHTURNOFF;
 			}
 		}
 
@@ -565,11 +597,14 @@ int hardware_rwchcrelays_write(void)
 			clrbit(rWCHC_relays.ALL, rid);
 	}
 
-	// save relays state if there was a change
+	// save/log relays state if there was a change
 	if (change) {
-		ret = hardware_save_relays();
-		if (ret)
-			dbgerr("hardware_save failed (%d)", ret);
+		hardware_relays_log();
+		if (CHTURNOFF == change) {	// only update permanent storage on full cycles (at turn off)
+			ret = hardware_save_relays();
+			if (ret)
+				dbgerr("hardware_save failed (%d)", ret);
+		}
 	}
 	
 	// send new state to hardware
@@ -809,16 +844,19 @@ int hardware_input(void)
 	
 	// handle switch 1
 	if (Hardware.peripherals.RQSW1) {
-		// change system mode
-		cursysmode = runtime->systemmode;
-		cursysmode++;
 		Hardware.peripherals.RQSW1 = 0;
 		count = 5;
+
+		// change system mode
+		pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+		cursysmode = runtime->systemmode;
+		cursysmode++;
 		
 		if (cursysmode >= SYS_UNKNOWN)	// XXX last mode
 			cursysmode = SYS_OFF;
 		
 		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?
+		pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	}
 	
 	// handle switch 2
