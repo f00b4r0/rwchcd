@@ -174,6 +174,4 @@ struct s_runtime {
 	pthread_rwlock_t runtime_rwlock;
 };
 
-extern int Threads_master_sem;
-
 #endif /* rwchcd_h */

@@ -96,7 +96,7 @@ static int runtime_log(void)
 	values[i++] = Runtime.t_outdoor_attenuated;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
 	
-	assert(i < ARRAY_SIZE(keys));
+	assert(ARRAY_SIZE(keys) >= i);
 	
 	return (storage_log("log_runtime", &version, keys, values, i));
 }

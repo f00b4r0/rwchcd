@@ -21,41 +21,41 @@
 #include "rwchcd_logger.h"
 
 static struct s_logger_callback * Log_cb_head = NULL;
-static time_t Log_period_min = 0;
+static unsigned int Log_period_min = 0;
 static pthread_rwlock_t Log_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 /**
  * Simple logger thread.
  * runs a busy loop through the callbacks every second.
- * @bug Will miss some logs if sleep() is too long due to the use of modulo.
+ * @bug buggy time handling.
  */
 void * logger_thread(void * arg)
 {
-	struct s_logger_callback * lcb = NULL;
+	struct s_logger_callback * lcb;
 	time_t now;
 	
 	// wait for first callback to be configured
-	while (!Log_cb_head)	// lockless due to proper ordering in logger_add_callback()
+	while (!Log_period_min)	// XXX lockless
 		sleep(1);
 	
 	// start logging
-	while (Threads_master_sem) {
+	while (1) {
 		now = time(NULL);
 		
 		pthread_rwlock_rdlock(&Log_rwlock);
 		for (lcb = Log_cb_head; lcb != NULL; lcb = lcb->next) {
-			if ((now % lcb->period))
+			if ((now - lcb->last_call) < lcb->period)
 				continue;
 			
 			if (lcb->cb())
 				dbgerr("cb failed");
+			
+			lcb->last_call = now;	// only touched here, the way we lock is fine
 		}
 		pthread_rwlock_unlock(&Log_rwlock);
 		
-		sleep(Log_period_min);	// sleep for the shortest required log period
+		sleep(Log_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
 	}
-	
-	pthread_exit(NULL);
 }
 
 /**
@@ -64,7 +64,7 @@ void * logger_thread(void * arg)
  * @param cb the callback function to call
  * @return exec status
  */
-int logger_add_callback(time_t period, int (* cb)(void))
+int logger_add_callback(unsigned int period, int (* cb)(void))
 {
 	struct s_logger_callback * lcb = NULL;
 	
@@ -88,4 +88,16 @@ int logger_add_callback(time_t period, int (* cb)(void))
 	pthread_rwlock_unlock(&Log_rwlock);
 	
 	return (ALL_OK);
+}
+
+void logger_clean_callbacks(void)
+{
+	struct s_logger_callback * lcb, * lcbn;
+
+	lcb = Log_cb_head;
+	while (lcb) {
+		lcbn = lcb->next;
+		free(lcb);
+		lcb = lcbn;
+	}
 }

@@ -56,7 +56,7 @@
 #define RWCHCD_UID	65534	///< Desired run uid
 #define RWCHCD_GID	65534	///< Desired run gid
 
-int Threads_master_sem = 0;
+static int Sem_master_thread = 0;
 
 static const char Version[] = SVN_REV;	///< SVN_REV is defined in makefile
 
@@ -323,7 +323,7 @@ static void * thread_master(void *arg)
 	if (SYS_OFF == runtime->systemmode)
 		runtime_set_systemmode(SYS_FROSTFREE);
 	
-	while (Threads_master_sem) {
+	while (Sem_master_thread) {
 		ret = hardware_input();
 		if (ret)
 			dbgerr("hardware_input returned: %d", ret);
@@ -374,7 +374,7 @@ int main(void)
 	pthread_attr_setschedparam(&attr, &sparam);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	
-	Threads_master_sem = 1;
+	Sem_master_thread = 1;
 
 	ret = pthread_create(&master_thr, &attr, thread_master, NULL);
 	if (ret)
@@ -410,9 +410,11 @@ int main(void)
 	
 	dbus_main();	// launch dbus main loop, blocks execution until termination
 	
-	Threads_master_sem = 0;	// signal end of work
+	Sem_master_thread = 0;	// signal end of work
+	pthread_cancel(logger_thr);
 	pthread_join(master_thr, NULL);	// wait for cleanup
 	pthread_join(logger_thr, NULL);
+	logger_clean_callbacks();
 	
 	return (0);
 }

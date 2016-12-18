@@ -13,12 +13,14 @@
 
 /** List of logger callbacks */
 struct s_logger_callback {
-	time_t period;		///< requested log period
+	time_t last_call;	///< last time the callback was called
+	unsigned int period;	///< requested log period
 	int (*cb)(void);	///< logger callback, must lock and call storage_log()
 	struct s_logger_callback * restrict next;
 };
 
 void * logger_thread(void * arg);
-int logger_add_callback(time_t period, int (* cb)(void));
+int logger_add_callback(unsigned int period, int (* cb)(void));
+void logger_clean_callbacks(void);
 
 #endif /* rwchcd_logger_h */
