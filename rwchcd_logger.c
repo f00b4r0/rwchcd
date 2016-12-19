@@ -101,11 +101,12 @@ int logger_add_callback(unsigned int period, int (* cb)(void))
 	lcb_after = lcb_before = Log_cb_head;
 	
 	// find insertion place
-	while (lcb_before) {
-		lcb_after = lcb_before->next;
-		
-		if (!lcb_after || (lcb_after->period > period))
+	while (lcb_after) {
+		if (lcb_after->period > period)
 			break;
+		
+		lcb_before = lcb_after;
+		lcb_after = lcb_before->next;
 	}
 
 	lcb->cb = cb;
@@ -117,10 +118,10 @@ int logger_add_callback(unsigned int period, int (* cb)(void))
 	 * I'll leave it as is for now. */
 	lcb->next = lcb_after;
 	
-	if (lcb_before)
-		lcb_before->next = lcb;
-	else	// we don't have a head yet
+	if (lcb_before == Log_cb_head)
 		Log_cb_head = lcb;
+	else
+		lcb_before->next = lcb;
 	/* End fence section */
 	
 	if (!Log_period_min)
