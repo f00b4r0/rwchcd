@@ -1850,12 +1850,12 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 	struct s_heatsource_l * restrict sourceelement = NULL;
 
 	if (!plant)
-		goto fail;
+		return (NULL);
 
 	// create a new source. calloc() sets good defaults
 	source = calloc(1, sizeof(*source));
 	if (!source)
-		goto fail;
+		return (NULL);
 
 	switch (type) {
 		case BOILER:
