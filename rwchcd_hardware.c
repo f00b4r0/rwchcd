@@ -59,7 +59,8 @@ static struct {
 
 /**
  * Log relays change.
- * @note This function isn't part of the logger system since it's asynchronous.
+ * @note This function isn't part of the timer system since it's more efficient
+ * and more accurate to run it aperiodically (on relay edge).
  */
 static void hardware_relays_log(void)
 {

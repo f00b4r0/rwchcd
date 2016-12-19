@@ -1,5 +1,5 @@
 //
-//  rwchcd_logger.c
+//  rwchcd_timer.c
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
@@ -22,30 +22,30 @@
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
-#include "rwchcd_logger.h"
+#include "rwchcd_timer.h"
 
-static struct s_logger_callback * Log_cb_head = NULL;
-static volatile unsigned int Log_period_min = 0;
+static struct s_timer_cb * Timer_cb_head = NULL;
+static volatile unsigned int Timer_period_min = 0;
 
 /**
- * Simple logger thread.
- * runs a busy loop through the callbacks every second.
+ * Simple timer thread.
+ * runs a delay loop through the callbacks.
  * @bug buggy time handling.
  */
-void * logger_thread(void * arg)
+void * timer_thread(void * arg)
 {
-	struct s_logger_callback * lcb;
+	struct s_timer_cb * lcb;
 	time_t now;
 	
 	// wait for first callback to be configured
-	while (!Log_period_min)	// XXX lockless
+	while (!Timer_period_min)
 		sleep(1);
 	
 	// start logging
 	while (1) {
 		now = time(NULL);
 		
-		for (lcb = Log_cb_head; lcb != NULL; lcb = lcb->next) {
+		for (lcb = Timer_cb_head; lcb != NULL; lcb = lcb->next) {
 			if ((now - lcb->last_call) < lcb->period)
 				break;	// ordered list, first mismatch means we don't need to check further
 			
@@ -53,11 +53,11 @@ void * logger_thread(void * arg)
 				if (lcb->cb())
 					dbgerr("cb failed");
 	
-				lcb->last_call = now;	// only touched here, the way we lock is fine
+				lcb->last_call = now;	// only updated here
 			}
 		}
 		
-		sleep(Log_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
+		sleep(Timer_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
 	}
 }
 
@@ -81,24 +81,24 @@ static inline unsigned int ugcd(unsigned int a, unsigned int b)
 }
 
 /**
- * Add a logger callback.
+ * Add a timer callback.
  * Insert callback ordered (by ascending period) in the callback list.
  * @param period the period at which that callback should be called
  * @param cb the callback function to call
  * @return exec status
  */
-int logger_add_callback(unsigned int period, int (* cb)(void))
+int timer_add_cb(unsigned int period, int (* cb)(void))
 {
-	struct s_logger_callback * lcb = NULL, * lcb_before, * lcb_after;
+	struct s_timer_cb * lcb = NULL, * lcb_before, * lcb_after;
 	
 	if ((period < 1) || (!cb))
 		return (-EINVALID);
 	
-	lcb = calloc(1, sizeof(struct s_logger_callback));
+	lcb = calloc(1, sizeof(struct s_timer_cb));
 	if (!lcb)
 		return (-EOOM);
 
-	lcb_after = lcb_before = Log_cb_head;
+	lcb_after = lcb_before = Timer_cb_head;
 	
 	// find insertion place
 	while (lcb_after) {
@@ -118,32 +118,32 @@ int logger_add_callback(unsigned int period, int (* cb)(void))
 	 * I'll leave it as is for now. */
 	lcb->next = lcb_after;
 	
-	if (lcb_before == Log_cb_head)
-		Log_cb_head = lcb;
+	if (lcb_before == Timer_cb_head)
+		Timer_cb_head = lcb;
 	else
 		lcb_before->next = lcb;
 	/* End fence section */
 	
-	if (!Log_period_min)
-		Log_period_min = period;
+	if (!Timer_period_min)
+		Timer_period_min = period;
 	else
-		Log_period_min = ugcd(period, Log_period_min);	// find the GCD period
+		Timer_period_min = ugcd(period, Timer_period_min);	// find the GCD period
 	
-	dbgmsg("period: %u, new_min: %u", period, Log_period_min);
+	dbgmsg("period: %u, new_min: %u", period, Timer_period_min);
 	
 	return (ALL_OK);
 }
 
 /**
  * Cleanup callback list.
- * @warning @b LOCKLESS This function must only be called when neither logger_thread()
- * nor logger_add_callback() are running or can run.
+ * @warning @b LOCKLESS This function must only be called when neither timer_thread()
+ * nor timer_add_cb() are running or can run.
  */
-void logger_clean_callbacks(void)
+void timer_clean_callbacks(void)
 {
-	struct s_logger_callback * lcb, * lcbn;
+	struct s_timer_cb * lcb, * lcbn;
 
-	lcb = Log_cb_head;
+	lcb = Timer_cb_head;
 	while (lcb) {
 		lcbn = lcb->next;
 		free(lcb);

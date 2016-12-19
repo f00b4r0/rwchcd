@@ -19,7 +19,7 @@
 #include "rwchcd_plant.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
-#include "rwchcd_logger.h"
+#include "rwchcd_timer.h"
 
 static const storage_version_t Runtime_sversion = 3;
 static struct s_runtime Runtime;
@@ -72,8 +72,9 @@ static int runtime_restore(void)
 /**
  * Log key runtime variables.
  * @return exec status
+ * @warning Locks runtime: do not call from master_thread
  */
-static int runtime_log(void)
+static int runtime_async_log(void)
 {
 	const storage_version_t version = 1;
 	static storage_keys_t keys[] = {
@@ -104,8 +105,9 @@ static int runtime_log(void)
 /**
  * Log internal temperatures.
  * @return exec status
+ * @warning Locks runtime: do not call from master_thread
  */
-static int runtime_log_temps(void)
+static int runtime_async_log_temps(void)
 {
 	const storage_version_t version = 1;
 	static storage_keys_t keys[] = {
@@ -342,8 +344,8 @@ int runtime_online(void)
 	outdoor_temp();
 	outdoor_temp_reset();
 
-	logger_add_callback((Runtime.config->building_tau / 60), runtime_log);
-	logger_add_callback(60, runtime_log_temps);
+	timer_add_cb((Runtime.config->building_tau / 60), runtime_async_log);
+	timer_add_cb(60, runtime_async_log_temps);
 	
 	return (plant_online(Runtime.plant));
 }

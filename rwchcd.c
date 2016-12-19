@@ -47,7 +47,7 @@
 #include "rwchcd_plant.h"
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
-#include "rwchcd_logger.h"
+#include "rwchcd_timer.h"
 #include "rwchcd_dbus.h"
 
 #include "svn_version.h"
@@ -363,7 +363,7 @@ thread_end:
 int main(void)
 {
 	struct sigaction saction;
-	pthread_t master_thr, logger_thr;
+	pthread_t master_thr, timer_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	int ret;
@@ -383,13 +383,13 @@ int main(void)
 	if (ret)
 		errx(ret, "failed to create master thread!");
 
-	ret = pthread_create(&logger_thr, NULL, logger_thread, NULL);
+	ret = pthread_create(&timer_thr, NULL, timer_thread, NULL);
 	if (ret)
-		errx(ret, "failed to create logger thread!");
+		errx(ret, "failed to create timer thread!");
 	
 #ifdef _GNU_SOURCE
 	pthread_setname_np(master_thr, "master");	// failure ignored
-	pthread_setname_np(logger_thr, "logger");
+	pthread_setname_np(timer_thr, "timer");
 #endif
 
 	// XXX Dropping priviledges here because we need root to set
@@ -414,10 +414,10 @@ int main(void)
 	dbus_main();	// launch dbus main loop, blocks execution until termination
 	
 	Sem_master_thread = 0;	// signal end of work
-	pthread_cancel(logger_thr);
+	pthread_cancel(timer_thr);
 	pthread_join(master_thr, NULL);	// wait for cleanup
-	pthread_join(logger_thr, NULL);
-	logger_clean_callbacks();
+	pthread_join(timer_thr, NULL);
+	timer_clean_callbacks();
 	
 	return (0);
 }
