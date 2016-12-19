@@ -36,9 +36,10 @@ $(MAIN): $(OBJS) $(DBUSGEN_OBJS)
 
 # this must be phony to force regen on every run
 svn_version.h:
-	echo -n '#define SVN_REV "'	> $@
-	echo -n $(SVNVER)		>> $@
-	echo '"'			>> $@
+	@echo Generating svn_version.h
+	@echo -n '#define SVN_REV "'	> $@
+	@echo -n $(SVNVER)		>> $@
+	@echo '"'			>> $@
 
 clean:
 	$(RM) *.o *.d *~ $(MAIN)

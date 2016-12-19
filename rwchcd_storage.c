@@ -150,7 +150,7 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 	FILE * restrict file = NULL;
 	char magic[ARRAY_SIZE(Storage_magic)];
 	storage_version_t sversion = 0, lversion = 0;
-	const char fmt[] = "%%%us - %%u - %%u\n";
+	const char fmt[] = "%%%us - %%u - %%u - %%u\n";	// magic - sversion - lversion - npairs
 	char headformat[ARRAY_SIZE(fmt)+1];
 	bool fcreate = false;
 	unsigned int i;
@@ -176,7 +176,7 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 	
 	if (!fcreate) {	// we have a file, does it work for us?
 		// read top line first
-		if (fscanf(file, headformat, magic, &sversion, &lversion) != 3)
+		if (fscanf(file, headformat, magic, &sversion, &lversion, &i) != 4)
 			fcreate = true;
 		
 		// compare with current global magic
@@ -184,11 +184,15 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 			fcreate = true;
 		
 		// compare with current global version
-		if (memcmp(&sversion, &Storage_version, sizeof(Storage_version)))
+		if (sversion != Storage_version)
 			fcreate = true;
 		
-		// compare with current global version
-		if (memcmp(&lversion, version, sizeof(*version)))
+		// compare with current local version
+		if (lversion != *version)
+			fcreate = true;
+		
+		// compare with current number of pairs
+		if (i != npairs)
 			fcreate = true;
 		
 		if (fcreate)
