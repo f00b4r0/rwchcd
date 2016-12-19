@@ -140,6 +140,8 @@ static inline void outdoor_temp_reset(void)
  * Compute the values of mixed and attenuated outdoor temp based on a
  * weighted moving average and the building time constant.
  * @note must run at (ideally) fixed intervals
+ * @note this is part of the synchronous code path because moving it to a separate
+ * thread would add overhead (locking) for essentially no performance improvement.
  */
 static void outdoor_temp()
 {

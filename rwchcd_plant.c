@@ -2008,11 +2008,11 @@ void plant_del(struct s_plant * plant)
  */
 int plant_online(struct s_plant * restrict const plant)
 {
-	struct s_pump_l * restrict pumpl;
-	struct s_valve_l * restrict valvel;
-	struct s_heating_circuit_l * restrict circuitl;
-	struct s_dhw_tank_l * restrict dhwtl;
-	struct s_heatsource_l * restrict heatsourcel;
+	struct s_pump_l * pumpl;
+	struct s_valve_l * valvel;
+	struct s_heating_circuit_l * circuitl;
+	struct s_dhw_tank_l * dhwtl;
+	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
 	int ret;
 
@@ -2119,11 +2119,11 @@ int plant_online(struct s_plant * restrict const plant)
  */
 int plant_offline(struct s_plant * restrict const plant)
 {
-	struct s_pump_l * restrict pumpl;
-	struct s_valve_l * restrict valvel;
-	struct s_heating_circuit_l * restrict circuitl;
-	struct s_dhw_tank_l * restrict dhwtl;
-	struct s_heatsource_l * restrict heatsourcel;
+	struct s_pump_l * pumpl;
+	struct s_valve_l * valvel;
+	struct s_heating_circuit_l * circuitl;
+	struct s_dhw_tank_l * dhwtl;
+	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
 	int ret;
 	
@@ -2217,12 +2217,12 @@ int plant_offline(struct s_plant * restrict const plant)
  */
 int plant_run(struct s_plant * restrict const plant)
 {
-	struct s_pump_l * restrict pumpl;
 	struct s_runtime * restrict const runtime = get_runtime();
-	struct s_heating_circuit_l * restrict circuitl;
-	struct s_dhw_tank_l * restrict dhwtl;
-	struct s_heatsource_l * restrict heatsourcel;
-	struct s_valve_l * restrict valvel;
+	struct s_heating_circuit_l * circuitl;
+	struct s_dhw_tank_l * dhwtl;
+	struct s_heatsource_l * heatsourcel;
+	struct s_valve_l * valvel;
+	struct s_pump_l * pumpl;
 	int ret;
 	bool sleeping = false, suberror = false;
 	time_t stop_delay = 0;

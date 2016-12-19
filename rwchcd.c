@@ -56,9 +56,9 @@
 #define RWCHCD_UID	65534	///< Desired run uid
 #define RWCHCD_GID	65534	///< Desired run gid
 
-static int Sem_master_thread = 0;
+static volatile int Sem_master_thread = 0;
 
-static const char Version[] = SVN_REV;	///< SVN_REV is defined in makefile
+static const char Version[] = SVN_REV;	///< SVN_REV is defined in svn_version.h
 
 /**
  * Daemon signal handler.
@@ -347,6 +347,9 @@ static void * thread_master(void *arg)
 			dbgerr("hardware_output returned: %d", ret);
 		
 		printf("\n");	// XXX DEBUG
+		
+		/* this sleep determines the maximum time resolution for the loop,
+		 * with significant impact on temp_expw_mavg() and hardware routines. */
 		sleep(1);
 	}
 	

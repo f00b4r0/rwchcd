@@ -10,6 +10,13 @@
  * @file
  * Persistent storage implementation.
  * Currently a buggy quick hack based on files.
+ * This implementation is very inefficient: among other issues, 
+ * we keep open()ing/close()ing files every time. Open once + frequent flush
+ * and close at program end would be better, but the fact is that this subsystem
+ * probably shouldn't use flat files at all, hence the lack of effort to improve this.
+ * Timed logs would be better of an RRD (librrd is sadly completely undocumented),
+ * and generally speaking a database with several tables makes more sense.
+ * @bug no check is performed for @b identifier collisions in any of the output functions.
  */
 
 #include <unistd.h>	// chdir

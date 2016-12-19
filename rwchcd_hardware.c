@@ -423,6 +423,7 @@ out:
 /**
  * Initialize hardware and ensure connection is set
  * @return error state
+ * @todo proper recovering from hardware alarm
  */
 int hardware_init(void)
 {

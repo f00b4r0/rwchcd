@@ -2,14 +2,18 @@
 //  rwchcd_logger.c
 //  rwchcd
 //
-//  Created by Thibaut VARÈNE on 18/12/2016.
-//  Copyright © 2016 Slashdirt. All rights reserved.
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
+
+/**
+ * @file
+ * Asynchronous timer operations
+ */
 
 #include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// calloc
 #include <assert.h>
-#include <pthread.h>	// rwlock
 
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
@@ -21,8 +25,7 @@
 #include "rwchcd_logger.h"
 
 static struct s_logger_callback * Log_cb_head = NULL;
-static unsigned int Log_period_min = 0;
-static pthread_rwlock_t Log_rwlock = PTHREAD_RWLOCK_INITIALIZER;
+static volatile unsigned int Log_period_min = 0;
 
 /**
  * Simple logger thread.
@@ -42,31 +45,51 @@ void * logger_thread(void * arg)
 	while (1) {
 		now = time(NULL);
 		
-		pthread_rwlock_rdlock(&Log_rwlock);
 		for (lcb = Log_cb_head; lcb != NULL; lcb = lcb->next) {
 			if ((now - lcb->last_call) < lcb->period)
-				continue;
+				break;	// ordered list, first mismatch means we don't need to check further
 			
-			if (lcb->cb())
-				dbgerr("cb failed");
-			
-			lcb->last_call = now;	// only touched here, the way we lock is fine
+			if (lcb->cb) {	// avoid segfault in case for some reason the pointer isn't (yet) valid (due to e.g. memory reordering)
+				if (lcb->cb())
+					dbgerr("cb failed");
+	
+				lcb->last_call = now;	// only touched here, the way we lock is fine
+			}
 		}
-		pthread_rwlock_unlock(&Log_rwlock);
 		
 		sleep(Log_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
 	}
 }
 
 /**
+ * Basic GCD non-recursive implementation
+ * @param a first number
+ * @param b second number
+ * @return GCD of a and b
+ */
+static inline unsigned int ugcd(unsigned int a, unsigned int b)
+{
+	unsigned int c;
+	
+	while (a) {
+		c = a;
+		a = b % a;
+		b = c;
+	}
+	
+	return b;
+}
+
+/**
  * Add a logger callback.
+ * Insert callback ordered (by ascending period) in the callback list.
  * @param period the period at which that callback should be called
  * @param cb the callback function to call
  * @return exec status
  */
 int logger_add_callback(unsigned int period, int (* cb)(void))
 {
-	struct s_logger_callback * lcb = NULL;
+	struct s_logger_callback * lcb = NULL, * lcb_before, * lcb_after;
 	
 	if ((period < 1) || (!cb))
 		return (-EINVALID);
@@ -74,22 +97,47 @@ int logger_add_callback(unsigned int period, int (* cb)(void))
 	lcb = calloc(1, sizeof(struct s_logger_callback));
 	if (!lcb)
 		return (-EOOM);
+
+	lcb_after = lcb_before = Log_cb_head;
 	
-	pthread_rwlock_wrlock(&Log_rwlock);
+	// find insertion place
+	while (lcb_before) {
+		lcb_after = lcb_before->next;
+		
+		if (!lcb_after || (lcb_after->period > period))
+			break;
+	}
+
+	lcb->cb = cb;
+	lcb->period = period;
+	
+	/* Begin fence section.
+	 * XXX REVISIT memory order is important here for this code to work reliably
+	 * lockless. We probably need a fence. This is not "mission critical" so
+	 * I'll leave it as is for now. */
+	lcb->next = lcb_after;
+	
+	if (lcb_before)
+		lcb_before->next = lcb;
+	else	// we don't have a head yet
+		Log_cb_head = lcb;
+	/* End fence section */
+	
 	if (!Log_period_min)
 		Log_period_min = period;
 	else
-		Log_period_min = period < Log_period_min ? period : Log_period_min;	// find the minimum period
+		Log_period_min = ugcd(period, Log_period_min);	// find the GCD period
 	
-	lcb->period = period;
-	lcb->cb = cb;
-	lcb->next = Log_cb_head;	// this could cause a loop if we didn't lock
-	Log_cb_head = lcb;
-	pthread_rwlock_unlock(&Log_rwlock);
+	dbgmsg("period: %u, new_min: %u", period, Log_period_min);
 	
 	return (ALL_OK);
 }
 
+/**
+ * Cleanup callback list.
+ * @warning @b LOCKLESS This function must only be called when neither logger_thread()
+ * nor logger_add_callback() are running or can run.
+ */
 void logger_clean_callbacks(void)
 {
 	struct s_logger_callback * lcb, * lcbn;
