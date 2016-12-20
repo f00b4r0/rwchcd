@@ -54,7 +54,7 @@ static int scheduler_now(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	const time_t now = time(NULL);
-	const struct tm * ltime = localtime(&now);	// localtime handles DST and TZ for us
+	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	const struct s_schedule * sch;
 	int tm_wday = ltime->tm_wday;
 	const int tm_wday_start = tm_wday;
@@ -62,8 +62,8 @@ static int scheduler_now(void)
 	bool found = false;
 	
 	if (SYS_AUTO != runtime->systemmode) {	// XXX no lock on this read
-		Sch_dhwmode = RM_FROSTFREE;	// if/when we will switch to SYS_AUTO we'll start from this
-		Sch_runmode = RM_FROSTFREE;
+		Sch_dhwmode = RM_FROSTFREE;	// if/when we will switch to SYS_AUTO we'll start from this:
+		Sch_runmode = RM_FROSTFREE;	// XXX must be kept in sync with runtime_set_systemmode()
 		return (-EGENERIC);		// we can't update, no need to waste time
 	}
 	
@@ -81,7 +81,7 @@ restart:
 			found = true;
 			continue;
 		}
-		else if (sch->tm_hour == ltime->tm_hour) {
+		else if (sch->tm_hour == ltime->tm_hour) {	// same hour, must check minutes
 			if (sch->tm_min <= ltime->tm_min) {
 				if (RM_UNKNOWN != sch->runmode)	// only update mode if valid
 					runmode = sch->runmode;
@@ -94,7 +94,7 @@ restart:
 			else
 				break;
 		}
-		else // (sch->tm_hour > ltime->tm_hour)
+		else // (sch->tm_hour > ltime->tm_hour): FUTURE
 			break;
 	}
 	

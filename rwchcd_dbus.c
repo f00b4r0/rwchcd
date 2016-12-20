@@ -18,6 +18,17 @@
  *
  * @todo dynamic D-Bus objects creation (for each plant component:
  * Heat source / circuit / dhwt). See NetworkManager?
+ *
+ * @note the D-Bus handler lives in a separate thread: beware of synchronisation.
+ * Currently no locking is being used based on the fact that:
+ * 1. the minor inconsistency triggered by a concurrent modification will not
+ * have nefarious effects and will only last for 1s at most (between two
+ * consecutive runs of the master thread), and thus does not warrant the
+ * performance penalty of using locks everywhere;
+ * 2. I apparently don't understand how dbus works because it appears to deadlock.
+ * XXX REVIEW
+ *
+ * @bug is D-Bus :/
  */
 
 #include "rwchcd_lib.h"
@@ -55,9 +66,9 @@ static gboolean on_handle_sysmode_get(dbusRwchcdControl *object,
 	struct s_runtime * restrict const runtime = get_runtime();
 	enum e_systemmode cursys;
 	
-	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_rdlock(&runtime->runtime_rwlock);
 	cursys = runtime->systemmode;
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	dbus_rwchcd_control_complete_sysmode_get(object, invocation, (guchar)cursys);
 	
@@ -82,9 +93,9 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 	else
 		return FALSE;
 
-	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	runtime_set_systemmode(newsysmode);
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	dbus_rwchcd_control_complete_sysmode_set(object, invocation);
 	
@@ -106,7 +117,7 @@ static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
 	temp_t systemp;
 	float temp;
 	
-	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_rdlock(&runtime->runtime_rwlock);
 	cursys = runtime->systemmode;
 	switch (cursys) {
 		case SYS_COMFORT:
@@ -122,7 +133,7 @@ static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
 			return false;
 			break;
 	}
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	temp = temp_to_celsius(systemp);
 	
@@ -152,7 +163,7 @@ static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 	if (validate_temp(newtemp) != ALL_OK)
 		return false;
 
-	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	cursys = runtime->systemmode;
 	switch (cursys) {
 		case SYS_COMFORT:
@@ -168,7 +179,7 @@ static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 			return false;
 			break;
 	}
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
+	//pthread_rwlock_unlock(&runtime->runtime_rwlock);
 
 	dbus_rwchcd_control_complete_config_temp_set(object, invocation);
 	
