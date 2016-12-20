@@ -27,8 +27,6 @@
  * performance penalty of using locks everywhere;
  * 2. I apparently don't understand how dbus works because it appears to deadlock.
  * XXX REVIEW
- *
- * @bug is D-Bus :/
  */
 
 #include "rwchcd_lib.h"

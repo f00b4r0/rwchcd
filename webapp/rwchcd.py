@@ -17,16 +17,19 @@ urls = (
 )
 
 formMode = form.Form(
-	form.Dropdown('sysmode', [(0, 'Off'), (2, 'Confort'), (3, 'Eco'), (4, 'Hors-Gel'), (5, 'ECS')]),
+	form.Dropdown('sysmode', [(0, 'Off'), (1, 'Auto'), (2, 'Confort'), (3, 'Eco'), (4, 'Hors-Gel'), (5, 'ECS')]),
 	form.Textbox('systemp', form.regexp('^\d+\.?\d*$', 'decimal number: xx.x')),
 	form.Checkbox('chgtmp', value='yes'),
 	)
 
 class rwchcd:
 	def GET(self):
-		outtemp = "{:4.1f}".format(rwchcd_Control.ToutdoorGet())
+		outtemp = "{:.1f}".format(rwchcd_Control.ToutdoorGet())
 		currmode = rwchcd_Control.SysmodeGet()
-		currtemp = "{:4.1f}".format(rwchcd_Control.ConfigTempGet())
+		if (currmode == 1):
+			currtemp = "0.0"
+		else:
+			currtemp = "{:.1f}".format(rwchcd_Control.ConfigTempGet())
 		fm = formMode()
 		fm.sysmode.value = currmode
 		fm.systemp.value = currtemp
