@@ -106,7 +106,8 @@ int timer_add_cb(unsigned int period, int (* cb)(void))
 	if (!lcb)
 		return (-EOOM);
 
-	lcb_after = lcb_before = Timer_cb_head;
+	lcb_before = NULL;
+	lcb_after = Timer_cb_head;
 	
 	// find insertion place
 	while (lcb_after) {
@@ -126,7 +127,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void))
 	 * I'll leave it as is for now. */
 	lcb->next = lcb_after;
 	
-	if (lcb_before == Timer_cb_head)
+	if (!lcb_before)
 		Timer_cb_head = lcb;
 	else
 		lcb_before->next = lcb;

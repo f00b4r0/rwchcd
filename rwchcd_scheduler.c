@@ -13,6 +13,7 @@
  * runtime-global runmode and dhwmode.
  * @todo adapt to be able to act on individual plant entities
  * @todo adapt to add "intelligence" and anticipation from e.g. circuit transitions
+ * @bug subpar locking
  */
 
 #include <stdlib.h>	// calloc
@@ -45,6 +46,8 @@ static enum e_runmode Sch_runmode = RM_UNKNOWN, Sch_dhwmode = RM_UNKNOWN;
  * the "turn-on" of the scheduler: when sysmode goes to SYS_AUTO, it starts both
  * modes in FROSTFREE, and that will only be changed by a valid mode setting by
  * the scheduler.
+ * @bug if the first schedule of the day has either runmode OR dhwmode set to
+ * RM_UNKNOWN, the function will not look back to find the correct mode.
  * @return exec status
  */
 static int scheduler_now(void)
@@ -58,22 +61,32 @@ static int scheduler_now(void)
 	enum e_runmode runmode = RM_UNKNOWN, dhwmode = RM_UNKNOWN;
 	bool found = false;
 	
+	if (SYS_AUTO != runtime->systemmode) {	// XXX no lock on this read
+		Sch_dhwmode = RM_FROSTFREE;	// if/when we will switch to SYS_AUTO we'll start from this
+		Sch_runmode = RM_FROSTFREE;
+		return (-EGENERIC);		// we can't update, no need to waste time
+	}
+	
 restart:
 	sch = Schedule_week[tm_wday];
 	
 	// find the current running schedule
 	while (sch) {
 		if (sch->tm_hour < ltime->tm_hour) {
-			runmode = sch->runmode;
-			dhwmode = sch->dhwmode;
+			if (RM_UNKNOWN != sch->runmode)	// only update mode if valid
+				runmode = sch->runmode;
+			if (RM_UNKNOWN != sch->dhwmode)
+				dhwmode = sch->dhwmode;
 			sch = sch->next;
 			found = true;
 			continue;
 		}
 		else if (sch->tm_hour == ltime->tm_hour) {
 			if (sch->tm_min <= ltime->tm_min) {
-				runmode = sch->runmode;
-				dhwmode = sch->dhwmode;
+				if (RM_UNKNOWN != sch->runmode)	// only update mode if valid
+					runmode = sch->runmode;
+				if (RM_UNKNOWN != sch->dhwmode)
+					dhwmode = sch->dhwmode;
 				sch = sch->next;
 				found = true;
 				continue;
@@ -151,14 +164,17 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 		return (-EINVALID);
 	if ((tm_min < 0) || (tm_min > 59))
 		return (-EINVALID);
-	
-	// we don't check runmode or dhwmode so we can abuse them
+	if (runmode > RM_UNKNOWN)
+		return (-EINVALID);
+	if (dhwmode > RM_UNKNOWN)
+		return (-EINVALID);
 	
 	sch = calloc(1, sizeof(*sch));
 	if (!sch)
 		return (-EOOM);
 	
-	sch_after = sch_before = Schedule_week[tm_wday];
+	sch_before = NULL;
+	sch_after = Schedule_week[tm_wday];
 	
 	// find insertion place
 	while (sch_after) {
@@ -184,7 +200,7 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	 * I'll leave it as is for now. */
 	sch->next = sch_after;
 	
-	if (sch_before == Schedule_week[tm_wday])
+	if (!sch_before)
 		Schedule_week[tm_wday] = sch;
 	else
 		sch_before->next = sch;
