@@ -57,6 +57,8 @@ static int scheduler_now(void)
 	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	const struct s_schedule * sch;
 	int tm_wday = ltime->tm_wday;
+	int tm_hour = ltime->tm_hour;
+	int tm_min = ltime->tm_min;
 	const int tm_wday_start = tm_wday;
 	enum e_runmode runmode = RM_UNKNOWN, dhwmode = RM_UNKNOWN;
 	bool found = false;
@@ -72,7 +74,7 @@ restart:
 	
 	// find the current running schedule
 	while (sch) {
-		if (sch->tm_hour < ltime->tm_hour) {
+		if (sch->tm_hour < tm_hour) {
 			if (RM_UNKNOWN != sch->runmode)	// only update mode if valid
 				runmode = sch->runmode;
 			if (RM_UNKNOWN != sch->dhwmode)
@@ -81,8 +83,8 @@ restart:
 			found = true;
 			continue;
 		}
-		else if (sch->tm_hour == ltime->tm_hour) {	// same hour, must check minutes
-			if (sch->tm_min <= ltime->tm_min) {
+		else if (sch->tm_hour == tm_hour) {	// same hour, must check minutes
+			if (sch->tm_min <= tm_min) {
 				if (RM_UNKNOWN != sch->runmode)	// only update mode if valid
 					runmode = sch->runmode;
 				if (RM_UNKNOWN != sch->dhwmode)
@@ -94,13 +96,17 @@ restart:
 			else
 				break;
 		}
-		else // (sch->tm_hour > ltime->tm_hour): FUTURE
+		else // (sch->tm_hour > tm_hour): FUTURE
 			break;
 	}
 	
 	if (!found) {
 		/* today's list didn't contain a single past schedule,
-		 we must roll back through the week until we find one. */
+		 we must roll back through the week until we find one.
+		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
+		 to find the last known valid schedule */
+		tm_min = 59;
+		tm_hour = 23;
 		if (--tm_wday < 0)
 			tm_wday = 6;
 		if (tm_wday_start == tm_wday) {
