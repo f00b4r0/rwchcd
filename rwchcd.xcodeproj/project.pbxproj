@@ -13,6 +13,7 @@
 		4F3AFBB21D88867600D86EE7 /* rwchcd_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */; };
 		4F961FA21D8D66BF00E2A8AF /* rwchcd_logic.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F961FA01D8D66BF00E2A8AF /* rwchcd_logic.c */; };
 		4FA61C3E1E06F75100B4D862 /* rwchcd_timer.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3C1E06F75100B4D862 /* rwchcd_timer.c */; };
+		4FA61C411E0955AA00B4D862 /* rwchcd_scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3F1E0955AA00B4D862 /* rwchcd_scheduler.c */; };
 		4FC1847B1DA6809E000E514B /* rwchcd_storage.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC184791DA6809E000E514B /* rwchcd_storage.c */; };
 		4FC1847E1DA7B2F9000E514B /* rwchcd_dbus.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1847C1DA7B2F9000E514B /* rwchcd_dbus.c */; };
 		4FCD55161D835D04003BB848 /* rwchcd_hardware.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */; };
@@ -48,6 +49,8 @@
 		4F961FA11D8D66BF00E2A8AF /* rwchcd_logic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_logic.h; sourceTree = SOURCE_ROOT; };
 		4FA61C3C1E06F75100B4D862 /* rwchcd_timer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_timer.c; sourceTree = SOURCE_ROOT; };
 		4FA61C3D1E06F75100B4D862 /* rwchcd_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_timer.h; sourceTree = SOURCE_ROOT; };
+		4FA61C3F1E0955AA00B4D862 /* rwchcd_scheduler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_scheduler.c; sourceTree = SOURCE_ROOT; };
+		4FA61C401E0955AA00B4D862 /* rwchcd_scheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_scheduler.h; sourceTree = SOURCE_ROOT; };
 		4FC184791DA6809E000E514B /* rwchcd_storage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_storage.c; sourceTree = SOURCE_ROOT; };
 		4FC1847A1DA6809E000E514B /* rwchcd_storage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_storage.h; sourceTree = SOURCE_ROOT; };
 		4FC1847C1DA7B2F9000E514B /* rwchcd_dbus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_dbus.c; sourceTree = SOURCE_ROOT; };
@@ -122,6 +125,8 @@
 				4FC1847D1DA7B2F9000E514B /* rwchcd_dbus.h */,
 				4FA61C3C1E06F75100B4D862 /* rwchcd_timer.c */,
 				4FA61C3D1E06F75100B4D862 /* rwchcd_timer.h */,
+				4FA61C3F1E0955AA00B4D862 /* rwchcd_scheduler.c */,
+				4FA61C401E0955AA00B4D862 /* rwchcd_scheduler.h */,
 				4FCD55141D835D04003BB848 /* rwchcd.c */,
 				4FCD55151D835D04003BB848 /* rwchcd.h */,
 				4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */,
@@ -213,6 +218,7 @@
 				4FA61C3E1E06F75100B4D862 /* rwchcd_timer.c in Sources */,
 				4F3AFBAC1D8873C500D86EE7 /* rwchcd_config.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* rwchcd_lib.c in Sources */,
+				4FA61C411E0955AA00B4D862 /* rwchcd_scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* rwchcd_plant.c in Sources */,
 				4FCD55181D835D04003BB848 /* rwchcd_spi.c in Sources */,
 				4F2D5F591D97191C00CF842D /* rwchcd_lcd.c in Sources */,

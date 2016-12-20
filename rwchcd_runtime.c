@@ -294,7 +294,7 @@ int runtime_set_runmode(const enum e_runmode runmode)
 		return (-EINVALID);
 
 	// if set, runmode cannot be RM_AUTO
-	if (RM_AUTO == runmode)
+	if ((RM_AUTO == runmode) || (runmode >= RM_UNKNOWN))
 		return (-EINVALIDMODE);
 
 	Runtime.runmode = runmode;
@@ -317,7 +317,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 		return (-EINVALID);
 
 	// if set, dhwmode cannot be RM_AUTO or RM_DHWONLY
-	if ((RM_AUTO == dhwmode) || (RM_DHWONLY == dhwmode))
+	if ((RM_AUTO == dhwmode) || (RM_DHWONLY == dhwmode) || (dhwmode >= RM_UNKNOWN))
 		return (-EINVALIDMODE);
 
 	Runtime.dhwmode = dhwmode;

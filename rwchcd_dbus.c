@@ -16,12 +16,8 @@
  * @bug will crash if any operation is attempted before the runtime/config structures
  * are properly set.
  *
- * @note the D-Bus handler lives in a separate thread: beware of synchronisation.
- * Currently no locking is being used based on the fact that the minor inconsistency
- * triggered by a concurrent modification will not have nefarious effects and will
- * only last for 1s at most (between two consecutive runs of the master thread),
- * and thus does not warranty the performance penalty of using locks everywhere.
- * XXX REVIEW
+ * @todo dynamic D-Bus objects creation (for each plant component:
+ * Heat source / circuit / dhwt). See NetworkManager?
  */
 
 #include "rwchcd_lib.h"

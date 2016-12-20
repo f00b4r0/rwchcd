@@ -48,6 +48,7 @@
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_timer.h"
+#include "rwchcd_scheduler.h"
 #include "rwchcd_dbus.h"
 
 #include "svn_version.h"
@@ -353,17 +354,29 @@ static void * thread_master(void *arg)
 		sleep(1);
 	}
 	
-thread_end:
 	// cleanup
 	dbgmsg("thread exiting!");
 	exit_process();
 	pthread_exit(NULL);		// exit
 }
 
+static void create_schedule(void)
+{
+	int i;
+	
+	for (i = 0; i < 7; i++) {
+		// every day start comfort at 6:00 and switch to eco at 23:00
+		scheduler_add(i, 6, 0, RM_COMFORT, RM_COMFORT);	// comfort at 6:00
+		scheduler_add(i, 14, 0, RM_UNKNOWN, RM_ECO);	// runmode unchanged, dhwmode ECO at 14:00
+		scheduler_add(i, 19, 0, RM_UNKNOWN, RM_COMFORT);// runmode unchanged, dhwmode COMFORT at 19:00
+		scheduler_add(i, 23, 0, RM_ECO, RM_ECO);	// eco at 23:00
+	}
+}
+
 int main(void)
 {
 	struct sigaction saction;
-	pthread_t master_thr, timer_thr;
+	pthread_t master_thr, timer_thr, scheduler_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	int ret;
@@ -387,9 +400,14 @@ int main(void)
 	if (ret)
 		errx(ret, "failed to create timer thread!");
 	
+	ret = pthread_create(&scheduler_thr, NULL, scheduler_thread, NULL);
+	if (ret)
+		errx(ret, "failed to create scheduler thread!");
+	
 #ifdef _GNU_SOURCE
 	pthread_setname_np(master_thr, "master");	// failure ignored
 	pthread_setname_np(timer_thr, "timer");
+	pthread_setname_np(scheduler_thr, "scheduler");
 #endif
 
 	// XXX Dropping priviledges here because we need root to set
@@ -411,12 +429,16 @@ int main(void)
 	sigaction(SIGINT, &saction, NULL);
 	sigaction(SIGTERM, &saction, NULL);
 	
+	create_schedule();
+	
 	dbus_main();	// launch dbus main loop, blocks execution until termination
 	
 	Sem_master_thread = 0;	// signal end of work
+	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
-	pthread_join(master_thr, NULL);	// wait for cleanup
+	pthread_join(scheduler_thr, NULL);
 	pthread_join(timer_thr, NULL);
+	pthread_join(master_thr, NULL);	// wait for cleanup
 	timer_clean_callbacks();
 	
 	return (0);

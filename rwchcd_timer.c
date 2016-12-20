@@ -24,8 +24,16 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_timer.h"
 
-static struct s_timer_cb * Timer_cb_head = NULL;
-static volatile unsigned int Timer_period_min = 0;
+/** timer callbacks */
+struct s_timer_cb {
+	time_t last_call;	///< last time the callback was called
+	unsigned int period;	///< requested timer period
+	int (*cb)(void);	///< timed callback, must lock where necessary
+	struct s_timer_cb * next;
+};
+
+static struct s_timer_cb * Timer_cb_head = NULL;	///< list of timer callbacks
+static volatile unsigned int Timer_period_min = 0;	///< time between runs in seconds
 
 /**
  * Simple timer thread.

@@ -14,8 +14,6 @@
 #ifndef rwchcd_dbus_h
 #define rwchcd_dbus_h
 
-#include "rwchcd.h"
-
 void dbus_quit(void);
 int dbus_main(void);
 
