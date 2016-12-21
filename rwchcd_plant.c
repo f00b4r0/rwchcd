@@ -10,7 +10,6 @@
  * @file
  * Plant basic operation implementation.
  * @todo valve PI(D) controller
- * @todo keep sensor history
  * @todo summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  */
 
@@ -1007,7 +1006,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// form consumer shift request if necessary
 	if (boiler_temp < boiler->set.limit_tmin) {
 		// percentage of shift is formed by the difference between current temp and expected temp in K * 10: 1K down means -10% shift
-		heat->run.consumer_shift = (boiler_temp-boiler->set.limit_tmin)/10;
+		heat->run.consumer_shift = (boiler_temp - boiler->set.limit_tmin)/10;
 	}
 		
 	// turn pump on if any

@@ -93,6 +93,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * Circuit logic.
  * @param circuit target circuit
  * @return exec status
+ * @warning review/test ambient model @b integer maths
  * XXX TODO: ADD optimizations (anticipated turn on/off, max ambient... p36+)
  * XXX TODO: ambient max delta shutdown; optim based on return temp
  */
@@ -159,7 +160,8 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
 	if ((prev_runmode != circuit->run.runmode) && circuit->run.actual_ambient) {
 		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
-		circuit->run.trans_since = circuit->run.am_update_time = now;
+		circuit->run.trans_since = now;
+		circuit->run.trans_start_temp = circuit->run.actual_ambient;
 	}
 
 	// XXX OPTIM if return temp is known
@@ -174,39 +176,36 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		ambient_delta = (circuit->set.ambient_factor/10) * (circuit->run.target_ambient - ambient_temp);
 	}
 	else {	// no sensor (or faulty), apply ambient model for transitions
-		elapsed_time = now - circuit->run.am_update_time;
+		elapsed_time = now - circuit->run.trans_since;
 		switch (circuit->run.transition) {
 			case TRANS_DOWN:
 				if (can_fastcool)
 					low_temp = runtime->t_outdoor_mixed;
 				else
-					low_temp = request_temp;
+					low_temp = request_temp - deltaK_to_temp(1);	// XXX -1K delta to ensure will will cross the untrip point
 				// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 				// all necessary data is _always_ available, no need to special case here
-				if (elapsed_time >= 600) {	// XXX every 10mn
-					ambient_temp = (circuit->run.actual_ambient - low_temp) * expf((float)-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
-					circuit->run.am_update_time = now;
-				}
-				else
-					ambient_temp = circuit->run.actual_ambient;
+				ambient_temp = (circuit->run.trans_start_temp - low_temp) * expf((float)-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
 				break;
 			case TRANS_UP:
-				// transition up, apply linear model
+				// transition up, apply semi-exponential model
 				if (circuit->set.am_tambient_tK) {	// only if necessary data is available
-					if (elapsed_time >= 600) {	// XXX every 10mn
-						// current + (elapsed_time * 1/tperK) * (tboost / treq)
-						ambient_temp = circuit->run.actual_ambient + (elapsed_time * 1/circuit->set.am_tambient_tK)*(1+circuit->set.tambient_boostdelta/request_temp);	// works even if boostdelta is not set
-						circuit->run.am_update_time = now;
-					}
-					else
-						ambient_temp = circuit->run.actual_ambient;
+					// tstart + elevation over time: tstart + ((elapsed_time * 1/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
+					/* note: the impact of the boost should be considered as a percentage of the total
+					 requested temperature increase over _current_ temp, hence (treq - tcurrent).
+					 Furthermore, by simply adjusting a few factors in equal proportion (100),
+					 we don't need to deal with floats and we can keep a very good precision:
+					 the compound error cancels out periodically. */
+					assert(circuit->set.am_tambient_tK >= 100);
+					ambient_temp = circuit->run.trans_start_temp + ((elapsed_time / (circuit->set.am_tambient_tK/100)) *
+							(100 + (100*circuit->set.tambient_boostdelta) / (request_temp - circuit->run.actual_ambient)));	// works even if boostdelta is not set
 					break;
 				}
 				// if settings are insufficient, model can't run, fallback to no transition
 			case TRANS_NONE:
 				// no transition, ambient temp assumed to be request temp
 				ambient_temp = circuit->run.request_ambient;
-				circuit->run.am_update_time = 0;
+				circuit->run.trans_start_temp = 0;
 				break;
 			default:
 				break;

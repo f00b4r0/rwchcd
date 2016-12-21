@@ -27,7 +27,7 @@ temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time
  */
 static inline temp_t celsius_to_temp(const float celsius)
 {
-	return ((temp_t)((celsius + 273.15F)*100));
+	return ((temp_t)((celsius + 273.15F)*KPRECISIONI));
 }
 
 /**
@@ -37,7 +37,7 @@ static inline temp_t celsius_to_temp(const float celsius)
  */
 static inline float temp_to_celsius(const temp_t temp)
 {
-	return ((float)((float)temp/100.0F - 273.15F));
+	return ((float)((float)temp/KPRECISIONF - 273.15F));
 }
 
 /**
@@ -47,7 +47,7 @@ static inline float temp_to_celsius(const temp_t temp)
  */
 static inline temp_t deltaK_to_temp(const float delta)
 {
-	return ((temp_t)(delta * 100));
+	return ((temp_t)(delta * KPRECISIONI));
 }
 
 /** 
@@ -57,7 +57,7 @@ static inline temp_t deltaK_to_temp(const float delta)
  */
 static inline float temp_to_deltaK(const temp_t temp)
 {
-	return ((float)((float)temp/100.F));
+	return ((float)((float)temp/KPRECISIONF));
 }
 
 #endif /* rwchcd_lib_h */
