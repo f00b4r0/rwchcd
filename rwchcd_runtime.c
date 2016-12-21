@@ -79,6 +79,8 @@ static int runtime_async_log(void)
 	const storage_version_t version = 1;
 	static storage_keys_t keys[] = {
 		"systemmode",
+		"runmode",
+		"dhwmode",
 		"summer",
 		"frost",
 		"t_outdoor_60",
@@ -90,6 +92,8 @@ static int runtime_async_log(void)
 	
 	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
 	values[i++] = Runtime.systemmode;
+	values[i++] = Runtime.runmode;
+	values[i++] = Runtime.dhwmode;
 	values[i++] = Runtime.summer;
 	values[i++] = Runtime.frost;
 	values[i++] = Runtime.t_outdoor_60;

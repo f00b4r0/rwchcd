@@ -24,10 +24,9 @@
  * Main program.
  * @todo:
  * Setup
- * Computation
- * Control
  * Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
- * UI + programming
+ * UI + dynamic plant creation / setup
+ * Config files
  * connection of multiple instances
  * multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * scheduler
@@ -40,6 +39,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <err.h>
+#include <sys/select.h>
 
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
@@ -56,6 +56,8 @@
 #define RWCHCD_PRIO	20	///< Desired run priority
 #define RWCHCD_UID	65534	///< Desired run uid
 #define RWCHCD_GID	65534	///< Desired run gid
+
+#define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
 
 static volatile int Sem_master_thread = 0;
 
@@ -311,6 +313,7 @@ static void exit_process(void)
 
 static void * thread_master(void *arg)
 {
+	int pipewfd = *((int *)arg);
 	struct s_runtime * restrict const runtime = get_runtime();
 	int ret;
 	
@@ -349,6 +352,10 @@ static void * thread_master(void *arg)
 		
 		printf("\n");	// XXX DEBUG
 		
+		// send keepalive to watchdog
+		/// @warning the loop must run more often than the wdog timeout
+		write(pipewfd, " ", 1);	// we don't care what we send
+		
 		/* this sleep determines the maximum time resolution for the loop,
 		 * with significant impact on temp_expw_mavg() and hardware routines. */
 		sleep(1);
@@ -367,21 +374,56 @@ static void create_schedule(void)
 	for (i = 0; i < 7; i++) {
 		// every day start comfort at 6:00 and switch to eco at 23:00
 		scheduler_add(i, 6, 0, RM_COMFORT, RM_COMFORT);	// comfort at 6:00
-		scheduler_add(i, 14, 0, RM_UNKNOWN, RM_ECO);	// runmode unchanged, dhwmode ECO at 14:00
-		scheduler_add(i, 19, 0, RM_UNKNOWN, RM_COMFORT);// runmode unchanged, dhwmode COMFORT at 19:00
 		scheduler_add(i, 23, 0, RM_ECO, RM_ECO);	// eco at 23:00
 	}
+}
+
+/**
+ * Simple watchdog thread.
+ * Will abort if timeout is reached.
+ * @param arg the read end of the pipe set in main()
+ */
+void * thread_watchdog(void * arg)
+{
+	int piperfd = *((int *)arg);
+	struct timeval timeout;
+	fd_set set;
+	int ret, dummy;
+	
+	FD_ZERO(&set);
+	FD_SET(piperfd, &set);
+	
+	timeout.tv_sec = RWCHCD_WDOGTM;
+	timeout.tv_usec = 0;
+	
+	do {
+		ret = select(piperfd+1, &set, NULL, NULL, &timeout);
+		while(read(piperfd, &dummy, 1) > 0);	// empty the pipe; we don't care what we read
+	} while (ret > 0);
+	
+	if (!ret) {// timemout occured
+		dbgerr("die!");
+		abort();
+	}
+	else	// ret < 0
+		err(ret, NULL);
 }
 
 int main(void)
 {
 	struct sigaction saction;
-	pthread_t master_thr, timer_thr, scheduler_thr;
+	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
+	int pipefd[2];
 	int ret;
 
 	dbgmsg("Revision %s starting", Version);
+	
+	// create a pipe
+	ret = pipe(pipefd);
+	if (ret)
+		err(ret, "failed to setup pipe!");
 
 	// setup threads
 	pthread_attr_init(&attr);
@@ -392,9 +434,13 @@ int main(void)
 	
 	Sem_master_thread = 1;
 
-	ret = pthread_create(&master_thr, &attr, thread_master, NULL);
+	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
 		errx(ret, "failed to create master thread!");
+	
+	ret = pthread_create(&watchdog_thr, NULL, thread_watchdog, &pipefd[0]);
+	if (ret)
+		errx(ret, "failed to create watchdog thread!");
 
 	ret = pthread_create(&timer_thr, NULL, timer_thread, NULL);
 	if (ret)
@@ -408,6 +454,7 @@ int main(void)
 	pthread_setname_np(master_thr, "master");	// failure ignored
 	pthread_setname_np(timer_thr, "timer");
 	pthread_setname_np(scheduler_thr, "scheduler");
+	pthread_setname_np(watchdog_thr, "watchdog");
 #endif
 
 	// XXX Dropping priviledges here because we need root to set
@@ -436,10 +483,14 @@ int main(void)
 	Sem_master_thread = 0;	// signal end of work
 	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
+	pthread_cancel(watchdog_thr);
 	pthread_join(scheduler_thr, NULL);
 	pthread_join(timer_thr, NULL);
+	pthread_join(watchdog_thr, NULL);
 	pthread_join(master_thr, NULL);	// wait for cleanup
 	timer_clean_callbacks();
+	close(pipefd[0]);
+	close(pipefd[1]);
 	
 	return (0);
 }
