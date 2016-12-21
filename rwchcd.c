@@ -394,10 +394,10 @@ void * thread_watchdog(void * arg)
 	FD_ZERO(&set);
 	FD_SET(piperfd, &set);
 	
-	timeout.tv_sec = RWCHCD_WDOGTM;
-	timeout.tv_usec = 0;
-	
 	do {
+		timeout.tv_sec = RWCHCD_WDOGTM;
+		timeout.tv_usec = 0;
+		
 		ret = select(piperfd+1, &set, NULL, NULL, &timeout);
 		if (ret > 0)
 			read(piperfd, &dummy, 1);	// empty the pipe; we don't care what we read
