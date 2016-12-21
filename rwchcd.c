@@ -40,6 +40,7 @@
 #include <pthread.h>
 #include <err.h>
 #include <sys/select.h>
+#include <fcntl.h>
 
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
@@ -424,6 +425,15 @@ int main(void)
 	ret = pipe(pipefd);
 	if (ret)
 		err(ret, "failed to setup pipe!");
+	
+	// mark it as non-blocking
+	ret = fcntl(pipefd[0], F_SETFL, O_NONBLOCK);
+	if (ret < 0)
+		err(ret, NULL);
+	
+	ret = fcntl(pipefd[1], F_SETFL, O_NONBLOCK);
+	if (ret < 0)
+		err(ret, NULL);
 
 	// setup threads
 	pthread_attr_init(&attr);

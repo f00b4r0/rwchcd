@@ -205,7 +205,7 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 			return (-ESTORE);
 
 		// write our header first
-		fprintf(file, headformat, Storage_magic, Storage_version, *version);
+		fprintf(file, headformat, Storage_magic, Storage_version, *version, npairs);
 		// write csv header
 		fprintf(file, "time;");
 		for (i = 0; i < npairs; i++)
