@@ -40,7 +40,7 @@
 #include <pthread.h>
 #include <err.h>
 #include <sys/select.h>
-#include <fcntl.h>
+#include <errno.h>
 
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
@@ -399,7 +399,10 @@ void * thread_watchdog(void * arg)
 	
 	do {
 		ret = select(piperfd+1, &set, NULL, NULL, &timeout);
-		while(read(piperfd, &dummy, 1) > 0);	// empty the pipe; we don't care what we read
+		if (ret > 0)
+			read(piperfd, &dummy, 1);	// empty the pipe; we don't care what we read
+		else if ((ret < 0) && (EINTR == errno))
+			ret = 1;	// ignore signal interruptions - SA_RESTART doesn't work for select()
 	} while (ret > 0);
 	
 	if (!ret) {// timemout occured
@@ -426,15 +429,6 @@ int main(void)
 	if (ret)
 		err(ret, "failed to setup pipe!");
 	
-	// mark it as non-blocking
-	ret = fcntl(pipefd[0], F_SETFL, O_NONBLOCK);
-	if (ret < 0)
-		err(ret, NULL);
-	
-	ret = fcntl(pipefd[1], F_SETFL, O_NONBLOCK);
-	if (ret < 0)
-		err(ret, NULL);
-
 	// setup threads
 	pthread_attr_init(&attr);
 	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
