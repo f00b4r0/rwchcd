@@ -189,13 +189,11 @@ static int init_process()
 	boiler->set.limit_tmin = celsius_to_temp(50);
 	boiler->set.id_temp = 2;	// XXX VALIDATION
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
-	boiler->burner_1 = hardware_relay_new();
-	if (!boiler->burner_1) {
-		dbgerr("burner relay creation failed");
-		return (-EOOM);
-	}
-	hardware_relay_set_id(boiler->burner_1, 14);	// XXX 2nd relay
-	boiler->burner_1->set.configured = true;
+	ret = hardware_relay_request(14);	// XXX 2nd relay
+	if (ret)
+		return (ret);
+	else
+		boiler->set.rid_burner_1 = 14;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
 	heatsource->set.sleeping_time = 1 * 24 * 60 * 60;	// XXX 1 day
 	heatsource->set.consumer_stop_delay = 10 * 60;	// 10mn
@@ -244,14 +242,18 @@ static int init_process()
 	vpriv->set_amount = 5;
 	vpriv = NULL;
 	
-	// create and configure two relays for that valve
-	circuit->valve->open = hardware_relay_new();
-	hardware_relay_set_id(circuit->valve->open, 11);
-	circuit->valve->open->set.configured = true;
-
-	circuit->valve->close = hardware_relay_new();
-	hardware_relay_set_id(circuit->valve->close, 10);
-	circuit->valve->close->set.configured = true;
+	// configure two relays for that valve
+	ret = hardware_relay_request(11);
+	if (ret)
+		return (ret);
+	else
+		circuit->valve->set.rid_open = 11;
+	
+	ret = hardware_relay_request(10);
+	if (ret)
+		return (ret);
+	else
+		circuit->valve->set.rid_close = 10;
 	
 	circuit->valve->set.configured = true;
 
@@ -262,10 +264,12 @@ static int init_process()
 		return (-EOOM);
 	}
 
-	// create and configure a relay for that pump
-	circuit->pump->relay = hardware_relay_new();
-	hardware_relay_set_id(circuit->pump->relay, 9);
-	circuit->pump->relay->set.configured = true;
+	// configure a relay for that pump
+	ret = hardware_relay_request(9);
+	if (ret)
+		return (ret);
+	else
+		circuit->pump->set.rid_relay = 9;
 
 	circuit->pump->set.configured = true;
 

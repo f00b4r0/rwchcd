@@ -82,6 +82,7 @@ enum e_execs {
 
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
 typedef int_fast16_t	tempid_t;	///< temperature index: if negative, is an offset in Kelvin. If > sizeof(Runtime->temps[]), invalid
+typedef uint_fast8_t	relid_t;	///< relay id matching hardware: 1 to 14, with 13==RL1 and 14==RL2
 
 /** Valid run modes */
 enum e_runmode {

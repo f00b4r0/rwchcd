@@ -42,9 +42,27 @@
 
 #define CALIBRATION_PERIOD	600	///< calibration period in seconds: every 10mn
 
+struct s_stateful_relay {
+	struct {
+		bool configured;	///< true if properly configured
+		uint_fast8_t id;	///< NOT USED
+	} set;		///< settings (externally set)
+	struct {
+		bool turn_on;		///< state requested by software
+		bool is_on;		///< current hardware active state
+		time_t on_since;	///< last time on state was triggered, 0 if off
+		time_t off_since;	///< last time off state was triggered, 0 if on
+		time_t state_time;	///< time spent in current state
+		time_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
+		time_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
+		uint_fast32_t cycles;	///< number of power cycles
+	} run;		///< private runtime (internally handled)
+	char * restrict name;
+};
+
 static const storage_version_t Hardware_sversion = 1;
 
-static struct s_stateful_relay * Relays[RELAY_MAX_ID];	///< physical relays
+static struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
 
 static struct {
 	bool ready;			///< hardware is ready
@@ -74,8 +92,8 @@ static void hardware_relays_log(void)
 	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(Relays));
 	
 	for (i=0; i<ARRAY_SIZE(Relays); i++) {
-		if (Relays[i]) {
-			if (Relays[i]->run.is_on)
+		if (Relays[i].set.configured) {
+			if (Relays[i].run.is_on)
 				values[i] = 1;
 			else
 				values[i] = 0;
@@ -197,17 +215,7 @@ static void parse_temps(void)
  */
 static int hardware_save_relays(void)
 {
-	static uint8_t blob[ARRAY_SIZE(Relays)*sizeof(*Relays[0])];
-	unsigned int i;
-	
-	for (i=0; i<ARRAY_SIZE(Relays); i++) {
-		if (Relays[i])
-			memcpy(&blob[i*sizeof(*Relays[0])], Relays[i], sizeof(*Relays[0]));
-		else
-			memset(&blob[i*sizeof(*Relays[0])], 0x00, sizeof(*Relays[0]));
-	}
-	
-	return (storage_dump("hardware_relays", &Hardware_sversion, blob, sizeof(blob)));
+	return (storage_dump("hardware_relays", &Hardware_sversion, Relays, sizeof(Relays)));
 }
 
 /**
@@ -217,9 +225,9 @@ static int hardware_save_relays(void)
  */
 static int hardware_restore_relays(void)
 {
-	static uint8_t blob[ARRAY_SIZE(Relays)*sizeof(*Relays[0])];
+	static typeof (Relays) blob;
 	storage_version_t sversion;
-	typeof(Relays[0]) relayptr = (typeof(relayptr))&blob;
+	typeof(&Relays[0]) relayptr = (typeof(relayptr))&blob;
 	unsigned int i;
 	
 	// try to restore key elements of hardware
@@ -228,15 +236,13 @@ static int hardware_restore_relays(void)
 			return (ALL_OK);	// XXX
 
 		for (i=0; i<ARRAY_SIZE(Relays); i++) {
-			if (Relays[i]) {
-				if (relayptr->run.is_on)	// account for last known state_time
-					Relays[i]->run.on_tottime += relayptr->run.state_time;
-				else
-					Relays[i]->run.off_tottime += relayptr->run.state_time;
-				Relays[i]->run.on_tottime += relayptr->run.on_tottime;
-				Relays[i]->run.off_tottime += relayptr->run.off_tottime;
-				Relays[i]->run.cycles += relayptr->run.cycles;
-			}
+			if (relayptr->run.is_on)	// account for last known state_time
+				Relays[i].run.on_tottime += relayptr->run.state_time;
+			else
+				Relays[i].run.off_tottime += relayptr->run.state_time;
+			Relays[i].run.on_tottime += relayptr->run.on_tottime;
+			Relays[i].run.off_tottime += relayptr->run.off_tottime;
+			Relays[i].run.cycles += relayptr->run.cycles;
 			relayptr++;
 		}
 	}
@@ -261,7 +267,7 @@ static inline uint8_t rid_to_rwchcaddr(const int_fast8_t id)
  * @return exec status
  * @warning minimal sanity check. HADDR_SLAST must be set first.
  */
-int hardware_config_addr_set(enum e_hw_address address, const int_fast8_t id)
+int hardware_config_addr_set(enum e_hw_address address, const relid_t id)
 {
 	uint8_t rid;
 	
@@ -556,9 +562,9 @@ int hardware_rwchcrelays_write(void)
 
 	// update each known hardware relay
 	for (i=0; i<RELAY_MAX_ID; i++) {
-		relay = Relays[i];
+		relay = &Relays[i];
 
-		if (!relay)
+		if (!relay->set.configured)
 			continue;
 
 		// update state counters at state change
@@ -588,7 +594,7 @@ int hardware_rwchcrelays_write(void)
 		relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 		// extract relay id XXX REVISIT
-		rid = relay->set.id - 1;
+		rid = i;
 		if (rid > 6)
 			rid++;	// skip the hole
 
@@ -659,75 +665,50 @@ int hardware_rwchcperiphs_read(void)
 	return (ret);
 }
 
-/**
- * Create a new stateful relay
- * @return pointer to the created relay
- */
-struct s_stateful_relay * hardware_relay_new(void)
+int hardware_relay_request(const relid_t id)
 {
-	struct s_stateful_relay * const relay = calloc(1, sizeof(struct s_stateful_relay));
-
-	// at creation relay is off
-	if (relay)
-		relay->run.off_since = time(NULL);
-
-	return (relay);
-}
-
-/**
- * Delete a stateful relay.
- * @param relay the relay to delete
- */
-void hardware_relay_del(struct s_stateful_relay * relay)
-{
-	if (!relay)
-		return;
-
-	Relays[relay->set.id-1] = NULL;
-
-	free(relay->name);
-	relay->name = NULL;
-	free(relay);
-}
-
-/**
- * Set a relay's id
- * @param relay the target relay
- * @param id the considered hardware id (numbered from 1)
- * @return exec status
- */
-int hardware_relay_set_id(struct s_stateful_relay * const relay, const uint_fast8_t id)
-{
-	if (!relay)
-		return (-EINVALID);
-
 	if (!id || id > RELAY_MAX_ID)
 		return (-EINVALID);
-
-	if (Relays[id-1])
+	
+	if (Relays[id-1].set.configured)
 		return (-EEXISTS);
 
-	relay->set.id = id;
-	Relays[id-1] = relay;
+	Relays[id-1].set.configured = true;
+	
+	return (ALL_OK);
+}
 
+int hardware_relay_release(const relid_t id)
+{
+	if (!id || id > RELAY_MAX_ID)
+		return (-EINVALID);
+	
+	if (!Relays[id-1].set.configured)
+		return (-ENOTCONFIGURED);
+	
+	memset(&Relays[id-1], 0x00, sizeof(Relays[id-1]));
+	
 	return (ALL_OK);
 }
 
 /**
  * set internal relay state (request)
- * @param relay the internal relay to modify
+ * @param id id of the internal relay to modify
  * @param turn_on true if relay is meant to be turned on
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @note actual (hardware) relay state will only be updated by a call to hardware_rwchcrelays_write()
  */
-int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool turn_on, const time_t change_delay)
+int hardware_relay_set_state(const relid_t id, const bool turn_on, const time_t change_delay)
 {
 	const time_t now = time(NULL);
+	struct s_stateful_relay * relay = NULL;
 
-	if (!relay)
+	if (!id || id > RELAY_MAX_ID)
 		return (-EINVALID);
-
+	
+	relay = &Relays[id-1];
+	
 	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
 
@@ -755,16 +736,19 @@ int hardware_relay_set_state(struct s_stateful_relay * const relay, const bool t
 /**
  * Get internal relay state (request).
  * Updates run.state_time and returns current state
- * @param relay the internal relay to modify
+ * @param id id of the internal relay to modify
  * @return run.is_on
  */
-int hardware_relay_get_state(struct s_stateful_relay * const relay)
+int hardware_relay_get_state(const relid_t id)
 {
 	const time_t now = time(NULL);
-
-	if (!relay)
+	struct s_stateful_relay * relay = NULL;
+	
+	if (!id || id > RELAY_MAX_ID)
 		return (-EINVALID);
-
+	
+	relay = &Relays[id-1];
+	
 	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
 
@@ -968,18 +952,15 @@ out:
  */
 int hardware_offline(void)
 {
-	struct s_stateful_relay * restrict relay;
 	uint_fast8_t i;
 	int ret;
 	
 	// turn off each known hardware relay
 	for (i=0; i<RELAY_MAX_ID; i++) {
-		relay = Relays[i];
-		
-		if (!relay)
+		if (!Relays[i].set.configured)
 			continue;
 		
-		relay->run.turn_on = false;
+		Relays[i].run.turn_on = false;
 	}
 	
 	// update the hardware

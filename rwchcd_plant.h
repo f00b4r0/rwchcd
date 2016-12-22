@@ -24,6 +24,7 @@ struct s_pump {
 	struct {
 		bool configured;		///< true if properly configured
 		time_t cooldown_time;		///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
+		relid_t rid_relay;		///< hardware relay controlling that pump
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)
@@ -31,7 +32,6 @@ struct s_pump {
 		bool req_on;			///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
 	} run;		///< private runtime (internally handled)
-	struct s_stateful_relay * restrict relay;	///< Hardware relay controlling that pump
 	char * restrict name;
 };
 
@@ -52,6 +52,8 @@ struct s_valve {
 		tempid_t id_temp1;	///< temp at the "primary" input: when position is 0% there is 0% flow from this input
 		tempid_t id_temp2;	///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Kelvin from temp1
 		tempid_t id_tempout;	///< temp at the output
+		relid_t rid_open;	///< relay for opening the valve
+		relid_t rid_close;	///< relay for closing the valve
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
@@ -65,8 +67,6 @@ struct s_valve {
 		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 						request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
-	struct s_stateful_relay * restrict open;	///< relay for opening the valve
-	struct s_stateful_relay * restrict close;	///< relay for closing the valve (if not set then spring return)
 	char * restrict name;
 	void * restrict priv;	///< private data structure for valvelaw
 	int (*valvelaw)(struct s_valve * restrict const, const temp_t);	///< pointer to valve law
@@ -138,14 +138,14 @@ struct s_boiler_priv {
 		tempid_t id_temp;		///< boiler temp id
 		tempid_t id_temp_outgoing;	///< boiler outflow temp id
 		tempid_t id_temp_return;	///< boiler inflow temp id
+		relid_t rid_burner_1;		///< first stage of burner
+		relid_t rid_burner_2;		///< second stage of burner
 	} set;		///< settings (externally set)
 	struct {
 		bool antifreeze;		///< true if anti freeze tripped
 		temp_t target_temp;		///< current target temp
 	} run;		///< private runtime (internally handled)
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
-	struct s_stateful_relay * restrict burner_1;	///< first stage of burner
-	struct s_stateful_relay * restrict burner_2;	///< second stage of burner
 };
 
 enum e_heatsource_type {
@@ -203,6 +203,7 @@ struct s_dhw_tank {
 		tempid_t id_temp_top;		///< temp sensor at top of dhw tank
 		tempid_t id_temp_win;		///< temp sensor heatwater inlet
 		tempid_t id_temp_wout;		///< temp sensor heatwater outlet
+		relid_t rid_selfheater;		///< relay for internal electric heater (if available)
 		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 	} set;		///< settings (externally set)
 	struct {
@@ -218,7 +219,6 @@ struct s_dhw_tank {
 	struct s_solar_heater * restrict solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
 	struct s_pump * restrict feedpump;	///< feed pump for this tank
 	struct s_pump * restrict recyclepump;	///< dhw recycle pump for this tank
-	struct s_stateful_relay * restrict selfheater;	///< relay for internal electric heater (if available)
 	char * restrict name;			///< name for this tank
 };
 

@@ -11,6 +11,7 @@
  * Plant basic operation implementation.
  * @todo valve PI(D) controller
  * @todo summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
+ * @todo plant_save()/plant_restore() (for e.g. dynamically created plants)
  */
 
 #include <stdlib.h>	// calloc/free
@@ -36,8 +37,7 @@ static void pump_del(struct s_pump * restrict pump)
 	if (!pump)
 		return;
 
-	hardware_relay_del(pump->relay);
-	pump->relay = NULL;
+	hardware_relay_release(pump->set.rid_relay);
 	free(pump->name);
 	pump->name = NULL;
 	free(pump);
@@ -97,7 +97,7 @@ static int pump_get_state(const struct s_pump * restrict const pump)
 		return (-ENOTCONFIGURED);
 	
 	// XXX we could return remaining cooldown time if necessary
-	return (hardware_relay_get_state(pump->relay));
+	return (hardware_relay_get_state(pump->set.rid_relay));
 }
 
 /**
@@ -141,7 +141,7 @@ static int pump_run(struct s_pump * restrict const pump)
 		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
 	
 	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	pump->run.actual_cooldown_time = hardware_relay_set_state(pump->relay, pump->run.req_on, cooldown);
+	pump->run.actual_cooldown_time = hardware_relay_set_state(pump->set.rid_relay, pump->run.req_on, cooldown);
 
 	return (ALL_OK);
 }
@@ -158,10 +158,8 @@ static void valve_del(struct s_valve * valve)
 	if (!valve)
 		return;
 
-	hardware_relay_del(valve->open);
-	valve->open = NULL;
-	hardware_relay_del(valve->close);
-	valve->close = NULL;
+	hardware_relay_release(valve->set.rid_open);
+	hardware_relay_release(valve->set.rid_close);
 	free(valve->priv);
 	valve->priv = NULL;
 	free(valve->name);
@@ -507,9 +505,6 @@ static inline int valve_tposition(struct s_valve * const valve, const temp_t tar
 	assert(valve);
 	assert(valve->set.configured);
 
-	if (!valve->open || !valve->close)
-		return (-EMISCONFIGURED);
-
 	// apply valve law to determine target position
 	return (valve->valvelaw(valve, target_tout));
 }
@@ -621,8 +616,8 @@ static int valve_run(struct s_valve * const valve)
 	
 	// check if stop is requested
 	if ((STOP == valve->run.request_action)) {
-		hardware_relay_set_state(valve->open, OFF, 0);
-		hardware_relay_set_state(valve->close, OFF, 0);
+		hardware_relay_set_state(valve->set.rid_open, OFF, 0);
+		hardware_relay_set_state(valve->set.rid_close, OFF, 0);
 		valve->run.running_since = 0;
 		valve->run.actual_action = STOP;
 		return (ALL_OK);
@@ -644,8 +639,8 @@ static int valve_run(struct s_valve * const valve)
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
 		else {
-			hardware_relay_set_state(valve->close, OFF, 0);	// break before make
-			hardware_relay_set_state(valve->open, ON, 0);
+			hardware_relay_set_state(valve->set.rid_close, OFF, 0);	// break before make
+			hardware_relay_set_state(valve->set.rid_open, ON, 0);
 			if (!valve->run.running_since || (CLOSE == valve->run.actual_action))
 				valve->run.running_since = now;
 			valve->run.actual_action = OPEN;
@@ -658,8 +653,8 @@ static int valve_run(struct s_valve * const valve)
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
 		else {
-			hardware_relay_set_state(valve->open, OFF, 0);	// break before make
-			hardware_relay_set_state(valve->close, ON, 0);
+			hardware_relay_set_state(valve->set.rid_open, OFF, 0);	// break before make
+			hardware_relay_set_state(valve->set.rid_close, ON, 0);
 			if (!valve->run.running_since || (OPEN == valve->run.actual_action))
 				valve->run.running_since = now;
 			valve->run.actual_action = CLOSE;
@@ -773,10 +768,8 @@ static void boiler_hs_del_priv(void * priv)
 	if (!boiler)
 		return;
 
-	hardware_relay_del(boiler->burner_1);
-	boiler->burner_1 = NULL;
-	hardware_relay_del(boiler->burner_2);
-	boiler->burner_2 = NULL;
+	hardware_relay_release(boiler->set.rid_burner_1);
+	hardware_relay_release(boiler->set.rid_burner_2);
 
 	free(boiler);
 }
@@ -826,8 +819,8 @@ static int boiler_hs_offline(struct s_heatsource * const heat)
 	if (!boiler)
 		return (-EINVALID);
 
-	hardware_relay_set_state(boiler->burner_1, OFF, 0);
-	hardware_relay_set_state(boiler->burner_2, OFF, 0);
+	hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
+	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 
 	if (boiler->loadpump)
 		pump_offline(boiler->loadpump);
@@ -841,8 +834,8 @@ static int boiler_hs_offline(struct s_heatsource * const heat)
  */
 static void boiler_failsafe(struct s_boiler_priv * const boiler)
 {
-	hardware_relay_set_state(boiler->burner_1, OFF, 0);
-	hardware_relay_set_state(boiler->burner_2, OFF, 0);
+	hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
+	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, FORCE);
 }
@@ -1001,7 +994,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	
 	// we're good to go
 
-	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", boiler->burner_1->run.is_on, temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
+	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
 	
 	// form consumer shift request if necessary
 	if (boiler_temp < boiler->set.limit_tmin) {
@@ -1028,9 +1021,9 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	
 	// burner control
 	if (boiler_temp < trip_temp)		// trip condition
-		hardware_relay_set_state(boiler->burner_1, ON, 0);	// immediate start
+		hardware_relay_set_state(boiler->set.rid_burner_1, ON, 0);	// immediate start
 	else if (boiler_temp > untrip_temp)	// untrip condition
-		hardware_relay_set_state(boiler->burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
+		hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
 
 	return (ALL_OK);
 }
@@ -1448,8 +1441,8 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (dhwt->recyclepump)
 		pump_offline(dhwt->recyclepump);
 
-	if (dhwt->selfheater)
-		hardware_relay_set_state(dhwt->selfheater, OFF, 0);
+	if (dhwt->set.rid_selfheater)
+		hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 	dhwt->run.runmode = RM_OFF;
 
@@ -1495,7 +1488,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				pump_set_state(dhwt->feedpump, ON, FORCE);
 			if (dhwt->recyclepump)
 				pump_set_state(dhwt->recyclepump, ON, FORCE);
-			hardware_relay_set_state(dhwt->selfheater, ON, 0);
+			hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
 			return (ALL_OK);
 		case RM_AUTO:
 		case RM_DHWONLY:
@@ -1544,9 +1537,9 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		
 		// if charge not in progress, trip if forced or at (target temp - histeresis)
 		if (dhwt->run.force_on || (curr_temp < (dhwt->run.target_temp - SETorDEF(dhwt->set.params.histeresis, runtime->config->def_dhwt.histeresis)))) {
-			if (runtime->plant_could_sleep && dhwt->selfheater && dhwt->selfheater->set.configured) {
+			if (runtime->plant_could_sleep && dhwt->set.rid_selfheater) {
 				// the plant is sleeping and we have a configured self heater: use it
-				hardware_relay_set_state(dhwt->selfheater, ON, 0);
+				hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
 			}
 			else {	// run from plant heat source
 				// calculate necessary water feed temp: target tank temp + offset
@@ -1603,7 +1596,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		// stop all heat input (ensures they're all off at switchover)
 		if (test) {
 			// stop self-heater (if any)
-			hardware_relay_set_state(dhwt->selfheater, OFF, 0);
+			hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 			/* feedpump management */
 
@@ -1829,8 +1822,7 @@ static void dhwt_del(struct s_dhw_tank * restrict dhwt)
 
 	solar_del(dhwt->solar);
 	dhwt->solar = NULL;
-	hardware_relay_del(dhwt->selfheater);
-	dhwt->selfheater = NULL;
+	hardware_relay_release(dhwt->set.rid_selfheater);
 	free(dhwt->name);
 	dhwt->name = NULL;
 
