@@ -387,6 +387,7 @@ static void create_schedule(void)
  * Simple watchdog thread.
  * Will abort if timeout is reached.
  * @param arg the read end of the pipe set in main()
+ * @todo see if pthread_cond_timedwait() wouldn't be more efficient
  */
 void * thread_watchdog(void * arg)
 {

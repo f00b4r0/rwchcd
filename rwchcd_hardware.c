@@ -665,6 +665,12 @@ int hardware_rwchcperiphs_read(void)
 	return (ret);
 }
 
+/**
+ * Request a hardware relay.
+ * Ensures that the desired hardware relay is available and grabs it.
+ * @param id target relay id (starting from 1)
+ * @return exec status
+ */
 int hardware_relay_request(const relid_t id)
 {
 	if (!id || id > RELAY_MAX_ID)
@@ -678,6 +684,12 @@ int hardware_relay_request(const relid_t id)
 	return (ALL_OK);
 }
 
+/**
+ * Release a hardware relay.
+ * Frees and cleans up the target hardware relay.
+ * @param id target relay id (starting from 1)
+ * @return exec status
+ */
 int hardware_relay_release(const relid_t id)
 {
 	if (!id || id > RELAY_MAX_ID)
