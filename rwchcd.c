@@ -421,6 +421,8 @@ void * thread_watchdog(void * arg)
 		err(ret, NULL);
 }
 
+#define RWCHCD_FIFO	"/tmp/rwchcd.fifo"
+
 int main(void)
 {
 	struct sigaction saction;
@@ -434,10 +436,14 @@ int main(void)
 	printf("Revision %s starting\n", Version);
 	
 	// create the stdout fifo for debugging
-	ret = mkfifo("/tmp/rwchcd.fifo", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	unlink(RWCHCD_FIFO);
+	ret = mkfifo(RWCHCD_FIFO, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	if (!ret) {
+		// ignore SIGPIPE
+		signal(SIGPIPE, SIG_IGN);
+		
 		// redirect stdout
-		outpipe = freopen("/tmp/rwchcd.fifo", "w", stdout);
+		outpipe = freopen(RWCHCD_FIFO, "w+", stdout);	// open read-write to avoid blocking here
 		
 		// make non-blocking
 		if (outpipe)
