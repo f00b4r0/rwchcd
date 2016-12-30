@@ -230,7 +230,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 			}
 			break;
 		case TRANS_UP:
-			if (ambient_temp < circuit->run.request_ambient - deltaK_to_temp(0.5F)) {	// boost if ambient temp is < to target - 0.5K - XXX
+			if (ambient_temp < (circuit->run.request_ambient - deltaK_to_temp(0.5F))) {	// boost if ambient temp is < to target - 0.5K - XXX
 				// boost is max of set boost (if any) and measured delta (if any)
 				if ((now - circuit->run.trans_since) < circuit->set.max_boost_time)
 					ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;

@@ -120,7 +120,7 @@ struct s_circuit_params {
 	temp_t outhoff_histeresis;	///< histeresis for no heating condition
 	temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
 	temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active. @warning MUST be set either globally or locally otherwise circuit won't heat
-	temp_t temp_inoffset;		///< offset temp for heat source request
+	temp_t temp_inoffset;		///< offset temp for heat source request. @note beware of interaction with e.g. boiler histeresis
 };
 
 /** DHWT common parameters */

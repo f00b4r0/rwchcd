@@ -41,6 +41,9 @@
 #include <err.h>
 #include <sys/select.h>
 #include <errno.h>
+#include <sys/types.h>	// fifo
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
@@ -424,10 +427,25 @@ int main(void)
 	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
+	FILE *outpipe = NULL;
 	int pipefd[2];
 	int ret;
 
-	dbgmsg("Revision %s starting", Version);
+	printf("Revision %s starting\n", Version);
+	
+	// create the stdout fifo for debugging
+	ret = mkfifo("/tmp/rwchcd.fifo", S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	if (!ret) {
+		// redirect stdout
+		outpipe = freopen("/tmp/rwchcd.fifo", "w", stdout);
+		
+		// make non-blocking
+		if (outpipe)
+			ret = fcntl(fileno(outpipe), F_SETFL, O_NONBLOCK);
+		
+		if (ret)
+			abort();	// we can't have a blocking stdout
+	}
 	
 	// create a pipe
 	ret = pipe(pipefd);
@@ -500,6 +518,8 @@ int main(void)
 	timer_clean_callbacks();
 	close(pipefd[0]);
 	close(pipefd[1]);
+	if (outpipe)
+		fclose(outpipe);
 	
 	return (0);
 }
