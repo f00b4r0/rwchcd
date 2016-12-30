@@ -37,7 +37,7 @@
 #endif  /* HAVE_GETTEXT */
 
 #ifdef DEBUG
- #define dbgmsg(format, ...)	do { printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__); fflush(stdout); } while(0)
+ #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 #else
  #define dbgmsg(format, ...)	/* nothing */
 #endif

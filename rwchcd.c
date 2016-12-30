@@ -359,6 +359,7 @@ static void * thread_master(void *arg)
 			dbgerr("hardware_output returned: %d", ret);
 		
 		printf("\n");	// XXX DEBUG
+		fflush(stdout);
 		
 		// send keepalive to watchdog
 		/// @warning the loop must run more often than the wdog timeout
