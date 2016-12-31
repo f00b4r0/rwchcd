@@ -6,7 +6,7 @@
   <interface name="org.slashdirt.rwchcd.Control">
     <!--
         SysmodeSet:
-        @value: desired running mode: 0 = OFF, 1 = AUTO, 2 = COMFORT, 3 = ECO, 4 = FROSTFREE, 5 = DHWONLY, 6 = MANUAL
+        @Sysmode: desired running mode: 0 = OFF, 1 = AUTO, 2 = COMFORT, 3 = ECO, 4 = FROSTFREE, 5 = DHWONLY, 6 = MANUAL
 
 	Sets system mode for rwchcd.
     -->
@@ -15,7 +15,7 @@
     </method>
     <!--
         SysmodeGet:
-        @value: current sysmode mode
+        @CurSysmode: current sysmode mode
 
 	Gets current system mode for rwchcd.
     -->
@@ -24,7 +24,7 @@
     </method>
     <!--
      ToutdoorGet:
-     @value: current outdoor temperature
+     @CurToutdoor: current outdoor temperature
      
      Gets current outdoor temperature in celsius
      -->
@@ -32,17 +32,21 @@
 	    <arg name="CurToutdoor" direction="out" type="d"/>
     </method>
     <!--
-     ConfigTempGet:
-     @value: current config temperature
+     ConfigTempModeGet:
+     @Runmode: target runmode: 2 = COMFORT, 3 = ECO, 4 = FROSTFREE
+     @CurTemp: current config temperature
      -->
-    <method name="ConfigTempGet">
+    <method name="ConfigTempModeGet">
+	    <arg name="Runmode" direction="in" type="y"/>
 	    <arg name="CurTemp" direction="out" type="d"/>
     </method>
     <!--
-     ConfigTempSet:
-     @value: desired config temperature
+     ConfigTempModeSet:
+     @Runmode: target runmode: 2 = COMFORT, 3 = ECO, 4 = FROSTFREE
+     @NewTemp: desired config temperature
      -->
-    <method name="ConfigTempSet">
+    <method name="ConfigTempModeSet">
+	    <arg name="Runmode" direction="in" type="y"/>
 	    <arg name="NewTemp" direction="in" type="d"/>
     </method>
   </interface>
