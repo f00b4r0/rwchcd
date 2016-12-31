@@ -92,31 +92,32 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 }
 
 /**
- * D-Bus method ConfigTempGet handler.
- * Replies with current config temperature for the current sysmode. XXX QUICK HACK.
- * @note only handles default circuit comfort temp for now.
+ * D-Bus method ConfigTempModeGet handler.
+ * Replies with current config default circuit temperature for the given runmode. XXX QUICK HACK.
+ * @param Runmode target runmode for query
+ * @note only handles default circuit temp for now.
  * @todo make it generic to set any config temp
  */
-static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
-				       GDBusMethodInvocation *invocation,
-				       gpointer user_data)
+static gboolean on_handle_config_temp_mode_get(dbusRwchcdControl *object,
+					       GDBusMethodInvocation *invocation,
+					       guchar Runmode,
+					       gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = get_runtime();
-	enum e_systemmode cursys;
+	enum e_runmode runmode = Runmode;
 	temp_t systemp;
 	float temp;
 	bool err = false;
 	
 	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
-	cursys = runtime->systemmode;
-	switch (cursys) {
-		case SYS_COMFORT:
+	switch (runmode) {
+		case RM_COMFORT:
 			systemp = runtime->config->def_circuit.t_comfort;
 			break;
-		case SYS_ECO:
+		case RM_ECO:
 			systemp = runtime->config->def_circuit.t_eco;
 			break;
-		case SYS_FROSTFREE:
+		case RM_FROSTFREE:
 			systemp = runtime->config->def_circuit.t_frostfree;
 			break;
 		default:
@@ -130,43 +131,44 @@ static gboolean on_handle_config_temp_get(dbusRwchcdControl *object,
 	
 	temp = temp_to_celsius(systemp);
 	
-	dbus_rwchcd_control_complete_config_temp_get(object, invocation, temp);
+	dbus_rwchcd_control_complete_config_temp_mode_get(object, invocation, temp);
 	
 	return true;
 }
 
 /**
- * D-Bus method ConfigTempSet handler.
- * Sets the desired config temperature for the current sysmode. XXX QUICK HACK.
- * @param temp new temperature value
- * @note only handles default circuit comfort temp for now.
+ * D-Bus method ConfigTempModeSet handler.
+ * Sets the desired config default circuit temperature for the given runmode. XXX QUICK HACK.
+ * @param Runmode target runmode for the new temp
+ * @param NewTemp new temperature value
+ * @note only handles default circuit temp for now.
  * @todo make it generic to set any config temp
  * @todo save config: cannot do for now because config_save() calls hardware
  * @warning doesn't save runtime after set
  */
-static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
-				      GDBusMethodInvocation *invocation,
-				      gdouble NewTemp,
-				      gpointer user_data)
+static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
+					       GDBusMethodInvocation *invocation,
+					       guchar Runmode,
+					       gdouble NewTemp,
+					       gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = get_runtime();
 	temp_t newtemp = celsius_to_temp(NewTemp);
-	enum e_systemmode cursys;
+	enum e_runmode runmode = Runmode;
 	bool err = false;
 
 	if (validate_temp(newtemp) != ALL_OK)
 		return false;
 
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
-	cursys = runtime->systemmode;
-	switch (cursys) {
-		case SYS_COMFORT:
+	switch (runmode) {
+		case RM_COMFORT:
 			get_runtime()->config->def_circuit.t_comfort = newtemp;
 			break;
-		case SYS_ECO:
+		case RM_ECO:
 			get_runtime()->config->def_circuit.t_eco = newtemp;
 			break;
-		case SYS_FROSTFREE:
+		case RM_FROSTFREE:
 			get_runtime()->config->def_circuit.t_frostfree = newtemp;
 			break;
 		default:
@@ -178,7 +180,7 @@ static gboolean on_handle_config_temp_set(dbusRwchcdControl *object,
 	if (err)
 		return false;
 	
-	dbus_rwchcd_control_complete_config_temp_set(object, invocation);
+	dbus_rwchcd_control_complete_config_temp_mode_set(object, invocation);
 	
 	return true;
 }
@@ -195,8 +197,8 @@ static void on_name_acquired(GDBusConnection *connection,
 	g_signal_connect(skeleton, "handle-sysmode-set", G_CALLBACK(on_handle_sysmode_set), NULL);
 	g_signal_connect(skeleton, "handle-sysmode-get", G_CALLBACK(on_handle_sysmode_get), NULL);
 	g_signal_connect(skeleton, "handle-toutdoor-get", G_CALLBACK(on_handle_toutdoor_get), NULL);
-	g_signal_connect(skeleton, "handle-config-temp-get", G_CALLBACK(on_handle_config_temp_get), NULL);
-	g_signal_connect(skeleton, "handle-config-temp-set", G_CALLBACK(on_handle_config_temp_set), NULL);
+	g_signal_connect(skeleton, "handle-config-temp-mode-get", G_CALLBACK(on_handle_config_temp_mode_get), NULL);
+	g_signal_connect(skeleton, "handle-config-temp-mode-set", G_CALLBACK(on_handle_config_temp_mode_set), NULL);
 	g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(skeleton),
 					 connection,
 					 "/org/slashdirt/rwchcd",
