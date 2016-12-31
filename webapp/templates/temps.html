@@ -1,0 +1,18 @@
+$def with (formmode)
+<html>
+ <head>
+    <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+    <META HTTP-EQUIV="Expires" CONTENT="-1">
+    <meta charset="UTF-8">
+    <title>Températures Chauffage Maison</title>
+  </head>
+  <body>
+    <h1>Températures chauffage maison</h1>
+    <form method="post">
+	$if not formmode.valid: <p>Erreur!</p>
+	$:formmode.render()
+	<input type="submit" />
+    </form>
+  </body>
+</html>
+
