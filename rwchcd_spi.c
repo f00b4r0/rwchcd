@@ -45,7 +45,7 @@
 #define SPI_RESYNC(cmd)								\
 		({								\
 		spitout = SPIRESYNCMAX;						\
-		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && --spitout && usleep(5*SPIRESYNCMAX-5*spitout));	\
+		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && spitout) usleep(5*SPIRESYNCMAX - 5*spitout--);	\
 		if (spitout) SPI_rw8bit(cmd);	/* consumes the last SYNCACK */	\
 		})
 
