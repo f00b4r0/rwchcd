@@ -2,6 +2,8 @@
 
 # License: GPLv2
 
+# TODO: check http://www.web2py.com
+
 import web
 from web import form
 from pydbus import SystemBus
@@ -18,7 +20,7 @@ urls = (
 )
 
 formMode = form.Form(
-	form.Dropdown('sysmode', [(0, 'Off'), (1, 'Auto'), (2, 'Confort'), (3, 'Eco'), (4, 'Hors-Gel'), (5, 'ECS')]),
+	form.Dropdown('sysmode', [(0, 'Off'), (1, 'Auto'), (2, 'Confort'), (3, 'Eco'), (4, 'Hors-Gel'), (5, 'ECS')], description='Mode'),
 	)
 
 formTemps = form.Form(
