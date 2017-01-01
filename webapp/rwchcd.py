@@ -45,7 +45,7 @@ class rwchcd:
 		else:
 			mode = int(form.sysmode.value)
 			rwchcd_Control.SysmodeSet(mode)
-			raise web.found(web.url())
+			raise web.found('')
 
 class temps:
 	def GET(self):
@@ -68,7 +68,7 @@ class temps:
 			rwchcd_Control.ConfigTempModeSet(2, comftemp)
 			rwchcd_Control.ConfigTempModeSet(3, econtemp)
 			rwchcd_Control.ConfigTempModeSet(4, frostemp)
-			raise web.found(web.url())
+			raise web.found('')
 
 		
 
