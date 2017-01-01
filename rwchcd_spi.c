@@ -74,7 +74,7 @@ static uint8_t SPI_rw8bit(const uint8_t data)
  * Delay: none
  * @return error status
  */
-int rwchcd_spi_keepalive_once(void)
+int spi_keepalive(void)
 {
 	SPI_RESYNC(RWCHC_SPIC_KEEPALIVE);
 
@@ -89,7 +89,7 @@ int rwchcd_spi_keepalive_once(void)
  * Delay: none
  * @return error code
  */
-int rwchcd_spi_lcd_acquire(void)
+int spi_lcd_acquire(void)
 {
 	int ret = -ESPI;
 	
@@ -111,7 +111,7 @@ out:
  * Delay: none
  * @return error code
  */
-int rwchcd_spi_lcd_relinquish(void)
+int spi_lcd_relinquish(void)
 {
 	int ret = -ESPI;
 	
@@ -133,7 +133,7 @@ out:
  * Delay: none
  * @return error code
  */
-int rwchcd_spi_lcd_fade(void)
+int spi_lcd_fade(void)
 {
 	int ret = -ESPI;
 
@@ -156,7 +156,7 @@ out:
  * @param cmd command byte to send
  * @return error code
  */
-int rwchcd_spi_lcd_cmd_w(const uint8_t cmd)
+int spi_lcd_cmd_w(const uint8_t cmd)
 {
 	int ret = -ESPI;
 	
@@ -187,7 +187,7 @@ out:
  * @param data data byte to send
  * @return error code
  */
-int rwchcd_spi_lcd_data_w(const uint8_t data)
+int spi_lcd_data_w(const uint8_t data)
 {
 	int ret = -ESPI;
 	
@@ -216,7 +216,7 @@ out:
  * @param percent backlight duty cycle in percent
  * @return error code
  */
-int rwchcd_spi_lcd_bl_w(const uint8_t percent)
+int spi_lcd_bl_w(const uint8_t percent)
 {
 	int ret = -ESPI;
 	
@@ -245,7 +245,7 @@ out:
  * @param outperiphs pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int rwchcd_spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
+int spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
 {
 	int ret = -ESPI;
 	
@@ -272,7 +272,7 @@ out:
  * @param outperiphs pointer to struct whose values are populated with desired states
  * @return error code
  */
-int rwchcd_spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
+int spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
 {
 	int ret = -ESPI;
 	
@@ -303,7 +303,7 @@ out:
  * @param relays pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int rwchcd_spi_relays_r(union rwchc_u_relays * const relays)
+int spi_relays_r(union rwchc_u_relays * const relays)
 {
 	int ret = -ESPI;
 	
@@ -340,7 +340,7 @@ out:
  * @param relays pointer to struct whose values are populated with desired states
  * @return error code
  */
-int rwchcd_spi_relays_w(const union rwchc_u_relays * const relays)
+int spi_relays_w(const union rwchc_u_relays * const relays)
 {
 	int ret = -ESPI;
 	
@@ -387,7 +387,7 @@ out:
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  */
-int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
+int spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
 	int ret = -ESPI;
 	
@@ -425,7 +425,7 @@ int rwchcd_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  * @todo XXX TODO: modify firmware to use the same logic as sensor_r()
  */
-int rwchcd_spi_ref_r(uint16_t * const refval, const uint8_t refn)
+int spi_ref_r(uint16_t * const refval, const uint8_t refn)
 {
 	int ret = -ESPI;
 	uint8_t cmd;
@@ -465,7 +465,7 @@ out:
  * @param settings pointer to struct whose values will be populated to match current settings
  * @return error code
  */
-int rwchcd_spi_settings_r(struct rwchc_s_settings * const settings)
+int spi_settings_r(struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = -ESPI;
@@ -494,7 +494,7 @@ out:
  * @param settings pointer to struct whose values are populated with desired settings
  * @return error code
  */
-int rwchcd_spi_settings_w(const struct rwchc_s_settings * const settings)
+int spi_settings_w(const struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = -ESPI;
@@ -528,7 +528,7 @@ out:
  * Delay: none (eeprom write is faster than a SPI cycle)
  * @return error code
  */
-int rwchcd_spi_settings_s(void)
+int spi_settings_s(void)
 {
 	int ret = -ESPI;
 	
@@ -550,7 +550,7 @@ out:
  * Delay: none (device unavailable until fully restarted: 1-2s delay would be reasonable)
  * @return exec status (ALL_OK if reset is presumably successful)
  */
-int rwchcd_spi_reset(void)
+int spi_reset(void)
 {
 	const uint8_t trig[] = RWCHC_RESET_TRIGGER;
 	unsigned int i;
@@ -579,7 +579,7 @@ out:
  * Init spi subsystem
  * @return fd or error code
  */
-int rwchcd_spi_init(void)
+int spi_init(void)
 {
 	return (wiringPiSPISetupMode(SPICHAN, SPICLOCK, SPIMODE));
 }

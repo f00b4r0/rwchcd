@@ -48,7 +48,7 @@ static int lcd_grab(void)
 	int ret, i = 0;
 	
 	do {
-		ret = rwchcd_spi_lcd_acquire();
+		ret = spi_lcd_acquire();
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 	
 	return (ret);
@@ -66,7 +66,7 @@ static int lcd_release(void)
 		return (ALL_OK);	// never relinquish if L2 is managed
 	
 	do {
-		ret = rwchcd_spi_lcd_relinquish();
+		ret = spi_lcd_relinquish();
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 	
 	return (ret);
@@ -81,7 +81,7 @@ int lcd_fade(void)
 	int ret, i = 0;
 
 	do {
-		ret = rwchcd_spi_lcd_fade();
+		ret = spi_lcd_fade();
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -99,7 +99,7 @@ static int lcd_dispclear(void)
 	memset(Line1Cur, ' ', LCD_LINELEN);
 
 	do {
-		ret = rwchcd_spi_lcd_cmd_w(0x01);
+		ret = spi_lcd_cmd_w(0x01);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 	
 	return (ret);
@@ -247,7 +247,7 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 	
 	i = 0;
 	do {
-		ret = rwchcd_spi_lcd_cmd_w(addr);
+		ret = spi_lcd_cmd_w(addr);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	if (ret)
@@ -257,7 +257,7 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 	for (; id<LCD_LINELEN; id++) {
 		i = 0;
 		do {
-			ret = rwchcd_spi_lcd_data_w(buf[id]);
+			ret = spi_lcd_data_w(buf[id]);
 		} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 		
 		if (ret)

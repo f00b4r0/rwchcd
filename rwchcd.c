@@ -149,7 +149,7 @@ static int init_process()
 		config->def_circuit.outhoff_histeresis = deltaK_to_temp(1);
 		config->def_circuit.limit_wtmax = celsius_to_temp(80);
 		config->def_circuit.limit_wtmin = celsius_to_temp(20);
-		config->def_circuit.temp_inoffset = deltaK_to_temp(7);
+		config->def_circuit.temp_inoffset = deltaK_to_temp(5);
 		
 		// DHWT defaults
 		config->def_dhwt.limit_wintmax = celsius_to_temp(90);
@@ -213,7 +213,7 @@ static int init_process()
 	// configure that circuit
 	circuit->set.am_tambient_tK = 60 * 60;	// 1h
 	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
-	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +3K
+	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
 	circuit->set.id_temp_outgoing = 3;	// XXX VALIDATION
 	circuit->set.id_temp_return = 4;	// XXX VALIDATION
 	circuit_make_linear(circuit);

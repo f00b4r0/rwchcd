@@ -382,7 +382,7 @@ static int hardware_config_fetch(struct rwchc_s_settings * const settings)
 	
 	// grab current config from the hardware
 	do {
-		ret = rwchcd_spi_settings_r(settings);
+		ret = spi_settings_r(settings);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 	
 	return (ret);
@@ -409,7 +409,7 @@ int hardware_config_store(void)
 	
 	// commit hardware config
 	do {
-		ret = rwchcd_spi_settings_w(&(Hardware.settings));
+		ret = spi_settings_w(&(Hardware.settings));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 	
 	if (ret)
@@ -418,7 +418,7 @@ int hardware_config_store(void)
 	i = 0;
 	// save hardware config
 	do {
-		ret = rwchcd_spi_settings_s();
+		ret = spi_settings_s();
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 	
 	dbgmsg("HW Config saved.");
@@ -436,7 +436,7 @@ int hardware_init(void)
 {
 	int ret;
 	
-	if (rwchcd_spi_init() < 0)
+	if (spi_init() < 0)
 		return (-EINIT);
 
 	memset(Relays, 0x0, ARRAY_SIZE(Relays));
@@ -474,7 +474,7 @@ static int hardware_calibrate(void)
 
 	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
 	
-	ret = rwchcd_spi_ref_r(&ref, 0);
+	ret = spi_ref_r(&ref, 0);
 	if (ret)
 		return (ret);
 
@@ -487,7 +487,7 @@ static int hardware_calibrate(void)
 	else
 		return (-EINVALID);
 
-	ret = rwchcd_spi_ref_r(&ref, 1);
+	ret = spi_ref_r(&ref, 1);
 	if (ret)
 		return (ret);
 
@@ -527,7 +527,7 @@ static int hardware_sensors_read(rwchc_sensor_t tsensors[])
 	for (sensor=0; sensor<Hardware.settings.addresses.nsensors; sensor++) {
 		i = 0;
 		do {
-			ret = rwchcd_spi_sensor_r(tsensors, sensor);
+			ret = spi_sensor_r(tsensors, sensor);
 		} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 		if (ret)
@@ -618,7 +618,7 @@ int hardware_rwchcrelays_write(void)
 	// send new state to hardware
 	i = 0;
 	do {
-		ret = rwchcd_spi_relays_w(&rWCHC_relays);
+		ret = spi_relays_w(&rWCHC_relays);
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	// update internal runtime state on success
@@ -641,7 +641,7 @@ int hardware_rwchcperiphs_write(void)
 		return (-EOFFLINE);
 	
 	do {
-		ret = rwchcd_spi_peripherals_w(&(Hardware.peripherals));
+		ret = spi_peripherals_w(&(Hardware.peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -659,7 +659,7 @@ int hardware_rwchcperiphs_read(void)
 		return (-EOFFLINE);
 	
 	do {
-		ret = rwchcd_spi_peripherals_r(&(Hardware.peripherals));
+		ret = spi_peripherals_r(&(Hardware.peripherals));
 	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
 	return (ret);
@@ -998,7 +998,7 @@ void hardware_exit(void)
 	int ret;
 	
 	// reset the hardware
-	ret = rwchcd_spi_reset();
+	ret = spi_reset();
 	if (ret)
 		dbgerr("reset failed (%d)", ret);
 }
