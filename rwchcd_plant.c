@@ -1019,9 +1019,9 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	if (untrip_temp > boiler->set.limit_tmax)
 		untrip_temp = boiler->set.limit_tmax;
 	
-	// burner control
+	// burner control - cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
 	if (boiler_temp < trip_temp)		// trip condition
-		hardware_relay_set_state(boiler->set.rid_burner_1, ON, 0);	// immediate start
+		hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
 	else if (boiler_temp > untrip_temp)	// untrip condition
 		hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
 

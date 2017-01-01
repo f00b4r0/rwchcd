@@ -5,6 +5,7 @@ Description=rWCHC Simple Daemon
 Type=dbus
 BusName=org.slashdirt.rwchcd
 ExecStart=/usr/sbin/rwchcd
+ExecStopPost=/bin/sleep 10
 KillMode=process
 Restart=on-failure
 RestartSec=10

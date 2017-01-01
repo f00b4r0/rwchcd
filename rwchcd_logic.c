@@ -182,7 +182,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 				if (can_fastcool)
 					low_temp = runtime->t_outdoor_mixed;
 				else
-					low_temp = request_temp - deltaK_to_temp(1);	// XXX -1K delta to ensure will will cross the untrip point
+					low_temp = request_temp;
 				// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 				// all necessary data is _always_ available, no need to special case here
 				ambient_temp = (circuit->run.trans_start_temp - low_temp) * expf((float)-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
@@ -190,15 +190,19 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 			case TRANS_UP:
 				// transition up, apply semi-exponential model
 				if (circuit->set.am_tambient_tK) {	// only if necessary data is available
-					// tstart + elevation over time: tstart + ((elapsed_time * 1/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
+					// tstart + elevation over time: tstart + ((elapsed_time * 100/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
 					/* note: the impact of the boost should be considered as a percentage of the total
 					 requested temperature increase over _current_ temp, hence (treq - tcurrent).
 					 Furthermore, by simply adjusting a few factors in equal proportion (100),
-					 we don't need to deal with floats and we can keep a very good precision:
-					 the compound error cancels out periodically. */
-					assert(circuit->set.am_tambient_tK >= 100);
-					ambient_temp = circuit->run.trans_start_temp + ((elapsed_time / (circuit->set.am_tambient_tK/100)) *
-							(100 + (100*circuit->set.tambient_boostdelta) / (request_temp - circuit->run.actual_ambient)));	// works even if boostdelta is not set
+					 we don't need to deal with floats and we can keep a good precision.
+					 Also note that am_tambient_tK must be considered /100 to match the internal
+					 temp type which is K*100.
+					 IMPORTANT: it is essential that this computation be stopped when the
+					 temperature differential (request - actual) is < 100 (1K) otherwise the
+					 term that tends toward 0 introduces a huge residual error when boost is enabled. */
+					ambient_temp = circuit->run.trans_start_temp + (((100*elapsed_time / circuit->set.am_tambient_tK) *
+							(100 + (100*circuit->set.tambient_boostdelta) / (request_temp - circuit->run.actual_ambient)))
+							/ 100);	// works even if boostdelta is not set
 					break;
 				}
 				// if settings are insufficient, model can't run, fallback to no transition
@@ -220,7 +224,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// handle transitions
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
-			if (ambient_temp > circuit->run.request_ambient) {
+			if (ambient_temp > (circuit->run.request_ambient + deltaK_to_temp(0.5F))) {
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					circuit->run.runmode = RM_OFF;
 			}
@@ -230,7 +234,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 			}
 			break;
 		case TRANS_UP:
-			if (ambient_temp < (circuit->run.request_ambient - deltaK_to_temp(0.5F))) {	// boost if ambient temp is < to target - 0.5K - XXX
+			if (ambient_temp < (circuit->run.request_ambient - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
 				// boost is max of set boost (if any) and measured delta (if any)
 				if ((now - circuit->run.trans_since) < circuit->set.max_boost_time)
 					ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;
