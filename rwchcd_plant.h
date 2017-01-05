@@ -161,7 +161,7 @@ struct s_heatsource {
 		enum e_runmode runmode;		///< current heatsource set_runmode
 		enum e_heatsource_type type;	///< type of heatsource
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
-		time_t sleeping_time;	///< if no request for this much time, then mark heat source as can sleep
+		time_t sleeping_time;		///< if no request for this much time, then mark heat source as can sleep
 		time_t consumer_stop_delay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
 	} set;		///< settings (externally set)
 	struct {
@@ -262,7 +262,11 @@ struct s_heatsource_l {
 	struct s_heatsource_l * next;
 };
 
-/** Plant structure */
+/**
+ * Plant structure.
+ * One plant is a coherent set of heatsource(s), circuit(s) and dhwt(s) all
+ * connected to each other.
+ */
 struct s_plant {
 	bool configured;	///< true if properly configured
 	uint_fast8_t pump_n;	///< number of pumps in the plant

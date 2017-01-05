@@ -2239,6 +2239,9 @@ int plant_run(struct s_plant * restrict const plant)
 				circuit_offline(circuitl->circuit);
 			case -EINVALIDMODE:
 				circuitl->circuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+			case -ESENSORINVAL:
+			case -ESENSORSHORT:
+			case -ESENSORDISCON:	// sensor issues are handled by circuit_run()
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
