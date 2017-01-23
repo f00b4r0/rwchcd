@@ -748,7 +748,8 @@ static struct s_boiler_priv * boiler_new(void)
 	if (boiler) {
 		boiler->set.histeresis = deltaK_to_temp(6);
 		boiler->set.limit_tmin = celsius_to_temp(10);
-		boiler->set.limit_tmax = celsius_to_temp(95);
+		boiler->set.limit_tmax = celsius_to_temp(90);
+		boiler->set.limit_thardmax = celsius_to_temp(100);
 		boiler->set.t_freeze = celsius_to_temp(5);
 		boiler->set.burner_min_time = 60 * 4;	// 4mn
 	}
@@ -798,6 +799,10 @@ static int boiler_hs_online(struct s_heatsource * const heat)
 
 	// check that mandatory settings are set
 	if (!boiler->set.limit_tmax)
+		ret = -EMISCONFIGURED;
+	
+	// check that hardmax is > tmax (effectively checks that it's set too)
+	if (boiler->set.limit_thardmax < boiler->set.limit_tmax)
 		ret = -EMISCONFIGURED;
 
 out:
@@ -987,8 +992,9 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	}
 
 	// ensure boiler is within safety limits
-	if (boiler_temp > boiler->set.limit_tmax) {
+	if (boiler_temp > boiler->set.limit_thardmax) {
 		boiler_failsafe(boiler);
+		heat->run.consumer_shift = RWCHCD_CSHIFT_MAX;
 		return (-ESAFETY);
 	}
 	
