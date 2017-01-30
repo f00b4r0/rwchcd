@@ -1468,7 +1468,8 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 		pump_set_state(dhwt->feedpump, OFF, FORCE);
 	if (dhwt->recyclepump)
 		pump_set_state(dhwt->recyclepump, OFF, FORCE);
-	hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+	if (dhwt->set.rid_selfheater)
+		hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 }
 
 /**
