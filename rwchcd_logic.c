@@ -317,6 +317,7 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	if (dhwt->run.legionella_on) {	// XXX TODO: handle untrip
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella);
 		dhwt->run.force_on = true;
+		dhwt->run.recycle_on = true;
 	}
 
 	// transition detection

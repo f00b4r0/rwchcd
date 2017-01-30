@@ -1467,7 +1467,7 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax;
+	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp;
 	bool valid_ttop = false, valid_tbottom = false, test;
 	const time_t now = time(NULL);
 	time_t limit;
@@ -1540,8 +1540,14 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		else
 			curr_temp = top_temp;
 		
-		// if charge not in progress, trip if forced or at (target temp - histeresis)
-		if (dhwt->run.force_on || (curr_temp < (dhwt->run.target_temp - SETorDEF(dhwt->set.params.histeresis, runtime->config->def_dhwt.histeresis)))) {
+		// set trip point to (target temp - histeresis)
+		if (dhwt->run.force_on)
+			trip_temp = dhwt->run.target_temp - deltaK_to_temp(1);	// if forced charge, force histeresis at 1K
+		else
+			trip_temp = dhwt->run.target_temp - SETorDEF(dhwt->set.params.histeresis, runtime->config->def_dhwt.histeresis);
+		
+		// trip condition
+		if (curr_temp < trip_temp) {
 			if (runtime->plant_could_sleep && dhwt->set.rid_selfheater) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
