@@ -1455,11 +1455,27 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 }
 
 /**
+ * DHWT failsafe routine.
+ * By default we stop all pumps and electric self heater.
+ * The major inconvenient here is that this failsafe mode COULD provoke a DHWT
+ * freeze in the most adverse conditions.
+ * @warning DHWT could freeze - TODO: needs review
+ * @param dhwt target dhwt
+ */
+static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
+{
+	if (dhwt->feedpump)
+		pump_set_state(dhwt->feedpump, OFF, FORCE);
+	if (dhwt->recyclepump)
+		pump_set_state(dhwt->recyclepump, OFF, FORCE);
+	hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+}
+
+/**
  * DHWT control loop.
  * Controls the dhwt's elements to achieve the desired target temperature.
  * @param dhwt target dhwt
  * @return error status
- * @warning no failsafe in case of sensor failure
  * @bug pump management for discharge protection needs review
  * @todo XXX TODO: implement dhwprio glissante/absolue for heat request
  * @todo XXX TODO: implement working on electric without sensor
@@ -1515,8 +1531,10 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		valid_ttop = true;
 
 	// no sensor available, give up
-	if (!valid_tbottom && !valid_ttop)
+	if (!valid_tbottom && !valid_ttop) {
+		dhwt_failsafe(dhwt);
 		return (ret);	// return last error
+	}
 
 	// We're good to go
 	
