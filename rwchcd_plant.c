@@ -1554,10 +1554,10 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
 	   untrip at target (preferably on high sensor). */
 	if (!dhwt->run.charge_since) {	// no charge in progress
-		if (valid_tbottom)	// prefer bottom temp if available
-			curr_temp = bottom_temp;
-		else
+		if (valid_ttop)	// prefer top temp if available (trip charge when top is cold)
 			curr_temp = top_temp;
+		else
+			curr_temp = bottom_temp;
 		
 		// set trip point to (target temp - histeresis)
 		if (dhwt->run.force_on)
@@ -1606,11 +1606,11 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		}
 	}
 	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
-		if (valid_ttop)	// prefer top temp if available
-			curr_temp = top_temp;
-		else
+		if (valid_tbottom)	// prefer bottom temp if available (untrip charge when bottom is hot)
 			curr_temp = bottom_temp;
-
+		else
+			curr_temp = top_temp;
+		
 		// untrip conditions
 		test = false;
 
