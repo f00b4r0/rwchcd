@@ -91,11 +91,15 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 
 /**
  * Circuit logic.
+ * Sets the target ambient temperature for a circuit based on selected run mode.
+ * Runs the ambient model, and applies temperature shift based on mesured or
+ * modelled ambient temperature. Handles runmode transitions.
  * @param circuit target circuit
  * @return exec status
  * @warning review/test ambient model @b integer maths
  * XXX TODO: ADD optimizations (anticipated turn on/off, max ambient... p36+)
  * XXX TODO: ambient max delta shutdown; optim based on return temp
+ * XXX TODO: optimization with return temperature
  */
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
@@ -257,12 +261,18 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 
 /**
  * DHWT logic.
+ * Sets DHWT target temperature based on selected run mode.
+ * Enforces programmatic use of force charge when necessary.
  * @param dhwt target dhwt
  * @return exec status
+ * @todo handle legionella correctly
  */
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
+	const time_t now = time(NULL);
+	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
+	enum e_runmode prev_runmode;
 	temp_t target_temp, ltmin, ltmax;
 
 	assert(dhwt);
@@ -272,6 +282,9 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	
 	if (!dhwt->run.online)
 		return (-EOFFLINE);
+	
+	// store current status for transition detection
+	prev_runmode = dhwt->run.runmode;
 	
 	// handle global/local runmodes
 	if (RM_AUTO == dhwt->set.runmode)
@@ -301,9 +314,24 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	}
 
 	// if anti-legionella charge is requested, enforce temp
-	if (dhwt->run.legionella_on)	// XXX TODO: handle untrip
+	if (dhwt->run.legionella_on) {	// XXX TODO: handle untrip
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella);
+		dhwt->run.force_on = true;
+	}
 
+	// transition detection
+	if (prev_runmode != dhwt->run.runmode) {
+		// handle programmed forced charges at COMFORT switch on
+		if (RM_COMFORT == dhwt->run.runmode) {
+			if (DHWTF_ALWAYS == dhwt->set.force_mode)
+				dhwt->run.force_on = true;
+			else if ((DHWTF_FIRST == dhwt->set.force_mode) && (ltime->tm_yday != dhwt->run.charge_yday)) {
+				dhwt->run.force_on = true;
+				dhwt->run.charge_yday = ltime->tm_yday;
+			}
+		}
+	}
+	
 	// enforce limits on dhw temp
 	ltmin = SETorDEF(dhwt->set.params.limit_tmin, runtime->config->def_dhwt.limit_tmin);
 	ltmax = SETorDEF(dhwt->set.params.limit_tmax, runtime->config->def_dhwt.limit_tmax);

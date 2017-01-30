@@ -202,6 +202,11 @@ struct s_dhw_tank {
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
 		enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };	///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
+		enum {
+			DHWTF_NEVER = 0,	///< never force
+			DHWTF_FIRST,		///< force first comfort charge of the day
+			DHWTF_ALWAYS		///< force all comfort charges
+		} force_mode;			///< Programmed force charge when switching to COMFORT
 		tempid_t id_temp_bottom;	///< temp sensor at bottom of dhw tank
 		tempid_t id_temp_top;		///< temp sensor at top of dhw tank
 		tempid_t id_temp_win;		///< temp sensor heatwater inlet
@@ -218,6 +223,7 @@ struct s_dhw_tank {
 		temp_t target_temp;		///< current target temp for this tank
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 		time_t charge_since;		///< starting time of current charge, 0 if no charge in progress
+		int charge_yday;		///< last day forced charge was triggered in DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
 	struct s_solar_heater * restrict solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
 	struct s_pump * restrict feedpump;	///< feed pump for this tank

@@ -952,7 +952,6 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd allure (p.51)
  * @todo XXX TODO: review consummer inhibit signal formula for cool startup
- * @todo XXX TODO: implement consummer force signal for overtemp cooldown
  * @todo XXX TODO: implement limit on return temp (p.55/56)
  */
 static int boiler_hs_run(struct s_heatsource * const heat)
