@@ -1435,10 +1435,13 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	dhwt->run.target_temp = 0;
+	dhwt->run.charge_on = false;
 	dhwt->run.force_on = false;
 	dhwt->run.recycle_on = false;
 	dhwt->run.legionella_on = false;
-	dhwt->run.charge_since = 0;
+	dhwt->run.charge_overtime = false;
+	dhwt->run.mode_since = 0;
+	dhwt->run.charge_yday = 0;
 
 	if (dhwt->feedpump)
 		pump_offline(dhwt->feedpump);
@@ -1475,11 +1478,16 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 /**
  * DHWT control loop.
  * Controls the dhwt's elements to achieve the desired target temperature.
+ * If charge time exceeds the limit, the DHWT will be stopped for the duration
+ * of the set limit.
  * @param dhwt target dhwt
  * @return error status
  * @bug pump management for discharge protection needs review
  * @todo XXX TODO: implement dhwprio glissante/absolue for heat request
  * @todo XXX TODO: implement working on electric without sensor
+ * @bug discharge protection might fail if the input sensor needs water flow
+ * in the feedpump. The solution to this is to implement a fallback to an upstream
+ * temperature (e.g. the heatsource's).
  */
 static int dhwt_run(struct s_dhw_tank * const dhwt)
 {
@@ -1539,8 +1547,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	// We're good to go
 	
-	dbgmsg("charge since: %ld, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
-	       dhwt->run.charge_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+	dbgmsg("charge: %d, mode since: %ld, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
+	       dhwt->run.charge_on, dhwt->run.mode_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 	
 	// handle recycle loop
 	if (dhwt->recyclepump) {
@@ -1551,9 +1559,18 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	}
 	
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
-	   apply histeresis on logic: trip at target - histeresis (preferably on low sensor),
-	   untrip at target (preferably on high sensor). */
-	if (!dhwt->run.charge_since) {	// no charge in progress
+	   apply histeresis on logic: trip at target - histeresis (preferably on top sensor),
+	   untrip at target (preferably on bottom sensor). */
+	if (!dhwt->run.charge_on) {	// no charge in progress
+		// check for overtime charge
+		limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
+		if (dhwt->run.charge_overtime) {
+			if (limit && ((now - dhwt->run.mode_since) <= limit))
+				return (ALL_OK); // no further processing, must wait
+			else
+				dhwt->run.charge_overtime = false;	// reset status
+		}
+		
 		if (valid_ttop)	// prefer top temp if available (trip charge when top is cold)
 			curr_temp = top_temp;
 		else
@@ -1602,7 +1619,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			}
 			
 			// mark heating in progress
-			dhwt->run.charge_since = now;
+			dhwt->run.charge_on = true;
+			dhwt->run.mode_since = now;
 		}
 	}
 	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
@@ -1616,11 +1634,13 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// if heating gone overtime, untrip
 		limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
-		if ((limit) && ((now - dhwt->run.charge_since) > limit))
+		if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
 			test = true;
+			dhwt->run.charge_overtime = true;
+		}
 
 		// if heating in progress, untrip at target temp
-		if (curr_temp > dhwt->run.target_temp)
+		if (curr_temp >= dhwt->run.target_temp)
 			test = true;
 
 		// stop all heat input (ensures they're all off at switchover)
@@ -1654,7 +1674,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			dhwt->run.force_on = false;
 
 			// mark heating as done
-			dhwt->run.charge_since = 0;
+			dhwt->run.charge_on = false;
+			dhwt->run.mode_since = now;
 		}
 	}
 

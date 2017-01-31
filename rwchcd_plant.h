@@ -216,13 +216,15 @@ struct s_dhw_tank {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if tank is available for use (under software management)
+		bool charge_on;			///< true if charge ongoing
 		bool recycle_on;		///< true if recycle pump should be running
 		bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
 		bool legionella_on;		///< true if anti-legionella charge is required
+		bool charge_overtime;		///< true if charge went overtime
 		enum e_runmode runmode;		///< dhwt actual (computed) runmode
 		temp_t target_temp;		///< current target temp for this tank
 		temp_t heat_request;		///< current temp request from heat source for this circuit
-		time_t charge_since;		///< starting time of current charge, 0 if no charge in progress
+		time_t mode_since;		///< starting time of current mode (if charge_on: charge start time, else charge end time)
 		int charge_yday;		///< last day forced charge was triggered in DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
 	struct s_solar_heater * restrict solar;	///< solar heater (if avalaible) - XXX NOT IMPLEMENTED
