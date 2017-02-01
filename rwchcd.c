@@ -393,7 +393,7 @@ static void create_schedule(void)
  * @param arg the read end of the pipe set in main()
  * @todo see if pthread_cond_timedwait() wouldn't be more efficient
  */
-void * thread_watchdog(void * arg)
+static void * thread_watchdog(void * arg)
 {
 	int piperfd = *((int *)arg);
 	struct timeval timeout;

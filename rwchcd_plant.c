@@ -12,6 +12,11 @@
  * @todo valve PI(D) controller
  * @todo summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  * @todo plant_save()/plant_restore() (for e.g. dynamically created plants)
+ * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
+ * switch to fuel when wood dies out) and cascade mode (for large systems).
+ * In this context, a "plant" should logically be a collection of consummers
+ * and heatsources all connected to each other: in a plant, all the heatsources
+ * are providing heat to all of the plant's consummers.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -25,7 +30,7 @@
 #include "rwchcd_logic.h"
 #include "rwchcd_plant.h"
 
-/** PUMP **/
+/*- PUMP -*/
 
 /**
  * Delete a pump
@@ -146,7 +151,7 @@ static int pump_run(struct s_pump * restrict const pump)
 	return (ALL_OK);
 }
 
-/** VALVE **/
+/*- VALVE -*/
 
 /**
  * Delete a valve
@@ -706,7 +711,7 @@ int valve_make_sapprox(struct s_valve * const valve)
 }
 
 
-/** SOLAR **/
+/*- SOLAR -*/
 
 /**
  * Create a new solar heater
@@ -734,7 +739,7 @@ static void solar_del(struct s_solar_heater * solar)
 	free(solar);
 }
 
-/** BOILER **/
+/*- BOILER -*/
 
 /**
  * Create a new boiler
@@ -1033,7 +1038,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	return (ALL_OK);
 }
 
-/** HEATSOURCE **/
+/*- HEATSOURCE -*/
 
 /**
  * Put heatsource online.
@@ -1114,7 +1119,7 @@ static int heatsource_run(struct s_heatsource * const heat)
 		return (-ENOTIMPLEMENTED);
 }
 
-/** CIRCUIT **/
+/*- CIRCUIT -*/
 
 /**
  Loi d'eau linaire: pente + offset
@@ -1384,7 +1389,7 @@ int circuit_make_linear(struct s_heating_circuit * const circuit)
 	return (ALL_OK);
 }
 
-/** DHWT **/
+/*- DHWT -*/
 
 /**
  * Put dhwt online.
@@ -1683,7 +1688,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 }
 
 
-/** PLANT **/
+/*- PLANT -*/
 
 /**
  * Create a new pump and attach it to the plant.
