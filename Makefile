@@ -7,7 +7,7 @@ LDLIBS := $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d
 VARLIBDIR := /var/lib/rwchcd
-SVNVER := $(shell svnversion -n .)
+REVISION := $(shell git describe --tags --always --dirty)
 
 DBUSGEN_BASE := rwchcd_dbus-generated
 
@@ -38,7 +38,7 @@ $(MAIN): $(OBJS) $(DBUSGEN_OBJS)
 svn_version.h:
 	@echo Generating svn_version.h
 	@echo -n '#define SVN_REV "'	> $@
-	@echo -n $(SVNVER)		>> $@
+	@echo -n $(REVISION)		>> $@
 	@echo '"'			>> $@
 
 clean:
@@ -74,7 +74,7 @@ uninstall:
 	@echo Done
 
 doc:	Doxyfile
-	( cat Doxyfile; echo "PROJECT_NUMBER=r$(SVNVER)" ) | doxygen -
+	( cat Doxyfile; echo "PROJECT_NUMBER=$(REVISION)" ) | doxygen -
 	
 # quick hack
 rwchcd_dbus.o:	$(DBUSGEN_BASE).h
