@@ -1,0 +1,5 @@
+*.[od]
+*-generated.[ch]
+svn_version.h
+rwchc_export.h
+rwchcd
