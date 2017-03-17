@@ -1,16 +1,16 @@
 {
-  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "cf5af325-46d8-4c8d-8e9b-20eb8517a32b++1948",
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "4A1F768CD5CDFDB97352B1029EA1B15D987DB511",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
-    "cf5af325-46d8-4c8d-8e9b-20eb8517a32b++1948" : {
+    "4A1F768CD5CDFDB97352B1029EA1B15D987DB511" : {
 
     }
   },
   "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
-    "cf5af325-46d8-4c8d-8e9b-20eb8517a32b++1948" : 0
+    "4A1F768CD5CDFDB97352B1029EA1B15D987DB511" : 0
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "838D74CF-891A-46AA-A0AD-4C3569DC0262",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
-    "cf5af325-46d8-4c8d-8e9b-20eb8517a32b++1948" : "rwchcd\/"
+    "4A1F768CD5CDFDB97352B1029EA1B15D987DB511" : "rwchcd\/"
   },
   "DVTSourceControlWorkspaceBlueprintNameKey" : "rwchcd",
   "DVTSourceControlWorkspaceBlueprintVersion" : 204,
@@ -19,7 +19,7 @@
     {
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/vcs.slashdirt.org\/svn\/rwchc",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
-      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "cf5af325-46d8-4c8d-8e9b-20eb8517a32b++1948"
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "4A1F768CD5CDFDB97352B1029EA1B15D987DB511"
     }
   ]
 }

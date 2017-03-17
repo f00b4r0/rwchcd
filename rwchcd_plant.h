@@ -74,12 +74,13 @@ struct s_valve {
 	int (*valvelaw)(struct s_valve * restrict const, const temp_t);	///< pointer to valve law
 };
 
-/** private data for templaw_linear (for 20C ambient target) */
-struct s_tlaw_lin20C_priv {
-	temp_t tout1;		///< outside temp1
-	temp_t twater1;		///< corresponding target water temp1
-	temp_t tout2;		///< outside temp2
-	temp_t twater2;		///< corresponding target water temp2
+/** private data for templaw_bilinear (for 20C ambient target) */
+struct s_tlaw_bilin20C_priv {
+	temp_t tout1;		///< outside temp1 (lowest outdoor temp)
+	temp_t twater1;		///< corresponding target water temp1 (highest water temp)
+	temp_t tout2;		///< outside temp2 (highest outdoor temp)
+	temp_t twater2;		///< corresponding target water temp2 (lowest water temp)
+	int_fast16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130)
 };
 
 /** Heating circuit element structure */
@@ -302,7 +303,7 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant);
 struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, enum e_heatsource_type type);
 struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
-int circuit_make_linear(struct s_heating_circuit * const circuit);
+int circuit_make_bilinear(struct s_heating_circuit * const circuit);
 int valve_make_bangbang(struct s_valve * const valve);
 int valve_make_sapprox(struct s_valve * const valve);
 
