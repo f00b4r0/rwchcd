@@ -23,9 +23,9 @@ DBUSGEN_DEPS := $(DBUSGEN_SRCS:.c=.d)
 
 MAIN := rwchcd
 
-.PHONY:	all clean distclean install uninstall dbus-gen doc svn_version.h
+.PHONY:	all clean distclean install uninstall dbus-gen doc version.h
 
-all:	svn_version.h $(MAIN)
+all:	version.h $(MAIN)
 	@echo	Done
 
 $(MAIN): $(OBJS) $(DBUSGEN_OBJS)
@@ -35,9 +35,9 @@ $(MAIN): $(OBJS) $(DBUSGEN_OBJS)
 	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
 
 # this must be phony to force regen on every run
-svn_version.h:
-	@echo Generating svn_version.h
-	@echo -n '#define SVN_REV "'	> $@
+version.h:
+	@echo Generating version.h
+	@echo -n '#define RWCHCD_REV "'	> $@
 	@echo -n $(REVISION)		>> $@
 	@echo '"'			>> $@
 

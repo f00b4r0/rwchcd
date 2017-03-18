@@ -55,7 +55,7 @@
 #include "rwchcd_scheduler.h"
 #include "rwchcd_dbus.h"
 
-#include "svn_version.h"
+#include "version.h"
 
 #define RWCHCD_PRIO	20	///< Desired run priority
 #define RWCHCD_UID	65534	///< Desired run uid
@@ -65,7 +65,7 @@
 
 static volatile int Sem_master_thread = 0;
 
-static const char Version[] = SVN_REV;	///< SVN_REV is defined in svn_version.h
+static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in version.h
 
 /**
  * Daemon signal handler.
