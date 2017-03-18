@@ -2,7 +2,7 @@
 //  rWCHCd.c
 //  A simple daemon for rWCHC
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016-2017 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -11,7 +11,7 @@
  rwchcd: a central heating controller daemon for rWCHC.
  
  @author Thibaut VARENE
- @date 2016
+ @date 2016-2017
  @copyright GPLv2
  
  Copyright: (C) 2016 Thibaut VARENE
@@ -57,9 +57,17 @@
 
 #include "version.h"
 
-#define RWCHCD_PRIO	20	///< Desired run priority
-#define RWCHCD_UID	65534	///< Desired run uid
-#define RWCHCD_GID	65534	///< Desired run gid
+#ifndef RWCHCD_PRIO
+ #define RWCHCD_PRIO	20	///< Desired run priority
+#endif
+
+#ifndef RWCHCD_UID
+ #define RWCHCD_UID	65534	///< Desired run uid
+#endif
+
+#ifndef RWCHCD_GID
+ #define RWCHCD_GID	65534	///< Desired run gid
+#endif
 
 #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
 
