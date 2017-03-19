@@ -1011,6 +1011,8 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 		// percentage of shift is formed by the difference between current temp and expected temp in K * 10: 1K down means -10% shift
 		heat->run.consumer_shift = (boiler_temp - boiler->set.limit_tmin)/10;
 	}
+	else
+		heat->run.consumer_shift = 0;
 		
 	// turn pump on if any
 	if (boiler->loadpump)
