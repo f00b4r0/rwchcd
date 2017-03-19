@@ -219,7 +219,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 				break;
 		}
 		if (circuit->run.transition)
-			dbgmsg("Trans: %d, prev amb: %d, new amb: %d, elapsed: %ld", circuit->run.transition, circuit->run.actual_ambient, ambient_temp, elapsed_time);
+			dbgmsg("Trans: %d, start amb: %d, curr amb: %d, elapsed: %ld", circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, elapsed_time);
 	}
 	
 	// store current ambient temp

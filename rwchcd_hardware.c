@@ -390,7 +390,6 @@ static int hardware_config_fetch(struct rwchc_s_settings * const settings)
 
 /**
  * Commit and save hardware config.
- * @param settings target hardware configuration
  * @return exec status
  */
 int hardware_config_store(void)

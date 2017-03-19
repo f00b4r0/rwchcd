@@ -14,7 +14,7 @@
  @date 2016-2017
  @copyright GPLv2
  
- Copyright: (C) 2016 Thibaut VARENE
+ Copyright: (C) 2016-2017 Thibaut VARENE
  
  Home page: http://hacks.slashdirt.org/hw/rwchc/
  */
