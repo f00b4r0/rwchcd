@@ -183,7 +183,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		elapsed_time = now - circuit->run.trans_since;
 		switch (circuit->run.transition) {
 			case TRANS_DOWN:
-				if (can_fastcool)
+				if (RM_OFF == circuit->run.runmode)
 					low_temp = runtime->t_outdoor_mixed;
 				else
 					low_temp = request_temp;
