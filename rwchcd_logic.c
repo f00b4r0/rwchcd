@@ -105,7 +105,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	enum e_runmode prev_runmode;
-	temp_t request_temp, low_temp;
+	temp_t request_temp, low_temp, diff_temp;
 	temp_t ambient_temp = 0, ambient_delta = 0;
 	time_t elapsed_time;
 	const time_t now = time(NULL);
@@ -203,10 +203,15 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 					 temp type which is K*100.
 					 IMPORTANT: it is essential that this computation be stopped when the
 					 temperature differential (request - actual) is < 100 (1K) otherwise the
-					 term that tends toward 0 introduces a huge residual error when boost is enabled. */
-					ambient_temp = circuit->run.trans_start_temp + (((100*elapsed_time / circuit->set.am_tambient_tK) *
-							(100 + (100*circuit->set.tambient_boostdelta) / (request_temp - circuit->run.actual_ambient)))
-							/ 100);	// works even if boostdelta is not set
+					 term that tends toward 0 introduces a huge residual error when boost is enabled.
+					 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
+					diff_temp = request_temp - circuit->run.actual_ambient;
+					if (diff_temp >= deltaK_to_temp(1.0F)) {
+						ambient_temp = circuit->run.trans_start_temp + (((100*elapsed_time / circuit->set.am_tambient_tK) *
+								(100 + (100*circuit->set.tambient_boostdelta) / diff_temp)) / 100);	// works even if boostdelta is not set
+					}
+					else
+						ambient_temp = request_temp;
 					break;
 				}
 				// if settings are insufficient, model can't run, fallback to no transition
