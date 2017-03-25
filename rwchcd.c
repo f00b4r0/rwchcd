@@ -224,14 +224,8 @@ static int init_process()
 	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
 	circuit->set.id_temp_outgoing = 3;	// XXX VALIDATION
 	circuit->set.id_temp_return = 4;	// XXX VALIDATION
-	circuit_make_bilinear(circuit);
-	struct s_tlaw_bilin20C_priv * restrict tpriv = circuit->tlaw_data_priv;
-	
-	tpriv->tout1 = celsius_to_temp(-5);
-	tpriv->twater1 = celsius_to_temp(66.5F);
-	tpriv->tout2 = celsius_to_temp(15);
-	tpriv->twater2 = celsius_to_temp(27);
-	tpriv->nH100 = 130;
+	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
+			      celsius_to_temp(15), celsius_to_temp(27), 130);
 
 	// create a valve for that circuit
 	circuit->valve = plant_new_valve(plant);

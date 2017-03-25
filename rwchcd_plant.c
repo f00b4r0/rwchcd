@@ -1127,11 +1127,6 @@ static int heatsource_run(struct s_heatsource * const heat)
  * Bilinear water temperature law.
  * This law approximates the curvature resulting from limited transmission non-linearities in heating elements
  * by splitting the curve in two linear segments around an inflexion point. It works well for 1 < nH < 1.5.
- * To determine the position of the inflexion point, the calculation starts from the linear curve as determined
- * by the two set points. It then computes the outdoor temperature corresponding to a 20C water output temp.
- * Then, it computes the temperature differential between the lowest outdoor temp set point and that calculated value.
- * The inflexion point is located on that differential, 30% down from the 20C output water temp point.
- * Thus, the high outdoor temp set point does NOT directly determines the position of the inflexion point.
  * The target output water temperature is computed for a 20C target ambient. It is then shifted accordingly to
  * the actual target ambient temp, based on the original (linear) curve slope.
  * Most of these calculations are empirical "industry proven practices".
@@ -1144,44 +1139,27 @@ static int heatsource_run(struct s_heatsource * const heat)
  * @param source_temp outdoor temperature to consider
  * @return a target water temperature for this circuit
  * @warning no parameter check
- * @todo the majority of the computation is redone everytime needlessly and could go in an init preamble.
  */
 static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
-	const struct s_tlaw_bilin20C_priv * tld = circuit->tlaw_data_priv;
+	const struct s_tlaw_bilin20C_priv * const tld = circuit->tlaw_data_priv;
 	float slope, slope_orig;
 	temp_t offset;
 	temp_t t_output, curve_shift, torig;
-	temp_t toutw20C, toutinfl, twaterinfl, tlin;
-	
-	assert(tld);
-	assert(tld->tout1 < tld->tout2);
 
-	// calculate the linear slope = (Y2 - Y1)/(X2 - X1)
-	slope = ((float)(tld->twater2 - tld->twater1)) / (tld->tout2 - tld->tout1);
-	slope_orig = slope;
-	// offset: reduce through a known point
-	offset = tld->twater2 - (tld->tout2 * slope);
+	assert(tld);
+
+	slope_orig = tld->slope;
 
 	// debug
-	torig = roundf(source_temp * slope) + offset;
-
-	// calculate outdoor temp for 20C water temp
-	toutw20C = roundf(((float)(celsius_to_temp(20) - offset)) / slope);
-
-	// calculate outdoor temp for inflexion point (toutw20C - (30% of toutw20C - tout1))
-	toutinfl = toutw20C - ((toutw20C - tld->tout1) * 30 / 100);
-
-	// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
-	tlin = (roundf(toutinfl * slope) + offset);
-	twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (tld->nH100 - 100) / 100);
+	torig = roundf(source_temp * tld->slope) + tld->offset;
 
 	// calculate new parameters based on current outdoor temperature (select adequate segment)
-	if (source_temp < toutinfl)
-		slope = ((float)(twaterinfl - tld->twater1)) / (toutinfl - tld->tout1);
+	if (source_temp < tld->toutinfl)
+		slope = ((float)(tld->twaterinfl - tld->twater1)) / (tld->toutinfl - tld->tout1);
 	else
-		slope = ((float)(tld->twater2 - twaterinfl)) / (tld->tout2 - toutinfl);
-	offset = twaterinfl - (toutinfl * slope);
+		slope = ((float)(tld->twater2 - tld->twaterinfl)) / (tld->tout2 - tld->toutinfl);
+	offset = tld->twaterinfl - (tld->toutinfl * slope);
 
 	// calculate output at nominal 20C: Y = input*slope + offset
 	t_output = roundf(source_temp * slope) + offset;
@@ -1404,22 +1382,70 @@ out:
 
 /**
  * Assign bilinear temperature law to the circuit.
+ * This function is used to assign or update a bilinear temperature law (and its
+ * associated parameters) to a target circuit.
+ * To determine the position of the inflexion point, the calculation starts from the linear curve as determined
+ * by the two set points. It then computes the outdoor temperature corresponding to a 20C water output temp.
+ * Then, it computes the temperature differential between the lowest outdoor temp set point and that calculated value.
+ * The inflexion point is located on that differential, 30% down from the 20C output water temp point.
+ * Thus, the high outdoor temp set point does NOT directly determines the position of the inflexion point.
+ *
  * @param circuit target circuit
+ * @param tout1 outside (low) temperature for point 1
+ * @param twater1 water (high) temperature for point 1
+ * @param tout2 outside (high) temperature for point 2
+ * @param twater2 water (low) temperature for point 2
+ * @param nH100 thermal non-linearity coef *100
  * @return error status
  */
-int circuit_make_bilinear(struct s_heating_circuit * const circuit)
+int circuit_make_bilinear(struct s_heating_circuit * const circuit,
+			  temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100)
 {
 	struct s_tlaw_bilin20C_priv * priv = NULL;
+	temp_t toutw20C, tlin;
 	
 	if (!circuit)
 		return (-EINVALID);
 
-	// create priv element
-	priv = calloc(1, sizeof(*priv));
-	if (!priv)
-		return (-EOOM);
+	// validate input
+	if ((tout1 >= tout2) || (twater1 <= twater2))
+		return (-EINVALID);
+
+	// create priv element if it doesn't already exist
+	if (!circuit->tlaw_data_priv) {
+		priv = calloc(1, sizeof(*priv));
+		if (!priv)
+			return (-EOOM);
+	}
+	else if ((templaw_bilinear == circuit->templaw) && circuit->tlaw_data_priv)
+		priv = circuit->tlaw_data_priv;
+	else
+		return (-EINVALID);
+
+	priv->tout1 = tout1;
+	priv->twater1 = twater1;
+	priv->tout2 = tout2;
+	priv->twater2 = twater2;
+	priv->nH100 = nH100;
+
+	// calculate the linear slope = (Y2 - Y1)/(X2 - X1)
+	priv->slope = ((float)(priv->twater2 - priv->twater1)) / (priv->tout2 - priv->tout1);
+	// offset: reduce through a known point
+	priv->offset = priv->twater2 - (priv->tout2 * priv->slope);
+
+	if (!priv->toutinfl) {
+		// calculate outdoor temp for 20C water temp
+		toutw20C = roundf(((float)(celsius_to_temp(20) - priv->offset)) / priv->slope);
+
+		// calculate outdoor temp for inflexion point (toutw20C - (30% of toutw20C - tout1))
+		priv->toutinfl = toutw20C - ((toutw20C - priv->tout1) * 30 / 100);
+
+		// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
+		tlin = (roundf(priv->toutinfl * priv->slope) + priv->offset);
+		priv->twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (priv->nH100 - 100) / 100);
+	}
 	
-	// attach created priv to valve
+	// attach priv structure
 	circuit->tlaw_data_priv = priv;
 	
 	circuit->templaw = templaw_bilinear;
