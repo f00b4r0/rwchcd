@@ -687,19 +687,28 @@ int valve_make_bangbang(struct s_valve * const valve)
 /** 
  * Constructor for sapprox valve control
  * @param valve target valve
+ * @param amount movement amount in %
+ * @param intvl sample interval in seconds
  * @return exec status
  */
-int valve_make_sapprox(struct s_valve * const valve)
+int valve_make_sapprox(struct s_valve * const valve,
+		       uint_fast8_t amount, time_t intvl)
 {
 	struct s_valve_sapprox_priv * priv = NULL;
 	
 	if (!valve)
 		return (-EINVALID);
 	
+	if (amount > 100)
+		return (-EINVALID);
+	
 	// create priv element
 	priv = calloc(1, sizeof(*priv));
 	if (!priv)
 		return (-EOOM);
+	
+	priv->set_amount = amount;
+	priv->set_sample_intvl = intvl;
 	
 	// attach created priv to valve
 	valve->priv = priv;

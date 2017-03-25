@@ -309,6 +309,6 @@ struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
 int circuit_make_bilinear(struct s_heating_circuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
 int valve_make_bangbang(struct s_valve * const valve);
-int valve_make_sapprox(struct s_valve * const valve);
+int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl);
 
 #endif /* rwchcd_plant_h */

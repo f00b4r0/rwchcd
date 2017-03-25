@@ -241,12 +241,7 @@ static int init_process()
 	circuit->valve->set.id_temp1 = boiler->set.id_temp_outgoing;
 	circuit->valve->set.id_temp2 = circuit->set.id_temp_return;
 	circuit->valve->set.id_tempout = circuit->set.id_temp_outgoing;
-	valve_make_sapprox(circuit->valve);
-	struct s_valve_sapprox_priv * restrict vpriv = circuit->valve->priv;
-	
-	vpriv->set_sample_intvl = 20;
-	vpriv->set_amount = 5;
-	vpriv = NULL;
+	valve_make_sapprox(circuit->valve, 5, 20);
 	
 	// configure two relays for that valve
 	ret = hardware_relay_request(11);
