@@ -1152,16 +1152,10 @@ static int heatsource_run(struct s_heatsource * const heat)
 static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
 	const struct s_tlaw_bilin20C_priv * const tld = circuit->tlaw_data_priv;
-	float slope, slope_orig;
-	temp_t offset;
-	temp_t t_output, curve_shift, torig;
+	float slope;
+	temp_t offset, t_output;
 
 	assert(tld);
-
-	slope_orig = tld->slope;
-
-	// debug
-	torig = roundf(source_temp * tld->slope) + tld->offset;
 
 	// calculate new parameters based on current outdoor temperature (select adequate segment)
 	if (source_temp < tld->toutinfl)
@@ -1173,11 +1167,10 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
 	// calculate output at nominal 20C: Y = input*slope + offset
 	t_output = roundf(source_temp * slope) + offset;
 
-	dbgmsg("orig: %.1f, new: %.1f", temp_to_celsius(torig), temp_to_celsius(t_output));
+	dbgmsg("orig: %.1f, new: %.1f", temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
 
 	// shift output based on actual target temperature
-	curve_shift = (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - slope_orig);
-	t_output += curve_shift;
+	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - tld->slope);
 
 	return (t_output);
 }
