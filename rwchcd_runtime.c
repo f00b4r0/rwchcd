@@ -21,7 +21,7 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_timer.h"
 
-static const storage_version_t Runtime_sversion = 3;
+static const storage_version_t Runtime_sversion = 4;
 static struct s_runtime Runtime;
 
 /**
@@ -76,7 +76,7 @@ static int runtime_restore(void)
  */
 static int runtime_async_log(void)
 {
-	const storage_version_t version = 1;
+	const storage_version_t version = 2;
 	static storage_keys_t keys[] = {
 		"systemmode",
 		"runmode",
@@ -113,7 +113,7 @@ static int runtime_async_log(void)
  */
 static int runtime_async_log_temps(void)
 {
-	const storage_version_t version = 1;
+	const storage_version_t version = 2;
 	static storage_keys_t keys[] = {
 		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
 	};

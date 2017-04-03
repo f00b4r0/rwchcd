@@ -72,8 +72,9 @@ enum e_execs {
 #define ON	true
 #define OFF	false
 
-#define KPRECISIONI	100
-#define KPRECISIONF	100.0F
+// fixed-point precision: we use a 1/1000th of a degree to reduce rounding imprecision in calculations
+#define KPRECISIONI	1000
+#define KPRECISIONF	1000.0F
 
 #define RWCHCD_TEMPMIN	((-50 + 273) * KPRECISIONI)	///< -50C is the lowest temperature we expect to deal with
 #define RWCHCD_TEMPMAX	((150 + 273) * KPRECISIONI)	///< +150C is the highest temperature we expect to deal with

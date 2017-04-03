@@ -20,7 +20,7 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_config.h"
 
-static const storage_version_t Config_sversion = 4;
+static const storage_version_t Config_sversion = 5;
 
 /**
  * Allocate new config.
