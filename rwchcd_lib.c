@@ -12,6 +12,7 @@
  */
 
 #include <math.h>	// roundf
+#include <assert.h>
 
 #include "rwchcd.h"
 #include "rwchcd_runtime.h"
@@ -66,6 +67,9 @@ temp_t get_temp(const tempid_t id)
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
 {
 	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
+	
+	if (alpha <= 1.0F/KPRECISIONF)
+		dbgerr("WARNING: rounding error. tau: %ld, dt: %ld", tau, dt);
 	
 	return (filtered - roundf(alpha * (filtered - new_sample)));
 }
