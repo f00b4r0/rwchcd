@@ -38,8 +38,10 @@
 
 #ifdef DEBUG
  #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+ #define pr_log(format, ...)	fprintf(stderr, format "\n", ## __VA_ARGS__)
 #else
  #define dbgmsg(format, ...)	/* nothing */
+ #define pr_log(format, ...)	printf(format "\n", ## __VA_ARGS__)
 #endif
 
 #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
