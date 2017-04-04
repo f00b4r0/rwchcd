@@ -2,7 +2,7 @@
 //  rwchcd_runtime.c
 //  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016-2017 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -20,6 +20,10 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
 #include "rwchcd_timer.h"
+
+#define OUTDOOR_AVG_UPDATE_DT	600	///< prevents running averages at less than 10mn interval. Should be good up to 100h building_tau.
+#define LOG_INTVL_RUNTIME	OUTDOOR_AVG_UPDATE_DT
+#define LOG_INTVL_TEMPS		60
 
 static const storage_version_t Runtime_sversion = 4;
 static struct s_runtime Runtime;
@@ -131,20 +135,11 @@ static int runtime_async_log_temps(void)
 }
 
 /**
- * Reset runtime outdoor temperatures to sane values
- */
-static inline void outdoor_temp_reset(void)
-{
-	// set init state of outdoor temperatures - XXX REVISIT
-	if (0 == Runtime.t_outdoor_attenuated)
-		Runtime.t_outdoor = Runtime.t_outdoor_60 = Runtime.t_outdoor_filtered = Runtime.t_outdoor_mixed = Runtime.t_outdoor_attenuated = get_temp(Runtime.config->id_temp_outdoor);
-
-}
-
-/**
  * Process outdoor temperature.
  * Compute the values of mixed and attenuated outdoor temp based on a
  * weighted moving average and the building time constant.
+ * This function is designed so that at init time, when the variables are all 0,
+ * the averages will take the value of the current outdoor temperature.
  * @note must run at (ideally) fixed intervals
  * @note this is part of the synchronous code path because moving it to a separate
  * thread would add overhead (locking) for essentially no performance improvement.
@@ -163,20 +158,20 @@ static void outdoor_temp()
 		Runtime.t_outdoor = toutdoor + Runtime.config->set_temp_outdoor_offset;
 	
 	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
-	Runtime.t_outdoor_mixed = (Runtime.t_outdoor_60 + Runtime.t_outdoor_filtered)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 
 	last60 = now;
 	
-	// XXX REVISIT prevent running averages at less than building_tau/60 interval, otherwise the precision rounding error in temp_expw_mavg becomes too large
-	if (dt < (Runtime.config->building_tau / 60))
-		return;
+	if (dt >= OUTDOOR_AVG_UPDATE_DT) {
+		Runtime.t_outdoor_ltime = now;
 
-	Runtime.t_outdoor_ltime = now;
+		Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor_60, Runtime.config->building_tau, dt);
+		Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_filtered, Runtime.config->building_tau, dt);
+		
+		runtime_save();
+	}
 
-	Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor, Runtime.config->building_tau, dt);
-	Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_filtered, Runtime.config->building_tau, dt);
-	
-	runtime_save();
+	// calculate mixed temp last: makes it work at init
+	Runtime.t_outdoor_mixed = (Runtime.t_outdoor_60 + Runtime.t_outdoor_filtered)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 }
 
 
@@ -346,10 +341,9 @@ int runtime_online(void)
 	runtime_restore();
 
 	outdoor_temp();
-	outdoor_temp_reset();
 
-	timer_add_cb((Runtime.config->building_tau / 60), runtime_async_log);
-	timer_add_cb(60, runtime_async_log_temps);
+	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log);
+	timer_add_cb(LOG_INTVL_TEMPS, runtime_async_log_temps);
 	
 	return (plant_online(Runtime.plant));
 }
