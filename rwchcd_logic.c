@@ -2,7 +2,7 @@
 //  rwchcd_logic.c
 //  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016-2017 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -103,6 +103,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  */
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
+	static time_t dtmin = 0;	// XXX updates only once
 	const struct s_runtime * restrict const runtime = get_runtime();
 	enum e_runmode prev_runmode;
 	temp_t request_temp, low_temp, diff_temp;
@@ -180,20 +181,25 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		ambient_delta = (circuit->set.ambient_factor/10) * (circuit->run.target_ambient - ambient_temp);
 	}
 	else {	// no sensor (or faulty), apply ambient model for transitions
-		elapsed_time = now - circuit->run.trans_since;
 		switch (circuit->run.transition) {
 			case TRANS_DOWN:
+				dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*runtime->config->building_tau);
+				elapsed_time = now - circuit->run.ambient_update_time;
 				if (RM_OFF == circuit->run.runmode)
 					low_temp = runtime->t_outdoor_mixed;
 				else
 					low_temp = request_temp;
 				// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 				// all necessary data is _always_ available, no need to special case here
-				ambient_temp = (circuit->run.trans_start_temp - low_temp) * expf((float)-elapsed_time/(3*runtime->config->building_tau)) + low_temp;	// we converge toward low_temp
+				if (elapsed_time > dtmin) {
+					ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, low_temp, 3*runtime->config->building_tau, elapsed_time); // we converge toward low_temp
+					circuit->run.ambient_update_time = now;
+				}
 				break;
 			case TRANS_UP:
 				// transition up, apply semi-exponential model
 				if (circuit->set.am_tambient_tK) {	// only if necessary data is available
+					elapsed_time = now - circuit->run.trans_since;
 					// tstart + elevation over time: tstart + ((elapsed_time * 100/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
 					/* note: the impact of the boost should be considered as a percentage of the total
 					 requested temperature increase over _current_ temp, hence (treq - tcurrent).
@@ -212,6 +218,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 					}
 					else
 						ambient_temp = request_temp;
+					circuit->run.ambient_update_time = now;
 					break;
 				}
 				// if settings are insufficient, model can't run, fallback to no transition

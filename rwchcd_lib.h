@@ -60,4 +60,14 @@ static inline float temp_to_deltaK(const temp_t temp)
 	return ((float)((float)temp/KPRECISIONF));
 }
 
+/**
+ * Calculate the minimum time interval to use with temp_expw_mavg() for a given
+ * tau.
+ * @param tau target tau
+ * @return minimum usable time interval
+ */
+static inline time_t expw_mavg_dtmin(const time_t tau)
+{
+	return (/*ceilf*/(((1.0F/KPRECISIONF)*tau)/(1-(1.0F/KPRECISIONF))) * 2);
+}
 #endif /* rwchcd_lib_h */

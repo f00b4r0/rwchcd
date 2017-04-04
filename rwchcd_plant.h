@@ -114,6 +114,7 @@ struct s_heating_circuit {
 		temp_t request_ambient;		///< current requested ambient target temp
 		temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
 		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current transition underwent by the circuit
+		time_t ambient_update_time;	///< ambient model last update time
 		time_t trans_since;		///< transition start time
 		temp_t trans_start_temp;	///< temperature at transition start
 		temp_t actual_ambient;		///< actual ambient temperature (either from sensor, or modelled)
