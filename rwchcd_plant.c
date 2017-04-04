@@ -633,8 +633,9 @@ static int valve_run(struct s_valve * const valve)
 	if (request_runtime < deadtime)
 		return (-EDEADBAND);
 
-	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, running since: %ld, runtime: %ld",
-	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, valve->run.running_since, runtime);
+	if (STOP != valve->run.actual_action)
+		dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, runtime: %ld",
+		       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, runtime);
 	
 	// check what is the requested action
 	if (OPEN == valve->run.request_action) {
