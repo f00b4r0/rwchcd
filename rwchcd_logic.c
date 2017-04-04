@@ -96,7 +96,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * modelled ambient temperature. Handles runmode transitions.
  * @param circuit target circuit
  * @return exec status
- * @warning review/test ambient model @b integer maths
+ * @todo cleanup
  * XXX TODO: ADD optimizations (anticipated turn on/off, max ambient... p36+)
  * XXX TODO: ambient max delta shutdown; optim based on return temp
  * XXX TODO: optimization with return temperature
@@ -106,7 +106,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	static time_t dtmin = 0;	// XXX updates only once
 	const struct s_runtime * restrict const runtime = get_runtime();
 	enum e_runmode prev_runmode;
-	temp_t request_temp, low_temp, diff_temp;
+	temp_t request_temp, diff_temp;
 	temp_t ambient_temp = 0, ambient_delta = 0;
 	time_t elapsed_time;
 	const time_t now = time(NULL);
@@ -180,58 +180,69 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		// calculate ambient shift based on measured ambient temp influence p.41
 		ambient_delta = (circuit->set.ambient_factor/10) * (circuit->run.target_ambient - ambient_temp);
 	}
-	else {	// no sensor (or faulty), apply ambient model for transitions
-		switch (circuit->run.transition) {
-			case TRANS_DOWN:
-				dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*runtime->config->building_tau);
-				elapsed_time = now - circuit->run.ambient_update_time;
-				if (RM_OFF == circuit->run.runmode)
-					low_temp = runtime->t_outdoor_mixed;
-				else
-					low_temp = request_temp;
-				// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
-				// all necessary data is _always_ available, no need to special case here
-				if (elapsed_time > dtmin) {
-					ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, low_temp, 3*runtime->config->building_tau, elapsed_time); // we converge toward low_temp
-					circuit->run.ambient_update_time = now;
-				}
-				break;
-			case TRANS_UP:
-				// transition up, apply semi-exponential model
-				if (circuit->set.am_tambient_tK) {	// only if necessary data is available
-					elapsed_time = now - circuit->run.trans_since;
-					// tstart + elevation over time: tstart + ((elapsed_time * 100/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
-					/* note: the impact of the boost should be considered as a percentage of the total
-					 requested temperature increase over _current_ temp, hence (treq - tcurrent).
-					 Furthermore, by simply adjusting a few factors in equal proportion (100),
-					 we don't need to deal with floats and we can keep a good precision.
-					 Also note that am_tambient_tK must be considered /100 to match the internal
-					 temp type which is K*100.
-					 IMPORTANT: it is essential that this computation be stopped when the
-					 temperature differential (request - actual) is < 100 (1K) otherwise the
-					 term that tends toward 0 introduces a huge residual error when boost is enabled.
-					 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
-					diff_temp = request_temp - circuit->run.actual_ambient;
-					if (diff_temp >= deltaK_to_temp(1.0F)) {
-						ambient_temp = circuit->run.trans_start_temp + (((100*elapsed_time / circuit->set.am_tambient_tK) *
-								(100 + (100*circuit->set.tambient_boostdelta) / diff_temp)) / 100);	// works even if boostdelta is not set
-					}
-					else
-						ambient_temp = request_temp;
-					circuit->run.ambient_update_time = now;
-					break;
-				}
-				// if settings are insufficient, model can't run, fallback to no transition
-			case TRANS_NONE:
-				// no transition, ambient temp assumed to be request temp
-				ambient_temp = circuit->run.request_ambient;
-				circuit->run.trans_start_temp = 0;
-				break;
-			default:
-				break;
+	else {	// no sensor (or faulty), apply ambient model
+		ambient_temp = circuit->run.actual_ambient;
+		
+		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
+		if (RM_OFF == circuit->run.runmode) {
+			dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*runtime->config->building_tau);
+			elapsed_time = now - circuit->run.ambient_update_time;
+			if (elapsed_time > dtmin) {
+				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, runtime->t_outdoor_mixed, 3*runtime->config->building_tau, elapsed_time); // we converge toward low_temp
+				circuit->run.ambient_update_time = now;
+			}
+			dbgmsg("off, ambient: %.1f", temp_to_celsius(ambient_temp));
 		}
-		if (circuit->run.transition)
-			dbgmsg("Trans: %d, start amb: %d, curr amb: %d, elapsed: %ld", circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, elapsed_time);
+		else {
+			// otherwise apply transition models. Circuit cannot be RM_OFF here
+			switch (circuit->run.transition) {
+				case TRANS_DOWN:
+					dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*runtime->config->building_tau);
+					elapsed_time = now - circuit->run.ambient_update_time;
+					// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
+					// all necessary data is _always_ available, no need to special case here
+					if (elapsed_time > dtmin) {
+						ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, request_temp, 3*runtime->config->building_tau, elapsed_time); // we converge toward low_temp
+						circuit->run.ambient_update_time = now;
+					}
+					break;
+				case TRANS_UP:
+					// transition up, apply semi-exponential model
+					if (circuit->set.am_tambient_tK) {	// only if necessary data is available
+						elapsed_time = now - circuit->run.trans_since;
+						// tstart + elevation over time: tstart + ((elapsed_time * 100/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
+						/* note: the impact of the boost should be considered as a percentage of the total
+						 requested temperature increase over _current_ temp, hence (treq - tcurrent).
+						 Furthermore, by simply adjusting a few factors in equal proportion (100),
+						 we don't need to deal with floats and we can keep a good precision.
+						 Also note that am_tambient_tK must be considered /100 to match the internal
+						 temp type which is K*100.
+						 IMPORTANT: it is essential that this computation be stopped when the
+						 temperature differential (request - actual) is < 100 (1K) otherwise the
+						 term that tends toward 0 introduces a huge residual error when boost is enabled.
+						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
+						diff_temp = request_temp - circuit->run.actual_ambient;
+						if (diff_temp >= deltaK_to_temp(1.0F)) {
+							ambient_temp = circuit->run.trans_start_temp + (((100*elapsed_time / circuit->set.am_tambient_tK) *
+									(100 + (100*circuit->set.tambient_boostdelta) / diff_temp)) / 100);	// works even if boostdelta is not set
+						}
+						else
+							ambient_temp = request_temp;
+						circuit->run.ambient_update_time = now;
+						break;
+					}
+					// if settings are insufficient, model can't run, fallback to no transition
+				case TRANS_NONE:
+					// no transition, ambient temp assumed to be request temp
+					ambient_temp = circuit->run.request_ambient;
+					circuit->run.trans_start_temp = 0;
+					break;
+				default:
+					break;
+			}
+			if (circuit->run.transition)
+				dbgmsg("Trans: %d, start amb: %d, curr amb: %d, elapsed: %ld", circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, elapsed_time);
+		}
 	}
 	
 	// store current ambient temp
