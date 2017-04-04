@@ -210,21 +210,21 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 					// transition up, apply semi-exponential model
 					if (circuit->set.am_tambient_tK) {	// only if necessary data is available
 						elapsed_time = now - circuit->run.trans_since;
-						// tstart + elevation over time: tstart + ((elapsed_time * 100/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
+						// tstart + elevation over time: tstart + ((elapsed_time * KPRECISIONI/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
 						/* note: the impact of the boost should be considered as a percentage of the total
 						 requested temperature increase over _current_ temp, hence (treq - tcurrent).
-						 Furthermore, by simply adjusting a few factors in equal proportion (100),
+						 Furthermore, by simply adjusting a few factors in equal proportion (KPRECISIONI),
 						 we don't need to deal with floats and we can keep a good precision.
-						 Also note that am_tambient_tK must be considered /100 to match the internal
-						 temp type which is K*100.
+						 Also note that am_tambient_tK must be considered /KPRECISIONI to match the internal
+						 temp type which is K*KPRECISIONI.
 						 IMPORTANT: it is essential that this computation be stopped when the
-						 temperature differential (request - actual) is < 100 (1K) otherwise the
+						 temperature differential (request - actual) is < KPRECISIONI (1K) otherwise the
 						 term that tends toward 0 introduces a huge residual error when boost is enabled.
 						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
 						diff_temp = request_temp - circuit->run.actual_ambient;
-						if (diff_temp >= deltaK_to_temp(1.0F)) {
-							ambient_temp = circuit->run.trans_start_temp + (((100*elapsed_time / circuit->set.am_tambient_tK) *
-									(100 + (100*circuit->set.tambient_boostdelta) / diff_temp)) / 100);	// works even if boostdelta is not set
+						if (diff_temp >= KPRECISIONI) {
+							ambient_temp = circuit->run.trans_start_temp + (((KPRECISIONI*elapsed_time / circuit->set.am_tambient_tK) *
+									(KPRECISIONI + (KPRECISIONI*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISIONI);	// works even if boostdelta is not set
 						}
 						else
 							ambient_temp = request_temp;

@@ -1019,7 +1019,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// form consumer shift request if necessary
 	if (boiler_temp < boiler->set.limit_tmin) {
 		// percentage of shift is formed by the difference between current temp and expected temp in K * 10: 1K down means -10% shift
-		heat->run.consumer_shift = (boiler_temp - boiler->set.limit_tmin)/10;
+		heat->run.consumer_shift = 10*(boiler_temp - boiler->set.limit_tmin)/KPRECISIONI;
 	}
 	else
 		heat->run.consumer_shift = 0;

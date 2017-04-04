@@ -21,7 +21,7 @@ temp_t get_temp(const tempid_t id);
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt);
 
 /**
- * Convert celsius value to internal temp_t format (Kelvin *100).
+ * Convert celsius value to internal temp_t format (Kelvin * KPRECISIONI).
  * @param celsius temp value in Celsius
  * @return value converted to internal type
  */

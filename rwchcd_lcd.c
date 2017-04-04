@@ -300,7 +300,7 @@ static const char * temp_to_str(const tempid_t tempid)
 	const temp_t temp = get_temp(tempid);
 	float celsius;
 
-#if (RWCHCD_TEMPMIN < ((-99 + 273) * 100))
+#if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
 #error Non representable minimum temperature
 #endif
 
