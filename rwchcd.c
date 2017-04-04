@@ -432,7 +432,7 @@ int main(void)
 	int pipefd[2];
 	int ret;
 
-	printf("Revision %s starting\n", Version);
+	pr_log("Revision %s starting", Version);
 	
 	// create the stdout fifo for debugging
 	unlink(RWCHCD_FIFO);

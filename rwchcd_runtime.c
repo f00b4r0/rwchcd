@@ -272,10 +272,11 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 	}
 	
 	dbgmsg("sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.runmode, Runtime.dhwmode);
-
 	Runtime.systemmode = sysmode;
 	
 	runtime_save();
+
+	pr_log("system mode set: %d", sysmode);
 
 	return (ALL_OK);
 }
@@ -299,7 +300,9 @@ int runtime_set_runmode(const enum e_runmode runmode)
 	Runtime.runmode = runmode;
 
 	runtime_save();
-	
+
+	pr_log("run mode set: %d", runmode);
+
 	return (ALL_OK);
 }
 
@@ -322,7 +325,9 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 	Runtime.dhwmode = dhwmode;
 
 	runtime_save();
-	
+
+	pr_log("DHW mode set: %d", dhwmode);
+
 	return (ALL_OK);
 }
 
