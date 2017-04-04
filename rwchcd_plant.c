@@ -2338,7 +2338,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_valve_l * valvel;
 	struct s_pump_l * pumpl;
 	int ret;
-	bool sleeping = false, suberror = false;
+	bool sleeping = true, suberror = false;
 	time_t stop_delay = 0;
 
 	assert(plant);
@@ -2421,7 +2421,7 @@ int plant_run(struct s_plant * restrict const plant)
 				continue;	// no further processing for this source
 		}
 		
-		if (heatsourcel->heats->run.could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
+		if (!heatsourcel->heats->run.could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
 			sleeping = heatsourcel->heats->run.could_sleep;
 		
 		// max stop delay
