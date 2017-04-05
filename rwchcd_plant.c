@@ -10,7 +10,6 @@
  * @file
  * Plant basic operation implementation.
  * @todo valve PI(D) controller
- * @todo summer run: valve mid position, periodic run of pumps - switchover condition is same as circuit_outhoff with target_temp = preset summer switchover temp
  * @todo plant_save()/plant_restore() (for e.g. dynamically created plants)
  * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
  * switch to fuel when wood dies out) and cascade mode (for large systems).
@@ -2322,6 +2321,64 @@ int plant_offline(struct s_plant * restrict const plant)
 }
 
 /**
+ * Force all pumps on and valves open.
+ * The idea of this function is to run as an override filter in the plant_run()
+ * loop so that during summer maintenance, the state of these actuators is
+ * overriden.
+ * When summer conditions are met, it will periodically run the pumps and ensure
+ * all valves are open.
+ * @param plant target plant
+ * @return exec status
+ */
+static int plant_summer_ops(const struct s_plant * restrict const plant)
+{
+#define SUMMER_RUN_INTVL	60*60*24*7	///< 1 week
+#define SUMMER_RUN_DURATION	60*10		///< 10 minutes
+	static time_t timer_start = 0;
+	const struct s_runtime * restrict const runtime = get_runtime();
+	struct s_pump_l * pumpl;
+	struct s_valve_l * valvel;
+	time_t now;
+	int ret;
+
+	now = time(NULL);
+
+	// don't do anything if summer AND plant asleep aren't in effect
+	if (!(runtime->summer && runtime->plant_could_sleep))
+		timer_start = now;
+
+	// stop running when duration is exceeded (this also prevents running when summer is first triggered)
+	if ((now - timer_start) >= (SUMMER_RUN_INTVL + SUMMER_RUN_DURATION)) {
+		timer_start = now;
+		pr_log("summer maintenance completed");
+	}
+
+	// don't run too often
+	if ((now - timer_start) < SUMMER_RUN_INTVL)
+		return (ALL_OK);
+
+	dbgmsg("summer maintenance active");
+
+	// open all valves
+	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
+		ret = valve_reqopen_full(valvel->valve);
+
+		if (ALL_OK != ret)
+			dbgerr("valve_reqopen_full failed on %d (%d)", valvel->id, ret);
+	}
+
+	// set all pumps ON
+	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
+		ret = pump_set_state(pumpl->pump, ON, NOFORCE);
+
+		if (ALL_OK != ret)
+			dbgerr("pump_set_state failed on %d (%d)", pumpl->id, ret);
+	}
+
+	return (ALL_OK);
+}
+
+/**
  * Run the plant.
  * This function operates all plant elements in turn by enumerating through each list.
  * @param plant the target plant to run
@@ -2428,6 +2485,8 @@ int plant_run(struct s_plant * restrict const plant)
 		stop_delay = (heatsourcel->heats->run.target_consumer_stop_delay > stop_delay) ? heatsourcel->heats->run.target_consumer_stop_delay : stop_delay;
 		runtime->consumer_shift = heatsourcel->heats->run.consumer_shift;	// XXX
 	}
+
+	plant_summer_ops(plant);
 
 	// run the valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
