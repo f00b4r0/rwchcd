@@ -438,7 +438,7 @@ int hardware_init(void)
 	if (spi_init() < 0)
 		return (-EINIT);
 
-	memset(Relays, 0x0, ARRAY_SIZE(Relays));
+	memset(Relays, 0x0, sizeof(Relays));
 	memset(&Hardware, 0x0, sizeof(Hardware));
 	
 	Hardware.ready = true;
