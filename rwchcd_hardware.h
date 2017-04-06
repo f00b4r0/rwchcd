@@ -47,7 +47,7 @@ int hardware_config_store(void);
 int hardware_rwchcrelays_write(void) __attribute__((warn_unused_result));
 int hardware_rwchcperiphs_write(void) __attribute__((warn_unused_result));
 int hardware_rwchcperiphs_read(void) __attribute__((warn_unused_result));
-int hardware_relay_request(const relid_t id) __attribute__((warn_unused_result));
+int hardware_relay_request(const relid_t id, const char * const name) __attribute__((warn_unused_result));
 int hardware_relay_release(const relid_t id);
 int hardware_relay_set_state(const relid_t id, bool turn_on, time_t change_delay);
 int hardware_relay_get_state(const relid_t id);

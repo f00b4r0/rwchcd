@@ -17,7 +17,7 @@
 #include <time.h>	// time
 #include <math.h>	// sqrtf
 #include <stdlib.h>	// calloc/free
-#include <string.h>	// memset
+#include <string.h>	// memset/strdup
 #include <unistd.h>	// sleep
 #include <assert.h>
 
@@ -212,6 +212,7 @@ static void parse_temps(void)
 /**
  * Save hardware relays state to permanent storage
  * @return exec status
+ * @todo proper save of relay name
  */
 static int hardware_save_relays(void)
 {
@@ -222,6 +223,7 @@ static int hardware_save_relays(void)
  * Restore hardware relays state from permanent storage
  * Restores cycles and on/off total time counts for set relays.
  * @return exec status
+ * @todo restore relay name
  */
 static int hardware_restore_relays(void)
 {
@@ -668,15 +670,26 @@ int hardware_rwchcperiphs_read(void)
  * Request a hardware relay.
  * Ensures that the desired hardware relay is available and grabs it.
  * @param id target relay id (starting from 1)
+ * @param name the user-defined name for this relay (string will be copied locally)
  * @return exec status
  */
-int hardware_relay_request(const relid_t id)
+int hardware_relay_request(const relid_t id, const char * const name)
 {
+	char * str = NULL;
+
 	if (!id || id > RELAY_MAX_ID)
 		return (-EINVALID);
 	
 	if (Relays[id-1].set.configured)
 		return (-EEXISTS);
+
+	if (name) {
+		str = strdup(name);
+		if (!str)
+			return(-EOOM);
+
+		Relays[id-1].name = str;
+	}
 
 	Relays[id-1].set.configured = true;
 	
@@ -696,6 +709,8 @@ int hardware_relay_release(const relid_t id)
 	
 	if (!Relays[id-1].set.configured)
 		return (-ENOTCONFIGURED);
+
+	free(Relays[id-1].name);
 	
 	memset(&Relays[id-1], 0x00, sizeof(Relays[id-1]));
 	

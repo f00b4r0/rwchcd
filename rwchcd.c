@@ -200,7 +200,7 @@ static int init_process()
 	boiler->set.limit_tmin = celsius_to_temp(50);
 	boiler->set.id_temp = 2;	// XXX VALIDATION
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
-	ret = hardware_relay_request(14);	// XXX 2nd relay
+	ret = hardware_relay_request(14, "burner");	// XXX 2nd relay
 	if (ret)
 		return (ret);
 	else
@@ -244,13 +244,13 @@ static int init_process()
 	valve_make_sapprox(circuit->valve, 5, 20);
 	
 	// configure two relays for that valve
-	ret = hardware_relay_request(11);
+	ret = hardware_relay_request(11, "v_open");
 	if (ret)
 		return (ret);
 	else
 		circuit->valve->set.rid_open = 11;
 	
-	ret = hardware_relay_request(10);
+	ret = hardware_relay_request(10, "v_close");
 	if (ret)
 		return (ret);
 	else
@@ -266,7 +266,7 @@ static int init_process()
 	}
 
 	// configure a relay for that pump
-	ret = hardware_relay_request(9);
+	ret = hardware_relay_request(9, "pump");
 	if (ret)
 		return (ret);
 	else
