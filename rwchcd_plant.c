@@ -1376,6 +1376,8 @@ valve:
 			goto out;
 	}
 
+	// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.id_temp_outgoing) > circuit->run.target_ambient))
+
 	ret = ALL_OK;
 out:
 	circuit->run.last_run_time = now;

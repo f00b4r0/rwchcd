@@ -25,7 +25,7 @@
 #define SPIRESYNCMAX	200		///< max resync tries -> terminal delay ~120ms including 100us SPIDELAYUS for each exchange
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0
-#define SPIMODE		3	///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
+#define SPIMODE		3		///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
 #define USLEEPLCDFAST	50		///< expected completion time (us) for most LCD ops
 #define USLEEPLCDSLOW	2000		///< expected completion time (us) for clear/home cmds
@@ -61,7 +61,6 @@ static uint8_t SPI_rw8bit(const uint8_t data)
 	static uint8_t exch;
 	exch = data;
 	wiringPiSPIDataRW(SPICHAN, &exch, 1);
-	//printf("\tsent: %x, rcvd: %x\n", data, exch);
 	usleep(SPIDELAYUS);
 	return exch;
 }
@@ -79,9 +78,9 @@ int spi_keepalive(void)
 	SPI_RESYNC(RWCHC_SPIC_KEEPALIVE);
 
 	if (SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_ALIVE))
-	    return (ALL_OK);
+		return (ALL_OK);
 	else
-	    return (-ESPI);
+		return (-ESPI);
 }
 
 /**

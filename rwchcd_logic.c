@@ -97,9 +97,11 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * @param circuit target circuit
  * @return exec status
  * @todo cleanup
- * XXX TODO: ADD optimizations (anticipated turn on/off, max ambient... p36+)
- * XXX TODO: ambient max delta shutdown; optim based on return temp
- * XXX TODO: optimization with return temperature
+ * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient... p36+)
+ * @todo XXX TODO: ambient max delta shutdown; optim based on return temp
+ * @todo XXX TODO: optimization with return temperature
+ * @note the ambient model will not acknowledge lag due to circuit warming up
+ * (including rate of rise limitation). REVIEW
  */
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
