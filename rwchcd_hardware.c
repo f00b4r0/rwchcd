@@ -121,17 +121,17 @@ static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 	uint_fast16_t value, dacoffset;
 	float calibmult;
 
-	dacoffset = (raw >> 12) & 0x3;
+	dacoffset = (raw >> RWCHC_DAC_OFFBIT) & RWCHC_DAC_OFFMASK;
 
 	value = raw & RWCHC_ADC_MAXV;		// raw is 10bit, cannot be negative when cast to sint
 	value *= RWCHC_ADC_MVSCALE;		// convert to millivolts
 	value += dacset[dacoffset]*RWCHC_DAC_MVSCALE*RWCHC_ADC_OPGAIN;	// add the initial offset
 
 	/* value is now (1+RWCHC_ADC_OPGAIN) * actual value at sensor. Sensor is fed 0.5mA,
-	 * so sensor resistance is 1/2 actual value in millivolt. 1+RWCHC_ADC_OPGAIN = 4.
-	 * Thus, resistance in ohm is value/2 */
+	 * so sensor resistance is RWCHC_ADC_RMULT * actual value in millivolt. */
 
-	value /= 2;
+	value *= RWCHC_ADC_RMULT;
+	value /= (1+RWCHC_ADC_OPGAIN);
 
 	// finally, apply calibration factor
 	if (calib)
