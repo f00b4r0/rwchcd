@@ -68,7 +68,7 @@ __attribute__((pure, always_inline)) static inline float temp_to_deltaK(const te
  */
 __attribute__((pure, always_inline)) static inline time_t expw_mavg_dtmin(const time_t tau)
 {
-	return (/*ceilf*/(((1.0F/KPRECISIONF)*tau)/(1-(1.0F/KPRECISIONF))) * 2);
+	return (/*ceilf*/(((1.0F/KPRECISIONF)*tau)/(1.0F-(1.0F/KPRECISIONF))) * 2);
 }
 
 #endif /* rwchcd_lib_h */
