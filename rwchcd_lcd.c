@@ -2,8 +2,8 @@
 //  rwchcd_lcd.c
 //  rwchcd
 //
-//  Created by Thibaut Varene on 24/09/2016.
-//  Copyright © 2016 Slashdirt. All rights reserved.
+//  (C) 2016-2017 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 /**
@@ -45,13 +45,7 @@ int lcd_subsys_init(void)
  */
 static int lcd_grab(void)
 {
-	int ret, i = 0;
-	
-	do {
-		ret = spi_lcd_acquire();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	return (ret);
+	return (spi_lcd_acquire());
 }
 
 /**
@@ -60,16 +54,10 @@ static int lcd_grab(void)
  */
 static int lcd_release(void)
 {
-	int ret, i = 0;
-	
 	if (L2mngd)
 		return (ALL_OK);	// never relinquish if L2 is managed
-	
-	do {
-		ret = spi_lcd_relinquish();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	return (ret);
+
+	return (spi_lcd_relinquish());
 }
 
 /**
@@ -78,13 +66,7 @@ static int lcd_release(void)
  */
 int lcd_fade(void)
 {
-	int ret, i = 0;
-
-	do {
-		ret = spi_lcd_fade();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	return (ret);
+	return (spi_lcd_fade());
 }
 
 /**
@@ -93,16 +75,10 @@ int lcd_fade(void)
  */
 static int lcd_dispclear(void)
 {
-	int ret, i = 0;
-	
 	memset(Line1Cur, ' ', LCD_LINELEN);
 	memset(Line1Cur, ' ', LCD_LINELEN);
 
-	do {
-		ret = spi_lcd_cmd_w(0x01);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	return (ret);
+	return (spi_lcd_cmd_w(0x01));
 }
 
 /**
@@ -200,7 +176,7 @@ int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
 int lcd_uline(const uint_fast8_t linenb, const bool force)
 {
 	int ret = ALL_OK;
-	uint_fast8_t id, i;
+	uint_fast8_t id;
 	uint8_t addr;
 	uint8_t * restrict buf, * restrict cur;
 	
@@ -245,21 +221,13 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 	addr += id;
 	addr |= 0b10000000;	// DDRAM op
 	
-	i = 0;
-	do {
-		ret = spi_lcd_cmd_w(addr);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
+	ret = spi_lcd_cmd_w(addr);
 	if (ret)
 		return (ret);
 	
 	// write data from Buf and update Cur - id already set
 	for (; id<LCD_LINELEN; id++) {
-		i = 0;
-		do {
-			ret = spi_lcd_data_w(buf[id]);
-		} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-		
+		ret = spi_lcd_data_w(buf[id]);
 		if (ret)
 			return (ret);
 		//dbgmsg("sending: %c", buf[id]);
@@ -307,9 +275,9 @@ static const char * temp_to_str(const tempid_t tempid)
 	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
 
 	if (temp > RWCHCD_TEMPMAX)
-		strncpy(snpbuf+3, "DISCON", 6);
+		strncpy(snpbuf+3, _("DISCON"), 6);
 	else if (temp < RWCHCD_TEMPMIN)
-		strncpy(snpbuf+3, "SHORT ", 6);	// must be 6 otherwith buf[6] might be garbage
+		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
 	else {
 		celsius = temp_to_celsius(temp);
 		snprintf(snpbuf+3, 7, "%5.1fC", celsius);	// handles rounding
@@ -326,25 +294,25 @@ static const char * lcd_disp_sysmode(void)
 
 	switch (runtime->systemmode) {
 		case SYS_OFF:
-			msg = "Off ";
+			msg = _("Off ");
 			break;
 		case SYS_AUTO:
-			msg = "Auto";
+			msg = _("Auto");
 			break;
 		case SYS_COMFORT:
-			msg = "Conf";
+			msg = _("Conf");
 			break;
 		case SYS_ECO:
-			msg = "Eco ";
+			msg = _("Eco ");
 			break;
 		case SYS_FROSTFREE:
-			msg = "Prot";
+			msg = _("Prot");
 			break;
 		case SYS_DHWONLY:
-			msg = "ECS ";
+			msg = _("ECS ");
 			break;
 		case SYS_MANUAL:
-			msg = "Man ";
+			msg = _("Man ");
 			break;
 		case SYS_UNKNOWN:
 		default:

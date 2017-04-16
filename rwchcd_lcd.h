@@ -2,8 +2,8 @@
 //  rwchcd_lcd.h
 //  rwchcd
 //
-//  Created by Thibaut Varene on 24/09/2016.
-//  Copyright © 2016 Slashdirt. All rights reserved.
+//  (C) 2016 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 /**
