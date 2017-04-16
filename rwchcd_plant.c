@@ -16,6 +16,7 @@
  * In this context, a "plant" should logically be a collection of consummers
  * and heatsources all connected to each other: in a plant, all the heatsources
  * are providing heat to all of the plant's consummers.
+ * @todo critical/non-critical inhibit signals. DHWT inhibit
  */
 
 #include <stdlib.h>	// calloc/free
@@ -966,7 +967,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd allure (p.51)
  * @todo XXX TODO: review consummer inhibit signal formula for cool startup
- * @todo XXX TODO: implement limit on return temp (p.55/56)
+ * @todo XXX TODO: implement limit on return temp (p.55/56 / p87-760), (consummer shift / return valve / bypass pump)
  */
 static int boiler_hs_run(struct s_heatsource * const heat)
 {
@@ -2331,11 +2332,12 @@ int plant_offline(struct s_plant * restrict const plant)
  * all valves are open.
  * @param plant target plant
  * @return exec status
+ * @todo sequential run (instead of parallel)
  */
 static int plant_summer_ops(const struct s_plant * restrict const plant)
 {
 #define SUMMER_RUN_INTVL	60*60*24*7	///< 1 week
-#define SUMMER_RUN_DURATION	60*10		///< 10 minutes
+#define SUMMER_RUN_DURATION	60*5		///< 5 minutes
 	static time_t timer_start = 0;
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_pump_l * pumpl;

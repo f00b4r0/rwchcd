@@ -155,6 +155,7 @@ struct s_boiler_priv {
 		temp_t target_temp;		///< current target temp
 	} run;		///< private runtime (internally handled)
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
+	struct s_valve * restrict retvalve;	///< return valve for the boiler, if present -- XXX NOT IMPLEMENTED
 };
 
 enum e_heatsource_type {
