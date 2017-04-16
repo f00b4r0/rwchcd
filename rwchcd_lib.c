@@ -22,7 +22,7 @@
  * @param temp the value to validate
  * @return validation result
  */
-int validate_temp(const temp_t temp)
+__attribute__((pure)) int validate_temp(const temp_t temp)
 {
 	int ret = ALL_OK;
 
@@ -64,7 +64,7 @@ temp_t get_temp(const tempid_t id)
  * @param tau time constant over which to average
  * @param dt time elapsed since last average
  */
-temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
+__attribute__((pure)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
 {
 	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
 	
