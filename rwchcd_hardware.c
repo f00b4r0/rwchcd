@@ -35,6 +35,8 @@
 #error Discrepancy in number of hardware sensors
 #endif
 
+#define RWCHCD_INIT_MAX_TRIES	10	///< how many times hardware init should be retried
+
 #define RELAY_MAX_ID	14	///< maximum valid relay id
 
 #define VALID_CALIB_MIN	0.8F	///< minimum valid calibration value
@@ -175,7 +177,6 @@ static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
  * Return a calibrated temp_t value for the given raw sensor data.
  * @param raw the raw sensor data to convert
  * @return the temperature in temp_t units
- * XXX REVISIT calls depth.
  */
 static inline temp_t sensor_to_temp(const rwchc_sensor_t raw)
 {
@@ -380,14 +381,7 @@ int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value)
  */
 static int hardware_config_fetch(struct rwchc_s_settings * const settings)
 {
-	int ret, i = 0;
-	
-	// grab current config from the hardware
-	do {
-		ret = spi_settings_r(settings);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
-	return (ret);
+	return (spi_settings_r(settings));
 }
 
 /**
@@ -397,7 +391,7 @@ static int hardware_config_fetch(struct rwchc_s_settings * const settings)
 int hardware_config_store(void)
 {
 	struct rwchc_s_settings hw_set;
-	int ret, i = 0;
+	int ret;
 	
 	if (!Hardware.ready)
 		return (-EOFFLINE);
@@ -409,19 +403,13 @@ int hardware_config_store(void)
 		return (ALL_OK); // don't wear flash down if unnecessary
 	
 	// commit hardware config
-	do {
-		ret = spi_settings_w(&(Hardware.settings));
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
+	ret = spi_settings_w(&(Hardware.settings));
 	if (ret)
 		goto out;
 	
-	i = 0;
 	// save hardware config
-	do {
-		ret = spi_settings_s();
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-	
+	ret = spi_settings_s();
+
 	dbgmsg("HW Config saved.");
 	
 out:
@@ -435,19 +423,22 @@ out:
  */
 int hardware_init(void)
 {
-	int ret;
+	int ret, i = 0;
 	
 	if (spi_init() < 0)
 		return (-EINIT);
 
 	memset(Relays, 0x0, sizeof(Relays));
 	memset(&Hardware, 0x0, sizeof(Hardware));
-	
-	Hardware.ready = true;
-	
+
 	// fetch hardware config
-	ret = hardware_config_fetch(&(Hardware.settings));
-	if (ret)
+	do {
+		ret = hardware_config_fetch(&(Hardware.settings));
+	} while (ret && (i++ < RWCHCD_INIT_MAX_TRIES));
+
+	if (ALL_OK == ret)
+		Hardware.ready = true;
+	else
 		dbgerr("hardware_config_fetch failed");
 
 	return (ret);
@@ -521,16 +512,12 @@ static int hardware_calibrate(void)
 static int hardware_sensors_read(rwchc_sensor_t tsensors[])
 {
 	int_fast8_t sensor;
-	int i, ret = ALL_OK;
+	int ret = ALL_OK;
 	
 	assert(Hardware.ready);
 
 	for (sensor=0; sensor<Hardware.settings.addresses.nsensors; sensor++) {
-		i = 0;
-		do {
-			ret = spi_sensor_r(tsensors, sensor);
-		} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
+		ret = spi_sensor_r(tsensors, sensor);
 		if (ret)
 			goto out;
 	}
@@ -617,10 +604,7 @@ int hardware_rwchcrelays_write(void)
 	}
 	
 	// send new state to hardware
-	i = 0;
-	do {
-		ret = spi_relays_w(&rWCHC_relays);
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
+	ret = spi_relays_w(&rWCHC_relays);
 
 	// update internal runtime state on success
 	// XXX NOTE there will be a discrepancy between internal state and Relays[] if the above fails
@@ -636,16 +620,10 @@ int hardware_rwchcrelays_write(void)
  */
 int hardware_rwchcperiphs_write(void)
 {
-	int i = 0, ret;
-
 	if (!Hardware.ready)
 		return (-EOFFLINE);
 	
-	do {
-		ret = spi_peripherals_w(&(Hardware.peripherals));
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
-
-	return (ret);
+	return (spi_peripherals_w(&(Hardware.peripherals)));
 }
 
 /**
@@ -654,16 +632,10 @@ int hardware_rwchcperiphs_write(void)
  */
 int hardware_rwchcperiphs_read(void)
 {
-	int i = 0, ret;
-
 	if (!Hardware.ready)
 		return (-EOFFLINE);
-	
-	do {
-		ret = spi_peripherals_r(&(Hardware.peripherals));
-	} while (ret && (i++ < RWCHCD_SPI_MAX_TRIES));
 
-	return (ret);
+	return (spi_peripherals_r(&(Hardware.peripherals)));
 }
 
 /**
