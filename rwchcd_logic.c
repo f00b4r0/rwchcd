@@ -338,11 +338,12 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 			return (-EINVALIDMODE);
 	}
 
-	// if anti-legionella charge is requested, enforce temp
+	// if anti-legionella charge is requested, enforce temp and bypass logic
 	if (dhwt->run.legionella_on) {	// XXX TODO: handle untrip
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella);
 		dhwt->run.force_on = true;
 		dhwt->run.recycle_on = true;
+		goto settarget;
 	}
 
 	// transition detection
@@ -365,7 +366,8 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 		target_temp = ltmin;
 	else if (target_temp > ltmax)
 		target_temp = ltmax;
-	
+
+settarget:
 	// save current target dhw temp
 	dhwt->run.target_temp = target_temp;
 	
