@@ -533,7 +533,7 @@ out:
  * @note non-configured hardware relays are turned off.
  * @return status
  */
-int hardware_rwchcrelays_write(void)
+__attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 {
 	struct s_stateful_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
@@ -618,7 +618,7 @@ int hardware_rwchcrelays_write(void)
  * Write all peripherals from internal runtime to hardware
  * @return status
  */
-int hardware_rwchcperiphs_write(void)
+__attribute__((warn_unused_result)) static int hardware_rwchcperiphs_write(void)
 {
 	if (!Hardware.ready)
 		return (-EOFFLINE);
@@ -630,7 +630,7 @@ int hardware_rwchcperiphs_write(void)
  * Read all peripherals from hardware into internal runtime
  * @return exec status
  */
-int hardware_rwchcperiphs_read(void)
+__attribute__((warn_unused_result)) static int hardware_rwchcperiphs_read(void)
 {
 	if (!Hardware.ready)
 		return (-EOFFLINE);
