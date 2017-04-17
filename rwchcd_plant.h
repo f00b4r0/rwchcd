@@ -110,7 +110,6 @@ struct s_heating_circuit {
 		enum e_runmode runmode;		///< circuit actual (computed) runmode
 		temp_t rorh_last_target;	///< previous set point target for rorh control
 		time_t rorh_update_time;	///< last time output was updated with respect to rorh
-		time_t actual_cooldown_time;	///< actual turn off cooldown time remaining
 		temp_t request_ambient;		///< current requested ambient target temp
 		temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
 		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current transition underwent by the circuit
@@ -179,6 +178,7 @@ struct s_heatsource {
 		bool could_sleep;		///< true if source is could be sleeping (no recent heat request from circuits)
 		enum e_runmode runmode;		///< heatsource actual (computed) runmode
 		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
+		time_t last_run_time;		///< last time heatsource was run
 		time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
 		time_t target_consumer_stop_delay;	///< calculated stop delay
 		int_fast16_t consumer_shift;	///< factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.

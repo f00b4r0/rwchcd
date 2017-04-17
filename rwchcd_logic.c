@@ -10,6 +10,7 @@
  * @file
  * Logic functions implementation for smart operation.
  * Smarter functions making use of time should be here and act as pre-filter for plant xxx_run() ops.
+ * @todo implement a flexible logic system that would take user-definable conditions and user-selectable actions to trigger custom actions (for more flexible plants)
  */
 
 #include <time.h>
@@ -386,6 +387,7 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	struct s_dhw_tank_l * restrict dhwtl;
 	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST;
 	const time_t now = time(NULL);
+	const time_t dt = now - heat->run.last_run_time;
 
 	int ret = -ENOTIMPLEMENTED;
 	
@@ -426,12 +428,17 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	
 	// apply result to heat source
 	heat->run.temp_request = temp_request;
-	
-	// XXX TODO: consumer stop delay should only be applied when heatsource temp is rising
-	heat->run.target_consumer_stop_delay = heat->set.consumer_stop_delay;
+
+	// decrement consummer stop delay if any
+	if (dt < heat->run.target_consumer_stop_delay)
+		heat->run.target_consumer_stop_delay -= dt;
+	else
+		heat->run.target_consumer_stop_delay = 0;
 
 	if (heat->hs_logic)
 		ret = heat->hs_logic(heat);
+
+	heat->run.last_run_time = now;
 	
 	return (ret);
 }

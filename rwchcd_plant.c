@@ -1047,6 +1047,10 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	else if (boiler_temp > untrip_temp)	// untrip condition
 		hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
 
+	// as long as the burner is running we reset the cooldown delay
+	if (hardware_relay_get_state(boiler->set.rid_burner_1))
+		heat->run.target_consumer_stop_delay = heat->set.consumer_stop_delay;
+
 	return (ALL_OK);
 }
 
@@ -1221,7 +1225,6 @@ static int circuit_offline(struct s_heating_circuit * const circuit)
 
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	circuit->run.target_wtemp = 0;
-	circuit->run.actual_cooldown_time = 0;
 
 	if (circuit->pump)
 		pump_offline(circuit->pump);
@@ -1276,14 +1279,11 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
-			if (circuit->run.actual_cooldown_time > 0) {	// delay offlining
+			if (runtime->consumer_stop_delay > 0) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-				// decrement counter
-				circuit->run.actual_cooldown_time -= (now - circuit->run.last_run_time);
-				dbgmsg("in cooldown, remaining: %ld", circuit->run.actual_cooldown_time);
-				// stop processing: maintain current wtemp
-				goto valve;
+				dbgmsg("in cooldown, remaining: %ld", runtime->consumer_stop_delay);
+				goto valve;	// stop processing
 			}
 			else
 				return (circuit_offline(circuit));
@@ -1314,8 +1314,6 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	}
 	
 	// we're good to go
-	
-	circuit->run.actual_cooldown_time = runtime->consumer_stop_delay;
 
 	// circuit is active, ensure pump is running
 	if (circuit->pump)
@@ -1362,12 +1360,15 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
 	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
-	
-	// save current target water temp
-	circuit->run.target_wtemp = water_temp;
 
 	// apply heat request: water temp + offset
 	circuit->run.heat_request = water_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_circuit.temp_inoffset);
+
+	// handle cooldown requests
+	if (runtime->consumer_stop_delay && (TRANS_DOWN == circuit->run.transition))	// XXX REVIEW might not always work
+		dbgmsg("in TRANS_DOWN cooldown, remaining: %ld", runtime->consumer_stop_delay);	// maintain current wtemp in down transitions
+	else
+		circuit->run.target_wtemp = water_temp;	// save current target water temp if no cooldown request
 
 valve:
 	// adjust valve position if necessary
@@ -1381,7 +1382,6 @@ valve:
 
 	ret = ALL_OK;
 out:
-	circuit->run.last_run_time = now;
 	return (ret);
 }
 
