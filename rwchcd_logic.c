@@ -239,6 +239,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 					// no transition, ambient temp assumed to be request temp
 					ambient_temp = circuit->run.request_ambient;
 					circuit->run.trans_start_temp = 0;
+					circuit->run.ambient_update_time = now;
 					break;
 				default:
 					break;
