@@ -1279,7 +1279,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
-			if (runtime->consumer_stop_delay > 0) {
+			if (circuit->run.target_wtemp && (runtime->consumer_stop_delay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				dbgmsg("in cooldown, remaining: %ld", runtime->consumer_stop_delay);
