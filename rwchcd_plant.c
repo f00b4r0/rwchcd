@@ -2324,17 +2324,16 @@ int plant_offline(struct s_plant * restrict const plant)
 }
 
 /**
- * Force all pumps on and valves open.
+ * Plant summer maintenance operations.
+ * When summer conditions are met, the pumps and valves are periodically actuated.
  * The idea of this function is to run as an override filter in the plant_run()
  * loop so that during summer maintenance, the state of these actuators is
  * overriden.
- * When summer conditions are met, it will periodically run the pumps and ensure
- * all valves are open.
  * @param plant target plant
  * @return exec status
  * @todo sequential run (instead of parallel)
  */
-static int plant_summer_ops(const struct s_plant * restrict const plant)
+static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 {
 #define SUMMER_RUN_INTVL	60*60*24*7	///< 1 week
 #define SUMMER_RUN_DURATION	60*5		///< 5 minutes
@@ -2490,7 +2489,8 @@ int plant_run(struct s_plant * restrict const plant)
 		runtime->consumer_shift = heatsourcel->heats->run.consumer_shift;	// XXX
 	}
 
-	plant_summer_ops(plant);
+	if (runtime->config->summer_maintenance)
+		plant_summer_maintenance(plant);
 
 	// run the valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {

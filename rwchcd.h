@@ -142,7 +142,7 @@ struct s_dhwt_params {
 struct s_config {
 	bool restored;			///< true if config has been restored from storage
 	bool configured;		///< true if properly configured
-	bool summer_pump_maintenance;	///< true if pumps should be run periodically in summer. @todo XXX NOT IMPLEMENTED
+	bool summer_maintenance;	///< true if pumps/valves should be run periodically in summer.
 	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp

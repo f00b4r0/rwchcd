@@ -146,6 +146,7 @@ static int init_process()
 		config_set_outdoor_sensorid(config, 1);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
+		config->summer_maintenance = true;	// enable summer maintenance
 
 		// circuit defaults
 		config->def_circuit.t_comfort = celsius_to_temp(20.0F);
