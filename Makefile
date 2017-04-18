@@ -1,13 +1,13 @@
+REVISION := $(shell git describe --tags --always --dirty)
 CC := gcc
 #add -Wconversion when ready - -Wdouble-promotion should be checked but triggers warnings with printf
 WFLAGS := -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wno-double-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla
 OPTIMS := -O0 -g -ggdb3 -march=native -mcpu=native -mtune=native -fstack-protector -Wstack-protector -fstrict-aliasing
-CFLAGS := -DDEBUG -D_GNU_SOURCE $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 $(OPTIMS)
+CFLAGS := -DDEBUG -D_GNU_SOURCE $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"'
 LDLIBS := $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d
 VARLIBDIR := /var/lib/rwchcd
-REVISION := $(shell git describe --tags --always --dirty)
 
 DBUSGEN_BASE := rwchcd_dbus-generated
 
@@ -23,9 +23,9 @@ DBUSGEN_DEPS := $(DBUSGEN_SRCS:.c=.d)
 
 MAIN := rwchcd
 
-.PHONY:	all clean distclean install uninstall dbus-gen doc version.h
+.PHONY:	all clean distclean install uninstall dbus-gen doc
 
-all:	version.h $(MAIN)
+all:	$(MAIN)
 	@echo	Done
 
 $(MAIN): $(OBJS) $(DBUSGEN_OBJS)
@@ -33,13 +33,6 @@ $(MAIN): $(OBJS) $(DBUSGEN_OBJS)
 
 .c.o:
 	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
-
-# this must be phony to force regen on every run
-version.h:
-	@echo Generating version.h
-	@echo -n '#define RWCHCD_REV "'	> $@
-	@echo -n $(REVISION)		>> $@
-	@echo '"'			>> $@
 
 clean:
 	$(RM) *.o *.d *~ $(MAIN)
@@ -78,5 +71,7 @@ doc:	Doxyfile
 	
 # quick hack
 rwchcd_dbus.o:	$(DBUSGEN_BASE).h
+# rebuild rwchcd.o if anything changes to update version
+rwchcd.o:       $(filter-out rwchcd.o,$(OBJS))
 
 -include $(DEPS) $(DBUSGEN_DEPS)

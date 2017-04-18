@@ -55,8 +55,6 @@
 #include "rwchcd_scheduler.h"
 #include "rwchcd_dbus.h"
 
-#include "version.h"
-
 #ifndef RWCHCD_PRIO
  #define RWCHCD_PRIO	20	///< Desired run priority
 #endif
@@ -73,7 +71,7 @@
 
 static volatile int Sem_master_thread = 0;
 
-static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in version.h
+static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in Makefile
 
 /**
  * Daemon signal handler.
