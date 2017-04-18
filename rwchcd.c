@@ -428,12 +428,15 @@ int main(void)
 	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
-	FILE *outpipe = NULL;
 	int pipefd[2];
 	int ret;
+#ifdef DEBUG
+	FILE *outpipe = NULL;
+#endif
 
 	pr_log("Revision %s starting", Version);
-	
+
+#ifdef DEBUG
 	// create the stdout fifo for debugging
 	unlink(RWCHCD_FIFO);
 	ret = mkfifo(RWCHCD_FIFO, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
@@ -451,8 +454,9 @@ int main(void)
 		if (ret)
 			abort();	// we can't have a blocking stdout
 	}
-	
-	// create a pipe
+#endif
+
+	// create a pipe for the watchdog
 	ret = pipe(pipefd);
 	if (ret)
 		err(ret, "failed to setup pipe!");
@@ -523,8 +527,13 @@ int main(void)
 	timer_clean_callbacks();
 	close(pipefd[0]);
 	close(pipefd[1]);
+
+#ifdef DEBUG
+	// cleanup fifo
 	if (outpipe)
 		fclose(outpipe);
-	
+	unlink(RWCHCD_FIFO);
+#endif
+
 	return (0);
 }

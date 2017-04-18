@@ -396,6 +396,9 @@ int runtime_offline(void)
 	return (plant_offline(Runtime.plant));
 }
 
+/**
+ * Exit runtime.
+ */
 void runtime_exit(void)
 {
 	runtime_init();		// clear runtime

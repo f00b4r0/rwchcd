@@ -28,7 +28,7 @@
 #define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate, allows 800 ISNS on the PIC
 #define SPIRESYNCMAX	250		///< max resync tries -> terminal delay ~125ms including 100us SPIDELAYUS for each exchange
 #define SPICLOCK	1000000		///< SPI clock 1MHz
-#define SPICHAN		0
+#define SPICHAN		0		///< RaspberryPi SPI channel 0
 #define SPIMODE		3		///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
 #define USLEEPLCDFAST	50		///< expected completion time (us) for most LCD ops

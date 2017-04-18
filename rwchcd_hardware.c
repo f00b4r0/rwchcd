@@ -10,7 +10,7 @@
  * @file
  * Hardware interface implementation.
  *
- * @todo support other RTD types (ni1000, lg-ni1000, etc)
+ * @todo support other RTD types (ni1000, lg-ni1000, etc), possibly mixed
  * @todo reflect runtime errors on hardware (LED/LCD)
  */
 
@@ -32,18 +32,19 @@
 #include "rwchc_export.h"
 
 #if RWCHC_NTSENSORS != RWCHCD_NTEMPS
-#error Discrepancy in number of hardware sensors
+ #error Discrepancy in number of hardware sensors
 #endif
 
 #define RWCHCD_INIT_MAX_TRIES	10	///< how many times hardware init should be retried
 
-#define RELAY_MAX_ID	14	///< maximum valid relay id
+#define RELAY_MAX_ID		14	///< maximum valid relay id
 
-#define VALID_CALIB_MIN	0.8F	///< minimum valid calibration value
-#define VALID_CALIB_MAX	1.2F	///< maximum valid calibration value
+#define VALID_CALIB_MIN		0.9F	///< minimum valid calibration value (-10%)
+#define VALID_CALIB_MAX		1.1F	///< maximum valid calibration value (+10%)
 
 #define CALIBRATION_PERIOD	600	///< calibration period in seconds: every 10mn
 
+/** software representation of a hardware relay */
 struct s_stateful_relay {
 	struct {
 		bool configured;	///< true if properly configured
@@ -59,7 +60,7 @@ struct s_stateful_relay {
 		time_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
 		uint_fast32_t cycles;	///< number of power cycles
 	} run;		///< private runtime (internally handled)
-	char * restrict name;
+	char * restrict name;		///< user-defined name for the relay
 };
 
 static const storage_version_t Hardware_sversion = 1;

@@ -17,7 +17,7 @@
 #include <time.h>
 #include "rwchcd.h"
 
-#define RWCHCD_TEMP_NOREQUEST	0
+#define RWCHCD_TEMP_NOREQUEST	0		///< value for no heat request
 
 #define RWCHCD_CSHIFT_MAX	200		///< Maximum value for consumer shift
 
