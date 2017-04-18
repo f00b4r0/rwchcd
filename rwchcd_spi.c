@@ -10,6 +10,10 @@
  * @file
  * SPI backend implementation for rWCHC hardware.
  *
+ * @note the LCD operations assume fixed timings: although we could query the
+ * hardware to confirm completion of the operation, it would typically be slower
+ * due to the embedded delay in SPI_rw8bit().
+ *
  * @warning this implementation is NOT thread safe: callers must ensure proper synchronization.
  */
 
@@ -22,7 +26,7 @@
 #include "rwchcd.h"	// for error codes
 
 #define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate, allows 800 ISNS on the PIC
-#define SPIRESYNCMAX	200		///< max resync tries -> terminal delay ~120ms including 100us SPIDELAYUS for each exchange
+#define SPIRESYNCMAX	250		///< max resync tries -> terminal delay ~125ms including 100us SPIDELAYUS for each exchange
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0
 #define SPIMODE		3		///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
@@ -37,15 +41,15 @@
  * This routine ensure we enter the atomic SPI ops in firmware.
  * It uses an exponential back-off delay after each retry, starting from 0
  * (and thus only applying the embedded delay of SPI_rw8bit()), up to a terminal
- * delay of 1ms (5*SPIRESYNCMAX microseconds) on the last run.
- * With SPIRESYNCMAX=200, this translates to a standalone accumulated delay of
+ * delay of 1ms (4*SPIRESYNCMAX microseconds) on the last run.
+ * With SPIRESYNCMAX=250, this translates to a standalone accumulated delay of
  * approximately 100ms. Adding the embedded delay of SPI_rw8bit() (100us), this adds
- * 20ms to this number.
+ * 25ms to this number.
  */
 #define SPI_RESYNC(cmd)								\
 		({								\
 		spitout = SPIRESYNCMAX;						\
-		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && spitout) usleep(5*SPIRESYNCMAX - 5*spitout--);	\
+		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && spitout) usleep((SPIRESYNCMAX - spitout--)*4);	\
 		if (spitout) SPI_rw8bit(cmd);	/* consumes the last SYNCACK */	\
 		})
 
