@@ -110,7 +110,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	enum e_runmode prev_runmode;
 	temp_t request_temp, diff_temp;
-	temp_t ambient_temp = 0, ambient_delta = 0;
+	temp_t ambient_temp, ambient_delta = 0;
 	time_t elapsed_time;
 	const time_t now = time(NULL);
 	bool can_fastcool;
@@ -244,7 +244,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 				default:
 					break;
 			}
-			if (circuit->run.transition)
+			if (circuit->run.transition)	// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
 				dbgmsg("Trans: %d, start amb: %d, curr amb: %d, elapsed: %ld", circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, elapsed_time);
 		}
 	}
