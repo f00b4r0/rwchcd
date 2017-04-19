@@ -181,7 +181,7 @@ static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
  */
 static inline temp_t sensor_to_temp(const rwchc_sensor_t raw)
 {
-	return (celsius_to_temp(pt1000_ohm_to_celsius(sensor_to_ohm(raw, 1))));
+	return (celsius_to_temp(pt1000_ohm_to_celsius(sensor_to_ohm(raw, true))));
 }
 
 /**
@@ -199,7 +199,7 @@ static void parse_temps(void)
 	assert(Hardware.ready && runtime);
 	
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
-	for (i = 0; i<runtime->config->nsensors; i++) {
+	for (i = 0; i < runtime->config->nsensors; i++) {
 		current = sensor_to_temp(Hardware.sensors[i]);
 		previous = runtime->temps[i];
 		
@@ -284,7 +284,7 @@ int hardware_config_addr_set(enum e_hw_address address, const relid_t id)
 	
 	switch (address) {
 		case HADDR_SLAST:
-			if (id > RWCHCD_NTEMPS)
+			if (id > RWCHC_NTSENSORS)
 				return (-EINVALID);
 			break;
 		case HADDR_SBURNER:
@@ -309,7 +309,7 @@ int hardware_config_addr_set(enum e_hw_address address, const relid_t id)
 	// apply setting
 	switch (address) {
 		case HADDR_SLAST:
-			if (id > RWCHCD_NTEMPS)
+			if (id > RWCHC_NTSENSORS)
 				return (-EINVALID);
 			Hardware.settings.addresses.nsensors = id;
 			break;
@@ -472,7 +472,7 @@ static int hardware_calibrate(void)
 		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
+		refcalib = sensor_to_ohm(ref, false);	// force uncalibrated read
 		newcalib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
 		if ((newcalib_nodac < VALID_CALIB_MIN) || (newcalib_nodac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// XXX should not happen
@@ -485,7 +485,7 @@ static int hardware_calibrate(void)
 		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, 0);	// force uncalibrated read
+		refcalib = sensor_to_ohm(ref, false);	// force uncalibrated read
 		newcalib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
 		if ((newcalib_dac < VALID_CALIB_MIN) || (newcalib_dac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// XXX should not happen
@@ -550,7 +550,7 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 	rWCHC_relays.ALL = 0;
 
 	// update each known hardware relay
-	for (i=0; i<RELAY_MAX_ID; i++) {
+	for (i=0; i<ARRAY_SIZE(Relays); i++) {
 		relay = &Relays[i];
 
 		if (!relay->set.configured)
@@ -650,7 +650,7 @@ int hardware_relay_request(const relid_t id, const char * const name)
 {
 	char * str = NULL;
 
-	if (!id || id > RELAY_MAX_ID)
+	if (!id || (id > ARRAY_SIZE(Relays)))
 		return (-EINVALID);
 	
 	if (Relays[id-1].set.configured)
@@ -677,7 +677,7 @@ int hardware_relay_request(const relid_t id, const char * const name)
  */
 int hardware_relay_release(const relid_t id)
 {
-	if (!id || id > RELAY_MAX_ID)
+	if (!id || (id > ARRAY_SIZE(Relays)))
 		return (-EINVALID);
 	
 	if (!Relays[id-1].set.configured)
@@ -703,7 +703,7 @@ int hardware_relay_set_state(const relid_t id, const bool turn_on, const time_t 
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
 
-	if (!id || id > RELAY_MAX_ID)
+	if (!id || (id > ARRAY_SIZE(Relays)))
 		return (-EINVALID);
 	
 	relay = &Relays[id-1];
@@ -743,7 +743,7 @@ int hardware_relay_get_state(const relid_t id)
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
 	
-	if (!id || id > RELAY_MAX_ID)
+	if (!id || (id > ARRAY_SIZE(Relays)))
 		return (-EINVALID);
 	
 	relay = &Relays[id-1];
@@ -955,7 +955,7 @@ int hardware_offline(void)
 	int ret;
 	
 	// turn off each known hardware relay
-	for (i=0; i<RELAY_MAX_ID; i++) {
+	for (i=0; i<ARRAY_SIZE(Relays); i++) {
 		if (!Relays[i].set.configured)
 			continue;
 		
@@ -983,6 +983,11 @@ int hardware_offline(void)
 void hardware_exit(void)
 {
 	int ret;
+	uint_fast8_t i;
+
+	// cleanup all resources
+	for (i = 1; i <= ARRAY_SIZE(Relays); i++)
+		hardware_relay_release(i);
 	
 	// reset the hardware
 	ret = spi_reset();
