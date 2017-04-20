@@ -223,7 +223,7 @@ static int hardware_save_relays(void)
 
 /**
  * Restore hardware relays state from permanent storage
- * Restores cycles and on/off total time counts for set relays.
+ * Restores cycles and on/off total time counts for all relays.
  * @return exec status
  * @todo restore relay name
  */
@@ -233,11 +233,13 @@ static int hardware_restore_relays(void)
 	storage_version_t sversion;
 	typeof(&Relays[0]) relayptr = (typeof(relayptr))&blob;
 	unsigned int i;
+	int ret;
 	
 	// try to restore key elements of hardware
-	if (storage_fetch("hardware_relays", &sversion, blob, sizeof(blob)) == ALL_OK) {
+	ret = storage_fetch("hardware_relays", &sversion, blob, sizeof(blob));
+	if (ALL_OK == ret) {
 		if (Hardware_sversion != sversion)
-			return (ALL_OK);	// XXX
+			return (-EMISMATCH);
 
 		for (i=0; i<ARRAY_SIZE(Relays); i++) {
 			if (relayptr->run.is_on)	// account for last known state_time
@@ -253,7 +255,7 @@ static int hardware_restore_relays(void)
 	else
 		dbgmsg("storage_fetch failed");
 
-	return (ALL_OK);
+	return (ret);
 }
 
 static inline uint8_t rid_to_rwchcaddr(const int_fast8_t id)
@@ -780,11 +782,9 @@ int hardware_online(void)
 	if (ret)
 		goto fail;
 
-	// restore previous state
-	ret = hardware_restore_relays();
-	if (ret)
-		goto fail;
-	
+	// restore previous state - failure is ignored
+	hardware_restore_relays();
+
 	// read sensors
 	ret = hardware_sensors_read(Hardware.sensors);
 	if (ret)
