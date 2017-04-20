@@ -69,6 +69,11 @@
 
 #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
 
+#define RELAY_PUMP	9
+#define RELAY_VCLOSE	10
+#define RELAY_VOPEN	11
+#define RELAY_BURNER	14
+
 static volatile int Sem_master_thread = 0;
 
 static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in Makefile
@@ -115,11 +120,11 @@ static int init_process()
 	hardware_config_limit_set(HLIM_BOILERMIN, 50);
 	hardware_config_limit_set(HLIM_BOILERMAX, 70);
 	hardware_config_addr_set(HADDR_SBURNER, 2);
-	hardware_config_addr_set(HADDR_TBURNER, 14);
+	hardware_config_addr_set(HADDR_TBURNER, RELAY_BURNER);
 	hardware_config_addr_set(HADDR_SWATER, 3);
-	hardware_config_addr_set(HADDR_TVOPEN, 11);
-	hardware_config_addr_set(HADDR_TVCLOSE, 10);
-	hardware_config_addr_set(HADDR_TPUMP, 9);
+	hardware_config_addr_set(HADDR_TVOPEN, RELAY_VOPEN);
+	hardware_config_addr_set(HADDR_TVCLOSE, RELAY_VCLOSE);
+	hardware_config_addr_set(HADDR_TPUMP, RELAY_PUMP);
 	hardware_config_store();
 
 	/* init runtime */
@@ -199,11 +204,11 @@ static int init_process()
 	boiler->set.limit_tmin = celsius_to_temp(50);
 	boiler->set.id_temp = 2;	// XXX VALIDATION
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
-	ret = hardware_relay_request(14, "burner");	// XXX 2nd relay
+	ret = hardware_relay_request(RELAY_BURNER, "burner");
 	if (ret)
 		return (ret);
 	else
-		boiler->set.rid_burner_1 = 14;
+		boiler->set.rid_burner_1 = RELAY_BURNER;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
 	heatsource->set.sleeping_time = 1 * 24 * 60 * 60;	// XXX 1 day
 	heatsource->set.consumer_stop_delay = 10 * 60;	// 10mn
@@ -243,17 +248,17 @@ static int init_process()
 	valve_make_sapprox(circuit->valve, 5, 20);
 	
 	// configure two relays for that valve
-	ret = hardware_relay_request(11, "v_open");
+	ret = hardware_relay_request(RELAY_VOPEN, "v_open");
 	if (ret)
 		return (ret);
 	else
-		circuit->valve->set.rid_open = 11;
+		circuit->valve->set.rid_open = RELAY_VOPEN;
 	
-	ret = hardware_relay_request(10, "v_close");
+	ret = hardware_relay_request(RELAY_VCLOSE, "v_close");
 	if (ret)
 		return (ret);
 	else
-		circuit->valve->set.rid_close = 10;
+		circuit->valve->set.rid_close = RELAY_VCLOSE;
 	
 	circuit->valve->set.configured = true;
 
@@ -265,11 +270,11 @@ static int init_process()
 	}
 
 	// configure a relay for that pump
-	ret = hardware_relay_request(9, "pump");
+	ret = hardware_relay_request(RELAY_PUMP, "pump");
 	if (ret)
 		return (ret);
 	else
-		circuit->pump->set.rid_relay = 9;
+		circuit->pump->set.rid_relay = RELAY_PUMP;
 
 	circuit->pump->set.configured = true;
 
