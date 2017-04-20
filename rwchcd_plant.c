@@ -1265,7 +1265,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const time_t now = time(NULL);
-	temp_t water_temp, curr_temp, lwtmin, lwtmax;
+	temp_t water_temp, curr_temp, saved_temp, lwtmin, lwtmax;
+	bool interference = false;
 	int ret;
 
 	assert(circuit);
@@ -1282,6 +1283,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 			if (circuit->run.target_wtemp && (runtime->consumer_stop_delay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+				water_temp = circuit->run.target_wtemp;
 				dbgmsg("in cooldown, remaining: %ld", runtime->consumer_stop_delay);
 				goto valve;	// stop processing
 			}
@@ -1346,34 +1348,50 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// enforce limits
 	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_circuit.limit_wtmin);
 	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_circuit.limit_wtmax);
-	
+
+	// low limit can be overriden by external interferences
 	if (water_temp < lwtmin)
 		water_temp = lwtmin;
+
+	// save "non-interfered" target water temp
+	saved_temp = water_temp;
 	
-	// apply global shift - can override lwtmin - XXX FORMULA - XXX will impact heat request
-	water_temp += deltaK_to_temp((0.25F * runtime->consumer_shift));
-	
+	// interference: handle stop delay requests
+	if (runtime->consumer_stop_delay) {
+		dbgmsg("stop delay active, remaining: %ld", runtime->consumer_stop_delay);	// maintain current or higher wtemp during stop delay
+		water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
+		interference = true;
+	}
+
+	// interference: apply global shift - XXX FORMULA
+	if (runtime->consumer_shift) {
+		water_temp += deltaK_to_temp((0.25F * runtime->consumer_shift));
+		interference = true;
+	}
+
+	// high limit can never be overriden
 	if (water_temp > lwtmax)
 		water_temp = lwtmax;
+	if (saved_temp > lwtmax)
+		saved_temp = lwtmax;
 
 	dbgmsg("request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f",
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
 	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
 
-	// apply heat request: water temp + offset
-	circuit->run.heat_request = water_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_circuit.temp_inoffset);
+	// heat request is always computed based on non-interfered water_temp value
+	circuit->run.heat_request = saved_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_circuit.temp_inoffset);
 
-	// handle cooldown requests
-	if (runtime->consumer_stop_delay && (TRANS_DOWN == circuit->run.transition))	// XXX REVIEW might not always work
-		dbgmsg("in TRANS_DOWN cooldown, remaining: %ld", runtime->consumer_stop_delay);	// maintain current wtemp in down transitions
-	else
-		circuit->run.target_wtemp = water_temp;	// save current target water temp if no cooldown request
+	// in the absence of external "interference", update saved target water temp
+	// note: this is necessary to avoid storing the new, cooler saved_temp during TRANS_DOWN cooldown
+	if (!interference)
+		circuit->run.target_wtemp = saved_temp;
 
 valve:
 	// adjust valve position if necessary
 	if (circuit->valve && circuit->valve->set.configured) {
-		ret = valve_tposition(circuit->valve, circuit->run.target_wtemp);
+		ret = valve_tposition(circuit->valve, water_temp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
 			goto out;
 	}
