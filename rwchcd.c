@@ -74,6 +74,11 @@
 #define RELAY_VOPEN	11
 #define RELAY_BURNER	14
 
+#define SENSOR_OUTDOOR	1
+#define SENSOR_BURNER	2
+#define SENSOR_WATEROUT	3
+#define SENSOR_WATERRET	4
+
 static volatile int Sem_master_thread = 0;
 
 static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in Makefile
@@ -119,9 +124,9 @@ static int init_process()
 	hardware_config_limit_set(HLIM_FROSTMIN, 3);
 	hardware_config_limit_set(HLIM_BOILERMIN, 50);
 	hardware_config_limit_set(HLIM_BOILERMAX, 70);
-	hardware_config_addr_set(HADDR_SBURNER, 2);
+	hardware_config_addr_set(HADDR_SBURNER, SENSOR_BURNER);
 	hardware_config_addr_set(HADDR_TBURNER, RELAY_BURNER);
-	hardware_config_addr_set(HADDR_SWATER, 3);
+	hardware_config_addr_set(HADDR_SWATER, SENSOR_WATEROUT);
 	hardware_config_addr_set(HADDR_TVOPEN, RELAY_VOPEN);
 	hardware_config_addr_set(HADDR_TVCLOSE, RELAY_VCLOSE);
 	hardware_config_addr_set(HADDR_TPUMP, RELAY_PUMP);
@@ -146,7 +151,7 @@ static int init_process()
 	if (!config->restored) {
 		config_set_building_tau(config, 10 * 60 * 60);	// XXX 10 hours
 		config_set_nsensors(config, 4);	// XXX 4 sensors
-		config_set_outdoor_sensorid(config, 1);
+		config_set_outdoor_sensorid(config, SENSOR_OUTDOOR);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
 		config->summer_maintenance = true;	// enable summer maintenance
@@ -177,6 +182,8 @@ static int init_process()
 		config_save(config);
 	}
 
+	hardware_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, "outdoor");
+
 	// attach config to runtime
 	runtime->config = config;
 
@@ -202,7 +209,10 @@ static int init_process()
 	boiler->set.histeresis = deltaK_to_temp(8);
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
-	boiler->set.id_temp = 2;	// XXX VALIDATION
+	ret = hardware_sensor_configure(SENSOR_BURNER, ST_PT1000, "boiler");
+	if (ret)
+		return ret;
+	boiler->set.id_temp = SENSOR_BURNER;
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
 	ret = hardware_relay_request(RELAY_BURNER, "burner");
 	if (ret)
@@ -226,8 +236,14 @@ static int init_process()
 	circuit->set.am_tambient_tK = 60 * 60;	// 1h
 	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
 	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
-	circuit->set.id_temp_outgoing = 3;	// XXX VALIDATION
-	circuit->set.id_temp_return = 4;	// XXX VALIDATION
+	ret = hardware_sensor_configure(SENSOR_WATEROUT, ST_PT1000, "water out");
+	if (ret)
+		return (ret);
+	circuit->set.id_temp_outgoing = SENSOR_WATEROUT;
+	ret = hardware_sensor_configure(SENSOR_WATERRET, ST_PT1000, "water return");
+	if (ret)
+		return (ret);
+	circuit->set.id_temp_return = SENSOR_WATERRET;
 	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
 			      celsius_to_temp(15), celsius_to_temp(27), 130);
 
@@ -242,8 +258,17 @@ static int init_process()
 	circuit->valve->set.tdeadzone = deltaK_to_temp(2);
 	circuit->valve->set.deadband = 4;	// XXX 4% minimum increments
 	circuit->valve->set.ete_time = 120;	// XXX 120 s
+	ret = hardware_sensor_configured(boiler->set.id_temp_outgoing);
+	if (ret)
+		return (ret);
 	circuit->valve->set.id_temp1 = boiler->set.id_temp_outgoing;
+	ret = hardware_sensor_configured(circuit->set.id_temp_return);
+	if (ret)
+		return (ret);
 	circuit->valve->set.id_temp2 = circuit->set.id_temp_return;
+	ret = hardware_sensor_configured(circuit->set.id_temp_outgoing);
+	if (ret)
+		return (ret);
 	circuit->valve->set.id_tempout = circuit->set.id_temp_outgoing;
 	valve_make_sapprox(circuit->valve, 5, 20);
 	

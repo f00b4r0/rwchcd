@@ -40,6 +40,14 @@ enum e_hw_limit {
 	HLIM_BOILERMIN,		///< Minimum boiler temp
 };
 
+/** valid types of temperature sensors */
+enum e_sensor_type {
+	ST_PT1000,
+	/*	ST_PT100,
+	 ST_NI1000,
+	 ST_LGNI1000, */
+};
+
 int hardware_init(void) __attribute__((warn_unused_result));
 int hardware_config_addr_set(enum e_hw_address address, const relid_t id);
 int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value);
@@ -48,6 +56,9 @@ int hardware_relay_request(const relid_t id, const char * const name) __attribut
 int hardware_relay_release(const relid_t id);
 int hardware_relay_set_state(const relid_t id, bool turn_on, time_t change_delay);
 int hardware_relay_get_state(const relid_t id);
+int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const char * const name) __attribute__((warn_unused_result));
+int hardware_sensor_deconfigure(const tempid_t id);
+int hardware_sensor_configured(const tempid_t id) __attribute__((warn_unused_result));
 int hardware_online(void);
 int hardware_input(void);
 int hardware_output(void);
