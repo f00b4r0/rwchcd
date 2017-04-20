@@ -206,6 +206,21 @@ static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
 	return (quadratic_cvd(R0, A, B, ohm));
 }
 
+/** 
+ * Convert Ni1000 resistance value to actual temperature.
+ * Use DIN 43760 with temp coef of 6178ppm/K.
+ * @param ohm the resistance value to convert
+ * @return temperature in Celsius
+ */
+static float ni1000_ohm_to_celsius(const uint_fast16_t ohm)
+{
+	const float R0 = 1000.0F;
+	const float A = 5.485e-3;
+	const float B = 6.650e-6;
+
+	return (quadratic_cvd(R0, A, B, ohm));
+}
+
 /**
  * Return a sensor ohm to celsius converter callback based on sensor type.
  * @return correct function pointer for sensor type or NULL if invalid type
@@ -215,6 +230,8 @@ static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
 	switch (type) {
 		case ST_PT1000:
 			return (pt1000_ohm_to_celsius);
+		case ST_NI1000:
+			return (ni1000_ohm_to_celsius);
 		default:
 			return (NULL);
 	}

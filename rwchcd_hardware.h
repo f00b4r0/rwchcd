@@ -43,8 +43,8 @@ enum e_hw_limit {
 /** valid types of temperature sensors */
 enum e_sensor_type {
 	ST_PT1000,
+	ST_NI1000,
 	/*	ST_PT100,
-	 ST_NI1000,
 	 ST_LGNI1000, */
 };
 
