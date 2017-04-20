@@ -10,7 +10,6 @@
  * @file
  * Hardware interface implementation.
  *
- * @todo support saving sensors configuration
  * @todo reflect runtime errors on hardware (LED/LCD)
  */
 
@@ -299,6 +298,52 @@ static int hardware_restore_relays(void)
 			Relays[i].run.off_tottime += relayptr->run.off_tottime;
 			Relays[i].run.cycles += relayptr->run.cycles;
 			relayptr++;
+		}
+	}
+	else
+		dbgmsg("storage_fetch failed");
+
+	return (ret);
+}
+
+/**
+ * Save hardware sensors to permanent storage
+ * @return exec status
+ * @todo proper save of sensor name
+ */
+static int hardware_save_sensors(void)
+{
+	return (storage_dump("hardware_sensors", &Hardware_sversion, Sensors, sizeof(Sensors)));
+}
+
+/**
+ * Restore hardware sensor config from permanent storage
+ * Restores converter callback for set sensors.
+ * @return exec status
+ * @todo restore sensor name
+ */
+static int hardware_restore_sensors(void)
+{
+	static typeof (Sensors) blob;
+	storage_version_t sversion;
+	typeof(&Sensors[0]) sensorptr = (typeof(sensorptr))&blob;
+	unsigned int i;
+	int ret;
+
+	// try to restore key elements of hardware
+	ret = storage_fetch("hardware_sensors", &sversion, blob, sizeof(blob));
+	if (ALL_OK == ret) {
+		if (Hardware_sversion != sversion)
+			return (-EMISMATCH);
+
+		for (i=0; i<ARRAY_SIZE(Sensors); i++) {
+			if (!sensorptr->set.configured)
+				continue;
+
+			Sensors[i].set.type = sensorptr->set.type;
+			Sensors[i].ohm_to_celsius = sensor_o_to_c(sensorptr->set.type);
+			if (Sensors[i].ohm_to_celsius)
+				Sensors[i].set.configured = true;
 		}
 	}
 	else
@@ -905,6 +950,7 @@ int hardware_online(void)
 
 	// restore previous state - failure is ignored
 	hardware_restore_relays();
+	hardware_restore_sensors();
 
 	// read sensors
 	ret = hardware_sensors_read(Hardware.sensors);
@@ -1090,6 +1136,8 @@ int hardware_offline(void)
 	
 	// update permanent storage with final count
 	hardware_save_relays();
+
+	hardware_save_sensors();
 	
 	Hardware.ready = false;
 	
