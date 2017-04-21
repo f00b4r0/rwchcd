@@ -212,7 +212,7 @@ static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-static float ni1000_ohm_to_celsius(const uint_fast16_t ohm)
+__attribute__((pure)) static float ni1000_ohm_to_celsius(const uint_fast16_t ohm)
 {
 	const float R0 = 1000.0F;
 	const float A = 5.485e-3;
