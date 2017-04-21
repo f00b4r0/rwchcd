@@ -2,7 +2,7 @@
 //  rwchcd_hardware.c
 //  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016-2017 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -10,7 +10,6 @@
  * @file
  * Hardware interface implementation.
  *
- * @todo support other RTD types (ni1000, lg-ni1000, etc), possibly mixed
  * @todo reflect runtime errors on hardware (LED/LCD)
  */
 
@@ -66,6 +65,23 @@ struct s_stateful_relay {
 static const storage_version_t Hardware_sversion = 1;
 
 static struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
+
+typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
+
+/** software representation of a temperature sensor */
+struct s_sensor {
+	struct {
+		bool configured;
+		enum e_sensor_type type;
+	} set;
+	struct {
+		temp_t value;
+	} run;
+	ohm_to_celsius_ft * ohm_to_celsius;
+	char * restrict name;
+};
+
+static struct s_sensor Sensors[RWCHCD_NTEMPS];		///< physical sensors
 
 static struct {
 	bool ready;			///< hardware is ready
@@ -190,14 +206,35 @@ __attribute__((pure)) static float pt1000_ohm_to_celsius(const uint_fast16_t ohm
 	return (quadratic_cvd(R0, A, B, ohm));
 }
 
-/**
- * Return a calibrated temp_t value for the given raw sensor data.
- * @param raw the raw sensor data to convert
- * @return the temperature in temp_t units
+/** 
+ * Convert Ni1000 resistance value to actual temperature.
+ * Use DIN 43760 with temp coef of 6178ppm/K.
+ * @param ohm the resistance value to convert
+ * @return temperature in Celsius
  */
-static inline temp_t sensor_to_temp(const rwchc_sensor_t raw)
+__attribute__((pure)) static float ni1000_ohm_to_celsius(const uint_fast16_t ohm)
 {
-	return (celsius_to_temp(pt1000_ohm_to_celsius(sensor_to_ohm(raw, true))));
+	const float R0 = 1000.0F;
+	const float A = 5.485e-3;
+	const float B = 6.650e-6;
+
+	return (quadratic_cvd(R0, A, B, ohm));
+}
+
+/**
+ * Return a sensor ohm to celsius converter callback based on sensor type.
+ * @return correct function pointer for sensor type or NULL if invalid type
+ */
+static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
+{
+	switch (type) {
+		case ST_PT1000:
+			return (pt1000_ohm_to_celsius);
+		case ST_NI1000:
+			return (ni1000_ohm_to_celsius);
+		default:
+			return (NULL);
+	}
 }
 
 /**
@@ -209,19 +246,31 @@ static void parse_temps(void)
 	struct s_runtime * const runtime = get_runtime();
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t dt = time(NULL) - lasttime;
+	ohm_to_celsius_ft * o_to_c;
+	uint_fast16_t ohm;
 	uint_fast8_t i;
 	temp_t previous, current;
 	
 	assert(Hardware.ready && runtime);
 	
-	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	for (i = 0; i < runtime->config->nsensors; i++) {
-		current = sensor_to_temp(Hardware.sensors[i]);
-		previous = runtime->temps[i];
-		
+		if (!Sensors[i].set.configured)
+			continue;
+
+		ohm = sensor_to_ohm(Hardware.sensors[i], true);
+		o_to_c = Sensors[i].ohm_to_celsius;
+		assert(o_to_c);
+
+		current = celsius_to_temp(o_to_c(ohm));
+		previous = Sensors[i].run.value;
+
 		// apply LP filter with 5s time constant
-		runtime->temps[i] = temp_expw_mavg(previous, current, 5, dt);
+		Sensors[i].run.value = temp_expw_mavg(previous, current, 5, dt);
 	}
+
+	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+	for (i = 0; i < runtime->config->nsensors; i++)
+		runtime->temps[i] = Sensors[i].run.value;
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	lasttime = time(NULL);
@@ -266,6 +315,52 @@ static int hardware_restore_relays(void)
 			Relays[i].run.off_tottime += relayptr->run.off_tottime;
 			Relays[i].run.cycles += relayptr->run.cycles;
 			relayptr++;
+		}
+	}
+	else
+		dbgmsg("storage_fetch failed");
+
+	return (ret);
+}
+
+/**
+ * Save hardware sensors to permanent storage
+ * @return exec status
+ * @todo proper save of sensor name
+ */
+static int hardware_save_sensors(void)
+{
+	return (storage_dump("hardware_sensors", &Hardware_sversion, Sensors, sizeof(Sensors)));
+}
+
+/**
+ * Restore hardware sensor config from permanent storage
+ * Restores converter callback for set sensors.
+ * @return exec status
+ * @todo restore sensor name
+ */
+static int hardware_restore_sensors(void)
+{
+	static typeof (Sensors) blob;
+	storage_version_t sversion;
+	typeof(&Sensors[0]) sensorptr = (typeof(sensorptr))&blob;
+	unsigned int i;
+	int ret;
+
+	// try to restore key elements of hardware
+	ret = storage_fetch("hardware_sensors", &sversion, blob, sizeof(blob));
+	if (ALL_OK == ret) {
+		if (Hardware_sversion != sversion)
+			return (-EMISMATCH);
+
+		for (i=0; i<ARRAY_SIZE(Sensors); i++) {
+			if (!sensorptr->set.configured)
+				continue;
+
+			Sensors[i].set.type = sensorptr->set.type;
+			Sensors[i].ohm_to_celsius = sensor_o_to_c(sensorptr->set.type);
+			if (Sensors[i].ohm_to_celsius)
+				Sensors[i].set.configured = true;
 		}
 	}
 	else
@@ -448,6 +543,7 @@ int hardware_init(void)
 		return (-EINIT);
 
 	memset(Relays, 0x0, sizeof(Relays));
+	memset(Sensors, 0x0, sizeof(Sensors));
 	memset(&Hardware, 0x0, sizeof(Hardware));
 
 	// fetch hardware config
@@ -658,6 +754,77 @@ __attribute__((warn_unused_result)) static int hardware_rwchcperiphs_read(void)
 }
 
 /**
+ * Configure a temperature sensor.
+ * @param id the physical id of the sensor to configure (starting from 1)
+ * @param type the sensor type (PT1000...)
+ * @param name a user-defined name describing the sensor
+ * @return exec status
+ */
+int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const char * const name)
+{
+	char * str = NULL;
+
+	if (!id || (id > ARRAY_SIZE(Sensors)))
+		return (-EINVALID);
+
+	Sensors[id-1].ohm_to_celsius = sensor_o_to_c(type);
+
+	if (!Sensors[id-1].ohm_to_celsius)
+		return (-EINVALID);
+
+	if (name) {
+		str = strdup(name);
+		if (!str)
+			return(-EOOM);
+
+		Sensors[id-1].name = str;
+	}
+
+	Sensors[id-1].set.type = type;
+	Sensors[id-1].set.configured = true;
+
+	return (ALL_OK);
+}
+
+/**
+ * Deconfigure a temperature sensor.
+ * @param id the physical id of the sensor to deconfigure (starting from 1)
+ * @return exec status
+ */
+int hardware_sensor_deconfigure(const tempid_t id)
+{
+	if (!id || (id > ARRAY_SIZE(Sensors)))
+		return (-EINVALID);
+
+	if (!Sensors[id-1].set.configured)
+		return (-ENOTCONFIGURED);
+
+	free(Sensors[id-1].name);
+
+	memset(&Sensors[id-1], 0x00, sizeof(Sensors[id-1]));
+
+	return (ALL_OK);
+}
+
+/**
+ * Validate a temperature sensor for use.
+ * Checks that the provided hardware id is valid, that is that it is within boundaries
+ * of the hardware limits and the configured number of sensors.
+ * Finally it checks that the designated sensor is properly configured in software.
+ * @return ALL_OK if sensor is properly configured and available for use.
+ */
+int hardware_sensor_configured(const tempid_t id)
+{
+	if (!id || (id > ARRAY_SIZE(Sensors)) || (id > get_runtime()->config->nsensors))
+		return (-EINVALID);
+
+	if (!Sensors[id-1].set.configured)
+		return (-ENOTCONFIGURED);
+
+	return (ALL_OK);
+}
+
+/**
  * Request a hardware relay.
  * Ensures that the desired hardware relay is available and grabs it.
  * @param id target relay id (starting from 1)
@@ -800,6 +967,7 @@ int hardware_online(void)
 
 	// restore previous state - failure is ignored
 	hardware_restore_relays();
+	hardware_restore_sensors();
 
 	// read sensors
 	ret = hardware_sensors_read(Hardware.sensors);
@@ -985,6 +1153,8 @@ int hardware_offline(void)
 	
 	// update permanent storage with final count
 	hardware_save_relays();
+
+	hardware_save_sensors();
 	
 	Hardware.ready = false;
 	
@@ -1005,6 +1175,10 @@ void hardware_exit(void)
 	for (i = 1; i <= ARRAY_SIZE(Relays); i++)
 		hardware_relay_release(i);
 	
+	// deconfigure all sensors
+	for (i = 1; i <= ARRAY_SIZE(Sensors); i++)
+		hardware_sensor_deconfigure(i);
+
 	// reset the hardware
 	ret = spi_reset();
 	if (ret)
