@@ -116,7 +116,7 @@ static void hardware_relays_log(void)
  * @param calib 1 if calibrated value is required, 0 otherwise
  * @return the resistance value
  */
-static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
+__attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 {
 	const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
 	uint_fast16_t value, dacoffset;
@@ -164,7 +164,7 @@ static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-static float quadratic_cvd(const float R0, const float A, const float B, const uint_fast16_t ohm)
+__attribute__((pure)) static float quadratic_cvd(const float R0, const float A, const float B, const uint_fast16_t ohm)
 {
 	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
 	return ((-R0*A + sqrtf(R0*R0*A*A - 4.0F*R0*B*(R0 - ohm))) / (2.0F*R0*B));
@@ -176,7 +176,7 @@ static float quadratic_cvd(const float R0, const float A, const float B, const u
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
+__attribute__((pure)) static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
 {
 	const float R0 = 1000.0F;
 	const float alpha = 0.003850F;
