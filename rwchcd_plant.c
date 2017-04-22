@@ -463,10 +463,10 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	assert(vpriv);
 	
 	// sample window
-	if ((now - vpriv->last_time) < vpriv->set_sample_intvl)
+	if ((now - vpriv->run.last_time) < vpriv->set.sample_intvl)
 		return (ALL_OK);
 	
-	vpriv->last_time = now;
+	vpriv->run.last_time = now;
 	
 	tempout = get_temp(valve->set.id_tempout);
 	ret = validate_temp(tempout);
@@ -485,11 +485,11 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set.tdeadzone/2) {
-		valve_reqopen_pct(valve, vpriv->set_amount);
+		valve_reqopen_pct(valve, vpriv->set.amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
 	else if (tempout > target_tout + valve->set.tdeadzone/2) {
-		valve_reqclose_pct(valve, vpriv->set_amount);
+		valve_reqclose_pct(valve, vpriv->set.amount);
 	}
 	// else stop valve
 	else {
@@ -708,8 +708,8 @@ int valve_make_sapprox(struct s_valve * const valve,
 	if (!priv)
 		return (-EOOM);
 	
-	priv->set_amount = amount;
-	priv->set_sample_intvl = intvl;
+	priv->set.amount = amount;
+	priv->set.sample_intvl = intvl;
 	
 	// attach created priv to valve
 	valve->priv = priv;
@@ -1257,7 +1257,6 @@ static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
  * Controls the circuits elements to achieve the desired target temperature.
  * @param circuit target circuit
  * @return exec status
- * XXX safety for heating floor if implementing positive consummer_shift()
  * @warning circuit->run.target_ambient must be properly set before this runs
  * @todo review consumer shift formula
  */
@@ -1357,6 +1356,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	saved_temp = water_temp;
 	
 	// interference: handle stop delay requests
+	// XXX this will prevent a (valid: small) reduction in output: assumed acceptable
 	if (runtime->consumer_stop_delay) {
 		dbgmsg("stop delay active, remaining: %ld", runtime->consumer_stop_delay);	// maintain current or higher wtemp during stop delay
 		water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
@@ -2356,13 +2356,11 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 #define SUMMER_RUN_INTVL	60*60*24*7	///< 1 week
 #define SUMMER_RUN_DURATION	60*5		///< 5 minutes
 	static time_t timer_start = 0;
+	const time_t now = time(NULL);
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_pump_l * pumpl;
 	struct s_valve_l * valvel;
-	time_t now;
 	int ret;
-
-	now = time(NULL);
 
 	// don't do anything if summer AND plant asleep aren't in effect
 	if (!(runtime->summer && runtime->plant_could_sleep))
