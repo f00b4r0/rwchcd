@@ -179,10 +179,12 @@ static void valve_del(struct s_valve * valve)
  * @param percent amount to close the valve
  * @return exec status
  */
-static int valve_reqopen_pct(struct s_valve * const valve, uint_fast8_t percent)
+static int valve_reqopen_pct(struct s_valve * const valve, int_fast16_t percent)
 {
 	assert(valve);
-	
+
+	percent *= 10;
+
 	// if valve is opening, add running time
 	if (OPEN == valve->run.request_action)
 		valve->run.target_course += percent;
@@ -200,9 +202,11 @@ static int valve_reqopen_pct(struct s_valve * const valve, uint_fast8_t percent)
  * @param percent amount to open the valve
  * @return exec status
  */
-static int valve_reqclose_pct(struct s_valve * const valve, uint_fast8_t percent)
+static int valve_reqclose_pct(struct s_valve * const valve, int_fast16_t percent)
 {
 	assert(valve);
+
+	percent *= 10;
 	
 	// if valve is opening, add running time
 	if (CLOSE == valve->run.request_action)
@@ -587,7 +591,7 @@ static int valve_run(struct s_valve * const valve)
 	percent_time = valve->set.ete_time/100.0F;
 	
 	// calc running time from pct
-	request_runtime = (percent_time*valve->run.target_course);	// XXX trunc/floor REVISIT?
+	request_runtime = (percent_time*valve->run.target_course/10);	// XXX trunc/floor REVISIT?
 	
 	// prevent endless run
 	if (request_runtime > valve->set.ete_time*VALVE_MAX_RUNX)
