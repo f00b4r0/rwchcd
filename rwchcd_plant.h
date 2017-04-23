@@ -66,10 +66,11 @@ struct s_valve {
 		bool in_deadzone;	///< true if valve is in deadzone (XXX USEFUL?)
 		bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
 		int_fast16_t actual_position;	///< estimated current position in %*10
-		uint_fast16_t target_course;	///< current target course in % of set.ete_time
+		int_fast16_t target_course;	///< current target course in % of set.ete_time
 		time_t running_since;	///< current operation (OPEN/CLOSE) start time
 		time_t acc_open_time;	///< accumulated open time since last close
 		time_t acc_close_time;	///< accumulated close time since last open
+		time_t last_run_time;	///< last time valve_run() was invoked
 		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 						request_action;	///< requested action
 	} run;		///< private runtime (internally handled)

@@ -595,8 +595,10 @@ static int logic_valve(struct s_valve * const valve)
 static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
-	time_t request_runtime, runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
+	time_t request_runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
 	float percent_time;	// time necessary per percent position change
+	int_fast16_t course;
+	time_t dt = now - valve->run.last_run_time;
 
 	assert(valve);
 	
@@ -606,33 +608,41 @@ static int valve_run(struct s_valve * const valve)
 	if (!valve->run.online)
 		return (-EOFFLINE);
 
+	valve->run.last_run_time = now;
+
+	if (dt == now)	// XXX init
+		return (ALL_OK);
+
 	percent_time = valve->set.ete_time/100.0F;
 	
+	// update counters
+	if (OPEN == valve->run.actual_action) { // valve has been opening till now
+		valve->run.acc_close_time = 0;
+		valve->run.acc_open_time += dt;
+		valve->run.actual_position += dt*10/percent_time;
+		course = dt*10 / percent_time;
+		valve->run.target_course -= course;
+	}
+	else if (CLOSE == valve->run.actual_action) {	// valve has been closing till now
+		valve->run.acc_open_time = 0;
+		valve->run.acc_close_time += dt;
+		valve->run.actual_position -= dt*10/percent_time;
+		course = dt*10 / percent_time;
+		valve->run.target_course -= course;
+	}
+
 	// calc running time from pct
 	request_runtime = (percent_time*valve->run.target_course/10);	// XXX trunc/floor REVISIT?
-	
-	// prevent endless run
-	if (request_runtime > valve->set.ete_time*VALVE_MAX_RUNX)
-		request_runtime = valve->set.ete_time*VALVE_MAX_RUNX;
-	
+
 	// if we've exceeded request_runtime, request valve stop
-	runtime = now - valve->run.running_since;
-	if ((STOP != valve->run.actual_action) && (runtime >= request_runtime))
+	if (request_runtime <= 0)
 		valve_reqstop(valve);
 
-	// if we have a change of action, update counters
-	if (valve->run.request_action != valve->run.actual_action) {
-		// update counters
-		if (OPEN == valve->run.actual_action) { // valve has been opening till now
-			valve->run.acc_close_time = 0;
-			valve->run.acc_open_time += runtime;
-			valve->run.actual_position += runtime*10/percent_time;
-		}
-		else if (CLOSE == valve->run.actual_action) {	// valve has been closing till now
-			valve->run.acc_open_time = 0;
-			valve->run.acc_close_time += runtime;
-			valve->run.actual_position -= runtime*10/percent_time;
-		}
+	// if valve is currently stopped, check that requested runtime is past deadband
+	if (STOP == valve->run.actual_action) {	// XXX REVIEW does not work for direction changes
+		deadtime = percent_time * valve->set.deadband;
+		if (request_runtime < deadtime)
+			return (-EDEADBAND);
 	}
 	
 	// apply physical limits
@@ -649,16 +659,10 @@ static int valve_run(struct s_valve * const valve)
 		valve->run.actual_action = STOP;
 		return (ALL_OK);
 	}
-	
-	// otherwise check that requested runtime is past deadband
-	deadtime = percent_time * valve->set.deadband;
-	if (request_runtime < deadtime)
-		return (-EDEADBAND);
 
-	if (STOP != valve->run.actual_action)
-		dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, runtime: %ld",
-		       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, runtime);
-	
+	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, runtime: %ld",
+	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, (now - valve->run.running_since));
+
 	// check what is the requested action
 	if (OPEN == valve->run.request_action) {
 		hardware_relay_set_state(valve->set.rid_close, OFF, 0);	// break before make
