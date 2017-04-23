@@ -47,6 +47,22 @@ struct s_valve_sapprox_priv {
 	} run;
 };
 
+struct s_valve_pi_priv {
+	struct {
+		time_t sample_intvl;	///< sample interval (s)
+		time_t Tu;		///< unit response time
+		time_t Td;		///< deadtime
+		temp_t Ksmax;
+	} set;
+	struct {
+		time_t last_time;
+		temp_t prev;
+		float Kp;
+		float Ki;
+		float db_acc;		///< deadband accumulator. Needed to integrate when valve is not actuated despite request.
+	} run;
+};
+
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
 /** Valve element structure */
 struct s_valve {
@@ -315,5 +331,6 @@ void plant_del(struct s_plant * plant);
 int circuit_make_bilinear(struct s_heating_circuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
 int valve_make_bangbang(struct s_valve * const valve);
 int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl);
+int valve_make_pi(struct s_valve * const valve, time_t intvl, time_t Td, time_t Tu, temp_t K);
 
 #endif /* rwchcd_plant_h */

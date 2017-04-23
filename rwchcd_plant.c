@@ -215,19 +215,11 @@ static int valve_request_pct(struct s_valve * const valve, int_fast16_t percent)
 #define valve_reqopen_full(valve)	valve_request_pct(valve, 120)	///< request valve full open
 #define valve_reqclose_full(valve)	valve_request_pct(valve, -120)	///< request valve full close
 
-#if 0
 /**
- - Current Position is an approximation of the valve's position as it relates to a power level (0 - 100%) where 0% is
- fully closed and 100% is fully open.
- - On Time is the amount of time the valve needs to be turned on (either open or close) to eliminate the error be-
- tween the estimated valve position and the desired power level. A positive On Time value indicates the need to
- open the valve while a negative value indicates the need to close the valve. On Time = (Input 1 Value - Current
- Position) / 100 * Valve Travel Time
- When power is applied to the controller, the valve is closed and time is set to 0
- 
- * Implement time-based PI controller in velocity form
+ * Implement time-based PI controller in velocity form.
+ * We are driving an integrating actuator, so we want to compute a change in output,
+ * not the actual output.
  * Saturation : max = in1 temp, min = in2 temp
- * We want to output
  http://www.plctalk.net/qanda/showthread.php?t=19141
  // http://www.energieplus-lesite.be/index.php?id=11247
  // http://www.ferdinandpiette.com/blog/2011/08/implementer-un-pid-sans-faire-de-calculs/
@@ -237,101 +229,36 @@ static int valve_request_pct(struct s_valve * const valve, int_fast16_t percent)
  // http://controlguru.com/the-normal-or-standard-pid-algorithm/
  // http://www.csimn.com/CSI_pages/PIDforDummies.html
  // https://en.wikipedia.org/wiki/PID_controller
+ http://blog.opticontrols.com/archives/344
+ http://controlguru.com/integral-reset-windup-jacketing-logic-and-the-velocity-pi-form/
+ https://www.taco-hvac.com/uploads/FileLibrary/app-note-Kp-Ki-100.pdf
+
+ Due to implementation, this triggers a lot of relay actuations:
+ - deadzone will kill the valve (that's normal)
+ - requesting a move lower than the deadband while there is an ongoing move
+   will also kill the valve and can result in a move smaller than deadband.
+ This latter problem can be mitigated by increasing sample time to match deadband,
+ however this introduces other problems
  */
 static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
 {
-#warning broken
+	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
+	const time_t now = time(NULL);
 	int_fast16_t percent;
-	temp_t tempin1, tempin2, tempout, error;
-	temp_t iterm, pterm, output;
-	static temp_t prev, output_prev;
-	float Kp, Ki;	// XXX PID settings
+	temp_t tempin_h, tempin_l, tempout, error, K;
+	float iterm, pterm, output;
+	float Kp, Ki;
+	const time_t dt = now - vpriv->run.last_time;
 	int ret;
-	
-	tempin1 = get_temp(valve->set.id_temp1);
-	ret = validate_temp(tempin1);
-	if (ALL_OK != ret)
-		return (ret);
-	
-	// get current outpout
-	tempout = get_temp(valve->set.id_tempout);
-	ret = validate_temp(tempout);
-	if (ALL_OK != ret)
-		return (ret);
+	time_t Tc, Ti;
 
-	// apply deadzone
-	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		valve->run.in_deadzone = true;
-		return (-EDEADZONE);
-	}
-	
-	valve->run.in_deadzone = false;
-	
-	/* if we don't have a sensor for secondary input, guesstimate it
-	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
-	 tempin2 = tempout - delta */
-	if (valve->set.id_temp2 == 0) {
-		tempin2 = tempout - deltaK_to_temp(30);	// XXX 30K delta by default
-	}
-	else if (valve->set.id_temp2 < 0) {
-		tempin2 = tempout - deltaK_to_temp(-(valve->set.id_temp2)); // XXX will need casting
-	}
-	else {
-		tempin2 = get_temp(valve->set.id_temp2);
-		ret = validate_temp(tempin2);
-		if (ALL_OK != ret)
-			return (ret);
-	}
-	
-	// calculate error (target - actual)
-	error = target_tout - tempout;	// error is deltaK * 100 (i.e. internal type delta)
-	
-	// Integral term (Ki * error)
-	iterm = Ki * error;
-	
-	// Proportional term (Kp * (previous - actual)
-	pterm = Kp * (prev - tempout);
-	prev = tempout;
-	
-	output = iterm + pterm + output_prev;
-	output_prev = output;
-	
-	// scale result on valve position from 0 to 100%
-	percent = ((output - tempin2)*100 / (tempin1 - tempin2));
-	
-	dbgmsg("error: %.1f, iterm: %.1f, pterm: %.1f, output: %.1f, percent: %d%%",
-	       temp_to_celsius(error), temp_to_celsius(iterm), temp_to_celsius(pterm), temp_to_celsius(output), percent);
-	
-	// enforce physical limits
-	if (percent > 100)
-		percent = 100;
-	else if (percent < 0)
-		percent = 0;
-	
-	//	valve->target_position = (int_fast8_t)percent;
-	
-	return (ALL_OK);
-}
+	assert(vpriv);
 
-/**
- * implement a linear law for valve position:
- * t_outpout = percent * t_input1 + (1-percent) * t_input2
- * side effect sets target_position
- * @param valve self
- * @param target_tout target valve output temperature
- * @return exec status
- */
-static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tout)
-{
-#warning broken
-	int_fast16_t percent;
-	temp_t tempin1, tempin2, tempout, error;
-	int ret;
+	// sample window
+	if (dt < vpriv->set.sample_intvl)
+		return (ALL_OK);
 
-	tempin1 = get_temp(valve->set.id_temp1);
-	ret = validate_temp(tempin1);
-	if (ALL_OK != ret)
-		return (ret);
+	vpriv->run.last_time = now;
 
 	// get current outpout
 	tempout = get_temp(valve->set.id_tempout);
@@ -339,53 +266,106 @@ static int valvelaw_linear(struct s_valve * const valve, const temp_t target_tou
 	if (ALL_OK != ret)
 		return (ret);
 
-	// apply deadzone
+	if (dt == now) {	// XXX init
+		vpriv->run.prev = tempout;
+		return (ALL_OK);
+	}
+
+	// get current high input
+	tempin_h = get_temp(valve->set.id_temp1);
+	ret = validate_temp(tempin_h);
+	if (ALL_OK != ret)
+		return (ret);
+
+	// if we don't have a sensor for low input, guesstimate it
+	tempin_l = get_temp(valve->set.id_temp2);
+	ret = validate_temp(tempin_l);
+	if (ALL_OK != ret)
+		tempin_l = tempin_h - vpriv->set.Ksmax;
+
+	// jacketing
+	if (target_tout <= tempin_l) {
+		valve_reqclose_full(valve);
+		vpriv->run.prev = tempout;
+		vpriv->run.db_acc = 0;
+		return (ALL_OK);
+	} else if (target_tout >= tempin_h) {
+		valve_reqopen_full(valve);
+		vpriv->run.prev = tempout;
+		vpriv->run.db_acc = 0;
+		return (ALL_OK);
+	}
+
+	// K = Ksmax/100 (maximum output delta / maximum control delta)
+
+	Tc = (1*vpriv->set.Tu > 8*vpriv->set.Td) ? 1*vpriv->set.Tu : 8*vpriv->set.Td;
+	K = abs(tempin_h - tempin_l)/100;	// abs() cause _h may occasionally be < _l
+	Kp = (float)vpriv->set.Tu/(K*(vpriv->set.Td+Tc));
+	Ti = vpriv->set.Tu;
+	Ki = Kp/Ti;
+
+	dbgmsg("K: %d, Tc: %ld, Kp: %e, Ki: %e", K, Tc, Kp, Ki);
+
+	// calculate error: (target - actual)
+	error = target_tout - tempout;
+	
+	// Integral term: (Ki * error) * sample interval
+	iterm = Ki * error * dt;
+	
+	// Proportional term applied to output: (Kp * (previous - actual)
+	pterm = Kp * (vpriv->run.prev - tempout);
+
+	output = iterm + pterm;
+
+	/* (tempin_h - tempin_l) is the process gain K.
+	 in fact, this could be scaled over a different law to better control
+	 non-linear valves, since this computation implicitely assumes the valve
+	 is linear.
+	 Kp = 1/K * (Tu/(Td+Tc), with Tc is closed-loop time constant: max(A*Tu,B*Td);
+	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
+	 Ki = Kp/Ti with Ti integration time. Ti = Tu
+	 This is why we don't use Ksmax in the computation of Kp in valve_make_pi().
+	 
+	 we're dealing with two constraints: the PI controller reacts to an observed
+	 response to an action, but the problem is that the steps of that action are
+	 of fixed size when dealing with a valve actuator (due to deadband and to
+	 limit actuator wear).
+	 Furthermore, the action itself isn't instantaneous: contrary to e.g. a PWM
+	 output, the valve motor has a finite speed: there's a lag between the control
+	 change and the moment when that change is fully effected.
+
+	 Therefore, the PI controller will spend a good deal of
+	 time reacting to an observed response that doesn't match its required action.
+	 */
+
+	dbgmsg("error: %d, iterm: %f, pterm: %f, output: %f, acc: %f",
+	       error, iterm, pterm, output, vpriv->run.db_acc);
+
+	// apply deadzone: keep the algorithm running but do not actuate the valve, accumulate instead
+	// when we get out of the deadzone the algorithm will be ready to correct with the adequate amount
 	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		valve->run.in_deadzone = true;
+		vpriv->run.db_acc += iterm;
+		//vpriv->run.prev = tempout; ??
 		return (-EDEADZONE);
 	}
-	
-	valve->run.in_deadzone = false;
 
-	/* if we don't have a sensor for secondary input, guesstimate it
-	 treat the provided id as a delta from valve tempout in Kelvin XXX REVISIT,
-	 tempin2 = tempout - delta */
-	if (valve->set.id_temp2 == 0) {
-		tempin2 = tempout - deltaK_to_temp(30);	// XXX 30K delta by default
-	}
-	else if (valve->set.id_temp2 < 0) {
-		tempin2 = tempout - deltaK_to_temp(-(valve->set.id_temp2)); // XXX will need casting
-	}
+	percent = floorf(output + vpriv->run.db_acc);
+
+	/* if we are below deadband, everything behaves as if the sample rate
+	 was reduced: we accumulate the iterm and we don't update the previous
+	 tempout. The next time the algorithm is run, everything will be as if
+	 it was run with dt = dt_prev + dt. And so on, until the requested change
+	 is large enough to trigger an action, at which point the cycle starts again */
+	if (abs(percent) < valve->set.deadband)
+		vpriv->run.db_acc += iterm;
 	else {
-		tempin2 = get_temp(valve->set.id_temp2);
-		ret = validate_temp(tempin2);
-		if (ALL_OK != ret)
-			return (ret);
+		valve_request_pct(valve, percent);
+		vpriv->run.prev = tempout;
+		vpriv->run.db_acc = 0;
 	}
-
-	/* Absolute positionning. We don't use actual tempout here.
-	 XXX REVIEW. Should help anticipating variations due to changes in inputs 
-	 if tempin2 > tempin1 then the valve will close */
-	percent = ((target_tout - tempin2)*100 / (tempin1 - tempin2));
-
-	// Add a proportional amount to compensate for drift
-	error = target_tout - tempout;	// error is deltaK * 100 (i.e. internal type delta)
-	percent += 2*temp_to_deltaK(error);	// XXX HARDCODED we take 2*Kelvin value as a %offset
-	
-	dbgmsg("target_tout: %.1f, tempout: %.1f, tempin1: %.1f, tempin2: %.1f, percent: %d, error: %.0f",
-	       temp_to_celsius(target_tout), temp_to_celsius(tempout), temp_to_celsius(tempin1), temp_to_celsius(tempin2), percent, temp_to_deltaK(error));
-
-	// enforce physical limits
-	if (percent > 100)
-		percent = 100;
-	else if (percent < 0)
-		percent = 0;
-	
-	//	valve->target_position = (int_fast8_t)percent;
 
 	return (ALL_OK);
 }
-#endif
 
 /**
  * implement a bang-bang law for valve position.
@@ -456,7 +436,7 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 		valve_reqstop(valve);
 		return (-EDEADZONE);
 	}
-	
+
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set.tdeadzone/2) {
@@ -706,6 +686,51 @@ int valve_make_sapprox(struct s_valve * const valve,
 	// assign function
 	valve->valvelaw = valvelaw_sapprox;
 	
+	return (ALL_OK);
+}
+
+/**
+ * Constructor for PI valve control
+ * @param valve target valve
+ * @param intvl sample interval in seconds
+ * @param Td delay slot time
+ * @param Tu unit step response time
+ * @param K unit step response output difference
+ * @return exec status
+ * @bug the computation of Kp and Ki must be reviewed and is likely wrong
+ */
+int valve_make_pi(struct s_valve * const valve,
+		  time_t intvl, time_t Td, time_t Tu, temp_t Ksmax)
+{
+	struct s_valve_pi_priv * priv = NULL;
+
+	if (!valve)
+		return (-EINVALID);
+
+	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0))
+		return (-EINVALID);
+
+	// XXX ensure intvl < (Tu/10)
+
+	// create priv element
+	priv = calloc(1, sizeof(*priv));
+	if (!priv)
+		return (-EOOM);
+
+	priv->set.sample_intvl = intvl;
+	priv->set.Td = Td;
+	priv->set.Tu = Tu;
+	priv->set.Ksmax = Ksmax;
+
+	priv->run.Kp = (0.9F*Tu)/Td; // XXX (0.9F*Tu)/(Ksmax*Td) doesn't work. Kp increases with Tu
+	priv->run.Ki = 3.3F*Td;	// XXX Ki increases with Td
+
+	// attach created priv to valve
+	valve->priv = priv;
+
+	// assign function
+	valve->valvelaw = valvelaw_pi;
+
 	return (ALL_OK);
 }
 

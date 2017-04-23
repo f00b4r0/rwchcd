@@ -255,8 +255,8 @@ static int init_process()
 	}
 
 	// configure that valve
-	circuit->valve->set.tdeadzone = deltaK_to_temp(2);
-	circuit->valve->set.deadband = 4;	// XXX 4% minimum increments
+	circuit->valve->set.tdeadzone = deltaK_to_temp(1);
+	circuit->valve->set.deadband = 2;	// XXX 2% minimum increments
 	circuit->valve->set.ete_time = 120;	// XXX 120 s
 	ret = hardware_sensor_configured(boiler->set.id_temp_outgoing);
 	if (ret)
@@ -270,7 +270,8 @@ static int init_process()
 	if (ret)
 		return (ret);
 	circuit->valve->set.id_tempout = circuit->set.id_temp_outgoing;
-	valve_make_sapprox(circuit->valve, 5, 20);
+	//valve_make_sapprox(circuit->valve, 5, 20);
+	valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30));
 	
 	// configure two relays for that valve
 	ret = hardware_relay_request(RELAY_VOPEN, "v_open");
