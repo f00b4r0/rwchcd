@@ -190,53 +190,30 @@ static int valve_reqstop(struct s_valve * const valve)
 }
 
 /**
- * Request valve closing amount
+ * Request valve closing/opening amount
  * @param valve target valve
- * @param percent amount to close the valve
+ * @param percent amount to open (positive) or close (negative) the valve
  * @return exec status
  */
-static int valve_reqopen_pct(struct s_valve * const valve, int_fast16_t percent)
+static int valve_request_pct(struct s_valve * const valve, int_fast16_t percent)
 {
 	assert(valve);
 
-	if (percent < valve->set.deadband) {
+	if (abs(percent) < valve->set.deadband) {
 		valve_reqstop(valve);
 		return (-EDEADBAND);
 	}
 
 	percent *= 10;
 
-	valve->run.request_action = OPEN;
-	valve->run.target_course = percent;
+	valve->run.request_action = (percent < 0) ? CLOSE : OPEN;
+	valve->run.target_course = abs(percent);
 
 	return (ALL_OK);
 }
 
-/**
- * Request valve opening amount.
- * @param valve target valve
- * @param percent amount to open the valve
- * @return exec status
- */
-static int valve_reqclose_pct(struct s_valve * const valve, int_fast16_t percent)
-{
-	assert(valve);
-
-	if (percent < valve->set.deadband) {
-		valve_reqstop(valve);
-		return (-EDEADBAND);
-	}
-
-	percent *= 10;
-
-	valve->run.request_action = CLOSE;
-	valve->run.target_course = percent;
-
-	return (ALL_OK);
-}
-
-#define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 120)	///< request valve full open
-#define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 120)	///< request valve full close
+#define valve_reqopen_full(valve)	valve_request_pct(valve, 120)	///< request valve full open
+#define valve_reqclose_full(valve)	valve_request_pct(valve, -120)	///< request valve full close
 
 #if 0
 /**
@@ -483,11 +460,11 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set.tdeadzone/2) {
-		valve_reqopen_pct(valve, vpriv->set.amount);
+		valve_request_pct(valve, vpriv->set.amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
 	else if (tempout > target_tout + valve->set.tdeadzone/2) {
-		valve_reqclose_pct(valve, vpriv->set.amount);
+		valve_request_pct(valve, -vpriv->set.amount);
 	}
 	// else stop valve
 	else {
@@ -702,6 +679,7 @@ int valve_make_bangbang(struct s_valve * const valve)
  * @param amount movement amount in %
  * @param intvl sample interval in seconds
  * @return exec status
+ * @warning should ensure that the sample interval allows full amount movement
  */
 int valve_make_sapprox(struct s_valve * const valve,
 		       uint_fast8_t amount, time_t intvl)
