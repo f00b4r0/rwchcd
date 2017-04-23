@@ -849,6 +849,8 @@ int hardware_relay_request(const relid_t id, const char * const name)
 		Relays[id-1].name = str;
 	}
 
+	Relays[id-1].run.off_since = time(NULL);	// XXX hack
+
 	Relays[id-1].set.configured = true;
 	
 	return (ALL_OK);
