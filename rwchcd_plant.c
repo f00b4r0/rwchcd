@@ -174,55 +174,6 @@ static void valve_del(struct s_valve * valve)
 }
 
 /**
- * Request valve closing amount
- * @param valve target valve
- * @param percent amount to close the valve
- * @return exec status
- */
-static int valve_reqopen_pct(struct s_valve * const valve, int_fast16_t percent)
-{
-	assert(valve);
-
-	percent *= 10;
-
-	// if valve is opening, add running time
-	if (OPEN == valve->run.request_action)
-		valve->run.target_course += percent;
-	else {
-		valve->run.request_action = OPEN;
-		valve->run.target_course = percent;
-	}
-	
-	return (ALL_OK);
-}
-
-/**
- * Request valve opening amount.
- * @param valve target valve
- * @param percent amount to open the valve
- * @return exec status
- */
-static int valve_reqclose_pct(struct s_valve * const valve, int_fast16_t percent)
-{
-	assert(valve);
-
-	percent *= 10;
-	
-	// if valve is opening, add running time
-	if (CLOSE == valve->run.request_action)
-		valve->run.target_course += percent;
-	else {
-		valve->run.request_action = CLOSE;
-		valve->run.target_course = percent;
-	}
-	
-	return (ALL_OK);
-}
-
-#define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 120)	///< request valve full open
-#define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 120)	///< request valve full close
-
-/**
  * Request valve stop
  * @param valve target valve
  * @return exec status
@@ -237,6 +188,55 @@ static int valve_reqstop(struct s_valve * const valve)
 
 	return (ALL_OK);
 }
+
+/**
+ * Request valve closing amount
+ * @param valve target valve
+ * @param percent amount to close the valve
+ * @return exec status
+ */
+static int valve_reqopen_pct(struct s_valve * const valve, int_fast16_t percent)
+{
+	assert(valve);
+
+	if (percent < valve->set.deadband) {
+		valve_reqstop(valve);
+		return (-EDEADBAND);
+	}
+
+	percent *= 10;
+
+	valve->run.request_action = OPEN;
+	valve->run.target_course = percent;
+
+	return (ALL_OK);
+}
+
+/**
+ * Request valve opening amount.
+ * @param valve target valve
+ * @param percent amount to open the valve
+ * @return exec status
+ */
+static int valve_reqclose_pct(struct s_valve * const valve, int_fast16_t percent)
+{
+	assert(valve);
+
+	if (percent < valve->set.deadband) {
+		valve_reqstop(valve);
+		return (-EDEADBAND);
+	}
+
+	percent *= 10;
+
+	valve->run.request_action = CLOSE;
+	valve->run.target_course = percent;
+
+	return (ALL_OK);
+}
+
+#define valve_reqopen_full(valve)	valve_reqopen_pct(valve, 120)	///< request valve full open
+#define valve_reqclose_full(valve)	valve_reqclose_pct(valve, 120)	///< request valve full close
 
 #if 0
 /**
@@ -595,7 +595,7 @@ static int logic_valve(struct s_valve * const valve)
 static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
-	time_t request_runtime, deadtime;	// minimum on time that the valve will travel once it is turned on in either direction.
+	time_t request_runtime;
 	float percent_time;	// time necessary per percent position change
 	int_fast16_t course;
 	time_t dt = now - valve->run.last_run_time;
@@ -638,13 +638,6 @@ static int valve_run(struct s_valve * const valve)
 	if (request_runtime <= 0)
 		valve_reqstop(valve);
 
-	// if valve is currently stopped, check that requested runtime is past deadband
-	if (STOP == valve->run.actual_action) {	// XXX REVIEW does not work for direction changes
-		deadtime = percent_time * valve->set.deadband;
-		if (request_runtime < deadtime)
-			return (-EDEADBAND);
-	}
-	
 	// apply physical limits
 	if (valve->run.actual_position > 1000)
 		valve->run.actual_position = 1000;
