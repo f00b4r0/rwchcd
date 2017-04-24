@@ -430,13 +430,10 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
 
 	// apply deadzone
 	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		valve->run.in_deadzone = true;
 		valve_reqstop(valve);
 		return (-EDEADZONE);
 	}
-	
-	valve->run.in_deadzone = false;
-	
+
 	if (target_tout > tempout)
 		valve_reqopen_full(valve);
 	else
@@ -479,12 +476,9 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	
 	// apply deadzone
 	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		valve->run.in_deadzone = true;
 		valve_reqstop(valve);
 		return (-EDEADZONE);
 	}
-	
-	valve->run.in_deadzone = false;
 	
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
@@ -566,8 +560,23 @@ static int valve_offline(struct s_valve * const valve)
 }
 
 #define VALVE_MAX_RUNX	3
+/**
+ * Valve logic.
+ * Ensures the valve cannot run forever in one direction.
+ * Flags when the valve has reached either end at least once.
+ * @param valve the target valve
+ * @return exec status
+ */
 static int logic_valve(struct s_valve * const valve)
 {
+	assert(valve);
+
+	if (!valve->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!valve->run.online)
+		return (-EOFFLINE);
+	
 	if (OPEN == valve->run.request_action) {
 		if (valve->run.acc_open_time >= valve->set.ete_time*VALVE_MAX_RUNX) {
 			valve->run.true_pos = true;
@@ -585,94 +594,91 @@ static int logic_valve(struct s_valve * const valve)
 }
 
 /**
- * run valve.
+ * Valve control loop.
+ * Triggers the relays based on requested valve operation, and performs time
+ * accounting to keep track of how far the valve has travelled.
+ * By design, the implementation will overshoot the target position if it cannot
+ * be reached due to time resolution.
  * @param valve target valve
  * @return error status
- * XXX only handles 3-way valve for now
- - Dead Time is the minimum on time that the valve will travel once it is turned on in either the closed or open di-
- rection. Dead Time = Valve Dead Band / 100 * Valve Travel Time.
+ * @todo XXX REVIEW only handles 3-way valve for now
+ * @warning first invocation must be with valve stopped (run.actual_action == STOP),
+ * otherwise dt will be out of whack.
+ * @note the function assumes that the sanity of the valve argument will be checked before invocation.
+ * @warning beware of the resolution limit on valve end-to-end time
+ * @warning REVIEW: overshoots
  */
 static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
-	time_t request_runtime;
+	const time_t dt = now - valve->run.last_run_time;
 	float percent_time;	// time necessary per percent position change
 	int_fast16_t course;
-	time_t dt = now - valve->run.last_run_time;
-
-	assert(valve);
-	
-	if (!valve->set.configured)
-		return (-ENOTCONFIGURED);
-
-	if (!valve->run.online)
-		return (-EOFFLINE);
+	int ret = ALL_OK;
 
 	valve->run.last_run_time = now;
-
-	if (dt == now)	// XXX init
-		return (ALL_OK);
-
-	percent_time = valve->set.ete_time/100.0F;
 	
+	percent_time = valve->set.ete_time/100.0F;
+	assert(percent_time > 0);
+	course = dt*10 / percent_time;	// XXX trunc/floor REVISIT?
+
 	// update counters
-	if (OPEN == valve->run.actual_action) { // valve has been opening till now
-		valve->run.acc_close_time = 0;
-		valve->run.acc_open_time += dt;
-		valve->run.actual_position += dt*10/percent_time;
-		course = dt*10 / percent_time;
-		valve->run.target_course -= course;
+	switch (valve->run.actual_action) {
+		case OPEN:	// valve has been opening till now
+			valve->run.acc_close_time = 0;
+			valve->run.acc_open_time += dt;
+			valve->run.actual_position += course;
+			valve->run.target_course -= course;
+			break;
+		case CLOSE:	// valve has been closing till now
+			valve->run.acc_open_time = 0;
+			valve->run.acc_close_time += dt;
+			valve->run.actual_position -= course;
+			valve->run.target_course -= course;
+			break;
+		case STOP:
+		default:
+			break;
 	}
-	else if (CLOSE == valve->run.actual_action) {	// valve has been closing till now
-		valve->run.acc_open_time = 0;
-		valve->run.acc_close_time += dt;
-		valve->run.actual_position -= dt*10/percent_time;
-		course = dt*10 / percent_time;
-		valve->run.target_course -= course;
-	}
-
-	// calc running time from pct
-	request_runtime = (percent_time*valve->run.target_course/10);	// XXX trunc/floor REVISIT?
-
-	// if we've exceeded request_runtime, request valve stop
-	if (request_runtime <= 0)
-		valve_reqstop(valve);
 
 	// apply physical limits
 	if (valve->run.actual_position > 1000)
 		valve->run.actual_position = 1000;
 	else if (valve->run.actual_position < 0)
 		valve->run.actual_position = 0;
-	
-	// check if stop is requested
-	if ((STOP == valve->run.request_action)) {
-		hardware_relay_set_state(valve->set.rid_open, OFF, 0);
-		hardware_relay_set_state(valve->set.rid_close, OFF, 0);
-		valve->run.running_since = 0;
-		valve->run.actual_action = STOP;
-		return (ALL_OK);
+
+	// if we've exceeded target course, request valve stop - XXX will overshoot by default
+	if (valve->run.target_course <= 0)	// XXX negative value is overshoot amount
+		valve_reqstop(valve);
+
+	// perform requested action
+	if (valve->run.request_action != valve->run.actual_action) {
+		switch (valve->run.request_action) {
+			case OPEN:
+				hardware_relay_set_state(valve->set.rid_close, OFF, 0);	// break before make
+				hardware_relay_set_state(valve->set.rid_open, ON, 0);
+				valve->run.actual_action = OPEN;
+				break;
+			case CLOSE:
+				hardware_relay_set_state(valve->set.rid_open, OFF, 0);	// break before make
+				hardware_relay_set_state(valve->set.rid_close, ON, 0);
+				valve->run.actual_action = CLOSE;
+				break;
+			default:
+				ret = -EINVALID;
+			case STOP:
+				hardware_relay_set_state(valve->set.rid_open, OFF, 0);
+				hardware_relay_set_state(valve->set.rid_close, OFF, 0);
+				valve->run.actual_action = STOP;
+				break;
+		}
 	}
 
-	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req runtime: %ld, runtime: %ld",
-	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F, request_runtime, (now - valve->run.running_since));
+	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req course: %.1f%%",
+	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
+	       (float)valve->run.target_course/10.0F);
 
-	// check what is the requested action
-	if (OPEN == valve->run.request_action) {
-		hardware_relay_set_state(valve->set.rid_close, OFF, 0);	// break before make
-		hardware_relay_set_state(valve->set.rid_open, ON, 0);
-		if (!valve->run.running_since || (CLOSE == valve->run.actual_action))
-			valve->run.running_since = now;
-		valve->run.actual_action = OPEN;
-	}
-	else if (CLOSE == valve->run.request_action) {
-		hardware_relay_set_state(valve->set.rid_open, OFF, 0);	// break before make
-		hardware_relay_set_state(valve->set.rid_close, ON, 0);
-		if (!valve->run.running_since || (OPEN == valve->run.actual_action))
-			valve->run.running_since = now;
-		valve->run.actual_action = CLOSE;
-	}
-	
-	return (ALL_OK);
+	return (ret);
 }
 
 /**
