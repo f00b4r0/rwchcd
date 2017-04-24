@@ -245,7 +245,8 @@ static void parse_temps(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
-	const time_t dt = time(NULL) - lasttime;
+	const time_t now = time(NULL);
+	const time_t dt = now - lasttime;
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
@@ -264,7 +265,7 @@ static void parse_temps(void)
 		current = celsius_to_temp(o_to_c(ohm));
 		previous = Sensors[i].run.value;
 
-		// apply LP filter with 5s time constant
+		// XXX apply LP filter with 5s time constant
 		Sensors[i].run.value = temp_expw_mavg(previous, current, 5, dt);
 	}
 
@@ -273,7 +274,7 @@ static void parse_temps(void)
 		runtime->temps[i] = Sensors[i].run.value;
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
-	lasttime = time(NULL);
+	lasttime = now;
 }
 
 /**
@@ -572,7 +573,7 @@ static int hardware_calibrate(void)
 	uint_fast16_t refcalib;
 	int ret;
 	rwchc_sensor_t ref;
-	time_t now = time(NULL);
+	const time_t now = time(NULL);
 	
 	assert(Hardware.ready);
 	
