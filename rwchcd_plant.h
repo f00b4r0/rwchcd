@@ -37,28 +37,31 @@ struct s_pump {
 	char * restrict name;
 };
 
+/** private structure for sapprox valve control */
 struct s_valve_sapprox_priv {
 	struct {
 		uint_fast8_t amount;		///< amount to move in %
 		time_t sample_intvl;		///< sample interval in seconds
 	} set;
 	struct {
-		time_t last_time;		///< private
+		time_t last_time;		///< last time the sapprox controller was run
 	} run;
 };
 
+/** Private structure for PI valve control */
 struct s_valve_pi_priv {
 	struct {
 		time_t sample_intvl;	///< sample interval (s)
 		time_t Tu;		///< unit response time
 		time_t Td;		///< deadtime
-		temp_t Ksmax;
+		temp_t Ksmax;		///< maximum valve output delta
 	} set;
 	struct {
-		time_t last_time;
-		temp_t prev;
-		float Kp;
-		float Ki;
+		bool reset;		///< controller reset request
+		time_t last_time;	///< last time the PI controller algorithm was run
+		time_t Tc;		///< closed loop time constant
+		temp_t prev_out;	///< previous run output temperature
+		float Kp_u;		///< Kp unscalled: Kp * K
 		float db_acc;		///< deadband accumulator. Needed to integrate when valve is not actuated despite request.
 	} run;
 };
@@ -71,8 +74,8 @@ struct s_valve {
 		temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
 		uint_fast8_t deadband;	///< deadband for valve operation in %: no operation if requested move is less than that
 		time_t ete_time;	///< end-to-end run time in seconds
-		tempid_t id_temp1;	///< temp at the "primary" input: when position is 0% there is 0% flow from this input
-		tempid_t id_temp2;	///< temp at the "secondary" input: when position is 0% there is 100% flow from this input. if negative, offset in Kelvin from temp1
+		tempid_t id_temp1;	///< temp at the "primary" input: when position is 0% (closed) there is 0% flow from this input
+		tempid_t id_temp2;	///< temp at the "secondary" input: when position is 0% (closed) there is 100% flow from this input
 		tempid_t id_tempout;	///< temp at the output
 		relid_t rid_open;	///< relay for opening the valve
 		relid_t rid_close;	///< relay for closing the valve
