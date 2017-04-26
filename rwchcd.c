@@ -466,26 +466,6 @@ int main(void)
 
 	pr_log("Revision %s starting", Version);
 
-#ifdef DEBUG
-	// create the stdout fifo for debugging
-	unlink(RWCHCD_FIFO);
-	ret = mkfifo(RWCHCD_FIFO, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-	if (!ret) {
-		// ignore SIGPIPE
-		signal(SIGPIPE, SIG_IGN);
-		
-		// redirect stdout
-		outpipe = freopen(RWCHCD_FIFO, "w+", stdout);	// open read-write to avoid blocking here
-		
-		// make non-blocking
-		if (outpipe)
-			ret = fcntl(fileno(outpipe), F_SETFL, O_NONBLOCK);
-		
-		if (ret)
-			abort();	// we can't have a blocking stdout
-	}
-#endif
-
 	// create a pipe for the watchdog
 	ret = pipe(pipefd);
 	if (ret)
@@ -534,6 +514,26 @@ int main(void)
 	if (ret)
 		err(ret, "failed to setuid()");
 	
+#ifdef DEBUG
+	// create the stdout fifo for debugging
+	unlink(RWCHCD_FIFO);
+	ret = mkfifo(RWCHCD_FIFO, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	if (!ret) {
+		// ignore SIGPIPE
+		signal(SIGPIPE, SIG_IGN);
+
+		// redirect stdout
+		outpipe = freopen(RWCHCD_FIFO, "w+", stdout);	// open read-write to avoid blocking here
+
+		// make non-blocking
+		if (outpipe)
+			ret = fcntl(fileno(outpipe), F_SETFL, O_NONBLOCK);
+
+		if (ret)
+			abort();	// we can't have a blocking stdout
+	}
+#endif
+
 	// signal handler for cleanup.
 	// No error checking because it's no big deal if it fails
 	saction.sa_handler = sig_handler;
