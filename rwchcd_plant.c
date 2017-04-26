@@ -193,16 +193,14 @@ static int valve_reqstop(struct s_valve * const valve)
  * Request valve closing/opening amount
  * @param valve target valve
  * @param percent amount to open (positive) or close (negative) the valve
- * @return exec status
+ * @return exec status. If requested amount is < valve deadband no action is performed, -EDEADBAND is returned.
  */
 static int valve_request_pct(struct s_valve * const valve, int_fast16_t percent)
 {
 	assert(valve);
 
-	if (abs(percent) < valve->set.deadband) {
-		valve_reqstop(valve);
+	if (abs(percent) < valve->set.deadband)
 		return (-EDEADBAND);
-	}
 
 	percent *= 10;
 
@@ -363,10 +361,9 @@ static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
 	 since this is also a point where the internal frequency is much lower
 	 and so Nyquist is still satisfied
 	 */
-	if (abs(percent) < valve->set.deadband)
+	if (valve_request_pct(valve, percent) != ALL_OK)
 		vpriv->run.db_acc += iterm;
 	else {
-		valve_request_pct(valve, percent);
 		vpriv->run.prev_out = tempout;
 		vpriv->run.db_acc = 0;
 	}
@@ -439,10 +436,8 @@ int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
 		return (ret);
 	
 	// apply deadzone
-	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		valve_reqstop(valve);
+	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2)))
 		return (-EDEADZONE);
-	}
 
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
