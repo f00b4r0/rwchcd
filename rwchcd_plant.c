@@ -606,8 +606,10 @@ static int valve_run(struct s_valve * const valve)
 	else if (valve->run.actual_position < 0)
 		valve->run.actual_position = 0;
 
-	// if we've exceeded target course, request valve stop - XXX will overshoot by default
-	if (valve->run.target_course <= 0)	// XXX negative value is overshoot amount
+	/* valve stop strategy:
+	 valve is stopped if next run would overshoot by more than half of the
+	 course resolution. */
+	if (valve->run.target_course < (course/2))	// residual value is under/overshoot amount
 		valve_reqstop(valve);
 
 	// perform requested action
