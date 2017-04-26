@@ -245,7 +245,7 @@ static int valve_request_pct(struct s_valve * const valve, int_fast16_t percent)
  * Therefore, the PI controller will spend a good deal of
  * time reacting to an observed response that doesn't match its required action.
  */
-static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
+static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const time_t now = time(NULL);
@@ -372,14 +372,14 @@ static int valvelaw_pi(struct s_valve * const valve, const temp_t target_tout)
 }
 
 /**
- * implement a bang-bang law for valve position.
+ * implement a bang-bang controller for valve position.
  * If target_tout > current tempout, open the valve, otherwise close it
  * @warning in case of sensor failure, NO ACTION is performed
  * @param valve self
  * @param target_tout target valve output temperature
  * @return exec status
  */
-static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_tout)
+static int valvectrl_bangbang(struct s_valve * const valve, const temp_t target_tout)
 {
 	int ret;
 	temp_t tempout;
@@ -404,7 +404,7 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
 }
 
 /**
- * Successive approximations law.
+ * Successive approximations controller.
  * Approximate the target temperature by repeatedly trying to converge toward
  * the set point. Priv structure contains sample interval, last sample time and
  * fixed amount of valve course to apply.
@@ -415,7 +415,7 @@ static int valvelaw_bangbang(struct s_valve * const valve, const temp_t target_t
  * @param target_tout the target output temperature
  * @return exec status
  */
-int valvelaw_sapprox(struct s_valve * const valve, const temp_t target_tout)
+int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_sapprox_priv * restrict const vpriv = valve->priv;
 	const time_t now = time(NULL);
@@ -468,7 +468,7 @@ static inline int valve_tposition(struct s_valve * const valve, const temp_t tar
 	assert(valve->set.configured);
 
 	// apply valve law to determine target position
-	return (valve->valvelaw(valve, target_tout));
+	return (valve->valvectrl(valve, target_tout));
 }
 
 /**
@@ -652,7 +652,7 @@ int valve_make_bangbang(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 	
-	valve->valvelaw = valvelaw_bangbang;
+	valve->valvectrl = valvectrl_bangbang;
 	
 	return (ALL_OK);
 }
@@ -688,7 +688,7 @@ int valve_make_sapprox(struct s_valve * const valve,
 	valve->priv = priv;
 	
 	// assign function
-	valve->valvelaw = valvelaw_sapprox;
+	valve->valvectrl = valvectrl_sapprox;
 	
 	return (ALL_OK);
 }
@@ -701,7 +701,7 @@ int valve_make_sapprox(struct s_valve * const valve,
  * @param Tu unit step response time
  * @param Ksmax 100% step response output difference
  * @return exec status
- * @note refer to valvelaw_pi() for calculation details
+ * @note refer to valvectrl_pi() for calculation details
  * @warning tuning factor is hardcoded
  */
 int valve_make_pi(struct s_valve * const valve,
@@ -744,7 +744,7 @@ int valve_make_pi(struct s_valve * const valve,
 	valve->priv = priv;
 
 	// assign function
-	valve->valvelaw = valvelaw_pi;
+	valve->valvectrl = valvectrl_pi;
 
 	return (ALL_OK);
 }

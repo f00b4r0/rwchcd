@@ -93,7 +93,7 @@ struct s_valve {
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
 	void * restrict priv;	///< private data structure for valvelaw
-	int (*valvelaw)(struct s_valve * restrict const, const temp_t);	///< pointer to valve law
+	int (*valvectrl)(struct s_valve * restrict const, const temp_t);	///< pointer to valve law
 };
 
 /** private data for templaw_bilinear (for 20C ambient target) */
