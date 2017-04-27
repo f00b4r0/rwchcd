@@ -192,26 +192,24 @@ static int valve_reqstop(struct s_valve * const valve)
 /**
  * Request valve closing/opening amount
  * @param valve target valve
- * @param percent amount to open (positive) or close (negative) the valve
+ * @param perthousand amount to open (positive) or close (negative) the valve
  * @return exec status. If requested amount is < valve deadband no action is performed, -EDEADBAND is returned.
  */
-static int valve_request_pct(struct s_valve * const valve, int_fast16_t percent)
+static int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 {
 	assert(valve);
 
-	if (abs(percent) < valve->set.deadband)
+	if (abs(perth) < valve->set.deadband)
 		return (-EDEADBAND);
 
-	percent *= 10;
-
-	valve->run.request_action = (percent < 0) ? CLOSE : OPEN;
-	valve->run.target_course = abs(percent);
+	valve->run.request_action = (perth < 0) ? CLOSE : OPEN;
+	valve->run.target_course = abs(perth);
 
 	return (ALL_OK);
 }
 
-#define valve_reqopen_full(valve)	valve_request_pct(valve, 120)	///< request valve full open
-#define valve_reqclose_full(valve)	valve_request_pct(valve, -120)	///< request valve full close
+#define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open
+#define valve_reqclose_full(valve)	valve_request_pth(valve, -1200)	///< request valve full close
 
 /**
  * Implement time-based PI controller in velocity form.
@@ -249,7 +247,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const time_t now = time(NULL);
-	int_fast16_t percent;
+	int_fast16_t perth;
 	temp_t tempin_h, tempin_l, tempout, error, K;
 	float iterm, pterm, output;
 	float Kp, Ki;
@@ -309,8 +307,8 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	}
 
 	/* 
-	 (tempin_h - tempin_l)/100 is the process gain K:
-	 maximum output delta (Ksmax) / maximum control delta (100%).
+	 (tempin_h - tempin_l)/1000 is the process gain K:
+	 maximum output delta (Ksmax) / maximum control delta (1000‰).
 	 in fact, this could be scaled over a different law to better control
 	 non-linear valves, since this computation implicitely assumes the valve
 	 is linear.
@@ -318,7 +316,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
-	K = abs(tempin_h - tempin_l)/100;	// abs() because _h may occasionally be < _l
+	K = abs(tempin_h - tempin_l)/1000;	// abs() because _h may occasionally be < _l
 	Kp = vpriv->run.Kp_u/K;
 	Ti = vpriv->set.Tu;
 	Ki = Kp/Ti;
@@ -344,11 +342,10 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	 */
 
 	output = iterm + pterm;
+	perth = floorf(output + vpriv->run.db_acc);
 
-	dbgmsg("error: %d, iterm: %f, pterm: %f, output: %f, acc: %f, pctfl: %f",
-	       error, iterm, pterm, output, vpriv->run.db_acc, output + vpriv->run.db_acc);
-
-	percent = floorf(output + vpriv->run.db_acc);
+	dbgmsg("error: %d, iterm: %f, pterm: %f, output: %f, acc: %f, pthfl: %f, perth: %d",
+	       error, iterm, pterm, output, vpriv->run.db_acc, output + vpriv->run.db_acc, perth);
 
 	/*
 	 if we are below valve deadband, everything behaves as if the sample rate
@@ -361,7 +358,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	 since this is also a point where the internal frequency is much lower
 	 and so Nyquist is still satisfied
 	 */
-	if (valve_request_pct(valve, percent) != ALL_OK)
+	if (valve_request_pth(valve, perth) != ALL_OK)
 		vpriv->run.db_acc += iterm;
 	else {
 		vpriv->run.prev_out = tempout;
@@ -442,11 +439,11 @@ int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set.tdeadzone/2) {
-		valve_request_pct(valve, vpriv->set.amount);
+		valve_request_pth(valve, vpriv->set.amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
 	else if (tempout > target_tout + valve->set.tdeadzone/2) {
-		valve_request_pct(valve, -vpriv->set.amount);
+		valve_request_pth(valve, -vpriv->set.amount);
 	}
 	// else stop valve
 	else {
@@ -571,15 +568,15 @@ static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
 	const time_t dt = now - valve->run.last_run_time;
-	float percent_time;	// time necessary per percent position change
+	float perth_time;	// time necessary per perthousand position change
 	int_fast16_t course;
 	int ret = ALL_OK;
 
 	valve->run.last_run_time = now;
 	
-	percent_time = valve->set.ete_time/100.0F;
-	assert(percent_time > 0);
-	course = dt*10 / percent_time;	// XXX trunc/floor REVISIT?
+	perth_time = valve->set.ete_time/1000.0F;
+	assert(perth_time > 0);
+	course = dt / perth_time;	// XXX trunc/floor REVISIT?
 
 	// update counters
 	switch (valve->run.actual_action) {

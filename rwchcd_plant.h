@@ -40,7 +40,7 @@ struct s_pump {
 /** private structure for sapprox valve control */
 struct s_valve_sapprox_priv {
 	struct {
-		uint_fast8_t amount;		///< amount to move in %
+		uint_fast16_t amount;		///< amount to move in ‰
 		time_t sample_intvl;		///< sample interval in seconds
 	} set;
 	struct {
@@ -72,7 +72,7 @@ struct s_valve {
 	struct {
 		bool configured;	///< true if properly configured
 		temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
-		uint_fast8_t deadband;	///< deadband for valve operation in %: no operation if requested move is less than that
+		uint_fast8_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
 		time_t ete_time;	///< end-to-end run time in seconds
 		tempid_t id_temp1;	///< temp at the "primary" input: when position is 0% (closed) there is 0% flow from this input
 		tempid_t id_temp2;	///< temp at the "secondary" input: when position is 0% (closed) there is 100% flow from this input
