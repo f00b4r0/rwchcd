@@ -249,7 +249,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	const time_t now = time(NULL);
 	int_fast16_t perth;
 	temp_t tempin_h, tempin_l, tempout, error, K;
-	float iterm, pterm, output;
+	float iterm, pterm, output, pthfl;
 	float Kp, Ki;
 	const time_t dt = now - vpriv->run.last_time;
 	int ret;
@@ -342,10 +342,17 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	 */
 
 	output = iterm + pterm;
-	perth = floorf(output + vpriv->run.db_acc);
+	pthfl = output + vpriv->run.db_acc;
+
+	/*
+	 trunc() so that the algorithm never requests _more_ than what it needs.
+	 No need to keep track of the residual since the requested value is
+	 an instantaneous calculation at the time of the algorithm run.
+	 */
+	perth = truncf(pthfl);
 
 	dbgmsg("error: %d, iterm: %f, pterm: %f, output: %f, acc: %f, pthfl: %f, perth: %d",
-	       error, iterm, pterm, output, vpriv->run.db_acc, output + vpriv->run.db_acc, perth);
+	       error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
 
 	/*
 	 if we are below valve deadband, everything behaves as if the sample rate
