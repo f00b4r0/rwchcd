@@ -575,15 +575,13 @@ static int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
 	const time_t dt = now - valve->run.last_run_time;
-	float perth_time;	// time necessary per perthousand position change
+	const float perth_ps = 1000.0F/valve->set.ete_time;	// perthousand position change per second
 	int_fast16_t course;
 	int ret = ALL_OK;
 
 	valve->run.last_run_time = now;
 	
-	perth_time = valve->set.ete_time/1000.0F;
-	assert(perth_time > 0);
-	course = dt / perth_time;	// XXX trunc/floor REVISIT?
+	course = roundf(dt * perth_ps);	// we don't keep track of residual because we're already in per thds.
 
 	// update counters
 	switch (valve->run.actual_action) {
