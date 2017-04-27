@@ -57,7 +57,6 @@ struct s_valve_pi_priv {
 		temp_t Ksmax;		///< maximum valve output delta
 	} set;
 	struct {
-		bool reset;		///< controller reset request
 		time_t last_time;	///< last time the PI controller algorithm was run
 		time_t Tc;		///< closed loop time constant
 		temp_t prev_out;	///< previous run output temperature
@@ -83,6 +82,7 @@ struct s_valve {
 	struct {
 		bool online;		///< true if valve is operational (under software management)
 		bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
+		bool ctrl_reset;	///< true if controller algorithm must be reset
 		int_fast16_t actual_position;	///< estimated current position in ‰
 		int_fast16_t target_course;	///< current target course in ‰ of set.ete_time
 		time_t acc_open_time;	///< accumulated open time since last close
@@ -92,8 +92,8 @@ struct s_valve {
 						request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
-	void * restrict priv;	///< private data structure for valvelaw
-	int (*valvectrl)(struct s_valve * restrict const, const temp_t);	///< pointer to valve law
+	void * restrict priv;	///< private data structure for valvectrl
+	int (*valvectrl)(struct s_valve * restrict const, const temp_t);	///< pointer to valve controller algorithm
 };
 
 /** private data for templaw_bilinear (for 20C ambient target) */

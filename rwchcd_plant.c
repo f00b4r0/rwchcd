@@ -271,7 +271,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 
 	// apply deadzone
 	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		vpriv->run.reset = true;
+		valve->run.ctrl_reset = true;
 		return (-EDEADZONE);
 	}
 
@@ -290,19 +290,19 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	// jacketing for saturation
 	if (target_tout <= tempin_l) {
 		valve_reqclose_full(valve);
-		vpriv->run.reset = true;
+		valve->run.ctrl_reset = true;
 		return (ALL_OK);
 	} else if (target_tout >= tempin_h) {
 		valve_reqopen_full(valve);
-		vpriv->run.reset = true;
+		valve->run.ctrl_reset = true;
 		return (ALL_OK);
 	}
 
 	// handle algorithm reset
-	if (vpriv->run.reset) {
+	if (valve->run.ctrl_reset) {
 		vpriv->run.prev_out = tempout;
 		vpriv->run.db_acc = 0;
-		vpriv->run.reset = false;
+		valve->run.ctrl_reset = false;
 		return (ALL_OK);	// skip until next iteration
 	}
 
@@ -427,6 +427,12 @@ int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_tout)
 	int ret;
 	
 	assert(vpriv);
+
+	// handle reset
+	if (valve->run.ctrl_reset) {
+		vpriv->run.last_time = now;
+		valve->run.ctrl_reset = false;
+	}
 	
 	// sample window
 	if ((now - vpriv->run.last_time) < vpriv->set.sample_intvl)
@@ -497,7 +503,10 @@ static int valve_online(struct s_valve * const valve)
 
 	// return to idle
 	valve_reqstop(valve);
-	
+
+	// reset the control algorithm
+	valve->run.ctrl_reset = true;
+
 	return (ALL_OK);
 }
 
@@ -518,6 +527,9 @@ static int valve_offline(struct s_valve * const valve)
 	
 	// close valve
 	valve_reqclose_full(valve);
+
+	// reset the control algorithm
+	valve->run.ctrl_reset = true;
 
 	return (ALL_OK);
 }
@@ -691,7 +703,7 @@ int valve_make_sapprox(struct s_valve * const valve,
 	
 	// assign function
 	valve->valvectrl = valvectrl_sapprox;
-	
+
 	return (ALL_OK);
 }
 
@@ -738,9 +750,6 @@ int valve_make_pi(struct s_valve * const valve,
 	assert(priv->run.Tc);
 
 	priv->run.Kp_u = (float)priv->set.Tu/(priv->set.Td+priv->run.Tc);
-
-	// force reset at first invocation
-	priv->run.reset = true;
 
 	// attach created priv to valve
 	valve->priv = priv;
