@@ -393,10 +393,8 @@ static int valvectrl_bangbang(struct s_valve * const valve, const temp_t target_
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		valve_reqstop(valve);
-		return (-EDEADZONE);
-	}
+	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2)))
+		return (-EDEADZONE);	// do nothing
 
 	if (target_tout > tempout)
 		valve_reqopen_full(valve);
