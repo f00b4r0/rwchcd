@@ -49,8 +49,8 @@ enum e_sensor_type {
 };
 
 int hardware_init(void) __attribute__((warn_unused_result));
-int hardware_config_addr_set(enum e_hw_address address, const relid_t id);
-int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value);
+int hardware_config_addr_set(enum e_hw_address address, const relid_t id) __attribute__ ((deprecated));
+int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value) __attribute__ ((deprecated));
 int hardware_config_store(void);
 int hardware_relay_request(const relid_t id, const char * const name) __attribute__((warn_unused_result));
 int hardware_relay_release(const relid_t id);

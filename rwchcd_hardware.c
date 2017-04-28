@@ -384,6 +384,7 @@ static inline uint8_t rid_to_rwchcaddr(const int_fast8_t id)
  * @param id target id
  * @return exec status
  * @warning minimal sanity check. HADDR_SLAST must be set first.
+ * @note THIS IS A PROTOTYPE-ONLY FUNCTION, NOT USED IN FINAL VERSION.
  */
 int hardware_config_addr_set(enum e_hw_address address, const relid_t id)
 {
@@ -466,6 +467,7 @@ int hardware_config_addr_set(enum e_hw_address address, const relid_t id)
  * @param value target limit value
  * @return exec status
  * @warning minimal sanity check.
+ * @note THIS IS A PROTOTYPE-ONLY FUNCTION, NOT USED IN FINAL VERSION.
  */
 int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value)
 {
