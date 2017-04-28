@@ -9,7 +9,6 @@
 /**
  * @file
  * Plant basic operation implementation.
- * @todo valve PI(D) controller
  * @todo plant_save()/plant_restore() (for e.g. dynamically created plants)
  * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
  * switch to fuel when wood dies out) and cascade mode (for large systems).
@@ -317,7 +316,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
 	K = abs(tempin_h - tempin_l)/1000;	// abs() because _h may occasionally be < _l
-	Kp = vpriv->run.Kp_u/K;
+	Kp = vpriv->run.Kp_t/K;
 	Ti = vpriv->set.Tu;
 	Ki = Kp/Ti;
 
@@ -467,12 +466,12 @@ int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_tout)
 }
 
 /**
- * sets valve target position from target temperature.
+ * Call valve control algorithm based on target temperature.
  * @param valve target valve
  * @param target_tout target temperature at output of valve
  * @return exec status
  */
-static inline int valve_tposition(struct s_valve * const valve, const temp_t target_tout)
+static inline int valve_control(struct s_valve * const valve, const temp_t target_tout)
 {
 	assert(valve);
 	assert(valve->set.configured);
@@ -713,7 +712,7 @@ int valve_make_sapprox(struct s_valve * const valve,
  * @param intvl sample interval in seconds
  * @param Td deadtime (time elapsed before any change in output is observed after a step change)
  * @param Tu unit step response time
- * @param Ksmax 100% step response output difference
+ * @param Ksmax 100% step response output difference. Used if it cannot be measured.
  * @return exec status
  * @note refer to valvectrl_pi() for calculation details
  * @warning tuning factor is hardcoded
@@ -749,7 +748,7 @@ int valve_make_pi(struct s_valve * const valve,
 	priv->run.Tc /= 10;
 	assert(priv->run.Tc);
 
-	priv->run.Kp_u = (float)priv->set.Tu/(priv->set.Td+priv->run.Tc);
+	priv->run.Kp_t = (float)priv->set.Tu/(priv->set.Td+priv->run.Tc);
 
 	// attach created priv to valve
 	valve->priv = priv;
@@ -1006,7 +1005,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd allure (p.51)
- * @todo XXX TODO: review consummer inhibit signal formula for cool startup
+ * @todo XXX TODO: review consummer inhibit signal formula for cool startup: write a proper integrator
  * @todo XXX TODO: implement limit on return temp (p.55/56 / p87-760), (consummer shift / return valve / bypass pump)
  */
 static int boiler_hs_run(struct s_heatsource * const heat)
@@ -1431,7 +1430,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 valve:
 	// adjust valve position if necessary
 	if (circuit->valve && circuit->valve->set.configured) {
-		ret = valve_tposition(circuit->valve, water_temp);
+		ret = valve_control(circuit->valve, water_temp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
 			goto out;
 	}
