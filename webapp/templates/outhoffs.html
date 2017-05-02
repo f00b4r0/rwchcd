@@ -4,17 +4,19 @@ $def with (formmode)
     <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
     <META HTTP-EQUIV="Expires" CONTENT="-1">
     <meta charset="UTF-8">
-    <title>Températures Chauffage Maison</title>
+    <title>Températures Extérieures de Non-Chauffage Maison</title>
   </head>
   <body>
-    <h1>Températures chauffage maison</h1>
+    <h1>Températures extérieures de non chauffage maison</h1>
+    <p>Si la température extérieure dépasse les valeurs choisies ici
+    le chauffage est coupé suivant le mode de fonctionnement actuellement actif.</p>
     <form method="post">
 	$if not formmode.valid: <p>Erreur!</p>
 	$:formmode.render()
 	<input type="submit" />
     </form>
     <p><a href=".">Contrôle mode</a></p>
-    <p><a href="outhoffs">Réglage températures de non-chauffage</a></p>
+    <p><a href="temps">Réglage températures ambiantes</a></p>
     <p><a href="/">Accueil</a></p>
   </body>
 </html>

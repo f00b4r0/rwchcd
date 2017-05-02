@@ -17,6 +17,7 @@ render = web.template.render('templates/')
 urls = (
 	'/', 'rwchcd',
 	'/temps', 'temps',
+	'/outhoffs', 'outhoffs',
 )
 
 formMode = form.Form(
@@ -68,6 +69,29 @@ class temps:
 			rwchcd_Control.ConfigTempModeSet(2, comftemp)
 			rwchcd_Control.ConfigTempModeSet(3, econtemp)
 			rwchcd_Control.ConfigTempModeSet(4, frostemp)
+			raise web.found('')
+
+class outhoffs:
+	def GET(self):
+		Comfouthoff = "{:.1f}".format(rwchcd_Control.ConfigOuthoffModeGet(2))
+		Ecoouthoff = "{:.1f}".format(rwchcd_Control.ConfigOuthoffModeGet(3))
+		Frostouthoff = "{:.1f}".format(rwchcd_Control.ConfigOuthoffModeGet(4))
+		fm = formTemps()
+		fm.comftemp.value = Comfouthoff
+		fm.econtemp.value = Ecoouthoff
+		fm.frostemp.value = Frostouthoff
+		return render.outhoffs(fm)
+	def POST(self):
+		form = formTemps()
+		if not form.validates():
+			return render.outhoffs(form)
+		else:
+			comftemp = float(form.comftemp.value)
+			econtemp = float(form.econtemp.value)
+			frostemp = float(form.frostemp.value)
+			rwchcd_Control.ConfigOuthoffModeSet(2, comftemp)
+			rwchcd_Control.ConfigOuthoffModeSet(3, econtemp)
+			rwchcd_Control.ConfigOuthoffModeSet(4, frostemp)
 			raise web.found('')
 
 		

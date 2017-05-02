@@ -163,13 +163,13 @@ static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	switch (runmode) {
 		case RM_COMFORT:
-			get_runtime()->config->def_circuit.t_comfort = newtemp;
+			runtime->config->def_circuit.t_comfort = newtemp;
 			break;
 		case RM_ECO:
-			get_runtime()->config->def_circuit.t_eco = newtemp;
+			runtime->config->def_circuit.t_eco = newtemp;
 			break;
 		case RM_FROSTFREE:
-			get_runtime()->config->def_circuit.t_frostfree = newtemp;
+			runtime->config->def_circuit.t_frostfree = newtemp;
 			break;
 		default:
 			err = true;
@@ -182,6 +182,100 @@ static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 	
 	dbus_rwchcd_control_complete_config_temp_mode_set(object, invocation);
 	
+	return true;
+}
+
+/**
+ * D-Bus method ConfigOuthoffModeGet handler.
+ * Replies with current config default circuit outhoff temp for the given runmode. XXX QUICK HACK.
+ * @param Runmode target runmode for query
+ * @note only handles default circuit outhoff temp for now.
+ * @todo make it generic to set any config temp
+ */
+static gboolean on_handle_config_outhoff_mode_get(dbusRwchcdControl *object,
+					       GDBusMethodInvocation *invocation,
+					       guchar Runmode,
+					       gpointer user_data)
+{
+	struct s_runtime * restrict const runtime = get_runtime();
+	enum e_runmode runmode = Runmode;
+	temp_t systemp;
+	float temp;
+	bool err = false;
+
+	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
+	switch (runmode) {
+		case RM_COMFORT:
+			systemp = runtime->config->def_circuit.outhoff_comfort;
+			break;
+		case RM_ECO:
+			systemp = runtime->config->def_circuit.outhoff_eco;
+			break;
+		case RM_FROSTFREE:
+			systemp = runtime->config->def_circuit.outhoff_frostfree;
+			break;
+		default:
+			err = true;
+			break;
+	}
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
+
+	if (err)
+		return false;
+
+	temp = temp_to_celsius(systemp);
+
+	dbus_rwchcd_control_complete_config_outhoff_mode_get(object, invocation, temp);
+
+	return true;
+}
+
+/**
+ * D-Bus method ConfigOuthoffModeSet handler.
+ * Sets the desired config default circuit outhoff temp for the given runmode. XXX QUICK HACK.
+ * @param Runmode target runmode for the new temp
+ * @param NewTemp new temperature value
+ * @note only handles default circuit outhoff temp for now.
+ * @todo make it generic to set any config temp
+ * @todo save config: cannot do for now because config_save() calls hardware
+ * @warning doesn't save runtime after set
+ */
+static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
+					       GDBusMethodInvocation *invocation,
+					       guchar Runmode,
+					       gdouble NewTemp,
+					       gpointer user_data)
+{
+	struct s_runtime * restrict const runtime = get_runtime();
+	temp_t newtemp = celsius_to_temp(NewTemp);
+	enum e_runmode runmode = Runmode;
+	bool err = false;
+
+	if (validate_temp(newtemp) != ALL_OK)
+		return false;
+
+	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+	switch (runmode) {
+		case RM_COMFORT:
+			runtime->config->def_circuit.outhoff_comfort = newtemp;
+			break;
+		case RM_ECO:
+			runtime->config->def_circuit.outhoff_eco = newtemp;
+			break;
+		case RM_FROSTFREE:
+			runtime->config->def_circuit.outhoff_frostfree = newtemp;
+			break;
+		default:
+			err = true;
+			break;
+	}
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
+
+	if (err)
+		return false;
+
+	dbus_rwchcd_control_complete_config_outhoff_mode_set(object, invocation);
+
 	return true;
 }
 
@@ -199,6 +293,8 @@ static void on_name_acquired(GDBusConnection *connection,
 	g_signal_connect(skeleton, "handle-toutdoor-get", G_CALLBACK(on_handle_toutdoor_get), NULL);
 	g_signal_connect(skeleton, "handle-config-temp-mode-get", G_CALLBACK(on_handle_config_temp_mode_get), NULL);
 	g_signal_connect(skeleton, "handle-config-temp-mode-set", G_CALLBACK(on_handle_config_temp_mode_set), NULL);
+	g_signal_connect(skeleton, "handle-config-outhoff-mode-get", G_CALLBACK(on_handle_config_outhoff_mode_get), NULL);
+	g_signal_connect(skeleton, "handle-config-outhoff-mode-set", G_CALLBACK(on_handle_config_outhoff_mode_set), NULL);
 	g_dbus_interface_skeleton_export(G_DBUS_INTERFACE_SKELETON(skeleton),
 					 connection,
 					 "/org/slashdirt/rwchcd",
