@@ -8,12 +8,18 @@ LDLIBS := $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d
 VARLIBDIR := /var/lib/rwchcd
+CONFIG := -DHAS_DBUS
+
+CFLAGS += $(CONFIG)
 
 DBUSGEN_BASE := rwchcd_dbus-generated
 
 SRCS := $(wildcard *.c)
 DBUSGEN_SRCS := $(DBUSGEN_BASE).c
 SRCS := $(filter-out $(DBUSGEN_SRCS),$(SRCS))
+ifeq (,$(findstring HAS_DBUS,$(CONFIG)))
+SRCS := $(filter-out rwchcd_dbus.c,$(SRCS))
+endif
 
 OBJS := $(SRCS:.c=.o)
 DBUSGEN_OBJS := $(DBUSGEN_SRCS:.c=.o)
@@ -22,13 +28,17 @@ DEPS := $(SRCS:.c=.d)
 DBUSGEN_DEPS := $(DBUSGEN_SRCS:.c=.d)
 
 MAIN := rwchcd
+MAINOBJS := $(OBJS)
+ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
+MAINOBJS += $(DBUSGEN_OBJS)
+endif
 
 .PHONY:	all clean distclean install uninstall dbus-gen doc
 
 all:	$(MAIN)
 	@echo	Done
 
-$(MAIN): $(OBJS) $(DBUSGEN_OBJS)
+$(MAIN): $(MAINOBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
 
 .c.o:

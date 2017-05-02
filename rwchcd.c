@@ -53,7 +53,9 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_timer.h"
 #include "rwchcd_scheduler.h"
-#include "rwchcd_dbus.h"
+#ifdef HAS_DBUS
+ #include "rwchcd_dbus.h"
+#endif
 
 #ifndef RWCHCD_PRIO
  #define RWCHCD_PRIO	20	///< Desired run priority
@@ -93,7 +95,11 @@ static void sig_handler(int signum)
 	switch (signum) {
 		case SIGINT:
 		case SIGTERM:
+#ifdef HAS_DBUS
 			dbus_quit();
+#else
+			Sem_master_thread = 0;
+#endif
 			break;
 		default:
 			break;
@@ -543,9 +549,13 @@ int main(void)
 	sigaction(SIGTERM, &saction, NULL);
 	
 	create_schedule();
-	
+
+#ifdef HAS_DBUS
 	dbus_main();	// launch dbus main loop, blocks execution until termination
-	
+#else
+	pthread_join(master_thr, NULL);	// wait for master end of execution
+#endif
+
 	Sem_master_thread = 0;	// signal end of work
 	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
