@@ -416,7 +416,7 @@ static int valvectrl_bangbang(struct s_valve * const valve, const temp_t target_
  * @param target_tout the target output temperature
  * @return exec status
  */
-int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_tout)
+static int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_sapprox_priv * restrict const vpriv = valve->priv;
 	const time_t now = time(NULL);
