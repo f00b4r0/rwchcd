@@ -81,6 +81,8 @@ enum e_execs {
 #define RWCHCD_TEMPMIN	((-50 + 273) * KPRECISIONI)	///< -50C is the lowest temperature we expect to deal with
 #define RWCHCD_TEMPMAX	((150 + 273) * KPRECISIONI)	///< +150C is the highest temperature we expect to deal with
 
+#define	RWCHCD_NTEMPS	15	///< number of available sensors
+
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
 typedef int_fast16_t	tempid_t;	///< temperature index: if negative, is an offset in Kelvin. If > sizeof(Runtime->temps[]), invalid
 typedef uint_fast8_t	relid_t;	///< relay id matching hardware: 1 to 14, with 13==RL1 and 14==RL2
@@ -136,29 +138,6 @@ struct s_dhwt_params {
 	temp_t t_frostfree;		///< target temp in frost-free mode. - XXX setup ensure > 0C
 	temp_t histeresis;		///< histeresis for target temp. - XXX setup ensure > 0C
 	temp_t temp_inoffset;		///< offset temp for heat source request. - XXX setup ensure > 0C
-};
-
-#define	RWCHCD_NTEMPS	15	///< number of available sensors
-
-/** Runtime environment structure */
-struct s_runtime {
-	enum e_systemmode systemmode;	///< current operation mode
-	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
-	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
-	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
-	bool summer;			///< outdoor temperature is compatible with summer mode
-	bool frost;			///< outdoor temperature requires frost protection
-	temp_t t_outdoor;		///< instantaneous outdoor temperature
-	temp_t t_outdoor_60;		///< t_outdoor filtered over a 60s window
-	temp_t external_hrequest;	///< external heat request (for cascading). @todo XXX NOT IMPLEMENTED
-	time_t start_time;		///< system start time
-	time_t consumer_stop_delay;	///< minimum time consumers should keep their current consumption before turning off
-	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
-	struct s_plant * restrict plant;	///< running plant
-	struct s_models * restrict models;	///< running models
-	struct s_config * restrict config;	///< running config
-	temp_t temps[RWCHCD_NTEMPS];		///< array of all the system temperatures
-	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible
 };
 
 #endif /* rwchcd_h */
