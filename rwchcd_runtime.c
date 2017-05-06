@@ -59,7 +59,7 @@ static int runtime_restore(void)
 	// try to restore key elements of last runtime
 	if (storage_fetch("runtime", &sversion, &temp_runtime, sizeof(temp_runtime)) == ALL_OK) {
 		if (Runtime_sversion != sversion)
-			return (ALL_OK);	// XXX
+			return (-EMISMATCH);
 		
 		Runtime.systemmode = temp_runtime.systemmode;
 		Runtime.runmode = temp_runtime.runmode;

@@ -713,20 +713,20 @@ int valve_make_sapprox(struct s_valve * const valve,
  * @param Td deadtime (time elapsed before any change in output is observed after a step change)
  * @param Tu unit step response time
  * @param Ksmax 100% step response output difference. Used if it cannot be measured.
+ * @param t_factor tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
  * @return exec status
  * @note refer to valvectrl_pi() for calculation details
  * @warning tuning factor is hardcoded
  */
 int valve_make_pi(struct s_valve * const valve,
-		  time_t intvl, time_t Td, time_t Tu, temp_t Ksmax)
+		  time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
 {
 	struct s_valve_pi_priv * priv = NULL;
-	const int tuning_factor = 10;	// XXX aggressive: 1 / moderate: 10 / conservative: 100
 
 	if (!valve)
 		return (-EINVALID);
 
-	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0))
+	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0) || (t_factor <= 0))
 		return (-EINVALID);
 
 	// ensure sample interval <= (Tu/4) [Nyquist]
@@ -744,7 +744,7 @@ int valve_make_pi(struct s_valve * const valve,
 	priv->set.Ksmax = Ksmax;
 
 	priv->run.Tc = (1*Tu > 8*Td) ? 1*Tu : 8*Td;
-	priv->run.Tc *= tuning_factor;
+	priv->run.Tc *= t_factor;
 	priv->run.Tc /= 10;
 	assert(priv->run.Tc);
 
@@ -1804,7 +1804,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			// clear heat request
 			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 
-			// untrip force charge: XXX force can run only once
+			// untrip force charge: force can run only once
 			dhwt->run.force_on = false;
 
 			// mark heating as done

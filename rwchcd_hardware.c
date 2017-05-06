@@ -593,7 +593,7 @@ static int hardware_calibrate(void)
 		refcalib = sensor_to_ohm(ref, false);	// force uncalibrated read
 		newcalib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
 		if ((newcalib_nodac < VALID_CALIB_MIN) || (newcalib_nodac > VALID_CALIB_MAX))	// don't store invalid values
-			return (-EINVALID);	// XXX should not happen
+			return (-EINVALID);	// should not happen
 	}
 	else
 		return (-EINVALID);
@@ -606,7 +606,7 @@ static int hardware_calibrate(void)
 		refcalib = sensor_to_ohm(ref, false);	// force uncalibrated read
 		newcalib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
 		if ((newcalib_dac < VALID_CALIB_MIN) || (newcalib_dac > VALID_CALIB_MAX))	// don't store invalid values
-			return (-EINVALID);	// XXX should not happen
+			return (-EINVALID);	// should not happen
 	}
 	else
 		return (-EINVALID);
@@ -951,6 +951,7 @@ int hardware_relay_get_state(const relid_t id)
 /**
  * Get the hardware ready for run loop.
  * Calibrate, then collect and process sensors.
+ * @warning can loop forever
  * @return exec status
  */
 int hardware_online(void)
@@ -965,9 +966,7 @@ int hardware_online(void)
 		return (-EOFFLINE);
 	
 	// calibrate
-	do {
-		ret = hardware_calibrate();
-	} while (-EINVALID == ret);	// wait until calibration values are correct - XXX can loop forever
+	ret = hardware_calibrate();
 	if (ret)
 		goto fail;
 

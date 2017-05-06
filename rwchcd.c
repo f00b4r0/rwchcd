@@ -303,7 +303,7 @@ static int init_process()
 		return (ret);
 	circuit->valve->set.id_tempout = circuit->set.id_temp_outgoing;
 	//valve_make_sapprox(circuit->valve, 50, 20);
-	valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30));
+	valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30), 10);
 	
 	// configure two relays for that valve
 	ret = hardware_relay_request(RELAY_VOPEN, "v_open");
