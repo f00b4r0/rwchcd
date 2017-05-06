@@ -71,9 +71,6 @@ enum e_execs {
 	EGENERIC,
 };
 
-#define ON	true
-#define OFF	false
-
 // fixed-point precision: we use a 1/1000th of a degree to reduce rounding imprecision in calculations
 #define KPRECISIONI	1000
 #define KPRECISIONF	1000.0F

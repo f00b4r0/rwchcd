@@ -18,8 +18,11 @@
 #include <time.h>
 #include "rwchcd.h"
 
-#define FORCE	1
-#define NOFORCE	0
+#define FORCE	true
+#define NOFORCE	false
+
+#define ON	true
+#define OFF	false
 
 /** Hardware addresses available in hw config */
 enum e_hw_address {
