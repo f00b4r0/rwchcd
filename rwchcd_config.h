@@ -22,7 +22,7 @@ struct s_config {
 	bool configured;		///< true if properly configured
 	bool summer_maintenance;	///< true if pumps/valves should be run periodically in summer.
 	uint_fast8_t temp_nsamples;	///< number of samples for temperature readout LP filtering
-	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
+	uint_fast8_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
