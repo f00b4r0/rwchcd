@@ -138,20 +138,6 @@ struct s_dhwt_params {
 	temp_t temp_inoffset;		///< offset temp for heat source request. - XXX setup ensure > 0C
 };
 
-/** Config structure */
-struct s_config {
-	bool restored;			///< true if config has been restored from storage
-	bool configured;		///< true if properly configured
-	bool summer_maintenance;	///< true if pumps/valves should be run periodically in summer.
-	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
-	tempid_t id_temp_outdoor;	///< outdoor temp
-	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
-	temp_t limit_tsummer;		///< outdoor temp for summer switch over
-	temp_t limit_tfrost;		///< outdoor temp for plant frost protection
-	struct s_circuit_params def_circuit;	///< circuit defaults: if individual circuits don't set these values, these defaults will be used
-	struct s_dhwt_params def_dhwt;		///< DHWT defaults: if individual dhwts don't set these values, these defaults will be used
-};
-
 #define	RWCHCD_NTEMPS	15	///< number of available sensors
 
 /** Runtime environment structure */

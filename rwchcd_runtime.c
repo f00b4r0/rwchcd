@@ -17,6 +17,7 @@
 
 #include "rwchcd_lib.h"
 #include "rwchcd_plant.h"
+#include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
 #include "rwchcd_timer.h"

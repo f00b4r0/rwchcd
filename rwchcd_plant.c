@@ -23,6 +23,7 @@
 #include <math.h>	// roundf
 #include <assert.h>
 
+#include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"

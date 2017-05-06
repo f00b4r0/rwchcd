@@ -15,6 +15,7 @@
 #include <assert.h>
 
 #include "rwchcd.h"
+#include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
 
 /**
