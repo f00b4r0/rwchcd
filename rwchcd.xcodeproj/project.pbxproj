@@ -16,6 +16,7 @@
 		4FA61C411E0955AA00B4D862 /* rwchcd_scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3F1E0955AA00B4D862 /* rwchcd_scheduler.c */; };
 		4FC1847B1DA6809E000E514B /* rwchcd_storage.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC184791DA6809E000E514B /* rwchcd_storage.c */; };
 		4FC1847E1DA7B2F9000E514B /* rwchcd_dbus.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1847C1DA7B2F9000E514B /* rwchcd_dbus.c */; };
+		4FC304A81EBDCDB900D77AC6 /* rwchcd_models.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC304A61EBDCDB900D77AC6 /* rwchcd_models.c */; };
 		4FCD55161D835D04003BB848 /* rwchcd_hardware.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */; };
 		4FCD55171D835D04003BB848 /* rwchcd_plant.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55101D835D04003BB848 /* rwchcd_plant.c */; };
 		4FCD55181D835D04003BB848 /* rwchcd_spi.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55121D835D04003BB848 /* rwchcd_spi.c */; };
@@ -58,6 +59,8 @@
 		4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; lineEnding = 0; path = rwchcd_introspection.xml; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.xml; };
 		4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = org.slashdirt.rwchcd.conf; sourceTree = SOURCE_ROOT; };
 		4FC184831DA7D19D000E514B /* rwchcd.service */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rwchcd.service; sourceTree = SOURCE_ROOT; };
+		4FC304A61EBDCDB900D77AC6 /* rwchcd_models.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = rwchcd_models.c; sourceTree = SOURCE_ROOT; };
+		4FC304A71EBDCDB900D77AC6 /* rwchcd_models.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = rwchcd_models.h; sourceTree = SOURCE_ROOT; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchc_export.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD550E1D835D04003BB848 /* rwchcd_hardware.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd_hardware.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -107,6 +110,8 @@
 				4FCD550F1D835D04003BB848 /* rwchcd_hardware.h */,
 				4FCD55101D835D04003BB848 /* rwchcd_plant.c */,
 				4FCD55111D835D04003BB848 /* rwchcd_plant.h */,
+				4FC304A61EBDCDB900D77AC6 /* rwchcd_models.c */,
+				4FC304A71EBDCDB900D77AC6 /* rwchcd_models.h */,
 				4FCD55121D835D04003BB848 /* rwchcd_spi.c */,
 				4FCD55131D835D04003BB848 /* rwchcd_spi.h */,
 				4F3AFBB01D88867600D86EE7 /* rwchcd_lib.c */,
@@ -223,6 +228,7 @@
 				4FCD55181D835D04003BB848 /* rwchcd_spi.c in Sources */,
 				4F2D5F591D97191C00CF842D /* rwchcd_lcd.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
+				4FC304A81EBDCDB900D77AC6 /* rwchcd_models.c in Sources */,
 				4F3AFBAF1D8884ED00D86EE7 /* rwchcd_runtime.c in Sources */,
 				4FC1847E1DA7B2F9000E514B /* rwchcd_dbus.c in Sources */,
 				4F961FA21D8D66BF00E2A8AF /* rwchcd_logic.c in Sources */,

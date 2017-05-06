@@ -28,6 +28,7 @@
 #include "rwchcd_hardware.h"
 #include "rwchcd_logic.h"
 #include "rwchcd_plant.h"
+#include "rwchcd_models.h"
 
 /*- PUMP -*/
 
@@ -1235,6 +1236,9 @@ static int circuit_online(struct s_heating_circuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
+	if (!circuit->bmodel)
+		return (-EMISCONFIGURED);
+
 	// check that mandatory sensors are working
 	testtemp = get_temp(circuit->set.id_temp_outgoing);
 	ret = validate_temp(testtemp);
@@ -1358,7 +1362,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 		pump_set_state(circuit->pump, ON, 0);
 
 	// calculate water pipe temp
-	water_temp = circuit->templaw(circuit, runtime->t_outdoor_mixed);
+	water_temp = circuit->templaw(circuit, circuit->bmodel->run.t_out_mix);
 	
 	// apply rate of rise limitation if any: update temp every minute
 	if (circuit->set.wtemp_rorh) {

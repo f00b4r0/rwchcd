@@ -20,9 +20,9 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_storage.h"
 #include "rwchcd_timer.h"
+#include "rwchcd_models.h"
 
-#define OUTDOOR_AVG_UPDATE_DT	600	///< prevents running averages at less than 10mn interval. Should be good up to 100h building_tau.
-#define LOG_INTVL_RUNTIME	OUTDOOR_AVG_UPDATE_DT
+#define LOG_INTVL_RUNTIME	900
 #define LOG_INTVL_TEMPS		60
 
 static const storage_version_t Runtime_sversion = 4;
@@ -60,9 +60,6 @@ static int runtime_restore(void)
 		if (Runtime_sversion != sversion)
 			return (ALL_OK);	// XXX
 		
-		Runtime.t_outdoor_ltime = temp_runtime.t_outdoor_ltime;
-		Runtime.t_outdoor_filtered = temp_runtime.t_outdoor_filtered;
-		Runtime.t_outdoor_attenuated = temp_runtime.t_outdoor_attenuated;
 		Runtime.systemmode = temp_runtime.systemmode;
 		Runtime.runmode = temp_runtime.runmode;
 		Runtime.dhwmode = temp_runtime.dhwmode;
@@ -101,8 +98,6 @@ static int runtime_async_log(void)
 	values[i++] = Runtime.summer;
 	values[i++] = Runtime.frost;
 	values[i++] = Runtime.t_outdoor_60;
-	values[i++] = Runtime.t_outdoor_filtered;
-	values[i++] = Runtime.t_outdoor_attenuated;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
 	
 	assert(ARRAY_SIZE(keys) >= i);
@@ -136,10 +131,8 @@ static int runtime_async_log_temps(void)
 
 /**
  * Process outdoor temperature.
- * Compute the values of mixed and attenuated outdoor temp based on a
- * weighted moving average and the building time constant.
- * This function is designed so that at init time, when the variables are all 0,
- * the averages will take the value of the current outdoor temperature.
+ * Computes outdoor temperature and "smoothed" outdoor temperature, with a safety
+ * fallback in case of sensor failure.
  * @note must run at (ideally) fixed intervals
  * @note this is part of the synchronous code path because moving it to a separate
  * thread would add overhead (locking) for essentially no performance improvement.
@@ -148,10 +141,9 @@ static void outdoor_temp()
 {
 	static time_t last60 = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t now = time(NULL);
-	const time_t dt = now - Runtime.t_outdoor_ltime;
 	const time_t dt60 = now - last60;
 	const temp_t toutdoor = get_temp(Runtime.config->id_temp_outdoor);
-	
+
 	if (validate_temp(toutdoor) != ALL_OK)
 		Runtime.t_outdoor = Runtime.config->limit_tfrost-1;	// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
 	else
@@ -160,50 +152,27 @@ static void outdoor_temp()
 	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
 
 	last60 = now;
-	
-	if (dt >= OUTDOOR_AVG_UPDATE_DT) {
-		Runtime.t_outdoor_ltime = now;
-
-		Runtime.t_outdoor_filtered = temp_expw_mavg(Runtime.t_outdoor_filtered, Runtime.t_outdoor_60, Runtime.config->building_tau, dt);
-		Runtime.t_outdoor_attenuated = temp_expw_mavg(Runtime.t_outdoor_attenuated, Runtime.t_outdoor_filtered, Runtime.config->building_tau, dt);
-		
-		runtime_save();
-	}
-
-	// calculate mixed temp last: makes it work at init
-	Runtime.t_outdoor_mixed = (Runtime.t_outdoor_60 + Runtime.t_outdoor_filtered)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 }
 
 
 /**
  * Conditions for summer switch.
- * summer mode is set on in ALL of the following conditions are met:
- * - t_outdoor_60 > limit_tsummer
- * - t_outdoor_mixed > limit_tsummer
- * - t_outdoor_attenuated > limit_tsummer
- * summer mode is back off if ALL of the following conditions are met:
- * - t_outdoor_60 < limit_tsummer
- * - t_outdoor_mixed < limit_tsummer
- * - t_outdoor_attenuated < limit_tsummer
- * State is preserved in all other cases
- * @note because we use AND, there's no need for histeresis
+ * If ALL bmodels are compatible with summer mode, summer mode is set.
+ * If ANY bmodel is incompatible with summer mode, summer mode is unset.
+ * Lockless by design.
  */
 static void runtime_summer(void)
 {
+	struct s_bmodel_l * bmodelelmt;
+	bool summer = true;
+
 	if (!Runtime.config->limit_tsummer)
 		return;	// invalid limit, don't do anything
-	
-	if ((Runtime.t_outdoor_60 > Runtime.config->limit_tsummer)	&&
-	    (Runtime.t_outdoor_mixed > Runtime.config->limit_tsummer)	&&
-	    (Runtime.t_outdoor_attenuated > Runtime.config->limit_tsummer)) {
-		Runtime.summer = true;
-	}
-	else {
-		if ((Runtime.t_outdoor_60 < Runtime.config->limit_tsummer)	&&
-		    (Runtime.t_outdoor_mixed < Runtime.config->limit_tsummer)	&&
-		    (Runtime.t_outdoor_attenuated < Runtime.config->limit_tsummer))
-			Runtime.summer = false;
-	}
+
+	for (bmodelelmt = Runtime.models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
+		summer &= bmodelelmt->bmodel->run.summer;
+
+	Runtime.summer = summer;
 }
 
 /**
@@ -338,7 +307,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
  */
 int runtime_online(void)
 {
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
 		return (-ENOTCONFIGURED);
 	
 	Runtime.start_time = time(NULL);
@@ -349,7 +318,9 @@ int runtime_online(void)
 
 	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log);
 	timer_add_cb(LOG_INTVL_TEMPS, runtime_async_log_temps);
-	
+
+	models_online(Runtime.models);
+
 	return (plant_online(Runtime.plant));
 }
 
@@ -361,19 +332,21 @@ int runtime_run(void)
 {
 	int ret;
 
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
 		return (-ENOTCONFIGURED);
 
 	// process data
 
-	dbgmsg("t_outdoor: %.1f, t_60: %.1f, t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f",
-	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60), temp_to_celsius(Runtime.t_outdoor_filtered),
-	       temp_to_celsius(Runtime.t_outdoor_mixed), temp_to_celsius(Runtime.t_outdoor_attenuated));
+	dbgmsg("t_outdoor: %.1f, t_60: %.1f",
+	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60));
 
 	outdoor_temp();
-	runtime_summer();
 	runtime_frost();
-	
+
+	models_run(Runtime.models);
+
+	runtime_summer();
+
 	ret = plant_run(Runtime.plant);
 	if (ret)
 		goto out;
@@ -388,12 +361,14 @@ out:
  */
 int runtime_offline(void)
 {
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
 		return (-ENOTCONFIGURED);
 
 	runtime_save();
-	
-	return (plant_offline(Runtime.plant));
+
+	plant_offline(Runtime.plant);
+
+	return (models_offline(Runtime.models));
 }
 
 /**

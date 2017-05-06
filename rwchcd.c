@@ -53,6 +53,7 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_timer.h"
 #include "rwchcd_scheduler.h"
+#include "rwchcd_models.h"
 #ifdef HAS_DBUS
  #include "rwchcd_dbus.h"
 #endif
@@ -112,6 +113,8 @@ static int init_process()
 	struct s_runtime * restrict const runtime = get_runtime();
 	struct s_config * restrict config = NULL;
 	struct s_plant * restrict plant = NULL;
+	struct s_models * restrict models = NULL;
+	struct s_bmodel * restrict bmodel_house = NULL;
 	struct s_heatsource * restrict heatsource = NULL;
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_dhw_tank * restrict dhwt = NULL;
@@ -155,7 +158,6 @@ static int init_process()
 	}
 	
 	if (!config->restored) {
-		config_set_building_tau(config, 10 * 60 * 60);	// XXX 10 hours
 		config_set_nsensors(config, 4);	// XXX 4 sensors
 		config_set_outdoor_sensorid(config, SENSOR_OUTDOOR);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
@@ -192,6 +194,30 @@ static int init_process()
 
 	// attach config to runtime
 	runtime->config = config;
+
+	/* init models */
+
+	// create new models
+	models = models_new();
+	if (!models) {
+		dbgerr("models creation failed");
+		return (-EOOM);
+	}
+
+	// create a new building model
+	bmodel_house = models_new_bmodel(models, "house");
+	if (!bmodel_house) {
+		dbgerr("bmodel creation failed");
+		return (-EGENERIC);
+	}
+
+	bmodel_house->set.tau = 10 * 60 * 60;		// XXX 10 hours
+	bmodel_house->set.configured = true;
+
+	models->configured = true;
+
+	// attach models to runtime
+	runtime->models = models;
 
 	/* init plant */
 
@@ -312,6 +338,8 @@ static int init_process()
 
 	circuit->set.runmode = RM_AUTO;		// use global setting
 
+	circuit->bmodel = bmodel_house;		// assign building model
+
 	circuit->set.configured = true;
 
 	// create a new DHWT for the plant
@@ -347,6 +375,7 @@ static void exit_process(void)
 	runtime_offline();
 	hardware_offline();
 	plant_del(runtime->plant);
+	models_del(runtime->models);
 	config_exit(runtime->config);
 	config_del(runtime->config);
 	runtime_exit();

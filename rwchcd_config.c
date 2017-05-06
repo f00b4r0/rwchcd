@@ -20,7 +20,7 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_config.h"
 
-static const storage_version_t Config_sversion = 5;
+static const storage_version_t Config_sversion = 6;
 
 /**
  * Allocate new config.
@@ -111,22 +111,6 @@ void config_exit(struct s_config * const config)
 	
 	// save current config
 	config_save(config);
-}
-
-/**
- * Set building constant.
- * @param config target config
- * @param tau building time constant
- * @return exec status
- */
-int config_set_building_tau(struct s_config * const config, const time_t tau)
-{
-	if (!config)
-		return (-EINVALID);
-
-	config->building_tau = tau;
-
-	return (ALL_OK);
 }
 
 /**

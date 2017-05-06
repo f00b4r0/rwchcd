@@ -20,30 +20,32 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_logic.h"
+#include "rwchcd_models.h"
 
 /**
  * Conditions for running circuit
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
  * Circuit is off in ANY of the following conditions are met:
  * - runtime->summer is true
- * - t_outdoor_60 > current temp_trigger
- * - t_outdoor_mixed > current temp_trigger
- * - t_outdoor_attenuated > current temp_trigger
+ * - t_out_60 > current temp_trigger
+ * - t_out_mix > current temp_trigger
+ * - t_out_att > current temp_trigger
  * Circuit is back on if ALL of the following conditions are met:
  * - runtime->summer is false
- * - t_outdoor_60 < current temp_trigger - outhoff_histeresis
- * - t_outdoor_mixed < current temp_trigger - outhoff_histeresis
- * - t_outdoor_attenuated < current temp_trigger - outhoff_histeresis
+ * - t_out_60 < current temp_trigger - outhoff_histeresis
+ * - t_out_mix < current temp_trigger - outhoff_histeresis
+ * - t_out_att < current temp_trigger - outhoff_histeresis
  * State is preserved in all other cases
  * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
 static void circuit_outhoff(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	temp_t temp_trigger;
 
-	// check for global summer switch off first
-	if (runtime->summer) {
+	// check for summer switch off first
+	if (bmodel->run.summer) {
 		circuit->run.outhoff = true;
 		return;
 	}
@@ -76,15 +78,15 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 	}
 
 	if ((runtime->t_outdoor_60 > temp_trigger) ||
-	    (runtime->t_outdoor_mixed > temp_trigger) ||
-	    (runtime->t_outdoor_attenuated > temp_trigger)) {
+	    (bmodel->run.t_out_mix > temp_trigger) ||
+	    (bmodel->run.t_out_att > temp_trigger)) {
 		circuit->run.outhoff = true;
 	}
 	else {
 		temp_trigger -= SETorDEF(circuit->set.params.outhoff_histeresis, runtime->config->def_circuit.outhoff_histeresis);
 		if ((runtime->t_outdoor_60 < temp_trigger) &&
-		    (runtime->t_outdoor_mixed < temp_trigger) &&
-		    (runtime->t_outdoor_attenuated < temp_trigger))
+		    (bmodel->run.t_out_mix < temp_trigger) &&
+		    (bmodel->run.t_out_att < temp_trigger))
 			circuit->run.outhoff = false;
 	}
 }
@@ -108,6 +110,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
 	static time_t dtmin = 0;	// XXX updates only once
 	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	enum e_runmode prev_runmode;
 	temp_t request_temp, diff_temp;
 	temp_t ambient_temp, ambient_delta = 0;
@@ -115,7 +118,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	const time_t now = time(NULL);
 	bool can_fastcool;
 	
-	assert(circuit);
+	assert(bmodel);
 	
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
@@ -188,10 +191,10 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
 		if (RM_OFF == circuit->run.runmode) {
-			dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*runtime->config->building_tau);
+			dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*bmodel->set.tau);
 			elapsed_time = now - circuit->run.ambient_update_time;
 			if (elapsed_time > dtmin) {
-				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, runtime->t_outdoor_mixed, 3*runtime->config->building_tau, elapsed_time); // we converge toward low_temp
+				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
 			}
 			dbgmsg("off, ambient: %.1f", temp_to_celsius(ambient_temp));
@@ -200,12 +203,12 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
 			switch (circuit->run.transition) {
 				case TRANS_DOWN:
-					dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*runtime->config->building_tau);
+					dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*bmodel->set.tau);	// XXX
 					elapsed_time = now - circuit->run.ambient_update_time;
 					// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 					// all necessary data is _always_ available, no need to special case here
 					if (elapsed_time > dtmin) {
-						ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, request_temp, 3*runtime->config->building_tau, elapsed_time); // we converge toward low_temp
+						ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, request_temp, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 						circuit->run.ambient_update_time = now;
 					}
 					break;

@@ -146,6 +146,7 @@ struct s_heating_circuit {
 	void * restrict tlaw_data_priv;		///< Reference data for templaw
 	struct s_valve * restrict valve;	///< valve for circuit (if available, otherwise it's direct)
 	struct s_pump * restrict pump;		///< pump for this circuit
+	const struct s_bmodel * restrict bmodel;///< bmodel corresponding to this circuit
 	char * restrict name;			///< name for this circuit
 };
 

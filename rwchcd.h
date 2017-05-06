@@ -143,7 +143,6 @@ struct s_config {
 	bool restored;			///< true if config has been restored from storage
 	bool configured;		///< true if properly configured
 	bool summer_maintenance;	///< true if pumps/valves should be run periodically in summer.
-	time_t building_tau;		///< building time constant
 	int_fast16_t nsensors;		///< number of active sensors (== id of last sensor)
 	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t set_temp_outdoor_offset;	///< offset for outdoor temp sensor
@@ -165,15 +164,12 @@ struct s_runtime {
 	bool frost;			///< outdoor temperature requires frost protection
 	temp_t t_outdoor;		///< instantaneous outdoor temperature
 	temp_t t_outdoor_60;		///< t_outdoor filtered over a 60s window
-	time_t t_outdoor_ltime;		///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
-	temp_t t_outdoor_filtered;	///< t_outdoor filtered by building time constant
-	temp_t t_outdoor_mixed;		///< mixed outdoor temperature (average of t_outdoor and t_filtered: the moving average of t_outdoor with building_tau)
-	temp_t t_outdoor_attenuated;	///< attenuated outdoor temperature (moving average of t_filtered with building_tau: double filter on t_outdoor)
 	temp_t external_hrequest;	///< external heat request (for cascading). @todo XXX NOT IMPLEMENTED
 	time_t start_time;		///< system start time
 	time_t consumer_stop_delay;	///< minimum time consumers should keep their current consumption before turning off
 	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 	struct s_plant * restrict plant;	///< running plant
+	struct s_models * restrict models;	///< running models
 	struct s_config * restrict config;	///< running config
 	temp_t temps[RWCHCD_NTEMPS];		///< array of all the system temperatures
 	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible
