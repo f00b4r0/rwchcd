@@ -158,6 +158,7 @@ static int init_process()
 	}
 	
 	if (!config->restored) {
+		config_set_temp_nsamples(config, 5);	// XXX 5 samples average
 		config_set_nsensors(config, 4);	// XXX 4 sensors
 		config_set_outdoor_sensorid(config, SENSOR_OUTDOOR);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C

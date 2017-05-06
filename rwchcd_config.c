@@ -20,7 +20,7 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_config.h"
 
-static const storage_version_t Config_sversion = 6;
+static const storage_version_t Config_sversion = 7;
 
 /**
  * Allocate new config.
@@ -111,6 +111,25 @@ void config_exit(struct s_config * const config)
 	
 	// save current config
 	config_save(config);
+}
+
+/**
+ * Set number of temperature samples for readouts.
+ * @param config target config
+ * @param nsamples number of samples
+ * @return exec status
+ */
+int config_set_temp_nsamples(struct s_config * const config, const uint_fast8_t nsamples)
+{
+	if (!config)
+		return (-EINVALID);
+
+	if (!nsamples)
+		return (-EINVALID);
+
+	config->temp_nsamples = nsamples;
+
+	return (ALL_OK);
 }
 
 /**

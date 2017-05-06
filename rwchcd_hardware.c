@@ -245,9 +245,7 @@ static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
 static void parse_temps(void)
 {
 	struct s_runtime * const runtime = get_runtime();
-	static time_t lasttime = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
-	const time_t now = time(NULL);
-	const time_t dt = now - lasttime;
+	const uint_fast8_t nsamples = runtime->config->temp_nsamples;
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
@@ -266,16 +264,14 @@ static void parse_temps(void)
 		current = celsius_to_temp(o_to_c(ohm));
 		previous = Sensors[i].run.value;
 
-		// XXX apply LP filter with 5s time constant
-		Sensors[i].run.value = temp_expw_mavg(previous, current, 5, dt);
+		// apply LP filter - handles init case where previous == 0
+		Sensors[i].run.value = previous ? temp_expw_mavg(previous, current, nsamples, 1) : current;
 	}
 
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	for (i = 0; i < runtime->config->nsensors; i++)
 		runtime->temps[i] = Sensors[i].run.value;
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
-	
-	lasttime = now;
 }
 
 /**
