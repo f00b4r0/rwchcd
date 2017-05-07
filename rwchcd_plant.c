@@ -649,8 +649,8 @@ static int valve_run(struct s_valve * const valve)
 		}
 	}
 
-	dbgmsg("req action: %d, action: %d, pos: %.1f%%, req course: %.1f%%",
-	       valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
+	dbgmsg("%s: req action: %d, action: %d, pos: %.1f%%, req course: %.1f%%",
+	       valve->name, valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
 	       (float)valve->run.target_course/10.0F);
 
 	return (ret);
@@ -1054,7 +1054,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	
 	// we're good to go
 
-	dbgmsg("running: %d, target_temp: %.1f, boiler_temp: %.1f", hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
+	dbgmsg("%s: running: %d, target_temp: %.1f, boiler_temp: %.1f", heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
 	
 	// form consumer shift request if necessary
 	if (boiler_temp < boiler->set.limit_tmin) {
@@ -1212,7 +1212,7 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
 	// calculate output at nominal 20C: Y = input*slope + offset
 	t_output = roundf(source_temp * slope) + offset;
 
-	dbgmsg("orig: %.1f, new: %.1f", temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
+	dbgmsg("%s: orig: %.1f, new: %.1f", circuit->name, temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
 
 	// shift output based on actual target temperature
 	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - tld->slope);
@@ -1326,7 +1326,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				water_temp = circuit->run.target_wtemp;
-				dbgmsg("in cooldown, remaining: %ld", runtime->consumer_stop_delay);
+				dbgmsg("%s: in cooldown, remaining: %ld", circuit->name, runtime->consumer_stop_delay);
 				goto valve;	// stop processing
 			}
 			else
@@ -1401,7 +1401,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// interference: handle stop delay requests
 	// XXX this will prevent a (valid: small) reduction in output: assumed acceptable
 	if (runtime->consumer_stop_delay) {
-		dbgmsg("stop delay active, remaining: %ld", runtime->consumer_stop_delay);	// maintain current or higher wtemp during stop delay
+		dbgmsg("%s: stop delay active, remaining: %ld", circuit->name, runtime->consumer_stop_delay);	// maintain current or higher wtemp during stop delay
 		water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
 		interference = true;
 	}
@@ -1418,7 +1418,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	if (saved_temp > lwtmax)
 		saved_temp = lwtmax;
 
-	dbgmsg("request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f",
+	dbgmsg("%s: request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
 	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
@@ -1682,8 +1682,8 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	// We're good to go
 	
-	dbgmsg("charge: %d, mode since: %ld, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
-	       dhwt->run.charge_on, dhwt->run.mode_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+	dbgmsg("%s: charge: %d, mode since: %ld, target_temp: %.1f, bottom_temp: %.1f, top_temp: %.1f",
+	       dhwt->name, dhwt->run.charge_on, dhwt->run.mode_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 	
 	// handle recycle loop
 	if (dhwt->recyclepump) {
