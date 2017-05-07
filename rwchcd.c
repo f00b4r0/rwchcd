@@ -230,7 +230,7 @@ static int init_process()
 	}
 
 	// create a new heat source for the plant
-	heatsource = plant_new_heatsource(plant, BOILER);
+	heatsource = plant_new_heatsource(plant, "boiler", BOILER);
 	if (!heatsource) {
 		dbgerr("heatsource creation failed");
 		return (-EOOM);
@@ -259,7 +259,7 @@ static int init_process()
 	heatsource->set.configured = true;
 
 	// create a new circuit for the plant
-	circuit = plant_new_circuit(plant);
+	circuit = plant_new_circuit(plant, "circuit");
 	if (!circuit) {
 		dbgerr("circuit creation failed");
 		return (-EOOM);
@@ -281,7 +281,7 @@ static int init_process()
 			      celsius_to_temp(15), celsius_to_temp(27), 130);
 
 	// create a valve for that circuit
-	circuit->valve = plant_new_valve(plant);
+	circuit->valve = plant_new_valve(plant, "valve");
 	if (!circuit->valve) {
 		dbgerr("valve creation failed");
 		return (-EOOM);
@@ -322,7 +322,7 @@ static int init_process()
 	circuit->valve->set.configured = true;
 
 	// create a pump for that circuit
-	circuit->pump = plant_new_pump(plant);
+	circuit->pump = plant_new_pump(plant, "pump");
 	if (!circuit->pump) {
 		dbgerr("pump creation failed");
 		return (-EOOM);
@@ -344,7 +344,7 @@ static int init_process()
 	circuit->set.configured = true;
 
 	// create a new DHWT for the plant
-	dhwt = plant_new_dhwt(plant);
+	dhwt = plant_new_dhwt(plant, NULL);
 	if (!dhwt) {
 		dbgerr("dhwt creation failed");
 		return (-EOOM);

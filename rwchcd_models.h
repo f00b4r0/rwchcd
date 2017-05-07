@@ -47,7 +47,7 @@ struct s_models {
 	struct s_bmodel_l * restrict bmodels;	///< building models
 };
 
-struct s_bmodel * models_new_bmodel(struct s_models * const models, const char * const name);
+struct s_bmodel * models_new_bmodel(struct s_models * restrict const models, const char * restrict const name);
 struct s_models * models_new(void);
 void models_del(struct s_models * models);
 int models_online(struct s_models * restrict const models);

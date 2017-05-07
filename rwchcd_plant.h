@@ -325,11 +325,12 @@ struct s_plant {
 int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
 int plant_offline(struct s_plant * restrict const plant);
 int plant_run(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
-struct s_pump * plant_new_pump(struct s_plant * const plant);
-struct s_valve * plant_new_valve(struct s_plant * const plant);
-struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant);
-struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant);
-struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, enum e_heatsource_type type);
+struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char * restrict const name);
+struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const char * restrict const name);
+struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name);
+struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name);
+struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name,
+					   const enum e_heatsource_type type);
 struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
 int circuit_make_bilinear(struct s_heating_circuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);

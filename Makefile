@@ -2,7 +2,7 @@ REVISION := $(shell git describe --tags --always --dirty)
 CC := gcc
 #add -Wconversion when ready - -Wdouble-promotion should be checked but triggers warnings with printf
 WFLAGS := -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wno-double-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla
-OPTIMS := -O0 -g -ggdb3 -march=native -mcpu=native -mtune=native -fstack-protector -Wstack-protector -fstrict-aliasing
+OPTIMS := -O0 -g -ggdb3 -march=native -mcpu=native -mtune=native -fstack-protector -Wstack-protector -fstrict-aliasing -Wstrict-aliasing
 CFLAGS := -DDEBUG -D_GNU_SOURCE $(shell pkg-config --cflags gio-unix-2.0) -std=gnu99 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"'
 LDLIBS := $(shell pkg-config --libs gio-unix-2.0) -lwiringPi -lm
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)

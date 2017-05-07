@@ -22,6 +22,7 @@
 #include <unistd.h>	// sleep
 #include <math.h>	// roundf
 #include <assert.h>
+#include <string.h>
 
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
@@ -1822,21 +1823,40 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 /**
  * Create a new pump and attach it to the plant.
  * @param plant the plant to attach the pump to
+ * @param name @b UNIQUE pump name (or NULL). A local copy is created if set
  * @return pointer to the created pump
  */
-struct s_pump * plant_new_pump(struct s_plant * const plant)
+struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char * restrict const name)
 {
+	const struct s_pump_l * restrict pumpl;
 	struct s_pump * restrict pump = NULL;
 	struct s_pump_l * restrict pumpelmt = NULL;
-	
+	char * restrict str = NULL;
+
 	if (!plant)
 		goto fail;
-	
+
+	// deal with name
+	if (name) {
+		// ensure unique name
+		for (pumpl = plant->pump_head; pumpl; pumpl = pumpl->next) {
+			if (!strcmp(pumpl->pump->name, name))
+				goto fail;
+		}
+
+		str = strdup(name);
+		if (!str)
+			goto fail;
+	}
+
 	// create a new pump. calloc() sets good defaults
 	pump = calloc(1, sizeof(*pump));
 	if (!pump)
 		goto fail;
-	
+
+	// set name
+	pump->name = str;
+
 	// create pump element
 	pumpelmt = calloc(1, sizeof(*pumpelmt));
 	if (!pumpelmt)
@@ -1854,6 +1874,7 @@ struct s_pump * plant_new_pump(struct s_plant * const plant)
 	return (pump);
 	
 fail:
+	free(str);
 	free(pump);
 	free(pumpelmt);
 	return (NULL);
@@ -1862,20 +1883,39 @@ fail:
 /**
  * Create a new valve and attach it to the plant.
  * @param plant the plant to attach the valve to
+ * @param name @b UNIQUE valve name (or NULL). A local copy is created if set
  * @return pointer to the created valve
  */
-struct s_valve * plant_new_valve(struct s_plant * const plant)
+struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const char * restrict const name)
 {
+	const struct s_valve_l * restrict valvel;
 	struct s_valve * restrict valve = NULL;
 	struct s_valve_l * restrict valveelmt = NULL;
-	
+	char * restrict str = NULL;
+
 	if (!plant)
 		goto fail;
-	
+
+	// deal with name
+	if (name) {
+		// ensure unique name
+		for (valvel = plant->valve_head; valvel; valvel = valvel->next) {
+			if (!strcmp(valvel->valve->name, name))
+				goto fail;
+		}
+
+		str = strdup(name);
+		if (!str)
+			goto fail;
+	}
+
 	// create a new valve. calloc() sets good defaults
 	valve = calloc(1, sizeof(*valve));
 	if (!valve)
 		goto fail;
+
+	// set name
+	valve->name = str;
 	
 	// create valve element
 	valveelmt = calloc(1, sizeof(*valveelmt));
@@ -1894,6 +1934,7 @@ struct s_valve * plant_new_valve(struct s_plant * const plant)
 	return (valve);
 	
 fail:
+	free(str);
 	free(valve);
 	free(valveelmt);
 	return (NULL);
@@ -1902,20 +1943,39 @@ fail:
 /**
  * Create a new heating circuit and attach it to the plant.
  * @param plant the plant to attach the circuit to
+ * @param name @b UNIQUE circuit name (or NULL). A local copy is created if set
  * @return pointer to the created heating circuit
  */
-struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant)
+struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name)
 {
+	const struct s_heating_circuit_l * restrict circuitl;
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_heating_circuit_l * restrict circuitelement = NULL;
+	char * restrict str = NULL;
 
 	if (!plant)
 		goto fail;
+
+	// deal with name
+	if (name) {
+		// ensure unique name
+		for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
+			if (!strcmp(circuitl->circuit->name, name))
+				goto fail;
+		}
+
+		str = strdup(name);
+		if (!str)
+			goto fail;
+	}
 
 	// create a new circuit. calloc() sets good defaults
 	circuit = calloc(1, sizeof(*circuit));
 	if (!circuit)
 		goto fail;
+
+	// set name
+	circuit->name = str;
 
 	// create a new circuit element
 	circuitelement = calloc(1, sizeof(*circuitelement));
@@ -1934,6 +1994,7 @@ struct s_heating_circuit * plant_new_circuit(struct s_plant * const plant)
 	return (circuit);
 
 fail:
+	free(str);
 	free(circuit);
 	free(circuitelement);
 	return (NULL);
@@ -1958,20 +2019,39 @@ static void circuit_del(struct s_heating_circuit * circuit)
 /**
  * Create a new dhw tank and attach it to the plant.
  * @param plant the plant to attach the tank to
+ * @param name @b UNIQUE dhwt name (or NULL). A local copy is created if set
  * @return pointer to the created tank
  */
-struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant)
+struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
 {
+	const struct s_dhw_tank_l * restrict dhwtl;
 	struct s_dhw_tank * restrict dhwt = NULL;
 	struct s_dhw_tank_l * restrict dhwtelement = NULL;
+	char * restrict str = NULL;
 
 	if (!plant)
 		goto fail;
+
+	// deal with name
+	if (name) {
+		// ensure unique name
+		for (dhwtl = plant->dhwt_head; dhwtl; dhwtl = dhwtl->next) {
+			if (!strcmp(dhwtl->dhwt->name, name))
+				goto fail;
+		}
+
+		str = strdup(name);
+		if (!str)
+			goto fail;
+	}
 
 	// create a new tank. calloc() sets good defaults
 	dhwt = calloc(1, sizeof(*dhwt));
 	if (!dhwt)
 		goto fail;
+
+	// set name
+	dhwt->name = str;
 
 	// create a new tank element
 	dhwtelement = calloc(1, sizeof(*dhwtelement));
@@ -1990,6 +2070,7 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * const plant)
 	return (dhwt);
 
 fail:
+	free(str);
 	free(dhwt);
 	free(dhwtelement);
 	return (NULL);
@@ -2017,21 +2098,38 @@ static void dhwt_del(struct s_dhw_tank * restrict dhwt)
 /**
  * Create a new heatsource in the plant
  * @param plant the target plant
+ * @param name @b UNIQUE heatsource name (or NULL). A local copy is created if set
  * @param type the heatsource type to create
  * @return pointer to the created source
  */
-struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const enum e_heatsource_type type)
+struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name,
+					   const enum e_heatsource_type type)
 {
+	const struct s_heatsource_l * restrict sourcel;
 	struct s_heatsource * restrict source = NULL;
 	struct s_heatsource_l * restrict sourceelement = NULL;
+	char * restrict str = NULL;
 
 	if (!plant)
-		return (NULL);
+		goto fail;
+
+	// deal with name
+	if (name) {
+		// ensure unique name
+		for (sourcel = plant->heats_head; sourcel; sourcel = sourcel->next) {
+			if (!strcmp(sourcel->heats->name, name))
+				goto fail;
+		}
+
+		str = strdup(name);
+		if (!str)
+			goto fail;
+	}
 
 	// create a new source. calloc() sets good defaults
 	source = calloc(1, sizeof(*source));
 	if (!source)
-		return (NULL);
+		goto fail;
 
 	switch (type) {
 		case BOILER:
@@ -2053,6 +2151,9 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 
 	source->set.type = type;
 
+	// set name
+	source->name = str;
+
 	// create a new source element
 	sourceelement = calloc(1, sizeof(*sourceelement));
 	if (!sourceelement)
@@ -2070,9 +2171,11 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * const plant, const e
 	return (source);
 
 fail:
-	if (source->hs_del_priv)
+	free(str);
+	if (source && source->hs_del_priv)
 		source->hs_del_priv(source->priv);
 	free(source);
+	free(sourceelement);
 	return (NULL);
 }
 
