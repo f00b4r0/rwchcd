@@ -29,7 +29,7 @@
  * Config files
  * connection of multiple instances
  * multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
- * scheduler
+ * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
@@ -55,6 +55,7 @@
 #include "rwchcd_timer.h"
 #include "rwchcd_scheduler.h"
 #include "rwchcd_models.h"
+#include "rwchcd_alarms.h"
 #ifdef HAS_DBUS
  #include "rwchcd_dbus.h"
 #endif
@@ -369,7 +370,8 @@ static int init_process()
 		dbgerr("hardware_online() failed");
 
 	lcd_online();
-	
+	alarms_online();
+
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
 }
@@ -379,6 +381,7 @@ static void exit_process(void)
 	struct s_runtime * restrict const runtime = get_runtime();
 
 	runtime_offline();
+	alarms_offline();
 	lcd_offline();
 	hardware_offline();
 	plant_del(runtime->plant);
@@ -432,6 +435,8 @@ static void * thread_master(void *arg)
 		ret = hardware_output();
 		if (ret)
 			dbgerr("hardware_output returned: %d", ret);
+		
+		alarms_run();	// XXX run this here last as it clears the alarms
 		
 		printf("\n");	// XXX DEBUG
 		fflush(stdout);
