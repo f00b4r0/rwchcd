@@ -9,35 +9,37 @@
 /**
  * @file
  * LCD implementation.
+ *
+ * @todo this implementation isn't link-agnostic: it calls the SPI subsystem.
+ * This should be reworked so that it becomes abstracted like the rest of the
+ * hardware subsystem.
+ * @todo most of this is a gross hack, XXX REVIEW.
  */
 
 #include <string.h>
 
 #include "rwchcd_spi.h"
+#include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
+#include "rwchcd_hardware.h"
 #include "rwchcd_lcd.h"
 
 #define LCD_LINELEN	16	///< width of LCD display line
 
-// buffer is one char longer to accomodate for the final '\0'. The rest of the code assumes that this '\0' is always present
-static uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
-static uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
-static bool L2mngd = false;	///< true if 2nd line is managed by software
-
-/**
- * LCD subsystem initialization.
- * @return exec status
- */
-int lcd_subsys_init(void)
-{
-	memset(Line1Buf, ' ', LCD_LINELEN);
-	memset(Line1Cur, ' ', LCD_LINELEN);
-	memset(Line2Buf, ' ', LCD_LINELEN);
-	memset(Line1Cur, ' ', LCD_LINELEN);
-	
-	return (ALL_OK);
-}
+static struct {
+	bool online;
+	bool reset;	///< true if full refresh of the display is necessary
+	bool L2mngd;	///< true if 2nd line is managed by software
+	tempid_t sensor;	///< current sensor displayed on LCD
+	uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
+	uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
+} LCD = {
+	.online = false,
+	.reset = false,
+	.L2mngd = false,
+	.sensor = 1,
+};
 
 /**
  * Grab LCD control from the device firmware.
@@ -54,7 +56,7 @@ static int lcd_grab(void)
  */
 static int lcd_release(void)
 {
-	if (L2mngd)
+	if (LCD.L2mngd)
 		return (ALL_OK);	// never relinquish if L2 is managed
 
 	return (spi_lcd_relinquish());
@@ -75,8 +77,8 @@ int lcd_fade(void)
  */
 static int lcd_dispclear(void)
 {
-	memset(Line1Cur, ' ', LCD_LINELEN);
-	memset(Line1Cur, ' ', LCD_LINELEN);
+	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
+	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
 
 	return (spi_lcd_cmd_w(0x01));
 }
@@ -86,14 +88,14 @@ static int lcd_dispclear(void)
  * @param linenb target line to clear (from 0)
  * @return exec status
  */
-int lcd_buflclear(const uint_fast8_t linenb)
+static int lcd_buflclear(const uint_fast8_t linenb)
 {
 	switch (linenb) {
 		case 0:
-			memset(Line1Buf, ' ', LCD_LINELEN);
+			memset(LCD.Line1Buf, ' ', LCD_LINELEN);
 			break;
 		case 1:
-			memset(Line2Buf, ' ', LCD_LINELEN);
+			memset(LCD.Line2Buf, ' ', LCD_LINELEN);
 			break;
 		default:
 			return (-EINVALID);
@@ -107,9 +109,9 @@ int lcd_buflclear(const uint_fast8_t linenb)
  * @param on true if under our control
  * @return exec status
  */
-int lcd_handle2ndline(const bool on)
+static int lcd_handle2ndline(const bool on)
 {
-	L2mngd = on;
+	LCD.L2mngd = on;
 	
 	return (ALL_OK);
 }
@@ -122,7 +124,7 @@ int lcd_handle2ndline(const bool on)
  * @param pos the target character position in the target line (from 0)
  * @return exec status
  */
-int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
+static int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
 	      const uint_fast8_t linenb, const uint_fast8_t pos)
 {
 	int ret = ALL_OK;
@@ -137,11 +139,11 @@ int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
 	
 	switch (linenb) {
 		case 0:
-			line = Line1Buf;
+			line = LCD.Line1Buf;
 			break;
 		case 1:
-			if (L2mngd) {
-				line = Line2Buf;
+			if (LCD.L2mngd) {
+				line = LCD.Line2Buf;
 				break;
 			}
 		default:
@@ -173,7 +175,7 @@ int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
  * @param force force refresh of entire line
  * @return exec status
  */
-int lcd_uline(const uint_fast8_t linenb, const bool force)
+static int lcd_uline(const uint_fast8_t linenb, const bool force)
 {
 	int ret = ALL_OK;
 	uint_fast8_t id;
@@ -182,14 +184,14 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 	
 	switch (linenb) {
 		case 0:
-			buf = Line1Buf;
-			cur = Line1Cur;
+			buf = LCD.Line1Buf;
+			cur = LCD.Line1Cur;
 			addr = 0x00;
 			break;
 		case 1:
-			if (L2mngd) {
-				buf = Line2Buf;
-				cur = Line2Cur;
+			if (LCD.L2mngd) {
+				buf = LCD.Line2Buf;
+				cur = LCD.Line2Cur;
 				addr = 0x40;
 				break;
 			}
@@ -199,7 +201,7 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 
 	if (!force) {
 		// find the first differing character between buffer and current
-		for (id = 0; id<LCD_LINELEN; id++) {
+		for (id = 0; id < LCD_LINELEN; id++) {
 			if (buf[id] != cur[id])
 				break;
 		}
@@ -226,7 +228,7 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 		return (ret);
 	
 	// write data from Buf and update Cur - id already set
-	for (; id<LCD_LINELEN; id++) {
+	for (; id < LCD_LINELEN; id++) {
 		ret = spi_lcd_data_w(buf[id]);
 		if (ret)
 			return (ret);
@@ -242,6 +244,35 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 }
 
 /**
+ * LCD subsystem initialization.
+ * @return exec status
+ */
+int lcd_init(void)
+{
+	memset(LCD.Line1Buf, ' ', LCD_LINELEN);
+	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
+	memset(LCD.Line2Buf, ' ', LCD_LINELEN);
+	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
+
+	return (ALL_OK);
+}
+
+/**
+ * Bring LCD subsystem online.
+ * @note requires the hardware layer to be operational (SPI connection)
+ * @return exec status
+ */
+int lcd_online(void)
+{
+	if (!hardware_is_online())
+		return (-EOFFLINE);
+
+	LCD.online = true;
+
+	return (ALL_OK);
+}
+
+/**
  * Update LCD display
  * @param force force refresh of entire display
  * @return exec status
@@ -249,12 +280,15 @@ int lcd_uline(const uint_fast8_t linenb, const bool force)
 int lcd_update(const bool force)
 {
 	int ret;
+
+	if (!LCD.online)
+		return (-EOFFLINE);
 	
 	ret = lcd_uline(0, force);
 	if (ret)
 		goto out;
 	
-	if (L2mngd)
+	if (LCD.L2mngd)
 		ret = lcd_uline(1, force);
 	
 out:
@@ -269,7 +303,7 @@ static const char * temp_to_str(const tempid_t tempid)
 	float celsius;
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
-#error Non representable minimum temperature
+ #error Non representable minimum temperature
 #endif
 
 	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
@@ -323,14 +357,83 @@ static const char * lcd_disp_sysmode(void)
 }
 
 // XXX quick hack
-int lcd_line1(const tempid_t tempid)
+static int lcd_line1(void)
 {
-	uint8_t buf[LCD_LINELEN];
+	static uint8_t buf[LCD_LINELEN];
+
 	memset(buf, ' ', LCD_LINELEN);
 	
 	memcpy(buf, lcd_disp_sysmode(), 4);
 	
-	memcpy(buf+6, temp_to_str(tempid), 9);
+	memcpy(buf+6, temp_to_str(LCD.sensor), 9);
 	
-	return (lcd_wline(buf, 16, 0, 0));
+	return (lcd_wline(buf, LCD_LINELEN, 0, 0));
+}
+
+/**
+ * Force full refresh of the lcd display.
+ */
+int lcd_reset(void)
+{
+	if (!LCD.online)
+		return (-EOFFLINE);
+
+	LCD.reset = true;
+
+	return (ALL_OK);
+}
+
+/**
+ * Set current sensor displayed on LCD.
+ * @param tempid target sensor id
+ * @return exec status
+ */
+int lcd_set_tempid(const tempid_t tempid)
+{
+	const struct s_config * restrict const config = get_runtime()->config;
+
+	if (!LCD.online)
+		return (-EOFFLINE);
+
+	if (tempid > config->nsensors)
+		return (-EINVALID);
+
+	LCD.sensor = tempid;
+
+	return (ALL_OK);
+}
+
+/**
+ * Run the LCD subsystem.
+ * @return exec status
+ */
+int lcd_run(void)
+{
+	if (!LCD.online)
+		return (-EOFFLINE);
+
+	lcd_line1();
+	lcd_update(LCD.reset);
+
+	LCD.reset = false;
+
+	return (ALL_OK);
+}
+
+/**
+ * Take LCD subsystem offline.
+ * @return exec status
+ */
+int lcd_offline(void)
+{
+	LCD.online = false;
+	return (ALL_OK);
+}
+
+/**
+ * LCD exit routine
+ */
+void lcd_exit(void)
+{
+	return;
 }

@@ -982,6 +982,15 @@ fail:
 }
 
 /**
+ * Assert that the hardware is ready.
+ * @return true if hardware is ready, false otherwise
+ */
+bool hardware_is_online(void)
+{
+	return (Hardware.ready);
+}
+
+/**
  * Collect inputs from hardware.
  * @note Will process switch inputs.
  * @return exec status
@@ -1008,7 +1017,7 @@ int hardware_input(void)
 		Hardware.peripherals.LED2 = 0;
 		Hardware.peripherals.buzzer = 0;
 		Hardware.peripherals.LCDbl = 0;
-		lcd_update(true);
+		lcd_reset();
 		// XXX reset runtime?
 	}
 	
@@ -1038,6 +1047,8 @@ int hardware_input(void)
 		
 		if (tempid > runtime->config->nsensors)
 			tempid = 1;
+
+		lcd_set_tempid(tempid);	// update sensor
 	}
 	
 	// trigger timed backlight
@@ -1067,10 +1078,7 @@ int hardware_input(void)
 	}
 	
 	parse_temps();
-	
-	lcd_line1(tempid);
-	lcd_update(false);
-	
+
 	ret = ALL_OK;
 	
 out:

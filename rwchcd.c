@@ -48,6 +48,7 @@
 #include "rwchcd.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
+#include "rwchcd_lcd.h"
 #include "rwchcd_plant.h"
 #include "rwchcd_config.h"
 #include "rwchcd_runtime.h"
@@ -128,7 +129,9 @@ static int init_process()
 		dbgerr("hardware init error: %d", ret);
 		return (ret);
 	}
-	
+
+	lcd_init();
+
 	// XXX firmware config bits here
 	hardware_config_limit_set(HLIM_FROSTMIN, 3);
 	hardware_config_limit_set(HLIM_BOILERMIN, 50);
@@ -364,6 +367,8 @@ static int init_process()
 	// bring the hardware online
 	while (hardware_online())
 		dbgerr("hardware_online() failed");
+
+	lcd_online();
 	
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
@@ -374,12 +379,14 @@ static void exit_process(void)
 	struct s_runtime * restrict const runtime = get_runtime();
 
 	runtime_offline();
+	lcd_offline();
 	hardware_offline();
 	plant_del(runtime->plant);
 	models_del(runtime->models);
 	config_exit(runtime->config);
 	config_del(runtime->config);
 	runtime_exit();
+	lcd_exit();
 	hardware_exit();
 }
 
@@ -417,6 +424,10 @@ static void * thread_master(void *arg)
 		ret = pthread_rwlock_unlock(&runtime->runtime_rwlock);
 		if (ret)
 			dbgerr("unlock failed: %d", ret);
+
+		ret = lcd_run();
+		if (ret)
+			dbgerr("lcd_run failed: %d", ret);
 		
 		ret = hardware_output();
 		if (ret)

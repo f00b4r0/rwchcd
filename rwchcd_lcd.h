@@ -16,13 +16,13 @@
 
 #include "rwchcd.h"
 
-int lcd_subsys_init(void);
-int lcd_buflclear(uint_fast8_t linenb);
-int lcd_wline(const uint8_t * restrict data, const uint_fast8_t len,
-	      const uint_fast8_t linenb, const uint_fast8_t pos);
-int lcd_uline(const uint_fast8_t linenb, const bool force);
-int lcd_update(const bool force);
-int lcd_line1(const tempid_t tempid);
+int lcd_init(void);
+int lcd_online(void);
+int lcd_reset(void);
+int lcd_set_tempid(const tempid_t tempid);
 int lcd_fade(void);
+int lcd_run(void);
+int lcd_offline(void);
+void lcd_exit(void);
 
 #endif /* rwchcd_lcd_h */

@@ -63,6 +63,7 @@ int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, 
 int hardware_sensor_deconfigure(const tempid_t id);
 int hardware_sensor_configured(const tempid_t id) __attribute__((warn_unused_result));
 int hardware_online(void);
+bool hardware_is_online(void);
 int hardware_input(void);
 int hardware_output(void);
 int hardware_run(void);
