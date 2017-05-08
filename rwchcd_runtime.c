@@ -365,11 +365,16 @@ int runtime_offline(void)
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
 		return (-ENOTCONFIGURED);
 
-	runtime_save();
+	if (runtime_save() != ALL_OK)
+		dbgerr("runtime save failed");
 
-	plant_offline(Runtime.plant);
+	if (plant_offline(Runtime.plant) != ALL_OK)
+		dbgerr("plant offline failed");
 
-	return (models_offline(Runtime.models));
+	if (models_offline(Runtime.models) != ALL_OK)
+		dbgerr("models offline failed");
+
+	return (ALL_OK);
 }
 
 /**
