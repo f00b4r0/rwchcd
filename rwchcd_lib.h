@@ -16,7 +16,6 @@
 
 #include "rwchcd.h"
 
-int validate_temp(const temp_t temp);
 temp_t get_temp(const tempid_t id);
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt);
 
@@ -69,6 +68,32 @@ __attribute__((pure, always_inline)) static inline float temp_to_deltaK(const te
 __attribute__((pure, always_inline)) static inline time_t expw_mavg_dtmin(const time_t tau)
 {
 	return (/*ceilf*/(((1.0F/KPRECISIONF)*tau)/(1.0F-(1.0F/KPRECISIONF))) * 2);
+}
+
+/**
+ * Validate a temperature value
+ * @param temp the value to validate
+ * @return validation result
+ */
+__attribute__((pure, always_inline)) static inline int validate_temp(const temp_t temp)
+{
+	int ret = ALL_OK;
+
+	switch (temp) {
+		case TEMPUNSET:
+			ret = -ESENSORINVAL;
+			break;
+		case TEMPSHORT:
+			ret = -ESENSORSHORT;
+			break;
+		case TEMPDISCON:
+			ret = -ESENSORDISCON;
+			break;
+		default:
+			break;
+	}
+
+	return (ret);
 }
 
 #endif /* rwchcd_lib_h */

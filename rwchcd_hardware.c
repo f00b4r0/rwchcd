@@ -264,8 +264,13 @@ static void parse_temps(void)
 		current = celsius_to_temp(o_to_c(ohm));
 		previous = Sensors[i].run.value;
 
-		// apply LP filter - handles init case where previous == 0
-		Sensors[i].run.value = previous ? temp_expw_mavg(previous, current, nsamples, 1) : current;
+		if (current <= RWCHCD_TEMPMIN)
+			Sensors[i].run.value = TEMPSHORT;
+		else if (current >= RWCHCD_TEMPMAX)
+			Sensors[i].run.value = TEMPDISCON;
+		else
+			// apply LP filter - ensure we only apply filtering on valid temps
+			Sensors[i].run.value = (previous >= TEMPINVALID) ? temp_expw_mavg(previous, current, nsamples, 1) : current;
 	}
 
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);

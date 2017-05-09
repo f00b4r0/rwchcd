@@ -80,6 +80,14 @@ enum e_execs {
 
 #define	RWCHCD_NTEMPS	15	///< number of available sensors
 
+/** Specific error values for temps */
+enum {
+	TEMPUNSET = 0,	///< temp hasn't been fetched
+	TEMPSHORT,	///< sensor is shorted
+	TEMPDISCON,	///< sensor is disconnected
+	TEMPINVALID,	///< values below this are all invalid
+};
+
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
 typedef uint_fast8_t	tempid_t;	///< temperature index: if > sizeof(Runtime->temps[]), invalid
 typedef uint_fast8_t	relid_t;	///< relay id matching hardware: 1 to 14, with 13==RL1 and 14==RL2

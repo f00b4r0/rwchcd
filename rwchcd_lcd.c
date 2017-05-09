@@ -308,9 +308,9 @@ static const char * temp_to_str(const tempid_t tempid)
 
 	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
 
-	if (temp > RWCHCD_TEMPMAX)
+	if (TEMPDISCON == temp)
 		strncpy(snpbuf+3, _("DISCON"), 6);
-	else if (temp < RWCHCD_TEMPMIN)
+	else if (TEMPSHORT == temp)
 		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
 	else {
 		celsius = temp_to_celsius(temp);

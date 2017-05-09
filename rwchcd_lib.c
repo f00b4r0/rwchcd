@@ -19,26 +19,6 @@
 #include "rwchcd_runtime.h"
 
 /**
- * Validate a temperature value
- * @param temp the value to validate
- * @return validation result
- */
-__attribute__((pure)) int validate_temp(const temp_t temp)
-{
-	int ret = ALL_OK;
-
-	if (temp == 0)
-		ret = -ESENSORINVAL;
-	else if (temp <= RWCHCD_TEMPMIN)
-		ret = -ESENSORSHORT;
-	else if (temp >= RWCHCD_TEMPMAX)
-		ret = -ESENSORDISCON;
-
-	return (ret);
-}
-
-
-/**
  * get temp from a given temp id
  * @param id the physical id (counted from 1) of the sensor
  * @return temp if id valid, 0 otherwise
