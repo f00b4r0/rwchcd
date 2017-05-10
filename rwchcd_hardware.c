@@ -27,6 +27,7 @@
 #include "rwchcd_lib.h"
 #include "rwchcd_storage.h"
 #include "rwchcd_lcd.h"
+#include "rwchcd_alarms.h"
 #include "rwchcd_hardware.h"
 
 #include "rwchc_export.h"
@@ -827,6 +828,54 @@ int hardware_sensor_configured(const tempid_t id)
 		return (-ENOTCONFIGURED);
 
 	return (ALL_OK);
+}
+
+/**
+ * Raise an alarm for a specific sensor.
+ * This function tests a sensor and raises an alarm if the sensor is either
+ * invalid or its value is invalid.
+ * @param id target sensor id
+ * @return exec status
+ */
+int hardware_sensor_alarm(const tempid_t id)
+{
+	const char * restrict const msgf = _("sensor fail: %s (%d) %s");
+	const char * restrict const msglcdf = _("sensor fail: %d");
+	const char * restrict fail, * restrict name = NULL;
+	char * restrict msg, * restrict msglcd;
+	size_t size;
+	int ret;
+
+	ret = validate_temp(get_temp(id));
+
+	switch (ret) {
+		case ALL_OK:
+			return ret;
+		case -ESENSORSHORT:
+			fail = _("shorted");
+			name = Sensors[id-1].name;
+			break;
+		case -ESENSORDISCON:
+			fail = _("disconnected");
+			name = Sensors[id-1].name;
+			break;
+		case -ESENSORINVAL:
+			fail = _("invalid");
+			break;
+		default:
+			fail = _("error");
+			break;
+	}
+
+	snprintf_automalloc(msg, size, msgf, name, id, fail);
+	snprintf_automalloc(msglcd, size, msglcdf, id);
+
+	ret = alarms_raise(ret, msg, msglcd);
+
+	free(msg);
+	free(msglcd);
+
+	return (ret);
 }
 
 /**

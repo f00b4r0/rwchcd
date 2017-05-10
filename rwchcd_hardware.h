@@ -62,6 +62,7 @@ int hardware_relay_get_state(const relid_t id);
 int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const char * const name) __attribute__((warn_unused_result));
 int hardware_sensor_deconfigure(const tempid_t id);
 int hardware_sensor_configured(const tempid_t id) __attribute__((warn_unused_result));
+int hardware_sensor_alarm(const tempid_t id);
 int hardware_online(void);
 bool hardware_is_online(void);
 int hardware_input(void);

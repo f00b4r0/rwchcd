@@ -792,6 +792,25 @@ static void solar_del(struct s_solar_heater * solar)
 /*- BOILER -*/
 
 /**
+ * Checklist for safe operation of a boiler.
+ * This function asserts that the boiler's mandatory sensor is working, and
+ * will register an alarm and report the error if it isn't.
+ * @param boiler target boiler
+ * @return exec status
+ */
+static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
+{
+	int ret;
+
+	// check that mandatory sensors are working
+	ret = validate_temp(get_temp(boiler->set.id_temp));
+	if (ALL_OK != ret)
+		hardware_sensor_alarm(boiler->set.id_temp);
+
+	return (ret);
+}
+
+/**
  * Create a new boiler
  * @return pointer to the created boiler
  */
@@ -906,14 +925,9 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
  * @param boiler target boiler
  * @return error status
  */
-static int boiler_antifreeze(struct s_boiler_priv * const boiler)
+static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 {
-	int ret;
 	const temp_t boilertemp = get_temp(boiler->set.id_temp);
-
-	ret = validate_temp(boilertemp);
-	if (ret)
-		return (ret);
 
 	// trip at set.t_freeze point
 	if (boilertemp <= boiler->set.t_freeze)
@@ -924,8 +938,6 @@ static int boiler_antifreeze(struct s_boiler_priv * const boiler)
 		if (boilertemp > (boiler->set.limit_tmin + boiler->set.histeresis/2))
 			boiler->run.antifreeze = false;
 	}
-
-	return (ALL_OK);
 }
 
 /**
@@ -942,13 +954,16 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 	int ret;
 
 	assert(boiler);
-	
-	// Check if we need antifreeze
-	ret = boiler_antifreeze(boiler);
-	if (ret) {
+
+	// safe operation check
+	ret = boiler_runchecklist(boiler);
+	if (ALL_OK != ret) {
 		boiler_failsafe(boiler);
 		return (ret);
 	}
+
+	// Check if we need antifreeze
+	boiler_antifreeze(boiler);
 
 	switch (heat->run.runmode) {
 		case RM_OFF:
@@ -1037,13 +1052,14 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	// Ensure safety first
 
-	// check mandatory sensor
-	boiler_temp = get_temp(boiler->set.id_temp);
-	ret = validate_temp(boiler_temp);
+	// check we can run
+	ret = boiler_runchecklist(boiler);
 	if (ALL_OK != ret) {
 		boiler_failsafe(boiler);
 		return (ret);
 	}
+
+	boiler_temp = get_temp(boiler->set.id_temp);
 
 	// ensure boiler is within safety limits
 	if (boiler_temp > boiler->set.limit_thardmax) {

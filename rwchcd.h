@@ -46,6 +46,13 @@
 
 #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 
+#define snprintf_needed(format, ...)	(1+snprintf(NULL, 0, format, __VA_ARGS__))
+#define snprintf_automalloc(target, size, format, ...)			({\
+		size = snprintf_needed(format, __VA_ARGS__);		\
+		target = malloc(size);					\
+		if (target)						\
+			snprintf(target, size, format, __VA_ARGS__);	})
+
 /** Valid execution status (used as negative return values) */
 enum e_execs {
 	ALL_OK = 0,	///< no error (must be 0)

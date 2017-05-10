@@ -231,7 +231,7 @@ struct s_dhw_tank {
 		bool configured;		///< true if properly configured
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
-		enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };	///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
+		//enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };	///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
 		enum {
 			DHWTF_NEVER = 0,	///< never force
 			DHWTF_FIRST,		///< force first comfort charge of the day
