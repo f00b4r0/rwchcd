@@ -24,25 +24,6 @@
 #define ON	true
 #define OFF	false
 
-/** Hardware addresses available in hw config */
-enum e_hw_address {
-	HADDR_TBURNER = 1,	///< Burner relay
-	HADDR_TPUMP,		///< Pump relay
-	HADDR_TVOPEN,		///< Valve open relay
-	HADDR_TVCLOSE,		///< Valve close relay
-	HADDR_SOUTDOOR,		///< outdoor sensor
-	HADDR_SBURNER,		///< burner sensor
-	HADDR_SWATER,		///< water sensor
-	HADDR_SLAST,		///< last sensor (== number of connected sensors)
-};
-
-/** Hardware limits available in hw config */
-enum e_hw_limit {
-	HLIM_FROSTMIN = 1,	///< Temperature for frost protection
-	HLIM_BOILERMAX,		///< Maximum boiler temp
-	HLIM_BOILERMIN,		///< Minimum boiler temp
-};
-
 /** valid types of temperature sensors */
 enum e_sensor_type {
 	ST_PT1000,
@@ -52,8 +33,8 @@ enum e_sensor_type {
 };
 
 int hardware_init(void) __attribute__((warn_unused_result));
-int hardware_config_addr_set(enum e_hw_address address, const relid_t id) __attribute__ ((deprecated));
-int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value) __attribute__ ((deprecated));
+int hardware_config_setbl(const uint8_t percent);
+int hardware_config_setnsensors(const relid_t lastid);
 int hardware_config_store(void);
 int hardware_relay_request(const relid_t id, const char * const name) __attribute__((warn_unused_result));
 int hardware_relay_release(const relid_t id);

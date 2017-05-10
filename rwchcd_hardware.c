@@ -11,6 +11,7 @@
  * Hardware interface implementation.
  *
  * @todo reflect runtime errors on hardware (LED/LCD)
+ * @todo implement failsafe relay state config
  */
 
 #include <time.h>	// time
@@ -374,124 +375,39 @@ static int hardware_restore_sensors(void)
 	return (ret);
 }
 
-static inline uint8_t rid_to_rwchcaddr(const int_fast8_t id)
-{
-	if (id < 8)
-		return (id-1);
-	else
-		return (id);
-}
-
 /**
- * Set hardware config addresses.
- * @param address target hardware address
- * @param id target id
+ * Set hardware configuration for LCD backlight level.
+ * @param percent backlight level (0 = off, 100 = full)
  * @return exec status
- * @warning minimal sanity check. HADDR_SLAST must be set first.
- * @note THIS IS A PROTOTYPE-ONLY FUNCTION, NOT USED IN FINAL VERSION.
  */
-int hardware_config_addr_set(enum e_hw_address address, const relid_t id)
+int hardware_config_setbl(const uint8_t percent)
 {
-	uint8_t rid;
-	
 	if (!Hardware.ready)
 		return (-EOFFLINE);
-	
-	// sanity checks
-	if (id <= 0)
-		return (-EINVALID);
-	
-	switch (address) {
-		case HADDR_SLAST:
-			if (id > RWCHC_NTSENSORS)
-				return (-EINVALID);
-			break;
-		case HADDR_SBURNER:
-		case HADDR_SWATER:
-		case HADDR_SOUTDOOR:
-			if (id > Hardware.settings.addresses.nsensors)
-				return (-EINVALID);
-			break;
-		case HADDR_TBURNER:
-		case HADDR_TPUMP:
-		case HADDR_TVOPEN:
-		case HADDR_TVCLOSE:
-			if (id > RELAY_MAX_ID)
-				return (-EINVALID);
-			break;
-		default:
-			return (-EINVALID);
-	}
 
-	rid = rid_to_rwchcaddr(id);
-	
-	// apply setting
-	switch (address) {
-		case HADDR_SLAST:
-			if (id > RWCHC_NTSENSORS)
-				return (-EINVALID);
-			Hardware.settings.addresses.nsensors = id;
-			break;
-		case HADDR_SBURNER:
-			if (id > Hardware.settings.addresses.nsensors)
-				return (-EINVALID);
-			Hardware.settings.addresses.S_burner = id-1;
-			break;
-		case HADDR_SWATER:
-			if (id > Hardware.settings.addresses.nsensors)
-				return (-EINVALID);
-			Hardware.settings.addresses.S_water = id-1;
-			break;
-		case HADDR_SOUTDOOR:
-			if (id > Hardware.settings.addresses.nsensors)
-				return (-EINVALID);
-			Hardware.settings.addresses.S_outdoor = id-1;
-			break;
-		case HADDR_TBURNER:
-			Hardware.settings.addresses.T_burner = rid;
-			break;
-		case HADDR_TPUMP:
-			Hardware.settings.addresses.T_pump = rid;
-			break;
-		case HADDR_TVOPEN:
-			Hardware.settings.addresses.T_Vopen = rid;
-			break;
-		case HADDR_TVCLOSE:
-			Hardware.settings.addresses.T_Vclose = rid;
-			break;
-		default: ;
-	}
-	
+	if (percent > 100)
+		return (-EINVALID);
+
+	Hardware.settings.lcdblpct = percent;
+
 	return (ALL_OK);
 }
 
 /**
- * Set hardware limit.
- * @param limit target hardware limit
- * @param value target limit value
+ * Set hardware configuration for number of sensors.
+ * @param lastid last connected sensor id
  * @return exec status
- * @warning minimal sanity check.
- * @note THIS IS A PROTOTYPE-ONLY FUNCTION, NOT USED IN FINAL VERSION.
  */
-int hardware_config_limit_set(enum e_hw_limit limit, const int_fast8_t value)
+int hardware_config_setnsensors(const relid_t lastid)
 {
 	if (!Hardware.ready)
 		return (-EOFFLINE);
-	
-	switch (limit) {
-		case HLIM_FROSTMIN:
-			Hardware.settings.limits.frost_tmin = value;
-			break;
-		case HLIM_BOILERMIN:
-			Hardware.settings.limits.burner_tmin = value;
-			break;
-		case HLIM_BOILERMAX:
-			Hardware.settings.limits.burner_tmax = value;
-			break;
-		default:
-			return (-EINVALID);
-	}
-	
+
+	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
+		return (-EINVALID);
+
+	Hardware.settings.nsensors = lastid;
+
 	return (ALL_OK);
 }
 
@@ -643,7 +559,7 @@ static int hardware_sensors_read(rwchc_sensor_t tsensors[])
 	
 	assert(Hardware.ready);
 
-	for (sensor=0; sensor<Hardware.settings.addresses.nsensors; sensor++) {
+	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
 		ret = spi_sensor_r(tsensors, sensor);
 		if (ret)
 			goto out;

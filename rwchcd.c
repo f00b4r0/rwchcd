@@ -133,18 +133,6 @@ static int init_process()
 
 	lcd_init();
 
-	// XXX firmware config bits here
-	hardware_config_limit_set(HLIM_FROSTMIN, 3);
-	hardware_config_limit_set(HLIM_BOILERMIN, 50);
-	hardware_config_limit_set(HLIM_BOILERMAX, 70);
-	hardware_config_addr_set(HADDR_SBURNER, SENSOR_BURNER);
-	hardware_config_addr_set(HADDR_TBURNER, RELAY_BURNER);
-	hardware_config_addr_set(HADDR_SWATER, SENSOR_WATEROUT);
-	hardware_config_addr_set(HADDR_TVOPEN, RELAY_VOPEN);
-	hardware_config_addr_set(HADDR_TVCLOSE, RELAY_VCLOSE);
-	hardware_config_addr_set(HADDR_TPUMP, RELAY_PUMP);
-	hardware_config_store();
-
 	/* init runtime */
 	ret = runtime_init();
 	if (ret) {

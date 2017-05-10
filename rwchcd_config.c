@@ -67,9 +67,8 @@ static int config_restore(struct s_config * const config)
 		memcpy(config, &temp_config, sizeof(*config));
 		
 		// restore hardware bits
-		hardware_config_addr_set(HADDR_SLAST, config->nsensors);
-		hardware_config_addr_set(HADDR_SOUTDOOR, config->id_temp_outdoor);
-		
+		hardware_config_setnsensors(config->nsensors);
+
 		dbgmsg("config restored");
 		
 		config->restored = true;
@@ -149,7 +148,7 @@ int config_set_nsensors(struct s_config * const config, const int_fast8_t nsenso
 
 	config->nsensors = nsensors;
 
-	return (hardware_config_addr_set(HADDR_SLAST, nsensors));
+	return (hardware_config_setnsensors(nsensors));
 }
 
 /**
@@ -209,7 +208,7 @@ int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t s
 
 	config->id_temp_outdoor = sensorid;
 
-	return (hardware_config_addr_set(HADDR_SOUTDOOR, sensorid));
+	return (ALL_OK);
 }
 
 /**
