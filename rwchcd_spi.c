@@ -407,7 +407,7 @@ out:
  */
 int spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
-	int ret = -ESPI;
+	int ret;
 	
 	assert(tsensors);
 	
@@ -445,7 +445,7 @@ int spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
  */
 int spi_ref_r(uint16_t * const refval, const uint8_t refn)
 {
-	int ret = -ESPI;
+	int ret;
 	uint8_t cmd;
 
 	assert(refval);
@@ -464,16 +464,20 @@ int spi_ref_r(uint16_t * const refval, const uint8_t refn)
 	SPI_RESYNC(cmd);
 
 	if (!spitout)
-		goto out;
-	
+		return (-ESPI);
+
+	/* same logic as spi_sensor_r() */
+	ret = ALL_OK;
+
 	*refval = SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
 	*refval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
-		goto out;
+		ret = -ESPI;
 
-	ret = ALL_OK;
-out:
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
+		ret = -ESPI;
+
 	return ret;
 }
 
