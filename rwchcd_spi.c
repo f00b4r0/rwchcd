@@ -10,6 +10,13 @@
  * @file
  * SPI backend implementation for rWCHC hardware.
  *
+ * The SPI logic and code flow must ensure that the firmware will never be left
+ * in a dangling state where an ongoing SPI call is interrupted.
+ * Thus, most of the functions here expect things to go well and
+ * flag if they don't. The point is that we must not interrupt
+ * the flow even if there is a mistransfer, since the firmware expects
+ * a full transfer regardless of errors.
+ *
  * @note the LCD operations assume fixed timings: although we could query the
  * hardware to confirm completion of the operation, it would typically be slower
  * due to the embedded delay in SPI_rw8bit().
@@ -116,18 +123,16 @@ int spi_fwversion(void)
  */
 int spi_lcd_acquire(void)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	SPI_RESYNC(RWCHC_SPIC_LCDACQR);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDACQR))
-		goto out;
-	
-	ret = ALL_OK;
-out:
+		ret = -ESPI;
+
 	return ret;
 }
 
@@ -138,18 +143,16 @@ out:
  */
 int spi_lcd_relinquish(void)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	SPI_RESYNC(RWCHC_SPIC_LCDRLQSH);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDRLQSH))
-		goto out;
-	
-	ret = ALL_OK;
-out:
+		ret = -ESPI;
+
 	return ret;
 }
 
@@ -160,18 +163,16 @@ out:
  */
 int spi_lcd_fade(void)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 
 	SPI_RESYNC(RWCHC_SPIC_LCDFADE);
 
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDFADE))
-		goto out;
+		ret = -ESPI;
 
-	ret = ALL_OK;
-out:
 	return ret;
 }
 
@@ -183,26 +184,24 @@ out:
  */
 int spi_lcd_cmd_w(const uint8_t cmd)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	SPI_RESYNC(RWCHC_SPIC_LCDCMDW);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(cmd, ~RWCHC_SPIC_LCDCMDW))
-		goto out;
-	
-	if (cmd & 0xFC)	// quick commands
+		ret = -ESPI;
+
+	if (cmd & 0xFC)	// XXX quick commands
 		usleep(USLEEPLCDFAST);
 	else	// clear/home
 		usleep(USLEEPLCDSLOW);
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
-		goto out;
-	
-	ret = ALL_OK;
-out:
+		ret = -ESPI;
+
 	return ret;
 }
 
@@ -214,23 +213,21 @@ out:
  */
 int spi_lcd_data_w(const uint8_t data)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	SPI_RESYNC(RWCHC_SPIC_LCDDATW);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(data, ~RWCHC_SPIC_LCDDATW))
-		goto out;
-	
+		ret = -ESPI;
+
 	usleep(USLEEPLCDFAST);	// wait for completion
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, data))
-		goto out;
-	
-	ret = ALL_OK;
-out:
+		ret = -ESPI;
+
 	return ret;
 }
 
@@ -243,82 +240,76 @@ out:
  */
 int spi_lcd_bl_w(const uint8_t percent)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	if (percent > 100)
-		return -EINVALID;
+		return (-EINVALID);
 	
 	SPI_RESYNC(RWCHC_SPIC_LCDBKLW);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(percent, ~RWCHC_SPIC_LCDBKLW))
-		goto out;
+		ret = -ESPI;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, percent))
-		goto out;
-	
-	ret = ALL_OK;
-out:
+		ret = -ESPI;
+
 	return ret;
 }
 
 /**
  * Read peripheral states.
  * Delay: none
- * @param outperiphs pointer to struct whose values will be populated to match current states
+ * @param periphs pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int spi_peripherals_r(union rwchc_u_outperiphs * const outperiphs)
+int spi_peripherals_r(union rwchc_u_periphs * const periphs)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
-	assert(outperiphs);
+	assert(periphs);
 	
 	SPI_RESYNC(RWCHC_SPIC_PERIPHSR);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
-	outperiphs->BYTE = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	periphs->BYTE = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
-		goto out;
+		ret = -ESPI;
 
-	ret = ALL_OK;
-out:
 	return ret;
 }
 
 /**
  * Write peripheral states.
  * Delay: none
- * @param outperiphs pointer to struct whose values are populated with desired states
+ * @param periphs pointer to struct whose values are populated with desired states
  * @return error code
  */
-int spi_peripherals_w(const union rwchc_u_outperiphs * const outperiphs)
+int spi_peripherals_w(const union rwchc_u_periphs * const periphs)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
-	assert(outperiphs);
+	assert(periphs);
 	
 	SPI_RESYNC(RWCHC_SPIC_PERIPHSW);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
-	if (!SPI_ASSERT(outperiphs->BYTE, ~RWCHC_SPIC_PERIPHSW))
-		goto out;
+	if (!SPI_ASSERT(periphs->BYTE, ~RWCHC_SPIC_PERIPHSW))
+		ret = -ESPI;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, outperiphs->BYTE))
-		goto out;
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, periphs->BYTE))
+		ret = -ESPI;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSW))
-		goto out;
+		ret = -ESPI;
 	
-	ret = ALL_OK;
-out:
 	return ret;
 }
 
@@ -367,39 +358,41 @@ out:
  */
 int spi_relays_w(const union rwchc_u_relays * const relays)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	assert(relays);
 	
 	SPI_RESYNC(RWCHC_SPIC_RELAYWL);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(relays->LOWB, ~RWCHC_SPIC_RELAYWL))
-		goto out;
-	
+		ret = -ESPI;
+
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->LOWB))
-		goto out;
-	
+		ret = -ESPI;
+
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWL))
+		ret = -ESPI;
+
+	if (ALL_OK != ret)	// don't bother trying to write the other half
 		goto out;
-	
+
 	SPI_RESYNC(RWCHC_SPIC_RELAYWH);	// resync since we have exited the atomic section in firmware
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(relays->HIGHB, ~RWCHC_SPIC_RELAYWH))
-		goto out;
-	
+		ret = -ESPI;
+
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->HIGHB))
-		goto out;
-	
+		ret = -ESPI;
+
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWH))
-		goto out;
-	
-	ret = ALL_OK;	// all good
+		ret = -ESPI;
+
 out:
 	return ret;
 }
@@ -493,23 +486,21 @@ out:
 int spi_settings_r(struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	assert(settings);
 
 	SPI_RESYNC(RWCHC_SPIC_SETTINGSR);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	for (i=0; i<sizeof(*settings); i++)
 		*((uint8_t *)settings+i) = SPI_rw8bit(i);
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSR))
-		goto out;
-	
-	ret = ALL_OK;
-out:
+		ret = -ESPI;
+
 	return ret;
 }
 
@@ -522,20 +513,14 @@ out:
 int spi_settings_w(const struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	assert(settings);
 	
 	SPI_RESYNC(RWCHC_SPIC_SETTINGSW);
 	
 	if (!spitout)
-		goto out;
-	
-	/* From here we invert the expectancy logic: we expect things to go well
-	 * and we'll flag if they don't. The point is that we must not interrupt
-	 * the loop even if there is a mistransfer, since the firmware expects
-	 * a full transfer regardless of errors. */
-	ret = ALL_OK;
+		return (-ESPI);
 	
 	for (i=0; i<sizeof(*settings); i++)
 		if (SPI_rw8bit(*((const uint8_t *)settings+i)) != i)
@@ -544,7 +529,6 @@ int spi_settings_w(const struct rwchc_s_settings * const settings)
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSW))
 		ret = -ESPI;
 
-out:
 	return ret;
 }
 
@@ -555,18 +539,16 @@ out:
  */
 int spi_settings_s(void)
 {
-	int ret = -ESPI;
+	int ret = ALL_OK;
 	
 	SPI_RESYNC(RWCHC_SPIC_SETTINGSS);
 	
 	if (!spitout)
-		goto out;
+		return (-ESPI);
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
-		goto out;
+		ret = -ESPI;
 	
-	ret = ALL_OK;
-out:
 	return ret;
 }
 
@@ -584,19 +566,12 @@ int spi_reset(void)
 	SPI_RESYNC(RWCHC_SPIC_RESET);
 
 	if (!spitout)
-		goto out;
-	
-	/* From here we invert the expectancy logic: we expect things to go well
-	 * and we'll flag if they don't. The point is that we must not interrupt
-	 * the loop even if there is a mistransfer, since the firmware expects
-	 * a full transfer regardless of errors. */
-	ret = ALL_OK;
+		return (-ESPI);
 	
 	for (i=0; i<ARRAY_SIZE(trig); i++)
 		if (SPI_rw8bit(trig[i]) != i)
 			ret = -ESPI;
 
-out:
 	return ret;
 }
 

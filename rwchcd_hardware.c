@@ -93,7 +93,7 @@ static struct {
 	int fwversion;			///< firmware version
 	struct rwchc_s_settings settings;
 	union rwchc_u_relays relays;		// XXX locks
-	union rwchc_u_outperiphs peripherals;	// XXX locks
+	union rwchc_u_periphs peripherals;	// XXX locks
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];	// XXX locks
 } Hardware;
 
@@ -1083,19 +1083,20 @@ int hardware_input(void)
 		goto out;
 	}
 	
-	// detect alarm condition - XXX HACK
-	if (Hardware.peripherals.LED2) {
+	// detect alarm condition
+	if (Hardware.peripherals.i_alarm) {
 		// clear alarm
-		Hardware.peripherals.LED2 = 0;
-		Hardware.peripherals.buzzer = 0;
-		Hardware.peripherals.LCDbl = 0;
+		Hardware.peripherals.o_LED2 = 0;
+		Hardware.peripherals.o_buzz = 0;
+		Hardware.peripherals.o_LCDbl = 0;
+		Hardware.peripherals.i_alarm = 0;
 		lcd_reset();
 		// XXX reset runtime?
 	}
 	
 	// handle switch 1
-	if (Hardware.peripherals.RQSW1) {
-		Hardware.peripherals.RQSW1 = 0;
+	if (Hardware.peripherals.i_SW1) {
+		Hardware.peripherals.i_SW1 = 0;
 		count = 5;
 
 		// change system mode
@@ -1111,10 +1112,10 @@ int hardware_input(void)
 	}
 	
 	// handle switch 2
-	if (Hardware.peripherals.RQSW2) {
+	if (Hardware.peripherals.i_SW2) {
 		// increase displayed tempid
 		tempid++;
-		Hardware.peripherals.RQSW2 = 0;
+		Hardware.peripherals.i_SW2 = 0;
 		count = 5;
 		
 		if (tempid > runtime->config->nsensors)
@@ -1125,13 +1126,13 @@ int hardware_input(void)
 	
 	// trigger timed backlight
 	if (count) {
-		Hardware.peripherals.LCDbl = 1;
+		Hardware.peripherals.o_LCDbl = 1;
 		count--;
 		if (!count)
 			lcd_fade();	// apply fadeout
 	}
 	else
-		Hardware.peripherals.LCDbl = 0;
+		Hardware.peripherals.o_LCDbl = 0;
 	
 	// calibrate
 	ret = hardware_calibrate();
