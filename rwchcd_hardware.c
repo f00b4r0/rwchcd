@@ -570,6 +570,27 @@ out:
 }
 
 /**
+ * Update internal relay system based on target state.
+ * @param rWCHC_relays target internal relay system
+ * @param id target relay id (from 0)
+ * @param state target state
+ */
+static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const relid_t id, const bool state)
+{
+	uint_fast8_t rid = id;
+
+	// adapt relay id XXX REVISIT
+	if (rid > 6)
+		rid++;	// skip the hole
+
+	// set state for triac control
+	if (state)
+		setbit(rWCHC_relays->ALL, rid);
+	else
+		clrbit(rWCHC_relays->ALL, rid);
+}
+
+/**
  * Write all relays
  * This function updates all known hardware relays according to their desired turn_on
  * state. This function also does time and cycle accounting for the relays.
@@ -581,7 +602,7 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 	struct s_stateful_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
-	uint_fast8_t rid, i;
+	uint_fast8_t i;
 	enum {CHNONE = 0, CHTURNON, CHTURNOFF } change = CHNONE;
 	int ret = -EGENERIC;
 
@@ -624,16 +645,8 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 		// update state time counter
 		relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
-		// extract relay id XXX REVISIT
-		rid = i;
-		if (rid > 6)
-			rid++;	// skip the hole
-
-		// set state for triac control
-		if (relay->run.turn_on)
-			setbit(rWCHC_relays.ALL, rid);
-		else
-			clrbit(rWCHC_relays.ALL, rid);
+		// update internal structure
+		rwchc_relay_set(&rWCHC_relays, i, relay->run.turn_on);
 	}
 
 	// save/log relays state if there was a change
@@ -804,10 +817,11 @@ int hardware_sensor_alarm(const tempid_t id)
  * Request a hardware relay.
  * Ensures that the desired hardware relay is available and grabs it.
  * @param id target relay id (starting from 1)
+ * @param failstate the state assumed by the hardware relay in standalone failover (controlling software failure)
  * @param name the user-defined name for this relay (string will be copied locally)
  * @return exec status
  */
-int hardware_relay_request(const relid_t id, const char * const name)
+int hardware_relay_request(const relid_t id, const bool failstate, const char * const name)
 {
 	char * str = NULL;
 
@@ -824,6 +838,9 @@ int hardware_relay_request(const relid_t id, const char * const name)
 
 		Relays[id-1].name = str;
 	}
+
+	// register failover state
+	rwchc_relay_set(&Hardware.settings.deffail, id-1, failstate);
 
 	Relays[id-1].run.off_since = time(NULL);	// XXX hack
 
@@ -948,6 +965,11 @@ int hardware_online(void)
 
 	if (!Hardware.ready)
 		return (-EOFFLINE);
+
+	// save settings - for deffail
+	ret = hardware_config_store();
+	if (ret)
+		goto fail;
 	
 	// calibrate
 	ret = hardware_calibrate();

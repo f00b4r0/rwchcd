@@ -239,7 +239,7 @@ static int init_process()
 		return ret;
 	boiler->set.id_temp = SENSOR_BURNER;
 	boiler->set.id_temp_outgoing = boiler->set.id_temp;
-	ret = hardware_relay_request(RELAY_BURNER, "burner");
+	ret = hardware_relay_request(RELAY_BURNER, OFF, "burner");
 	if (ret)
 		return (ret);
 	else
@@ -299,13 +299,13 @@ static int init_process()
 	valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30), 10);
 	
 	// configure two relays for that valve
-	ret = hardware_relay_request(RELAY_VOPEN, "v_open");
+	ret = hardware_relay_request(RELAY_VOPEN, OFF, "v_open");
 	if (ret)
 		return (ret);
 	else
 		circuit->valve->set.rid_open = RELAY_VOPEN;
 	
-	ret = hardware_relay_request(RELAY_VCLOSE, "v_close");
+	ret = hardware_relay_request(RELAY_VCLOSE, OFF, "v_close");
 	if (ret)
 		return (ret);
 	else
@@ -321,7 +321,7 @@ static int init_process()
 	}
 
 	// configure a relay for that pump
-	ret = hardware_relay_request(RELAY_PUMP, "pump");
+	ret = hardware_relay_request(RELAY_PUMP, ON, "pump");
 	if (ret)
 		return (ret);
 	else
