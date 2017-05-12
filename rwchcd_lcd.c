@@ -23,6 +23,7 @@
 #include "rwchcd_runtime.h"
 #include "rwchcd_lib.h"
 #include "rwchcd_hardware.h"
+#include "rwchcd_alarms.h"
 #include "rwchcd_lcd.h"
 
 #define LCD_LINELEN	16	///< width of LCD display line
@@ -31,6 +32,7 @@ static struct {
 	bool online;
 	bool reset;	///< true if full refresh of the display is necessary
 	bool L2mngd;	///< true if 2nd line is managed by software
+	bool L2mngd_prev;	///< this flag is necessary to account for the fact that the firmware will modify the 2nd line
 	tempid_t sensor;	///< current sensor displayed on LCD
 	uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
 	uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
@@ -38,6 +40,7 @@ static struct {
 	.online = false,
 	.reset = false,
 	.L2mngd = false,
+	.L2mngd_prev = false,
 	.sensor = 1,
 };
 
@@ -109,11 +112,13 @@ static int lcd_buflclear(const uint_fast8_t linenb)
  * @param on true if under our control
  * @return exec status
  */
-static int lcd_handle2ndline(const bool on)
+static inline void lcd_handle2ndline(const bool on)
 {
 	LCD.L2mngd = on;
-	
-	return (ALL_OK);
+
+	// handle reset of "L2 previously under management" flag, set in lcd_update()
+	if (!on)
+		LCD.L2mngd_prev = on;
 }
 
 /**
@@ -279,6 +284,7 @@ int lcd_online(void)
  */
 int lcd_update(const bool force)
 {
+	bool l2force = force;
 	int ret;
 
 	if (!LCD.online)
@@ -288,9 +294,14 @@ int lcd_update(const bool force)
 	if (ret)
 		goto out;
 	
-	if (LCD.L2mngd)
-		ret = lcd_uline(1, force);
-	
+	if (LCD.L2mngd) {
+		if (!LCD.L2mngd_prev) {
+			l2force = true;
+			LCD.L2mngd_prev = true;
+		}
+		ret = lcd_uline(1, l2force);
+	}
+
 out:
 	return (ret);
 }
@@ -409,10 +420,30 @@ int lcd_set_tempid(const tempid_t tempid)
  */
 int lcd_run(void)
 {
+	static char alarml1[LCD_LINELEN];
+	const char * alarm_msg16;
+	int alcnt;
+	size_t len;
+
 	if (!LCD.online)
 		return (-EOFFLINE);
 
-	lcd_line1();
+	alcnt = alarms_count();
+	if (alcnt) {
+		snprintf(alarml1, sizeof(alarml1), _("ALARMS: %d"), alcnt);
+		lcd_buflclear(0);
+		lcd_wline((const uint8_t *)alarml1, strlen(alarml1), 0, 0);
+		alarm_msg16 = alarms_msg_iterator(true);
+		len = strlen(alarm_msg16);
+		lcd_handle2ndline(true);
+		lcd_buflclear(1);
+		lcd_wline((const uint8_t *)alarm_msg16, (len > LCD_LINELEN) ? LCD_LINELEN : len, 1, 0);
+	}
+	else {
+		lcd_handle2ndline(false);
+		lcd_line1();
+	}
+
 	lcd_update(LCD.reset);
 
 	LCD.reset = false;
