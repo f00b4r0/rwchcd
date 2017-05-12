@@ -22,6 +22,7 @@
 #include "rwchcd_storage.h"
 #include "rwchcd_timer.h"
 #include "rwchcd_models.h"
+#include "rwchcd_hardware.h"	// hardware_sensor_alarm()
 
 #define LOG_INTVL_RUNTIME	900
 #define LOG_INTVL_TEMPS		60
@@ -141,15 +142,20 @@ static int runtime_async_log_temps(void)
 static void outdoor_temp()
 {
 	static time_t last60 = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
+	const tempid_t tid = Runtime.config->id_temp_outdoor;
 	const time_t now = time(NULL);
 	const time_t dt60 = now - last60;
-	const temp_t toutdoor = get_temp(Runtime.config->id_temp_outdoor);
+	const temp_t toutdoor = get_temp(tid);
+	int ret;
 
-	if (validate_temp(toutdoor) != ALL_OK)
-		Runtime.t_outdoor = Runtime.config->limit_tfrost-1;	// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
-	else
+	ret = validate_temp(toutdoor);
+	if (ALL_OK == ret)
 		Runtime.t_outdoor = toutdoor + Runtime.config->set_temp_outdoor_offset;
-	
+	else {
+		Runtime.t_outdoor = Runtime.config->limit_tfrost-1;	// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
+		hardware_sensor_alarm(tid);
+	}
+
 	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
 
 	last60 = now;
