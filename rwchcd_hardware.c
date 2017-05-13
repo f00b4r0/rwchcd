@@ -184,7 +184,7 @@ __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((pure)) static float quadratic_cvd(const float R0, const float A, const float B, const uint_fast16_t ohm)
+__attribute__((const)) static float quadratic_cvd(const float R0, const float A, const float B, const uint_fast16_t ohm)
 {
 	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
 	return ((-R0*A + sqrtf(R0*R0*A*A - 4.0F*R0*B*(R0 - ohm))) / (2.0F*R0*B));
@@ -196,7 +196,7 @@ __attribute__((pure)) static float quadratic_cvd(const float R0, const float A, 
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((pure)) static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
+__attribute__((const)) static float pt1000_ohm_to_celsius(const uint_fast16_t ohm)
 {
 	const float R0 = 1000.0F;
 	const float alpha = 0.003850F;
@@ -216,7 +216,7 @@ __attribute__((pure)) static float pt1000_ohm_to_celsius(const uint_fast16_t ohm
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((pure)) static float ni1000_ohm_to_celsius(const uint_fast16_t ohm)
+__attribute__((const)) static float ni1000_ohm_to_celsius(const uint_fast16_t ohm)
 {
 	const float R0 = 1000.0F;
 	const float A = 5.485e-3;
@@ -575,7 +575,7 @@ out:
  * @param id target relay id (from 0)
  * @param state target state
  */
-static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const relid_t id, const bool state)
+__attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const relid_t id, const bool state)
 {
 	uint_fast8_t rid = id;
 

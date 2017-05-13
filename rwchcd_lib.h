@@ -24,7 +24,7 @@ temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time
  * @param celsius temp value in Celsius
  * @return value converted to internal type
  */
-__attribute__((pure, always_inline)) static inline temp_t celsius_to_temp(const float celsius)
+__attribute__((const, always_inline)) static inline temp_t celsius_to_temp(const float celsius)
 {
 	return ((temp_t)((celsius + 273.15F)*KPRECISIONI));
 }
@@ -34,7 +34,7 @@ __attribute__((pure, always_inline)) static inline temp_t celsius_to_temp(const 
  * @param temp temp value as temp_t
  * @return value converted to Celsius
  */
-__attribute__((pure, always_inline)) static inline float temp_to_celsius(const temp_t temp)
+__attribute__((const, always_inline)) static inline float temp_to_celsius(const temp_t temp)
 {
 	return ((float)((float)temp/KPRECISIONF - 273.15F));
 }
@@ -44,7 +44,7 @@ __attribute__((pure, always_inline)) static inline float temp_to_celsius(const t
  * @param delta the delta value to be converted
  * @return the corresponding value expressed in internal temperature format.
  */
-__attribute__((pure, always_inline)) static inline temp_t deltaK_to_temp(const float delta)
+__attribute__((const, always_inline)) static inline temp_t deltaK_to_temp(const float delta)
 {
 	return ((temp_t)(delta * KPRECISIONI));
 }
@@ -54,7 +54,7 @@ __attribute__((pure, always_inline)) static inline temp_t deltaK_to_temp(const f
  * @param temp the internal delta value to be converted
  * @return the value converted to Kelvin
  */
-__attribute__((pure, always_inline)) static inline float temp_to_deltaK(const temp_t temp)
+__attribute__((const, always_inline)) static inline float temp_to_deltaK(const temp_t temp)
 {
 	return ((float)((float)temp/KPRECISIONF));
 }
@@ -65,7 +65,7 @@ __attribute__((pure, always_inline)) static inline float temp_to_deltaK(const te
  * @param tau target tau
  * @return minimum usable time interval
  */
-__attribute__((pure, always_inline)) static inline time_t expw_mavg_dtmin(const time_t tau)
+__attribute__((const, always_inline)) static inline time_t expw_mavg_dtmin(const time_t tau)
 {
 	return (/*ceilf*/(((1.0F/KPRECISIONF)*tau)/(1.0F-(1.0F/KPRECISIONF))) * 2);
 }
@@ -75,7 +75,7 @@ __attribute__((pure, always_inline)) static inline time_t expw_mavg_dtmin(const 
  * @param temp the value to validate
  * @return validation result
  */
-__attribute__((pure, always_inline)) static inline int validate_temp(const temp_t temp)
+__attribute__((const, always_inline)) static inline int validate_temp(const temp_t temp)
 {
 	int ret = ALL_OK;
 
