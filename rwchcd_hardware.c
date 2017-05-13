@@ -1004,6 +1004,7 @@ bool hardware_is_online(void)
  * Collect inputs from hardware.
  * @note Will process switch inputs.
  * @return exec status
+ * @todo review logic
  */
 int hardware_input(void)
 {
@@ -1021,15 +1022,24 @@ int hardware_input(void)
 		goto out;
 	}
 	
-	// detect alarm condition
+	// detect hardware alarm condition
 	if (Hardware.peripherals.i_alarm) {
+		pr_log("Hardware in alarm");
 		// clear alarm
-		Hardware.peripherals.o_LED2 = 0;
-		Hardware.peripherals.o_buzz = 0;
-		Hardware.peripherals.o_LCDbl = 0;
 		Hardware.peripherals.i_alarm = 0;
 		lcd_reset();
 		// XXX reset runtime?
+	}
+
+	// handle software alarm
+	if (alarms_count()) {
+		Hardware.peripherals.o_LED2 = 1;
+		Hardware.peripherals.o_buzz = !Hardware.peripherals.o_buzz;
+		count = 2;
+	}
+	else {
+		Hardware.peripherals.o_LED2 = 0;
+		Hardware.peripherals.o_buzz = 0;
 	}
 	
 	// handle switch 1
