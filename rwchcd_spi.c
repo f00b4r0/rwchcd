@@ -565,7 +565,7 @@ int spi_reset(void)
 {
 	const uint8_t trig[] = RWCHC_RESET_TRIGGER;
 	unsigned int i;
-	int ret = -ESPI;
+	int ret = ALL_OK;
 
 	SPI_RESYNC(RWCHC_SPIC_RESET);
 
