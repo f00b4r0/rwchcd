@@ -19,6 +19,7 @@
 #include "rwchc_export.h"
 
 int spi_keepalive(void) __attribute__((warn_unused_result));
+int spi_fwversion(void);
 int spi_lcd_acquire(void) __attribute__((warn_unused_result));
 int spi_lcd_relinquish(void) __attribute__((warn_unused_result));
 int spi_lcd_fade(void) __attribute__((warn_unused_result));

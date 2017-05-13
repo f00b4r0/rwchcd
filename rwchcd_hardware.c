@@ -90,6 +90,7 @@ static struct {
 	time_t last_calib;		///< time of last calibration
 	float calib_nodac;		///< sensor calibration value without dac offset
 	float calib_dac;		///< sensor calibration value with dac offset
+	int fwversion;			///< firmware version
 	struct rwchc_s_settings settings;
 	union rwchc_u_relays relays;		// XXX locks
 	union rwchc_u_outperiphs peripherals;	// XXX locks
@@ -552,15 +553,20 @@ int hardware_init(void)
 	memset(Sensors, 0x0, sizeof(Sensors));
 	memset(&Hardware, 0x0, sizeof(Hardware));
 
-	// fetch hardware config
+	// fetch firmware version
 	do {
-		ret = hardware_config_fetch(&(Hardware.settings));
-	} while (ret && (i++ < RWCHCD_INIT_MAX_TRIES));
+		ret = spi_fwversion();
+	} while ((ret <= 0) && (i++ < RWCHCD_INIT_MAX_TRIES));
 
-	if (ALL_OK == ret)
+	if (ret > 0) {
+		pr_log("Firmware version %d detected", ret);
+		Hardware.fwversion = ret;
+		// fetch hardware config
+		ret = hardware_config_fetch(&(Hardware.settings));
 		Hardware.ready = true;
+	}
 	else
-		dbgerr("hardware_config_fetch failed");
+		dbgerr("hardware_init failed");
 
 	return (ret);
 }
@@ -996,6 +1002,18 @@ int hardware_relay_get_state(const relid_t id)
 	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 	return (relay->run.is_on);
+}
+
+/**
+ * Firmware version.
+ * @return positive version or negative error
+ */
+int hardware_fwversion(void)
+{
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+
+	return (Hardware.fwversion);
 }
 
 /**

@@ -88,6 +88,28 @@ int spi_keepalive(void)
 }
 
 /**
+ * Retrieve firmware version number.
+ * Delay: none
+ * @return negative error code or positive version number
+ */
+int spi_fwversion(void)
+{
+	int ret;
+
+	SPI_RESYNC(RWCHC_SPIC_VERSION);
+
+	if (!spitout)
+		return (-ESPI);
+
+	ret = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_VERSION))
+		ret = -ESPI;
+
+	return ret;
+}
+
+/**
  * Acquire control over LCD display.
  * Delay: none
  * @return error code
