@@ -9,9 +9,6 @@
 /**
  * @file
  * Hardware interface implementation.
- *
- * @todo reflect runtime errors on hardware (LED/LCD)
- * @todo implement failsafe relay state config
  */
 
 #include <time.h>	// time

@@ -30,6 +30,7 @@
  * connection of multiple instances
  * multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
+ * @warning must ensure that hardware_init happens before dropping priviledges or spi_init() will fail.
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
@@ -523,6 +524,8 @@ int main(void)
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
 		errx(ret, "failed to create master thread!");
+
+#warning TODO should wait for init sequence completion here
 	
 	ret = pthread_create(&watchdog_thr, NULL, thread_watchdog, &pipefd[0]);
 	if (ret)

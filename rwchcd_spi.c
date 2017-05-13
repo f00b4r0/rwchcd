@@ -1,8 +1,8 @@
 //
-//  rWCHCd_spi.c
-//  A simple daemon for rWCHC
+//  rwchcd_spi.c
+//  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016-2017 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -441,7 +441,6 @@ int spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
  * @param refn target reference number to be read (0 or 1)
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
- * @todo XXX TODO: modify firmware to use the same logic as sensor_r()
  */
 int spi_ref_r(uint16_t * const refval, const uint8_t refn)
 {
