@@ -1710,10 +1710,10 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	}
 	
 	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
-	   apply histeresis on logic: trip at target - histeresis (preferably on top sensor),
-	   untrip at target (preferably on bottom sensor). */
+	   apply histeresis on logic: trip at target - histeresis (preferably on bottom sensor),
+	   untrip at target (preferably on top sensor). */
 	if (!dhwt->run.charge_on) {	// no charge in progress
-		// check for overtime charge
+		// prevent charge "pumping", enforce delay between charges
 		limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
 		if (dhwt->run.charge_overtime) {
 			if (limit && ((now - dhwt->run.mode_since) <= limit))
@@ -1722,11 +1722,11 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 				dhwt->run.charge_overtime = false;	// reset status
 		}
 		
-		if (valid_ttop)	// prefer top temp if available (trip charge when top is cold)
-			curr_temp = top_temp;
-		else
+		if (valid_tbottom)	// prefer bottom temp if available (trip charge when bottom is cold)
 			curr_temp = bottom_temp;
-		
+		else
+			curr_temp = top_temp;
+
 		// set trip point to (target temp - histeresis)
 		if (dhwt->run.force_on)
 			trip_temp = dhwt->run.target_temp - deltaK_to_temp(1);	// if forced charge, force histeresis at 1K
@@ -1775,11 +1775,11 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		}
 	}
 	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
-		if (valid_tbottom)	// prefer bottom temp if available (untrip charge when bottom is hot)
-			curr_temp = bottom_temp;
-		else
+		if (valid_ttop)	// prefer top temp if available (untrip charge when top is hot)
 			curr_temp = top_temp;
-		
+		else
+			curr_temp = bottom_temp;
+
 		// untrip conditions
 		test = false;
 
