@@ -251,6 +251,7 @@ struct s_dhw_tank {
 		bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
 		bool legionella_on;		///< true if anti-legionella charge is required
 		bool charge_overtime;		///< true if charge went overtime
+		bool electric_mode;		///< true if operating on electric heater
 		enum e_runmode runmode;		///< dhwt actual (computed) runmode
 		temp_t target_temp;		///< current target temp for this tank
 		temp_t heat_request;		///< current temp request from heat source for this circuit

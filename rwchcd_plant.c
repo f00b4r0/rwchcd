@@ -1584,15 +1584,9 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
+	// clear runtime data
+	memset(&(dhwt->run), 0x00, sizeof(dhwt->run));
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	dhwt->run.target_temp = 0;
-	dhwt->run.charge_on = false;
-	dhwt->run.force_on = false;
-	dhwt->run.recycle_on = false;
-	dhwt->run.legionella_on = false;
-	dhwt->run.charge_overtime = false;
-	dhwt->run.mode_since = 0;
-	dhwt->run.charge_yday = 0;
 
 	if (dhwt->feedpump)
 		pump_offline(dhwt->feedpump);
@@ -1633,7 +1627,6 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  * of the set limit.
  * @param dhwt target dhwt
  * @return error status
- * @bug pump management for discharge protection needs review
  * @todo XXX TODO: implement dhwprio glissante/absolue for heat request
  * @todo XXX TODO: implement working on electric without sensor
  * @bug discharge protection might fail if the input sensor needs water flow
@@ -1738,8 +1731,10 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			if (runtime->plant_could_sleep && dhwt->set.rid_selfheater) {
 				// the plant is sleeping and we have a configured self heater: use it
 				hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
+				dhwt->run.electric_mode = true;
 			}
 			else {	// run from plant heat source
+				dhwt->run.electric_mode = false;
 				// calculate necessary water feed temp: target tank temp + offset
 				water_temp = dhwt->run.target_temp + SETorDEF(dhwt->set.params.temp_inoffset, runtime->config->def_dhwt.temp_inoffset);
 
@@ -1750,23 +1745,6 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 
 				// apply heat request
 				dhwt->run.heat_request = water_temp;
-
-				/* feedpump management */
-
-				test = ON;	// by default, turn on pump
-
-				// if available, test for inlet water temp
-				water_temp = get_temp(dhwt->set.id_temp_win);	// XXX REVIEW: if this sensor relies on pump running for accurate read, then this can be a problem
-				ret = validate_temp(water_temp);
-				if (ALL_OK == ret) {
-					// discharge protection: if water feed temp is < dhwt current temp, stop the pump
-					if (water_temp < curr_temp)	// XXX REVIEW: no histeresis
-						test = OFF;
-				}
-
-				// turn feedpump on
-				if (dhwt->feedpump)
-					pump_set_state(dhwt->feedpump, test, NOFORCE);
 			}
 			
 			// mark heating in progress
@@ -1799,8 +1777,35 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			// stop self-heater (if any)
 			hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
-			/* feedpump management */
+			// clear heat request
+			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 
+			// untrip force charge: force can run only once
+			dhwt->run.force_on = false;
+
+			// mark heating as done
+			dhwt->run.charge_on = false;
+			dhwt->run.mode_since = now;
+		}
+	}
+
+	// handle feedpump - outside of the trigger since we need to manage inlet temp
+	if (dhwt->feedpump) {
+		if (dhwt->run.charge_on && !dhwt->run.electric_mode) {	// on heatsource charge
+			// if available, test for inlet water temp
+			water_temp = get_temp(dhwt->set.id_temp_win);	// XXX REVIEW: if this sensor relies on pump running for accurate read, then this can be a problem
+			ret = validate_temp(water_temp);
+			if (ALL_OK == ret) {
+				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
+				if (water_temp < curr_temp)
+					pump_set_state(dhwt->feedpump, OFF, FORCE);
+				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K histeresis
+					pump_set_state(dhwt->feedpump, ON, NOFORCE);
+			}
+			else
+				pump_set_state(dhwt->feedpump, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
+		}
+		else {				// no charge or electric charge
 			test = FORCE;	// by default, force feedpump immediate turn off
 
 			// if available, test for inlet water temp
@@ -1813,20 +1818,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			}
 
 			// turn off pump with conditional cooldown
-			if (dhwt->feedpump)
-				pump_set_state(dhwt->feedpump, OFF, test);
-
-			/* end feedpump management */
-
-			// clear heat request
-			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-
-			// untrip force charge: force can run only once
-			dhwt->run.force_on = false;
-
-			// mark heating as done
-			dhwt->run.charge_on = false;
-			dhwt->run.mode_since = now;
+			pump_set_state(dhwt->feedpump, OFF, test);
 		}
 	}
 
