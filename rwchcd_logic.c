@@ -109,13 +109,12 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  */
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
-	static time_t dtmin = 0;	// XXX updates only once
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	enum e_runmode prev_runmode;
 	temp_t request_temp, diff_temp;
 	temp_t ambient_temp, ambient_delta = 0;
-	time_t elapsed_time;
+	time_t elapsed_time, dtmin;
 	const time_t now = time(NULL);
 	bool can_fastcool;
 	
@@ -189,10 +188,10 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	}
 	else {	// no sensor (or faulty), apply ambient model
 		ambient_temp = circuit->run.actual_ambient;
+		dtmin = expw_mavg_dtmin(3*bmodel->set.tau);
 		
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
 		if (RM_OFF == circuit->run.runmode) {
-			dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*bmodel->set.tau);
 			elapsed_time = now - circuit->run.ambient_update_time;
 			if (elapsed_time > dtmin) {
 				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
@@ -204,7 +203,6 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
 			switch (circuit->run.transition) {
 				case TRANS_DOWN:
-					dtmin = dtmin ? dtmin : expw_mavg_dtmin(3*bmodel->set.tau);	// XXX
 					elapsed_time = now - circuit->run.ambient_update_time;
 					// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 					// all necessary data is _always_ available, no need to special case here
