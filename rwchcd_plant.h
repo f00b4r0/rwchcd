@@ -30,6 +30,7 @@ struct s_pump {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)
+		bool dwht_use;			///< true if pump is currently used by active DHWT
 		time_t actual_cooldown_time;	///< actual cooldown time remaining
 		bool req_on;			///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
@@ -81,6 +82,7 @@ struct s_valve {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
+		bool dwht_use;		///< true if valve is currently used by active DHWT
 		bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
 		bool ctrl_reset;	///< true if controller algorithm must be reset
 		int_fast16_t actual_position;	///< estimated current position in ‰

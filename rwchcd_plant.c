@@ -1570,6 +1570,28 @@ out:
 }
 
 /**
+ * Flag actuators currently used.
+ * This function is necessary to ensure proper behavior of the summer maintenance
+ * system:
+ * - When the DHWT is in active use (ECO/COMFORT) then the related actuators
+ *   are flagged in use.
+ * - When the DHWT is offline or in FROSTFREE then the related actuators are
+ *   unflagged. This works because the summer maintenance can only run when
+ *   frost condition is @b GUARANTEED not to happen.
+ * @note the feedpump is @b NOT unflagged when running electric to avoid sending
+ * cold water into the feed circuit. Thus the feedpump cannot be "summer maintained"
+ * when the DHWT is running electric.
+ */
+static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active)
+{
+	if (dhwt->feedpump)
+		dhwt->feedpump->run.dwht_use = active;
+
+	if (dhwt->recyclepump)
+		dhwt->recyclepump->run.dwht_use = active;
+}
+
+/**
  * Put dhwt offline.
  * Perform all necessary actions to completely shut down the dhwt but
  * DO NOT MARK IT AS OFFLINE.
@@ -1587,6 +1609,8 @@ static int dhwt_offline(struct s_dhw_tank * const dhwt)
 	// clear runtime data
 	memset(&(dhwt->run), 0x00, sizeof(dhwt->run));
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+
+	dhwt_actuator_use(dhwt, false);
 
 	if (dhwt->feedpump)
 		pump_offline(dhwt->feedpump);
@@ -1655,7 +1679,10 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			return (dhwt_offline(dhwt));
 		case RM_COMFORT:
 		case RM_ECO:
+			dhwt_actuator_use(dhwt, true);
+			break;
 		case RM_FROSTFREE:
+			dhwt_actuator_use(dhwt, false);
 			break;
 		case RM_MANUAL:
 			if (dhwt->feedpump)
@@ -2537,6 +2564,9 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 
 	// open all valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
+		if (valvel->valve->run.dwht_use)
+			continue;	// don't touch DHWT valves when in use
+
 		ret = valve_reqopen_full(valvel->valve);
 
 		if (ALL_OK != ret)
@@ -2545,6 +2575,9 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 
 	// set all pumps ON
 	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
+		if (pumpl->pump->run.dwht_use)
+			continue;	// don't touch DHWT pumps when in use
+
 		ret = pump_set_state(pumpl->pump, ON, NOFORCE);
 
 		if (ALL_OK != ret)
