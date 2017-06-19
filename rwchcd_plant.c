@@ -1706,13 +1706,15 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 	   apply histeresis on logic: trip at target - histeresis (preferably on bottom sensor),
 	   untrip at target (preferably on top sensor). */
 	if (!dhwt->run.charge_on) {	// no charge in progress
-		// prevent charge "pumping", enforce delay between charges
-		limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
-		if (dhwt->run.charge_overtime) {
-			if (limit && ((now - dhwt->run.mode_since) <= limit))
-				return (ALL_OK); // no further processing, must wait
-			else
-				dhwt->run.charge_overtime = false;	// reset status
+		// in non-electric mode: prevent charge "pumping", enforce delay between charges
+		if (!dhwt->run.electric_mode) {
+			limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
+			if (dhwt->run.charge_overtime) {
+				if (limit && ((now - dhwt->run.mode_since) <= limit))
+					return (ALL_OK); // no further processing, must wait
+				else
+					dhwt->run.charge_overtime = false;	// reset status
+			}
 		}
 		
 		if (valid_tbottom)	// prefer bottom temp if available (trip charge when bottom is cold)
@@ -1761,11 +1763,13 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		// untrip conditions
 		test = false;
 
-		// if heating gone overtime, untrip
-		limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
-		if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
-			test = true;
-			dhwt->run.charge_overtime = true;
+		// in non-electric mode: if heating gone overtime, untrip
+		if (!dhwt->run.electric_mode) {
+			limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
+			if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
+				test = true;
+				dhwt->run.charge_overtime = true;
+			}
 		}
 
 		// if heating in progress, untrip at target temp
