@@ -1,5 +1,5 @@
 //
-//  rwchcd_plant.h
+//  plant.h
 //  
 //
 //  (C) 2016-2017 Thibaut VARENE

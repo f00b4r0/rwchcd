@@ -1,5 +1,5 @@
 //
-//  rwchcd_plant.c
+//  plant.c
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE
@@ -24,13 +24,13 @@
 #include <assert.h>
 #include <string.h>
 
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_lib.h"
-#include "rwchcd_hardware.h"
-#include "rwchcd_logic.h"
-#include "rwchcd_plant.h"
-#include "rwchcd_models.h"
+#include "config.h"
+#include "runtime.h"
+#include "lib.h"
+#include "hardware.h"
+#include "logic.h"
+#include "plant.h"
+#include "models.h"
 
 /*- PUMP -*/
 

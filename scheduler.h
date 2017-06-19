@@ -1,5 +1,5 @@
 //
-//  rwchcd_scheduler.h
+//  scheduler.h
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE

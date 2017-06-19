@@ -1,5 +1,5 @@
 //
-//  rwchcd_storage.h
+//  storage.h
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE

@@ -1,5 +1,5 @@
 //
-//  rwchcd_timer.h
+//  timer.h
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE

@@ -1,5 +1,5 @@
 //
-//  rwchcd_alarms.c
+//  alarms.c
 //  rwchcd
 //
 //  (C) 2017 Thibaut VARENE
@@ -27,7 +27,7 @@
 #include <string.h>
 
 #include "rwchcd.h"
-#include "rwchcd_alarms.h"
+#include "alarms.h"
 
 /** alarm entry */
 struct s_alarm {

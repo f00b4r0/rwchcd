@@ -1,5 +1,5 @@
 //
-//  rwchcd_scheduler.c
+//  scheduler.c
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
@@ -21,8 +21,8 @@
 #include <time.h>
 #include <pthread.h>
 
-#include "rwchcd_runtime.h"
-#include "rwchcd_scheduler.h"
+#include "runtime.h"
+#include "scheduler.h"
 
 /** A schedule item for a given day. */
 struct s_schedule {

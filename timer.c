@@ -1,5 +1,5 @@
 //
-//  rwchcd_timer.c
+//  timer.c
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
@@ -16,13 +16,13 @@
 #include <assert.h>
 
 #include "rwchcd.h"
-#include "rwchcd_lib.h"
-#include "rwchcd_hardware.h"
-#include "rwchcd_plant.h"
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_storage.h"
-#include "rwchcd_timer.h"
+#include "lib.h"
+#include "hardware.h"
+#include "plant.h"
+#include "config.h"
+#include "runtime.h"
+#include "storage.h"
+#include "timer.h"
 
 /** timer callbacks */
 struct s_timer_cb {

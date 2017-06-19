@@ -1,5 +1,5 @@
 //
-//  rwchcd_config.c
+//  config.c
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE
@@ -15,10 +15,10 @@
 #include <string.h>	// memcpy
 #include <assert.h>
 
-#include "rwchcd_lib.h"
-#include "rwchcd_hardware.h"
-#include "rwchcd_storage.h"
-#include "rwchcd_config.h"
+#include "lib.h"
+#include "hardware.h"
+#include "storage.h"
+#include "config.h"
 
 static const storage_version_t Config_sversion = 7;
 

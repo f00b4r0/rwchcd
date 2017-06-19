@@ -47,18 +47,18 @@
 #include <fcntl.h>
 
 #include "rwchcd.h"
-#include "rwchcd_lib.h"
-#include "rwchcd_hardware.h"
-#include "rwchcd_lcd.h"
-#include "rwchcd_plant.h"
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_timer.h"
-#include "rwchcd_scheduler.h"
-#include "rwchcd_models.h"
-#include "rwchcd_alarms.h"
+#include "lib.h"
+#include "hardware.h"
+#include "lcd.h"
+#include "plant.h"
+#include "config.h"
+#include "runtime.h"
+#include "timer.h"
+#include "scheduler.h"
+#include "models.h"
+#include "alarms.h"
 #ifdef HAS_DBUS
- #include "rwchcd_dbus.h"
+ #include "dbus.h"
 #endif
 
 #ifndef RWCHCD_PRIO

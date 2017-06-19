@@ -1,5 +1,5 @@
 //
-//  rwchcd_lcd.h
+//  lcd.h
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE

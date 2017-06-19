@@ -12,13 +12,13 @@ CONFIG := -DHAS_DBUS
 
 CFLAGS += $(CONFIG)
 
-DBUSGEN_BASE := rwchcd_dbus-generated
+DBUSGEN_BASE := dbus-generated
 
 SRCS := $(wildcard *.c)
 DBUSGEN_SRCS := $(DBUSGEN_BASE).c
 SRCS := $(filter-out $(DBUSGEN_SRCS),$(SRCS))
 ifeq (,$(findstring HAS_DBUS,$(CONFIG)))
-SRCS := $(filter-out rwchcd_dbus.c,$(SRCS))
+SRCS := $(filter-out dbus.c,$(SRCS))
 endif
 
 OBJS := $(SRCS:.c=.o)
@@ -80,7 +80,7 @@ doc:	Doxyfile
 	( cat Doxyfile; echo "PROJECT_NUMBER=$(REVISION)" ) | doxygen -
 	
 # quick hack
-rwchcd_dbus.o:	$(DBUSGEN_BASE).h
+dbus.o:	$(DBUSGEN_BASE).h
 # rebuild rwchcd.o if anything changes to update version
 rwchcd.o:       $(filter-out rwchcd.o,$(OBJS))
 

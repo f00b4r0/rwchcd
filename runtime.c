@@ -1,5 +1,5 @@
 //
-//  rwchcd_runtime.c
+//  runtime.c
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE
@@ -15,14 +15,14 @@
 #include <string.h>	// memset/memcpy
 #include <assert.h>
 
-#include "rwchcd_lib.h"
-#include "rwchcd_plant.h"
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_storage.h"
-#include "rwchcd_timer.h"
-#include "rwchcd_models.h"
-#include "rwchcd_hardware.h"	// hardware_sensor_alarm()
+#include "lib.h"
+#include "plant.h"
+#include "config.h"
+#include "runtime.h"
+#include "storage.h"
+#include "timer.h"
+#include "models.h"
+#include "hardware.h"	// hardware_sensor_alarm()
 
 #define LOG_INTVL_RUNTIME	900
 #define LOG_INTVL_TEMPS		60

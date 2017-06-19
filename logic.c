@@ -1,5 +1,5 @@
 //
-//  rwchcd_logic.c
+//  logic.c
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE
@@ -17,11 +17,11 @@
 #include <math.h>
 #include <assert.h>
 
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_lib.h"
-#include "rwchcd_logic.h"
-#include "rwchcd_models.h"
+#include "config.h"
+#include "runtime.h"
+#include "lib.h"
+#include "logic.h"
+#include "models.h"
 
 /**
  * Conditions for running circuit

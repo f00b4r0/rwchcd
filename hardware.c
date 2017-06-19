@@ -1,5 +1,5 @@
 //
-//  rwchcd_hardware.c
+//  hardware.c
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE
@@ -19,14 +19,14 @@
 #include <assert.h>
 
 #include "rwchcd.h"
-#include "rwchcd_spi.h"
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_lib.h"
-#include "rwchcd_storage.h"
-#include "rwchcd_lcd.h"
-#include "rwchcd_alarms.h"
-#include "rwchcd_hardware.h"
+#include "spi.h"
+#include "config.h"
+#include "runtime.h"
+#include "lib.h"
+#include "storage.h"
+#include "lcd.h"
+#include "alarms.h"
+#include "hardware.h"
 
 #include "rwchc_export.h"
 

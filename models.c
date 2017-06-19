@@ -1,5 +1,5 @@
 //
-//  rwchcd_models.c
+//  models.c
 //  rwchcd
 //
 //  (C) 2017 Thibaut VARENE
@@ -17,11 +17,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_lib.h"
-#include "rwchcd_storage.h"
-#include "rwchcd_models.h"
+#include "config.h"
+#include "runtime.h"
+#include "lib.h"
+#include "storage.h"
+#include "models.h"
 
 #define OUTDOOR_AVG_UPDATE_DT		600	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
 #define MODELS_STORAGE_NAME_LEN		64

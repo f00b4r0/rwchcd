@@ -1,5 +1,5 @@
 //
-//  rwchcd_lcd.c
+//  lcd.c
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE
@@ -18,13 +18,13 @@
 
 #include <string.h>
 
-#include "rwchcd_spi.h"
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_lib.h"
-#include "rwchcd_hardware.h"
-#include "rwchcd_alarms.h"
-#include "rwchcd_lcd.h"
+#include "spi.h"
+#include "config.h"
+#include "runtime.h"
+#include "lib.h"
+#include "hardware.h"
+#include "alarms.h"
+#include "lcd.h"
 
 #define LCD_LINELEN	16	///< width of LCD display line
 

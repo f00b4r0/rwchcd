@@ -1,5 +1,5 @@
 //
-//  rwchcd_storage.c
+//  storage.c
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
@@ -25,7 +25,7 @@
 #include <time.h>	// time
 #include <errno.h>	// errno
 
-#include "rwchcd_storage.h"
+#include "storage.h"
 
 #define RWCHCD_STORAGE_MAGIC "rwchcd"
 #define RWCHCD_STORAGE_VERSION 1UL

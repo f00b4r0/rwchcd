@@ -1,5 +1,5 @@
 //
-//  rwchcd_spi.h
+//  spi.h
 //  
 //
 //  (C) 2016 Thibaut VARENE

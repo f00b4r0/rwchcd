@@ -1,5 +1,5 @@
 //
-//  rwchcd_logic.h
+//  logic.h
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
@@ -15,7 +15,7 @@
 #define rwchcd_logic_h
 
 #include "rwchcd.h"
-#include "rwchcd_plant.h"
+#include "plant.h"
 
 int logic_circuit(struct s_heating_circuit * restrict const circuit);
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt);

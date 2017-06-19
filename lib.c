@@ -1,5 +1,5 @@
 //
-//  rwchcd_lib.c
+//  lib.c
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
@@ -15,8 +15,8 @@
 #include <assert.h>
 
 #include "rwchcd.h"
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
+#include "config.h"
+#include "runtime.h"
 
 /**
  * get temp from a given temp id

@@ -1,5 +1,5 @@
 //
-//  rwchcd_models.h
+//  models.h
 //  rwchcd
 //
 //  (C) 2017 Thibaut VARENE

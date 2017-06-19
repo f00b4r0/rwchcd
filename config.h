@@ -1,5 +1,5 @@
 //
-//  rwchcd_config.h
+//  config.h
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE

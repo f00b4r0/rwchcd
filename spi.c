@@ -1,5 +1,5 @@
 //
-//  rwchcd_spi.c
+//  spi.c
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE
@@ -29,7 +29,7 @@
 #include <assert.h>
 #include <wiringPiSPI.h>
 
-#include "rwchcd_spi.h"
+#include "spi.h"
 #include "rwchcd.h"	// for error codes
 
 #define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate, allows 800 ISNS on the PIC

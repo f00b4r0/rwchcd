@@ -1,5 +1,5 @@
 //
-//  rwchcd_dbus.c
+//  dbus.c
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE
@@ -20,11 +20,11 @@
  * Heat source / circuit / dhwt). See NetworkManager?
  */
 
-#include "rwchcd_lib.h"
-#include "rwchcd_config.h"
-#include "rwchcd_runtime.h"
-#include "rwchcd_dbus.h"
-#include "rwchcd_dbus-generated.h"
+#include "lib.h"
+#include "config.h"
+#include "runtime.h"
+#include "dbus.h"
+#include "dbus-generated.h"
 
 
 static GMainLoop *Mainloop = NULL;
