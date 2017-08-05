@@ -19,7 +19,7 @@
  * The advantage is that there's no need to track the alarms to avoid duplication,
  * the system can remain lightweight. The inconvenient is there's a single point
  * in time where all the alarms are fully collected before being deleted. This
- * happens in alarms_run(). alarms_active() and alarms_msg_iterator() are provided
+ * happens in alarms_run(). alarms_count() and alarms_msg_iterator() are provided
  * for convenience but should only be used immediately before alarms_run().
  */
 

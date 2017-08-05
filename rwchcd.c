@@ -30,7 +30,6 @@
  * connection of multiple instances
  * multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
- * @warning must ensure that hardware_init happens before dropping priviledges or spi_init() will fail.
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
@@ -85,7 +84,8 @@
 #define SENSOR_WATEROUT	3
 #define SENSOR_WATERRET	4
 
-static volatile int Sem_master_thread = 0;
+static volatile bool Sem_master_thread = false;
+static volatile bool Sem_master_hwinit_done = false;
 
 static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in Makefile
 
@@ -102,7 +102,7 @@ static void sig_handler(int signum)
 #ifdef HAS_DBUS
 			dbus_quit();
 #else
-			Sem_master_thread = 0;
+			Sem_master_thread = false;
 #endif
 			break;
 		default:
@@ -131,6 +131,8 @@ static int init_process()
 		dbgerr("hardware init error: %d", ret);
 		return (ret);
 	}
+
+	Sem_master_hwinit_done = true;
 
 	lcd_init();
 
@@ -519,14 +521,12 @@ int main(void)
 	pthread_attr_setschedparam(&attr, &sparam);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 	
-	Sem_master_thread = 1;
+	Sem_master_thread = true;
 
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
 		errx(ret, "failed to create master thread!");
 
-#warning TODO should wait for init sequence completion here
-	
 	ret = pthread_create(&watchdog_thr, NULL, thread_watchdog, &pipefd[0]);
 	if (ret)
 		errx(ret, "failed to create watchdog thread!");
@@ -545,6 +545,10 @@ int main(void)
 	pthread_setname_np(scheduler_thr, "scheduler");
 	pthread_setname_np(watchdog_thr, "watchdog");
 #endif
+
+	/* wait for hardware init to complete before dropping priviledges */
+	while (!Sem_master_hwinit_done)
+		usleep(10000);
 
 	// XXX Dropping priviledges here because we need root to set
 	// SCHED_FIFO during pthread_create(), and for setname().
@@ -593,7 +597,7 @@ int main(void)
 	pthread_join(master_thr, NULL);	// wait for master end of execution
 #endif
 
-	Sem_master_thread = 0;	// signal end of work
+	Sem_master_thread = false;	// signal end of work
 	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
 	pthread_cancel(watchdog_thr);
