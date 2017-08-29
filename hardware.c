@@ -1007,9 +1007,9 @@ int hardware_input(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
-	static int count = 0;
+	static unsigned int count = 0, systout = 0;
 	static tempid_t tempid = 1;
-	enum e_systemmode cursysmode;
+	static enum e_systemmode cursysmode = SYS_UNKNOWN;
 	int ret;
 	
 	// read peripherals
@@ -1043,19 +1043,29 @@ int hardware_input(void)
 	if (Hardware.peripherals.i_SW1) {
 		Hardware.peripherals.i_SW1 = 0;
 		count = 5;
+		systout = 3;
 
-		// change system mode
-		pthread_rwlock_wrlock(&runtime->runtime_rwlock);
-		cursysmode = runtime->systemmode;
 		cursysmode++;
-		
+
 		if (cursysmode >= SYS_UNKNOWN)	// XXX last mode
 			cursysmode = SYS_OFF;
-		
-		runtime_set_systemmode(cursysmode);	// XXX should only be active after timeout?
-		pthread_rwlock_unlock(&runtime->runtime_rwlock);
+
+		lcd_sysmode_change(cursysmode);	// update LCD
 	}
-	
+
+	if (!systout) {
+		if (cursysmode != runtime->systemmode) {
+			// change system mode
+			pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+			runtime_set_systemmode(cursysmode);
+			pthread_rwlock_unlock(&runtime->runtime_rwlock);
+			// hardware_beep()
+		}
+		cursysmode = runtime->systemmode;
+	}
+	else
+		systout--;
+
 	// handle switch 2
 	if (Hardware.peripherals.i_SW2) {
 		// increase displayed tempid
@@ -1072,8 +1082,7 @@ int hardware_input(void)
 	// trigger timed backlight
 	if (count) {
 		Hardware.peripherals.o_LCDbl = 1;
-		count--;
-		if (!count)
+		if (!--count)
 			lcd_fade();	// apply fadeout
 	}
 	else

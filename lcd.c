@@ -33,7 +33,9 @@ static struct {
 	bool reset;	///< true if full refresh of the display is necessary
 	bool L2mngd;	///< true if 2nd line is managed by software
 	bool L2mngd_prev;	///< this flag is necessary to account for the fact that the firmware will modify the 2nd line
+	bool sysmchg;	///< true if sysmode change in progress
 	tempid_t sensor;	///< current sensor displayed on LCD
+	enum e_systemmode newsysmode;	///< upcoming system mode
 	uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
 	uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
 } LCD = {
@@ -41,6 +43,7 @@ static struct {
 	.reset = false,
 	.L2mngd = false,
 	.L2mngd_prev = false,
+	.sysmchg = false,
 	.sensor = 1,
 };
 
@@ -332,12 +335,11 @@ static const char * temp_to_str(const tempid_t tempid)
 }
 
 // XXX quick hack
-static const char * lcd_disp_sysmode(void)
+static const char * lcd_disp_sysmode(enum e_systemmode sysmode)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
 	const char * restrict msg;
 
-	switch (runtime->systemmode) {
+	switch (sysmode) {
 		case SYS_OFF:
 			msg = _("Off ");
 			break;
@@ -370,14 +372,25 @@ static const char * lcd_disp_sysmode(void)
 // XXX quick hack
 static int lcd_line1(void)
 {
+	const enum e_systemmode systemmode = get_runtime()->systemmode;
 	static uint8_t buf[LCD_LINELEN];
 
 	memset(buf, ' ', LCD_LINELEN);
-	
-	memcpy(buf, lcd_disp_sysmode(), 4);
-	
-	memcpy(buf+6, temp_to_str(LCD.sensor), 9);
-	
+
+	memcpy(buf, lcd_disp_sysmode(systemmode), 4);
+
+	if (LCD.sysmchg) {
+		if (systemmode != LCD.newsysmode) {
+			buf[5] = '-';
+			buf[6] = '>';
+			memcpy(buf+8, lcd_disp_sysmode(LCD.newsysmode), 4);
+		}
+		else
+			LCD.sysmchg = false;
+	}
+	else
+		memcpy(buf+6, temp_to_str(LCD.sensor), 9);
+
 	return (lcd_wline(buf, LCD_LINELEN, 0, 0));
 }
 
@@ -410,6 +423,19 @@ int lcd_set_tempid(const tempid_t tempid)
 		return (-EINVALID);
 
 	LCD.sensor = tempid;
+
+	return (ALL_OK);
+}
+
+/**
+ * Indicate a system mode change has been requested.
+ * @param newsysmode the upcoming system mode
+ * @return exec status
+ */
+int lcd_sysmode_change(enum e_systemmode newsysmode)
+{
+	LCD.newsysmode = newsysmode;
+	LCD.sysmchg = true;
 
 	return (ALL_OK);
 }
