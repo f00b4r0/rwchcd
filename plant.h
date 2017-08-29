@@ -139,9 +139,11 @@ struct s_heating_circuit {
 		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current transition underwent by the circuit
 		time_t ambient_update_time;	///< ambient model last update time
 		time_t trans_since;		///< transition start time
+		time_t trans_active_elapsed;	///< time elapsed in active transitioning (when power output meats request)
 		temp_t trans_start_temp;	///< temperature at transition start
 		temp_t actual_ambient;		///< actual ambient temperature (either from sensor, or modelled)
 		temp_t target_wtemp;		///< current target water temp
+		temp_t actual_wtemp;		///< actual water temperature
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 	} run;		///< private runtime (internally handled)
 	temp_t (*templaw)(const struct s_heating_circuit * restrict const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C

@@ -1375,6 +1375,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	
 	// we're good to go
 
+	circuit->run.actual_wtemp = curr_temp;
+
 	// circuit is active, ensure pump is running
 	if (circuit->pump)
 		pump_set_state(circuit->pump, ON, 0);

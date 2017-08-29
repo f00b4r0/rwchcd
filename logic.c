@@ -104,9 +104,10 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient... p36+)
  * @todo XXX TODO: ambient max delta shutdown; optim based on return temp
  * @todo XXX TODO: optimization with return temperature
- * @note the ambient model will not acknowledge lag due to circuit warming up
+ * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
  * (including rate of rise limitation). REVIEW
  */
+#define LOGIC_MIN_POWER_TRANS_UP	75	///< minimum estimate (linear) output power for transition up modelling
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
@@ -173,12 +174,15 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
 		circuit->run.trans_since = now;
 		circuit->run.trans_start_temp = circuit->run.actual_ambient;
+		circuit->run.trans_active_elapsed = 0;
 	}
 
 	// XXX OPTIM if return temp is known
 
 	// apply offset and save calculated target ambient temp to circuit
 	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, runtime->config->def_circuit.t_offset);
+
+	elapsed_time = now - circuit->run.ambient_update_time;
 
 	// Ambient temperature is either read or modelled
 	ambient_temp = get_temp(circuit->set.id_temp_ambient);
@@ -192,7 +196,6 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
 		if (RM_OFF == circuit->run.runmode) {
-			elapsed_time = now - circuit->run.ambient_update_time;
 			if (elapsed_time > dtmin) {
 				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
@@ -203,18 +206,22 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
 			switch (circuit->run.transition) {
 				case TRANS_DOWN:
-					elapsed_time = now - circuit->run.ambient_update_time;
 					// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 					// all necessary data is _always_ available, no need to special case here
 					if (elapsed_time > dtmin) {
 						ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, request_temp, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 						circuit->run.ambient_update_time = now;
+						circuit->run.trans_active_elapsed += elapsed_time;
 					}
 					break;
 				case TRANS_UP:
 					// transition up, apply semi-exponential model
 					if (circuit->set.am_tambient_tK) {	// only if necessary data is available
-						elapsed_time = now - circuit->run.trans_since;
+						/* XXX count active time only if approximate output power is > LOGIC_MIN_POWER_TRANS_UP %
+						  (linear) approximate output power is (actual_wtemp - ambient) / (target_wtemp - ambient) */
+						if ((100 * (circuit->run.actual_wtemp - circuit->run.actual_ambient) / (circuit->run.target_wtemp - circuit->run.actual_ambient)) > LOGIC_MIN_POWER_TRANS_UP)
+							circuit->run.trans_active_elapsed += elapsed_time;
+
 						// tstart + elevation over time: tstart + ((elapsed_time * KPRECISIONI/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
 						/* note: the impact of the boost should be considered as a percentage of the total
 						 requested temperature increase over _current_ temp, hence (treq - tcurrent).
@@ -228,7 +235,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
 						diff_temp = request_temp - circuit->run.actual_ambient;
 						if (diff_temp >= KPRECISIONI) {
-							ambient_temp = circuit->run.trans_start_temp + (((KPRECISIONI*elapsed_time / circuit->set.am_tambient_tK) *
+							ambient_temp = circuit->run.trans_start_temp + (((KPRECISIONI*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
 									(KPRECISIONI + (KPRECISIONI*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISIONI);	// works even if boostdelta is not set
 						}
 						else
@@ -240,14 +247,14 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 				case TRANS_NONE:
 					// no transition, ambient temp assumed to be request temp
 					ambient_temp = circuit->run.request_ambient;
-					circuit->run.trans_start_temp = 0;
 					circuit->run.ambient_update_time = now;
 					break;
 				default:
 					break;
 			}
 			if (circuit->run.transition)	// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
-				dbgmsg("%s: Trans: %d, start amb: %d, curr amb: %d", circuit->name, circuit->run.transition, circuit->run.trans_start_temp, ambient_temp);
+				dbgmsg("%s: Trans: %d, start amb: %d, curr amb: %d, active elapsed: %ld",
+				       circuit->name, circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, circuit->run.trans_active_elapsed);
 		}
 	}
 	
