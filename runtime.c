@@ -229,7 +229,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			Runtime.runmode = RM_ECO;
 			Runtime.dhwmode = RM_ECO;
 			break;
-		case SYS_AUTO:		// XXX by default AUTO switches to frostfree until further settings
+		case SYS_AUTO:		// NOTE by default AUTO switches to frostfree until further settings
 		case SYS_FROSTFREE:
 			Runtime.runmode = RM_FROSTFREE;
 			Runtime.dhwmode = RM_FROSTFREE;
@@ -240,7 +240,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			break;
 		case SYS_DHWONLY:
 			Runtime.runmode = RM_DHWONLY;
-			Runtime.dhwmode = RM_COMFORT;	// XXX by default in comfort mode until further settings
+			Runtime.dhwmode = RM_COMFORT;	// NOTE by default in comfort mode until further settings
 			break;
 		case SYS_UNKNOWN:
 		default:

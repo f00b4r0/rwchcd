@@ -154,8 +154,7 @@ struct s_heating_circuit {
 	char * restrict name;			///< name for this circuit
 };
 
-/** Boiler heatsource private structure */
-// XXX TODO: return mixing valve / isolation valve / modulating burner
+/** Boiler heatsource private structure. @todo XXX TODO: return mixing valve / isolation valve / modulating burner */
 struct s_boiler_priv {
 	struct {
 		enum {

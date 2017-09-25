@@ -1046,8 +1046,8 @@ int hardware_input(void)
 
 		cursysmode++;
 
-		if (cursysmode >= SYS_UNKNOWN)	// XXX last mode
-			cursysmode = SYS_OFF;
+		if (cursysmode >= SYS_UNKNOWN)	// last valid mode
+			cursysmode = 0;		// first valid mode
 
 		lcd_sysmode_change(cursysmode);	// update LCD
 	}

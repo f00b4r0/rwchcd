@@ -429,7 +429,7 @@ static void * thread_master(void *arg)
 		
 		alarms_run();	// XXX run this here last as it clears the alarms
 		
-		printf("\n");	// XXX DEBUG
+		dbgmsg("\n");	// insert empty line between each run
 		fflush(stdout);
 		
 		// send keepalive to watchdog

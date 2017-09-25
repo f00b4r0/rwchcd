@@ -194,7 +194,7 @@ int spi_lcd_cmd_w(const uint8_t cmd)
 	if (!SPI_ASSERT(cmd, ~RWCHC_SPIC_LCDCMDW))
 		ret = -ESPI;
 
-	if (cmd & 0xFC)	// XXX quick commands
+	if (cmd & 0xFC)	// quick commands
 		usleep(USLEEPLCDFAST);
 	else	// clear/home
 		usleep(USLEEPLCDSLOW);

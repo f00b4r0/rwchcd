@@ -103,7 +103,7 @@ static int pump_get_state(const struct s_pump * restrict const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 	
-	// XXX we could return remaining cooldown time if necessary
+	// NOTE we could return remaining cooldown time if necessary
 	return (hardware_relay_get_state(pump->set.rid_relay));
 }
 
@@ -1074,7 +1074,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	
 	// form consumer shift request if necessary
 	if (boiler_temp < boiler->set.limit_tmin) {
-		// percentage of shift is formed by the difference between current temp and expected temp in K * 10: 1K down means -10% shift
+		// percentage of shift is formed by the difference between current temp and expected temp in K * 10: 1K down means -10% shift - XXX REVIEW
 		heat->run.consumer_shift = 10*(boiler_temp - boiler->set.limit_tmin)/KPRECISIONI;
 	}
 	else
@@ -1731,7 +1731,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 			pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
 	}
 	
-	/* handle heat charge - XXX we enforce sensor position, it SEEMS desirable
+	/* handle heat charge - NOTE we enforce sensor position, it SEEMS desirable
 	   apply histeresis on logic: trip at target - histeresis (preferably on bottom sensor),
 	   untrip at target (preferably on top sensor). */
 	if (!dhwt->run.charge_on) {	// no charge in progress
@@ -2349,7 +2349,6 @@ int plant_online(struct s_plant * restrict const plant)
 		pumpl->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("pump_online failed, id: %d (%d)", pumpl->id, ret);
 			pump_offline(pumpl->pump);
 			pumpl->pump->run.online = false;
@@ -2365,7 +2364,6 @@ int plant_online(struct s_plant * restrict const plant)
 		valvel->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("valve_online failed, id: %d (%d)", valvel->id, ret);
 			valve_offline(valvel->valve);
 			valvel->valve->run.online = false;
@@ -2382,7 +2380,6 @@ int plant_online(struct s_plant * restrict const plant)
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
 			circuit_offline(circuitl->circuit);
 			circuitl->circuit->run.online = false;
@@ -2398,7 +2395,6 @@ int plant_online(struct s_plant * restrict const plant)
 		dhwtl->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("dhwt_online failed, id: %d (%d)", dhwtl->id, ret);
 			dhwt_offline(dhwtl->dhwt);
 			dhwtl->dhwt->run.online = false;
@@ -2415,7 +2411,6 @@ int plant_online(struct s_plant * restrict const plant)
 		heatsourcel->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
 			heatsource_offline(heatsourcel->heats);
 			heatsourcel->heats->run.online = false;
@@ -2460,7 +2455,6 @@ int plant_offline(struct s_plant * restrict const plant)
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("circuit_offline failed, id: %d (%d)", circuitl->id, ret);
 			suberror = true;
 		}
@@ -2473,7 +2467,6 @@ int plant_offline(struct s_plant * restrict const plant)
 		dhwtl->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("dhwt_offline failed, id: %d (%d)", dhwtl->id, ret);
 			suberror = true;
 		}
@@ -2487,7 +2480,6 @@ int plant_offline(struct s_plant * restrict const plant)
 		heatsourcel->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("heatsource_offline failed, id: %d (%d)", heatsourcel->id, ret);
 			suberror = true;
 		}
@@ -2501,7 +2493,6 @@ int plant_offline(struct s_plant * restrict const plant)
 		valvel->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("valve_offline failed, id: %d (%d)", valvel->id, ret);
 			suberror = true;
 		}
@@ -2514,7 +2505,6 @@ int plant_offline(struct s_plant * restrict const plant)
 		pumpl->status = ret;
 		
 		if (ALL_OK != ret) {
-			// XXX error handling
 			dbgerr("pump_offline failed, id: %d (%d)", pumpl->id, ret);
 			suberror = true;
 		}

@@ -107,9 +107,9 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
  * (including rate of rise limitation). REVIEW
  */
-#define LOGIC_MIN_POWER_TRANS_UP	75	///< minimum estimate (linear) output power for transition up modelling
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
+#define LOGIC_MIN_POWER_TRANS_UP	75	///< minimum estimate (linear) output power percentage for transition up modelling
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	enum e_runmode prev_runmode;
@@ -187,8 +187,8 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// Ambient temperature is either read or modelled
 	ambient_temp = get_temp(circuit->set.id_temp_ambient);
 	if (validate_temp(ambient_temp) == ALL_OK) {	// we have an ambient sensor
-		// calculate ambient shift based on measured ambient temp influence p.41
-		ambient_delta = (circuit->set.ambient_factor/10) * (circuit->run.target_ambient - ambient_temp);
+		// calculate ambient shift based on measured ambient temp influence in percent
+		ambient_delta = (circuit->set.ambient_factor) * (circuit->run.target_ambient - ambient_temp) / 100;
 	}
 	else {	// no sensor (or faulty), apply ambient model
 		ambient_temp = circuit->run.actual_ambient;
