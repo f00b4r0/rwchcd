@@ -90,9 +90,9 @@ static struct {
 	float calib_dac;		///< sensor calibration value with dac offset
 	int fwversion;			///< firmware version
 	struct rwchc_s_settings settings;
-	union rwchc_u_relays relays;		// XXX locks
-	union rwchc_u_periphs peripherals;	// XXX locks
-	rwchc_sensor_t sensors[RWCHC_NTSENSORS];	// XXX locks
+	union rwchc_u_relays relays;
+	union rwchc_u_periphs peripherals;
+	rwchc_sensor_t sensors[RWCHC_NTSENSORS];
 } Hardware;
 
 /**
@@ -254,8 +254,10 @@ static void parse_temps(void)
 	assert(Hardware.ready && runtime);
 	
 	for (i = 0; i < runtime->config->nsensors; i++) {
-		if (!Sensors[i].set.configured)
+		if (!Sensors[i].set.configured) {
+			Sensors[i].run.value = TEMPUNSET;
 			continue;
+		}
 
 		ohm = sensor_to_ohm(Hardware.sensors[i], true);
 		o_to_c = Sensors[i].ohm_to_celsius;
