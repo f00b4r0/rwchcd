@@ -31,6 +31,7 @@
 #include "logic.h"
 #include "plant.h"
 #include "models.h"
+#include "alarms.h"	// alarms_raise()
 
 /*- PUMP -*/
 
@@ -805,7 +806,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 	// check that mandatory sensors are working
 	ret = validate_temp(get_temp(boiler->set.id_temp));
 	if (ALL_OK != ret)
-		hardware_sensor_alarm(boiler->set.id_temp);
+		alarms_raise(ret, _("Boiler sensor failure"), _("Boiler sens fail"));
 
 	return (ret);
 }
@@ -1014,13 +1015,13 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 }
 
 /**
- * Implement basic single allure boiler.
+ * Implement basic single stage boiler.
  * @note As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
  * @note the boiler trip/untrip points are target +/- histeresis/2
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
- * @todo XXX TODO: implement 2nd allure (p.51)
+ * @todo XXX TODO: implement 2nd stage (p.51)
  * @todo XXX TODO: review consummer inhibit signal formula for cool startup: write a proper integrator
  * @todo XXX TODO: implement limit on return temp (p.55/56 / p87-760), (consummer shift / return valve / bypass pump)
  */

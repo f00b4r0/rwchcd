@@ -239,6 +239,52 @@ static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
 }
 
 /**
+ * Raise an alarm for a specific sensor.
+ * This function raises an alarm if the sensor's temperature is invalid.
+ * @param id target sensor id
+ * @param temp sensor temperature
+ * @return exec status
+ */
+static int sensor_alarm(const tempid_t id, const temp_t temp)
+{
+	const char * restrict const msgf = _("sensor fail: %s (%d) %s");
+	const char * restrict const msglcdf = _("sensor fail: %d");
+	const char * restrict fail, * restrict name = NULL;
+	char * restrict msg, * restrict msglcd;
+	size_t size;
+	int ret;
+
+	ret = validate_temp(temp);
+
+	switch (ret) {
+		case -ESENSORSHORT:
+			fail = _("shorted");
+			name = Sensors[id-1].name;
+			break;
+		case -ESENSORDISCON:
+			fail = _("disconnected");
+			name = Sensors[id-1].name;
+			break;
+		case -ESENSORINVAL:
+			fail = _("invalid");
+			break;
+		default:
+			fail = _("error");
+			break;
+	}
+
+	snprintf_automalloc(msg, size, msgf, name, id, fail);
+	snprintf_automalloc(msglcd, size, msglcdf, id);
+
+	ret = alarms_raise(ret, msg, msglcd);
+
+	free(msg);
+	free(msglcd);
+
+	return (ret);
+}
+
+/**
  * Process raw sensor data and extract temperature values into the runtime temps[] array.
  * Applies a short-window LP filter on raw data to smooth out noise.
  */
@@ -266,10 +312,14 @@ static void parse_temps(void)
 		current = celsius_to_temp(o_to_c(ohm));
 		previous = Sensors[i].run.value;
 
-		if (current <= RWCHCD_TEMPMIN)
+		if (current <= RWCHCD_TEMPMIN) {
 			Sensors[i].run.value = TEMPSHORT;
-		else if (current >= RWCHCD_TEMPMAX)
+			sensor_alarm(i+1, TEMPSHORT);
+		}
+		else if (current >= RWCHCD_TEMPMAX) {
 			Sensors[i].run.value = TEMPDISCON;
+			sensor_alarm(i+1, TEMPDISCON);
+		}
 		else
 			// apply LP filter - ensure we only apply filtering on valid temps
 			Sensors[i].run.value = (previous >= TEMPINVALID) ? temp_expw_mavg(previous, current, nsamples, 1) : current;
@@ -761,54 +811,6 @@ int hardware_sensor_configured(const tempid_t id)
 		return (-ENOTCONFIGURED);
 
 	return (ALL_OK);
-}
-
-/**
- * Raise an alarm for a specific sensor.
- * This function tests a sensor and raises an alarm if the sensor is either
- * invalid or its value is invalid.
- * @param id target sensor id
- * @return exec status
- */
-int hardware_sensor_alarm(const tempid_t id)
-{
-	const char * restrict const msgf = _("sensor fail: %s (%d) %s");
-	const char * restrict const msglcdf = _("sensor fail: %d");
-	const char * restrict fail, * restrict name = NULL;
-	char * restrict msg, * restrict msglcd;
-	size_t size;
-	int ret;
-
-	ret = validate_temp(get_temp(id));
-
-	switch (ret) {
-		case ALL_OK:
-			return ret;
-		case -ESENSORSHORT:
-			fail = _("shorted");
-			name = Sensors[id-1].name;
-			break;
-		case -ESENSORDISCON:
-			fail = _("disconnected");
-			name = Sensors[id-1].name;
-			break;
-		case -ESENSORINVAL:
-			fail = _("invalid");
-			break;
-		default:
-			fail = _("error");
-			break;
-	}
-
-	snprintf_automalloc(msg, size, msgf, name, id, fail);
-	snprintf_automalloc(msglcd, size, msglcdf, id);
-
-	ret = alarms_raise(ret, msg, msglcd);
-
-	free(msg);
-	free(msglcd);
-
-	return (ret);
 }
 
 /**

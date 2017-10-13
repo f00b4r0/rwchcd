@@ -22,7 +22,7 @@
 #include "storage.h"
 #include "timer.h"
 #include "models.h"
-#include "hardware.h"	// hardware_sensor_alarm()
+#include "alarms.h"	// alarms_raise()
 
 #define LOG_INTVL_RUNTIME	900
 #define LOG_INTVL_TEMPS		60
@@ -153,7 +153,7 @@ static void outdoor_temp()
 		Runtime.t_outdoor = toutdoor + Runtime.config->set_temp_outdoor_offset;
 	else {
 		Runtime.t_outdoor = Runtime.config->limit_tfrost-1;	// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
-		hardware_sensor_alarm(tid);
+		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
 	}
 
 	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
