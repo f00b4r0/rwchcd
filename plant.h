@@ -161,7 +161,7 @@ struct s_boiler_priv {
 			IDLE_NEVER = 0,		///< boiler runs always at least at limit_tmin
 			IDLE_FROSTONLY,		///< boiler turns off only in frost free
 			IDLE_ALWAYS,		///< boiler turns off any time there's no heat request
-		} idle_mode;		///< boiler off regime (p.48)
+		} idle_mode;		///< boiler off regime
 		temp_t histeresis;		///< boiler temp histeresis
 		temp_t limit_thardmax;		///< "safety" trip temperature. Past this temperature the boiler will (be stopped and) require consumers to maximize their usage to dissipate heat faster.
 		temp_t limit_tmax;		///< maximum boiler temp when operating. Must be < limit_thardmax

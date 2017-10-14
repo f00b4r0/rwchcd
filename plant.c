@@ -975,7 +975,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
 		case RM_FROSTFREE:
 			target_temp = heat->run.temp_request;
 			break;
-		case RM_MANUAL:
+		case RM_TEST:
 			target_temp = boiler->set.limit_tmax;	// set max temp to (safely) trigger burner operation
 			break;
 		case RM_AUTO:
@@ -1041,7 +1041,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 		case RM_ECO:
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-		case RM_MANUAL:
+		case RM_TEST:
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
@@ -1348,7 +1348,7 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 			}
 			else
 				return (circuit_offline(circuit));
-		case RM_MANUAL:
+		case RM_TEST:
 			valve_reqstop(circuit->valve);
 			if (circuit->pump)
 				pump_set_state(circuit->pump, ON, FORCE);
@@ -1687,7 +1687,7 @@ static int dhwt_run(struct s_dhw_tank * const dhwt)
 		case RM_FROSTFREE:
 			dhwt_actuator_use(dhwt, false);
 			break;
-		case RM_MANUAL:
+		case RM_TEST:
 			if (dhwt->feedpump)
 				pump_set_state(dhwt->feedpump, ON, FORCE);
 			if (dhwt->recyclepump)

@@ -358,8 +358,8 @@ static const char * lcd_disp_sysmode(enum e_systemmode sysmode)
 		case SYS_DHWONLY:
 			msg = _("ECS ");
 			break;
-		case SYS_MANUAL:
-			msg = _("Man ");
+		case SYS_TEST:
+			msg = _("Test");
 			break;
 		case SYS_UNKNOWN:
 		default:

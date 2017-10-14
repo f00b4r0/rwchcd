@@ -234,9 +234,9 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			Runtime.runmode = RM_FROSTFREE;
 			Runtime.dhwmode = RM_FROSTFREE;
 			break;
-		case SYS_MANUAL:
-			Runtime.runmode = RM_MANUAL;
-			Runtime.dhwmode = RM_MANUAL;
+		case SYS_TEST:
+			Runtime.runmode = RM_TEST;
+			Runtime.dhwmode = RM_TEST;
 			break;
 		case SYS_DHWONLY:
 			Runtime.runmode = RM_DHWONLY;

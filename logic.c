@@ -64,7 +64,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 			break;
 		case RM_OFF:
 		case RM_AUTO:
-		case RM_MANUAL:
+		case RM_TEST:
 		case RM_UNKNOWN:
 		default:
 			return;
@@ -142,7 +142,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// depending on circuit run mode, assess circuit target temp
 	switch (circuit->run.runmode) {
 		case RM_OFF:
-		case RM_MANUAL:
+		case RM_TEST:
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
 			request_temp = SETorDEF(circuit->set.params.t_comfort, runtime->config->def_circuit.t_comfort);
@@ -331,7 +331,7 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	// depending on dhwt run mode, assess dhwt target temp
 	switch (dhwt->run.runmode) {
 		case RM_OFF:
-		case RM_MANUAL:
+		case RM_TEST:
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
 			target_temp = SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort);

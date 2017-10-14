@@ -6,7 +6,7 @@
   <interface name="org.slashdirt.rwchcd.Control">
     <!--
         SysmodeSet:
-        @Sysmode: desired running mode: 0 = OFF, 1 = AUTO, 2 = COMFORT, 3 = ECO, 4 = FROSTFREE, 5 = DHWONLY, 6 = MANUAL
+        @Sysmode: desired running mode: 0 = OFF, 1 = AUTO, 2 = COMFORT, 3 = ECO, 4 = FROSTFREE, 5 = DHWONLY, 6 = TEST
 
 	Sets system mode for rwchcd.
     -->

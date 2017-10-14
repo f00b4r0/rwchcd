@@ -107,7 +107,7 @@ enum e_runmode {
 	RM_ECO,		///< device is in eco mode
 	RM_FROSTFREE,	///< device is in frostfree mode
 	RM_DHWONLY,	///< device is in DHW only mode
-	RM_MANUAL,	///< device is in manual mode (typically all actuators are on)
+	RM_TEST,	///< device is in test mode (typically all actuators are on)
 	RM_UNKNOWN,	///< invalid past this value
 };
 
@@ -119,7 +119,7 @@ enum e_systemmode {
 	SYS_ECO,	///< system is running in eco mode
 	SYS_FROSTFREE,	///< system is running in frostfree mode
 	SYS_DHWONLY,	///< system is running in DHW only mode
-	SYS_MANUAL,	///< system is running in manual mode
+	SYS_TEST,	///< system is running in test mode
 	SYS_UNKNOWN,	///< invalid past this value
 };
 
