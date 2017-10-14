@@ -197,7 +197,7 @@ struct s_heatsource {
 		enum e_heatsource_type type;	///< type of heatsource
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
 		time_t sleeping_time;		///< if no request for this much time, then mark heat source as can sleep
-		time_t consumer_stop_delay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
+		time_t consumer_sdelay;		///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if source is available for use (under software management)
@@ -206,7 +206,7 @@ struct s_heatsource {
 		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
 		time_t last_run_time;		///< last time heatsource was run
 		time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
-		time_t target_consumer_stop_delay;	///< calculated stop delay
+		time_t target_consumer_sdelay;	///< calculated stop delay
 		int_fast16_t consumer_shift;	///< factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
@@ -234,7 +234,7 @@ struct s_dhw_tank {
 		bool configured;		///< true if properly configured
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
-		//enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };	///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
+        //enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };    ///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
 		enum {
 			DHWTF_NEVER = 0,	///< never force
 			DHWTF_FIRST,		///< force first comfort charge of the day
@@ -314,6 +314,8 @@ struct s_heatsource_l {
  */
 struct s_plant {
 	bool configured;	///< true if properly configured
+	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
+	time_t consumer_sdelay;	///< minimum time consumers should keep their current consumption before turning off
 	uint_fast8_t pump_n;	///< number of pumps in the plant
 	uint_fast8_t valve_n;	///< number of valves in the plant
 	uint_fast8_t heats_n;	///< number of heat sources in the plant

@@ -440,10 +440,10 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	heat->run.temp_request = temp_request;
 
 	// decrement consummer stop delay if any
-	if (dt < heat->run.target_consumer_stop_delay)
-		heat->run.target_consumer_stop_delay -= dt;
+	if (dt < heat->run.target_consumer_sdelay)
+		heat->run.target_consumer_sdelay -= dt;
 	else
-		heat->run.target_consumer_stop_delay = 0;
+		heat->run.target_consumer_sdelay = 0;
 
 	if (heat->hs_logic)
 		ret = heat->hs_logic(heat);

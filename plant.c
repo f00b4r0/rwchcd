@@ -1106,7 +1106,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	// as long as the burner is running we reset the cooldown delay
 	if (hardware_relay_get_state(boiler->set.rid_burner_1))
-		heat->run.target_consumer_stop_delay = heat->set.consumer_stop_delay;
+		heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
 	return (ALL_OK);
 }
@@ -1339,11 +1339,11 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
-			if (circuit->run.target_wtemp && (runtime->consumer_stop_delay > 0)) {
+			if (circuit->run.target_wtemp && (runtime->plant->consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				water_temp = circuit->run.target_wtemp;
-				dbgmsg("%s: in cooldown, remaining: %ld", circuit->name, runtime->consumer_stop_delay);
+				dbgmsg("%s: in cooldown, remaining: %ld", circuit->name, runtime->plant->consumer_sdelay);
 				goto valve;	// stop processing
 			}
 			else
@@ -1419,15 +1419,15 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	
 	// interference: handle stop delay requests
 	// XXX this will prevent a (valid: small) reduction in output: assumed acceptable
-	if (runtime->consumer_stop_delay) {
-		dbgmsg("%s: stop delay active, remaining: %ld", circuit->name, runtime->consumer_stop_delay);	// maintain current or higher wtemp during stop delay
+	if (runtime->plant->consumer_sdelay) {
+		dbgmsg("%s: stop delay active, remaining: %ld", circuit->name, runtime->plant->consumer_sdelay);	// maintain current or higher wtemp during stop delay
 		water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
 		interference = true;
 	}
 
 	// interference: apply global shift - XXX FORMULA
-	if (runtime->consumer_shift) {
-		water_temp += deltaK_to_temp((0.25F * runtime->consumer_shift));
+	if (runtime->plant->consumer_shift) {
+		water_temp += deltaK_to_temp((0.25F * runtime->plant->consumer_shift));
 		interference = true;
 	}
 
@@ -2684,8 +2684,8 @@ int plant_run(struct s_plant * restrict const plant)
 			sleeping = heatsourcel->heats->run.could_sleep;
 		
 		// max stop delay
-		stop_delay = (heatsourcel->heats->run.target_consumer_stop_delay > stop_delay) ? heatsourcel->heats->run.target_consumer_stop_delay : stop_delay;
-		runtime->consumer_shift = heatsourcel->heats->run.consumer_shift;	// XXX
+		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
+		plant->consumer_shift = heatsourcel->heats->run.consumer_shift;	// XXX
 	}
 
 	if (runtime->config->summer_maintenance)
@@ -2736,7 +2736,7 @@ int plant_run(struct s_plant * restrict const plant)
 	runtime->plant_could_sleep = sleeping;
 
 	// reflect global stop delay
-	runtime->consumer_stop_delay = stop_delay;
+	plant->consumer_sdelay = stop_delay;
 	
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.

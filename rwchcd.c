@@ -249,7 +249,7 @@ static int init_process()
 		boiler->set.rid_burner_1 = RELAY_BURNER;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
 	heatsource->set.sleeping_time = 1 * 24 * 60 * 60;	// XXX 1 day
-	heatsource->set.consumer_stop_delay = 6 * 60;	// 6mn
+	heatsource->set.consumer_sdelay = 6 * 60;	// 6mn
 	heatsource->set.runmode = RM_AUTO;	// use global setting
 	heatsource->set.configured = true;
 
