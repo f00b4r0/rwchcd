@@ -1086,7 +1086,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// ensure boiler is within safety limits
 	if (boiler_temp > boiler->set.limit_thardmax) {
 		boiler_failsafe(boiler);
-		heat->run.consumer_shift = RWCHCD_CSHIFT_MAX;
+		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
 		return (-ESAFETY);
 	}
 	
@@ -1100,10 +1100,10 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	// form consumer shift request if necessary for cold start protection
 	if (temp_intgrl < 0) {
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift
-		heat->run.consumer_shift = 2 * temp_intgrl / KPRECISIONI;
+		heat->run.cshift_crit = 2 * temp_intgrl / KPRECISIONI;
 	}
 	else {
-		heat->run.consumer_shift = 0;		// reset shift
+		heat->run.cshift_crit = 0;		// reset shift
 		boiler->run.boil_itg.integral = 0;	// reset integral
 	}
 
@@ -2712,7 +2712,7 @@ int plant_run(struct s_plant * restrict const plant)
 		
 		// max stop delay
 		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
-		plant->consumer_shift = heatsourcel->heats->run.consumer_shift;	// XXX
+		plant->consumer_shift = heatsourcel->heats->run.cshift_crit;	// XXX
 	}
 
 	if (runtime->config->summer_maintenance)
