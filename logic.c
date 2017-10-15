@@ -168,7 +168,11 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
 	if (circuit->run.outhoff && !runtime->frost)
 		circuit->run.runmode = RM_OFF;
-	
+
+	// if an absolute priority DHW charge is in progress, switch to frostfree
+	if (runtime->plant->dhwc_absolute)
+		circuit->run.runmode = RM_FROSTFREE;
+
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
 	if ((prev_runmode != circuit->run.runmode) && circuit->run.actual_ambient) {
 		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
@@ -395,9 +399,10 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	struct s_heating_circuit_l * restrict circuitl;
 	struct s_dhw_tank_l * restrict dhwtl;
-	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST;
+	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
 	const time_t now = time(NULL);
 	const time_t dt = now - heat->run.last_run_time;
+	bool dhwt_sliding = false, dhwt_reqdhw = false;
 
 	int ret = -ENOTIMPLEMENTED;
 	
@@ -433,11 +438,52 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	// then dhwt
 	for (dhwtl = runtime->plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		temp = dhwtl->dhwt->run.heat_request;
-		temp_request = (temp > temp_request) ? temp : temp_request;
+		temp_req_dhw = (temp > temp_req_dhw) ? temp : temp_req_dhw;
+
+		// handle DHW charge priority
+		if (dhwtl->dhwt->run.charge_on) {
+			switch (dhwtl->dhwt->set.dhwt_cprio) {
+				case DHWTP_SLIDDHW:
+					dhwt_reqdhw = true;
+				case DHWTP_SLIDMAX:
+					dhwt_sliding = true;
+					break;
+				case DHWTP_ABSOLUTE:
+				case DHWTP_PARALDHW:
+					dhwt_reqdhw = true;
+				case DHWTP_PARALMAX:
+				default:
+					/* nothing */
+					break;
+			}
+		}
 	}
-	
+
+	/*
+	 if dhwt_sliding => circuits can be reduced
+	 if dhwt_reqdhw => heat request = max dhw request, else max (max circuit, max dhw)
+	 */
+
+	// calculate max of circuit requests and dhwt requests
+	temp_request = (temp_req_dhw > temp_request) ? temp_req_dhw : temp_request;
+
 	// apply result to heat source
-	heat->run.temp_request = temp_request;
+	heat->run.temp_request = dhwt_reqdhw ? temp_req_dhw : temp_request;
+
+	// compute sliding integral in DHW sliding prio
+	if (dhwt_sliding) {
+		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->hs_temp_out(heat), now);
+
+		if (temp < 0) {
+			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
+			heat->run.cshift_noncrit = temp / KPRECISIONI;
+		}
+		else {
+			heat->run.cshift_noncrit = 0;	// reset shift
+			heat->run.sld_itg.integral = 0;	// reset integral
+		}
+
+	}
 
 	// decrement consummer stop delay if any
 	if (dt < heat->run.target_consumer_sdelay)

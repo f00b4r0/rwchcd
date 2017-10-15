@@ -1610,6 +1610,8 @@ out:
  * @note the feedpump is @b NOT unflagged when running electric to avoid sending
  * cold water into the feed circuit. Thus the feedpump cannot be "summer maintained"
  * when the DHWT is running electric.
+ * @param dhwt target dhwt
+ * @param active flag status
  */
 static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active)
 {
@@ -1618,6 +1620,20 @@ static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active
 
 	if (dhwt->recyclepump)
 		dhwt->recyclepump->run.dwht_use = active;
+}
+
+/**
+ * Test if DHWT is currently in absolute priority charge mode.
+ * This function tests if a DHWT in charge is set for absolute priority.
+ * @param dhwt target dhwt
+ * @return true if DHWT is in active charge and absolute priority is set.
+ */
+static inline bool dhwt_in_absolute_charge(const struct s_dhw_tank * const dhwt)
+{
+	if (dhwt->run.charge_on && (DHWTP_ABSOLUTE == dhwt->set.dhwt_cprio))
+		return (true);
+	else
+		return (false);
 }
 
 /**
@@ -1680,7 +1696,6 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  * of the set limit.
  * @param dhwt target dhwt
  * @return error status
- * @todo XXX TODO: implement dhwprio glissante/absolue for heat request
  * @todo XXX TODO: implement working on electric without sensor
  * @bug discharge protection might fail if the input sensor needs water flow
  * in the feedpump. The solution to this is to implement a fallback to an upstream
@@ -2624,7 +2639,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_valve_l * valvel;
 	struct s_pump_l * pumpl;
 	int ret;
-	bool sleeping = true, suberror = false;
+	bool sleeping = true, suberror = false, dhwc_absolute = false;
 	time_t stop_delay = 0;
 
 	assert(plant);
@@ -2633,14 +2648,45 @@ int plant_run(struct s_plant * restrict const plant)
 		return (-ENOTCONFIGURED);
 
 	// run the consummers first so they can set their requested heat input
-	// circuits first
+	// dhwt first (to handle absolute priority)
+	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		ret = logic_dhwt(dhwtl->dhwt);
+		if (ALL_OK == ret) {	// run() only if logic() succeeds
+			ret = dhwt_run(dhwtl->dhwt);
+			if (ALL_OK == ret) {
+				if (dhwt_in_absolute_charge(dhwtl->dhwt))
+					dhwc_absolute = true;
+			}
+		}
+
+		dhwtl->status = ret;
+		
+		switch (ret) {
+			case ALL_OK:
+				break;
+			default:
+				dhwt_offline(dhwtl->dhwt);
+			case -EINVALIDMODE:
+				dhwtl->dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+			case -ENOTCONFIGURED:
+			case -EOFFLINE:
+				suberror = true;
+				dbgerr("dhwt_logic/run failed on %d (%d)", dhwtl->id, ret);
+				continue;
+		}
+	}
+
+	// update dhwc_absolute
+	plant->dhwc_absolute = dhwc_absolute;
+
+	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		ret = logic_circuit(circuitl->circuit);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
 			ret = circuit_run(circuitl->circuit);
-		
+
 		circuitl->status = ret;
-		
+
 		switch (ret) {
 			case ALL_OK:
 				break;
@@ -2655,29 +2701,6 @@ int plant_run(struct s_plant * restrict const plant)
 			case -EOFFLINE:
 				suberror = true;
 				dbgerr("circuit_logic/run failed on %d (%d)", circuitl->id, ret);
-				continue;
-		}
-	}
-
-	// then dhwt
-	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		ret = logic_dhwt(dhwtl->dhwt);
-		if (ALL_OK == ret)	// run() only if logic() succeeds
-			ret = dhwt_run(dhwtl->dhwt);
-		
-		dhwtl->status = ret;
-		
-		switch (ret) {
-			case ALL_OK:
-				break;
-			default:
-				dhwt_offline(dhwtl->dhwt);
-			case -EINVALIDMODE:
-				dhwtl->dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
-			case -ENOTCONFIGURED:
-			case -EOFFLINE:
-				suberror = true;
-				dbgerr("dhwt_logic/run failed on %d (%d)", dhwtl->id, ret);
 				continue;
 		}
 	}
@@ -2712,7 +2735,9 @@ int plant_run(struct s_plant * restrict const plant)
 		
 		// max stop delay
 		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
-		plant->consumer_shift = heatsourcel->heats->run.cshift_crit;	// XXX
+
+		// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
+		plant->consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
 	}
 
 	if (runtime->config->summer_maintenance)

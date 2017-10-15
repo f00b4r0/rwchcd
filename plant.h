@@ -209,6 +209,8 @@ struct s_heatsource {
 		time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
 		time_t target_consumer_sdelay;	///< calculated stop delay
 		int_fast16_t cshift_crit;	///< critical factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.
+		int_fast16_t cshift_noncrit;	///< non-critical factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.
+		struct s_temp_intgrl sld_itg;	///< sliding priority integral, used to compute consummer shift when in DHW sliding priority
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
 	void * restrict priv;			///< pointer to source private data structure
@@ -236,7 +238,13 @@ struct s_dhw_tank {
 		bool configured;		///< true if properly configured
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
-        //enum { DHWTP_ABSOLUTE, DHWTP_SLIDDHW, DHWTP_SLIDMAX, DHWTP_PARALDHW, DHWTP_PARALMAX };    ///< XXX priorite ECS - absolute, glissante (ecs ou max), aucune (parallele ecs ou max)
+		enum {
+			DHWTP_PARALMAX = 0,	///< no priority: parallel run with maximum selection
+			DHWTP_PARALDHW,		///< no priority: parallel run with DHW temp request override
+			DHWTP_SLIDMAX,		///< sliding priority with maximum selection: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature
+			DHWTP_SLIDDHW,		///< sliding priority with DHW temp request override: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature
+			DHWTP_ABSOLUTE,		///< absolute priority: heating circuits will not receive heat during DHW charge
+		} dhwt_cprio;	///< DHW charge priority
 		enum {
 			DHWTF_NEVER = 0,	///< never force
 			DHWTF_FIRST,		///< force first comfort charge of the day
@@ -316,6 +324,7 @@ struct s_heatsource_l {
  */
 struct s_plant {
 	bool configured;	///< true if properly configured
+	bool dhwc_absolute;	///< true if absolute DHWT charge in progress
 	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 	time_t consumer_sdelay;	///< minimum time consumers should keep their current consumption before turning off
 	uint_fast8_t pump_n;	///< number of pumps in the plant
