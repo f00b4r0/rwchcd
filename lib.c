@@ -53,3 +53,32 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 	
 	return (filtered - roundf(alpha * (filtered - new_sample)));
 }
+
+/**
+ * Threshold temperature integral, midpoint method.
+ * This function calculates the integral over time of a temperature series after
+ * subtracting a threshold value: the integral is positive if the values are above
+ * the threshold, and negative otherwise.
+ * The trapezoidal method is used here as it's the easiest to implement in a
+ * discrete context.
+ * @note by design this method will underestimate the integral value.
+ * @warning no check for overflow/underflow
+ * @param intgrl current integral data
+ * @param thrsh threshold value
+ * @param new_temp new temperature point
+ * @param new_time new temperature time
+ * @return the integral value in temp_t units * time_t units (millikelvins second)
+ */
+temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time)
+{
+	if ((0 == intgrl->last_time) || (thrsh != intgrl->last_thrsh))	// reset condition
+		intgrl->integral = 0;
+	else
+		intgrl->integral += (((new_temp + intgrl->last_temp)/2) - thrsh) * (new_time - intgrl->last_time);
+
+	intgrl->last_thrsh = thrsh;
+	intgrl->last_time = new_time;
+	intgrl->last_temp = new_temp;
+
+	return (intgrl->integral);
+}

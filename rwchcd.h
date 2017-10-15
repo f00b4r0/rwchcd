@@ -78,7 +78,7 @@ enum e_execs {
 	EGENERIC,
 };
 
-// fixed-point precision: we use a 1/1000th of a degree to reduce rounding imprecision in calculations
+// fixed-point precision: we use a 1/1000th of a degree (millikelvin) to reduce rounding imprecision in calculations
 #define KPRECISIONI	1000
 #define KPRECISIONF	1000.0F
 
@@ -150,6 +150,14 @@ struct s_dhwt_params {
 	temp_t t_frostfree;		///< target temp in frost-free mode. - XXX setup ensure > 0C
 	temp_t histeresis;		///< histeresis for target temp. - XXX setup ensure > 0C
 	temp_t temp_inoffset;		///< offset temp for heat source request. - XXX setup ensure > 0C
+};
+
+/** Temperature integral data */
+struct s_temp_intgrl {
+	temp_t integral;		///< integral value in temp_t * time_t
+	temp_t last_thrsh;		///< temperature threshold for integral calculation
+	temp_t last_temp;		///< last recorded temperature value
+	time_t last_time;		///< last recorded temperature time
 };
 
 #endif /* rwchcd_h */
