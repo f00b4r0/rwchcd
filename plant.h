@@ -216,6 +216,7 @@ struct s_heatsource {
 	int (*hs_offline)(struct s_heatsource * const);	///< pointer to source private offline() function
 	int (*hs_logic)(struct s_heatsource * const);	///< pointer to source private logic() function
 	int (*hs_run)(struct s_heatsource * const);	///< pointer to source private run() function
+	temp_t (*hs_temp_out)(struct s_heatsource * const);	///< pointer to source private temp_out() function (returns current output temperature)
 	void (*hs_del_priv)(void * priv);		///< pointer to source private del() function
 };
 

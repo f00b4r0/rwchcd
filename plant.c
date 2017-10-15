@@ -851,6 +851,22 @@ static void boiler_hs_del_priv(void * priv)
 }
 
 /**
+ * Return current boiler output temperature.
+ * @param heat heatsource parent structure
+ * @return current output temperature
+ * @warning no parameter check
+ */
+static temp_t boiler_hs_temp_out(struct s_heatsource * const heat)
+{
+	const struct s_boiler_priv * const boiler = heat->priv;
+
+	if (!boiler)
+		return (TEMPINVALID);
+
+	return (get_temp(boiler->set.id_temp_outgoing));
+}
+
+/**
  * Put boiler online.
  * Perform all necessary actions to prepare the boiler for service.
  * @param heat heatsource parent structure
@@ -868,6 +884,11 @@ static int boiler_hs_online(struct s_heatsource * const heat)
 
 	// check that mandatory sensors are working
 	testtemp = get_temp(boiler->set.id_temp);
+	ret = validate_temp(testtemp);
+	if (ret)
+		goto out;
+
+	testtemp = get_temp(boiler->set.id_temp_outgoing);
 	ret = validate_temp(testtemp);
 	if (ret)
 		goto out;
@@ -2185,6 +2206,7 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant
 			source->hs_offline = boiler_hs_offline;
 			source->hs_logic = boiler_hs_logic;
 			source->hs_run = boiler_hs_run;
+			source->hs_temp_out = boiler_hs_temp_out;
 			source->hs_del_priv = boiler_hs_del_priv;
 			break;
 		case NONE:

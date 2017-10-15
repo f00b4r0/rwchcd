@@ -90,6 +90,9 @@ __attribute__((const, always_inline)) static inline int validate_temp(const temp
 		case TEMPDISCON:
 			ret = -ESENSORDISCON;
 			break;
+		case TEMPINVALID:
+			ret = -EINVALID;
+			break;
 		default:
 			break;
 	}
