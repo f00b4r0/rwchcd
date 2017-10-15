@@ -178,6 +178,7 @@ struct s_boiler_priv {
 	struct {
 		bool antifreeze;		///< true if anti freeze tripped
 		temp_t target_temp;		///< current target temp
+		struct s_temp_intgrl boil_itg;	///< boiler integral (for cold start protection)
 	} run;		///< private runtime (internally handled)
 	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
 	struct s_valve * restrict retvalve;	///< return valve for the boiler, if present -- XXX NOT IMPLEMENTED

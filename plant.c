@@ -1018,17 +1018,18 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
  * Implement basic single stage boiler.
  * @note As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
  * @note the boiler trip/untrip points are target +/- histeresis/2
+ * @note cold startup protection has a hardcoded 2% per 1Ks ratio
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage (p.51)
- * @todo XXX TODO: review consummer inhibit signal formula for cool startup: write a proper integrator
  * @todo XXX TODO: implement limit on return temp (p.55/56 / p87-760), (consummer shift / return valve / bypass pump)
  */
 static int boiler_hs_run(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t boiler_temp, trip_temp, untrip_temp;
+	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl;
+	const time_t now = time(NULL);
 	int ret;
 
 	assert(boiler);
@@ -1073,14 +1074,19 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 
 	dbgmsg("%s: running: %d, target_temp: %.1f, boiler_temp: %.1f", heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
 	
-	// form consumer shift request if necessary
-	if (boiler_temp < boiler->set.limit_tmin) {
-		// percentage of shift is formed by the difference between current temp and expected temp in K * 10: 1K down means -10% shift - XXX REVIEW
-		heat->run.consumer_shift = 10*(boiler_temp - boiler->set.limit_tmin)/KPRECISIONI;
+	// calculate boiler integral
+	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, now);
+
+	// form consumer shift request if necessary for cold start protection
+	if (temp_intgrl < 0) {
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift
+		heat->run.consumer_shift = 2 * temp_intgrl / KPRECISIONI;
 	}
-	else
-		heat->run.consumer_shift = 0;
-		
+	else {
+		heat->run.consumer_shift = 0;		// reset shift
+		boiler->run.boil_itg.integral = 0;	// reset integral
+	}
+
 	// turn pump on if any
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, 0);
