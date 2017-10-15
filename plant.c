@@ -1029,7 +1029,6 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl;
-	const time_t now = time(NULL);
 	int ret;
 
 	assert(boiler);
@@ -1075,7 +1074,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	dbgmsg("%s: running: %d, target_temp: %.1f, boiler_temp: %.1f", heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
 	
 	// calculate boiler integral
-	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, now);
+	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, get_runtime()->temps_time);
 
 	// form consumer shift request if necessary for cold start protection
 	if (temp_intgrl < 0) {

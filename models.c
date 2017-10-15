@@ -126,7 +126,7 @@ static void bmodel_del(struct s_bmodel * restrict bmodel)
 static void bmodel_outdoor(struct s_bmodel * const bmodel)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	const time_t now = time(NULL);
+	const time_t now = runtime->temps_time;	// what matters is the actual update time of the outdoor sensor
 	const time_t dt = now - bmodel->run.t_out_ltime;;
 
 	if (dt >= OUTDOOR_AVG_UPDATE_DT) {

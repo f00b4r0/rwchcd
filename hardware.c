@@ -85,6 +85,7 @@ static struct s_sensor Sensors[RWCHCD_NTEMPS];		///< physical sensors
 
 static struct {
 	bool ready;			///< hardware is ready
+	time_t sensors_ftime;		///< sensors fetch time
 	time_t last_calib;		///< time of last calibration
 	float calib_nodac;		///< sensor calibration value without dac offset
 	float calib_dac;		///< sensor calibration value with dac offset
@@ -328,6 +329,7 @@ static void parse_temps(void)
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	for (i = 0; i < runtime->config->nsensors; i++)
 		runtime->temps[i] = Sensors[i].run.value;
+	runtime->temps_time = Hardware.sensors_ftime;
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 }
 
@@ -985,6 +987,8 @@ int hardware_online(void)
 	if (ret)
 		goto fail;
 
+	Hardware.sensors_ftime = time(NULL);
+
 	parse_temps();
 
 fail:
@@ -1105,6 +1109,7 @@ int hardware_input(void)
 	else {
 		// copy valid data to runtime environment
 		memcpy(Hardware.sensors, rawsensors, sizeof(Hardware.sensors));
+		Hardware.sensors_ftime = time(NULL);
 	}
 	
 	parse_temps();

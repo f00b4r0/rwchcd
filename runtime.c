@@ -143,7 +143,7 @@ static void outdoor_temp()
 {
 	static time_t last60 = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const tempid_t tid = Runtime.config->id_temp_outdoor;
-	const time_t now = time(NULL);
+	const time_t now = Runtime.temps_time;	// what matters is the actual update time of the outdoor sensor
 	const time_t dt60 = now - last60;
 	const temp_t toutdoor = get_temp(tid);
 	int ret;
