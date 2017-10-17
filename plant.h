@@ -16,16 +16,6 @@
 
 #include "rwchcd.h"
 
-struct s_solar_heater {
-	struct {
-		bool configured;
-		tempid_t id_temp_panel;		///< current panel temp for this circuit
-	} set;		///< settings (externally set)
-	struct s_pump * restrict pump;		///< pump for this circuit
-	char * restrict name;
-};
-
-
 /** List of pumps */
 struct s_pump_l {
 	uint_fast8_t id;
