@@ -54,9 +54,9 @@ struct s_heatsource {
 	void (*hs_del_priv)(void * priv);		///< pointer to source private del() function
 };
 
-int heatsource_online(struct s_heatsource * const heat);
+int heatsource_online(struct s_heatsource * const heat) __attribute__((warn_unused_result));
 int heatsource_offline(struct s_heatsource * const heat);
-int heatsource_run(struct s_heatsource * const heat);
+int heatsource_run(struct s_heatsource * const heat) __attribute__((warn_unused_result));
 void heatsource_del(struct s_heatsource * heat);
 
 #endif /* heatsource_h */

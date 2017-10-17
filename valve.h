@@ -78,10 +78,10 @@ struct s_valve {
 };
 
 void valve_del(struct s_valve * valve);
-int valve_online(struct s_valve * const valve);
+int valve_online(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_offline(struct s_valve * const valve);
-int valve_logic(struct s_valve * const valve);
-int valve_run(struct s_valve * const valve);
+int valve_logic(struct s_valve * const valve) __attribute__((warn_unused_result));
+int valve_run(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_reqstop(struct s_valve * const valve);
 int valve_request_pth(struct s_valve * const valve, int_fast16_t perth);
 int valve_make_bangbang(struct s_valve * const valve);

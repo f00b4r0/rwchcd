@@ -34,10 +34,10 @@ struct s_pump {
 };
 
 void pump_del(struct s_pump * restrict pump);
-int pump_online(struct s_pump * restrict const pump);
+int pump_online(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state);
 int pump_get_state(const struct s_pump * restrict const pump);
 int pump_offline(struct s_pump * restrict const pump);
-int pump_run(struct s_pump * restrict const pump);
+int pump_run(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 
 #endif /* pump_h */

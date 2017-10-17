@@ -61,9 +61,9 @@ struct s_dhw_tank {
 	char * restrict name;			///< name for this tank
 };
 
-int dhwt_online(struct s_dhw_tank * const dhwt);
+int dhwt_online(struct s_dhw_tank * const dhwt) __attribute__((warn_unused_result));
 int dhwt_offline(struct s_dhw_tank * const dhwt);
-int dhwt_run(struct s_dhw_tank * const dhwt);
+int dhwt_run(struct s_dhw_tank * const dhwt) __attribute__((warn_unused_result));
 void dhwt_del(struct s_dhw_tank * restrict dhwt);
 
 /**
