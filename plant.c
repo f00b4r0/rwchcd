@@ -15,7 +15,6 @@
  * In this context, a "plant" should logically be a collection of consummers
  * and heatsources all connected to each other: in a plant, all the heatsources
  * are providing heat to all of the plant's consummers.
- * @todo critical/non-critical inhibit signals. DHWT inhibit
  */
 
 #include <stdlib.h>	// calloc/free
@@ -1101,6 +1100,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	if (temp_intgrl < 0) {
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift
 		heat->run.cshift_crit = 2 * temp_intgrl / KPRECISIONI;
+		dbgmsg("%s: integral: %d mKs, cshift_crit: %d%%", heat->name, temp_intgrl, heat->run.cshift_crit);
 	}
 	else {
 		heat->run.cshift_crit = 0;		// reset shift
@@ -1344,7 +1344,6 @@ static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
  * @param circuit target circuit
  * @return exec status
  * @warning circuit->run.target_ambient must be properly set before this runs
- * @todo review consumer shift formula
  */
 static int circuit_run(struct s_heating_circuit * const circuit)
 {
@@ -1449,9 +1448,10 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 		interference = true;
 	}
 
-	// interference: apply global shift - XXX FORMULA
+	// interference: apply global shift
 	if (runtime->plant->consumer_shift) {
-		water_temp += deltaK_to_temp((0.25F * runtime->plant->consumer_shift));
+		// X% shift is (current + X*(current - ref)/100). ref is 0°C (absolute physical minimum) to avoid potential inversion problems with return temp
+		water_temp += runtime->plant->consumer_shift * (water_temp - celsius_to_temp(0)) / 100;
 		interference = true;
 	}
 
