@@ -1443,10 +1443,8 @@ static int circuit_run(struct s_heating_circuit * const circuit)
 	// save "non-interfered" target water temp
 	saved_temp = water_temp;
 	
-	// interference: handle stop delay requests
-	// XXX this will prevent a (valid: small) reduction in output: assumed acceptable
-	if (runtime->plant->consumer_sdelay) {
-		dbgmsg("%s: stop delay active, remaining: %ld", circuit->name, runtime->plant->consumer_sdelay);	// maintain current or higher wtemp during stop delay
+	// interference: handle output flooring requests: maintain current or higher wtemp
+	if (circuit->run.floor_output) {
 		water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
 		interference = true;
 	}

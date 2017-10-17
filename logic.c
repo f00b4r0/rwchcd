@@ -181,6 +181,15 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		circuit->run.trans_active_elapsed = 0;
 	}
 
+	// handle extra logic
+	// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
+	if ((TRANS_DOWN == circuit->run.transition) && runtime->plant->consumer_sdelay && !runtime->plant->dhwc_absolute)
+		circuit->run.floor_output = true;
+
+	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
+	if (!runtime->plant->consumer_sdelay)
+		circuit->run.floor_output = false;
+
 	// XXX OPTIM if return temp is known
 
 	// apply offset and save calculated target ambient temp to circuit
