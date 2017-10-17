@@ -139,6 +139,10 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	else
 		circuit->run.runmode = circuit->set.runmode;
 
+	// if an absolute priority DHW charge is in progress, switch to dhw-only (will register the transition)
+	if (runtime->plant->dhwc_absolute)
+		circuit->run.runmode = RM_DHWONLY;
+
 	// depending on circuit run mode, assess circuit target temp
 	switch (circuit->run.runmode) {
 		case RM_OFF:
@@ -168,10 +172,6 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
 	if (circuit->run.outhoff && !runtime->frost)
 		circuit->run.runmode = RM_OFF;
-
-	// if an absolute priority DHW charge is in progress, switch to frostfree
-	if (runtime->plant->dhwc_absolute)
-		circuit->run.runmode = RM_FROSTFREE;
 
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
 	if ((prev_runmode != circuit->run.runmode) && circuit->run.actual_ambient) {
