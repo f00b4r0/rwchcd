@@ -15,7 +15,6 @@
 #define dhwt_h
 
 #include "rwchcd.h"
-#include "pump.h"
 
 /** DHWT element structure */
 struct s_dhw_tank {

@@ -15,6 +15,7 @@
 #include <string.h>	// memset
 #include <assert.h>
 
+#include "pump.h"
 #include "dhwt.h"
 #include "hardware.h"
 #include "lib.h"

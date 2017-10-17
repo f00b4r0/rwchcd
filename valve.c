@@ -19,8 +19,37 @@
 #include "hardware.h"
 #include "lib.h"
 
+/** private structure for sapprox valve control */
+struct s_valve_sapprox_priv {
+	struct {
+		uint_fast16_t amount;		///< amount to move in ‰
+		time_t sample_intvl;		///< sample interval in seconds
+	} set;		///< settings (externally set)
+	struct {
+		time_t last_time;		///< last time the sapprox controller was run
+	} run;		///< private runtime (internally handled)
+};
+
+/** Private structure for PI valve control */
+struct s_valve_pi_priv {
+	struct {
+		time_t sample_intvl;	///< sample interval (s)
+		time_t Tu;		///< unit response time
+		time_t Td;		///< deadtime
+		temp_t Ksmax;		///< maximum valve output delta. Used if it cannot be measured.
+	} set;		///< settings (externally set)
+	struct {
+		time_t last_time;	///< last time the PI controller algorithm was run
+		time_t Tc;		///< closed loop time constant
+		temp_t prev_out;	///< previous run output temperature
+		float Kp_t;		///< Kp time factor: Kp = Kp_t / K, K process gain, Kp proportional coefficient
+		float db_acc;		///< deadband accumulator. Needed to integrate when valve is not actuated despite request.
+	} run;		///< private runtime (internally handled)
+};
+
+
 /**
- * Delete a valve
+ * Delete a valve.
  * Frees all valve-local resources
  * @param valve the valve to delete
  */

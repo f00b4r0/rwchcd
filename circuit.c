@@ -26,6 +26,20 @@
 
 #include "plant.h"
 
+/** private data for templaw_bilinear (for 20C ambient target) */
+struct s_tlaw_bilin20C_priv {
+	temp_t tout1;		///< outside temp1 (lowest outdoor temp)
+	temp_t twater1;		///< corresponding target water temp1 (highest water temp)
+	temp_t tout2;		///< outside temp2 (highest outdoor temp)
+	temp_t twater2;		///< corresponding target water temp2 (lowest water temp)
+	int_fast16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130)
+	temp_t toutinfl;	///< outdoor temperature at inflexion point (if 0 will be calculated from nH100)
+	temp_t twaterinfl;	///< water temperature at inflexion point (if 0 will be calculated from nH100)
+	temp_t offset;		///< global (linear) curve offset
+	float slope;		///< global (linear) curve slope
+};
+
+
 /**
  * Bilinear water temperature law.
  * This law approximates the curvature resulting from limited transmission non-linearities in heating elements

@@ -60,6 +60,7 @@
  #include "dbus.h"
 #endif
 
+#include "pump.h"
 #include "valve.h"
 #include "circuit.h"
 #include "dhwt.h"
