@@ -27,6 +27,8 @@
 #include "dhwt.h"
 #include "heatsource.h"
 
+#include "plant.h"	// for heatsource logic
+
 /**
  * Conditions for running circuit
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
@@ -144,7 +146,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		circuit->run.runmode = circuit->set.runmode;
 
 	// if an absolute priority DHW charge is in progress, switch to dhw-only (will register the transition)
-	if (runtime->plant->dhwc_absolute)
+	if (runtime->dhwc_absolute)
 		circuit->run.runmode = RM_DHWONLY;
 
 	// depending on circuit run mode, assess circuit target temp
@@ -187,11 +189,11 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 
 	// handle extra logic
 	// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
-	if ((TRANS_DOWN == circuit->run.transition) && runtime->plant->consumer_sdelay && !runtime->plant->dhwc_absolute)
+	if ((TRANS_DOWN == circuit->run.transition) && runtime->consumer_sdelay && !runtime->dhwc_absolute)
 		circuit->run.floor_output = true;
 
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
-	if (!runtime->plant->consumer_sdelay)
+	if (!runtime->consumer_sdelay)
 		circuit->run.floor_output = false;
 
 	// XXX OPTIM if return temp is known

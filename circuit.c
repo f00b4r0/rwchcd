@@ -24,8 +24,6 @@
 #include "models.h"
 #include "config.h"
 
-#include "plant.h"
-
 /** private data for templaw_bilinear (for 20C ambient target) */
 struct s_tlaw_bilin20C_priv {
 	temp_t tout1;		///< outside temp1 (lowest outdoor temp)
@@ -184,11 +182,11 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
-			if (circuit->run.target_wtemp && (runtime->plant->consumer_sdelay > 0)) {
+			if (circuit->run.target_wtemp && (runtime->consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				water_temp = circuit->run.target_wtemp;
-				dbgmsg("%s: in cooldown, remaining: %ld", circuit->name, runtime->plant->consumer_sdelay);
+				dbgmsg("%s: in cooldown, remaining: %ld", circuit->name, runtime->consumer_sdelay);
 				goto valve;	// stop processing
 			}
 			else
@@ -269,9 +267,9 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	}
 
 	// interference: apply global shift
-	if (runtime->plant->consumer_shift) {
+	if (runtime->consumer_shift) {
 		// X% shift is (current + X*(current - ref)/100). ref is 0°C (absolute physical minimum) to avoid potential inversion problems with return temp
-		water_temp += runtime->plant->consumer_shift * (water_temp - celsius_to_temp(0)) / 100;
+		water_temp += runtime->consumer_shift * (water_temp - celsius_to_temp(0)) / 100;
 		interference = true;
 	}
 

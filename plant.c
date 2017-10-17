@@ -735,7 +735,7 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 
 	// update dhwc_absolute
-	plant->dhwc_absolute = dhwc_absolute;
+	runtime->dhwc_absolute = dhwc_absolute;
 
 	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
@@ -795,7 +795,7 @@ int plant_run(struct s_plant * restrict const plant)
 		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
 
 		// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
-		plant->consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
+		runtime->consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
 	}
 
 	if (runtime->config->summer_maintenance)
@@ -846,7 +846,7 @@ int plant_run(struct s_plant * restrict const plant)
 	runtime->plant_could_sleep = sleeping;
 
 	// reflect global stop delay
-	plant->consumer_sdelay = stop_delay;
+	runtime->consumer_sdelay = stop_delay;
 	
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.

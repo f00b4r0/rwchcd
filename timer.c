@@ -18,7 +18,6 @@
 #include "rwchcd.h"
 #include "lib.h"
 #include "hardware.h"
-#include "plant.h"
 #include "config.h"
 #include "runtime.h"
 #include "storage.h"
