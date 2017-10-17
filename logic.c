@@ -23,6 +23,10 @@
 #include "logic.h"
 #include "models.h"
 
+#include "circuit.h"
+#include "dhwt.h"
+#include "heatsource.h"
+
 /**
  * Conditions for running circuit
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient

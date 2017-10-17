@@ -60,6 +60,11 @@
  #include "dbus.h"
 #endif
 
+#include "valve.h"
+#include "circuit.h"
+#include "dhwt.h"
+#include "heatsource.h"
+
 #ifndef RWCHCD_PRIO
  #define RWCHCD_PRIO	20	///< Desired run priority
 #endif

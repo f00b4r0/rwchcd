@@ -87,6 +87,9 @@ enum e_execs {
 
 #define	RWCHCD_NTEMPS	15	///< number of available sensors
 
+#define RWCHCD_TEMP_NOREQUEST	0		///< value for no heat request
+#define RWCHCD_CSHIFT_MAX	200		///< Maximum value for consumer shift
+
 /** Specific error values for temps */
 enum {
 	TEMPUNSET = 0,	///< temp hasn't been fetched

@@ -12,6 +12,11 @@
 		4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAA1D8873C500D86EE7 /* config.c */; };
 		4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAD1D8884ED00D86EE7 /* runtime.c */; };
 		4F3AFBB21D88867600D86EE7 /* lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBB01D88867600D86EE7 /* lib.c */; };
+		4F42A5D01F967BC3001B0A1F /* pump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5CE1F967BC3001B0A1F /* pump.c */; };
+		4F42A5D31F968069001B0A1F /* valve.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5D11F968069001B0A1F /* valve.c */; };
+		4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5D41F9683CC001B0A1F /* heatsource.c */; };
+		4F42A5D91F9687F3001B0A1F /* circuit.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5D71F9687F3001B0A1F /* circuit.c */; };
+		4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DA1F968AE8001B0A1F /* dhwt.c */; };
 		4F961FA21D8D66BF00E2A8AF /* logic.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F961FA01D8D66BF00E2A8AF /* logic.c */; };
 		4FA61C3E1E06F75100B4D862 /* timer.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3C1E06F75100B4D862 /* timer.c */; };
 		4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3F1E0955AA00B4D862 /* scheduler.c */; };
@@ -48,6 +53,16 @@
 		4F3AFBAE1D8884ED00D86EE7 /* runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBB01D88867600D86EE7 /* lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = lib.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBB11D88867600D86EE7 /* lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = lib.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4F42A5CE1F967BC3001B0A1F /* pump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pump.c; sourceTree = SOURCE_ROOT; };
+		4F42A5CF1F967BC3001B0A1F /* pump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pump.h; sourceTree = SOURCE_ROOT; };
+		4F42A5D11F968069001B0A1F /* valve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = valve.c; sourceTree = SOURCE_ROOT; };
+		4F42A5D21F968069001B0A1F /* valve.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = valve.h; sourceTree = SOURCE_ROOT; };
+		4F42A5D41F9683CC001B0A1F /* heatsource.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heatsource.c; sourceTree = SOURCE_ROOT; };
+		4F42A5D51F9683CC001B0A1F /* heatsource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heatsource.h; sourceTree = SOURCE_ROOT; };
+		4F42A5D71F9687F3001B0A1F /* circuit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = circuit.c; sourceTree = SOURCE_ROOT; };
+		4F42A5D81F9687F3001B0A1F /* circuit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = circuit.h; sourceTree = SOURCE_ROOT; };
+		4F42A5DA1F968AE8001B0A1F /* dhwt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dhwt.c; sourceTree = SOURCE_ROOT; };
+		4F42A5DB1F968AE8001B0A1F /* dhwt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt.h; sourceTree = SOURCE_ROOT; };
 		4F961F9F1D899D5100E2A8AF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
 		4F961FA01D8D66BF00E2A8AF /* logic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = logic.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F961FA11D8D66BF00E2A8AF /* logic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logic.h; sourceTree = SOURCE_ROOT; };
@@ -111,6 +126,16 @@
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4FCD550E1D835D04003BB848 /* hardware.c */,
 				4FCD550F1D835D04003BB848 /* hardware.h */,
+				4F42A5CE1F967BC3001B0A1F /* pump.c */,
+				4F42A5CF1F967BC3001B0A1F /* pump.h */,
+				4F42A5D11F968069001B0A1F /* valve.c */,
+				4F42A5D21F968069001B0A1F /* valve.h */,
+				4F42A5D41F9683CC001B0A1F /* heatsource.c */,
+				4F42A5D51F9683CC001B0A1F /* heatsource.h */,
+				4F42A5DA1F968AE8001B0A1F /* dhwt.c */,
+				4F42A5DB1F968AE8001B0A1F /* dhwt.h */,
+				4F42A5D71F9687F3001B0A1F /* circuit.c */,
+				4F42A5D81F9687F3001B0A1F /* circuit.h */,
 				4FCD55101D835D04003BB848 /* plant.c */,
 				4FCD55111D835D04003BB848 /* plant.h */,
 				4FC304A61EBDCDB900D77AC6 /* models.c */,
@@ -225,13 +250,18 @@
 			files = (
 				4FC1847B1DA6809E000E514B /* storage.c in Sources */,
 				4FCD55161D835D04003BB848 /* hardware.c in Sources */,
+				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,
+				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,
 				4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,
 				4FCD55181D835D04003BB848 /* spi.c in Sources */,
+				4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */,
+				4F42A5D91F9687F3001B0A1F /* circuit.c in Sources */,
 				4F15A85E1EBF74880000507A /* alarms.c in Sources */,
+				4F42A5D01F967BC3001B0A1F /* pump.c in Sources */,
 				4F2D5F591D97191C00CF842D /* lcd.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
 				4FC304A81EBDCDB900D77AC6 /* models.c in Sources */,
