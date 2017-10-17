@@ -284,8 +284,7 @@ fail:
  * @param type the heatsource type to create
  * @return pointer to the created source
  */
-struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name,
-					   const enum e_heatsource_type type)
+struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_heatsource_l * restrict sourcel;
 	struct s_heatsource * restrict source = NULL;
@@ -312,21 +311,6 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant
 	source = calloc(1, sizeof(*source));
 	if (!source)
 		goto fail;
-
-	switch (type) {
-		case BOILER:
-			heatsource_make_boiler(source);
-			break;
-		case NONE:
-		default:
-			break;
-	}
-
-	// check we have a priv element except for type NONE
-	if (!source->priv && (NONE != type))
-		goto fail;
-
-	source->set.type = type;
 
 	// set name
 	source->name = str;

@@ -64,6 +64,7 @@
 #include "circuit.h"
 #include "dhwt.h"
 #include "heatsource.h"
+#include "boiler.h"
 
 #ifndef RWCHCD_PRIO
  #define RWCHCD_PRIO	20	///< Desired run priority
@@ -230,11 +231,16 @@ static int init_process()
 	}
 
 	// create a new heat source for the plant
-	heatsource = plant_new_heatsource(plant, "boiler", BOILER);
+	heatsource = plant_new_heatsource(plant, "boiler");
 	if (!heatsource) {
 		dbgerr("heatsource creation failed");
 		return (-EOOM);
 	}
+
+	// make that heatsource a boiler
+	ret = boiler_heatsource(heatsource);
+	if (ret)
+		return (ret);
 
 	// configure that source	XXX REVISIT
 	boiler = heatsource->priv;
