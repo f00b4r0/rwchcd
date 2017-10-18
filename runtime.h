@@ -40,6 +40,7 @@ struct s_runtime {
 };
 
 struct s_runtime * get_runtime(void);
+temp_t get_temp(const tempid_t id);
 int runtime_init(void);
 int runtime_set_systemmode(const enum e_systemmode sysmode);
 int runtime_set_runmode(const enum e_runmode runmode);

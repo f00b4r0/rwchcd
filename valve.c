@@ -18,6 +18,7 @@
 #include "valve.h"
 #include "hardware.h"
 #include "lib.h"
+#include "runtime.h"	// get_temp()
 
 /** private structure for sapprox valve control */
 struct s_valve_sapprox_priv {

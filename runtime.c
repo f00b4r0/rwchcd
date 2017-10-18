@@ -40,6 +40,19 @@ struct s_runtime * get_runtime(void)
 }
 
 /**
+ * Get temp from a given temp id
+ * @param id the physical id (counted from 1) of the sensor
+ * @return temp if id valid, 0 otherwise
+ */
+temp_t get_temp(const tempid_t id)
+{
+	if ((id <= 0) || (id > Runtime.config->nsensors))
+		return (TEMPUNSET);
+
+	return (Runtime.temps[id-1]);	// XXX REVISIT lock
+}
+
+/**
  * Save runtime to permanent storage
  * @return exec status
  */

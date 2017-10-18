@@ -16,7 +16,6 @@
 
 #include "rwchcd.h"
 
-temp_t get_temp(const tempid_t id);
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt);
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time);
 

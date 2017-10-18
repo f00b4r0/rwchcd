@@ -14,24 +14,6 @@
 #include <math.h>	// roundf
 
 #include "rwchcd.h"
-#include "config.h"
-#include "runtime.h"
-
-/**
- * get temp from a given temp id
- * @param id the physical id (counted from 1) of the sensor
- * @return temp if id valid, 0 otherwise
- * @warning no param check
- */
-temp_t get_temp(const tempid_t id)
-{
-	const struct s_runtime * const runtime = get_runtime();
-
-	if ((id <= 0) || (id > runtime->config->nsensors))
-		return (TEMPUNSET);
-
-	return (runtime->temps[id-1]);	// XXX REVISIT lock
-}
 
 /**
  * Exponentially weighted moving average implementing a trivial LP filter.
