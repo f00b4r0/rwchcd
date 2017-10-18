@@ -34,10 +34,10 @@ temp_t get_temp(const tempid_t id)
 }
 
 /**
- * Exponentially weighted moving average implementing a trivial LP filter
- http://www.rowetel.com/?p=1245
- https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
- http://www.edn.com/design/systems-design/4320010/A-simple-software-lowpass-filter-suits-embedded-system-applications
+ * Exponentially weighted moving average implementing a trivial LP filter.
+ * - http://www.rowetel.com/?p=1245
+ * - https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
+ * - http://www.edn.com/design/systems-design/4320010/A-simple-software-lowpass-filter-suits-embedded-system-applications
  * @warning if dt is 0 then the value will never be updated (dt has a 1s resolution)
  * @param filtered accumulated average
  * @param new_sample new sample to average
@@ -55,7 +55,7 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 }
 
 /**
- * Threshold temperature integral, midpoint method.
+ * Threshold temperature integral, trapezoidal method.
  * This function calculates the integral over time of a temperature series after
  * subtracting a threshold value: the integral is positive if the values are above
  * the threshold, and negative otherwise.

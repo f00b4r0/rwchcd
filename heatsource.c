@@ -44,8 +44,8 @@ int heatsource_online(struct s_heatsource * const heat)
 	if (!heat->priv)
 		return (-EMISCONFIGURED);
 
-	if (heat->hs_online)
-		ret = heat->hs_online(heat);
+	if (heat->cb.online)
+		ret = heat->cb.online(heat);
 
 	return (ret);
 }
@@ -69,8 +69,8 @@ int heatsource_offline(struct s_heatsource * const heat)
 
 	heat->run.runmode = RM_OFF;
 
-	if (heat->hs_offline)
-		ret = heat->hs_offline(heat);
+	if (heat->cb.offline)
+		ret = heat->cb.offline(heat);
 
 	return (ret);
 }
@@ -91,14 +91,14 @@ int heatsource_run(struct s_heatsource * const heat)
 	if (!heat->run.online)
 		return (-EOFFLINE);
 
-	if (heat->hs_run)
-		return (heat->hs_run(heat));
+	if (heat->cb.run)
+		return (heat->cb.run(heat));
 	else
 		return (-ENOTIMPLEMENTED);
 }
 
 /**
- * Delete a heatsource
+ * Delete a heatsource.
  * @param source the source to delete
  */
 void heatsource_del(struct s_heatsource * heat)
@@ -106,8 +106,8 @@ void heatsource_del(struct s_heatsource * heat)
 	if (!heat)
 		return;
 
-	if (heat->hs_del_priv)
-		heat->hs_del_priv(heat->priv);
+	if (heat->cb.del_priv)
+		heat->cb.del_priv(heat->priv);
 	heat->priv = NULL;
 
 	free(heat->name);

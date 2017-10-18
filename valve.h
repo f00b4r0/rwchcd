@@ -56,9 +56,9 @@ int valve_logic(struct s_valve * const valve) __attribute__((warn_unused_result)
 int valve_run(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_reqstop(struct s_valve * const valve);
 int valve_request_pth(struct s_valve * const valve, int_fast16_t perth);
-int valve_make_bangbang(struct s_valve * const valve);
-int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl);
-int valve_make_pi(struct s_valve * const valve, time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor);
+int valve_make_bangbang(struct s_valve * const valve) __attribute__((warn_unused_result));
+int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl) __attribute__((warn_unused_result));
+int valve_make_pi(struct s_valve * const valve, time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
 
 /**
  * Call valve control algorithm based on target temperature.

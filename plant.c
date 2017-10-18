@@ -278,7 +278,7 @@ fail:
 }
 
 /**
- * Create a new heatsource in the plant
+ * Create a new heatsource in the plant.
  * @param plant the target plant
  * @param name @b UNIQUE heatsource name (or NULL). A local copy is created if set
  * @param type the heatsource type to create
@@ -333,8 +333,8 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant
 
 fail:
 	free(str);
-	if (source && source->hs_del_priv)
-		source->hs_del_priv(source->priv);
+	if (source && source->cb.del_priv)
+		source->cb.del_priv(source->priv);
 	free(source);
 	free(sourceelement);
 	return (NULL);

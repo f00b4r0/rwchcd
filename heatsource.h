@@ -46,12 +46,14 @@ struct s_heatsource {
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
 	void * restrict priv;			///< pointer to source private data structure
-	int (*hs_online)(struct s_heatsource * const);	///< pointer to source private online() function
-	int (*hs_offline)(struct s_heatsource * const);	///< pointer to source private offline() function
-	int (*hs_logic)(struct s_heatsource * const);	///< pointer to source private logic() function
-	int (*hs_run)(struct s_heatsource * const);	///< pointer to source private run() function
-	temp_t (*hs_temp_out)(struct s_heatsource * const);	///< pointer to source private temp_out() function (returns current output temperature)
-	void (*hs_del_priv)(void * priv);		///< pointer to source private del() function
+	struct {
+		int (*online)(struct s_heatsource * const);	///< pointer to source private online() function
+		int (*offline)(struct s_heatsource * const);	///< pointer to source private offline() function
+		int (*logic)(struct s_heatsource * const);	///< pointer to source private logic() function
+		int (*run)(struct s_heatsource * const);	///< pointer to source private run() function
+		temp_t (*temp_out)(struct s_heatsource * const);///< pointer to source private temp_out() function (returns current output temperature)
+		void (*del_priv)(void * priv);			///< pointer to source private del() function
+	} cb;		///< heatsource callbacks
 };
 
 int heatsource_online(struct s_heatsource * const heat) __attribute__((warn_unused_result));

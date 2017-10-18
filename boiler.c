@@ -41,7 +41,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 }
 
 /**
- * Create a new boiler
+ * Create a new boiler.
  * @return pointer to the created boiler
  */
 static struct s_boiler_priv * boiler_new(void)
@@ -62,11 +62,11 @@ static struct s_boiler_priv * boiler_new(void)
 }
 
 /**
- * Delete a boiler
+ * Delete a boiler.
  * Frees all boiler-local resources
  * @param boiler the boiler to delete
  */
-static void boiler_hs_del_priv(void * priv)
+static void boiler_hscb_del_priv(void * priv)
 {
 	struct s_boiler_priv * boiler = priv;
 
@@ -85,7 +85,7 @@ static void boiler_hs_del_priv(void * priv)
  * @return current output temperature
  * @warning no parameter check
  */
-static temp_t boiler_hs_temp_out(struct s_heatsource * const heat)
+static temp_t boiler_hscb_temp_out(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
 
@@ -102,7 +102,7 @@ static temp_t boiler_hs_temp_out(struct s_heatsource * const heat)
  * @return exec status
  * @warning no parameter check
  */
-static int boiler_hs_online(struct s_heatsource * const heat)
+static int boiler_hscb_online(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
 	temp_t testtemp;
@@ -142,7 +142,7 @@ out:
  * @return exec status
  * @warning no parameter check
  */
-static int boiler_hs_offline(struct s_heatsource * const heat)
+static int boiler_hscb_offline(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * const boiler = heat->priv;
 
@@ -192,13 +192,13 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 }
 
 /**
- * Boiler logic
+ * Boiler logic.
  * As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online). XXX REVIEW
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @todo burner turn-on anticipation
  */
-static int boiler_hs_logic(struct s_heatsource * restrict const heat)
+static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 {
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
@@ -275,7 +275,7 @@ static int boiler_hs_logic(struct s_heatsource * restrict const heat)
  * @todo XXX TODO: implement 2nd stage (p.51)
  * @todo XXX TODO: implement limit on return temp (p.55/56 / p87-760), (consummer shift / return valve / bypass pump)
  */
-static int boiler_hs_run(struct s_heatsource * const heat)
+static int boiler_hscb_run(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl;
@@ -286,7 +286,7 @@ static int boiler_hs_run(struct s_heatsource * const heat)
 	switch (heat->run.runmode) {
 		case RM_OFF:
 			if (!boiler->run.antifreeze)
-				return (boiler_hs_offline(heat));	// Only if no antifreeze (see above)
+				return (boiler_hscb_offline(heat));	// Only if no antifreeze (see above)
 		case RM_COMFORT:
 		case RM_ECO:
 		case RM_DHWONLY:
@@ -385,12 +385,12 @@ int boiler_heatsource(struct s_heatsource * const heat)
 	if (!heat->priv)
 		return (-EOOM);
 
-	heat->hs_online = boiler_hs_online;
-	heat->hs_offline = boiler_hs_offline;
-	heat->hs_logic = boiler_hs_logic;
-	heat->hs_run = boiler_hs_run;
-	heat->hs_temp_out = boiler_hs_temp_out;
-	heat->hs_del_priv = boiler_hs_del_priv;
+	heat->cb.online = boiler_hscb_online;
+	heat->cb.offline = boiler_hscb_offline;
+	heat->cb.logic = boiler_hscb_logic;
+	heat->cb.run = boiler_hscb_run;
+	heat->cb.temp_out = boiler_hscb_temp_out;
+	heat->cb.del_priv = boiler_hscb_del_priv;
 
 	heat->set.type = HS_BOILER;
 

@@ -69,7 +69,7 @@ void valve_del(struct s_valve * valve)
 }
 
 /**
- * Request valve stop
+ * Request valve stop.
  * @param valve target valve
  * @return exec status
  */
@@ -85,7 +85,7 @@ int valve_reqstop(struct s_valve * const valve)
 }
 
 /**
- * Request valve closing/opening amount
+ * Request valve closing/opening amount.
  * @param valve target valve
  * @param perthousand amount to open (positive) or close (negative) the valve
  * @return exec status. If requested amount is < valve deadband no action is performed, -EDEADBAND is returned.
@@ -271,7 +271,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 }
 
 /**
- * implement a bang-bang controller for valve position.
+ * Implement a bang-bang controller for valve position.
  * If target_tout > current tempout, open the valve, otherwise close it
  * @warning in case of sensor failure, NO ACTION is performed
  * @param valve self
@@ -412,7 +412,7 @@ int valve_offline(struct s_valve * const valve)
 	return (ALL_OK);
 }
 
-#define VALVE_MAX_RUNX	3
+#define VALVE_MAX_RUNX	3	///< sets maximum continuous actuation request in one direction as ete_time * VALVE_MAX_RUNX
 /**
  * Valve logic.
  * Ensures the valve cannot run forever in one direction.
@@ -431,13 +431,13 @@ int valve_logic(struct s_valve * const valve)
 		return (-EOFFLINE);
 
 	if (OPEN == valve->run.request_action) {
-		if (valve->run.acc_open_time >= valve->set.ete_time*VALVE_MAX_RUNX) {
+		if (valve->run.acc_open_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
 			valve->run.true_pos = true;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
 	}
 	else if (CLOSE == valve->run.request_action) {
-		if (valve->run.acc_close_time >= valve->set.ete_time*VALVE_MAX_RUNX) {
+		if (valve->run.acc_close_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
 			valve->run.true_pos = true;
 			valve_reqstop(valve);	// don't run if we're already maxed out
 		}
@@ -535,7 +535,7 @@ int valve_run(struct s_valve * const valve)
 }
 
 /**
- * Constructor for bangbang valve control
+ * Constructor for bangbang valve control.
  * @param valve target valve
  * @return exec status
  */
@@ -550,7 +550,7 @@ int valve_make_bangbang(struct s_valve * const valve)
 }
 
 /**
- * Constructor for sapprox valve control
+ * Constructor for sapprox valve control.
  * @param valve target valve
  * @param amount movement amount in %
  * @param intvl sample interval in seconds
@@ -563,6 +563,9 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 
 	if (!valve)
 		return (-EINVALID);
+
+	if (valve->priv)
+		return (-EEXISTS);
 
 	if (amount > 100)
 		return (-EINVALID);
@@ -585,7 +588,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 }
 
 /**
- * Constructor for PI valve control
+ * Constructor for PI valve control.
  * @param valve target valve
  * @param intvl sample interval in seconds
  * @param Td deadtime (time elapsed before any change in output is observed after a step change)
@@ -594,7 +597,6 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
  * @param t_factor tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
  * @return exec status
  * @note refer to valvectrl_pi() for calculation details
- * @warning tuning factor is hardcoded
  */
 int valve_make_pi(struct s_valve * const valve,
 		  time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
@@ -603,6 +605,9 @@ int valve_make_pi(struct s_valve * const valve,
 
 	if (!valve)
 		return (-EINVALID);
+
+	if (valve->priv)
+		return (-EEXISTS);
 
 	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0) || (t_factor <= 0))
 		return (-EINVALID);
@@ -621,7 +626,7 @@ int valve_make_pi(struct s_valve * const valve,
 	priv->set.Tu = Tu;
 	priv->set.Ksmax = Ksmax;
 
-	priv->run.Tc = (1*Tu > 8*Td) ? 1*Tu : 8*Td;
+	priv->run.Tc = (1*Tu > 8*Td) ? 1*Tu : 8*Td;	// see valvectrl_pi()
 	priv->run.Tc *= t_factor;
 	priv->run.Tc /= 10;
 	assert(priv->run.Tc);

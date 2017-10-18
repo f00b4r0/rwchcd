@@ -343,7 +343,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 }
 
 /**
- * DHWT destructor
+ * DHWT destructor.
  * Frees all dhwt-local resources
  * @param dhwt the dhwt to delete
  */

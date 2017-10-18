@@ -54,7 +54,7 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 }
 
 /**
- * Restore building model state from permanent storage
+ * Restore building model state from permanent storage.
  * @bug name length hack
  * @param bmodel the building model to restore, @b MUST be named
  * @return exec status
