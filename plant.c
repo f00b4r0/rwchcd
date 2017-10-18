@@ -619,6 +619,79 @@ int plant_offline(struct s_plant * restrict const plant)
 }
 
 /**
+ * Collect heat requests from a plant.
+ * Updates runtime->plant_hrequest, runtime->plant_could_sleep, runtime->dhwc_sliding
+ * @param plant target plant
+ */
+static void plant_collect_hrequests(const struct s_plant * restrict const plant)
+{
+	static time_t last_circuit_reqtime = 0;
+	const time_t now = time(NULL);
+	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_heating_circuit_l * circuitl;
+	struct s_dhw_tank_l * dhwtl;
+	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
+	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false;
+
+	assert(plant);
+
+	// for consummers in runtime scheme, collect heat requests and max them
+	// circuits first
+	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		temp = circuitl->circuit->run.heat_request;
+		temp_request = (temp > temp_request) ? temp : temp_request;
+		if (RWCHCD_TEMP_NOREQUEST != temp)
+			last_circuit_reqtime = now;
+	}
+
+	// check if last request exceeds timeout
+	if ((now - last_circuit_reqtime) > runtime->config->sleeping_delay)
+		runtime->plant_could_sleep = true;
+	else
+		runtime->plant_could_sleep = false;
+
+	// then dhwt
+	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		temp = dhwtl->dhwt->run.heat_request;
+		temp_req_dhw = (temp > temp_req_dhw) ? temp : temp_req_dhw;
+
+		// handle DHW charge priority
+		if (dhwtl->dhwt->run.charge_on) {
+			switch (dhwtl->dhwt->set.dhwt_cprio) {
+				case DHWTP_SLIDDHW:
+					dhwt_reqdhw = true;
+				case DHWTP_SLIDMAX:
+					dhwt_sliding = true;
+					break;
+				case DHWTP_ABSOLUTE:
+					dhwt_absolute = true;
+				case DHWTP_PARALDHW:
+					dhwt_reqdhw = true;
+				case DHWTP_PARALMAX:
+				default:
+					/* nothing */
+					break;
+			}
+		}
+	}
+
+	/*
+	 if dhwt_absolute => circuits don't receive heat
+	 if dhwt_sliding => circuits can be reduced
+	 if dhwt_reqdhw => heat request = max dhw request, else max (max circuit, max dhw)
+	 */
+
+	// calculate max of circuit requests and dhwt requests
+	temp_request = (temp_req_dhw > temp_request) ? temp_req_dhw : temp_request;
+
+	// select effective heat request
+	runtime->plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
+
+	runtime->dhwc_absolute = dhwt_absolute;
+	runtime->dhwc_sliding = dhwt_sliding;
+}
+
+/**
  * Plant summer maintenance operations.
  * When summer conditions are met, the pumps and valves are periodically actuated.
  * The idea of this function is to run as an override filter in the plant_run()
@@ -697,7 +770,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_valve_l * valvel;
 	struct s_pump_l * pumpl;
 	int ret;
-	bool sleeping = true, suberror = false, dhwc_absolute = false;
+	bool suberror = false;
 	time_t stop_delay = 0;
 
 	assert(plant);
@@ -706,16 +779,11 @@ int plant_run(struct s_plant * restrict const plant)
 		return (-ENOTCONFIGURED);
 
 	// run the consummers first so they can set their requested heat input
-	// dhwt first (to handle absolute priority)
+	// dhwt first
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		ret = logic_dhwt(dhwtl->dhwt);
-		if (ALL_OK == ret) {	// run() only if logic() succeeds
+		if (ALL_OK == ret)	// run() only if logic() succeeds
 			ret = dhwt_run(dhwtl->dhwt);
-			if (ALL_OK == ret) {
-				if (dhwt_in_absolute_charge(dhwtl->dhwt))
-					dhwc_absolute = true;
-			}
-		}
 
 		dhwtl->status = ret;
 		
@@ -733,9 +801,6 @@ int plant_run(struct s_plant * restrict const plant)
 				continue;
 		}
 	}
-
-	// update dhwc_absolute
-	runtime->dhwc_absolute = dhwc_absolute;
 
 	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
@@ -763,6 +828,9 @@ int plant_run(struct s_plant * restrict const plant)
 		}
 	}
 
+	// collect heat requests
+	plant_collect_hrequests(plant);
+
 	// finally run the heat source
 	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
 	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
@@ -787,10 +855,7 @@ int plant_run(struct s_plant * restrict const plant)
 				dbgerr("logic_heatsource/run failed on %d (%d)", heatsourcel->id, ret);
 				continue;	// no further processing for this source
 		}
-		
-		if (!heatsourcel->heats->run.could_sleep)	// if (a) heatsource isn't sleeping then the plant isn't sleeping
-			sleeping = heatsourcel->heats->run.could_sleep;
-		
+
 		// max stop delay
 		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
 
@@ -841,9 +906,6 @@ int plant_run(struct s_plant * restrict const plant)
 				continue;	// no further processing for this valve
 		}
 	}
-	
-	// reflect global sleeping state
-	runtime->plant_could_sleep = sleeping;
 
 	// reflect global stop delay
 	runtime->consumer_sdelay = stop_delay;

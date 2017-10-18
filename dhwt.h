@@ -65,18 +65,4 @@ int dhwt_offline(struct s_dhw_tank * const dhwt);
 int dhwt_run(struct s_dhw_tank * const dhwt) __attribute__((warn_unused_result));
 void dhwt_del(struct s_dhw_tank * restrict dhwt);
 
-/**
- * Test if DHWT is currently in absolute priority charge mode.
- * This function tests if a DHWT in charge is set for absolute priority.
- * @param dhwt target dhwt
- * @return true if DHWT is in active charge and absolute priority is set.
- */
-static inline bool dhwt_in_absolute_charge(const struct s_dhw_tank * const dhwt)
-{
-	if (dhwt->run.charge_on && (DHWTP_ABSOLUTE == dhwt->set.dhwt_cprio))
-		return (true);
-	else
-		return (false);
-}
-
 #endif /* dhwt_h */

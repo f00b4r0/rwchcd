@@ -27,8 +27,6 @@
 #include "dhwt.h"
 #include "heatsource.h"
 
-#include "plant.h"	// for heatsource logic
-
 /**
  * Conditions for running circuit
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
@@ -412,13 +410,9 @@ settarget:
 int logic_heatsource(struct s_heatsource * restrict const heat)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
-	struct s_heating_circuit_l * restrict circuitl;
-	struct s_dhw_tank_l * restrict dhwtl;
-	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
 	const time_t now = time(NULL);
 	const time_t dt = now - heat->run.last_run_time;
-	bool dhwt_sliding = false, dhwt_reqdhw = false;
-
+	temp_t temp;
 	int ret = -ENOTIMPLEMENTED;
 	
 	assert(heat);
@@ -434,59 +428,12 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 		heat->run.runmode = runtime->runmode;
 	else
 		heat->run.runmode = heat->set.runmode;
-	
-	// for consummers in runtime scheme, collect heat requests and max them
-	// circuits first
-	for (circuitl = runtime->plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		temp = circuitl->circuit->run.heat_request;
-		temp_request = (temp > temp_request) ? temp : temp_request;
-		if (RWCHCD_TEMP_NOREQUEST != temp)
-			heat->run.last_circuit_reqtime = now;
-	}
-	
-	// check if last request exceeds timeout
-	if ((now - heat->run.last_circuit_reqtime) > heat->set.sleeping_time)
-		heat->run.could_sleep = true;
-	else
-		heat->run.could_sleep = false;
-	
-	// then dhwt
-	for (dhwtl = runtime->plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		temp = dhwtl->dhwt->run.heat_request;
-		temp_req_dhw = (temp > temp_req_dhw) ? temp : temp_req_dhw;
 
-		// handle DHW charge priority
-		if (dhwtl->dhwt->run.charge_on) {
-			switch (dhwtl->dhwt->set.dhwt_cprio) {
-				case DHWTP_SLIDDHW:
-					dhwt_reqdhw = true;
-				case DHWTP_SLIDMAX:
-					dhwt_sliding = true;
-					break;
-				case DHWTP_ABSOLUTE:
-				case DHWTP_PARALDHW:
-					dhwt_reqdhw = true;
-				case DHWTP_PARALMAX:
-				default:
-					/* nothing */
-					break;
-			}
-		}
-	}
-
-	/*
-	 if dhwt_sliding => circuits can be reduced
-	 if dhwt_reqdhw => heat request = max dhw request, else max (max circuit, max dhw)
-	 */
-
-	// calculate max of circuit requests and dhwt requests
-	temp_request = (temp_req_dhw > temp_request) ? temp_req_dhw : temp_request;
-
-	// apply result to heat source
-	heat->run.temp_request = dhwt_reqdhw ? temp_req_dhw : temp_request;
+	heat->run.temp_request = runtime->plant_hrequest;
+	heat->run.could_sleep = runtime->plant_could_sleep;
 
 	// compute sliding integral in DHW sliding prio
-	if (dhwt_sliding) {
+	if (runtime->dhwc_sliding) {
 		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp_out(heat), now);
 
 		if (temp < 0) {

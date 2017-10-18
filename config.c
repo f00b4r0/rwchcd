@@ -20,7 +20,7 @@
 #include "storage.h"
 #include "config.h"
 
-static const storage_version_t Config_sversion = 7;
+static const storage_version_t Config_sversion = 8;
 
 /**
  * Allocate new config.

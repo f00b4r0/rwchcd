@@ -29,7 +29,6 @@ struct s_heatsource {
 		enum e_runmode runmode;		///< current heatsource set_runmode
 		enum e_heatsource_type type;	///< type of heatsource
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
-		time_t sleeping_time;		///< if no request for this much time, then mark heat source as can sleep
 		time_t consumer_sdelay;		///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
 	} set;		///< settings (externally set)
 	struct {
@@ -38,7 +37,6 @@ struct s_heatsource {
 		enum e_runmode runmode;		///< heatsource actual (computed) runmode
 		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
 		time_t last_run_time;		///< last time heatsource was run
-		time_t last_circuit_reqtime;	///< last time a circuit has put out a request for that heat source
 		time_t target_consumer_sdelay;	///< calculated stop delay
 		int_fast16_t cshift_crit;	///< critical factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.
 		int_fast16_t cshift_noncrit;	///< non-critical factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.

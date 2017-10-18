@@ -25,8 +25,10 @@ struct s_runtime {
 	bool summer;			///< outdoor temperature is compatible with summer mode
 	bool frost;			///< outdoor temperature requires frost protection
 	bool dhwc_absolute;		///< true if absolute DHWT charge in progress
+	bool dhwc_sliding;		///< true if sliding DHWT charge in progress
 	temp_t t_outdoor;		///< instantaneous outdoor temperature
 	temp_t t_outdoor_60;		///< t_outdoor filtered over a 60s window
+	temp_t plant_hrequest;		///< local heat request
 	temp_t external_hrequest;	///< external heat request (for cascading). @todo XXX NOT IMPLEMENTED
 	time_t start_time;		///< system start time
 	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off

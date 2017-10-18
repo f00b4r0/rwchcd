@@ -166,6 +166,7 @@ static int init_process()
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
 		config->summer_maintenance = true;	// enable summer maintenance
+		config->sleeping_delay = 1 * 24 * 60 * 60;	// XXX 1 day
 
 		// circuit defaults
 		config->def_circuit.t_comfort = celsius_to_temp(20.0F);
@@ -260,7 +261,6 @@ static int init_process()
 	else
 		boiler->set.rid_burner_1 = RELAY_BURNER;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
-	heatsource->set.sleeping_time = 1 * 24 * 60 * 60;	// XXX 1 day
 	heatsource->set.consumer_sdelay = 6 * 60;	// 6mn
 	heatsource->set.runmode = RM_AUTO;	// use global setting
 	heatsource->set.configured = true;
