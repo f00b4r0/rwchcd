@@ -434,7 +434,7 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 
 	// compute sliding integral in DHW sliding prio
 	if (runtime->dhwc_sliding) {
-		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp_out(heat), now);
+		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp_out(heat), runtime->temps_time);
 
 		if (temp < 0) {
 			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
