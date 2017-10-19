@@ -90,7 +90,6 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
  */
 int circuit_online(struct s_heating_circuit * const circuit)
 {
-	temp_t testtemp;
 	int ret;
 
 	if (!circuit)
@@ -103,8 +102,7 @@ int circuit_online(struct s_heating_circuit * const circuit)
 		return (-EMISCONFIGURED);
 
 	// check that mandatory sensors are working
-	testtemp = get_temp(circuit->set.id_temp_outgoing);
-	ret = validate_temp(testtemp);
+	ret = clone_temp(circuit->set.id_temp_outgoing, NULL);
 	if (ret)
 		goto out;
 
@@ -210,8 +208,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	// if we reached this point then the circuit is active
 
 	// safety checks
-	curr_temp = get_temp(circuit->set.id_temp_outgoing);
-	ret = validate_temp(curr_temp);
+	ret = clone_temp(circuit->set.id_temp_outgoing, &curr_temp);
 	if (ALL_OK != ret) {
 		circuit_failsafe(circuit);
 		return (ret);

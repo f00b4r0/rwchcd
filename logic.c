@@ -202,8 +202,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	elapsed_time = now - circuit->run.ambient_update_time;
 
 	// Ambient temperature is either read or modelled
-	ambient_temp = get_temp(circuit->set.id_temp_ambient);
-	if (validate_temp(ambient_temp) == ALL_OK) {	// we have an ambient sensor
+	if (clone_temp(circuit->set.id_temp_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 		// calculate ambient shift based on measured ambient temp influence in percent
 		ambient_delta = (circuit->set.ambient_factor) * (circuit->run.target_ambient - ambient_temp) / 100;
 	}

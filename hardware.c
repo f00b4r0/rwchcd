@@ -243,10 +243,10 @@ static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
  * Raise an alarm for a specific sensor.
  * This function raises an alarm if the sensor's temperature is invalid.
  * @param id target sensor id
- * @param temp sensor temperature
+ * @param error sensor error
  * @return exec status
  */
-static int sensor_alarm(const tempid_t id, const temp_t temp)
+static int sensor_alarm(const tempid_t id, const int error)
 {
 	const char * restrict const msgf = _("sensor fail: %s (%d) %s");
 	const char * restrict const msglcdf = _("sensor fail: %d");
@@ -255,9 +255,7 @@ static int sensor_alarm(const tempid_t id, const temp_t temp)
 	size_t size;
 	int ret;
 
-	ret = validate_temp(temp);
-
-	switch (ret) {
+	switch (error) {
 		case -ESENSORSHORT:
 			fail = _("shorted");
 			name = Sensors[id-1].name;
@@ -277,7 +275,7 @@ static int sensor_alarm(const tempid_t id, const temp_t temp)
 	snprintf_automalloc(msg, size, msgf, name, id, fail);
 	snprintf_automalloc(msglcd, size, msglcdf, id);
 
-	ret = alarms_raise(ret, msg, msglcd);
+	ret = alarms_raise(error, msg, msglcd);
 
 	free(msg);
 	free(msglcd);
@@ -315,11 +313,11 @@ static void parse_temps(void)
 
 		if (current <= RWCHCD_TEMPMIN) {
 			Sensors[i].run.value = TEMPSHORT;
-			sensor_alarm(i+1, TEMPSHORT);
+			sensor_alarm(i+1, -ESENSORSHORT);
 		}
 		else if (current >= RWCHCD_TEMPMAX) {
 			Sensors[i].run.value = TEMPDISCON;
-			sensor_alarm(i+1, TEMPDISCON);
+			sensor_alarm(i+1, -ESENSORDISCON);
 		}
 		else
 			// apply LP filter - ensure we only apply filtering on valid temps

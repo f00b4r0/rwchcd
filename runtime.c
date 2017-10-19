@@ -53,6 +53,46 @@ temp_t get_temp(const tempid_t id)
 }
 
 /**
+ * Clone temp from a given temp id
+ * @param id the physical id (counted from 1) of the sensor
+ * @param tclone pointer to target to store the temperature value
+ * @return exec status
+ */
+int clone_temp(const tempid_t id, temp_t * const tclone)
+{
+	int ret;
+	temp_t temp;
+
+	if ((id <= 0) || (id > Runtime.config->nsensors))
+		return (-EINVALID);
+
+	temp = Runtime.temps[id-1];	// XXX REVISIT lock
+
+	if (tclone)
+		*tclone = temp;
+	
+	switch (temp) {
+		case TEMPUNSET:
+			ret = -ESENSORINVAL;
+			break;
+		case TEMPSHORT:
+			ret = -ESENSORSHORT;
+			break;
+		case TEMPDISCON:
+			ret = -ESENSORDISCON;
+			break;
+		case TEMPINVALID:
+			ret = -EINVALID;
+			break;
+		default:
+			ret = ALL_OK;
+			break;
+	}
+
+	return (ret);
+}
+
+/**
  * Save runtime to permanent storage
  * @return exec status
  */
@@ -159,10 +199,10 @@ static void outdoor_temp()
 	static time_t last = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t now = Runtime.temps_time;	// what matters is the actual update time of the outdoor sensor
 	const time_t dt = now - last;
-	const temp_t toutdoor = get_temp(Runtime.config->id_temp_outdoor);
+	temp_t toutdoor;
 	int ret;
 
-	ret = validate_temp(toutdoor);
+	ret = clone_temp(Runtime.config->id_temp_outdoor, &toutdoor);
 	if (ALL_OK == ret) {
 		Runtime.t_outdoor = toutdoor + Runtime.config->set_temp_outdoor_offset;
 		Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, toutdoor, 60, dt);

@@ -77,26 +77,10 @@ __attribute__((const, always_inline)) static inline time_t expw_mavg_dtmin(const
  */
 __attribute__((const, always_inline)) static inline int validate_temp(const temp_t temp)
 {
-	int ret = ALL_OK;
-
-	switch (temp) {
-		case TEMPUNSET:
-			ret = -ESENSORINVAL;
-			break;
-		case TEMPSHORT:
-			ret = -ESENSORSHORT;
-			break;
-		case TEMPDISCON:
-			ret = -ESENSORDISCON;
-			break;
-		case TEMPINVALID:
-			ret = -EINVALID;
-			break;
-		default:
-			break;
-	}
-
-	return (ret);
+	if ((temp <= RWCHCD_TEMPMIN) || (temp >= RWCHCD_TEMPMAX))
+		return (-EINVALID);
+	else
+		return (ALL_OK);
 }
 
 #endif /* rwchcd_lib_h */

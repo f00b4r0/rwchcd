@@ -313,8 +313,11 @@ out:
 static const char * temp_to_str(const tempid_t tempid)
 {
 	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
-	const temp_t temp = get_temp(tempid);
+	temp_t temp;
 	float celsius;
+	int ret;
+
+	ret = clone_temp(tempid, &temp);
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
  #error Non representable minimum temperature
@@ -322,9 +325,9 @@ static const char * temp_to_str(const tempid_t tempid)
 
 	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
 
-	if (TEMPDISCON == temp)
+	if (-ESENSORDISCON == ret)
 		strncpy(snpbuf+3, _("DISCON"), 6);
-	else if (TEMPSHORT == temp)
+	else if (-ESENSORSHORT == ret)
 		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
 	else {
 		celsius = temp_to_celsius(temp);

@@ -33,7 +33,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 	int ret;
 
 	// check that mandatory sensors are working
-	ret = validate_temp(get_temp(boiler->set.id_temp));
+	ret = clone_temp(boiler->set.id_temp, NULL);
 	if (ALL_OK != ret)
 		alarms_raise(ret, _("Boiler sensor failure"), _("Boiler sens fail"));
 
@@ -88,11 +88,14 @@ static void boiler_hscb_del_priv(void * priv)
 static temp_t boiler_hscb_temp_out(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
+	temp_t temp;
 
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	return (get_temp(boiler->set.id_temp_outgoing));
+	clone_temp(boiler->set.id_temp_outgoing, &temp);
+
+	return (temp);
 }
 
 /**
@@ -105,20 +108,17 @@ static temp_t boiler_hscb_temp_out(struct s_heatsource * const heat)
 static int boiler_hscb_online(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
-	temp_t testtemp;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
 	// check that mandatory sensors are working
-	testtemp = get_temp(boiler->set.id_temp);
-	ret = validate_temp(testtemp);
+	ret = clone_temp(boiler->set.id_temp, NULL);
 	if (ret)
 		goto out;
 
-	testtemp = get_temp(boiler->set.id_temp_outgoing);
-	ret = validate_temp(testtemp);
+	ret = clone_temp(boiler->set.id_temp_outgoing, NULL);
 	if (ret)
 		goto out;
 
@@ -178,7 +178,9 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
  */
 static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 {
-	const temp_t boilertemp = get_temp(boiler->set.id_temp);
+	temp_t boilertemp;
+
+	clone_temp(boiler->set.id_temp, &boilertemp);
 
 	// trip at set.t_freeze point
 	if (boilertemp <= boiler->set.t_freeze)
@@ -312,10 +314,10 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		return (ret);
 	}
 
-	boiler_temp = get_temp(boiler->set.id_temp);
+	ret = clone_temp(boiler->set.id_temp, &boiler_temp);
 
 	// ensure boiler is within safety limits
-	if (boiler_temp > boiler->set.limit_thardmax) {
+	if ((ALL_OK != ret) || (boiler_temp > boiler->set.limit_thardmax)) {
 		boiler_failsafe(boiler);
 		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
 		return (-ESAFETY);

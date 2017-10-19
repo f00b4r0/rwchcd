@@ -42,7 +42,8 @@ struct s_runtime {
 };
 
 struct s_runtime * get_runtime(void);
-temp_t get_temp(const tempid_t id);
+temp_t get_temp(const tempid_t id) __attribute__((deprecated));
+int clone_temp(const tempid_t id, temp_t * const temp) __attribute__((warn_unused_result));
 int runtime_init(void);
 int runtime_set_systemmode(const enum e_systemmode sysmode);
 int runtime_set_runmode(const enum e_runmode runmode);
