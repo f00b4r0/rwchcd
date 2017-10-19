@@ -24,8 +24,8 @@
 #include "models.h"
 #include "alarms.h"	// alarms_raise()
 
-#define LOG_INTVL_RUNTIME	900
-#define LOG_INTVL_TEMPS		60
+#define LOG_INTVL_RUNTIME	900	///< log current runtime every X seconds
+#define LOG_INTVL_TEMPS		60	///< log temperatures every X seconds
 
 static const storage_version_t Runtime_sversion = 4;
 static struct s_runtime Runtime;
@@ -42,7 +42,7 @@ struct s_runtime * get_runtime(void)
 /**
  * Get temp from a given temp id
  * @param id the physical id (counted from 1) of the sensor
- * @return temp if id valid, 0 otherwise
+ * @return temp if id valid, TEMPUNSET otherwise
  */
 temp_t get_temp(const tempid_t id)
 {
@@ -92,16 +92,16 @@ static int runtime_restore(void)
  */
 static int runtime_async_log(void)
 {
-	const storage_version_t version = 2;
+	const storage_version_t version = 3;
 	static storage_keys_t keys[] = {
 		"systemmode",
 		"runmode",
 		"dhwmode",
 		"summer",
 		"frost",
+		"plant_sleep",
 		"t_outdoor_60",
-		"t_outdoor_filtered",
-		"t_outdoor_attenuated",
+		"plant_hrequest",
 	};
 	static storage_values_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
@@ -112,7 +112,9 @@ static int runtime_async_log(void)
 	values[i++] = Runtime.dhwmode;
 	values[i++] = Runtime.summer;
 	values[i++] = Runtime.frost;
+	values[i++] = Runtime.plant_could_sleep;
 	values[i++] = Runtime.t_outdoor_60;
+	values[i++] = Runtime.plant_hrequest;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
 	
 	assert(ARRAY_SIZE(keys) >= i);
@@ -154,24 +156,23 @@ static int runtime_async_log_temps(void)
  */
 static void outdoor_temp()
 {
-	static time_t last60 = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
-	const tempid_t tid = Runtime.config->id_temp_outdoor;
+	static time_t last = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
 	const time_t now = Runtime.temps_time;	// what matters is the actual update time of the outdoor sensor
-	const time_t dt60 = now - last60;
-	const temp_t toutdoor = get_temp(tid);
+	const time_t dt = now - last;
+	const temp_t toutdoor = get_temp(Runtime.config->id_temp_outdoor);
 	int ret;
 
 	ret = validate_temp(toutdoor);
-	if (ALL_OK == ret)
+	if (ALL_OK == ret) {
 		Runtime.t_outdoor = toutdoor + Runtime.config->set_temp_outdoor_offset;
+		Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, toutdoor, 60, dt);
+		last = now;
+	}
 	else {
-		Runtime.t_outdoor = Runtime.config->limit_tfrost-1;	// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
+		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
+		Runtime.t_outdoor_60 = Runtime.t_outdoor = Runtime.config->limit_tfrost-1;
 		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
 	}
-
-	Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt60);
-
-	last60 = now;
 }
 
 
@@ -350,8 +351,6 @@ int runtime_online(void)
  */
 int runtime_run(void)
 {
-	int ret;
-
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
 		return (-ENOTCONFIGURED);
 
@@ -367,12 +366,7 @@ int runtime_run(void)
 
 	runtime_summer();
 
-	ret = plant_run(Runtime.plant);
-	if (ret)
-		goto out;
-
-out:
-	return (ret);
+	return (plant_run(Runtime.plant));
 }
 
 /**
