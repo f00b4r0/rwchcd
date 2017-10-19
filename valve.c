@@ -104,9 +104,6 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 	return (ALL_OK);
 }
 
-#define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open
-#define valve_reqclose_full(valve)	valve_request_pth(valve, -1200)	///< request valve full close
-
 /**
  * Implement time-based PI controller in velocity form.
  * We are driving an integrating actuator, so we want to compute a change in output,
@@ -365,7 +362,6 @@ static int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_t
  * Perform all necessary actions to prepare the valve for service.
  * @param valve target valve
  * @return exec status
- * @warning no parameter check
  * @note no check on temperature sensors because some valves (e.g. zone valves)
  * do not need a sensor to be operated.
  */
@@ -394,7 +390,6 @@ int valve_online(struct s_valve * const valve)
  * Perform all necessary actions to completely shut down the valve.
  * @param valve target valve
  * @return exec status
- * @warning no parameter check
  */
 int valve_offline(struct s_valve * const valve)
 {
@@ -469,6 +464,8 @@ int valve_run(struct s_valve * const valve)
 	const float perth_ps = 1000.0F/valve->set.ete_time;	// perthousand position change per second
 	int_fast16_t course;
 	int ret = ALL_OK;
+
+	assert(valve);
 
 	valve->run.last_run_time = now;
 

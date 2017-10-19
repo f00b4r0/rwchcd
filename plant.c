@@ -346,7 +346,7 @@ fail:
  */
 struct s_plant * plant_new(void)
 {
-	struct s_plant * const plant = calloc(1, sizeof(struct s_plant));
+	struct s_plant * const plant = calloc(1, sizeof(*plant));
 
 	return (plant);
 }
@@ -711,6 +711,8 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 	struct s_pump_l * pumpl;
 	struct s_valve_l * valvel;
 	int ret;
+
+	assert(plant);
 
 	// don't do anything if summer AND plant asleep aren't in effect
 	if (!(runtime->summer && runtime->plant_could_sleep))

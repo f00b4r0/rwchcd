@@ -38,7 +38,6 @@ void pump_del(struct s_pump * restrict pump)
  * Perform all necessary actions to prepare the pump for service.
  * @param pump target pump
  * @return exec status
- * @warning no parameter check
  */
 int pump_online(struct s_pump * restrict const pump)
 {
@@ -95,7 +94,6 @@ int pump_get_state(const struct s_pump * restrict const pump)
  * Perform all necessary actions to completely shut down the pump.
  * @param pump target pump
  * @return exec status
- * @warning no parameter check
  */
 int pump_offline(struct s_pump * restrict const pump)
 {

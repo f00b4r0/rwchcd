@@ -97,6 +97,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 }
 
 
+#define LOGIC_MIN_POWER_TRANS_UP	75	///< minimum estimate (linear) output power percentage for transition up modelling
 /**
  * Circuit logic.
  * Sets the target ambient temperature for a circuit based on selected run mode.
@@ -113,7 +114,6 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  */
 int logic_circuit(struct s_heating_circuit * restrict const circuit)
 {
-#define LOGIC_MIN_POWER_TRANS_UP	75	///< minimum estimate (linear) output power percentage for transition up modelling
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	enum e_runmode prev_runmode;

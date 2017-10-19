@@ -308,6 +308,9 @@ void models_del(struct s_models * models)
  */
 int models_online(struct s_models * restrict const models)
 {
+	if (!models)
+		return (-EINVALID);
+
 	models_restore(models);
 
 	models->online = true;
@@ -322,6 +325,9 @@ int models_online(struct s_models * restrict const models)
  */
 int models_offline(struct s_models * restrict const models)
 {
+	if (!models)
+		return (-EINVALID);
+
 	models_save(models);
 
 	models->online = false;

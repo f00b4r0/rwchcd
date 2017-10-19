@@ -78,5 +78,4 @@ static inline int valve_control(struct s_valve * const valve, const temp_t targe
 #define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open
 #define valve_reqclose_full(valve)	valve_request_pth(valve, -1200)	///< request valve full close
 
-
 #endif /* valve_h */

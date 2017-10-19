@@ -13,14 +13,8 @@
 
 #include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// calloc
-#include <assert.h>
 
 #include "rwchcd.h"
-#include "lib.h"
-#include "hardware.h"
-#include "config.h"
-#include "runtime.h"
-#include "storage.h"
 #include "timer.h"
 
 /** timer callbacks */
@@ -101,7 +95,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void))
 	if ((period < 1) || (!cb))
 		return (-EINVALID);
 	
-	lcb = calloc(1, sizeof(struct s_timer_cb));
+	lcb = calloc(1, sizeof(*lcb));
 	if (!lcb)
 		return (-EOOM);
 

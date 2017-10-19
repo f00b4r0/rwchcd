@@ -28,7 +28,7 @@ static const storage_version_t Config_sversion = 8;
  */
 struct s_config * config_new(void)
 {
-	struct s_config * const config = calloc(1, sizeof(struct s_config));
+	struct s_config * const config = calloc(1, sizeof(*config));
 
 	return (config);
 }

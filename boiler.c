@@ -46,7 +46,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
  */
 static struct s_boiler_priv * boiler_new(void)
 {
-	struct s_boiler_priv * const boiler = calloc(1, sizeof(struct s_boiler_priv));
+	struct s_boiler_priv * const boiler = calloc(1, sizeof(*boiler));
 
 	// set some sane defaults
 	if (boiler) {
@@ -89,8 +89,8 @@ static temp_t boiler_hscb_temp_out(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
 
-	if (!boiler)
-		return (TEMPINVALID);
+	assert(HS_BOILER == heat->set.type);
+	assert(boiler);
 
 	return (get_temp(boiler->set.id_temp_outgoing));
 }
@@ -108,8 +108,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	temp_t testtemp;
 	int ret;
 
-	if (!boiler)
-		return (-EINVALID);
+	assert(HS_BOILER == heat->set.type);
+	assert(boiler);
 
 	// check that mandatory sensors are working
 	testtemp = get_temp(boiler->set.id_temp);
@@ -146,8 +146,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * const boiler = heat->priv;
 
-	if (!boiler)
-		return (-EINVALID);
+	assert(HS_BOILER == heat->set.type);
+	assert(boiler);
 
 	hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
 	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
@@ -204,6 +204,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
 	int ret;
 
+	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
 	// safe operation check
@@ -281,6 +282,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl;
 	int ret;
 
+	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
 	switch (heat->run.runmode) {

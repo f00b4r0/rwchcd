@@ -656,9 +656,8 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 	enum {CHNONE = 0, CHTURNON, CHTURNOFF } change = CHNONE;
 	int ret = -EGENERIC;
 
-	if (!Hardware.ready)
-		return (-EOFFLINE);
-	
+	assert(Hardware.ready);
+
 	// start clean
 	rWCHC_relays.ALL = 0;
 
@@ -724,11 +723,9 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
  * Write all peripherals from internal runtime to hardware
  * @return status
  */
-__attribute__((warn_unused_result)) static int hardware_rwchcperiphs_write(void)
+__attribute__((warn_unused_result)) static inline int hardware_rwchcperiphs_write(void)
 {
-	if (!Hardware.ready)
-		return (-EOFFLINE);
-	
+	assert(Hardware.ready);
 	return (spi_peripherals_w(&(Hardware.peripherals)));
 }
 
@@ -736,11 +733,9 @@ __attribute__((warn_unused_result)) static int hardware_rwchcperiphs_write(void)
  * Read all peripherals from hardware into internal runtime
  * @return exec status
  */
-__attribute__((warn_unused_result)) static int hardware_rwchcperiphs_read(void)
+__attribute__((warn_unused_result)) static inline int hardware_rwchcperiphs_read(void)
 {
-	if (!Hardware.ready)
-		return (-EOFFLINE);
-
+	assert(Hardware.ready);
 	return (spi_peripherals_r(&(Hardware.peripherals)));
 }
 
@@ -748,7 +743,7 @@ __attribute__((warn_unused_result)) static int hardware_rwchcperiphs_read(void)
  * Configure a temperature sensor.
  * @param id the physical id of the sensor to configure (starting from 1)
  * @param type the sensor type (PT1000...)
- * @param name a user-defined name describing the sensor
+ * @param name an optional user-defined name describing the sensor
  * @return exec status
  */
 int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const char * const name)
@@ -757,6 +752,9 @@ int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, 
 
 	if (!id || (id > ARRAY_SIZE(Sensors)))
 		return (-EINVALID);
+
+	if (Sensors[id-1].set.configured)
+		return (-EEXISTS);
 
 	Sensors[id-1].ohm_to_celsius = sensor_o_to_c(type);
 
@@ -820,7 +818,7 @@ int hardware_sensor_configured(const tempid_t id)
  * Ensures that the desired hardware relay is available and grabs it.
  * @param id target relay id (starting from 1)
  * @param failstate the state assumed by the hardware relay in standalone failover (controlling software failure)
- * @param name the user-defined name for this relay (string will be copied locally)
+ * @param name the optional user-defined name for this relay (string will be copied locally)
  * @return exec status
  */
 int hardware_relay_request(const relid_t id, const bool failstate, const char * const name)
@@ -1019,6 +1017,9 @@ int hardware_input(void)
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
 	int ret;
 	
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+
 	// read peripherals
 	ret = hardware_rwchcperiphs_read();
 	if (ALL_OK != ret) {
@@ -1127,7 +1128,10 @@ out:
 int hardware_output(void)
 {
 	int ret;
-	
+
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+
 	// write relays
 	ret = hardware_rwchcrelays_write();
 	if (ALL_OK != ret) {
@@ -1182,6 +1186,9 @@ int hardware_offline(void)
 	uint_fast8_t i;
 	int ret;
 	
+	if (!Hardware.ready)
+		return (-EOFFLINE);
+
 	// turn off each known hardware relay
 	for (i=0; i<ARRAY_SIZE(Relays); i++) {
 		if (!Relays[i].set.configured)
