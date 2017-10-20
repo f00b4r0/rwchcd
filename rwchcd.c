@@ -440,8 +440,10 @@ static void * thread_master(void *arg)
 			dbgerr("hardware_output returned: %d", ret);
 		
 		alarms_run();	// XXX run this here last as it clears the alarms
-		
-		dbgmsg("\n");	// insert empty line between each run
+
+#ifdef DEBUG
+		printf("\n");	// insert empty line between each run
+#endif
 		fflush(stdout);
 		
 		// send keepalive to watchdog
