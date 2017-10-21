@@ -118,9 +118,8 @@ static int runtime_restore(void)
 		Runtime.systemmode = temp_runtime.systemmode;
 		Runtime.runmode = temp_runtime.runmode;
 		Runtime.dhwmode = temp_runtime.dhwmode;
+		pr_log(_("Runtime state restored"));
 	}
-	else
-		dbgmsg("storage_fetch failed");
 	
 	return (ALL_OK);
 }
@@ -306,7 +305,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 	
 	runtime_save();
 
-	pr_log("system mode set: %d", sysmode);
+	pr_log(_("System mode set: %d"), sysmode);
 
 	return (ALL_OK);
 }
@@ -331,7 +330,7 @@ int runtime_set_runmode(const enum e_runmode runmode)
 
 	runtime_save();
 
-	pr_log("run mode set: %d", runmode);
+	pr_log(_("Run mode set: %d"), runmode);
 
 	return (ALL_OK);
 }
@@ -356,7 +355,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 
 	runtime_save();
 
-	pr_log("DHW mode set: %d", dhwmode);
+	pr_log(_("DHW mode set: %d"), dhwmode);
 
 	return (ALL_OK);
 }

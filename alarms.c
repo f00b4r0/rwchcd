@@ -179,7 +179,7 @@ int alarms_run(void)
 		return (-EOFFLINE);
 
 	while ((msg = alarms_msg_iterator(false)))
-		pr_log("ALARM: %s", msg);
+		pr_log(_("ALARM: %s"), msg);
 
 	alarms_clear();
 

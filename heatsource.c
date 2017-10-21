@@ -25,7 +25,7 @@
  * Perform all necessary actions to prepare the heatsource for service but
  * DO NOT MARK IT AS ONLINE.
  * @param heat target heatsource
- * @param return exec status
+ * @return exec status
  */
 int heatsource_online(struct s_heatsource * const heat)
 {
@@ -55,7 +55,7 @@ int heatsource_online(struct s_heatsource * const heat)
  * Perform all necessary actions to completely shut down the heatsource but
  * DO NOT MARK IT AS OFFLINE.
  * @param heat target heatsource
- * @param return exec status
+ * @return exec status
  */
 int heatsource_offline(struct s_heatsource * const heat)
 {
@@ -99,7 +99,7 @@ int heatsource_run(struct s_heatsource * const heat)
 
 /**
  * Delete a heatsource.
- * @param source the source to delete
+ * @param heat the source to delete
  */
 void heatsource_del(struct s_heatsource * heat)
 {

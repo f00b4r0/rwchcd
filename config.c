@@ -69,12 +69,10 @@ static int config_restore(struct s_config * const config)
 		// restore hardware bits
 		hardware_config_setnsensors(config->nsensors);
 
-		dbgmsg("config restored");
+		pr_log(_("System configuration restored"));
 		
 		config->restored = true;
 	}
-	else
-		dbgerr("storage_fetch failed (%d)", ret);
 	
 	return (ret);
 }

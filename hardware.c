@@ -371,9 +371,8 @@ static int hardware_restore_relays(void)
 			Relays[i].run.cycles += relayptr->run.cycles;
 			relayptr++;
 		}
+		dbgmsg("Hardware relay state restored");
 	}
-	else
-		dbgmsg("storage_fetch failed");
 
 	return (ret);
 }
@@ -417,9 +416,8 @@ static int hardware_restore_sensors(void)
 			if (Sensors[i].ohm_to_celsius)
 				Sensors[i].set.configured = true;
 		}
+		dbgmsg("Hardware sensors configuration restored");
 	}
-	else
-		dbgmsg("storage_fetch failed");
 
 	return (ret);
 }
@@ -523,7 +521,7 @@ int hardware_init(void)
 	} while ((ret <= 0) && (i++ < RWCHCD_INIT_MAX_TRIES));
 
 	if (ret > 0) {
-		pr_log("Firmware version %d detected", ret);
+		pr_log(_("Firmware version %d detected"), ret);
 		Hardware.fwversion = ret;
 		// fetch hardware config
 		ret = hardware_config_fetch(&(Hardware.settings));
@@ -975,8 +973,10 @@ int hardware_online(void)
 		goto fail;
 
 	// restore previous state - failure is ignored
-	hardware_restore_relays();
-	hardware_restore_sensors();
+	ret = hardware_restore_relays();
+	ret |= hardware_restore_sensors();
+	if (ALL_OK == ret)
+		pr_log(_("Hardware state restored"));
 
 	// read sensors
 	ret = hardware_sensors_read(Hardware.sensors);
@@ -1027,7 +1027,7 @@ int hardware_input(void)
 	
 	// detect hardware alarm condition
 	if (Hardware.peripherals.i_alarm) {
-		pr_log("Hardware in alarm");
+		pr_log(_("Hardware in alarm"));
 		// clear alarm
 		Hardware.peripherals.i_alarm = 0;
 		lcd_reset();

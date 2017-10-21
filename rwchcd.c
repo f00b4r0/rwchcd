@@ -521,7 +521,7 @@ int main(void)
 	FILE *outpipe = NULL;
 #endif
 
-	pr_log("Revision %s starting", Version);
+	pr_log(_("Revision %s starting"), Version);
 
 	// create a pipe for the watchdog
 	ret = pipe(pipefd);

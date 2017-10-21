@@ -88,7 +88,7 @@ int valve_reqstop(struct s_valve * const valve)
 /**
  * Request valve closing/opening amount.
  * @param valve target valve
- * @param perthousand amount to open (positive) or close (negative) the valve
+ * @param perth ‰ amount to open (positive) or close (negative) the valve
  * @return exec status. If requested amount is < valve deadband no action is performed, -EDEADBAND is returned.
  */
 int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
@@ -447,7 +447,7 @@ int valve_logic(struct s_valve * const valve)
  * @return error status
  * @todo XXX REVIEW only handles 3-way valve for now
  * @warning first invocation must be with valve stopped (run.actual_action == STOP),
- * otherwise dt will be out of whack.
+ * otherwise dt will be out of whack (this is normally ensured by valve_online()).
  * @note the function assumes that the sanity of the valve argument will be checked before invocation.
  * @warning beware of the resolution limit on valve end-to-end time
  * @warning REVIEW: overshoots
@@ -456,7 +456,7 @@ int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
 	const time_t dt = now - valve->run.last_run_time;
-	const float perth_ps = 1000.0F/valve->set.ete_time;	// perthousand position change per second
+	const float perth_ps = 1000.0F/valve->set.ete_time;	// ‰ position change per second
 	int_fast16_t course;
 	int ret = ALL_OK;
 
@@ -464,7 +464,7 @@ int valve_run(struct s_valve * const valve)
 
 	valve->run.last_run_time = now;
 
-	course = roundf(dt * perth_ps);	// we don't keep track of residual because we're already in per thds.
+	course = roundf(dt * perth_ps);		// we don't keep track of residual because we're already in ‰.
 
 	// update counters
 	switch (valve->run.actual_action) {

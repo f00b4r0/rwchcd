@@ -281,7 +281,6 @@ fail:
  * Create a new heatsource in the plant.
  * @param plant the target plant
  * @param name @b UNIQUE heatsource name (or NULL). A local copy is created if set
- * @param type the heatsource type to create
  * @return pointer to the created source
  */
 struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name)
@@ -721,7 +720,7 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 	// stop running when duration is exceeded (this also prevents running when summer is first triggered)
 	if ((now - timer_start) >= (SUMMER_RUN_INTVL + SUMMER_RUN_DURATION)) {
 		timer_start = now;
-		pr_log("summer maintenance completed");
+		pr_log(_("Summer maintenance completed"));
 	}
 
 	// don't run too often

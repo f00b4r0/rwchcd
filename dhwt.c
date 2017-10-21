@@ -27,7 +27,7 @@
  * Perform all necessary actions to prepare the dhwt for service but
  * DO NOT MARK IT AS ONLINE.
  * @param dhwt target dhwt
- * @param return exec status
+ * @return exec status
  */
 int dhwt_online(struct s_dhw_tank * const dhwt)
 {
@@ -80,7 +80,7 @@ static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active
  * Perform all necessary actions to completely shut down the dhwt but
  * DO NOT MARK IT AS OFFLINE.
  * @param dhwt target dhwt
- * @param return error status
+ * @return error status
  */
 int dhwt_offline(struct s_dhw_tank * const dhwt)
 {

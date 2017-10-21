@@ -86,7 +86,7 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
  * Perform all necessary actions to prepare the circuit for service but
  * DO NOT MARK IT AS ONLINE.
  * @param circuit target circuit
- * @param return exec status
+ * @return exec status
  */
 int circuit_online(struct s_heating_circuit * const circuit)
 {
@@ -115,7 +115,7 @@ out:
  * Perform all necessary actions to completely shut down the circuit but
  * DO NOT MARK IT AS OFFLINE.
  * @param circuit target circuit
- * @param return error status
+ * @return error status
  */
 int circuit_offline(struct s_heating_circuit * const circuit)
 {
