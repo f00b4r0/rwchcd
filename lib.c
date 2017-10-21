@@ -14,6 +14,7 @@
 #include <math.h>	// roundf
 
 #include "rwchcd.h"
+#include "lib.h"
 
 /**
  * Exponentially weighted moving average implementing a trivial LP filter.

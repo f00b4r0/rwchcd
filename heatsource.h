@@ -15,6 +15,7 @@
 #define heatsource_h
 
 #include "rwchcd.h"
+#include "lib.h"
 
 enum e_heatsource_type {
 	HS_NONE = 0,	///< No heat source: that's a misconfiguration

@@ -321,7 +321,7 @@ static void parse_temps(void)
 		}
 		else
 			// apply LP filter - ensure we only apply filtering on valid temps
-			Sensors[i].run.value = (previous >= TEMPINVALID) ? temp_expw_mavg(previous, current, nsamples, 1) : current;
+			Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, nsamples, 1) : current;
 	}
 
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);

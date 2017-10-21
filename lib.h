@@ -16,6 +16,14 @@
 
 #include "rwchcd.h"
 
+/** Temperature integral data */
+struct s_temp_intgrl {
+	temp_t integral;		///< integral value in temp_t * time_t
+	temp_t last_thrsh;		///< temperature threshold for integral calculation
+	temp_t last_temp;		///< last recorded temperature value
+	time_t last_time;		///< last recorded temperature time
+};
+
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt);
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time);
 

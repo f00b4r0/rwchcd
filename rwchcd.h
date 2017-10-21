@@ -155,12 +155,4 @@ struct s_dhwt_params {
 	temp_t temp_inoffset;		///< offset temp for heat source request. - XXX setup ensure > 0C
 };
 
-/** Temperature integral data */
-struct s_temp_intgrl {
-	temp_t integral;		///< integral value in temp_t * time_t
-	temp_t last_thrsh;		///< temperature threshold for integral calculation
-	temp_t last_temp;		///< last recorded temperature value
-	time_t last_time;		///< last recorded temperature time
-};
-
 #endif /* rwchcd_h */

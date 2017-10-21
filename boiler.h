@@ -15,6 +15,7 @@
 #define boiler_h
 
 #include "rwchcd.h"
+#include "lib.h"
 #include "heatsource.h"
 
 /** Boiler heatsource private structure. @todo XXX TODO: return mixing valve / isolation valve / modulating burner */
