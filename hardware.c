@@ -1013,6 +1013,7 @@ int hardware_input(void)
 	static unsigned int count = 0, systout = 0;
 	static tempid_t tempid = 1;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
+	static bool syschg = false;
 	int ret;
 	
 	if (!Hardware.ready)
@@ -1050,6 +1051,7 @@ int hardware_input(void)
 		Hardware.peripherals.i_SW1 = 0;
 		count = 5;
 		systout = 3;
+		syschg = true;
 
 		cursysmode++;
 
@@ -1060,13 +1062,15 @@ int hardware_input(void)
 	}
 
 	if (!systout) {
-		if (cursysmode != runtime->systemmode) {
+		if (syschg && (cursysmode != runtime->systemmode)) {
 			// change system mode
 			pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 			runtime_set_systemmode(cursysmode);
 			pthread_rwlock_unlock(&runtime->runtime_rwlock);
 			// hardware_beep()
+			Hardware.peripherals.o_buzz = 1;
 		}
+		syschg = false;
 		cursysmode = runtime->systemmode;
 	}
 	else
