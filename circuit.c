@@ -165,7 +165,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const time_t now = time(NULL);
-	temp_t water_temp, curr_temp, saved_temp, lwtmin, lwtmax;
+	temp_t water_temp, curr_temp, ret_temp, saved_temp, lwtmin, lwtmax;
 	bool interference = false;
 	int ret;
 
@@ -263,10 +263,15 @@ int circuit_run(struct s_heating_circuit * const circuit)
 		interference = true;
 	}
 
-	// interference: apply global shift
+	// interference: apply global power shift
 	if (runtime->consumer_shift) {
-		// X% shift is (current + X*(current - ref)/100). ref is 0°C (absolute physical minimum) to avoid potential inversion problems with return temp
-		water_temp += runtime->consumer_shift * (water_temp - celsius_to_temp(0)) / 100;
+		ret = clone_temp(circuit->set.id_temp_return, &ret_temp);
+		// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
+		if ((ALL_OK != ret) || (ret_temp >= water_temp))
+			ret_temp = celsius_to_temp(0);
+
+		// X% shift is (current + X*(current - ref)/100). ref is return temp
+		water_temp += runtime->consumer_shift * (water_temp - ret_temp) / 100;
 		interference = true;
 	}
 

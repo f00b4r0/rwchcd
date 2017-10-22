@@ -178,7 +178,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 		tempin_l = tempin_h - vpriv->set.Ksmax;
 
 	// jacketing for saturation
-	if (target_tout <= tempin_l) {
+	if (target_tout <= tempin_l) {		// check tempin_l first to prioritize valve closing (useful in case of temporary _h < _l)
 		valve_reqclose_full(valve);
 		valve->run.ctrl_reset = true;
 		return (ALL_OK);
