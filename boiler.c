@@ -149,6 +149,9 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
+	// reset integral
+	boiler->run.boil_itg.last_time = 0;
+
 	hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
 	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 
@@ -277,6 +280,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage (p.51)
  * @todo XXX TODO: implement limit on return temp (p.55/56 / p87-760), (consummer shift / return valve / bypass pump)
+ * @todo review integral jacketing - maybe use a PI(D) instead?
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
@@ -332,7 +336,11 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// form consumer shift request if necessary for cold start protection
 	if (temp_intgrl < 0) {
-		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift
+		// at boiler first start the integral can windup quickly: jacket integral at -200% - XXX hardcoded
+		if (temp_intgrl < (-100 * KPRECISIONI))
+			boiler->run.boil_itg.integral = temp_intgrl = (-100 * KPRECISIONI);
+
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
 		heat->run.cshift_crit = 2 * temp_intgrl / KPRECISIONI;
 		dbgmsg("%s: integral: %d mKs, cshift_crit: %d%%", heat->name, temp_intgrl, heat->run.cshift_crit);
 	}
