@@ -264,6 +264,7 @@ int runtime_init(void)
 
 /**
  * Set the global system operation mode.
+ * @note SYS_AUTO does not change the current runmode and dhwmode.
  * @param sysmode desired operation mode.
  * @return error status
  */
@@ -282,7 +283,8 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			Runtime.runmode = RM_ECO;
 			Runtime.dhwmode = RM_ECO;
 			break;
-		case SYS_AUTO:		// NOTE by default AUTO switches to frostfree until further settings
+		case SYS_AUTO:		// NOTE by default AUTO does not change the current run/dhwmodes
+			break;
 		case SYS_FROSTFREE:
 			Runtime.runmode = RM_FROSTFREE;
 			Runtime.dhwmode = RM_FROSTFREE;
@@ -323,8 +325,19 @@ int runtime_set_runmode(const enum e_runmode runmode)
 		return (-EINVALID);
 
 	// if set, runmode cannot be RM_AUTO
-	if ((RM_AUTO == runmode) || (runmode >= RM_UNKNOWN))
-		return (-EINVALIDMODE);
+	switch (runmode) {
+		case RM_OFF:
+		case RM_COMFORT:
+		case RM_ECO:
+		case RM_FROSTFREE:
+		case RM_DHWONLY:
+		case RM_TEST:
+			break;
+		case RM_AUTO:
+		case RM_UNKNOWN:
+		default:
+			return (-EINVALIDMODE);
+	}
 
 	Runtime.runmode = runmode;
 
@@ -348,8 +361,19 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 		return (-EINVALID);
 
 	// if set, dhwmode cannot be RM_AUTO or RM_DHWONLY
-	if ((RM_AUTO == dhwmode) || (RM_DHWONLY == dhwmode) || (dhwmode >= RM_UNKNOWN))
-		return (-EINVALIDMODE);
+	switch (dhwmode) {
+		case RM_OFF:
+		case RM_COMFORT:
+		case RM_ECO:
+		case RM_FROSTFREE:
+		case RM_TEST:
+			break;
+		case RM_AUTO:
+		case RM_DHWONLY:
+		case RM_UNKNOWN:
+		default:
+			return (-EINVALIDMODE);
+	}
 
 	Runtime.dhwmode = dhwmode;
 

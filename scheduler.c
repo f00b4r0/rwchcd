@@ -35,17 +35,12 @@ struct s_schedule {
 
 /** Array of daily schedules for the week */
 static struct s_schedule * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, };
-static enum e_runmode Sch_runmode = RM_UNKNOWN, Sch_dhwmode = RM_UNKNOWN;
 
 /**
  * Find the current schedule.
  * We parse today's schedule list, updating the runmode and dhwmode variables
  * as we pass through past schedules. We stop when the next schedule is in the
  * future, which leaves us with the last valid run/dhw modes in the variables.
- * @bug if the modes are "abused" with invalid modes, a problem can arise at
- * the "turn-on" of the scheduler: when sysmode goes to SYS_AUTO, it starts both
- * modes in FROSTFREE, and that will only be changed by a valid mode setting by
- * the scheduler.
  * @bug if the first schedule of the day has either runmode OR dhwmode set to
  * RM_UNKNOWN, the function will not look back to find the correct mode.
  * @return exec status
@@ -60,14 +55,21 @@ static int scheduler_now(void)
 	int tm_hour = ltime->tm_hour;
 	int tm_min = ltime->tm_min;
 	const int tm_wday_start = tm_wday;
-	enum e_runmode runmode = RM_UNKNOWN, dhwmode = RM_UNKNOWN;
+	enum e_runmode runmode, dhwmode, rt_runmode, rt_dhwmode;
+	enum e_systemmode rt_sysmode;
 	bool found = false;
-	
-	if (SYS_AUTO != runtime->systemmode) {	// XXX no lock on this read
-		Sch_dhwmode = RM_FROSTFREE;	// if/when we will switch to SYS_AUTO we'll start from this:
-		Sch_runmode = RM_FROSTFREE;	// XXX must be kept in sync with runtime_set_systemmode()
-		return (-EGENERIC);		// we can't update, no need to waste time
-	}
+
+	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
+	rt_sysmode = runtime->systemmode;
+	rt_runmode = runtime->runmode;
+	rt_dhwmode = runtime->dhwmode;
+	pthread_rwlock_unlock(&runtime->runtime_rwlock);
+
+	if (SYS_AUTO != rt_sysmode)
+		return (-EGENERIC);	// we can't update, no need to waste time
+
+	// start from invalid mode (prevents spurious change with runtime_set_*())
+	runmode = dhwmode = RM_UNKNOWN;
 	
 restart:
 	sch = Schedule_week[tm_wday];
@@ -117,15 +119,13 @@ restart:
 	}
 
 	// update only if necessary
-	if ((runmode != Sch_runmode) || (dhwmode != Sch_dhwmode)) {
+	if ((runmode != rt_runmode) || (dhwmode != rt_dhwmode)) {
 		dbgmsg("schedule update at %ld. Runmode old: %d, new: %d; dhwmode old: %d, new: %d",
-		       now, Sch_runmode, runmode, Sch_dhwmode, dhwmode);
+		       now, rt_runmode, runmode, rt_dhwmode, dhwmode);
 		pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 		runtime_set_dhwmode(dhwmode);	// errors ignored (if invalid mode or if sysmode != AUTO)
 		runtime_set_runmode(runmode);
 		pthread_rwlock_unlock(&runtime->runtime_rwlock);
-		Sch_dhwmode = dhwmode;	// only touched in this function, no need to lock
-		Sch_runmode = runmode;
 	}
 	
 	return (ALL_OK);
