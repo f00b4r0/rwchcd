@@ -77,7 +77,7 @@ int heatsource_offline(struct s_heatsource * const heat)
 
 /**
  * Run heatsource.
- * @note Honoring SYSMODE is left to private routines
+ * @note Honoring runmode is left to private routines
  * @param heat target heatsource
  * @return exec status
  */

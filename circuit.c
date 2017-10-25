@@ -233,7 +233,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 			circuit->run.rorh_update_time = now;
 		}
 		else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
-			if (now - circuit->run.rorh_update_time >= 60) {	// 1mn has past, update target - XXX 60s resolution
+			if (now - circuit->run.rorh_update_time >= 60) {	// 1mn has past, update target - XXX hardcoded 60s resolution
 				curr_temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);	// we hijack curr_temp here to save a variable
 				water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
 				circuit->run.rorh_last_target = water_temp;

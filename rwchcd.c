@@ -23,12 +23,12 @@
  * @file
  * Main program.
  * @todo:
- * Setup
- * Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
- * UI + dynamic plant creation / setup
- * Config files
- * connection of multiple instances
- * multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
+ * - Setup
+ * - Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
+ * - UI + dynamic plant creation / setup
+ * - Config files
+ * - connection of multiple instances
+ * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
  */
 

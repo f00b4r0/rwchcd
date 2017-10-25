@@ -22,7 +22,7 @@ struct s_heating_circuit {
 		bool configured;		///< true if circuit is configured
 		enum e_runmode runmode;		///< current circuit set_runmode
 		struct s_circuit_params params;	///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
-		short ambient_factor;		///< influence of ambient temp on templaw calculations, in percent - XXX REVIEW TYPE
+		int_fast16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour
 		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target)
 		time_t am_tambient_tK;		///< ambient model: time necessary for 1 Kelvin temperature rise (seconds)

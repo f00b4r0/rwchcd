@@ -16,6 +16,8 @@
 
 #include "rwchcd.h"
 
+// https://www.lysator.liu.se/c/restrict.html#linked-lists
+
 /** List of pumps */
 struct s_pump_l {
 	uint_fast8_t id;
