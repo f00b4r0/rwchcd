@@ -1003,6 +1003,7 @@ bool hardware_is_online(void)
 /**
  * Collect inputs from hardware.
  * @note Will process switch inputs.
+ * @note Will panic if sensors cannot be read for more than 30s (hardcoded).
  * @return exec status
  * @todo review logic
  */
@@ -1023,7 +1024,7 @@ int hardware_input(void)
 	ret = hardware_rwchcperiphs_read();
 	if (ALL_OK != ret) {
 		dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
-		goto out;
+		goto skip_periphs;
 	}
 	
 	// detect hardware alarm condition
@@ -1097,7 +1098,8 @@ int hardware_input(void)
 	}
 	else
 		Hardware.peripherals.o_LCDbl = 0;
-	
+
+skip_periphs:
 	// calibrate
 	ret = hardware_calibrate();
 	if (ALL_OK != ret)
@@ -1106,20 +1108,23 @@ int hardware_input(void)
 	// read sensors
 	ret = hardware_sensors_read(rawsensors);
 	if (ALL_OK != ret) {
-		// XXX REVISIT: flag the error but do NOT stop processing here
+		// flag the error but do NOT stop processing here
 		dbgerr("hardware_sensors_read failed (%d)", ret);
+		if ((time(NULL) - Hardware.sensors_ftime) > 30) {
+			// if we failed to read the sensor for too long, time to panic - XXX hardcoded
+			alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
+			pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+			memset(runtime->temps, 0, sizeof(runtime->temps));	// clear temps, will trigger failsafes
+			pthread_rwlock_unlock(&runtime->runtime_rwlock);
+		}
 	}
 	else {
 		// copy valid data to runtime environment
 		memcpy(Hardware.sensors, rawsensors, sizeof(Hardware.sensors));
 		Hardware.sensors_ftime = time(NULL);
+		parse_temps();
 	}
 	
-	parse_temps();
-
-	ret = ALL_OK;
-	
-out:
 	return (ret);
 }
 
