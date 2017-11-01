@@ -1102,21 +1102,20 @@ int hardware_input(void)
 skip_periphs:
 	// calibrate
 	ret = hardware_calibrate();
-	if (ALL_OK != ret)
-		dbgerr("hardware_calibrate failed (%d)", ret);	// flag only: calibrate() will not store invalid values
+	if (ALL_OK != ret) {
+		dbgerr("hardware_calibrate failed (%d)", ret);
+		goto fail;
+		/* repeated calibration failure might signal a sensor acquisition circuit
+		 that's broken. Temperature readings may no longer be reliable and
+		 the system should eventually trigger failsafe */
+	}
 	
 	// read sensors
 	ret = hardware_sensors_read(rawsensors);
 	if (ALL_OK != ret) {
 		// flag the error but do NOT stop processing here
 		dbgerr("hardware_sensors_read failed (%d)", ret);
-		if ((time(NULL) - Hardware.sensors_ftime) > 30) {
-			// if we failed to read the sensor for too long, time to panic - XXX hardcoded
-			alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
-			pthread_rwlock_wrlock(&runtime->runtime_rwlock);
-			memset(runtime->temps, 0, sizeof(runtime->temps));	// clear temps, will trigger failsafes
-			pthread_rwlock_unlock(&runtime->runtime_rwlock);
-		}
+		goto fail;
 	}
 	else {
 		// copy valid data to runtime environment
@@ -1125,6 +1124,17 @@ skip_periphs:
 		parse_temps();
 	}
 	
+	return (ret);
+
+fail:
+	if ((time(NULL) - Hardware.sensors_ftime) > 30) {
+		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
+		alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
+		pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+		memset(runtime->temps, 0, sizeof(runtime->temps));	// clear temps, will trigger failsafes
+		pthread_rwlock_unlock(&runtime->runtime_rwlock);
+	}
+
 	return (ret);
 }
 
