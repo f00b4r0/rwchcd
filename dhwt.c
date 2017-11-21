@@ -91,8 +91,16 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
 		return (-ENOTCONFIGURED);
 
 	// clear runtime data
-	memset(&(dhwt->run), 0x00, sizeof(dhwt->run));
+	dhwt->run.charge_on = false;
+	dhwt->run.recycle_on = false;
+	dhwt->run.force_on = false;
+	dhwt->run.legionella_on = false;
+	dhwt->run.charge_overtime = false;
+	dhwt->run.electric_mode = false;
+	dhwt->run.target_temp = 0;
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+	dhwt->run.mode_since = 0;
+	dhwt->run.charge_yday = 0;
 
 	dhwt_actuator_use(dhwt, false);
 
