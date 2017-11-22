@@ -62,7 +62,7 @@ enum e_execs {
 	EDEADZONE,	///< target is in deadzone
 	EDEADBAND,	///< valve is in deadband
 	ENOTIMPLEMENTED,///< argument/request/whatever is not implemented
-	EOFFLINE,	///< device is offline
+	EOFFLINE,	///< element is offline: a critical operational prerequisite failed
 	EINVALID,	///< invalid argument
 	EINVALIDMODE,	///< invalid set_runmode
 	ESENSORINVAL,	///< invalid sensor id
