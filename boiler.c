@@ -272,8 +272,16 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 /**
  * Implement basic single stage boiler.
+ * The boiler default trip/untrip points are target +/- hysteresis/2, with the following adaptiveness:
+ * - On the low end of the curve (low temperatures):
+ *   - trip temp cannot be lower than limit_tmin;
+ *   - untrip temp is proportionately adjusted (increased) to allow for the full hysteresis swing;
+ *   - if heat request is < trip temp, the above full hysteresis swing will be proportionately reduced,
+ *     down to a minimum of hysteresis/2 (e.g. if hysteresis is 8C, and request is 2C below trip temp,
+ *     hysteresis will be reduced to 6C swinging above trip temp).
+ * - On the high end of the curve (high temperatures):
+ *   - untrip temp cannot be higher than limit_tmax.
  * @note As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
- * @note the boiler trip/untrip points are target +/- histeresis/2
  * @note cold startup protection has a hardcoded 2% per 1Ks ratio
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
@@ -285,7 +293,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl;
+	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
@@ -351,8 +359,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, 0);
 
-	// un/trip points - histeresis/2 (common practice), assuming sensor will always be significantly cooler than actual output
-	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {	// apply trip_temp only if we have a heat request
+	/* un/trip points */
+	// apply trip_temp only if we have a heat request
+	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {
 		trip_temp = (boiler->run.target_temp - boiler->set.histeresis/2);
 		if (trip_temp < boiler->set.limit_tmin)
 			trip_temp = boiler->set.limit_tmin;
@@ -360,17 +369,26 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	else
 		trip_temp = 0;
 
+	// always apply untrip temp (stop condition must always exist)
 	untrip_temp = (boiler->run.target_temp + boiler->set.histeresis/2);
-	untrip_temp += (boiler->set.histeresis - (untrip_temp - trip_temp));	// operate at constant histeresis on the low end
 
+	// operate at constant histeresis on the low end
+	untrip_temp += (boiler->set.histeresis - (untrip_temp - trip_temp));
+
+	// allow shifting untrip temp if actual heat request goes below trip_temp (e.g. when trip_temp = limit_tmin)...
+	temp = trip_temp - heat->run.temp_request;
+	untrip_temp -= (temp > 0) ? temp : 0;
+
+	// ... up to hysteresis/2 (if untrip < (trip + hyst/2) => untrip = trip + hyst/2)
+	temp = (boiler->set.histeresis/2) - (untrip_temp - trip_temp);
+	untrip_temp += (temp > 0) ? temp : 0;
+
+	// cap untrip temp at limit_tmax
 	if (untrip_temp > boiler->set.limit_tmax)
 		untrip_temp = boiler->set.limit_tmax;
 
-	dbgmsg("%s: running: %d, target_t: %.1f, boiler_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
-	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp),
-	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp));
-
-	// burner control - cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
+	/* burner control */
+	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
 	if (boiler_temp < trip_temp)		// trip condition
 		hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
 	else if (boiler_temp > untrip_temp)	// untrip condition
@@ -379,6 +397,10 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// as long as the burner is running we reset the cooldown delay
 	if (hardware_relay_get_state(boiler->set.rid_burner_1))
 		heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
+
+	dbgmsg("%s: running: %d, target_t: %.1f, boiler_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
+	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp),
+	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp));
 
 	return (ALL_OK);
 }
