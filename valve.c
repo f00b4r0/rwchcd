@@ -206,7 +206,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
-	K = abs(tempin_h - tempin_l)/1000;	// abs() because _h may occasionally be < _l
+	K = abs(tempin_h - tempin_l)/1000;	// abs() because _h may occasionally be < _l - imprecision: floors
 	Kp = vpriv->run.Kp_t/K;
 	Ti = vpriv->set.Tu;
 	Ki = Kp/Ti;

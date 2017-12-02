@@ -329,8 +329,6 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// we're good to go
 
-	dbgmsg("%s: running: %d, target_temp: %.1f, boiler_temp: %.1f", heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp), temp_to_celsius(boiler_temp));
-
 	// calculate boiler integral
 	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, get_runtime()->temps_time);
 
@@ -363,8 +361,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		trip_temp = 0;
 
 	untrip_temp = (boiler->run.target_temp + boiler->set.histeresis/2);
+	untrip_temp += (boiler->set.histeresis - (untrip_temp - trip_temp));	// operate at constant histeresis on the low end
+
 	if (untrip_temp > boiler->set.limit_tmax)
 		untrip_temp = boiler->set.limit_tmax;
+
+	dbgmsg("%s: running: %d, target_t: %.1f, boiler_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
+	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp),
+	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp));
 
 	// burner control - cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
 	if (boiler_temp < trip_temp)		// trip condition
