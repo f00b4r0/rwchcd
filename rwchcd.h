@@ -135,10 +135,10 @@ struct s_circuit_params {
 	temp_t outhoff_comfort;		///< outdoor temp for no heating in comfort mode
 	temp_t outhoff_eco;		///< outdoor temp for no heating in eco mode
 	temp_t outhoff_frostfree;	///< outdoor temp for no heating in frostfree mode
-	temp_t outhoff_histeresis;	///< histeresis for no heating condition
+	temp_t outhoff_histeresis;	///< hysteresis for no heating condition
 	temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
 	temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active. @warning MUST be set either globally or locally otherwise circuit won't heat
-	temp_t temp_inoffset;		///< offset temp for heat source request. @note beware of interaction with e.g. boiler histeresis
+	temp_t temp_inoffset;		///< offset temp for heat source request. @note beware of interaction with e.g. boiler hysteresis
 };
 
 /** DHWT common parameters */
@@ -151,7 +151,7 @@ struct s_dhwt_params {
 	temp_t t_comfort;		///< target temp in comfort mode. - XXX setup ensure > tfrostfree
 	temp_t t_eco;			///< target temp in eco mode. - XXX setup ensure > tfrostfree
 	temp_t t_frostfree;		///< target temp in frost-free mode. - XXX setup ensure > 0C
-	temp_t histeresis;		///< histeresis for target temp. - XXX setup ensure > 0C
+	temp_t hysteresis;		///< hysteresis for target temp. - XXX setup ensure > 0C
 	temp_t temp_inoffset;		///< offset temp for heat source request. - XXX setup ensure > 0C
 };
 

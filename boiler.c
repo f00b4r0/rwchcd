@@ -50,7 +50,7 @@ static struct s_boiler_priv * boiler_new(void)
 
 	// set some sane defaults
 	if (boiler) {
-		boiler->set.histeresis = deltaK_to_temp(6);
+		boiler->set.hysteresis = deltaK_to_temp(6);
 		boiler->set.limit_tmin = celsius_to_temp(10);
 		boiler->set.limit_tmax = celsius_to_temp(90);
 		boiler->set.limit_thardmax = celsius_to_temp(100);
@@ -189,9 +189,9 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 	if (boilertemp <= boiler->set.t_freeze)
 		boiler->run.antifreeze = true;
 
-	// untrip when boiler reaches set.limit_tmin + histeresis/2
+	// untrip when boiler reaches set.limit_tmin + hysteresis/2
 	if (boiler->run.antifreeze) {
-		if (boilertemp > (boiler->set.limit_tmin + boiler->set.histeresis/2))
+		if (boilertemp > (boiler->set.limit_tmin + boiler->set.hysteresis/2))
 			boiler->run.antifreeze = false;
 	}
 }
@@ -362,7 +362,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	/* un/trip points */
 	// apply trip_temp only if we have a heat request
 	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {
-		trip_temp = (boiler->run.target_temp - boiler->set.histeresis/2);
+		trip_temp = (boiler->run.target_temp - boiler->set.hysteresis/2);
 		if (trip_temp < boiler->set.limit_tmin)
 			trip_temp = boiler->set.limit_tmin;
 	}
@@ -370,17 +370,17 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		trip_temp = 0;
 
 	// always apply untrip temp (stop condition must always exist)
-	untrip_temp = (boiler->run.target_temp + boiler->set.histeresis/2);
+	untrip_temp = (boiler->run.target_temp + boiler->set.hysteresis/2);
 
-	// operate at constant histeresis on the low end
-	untrip_temp += (boiler->set.histeresis - (untrip_temp - trip_temp));
+	// operate at constant hysteresis on the low end
+	untrip_temp += (boiler->set.hysteresis - (untrip_temp - trip_temp));
 
 	// allow shifting untrip temp if actual heat request goes below trip_temp (e.g. when trip_temp = limit_tmin)...
 	temp = trip_temp - heat->run.temp_request;
 	untrip_temp -= (temp > 0) ? temp : 0;
 
 	// ... up to hysteresis/2 (if untrip < (trip + hyst/2) => untrip = trip + hyst/2)
-	temp = (boiler->set.histeresis/2) - (untrip_temp - trip_temp);
+	temp = (boiler->set.hysteresis/2) - (untrip_temp - trip_temp);
 	untrip_temp += (temp > 0) ? temp : 0;
 
 	// cap untrip temp at limit_tmax

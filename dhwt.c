@@ -219,7 +219,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	}
 
 	/* handle heat charge - NOTE we enforce sensor position, it SEEMS desirable
-	 apply histeresis on logic: trip at target - histeresis (preferably on bottom sensor),
+	 apply hysteresis on logic: trip at target - hysteresis (preferably on bottom sensor),
 	 untrip at target (preferably on top sensor). */
 	if (!dhwt->run.charge_on) {	// no charge in progress
 					// in non-electric mode: prevent charge "pumping", enforce delay between charges
@@ -238,11 +238,11 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		else
 			curr_temp = top_temp;
 
-		// set trip point to (target temp - histeresis)
+		// set trip point to (target temp - hysteresis)
 		if (dhwt->run.force_on)
-			trip_temp = dhwt->run.target_temp - deltaK_to_temp(1);	// if forced charge, force histeresis at 1K
+			trip_temp = dhwt->run.target_temp - deltaK_to_temp(1);	// if forced charge, force hysteresis at 1K
 		else
-			trip_temp = dhwt->run.target_temp - SETorDEF(dhwt->set.params.histeresis, runtime->config->def_dhwt.histeresis);
+			trip_temp = dhwt->run.target_temp - SETorDEF(dhwt->set.params.hysteresis, runtime->config->def_dhwt.hysteresis);
 
 		// trip condition
 		if (curr_temp < trip_temp) {
@@ -318,7 +318,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
 					pump_set_state(dhwt->feedpump, OFF, FORCE);
-				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K histeresis
+				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K hysteresis
 					pump_set_state(dhwt->feedpump, ON, NOFORCE);
 			}
 			else

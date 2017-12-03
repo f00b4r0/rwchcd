@@ -158,7 +158,7 @@ static void bmodel_outdoor(struct s_bmodel * const bmodel)
  * - t_out_mix < limit_tsummer
  * - t_out_att < limit_tsummer
  * State is preserved in all other cases
- * @note because we use AND, there's no need for histeresis
+ * @note because we use AND, there's no need for hysteresis
  * @param bmodel target building model
  * @return exec status
  */

@@ -238,7 +238,7 @@ static void runtime_summer(void)
 /**
  * Conditions for frost switch.
  * Trigger frost protection flag when t_outdoor_60 < limit_tfrost.
- * @note there is a fixed 1K positive histeresis (on untrip)
+ * @note there is a fixed 1K positive hysteresis (on untrip)
  */
 static void runtime_frost(void)
 {

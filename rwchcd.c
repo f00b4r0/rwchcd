@@ -187,7 +187,7 @@ static int init_process()
 		config->def_dhwt.t_comfort = celsius_to_temp(55);
 		config->def_dhwt.t_eco = celsius_to_temp(40);
 		config->def_dhwt.t_frostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
-		config->def_dhwt.histeresis = deltaK_to_temp(10);
+		config->def_dhwt.hysteresis = deltaK_to_temp(10);
 		config->def_dhwt.temp_inoffset = deltaK_to_temp(10);
 		
 		config->configured = true;
@@ -247,7 +247,7 @@ static int init_process()
 	// configure that source	XXX REVISIT
 	boiler = heatsource->priv;
 	boiler->set.idle_mode = IDLE_FROSTONLY;
-	boiler->set.histeresis = deltaK_to_temp(8);
+	boiler->set.hysteresis = deltaK_to_temp(8);
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
 	ret = hardware_sensor_configure(SENSOR_BURNER, ST_PT1000, "boiler");
