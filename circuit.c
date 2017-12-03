@@ -73,7 +73,7 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
 	// calculate output at nominal 20C: Y = input*slope + offset
 	t_output = roundf(source_temp * slope) + offset;
 
-	dbgmsg("%s: orig: %.1f, new: %.1f", circuit->name, temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
+	dbgmsg("%s: lin: %.1f, comp: %.1f", circuit->name, temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
 
 	// shift output based on actual target temperature
 	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - tld->slope);
@@ -281,7 +281,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	if (saved_temp > lwtmax)
 		saved_temp = lwtmax;
 
-	dbgmsg("%s: request_amb: %.1f, target_amb: %.1f, target_wt: %.1f, curr_wt: %.1f, curr_rwt: %.1f", circuit->name,
+	dbgmsg("%s: rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
 	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));

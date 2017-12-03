@@ -211,19 +211,19 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	Ti = vpriv->set.Tu;
 	Ki = Kp/Ti;
 
-	dbgmsg("K: %d, Tc: %ld, Kp: %e, Ki: %e", K, vpriv->run.Tc, Kp, Ki);
+	//dbgmsg("%s: K: %d, Tc: %ld, Kp: %e, Ki: %e", valve->name, K, vpriv->run.Tc, Kp, Ki);
 
-	// calculate error: (target - actual)
+	// calculate error E: (target - actual)
 	error = target_tout - tempout;
 
-	// Integral term: (Ki * error) * sample interval
+	// Integral term I: (Ki * error) * sample interval
 	iterm = Ki * error * dt;
 
-	// Proportional term applied to output: Kp * (previous - actual)
+	// Proportional term P applied to output: Kp * (previous - actual)
 	pterm = Kp * (vpriv->run.prev_out - tempout);
 
 	/*
-	 Applying the proportional term to the output avoids kicks when
+	 Applying the proportional term to the output O avoids kicks when
 	 setpoint is changed, however it will also "fight back" against
 	 such a change. This negative action will eventually be overcome
 	 by the integral term.
@@ -241,8 +241,8 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	 */
 	perth = truncf(pthfl);
 
-	dbgmsg("error: %d, iterm: %f, pterm: %f, output: %f, acc: %f, pthfl: %f, perth: %d",
-	       error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
+	dbgmsg("%s: E: %d, I: %f, P: %f, O: %f, acc: %f, pthfl: %f, perth: %d",
+	       valve->name, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
 
 	/*
 	 if we are below valve deadband, everything behaves as if the sample rate
@@ -520,7 +520,7 @@ int valve_run(struct s_valve * const valve)
 		}
 	}
 
-	dbgmsg("%s: req action: %d, action: %d, pos: %.1f%%, req course: %.1f%%",
+	dbgmsg("%s: rq_act: %d, act: %d, pos: %.1f%%, rq_crs: %.1f%%",
 	       valve->name, valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
 	       (float)valve->run.target_course/10.0F);
 

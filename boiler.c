@@ -398,8 +398,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (hardware_relay_get_state(boiler->set.rid_burner_1))
 		heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
-	dbgmsg("%s: running: %d, target_t: %.1f, boiler_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
-	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(boiler->run.target_temp),
+	dbgmsg("%s: on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
+	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
 	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp));
 
 	return (ALL_OK);
