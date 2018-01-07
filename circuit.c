@@ -141,7 +141,10 @@ int circuit_offline(struct s_heating_circuit * const circuit)
 
 /**
  * Circuit failsafe routine.
- * By default we close the valve (if any) and start the pump (if any).
+ * By default we shutdown the circuit:
+ * - remove heat request
+ * - close the valve (if any)
+ * - start the pump (if any)
  * The logic being that we cannot make any assumption as to whether or not it is
  * safe to open the valve, whereas closing it will always be safe.
  * Turning on the pump mitigates frost risks.
@@ -149,6 +152,7 @@ int circuit_offline(struct s_heating_circuit * const circuit)
  */
 static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
 {
+	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	valve_reqclose_full(circuit->valve);
 	if (circuit->pump)
 		pump_set_state(circuit->pump, ON, FORCE);
