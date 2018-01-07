@@ -248,7 +248,7 @@ static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
  */
 static int sensor_alarm(const tempid_t id, const int error)
 {
-	const char * restrict const msgf = _("sensor fail: %s (%d) %s");
+	const char * restrict const msgf = _("sensor fail: \"%s\" (%d) %s");
 	const char * restrict const msglcdf = _("sensor fail: %d");
 	const char * restrict fail, * restrict name = NULL;
 	char * restrict msg, * restrict msglcd;
