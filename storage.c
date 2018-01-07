@@ -2,7 +2,7 @@
 //  storage.c
 //  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016,2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -19,23 +19,29 @@
  * @bug no check is performed for @b identifier collisions in any of the output functions.
  */
 
-#include <unistd.h>	// chdir
-#include <stdio.h>	// fopen...
+#include <unistd.h>	// chdir/write/close/unlink
+#include <stdio.h>	// rename/fopen...
 #include <string.h>	// memcmp
 #include <time.h>	// time
 #include <errno.h>	// errno
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>	// open/posix_fallocate/fadvise
+#include <stdlib.h>	// mkstemp
 
 #include "storage.h"
 
 #define RWCHCD_STORAGE_MAGIC "rwchcd"
 #define RWCHCD_STORAGE_VERSION 1UL
 #define STORAGE_PATH	"/var/lib/rwchcd/"
+#define STORAGE_TMPLATE	"tmpXXXXXX"
 
 static const char Storage_magic[] = RWCHCD_STORAGE_MAGIC;
 static const storage_version_t Storage_version = RWCHCD_STORAGE_VERSION;
 
 /**
  * Generic storage backend write call.
+ * Uses basic CoW, see https://lwn.net/Articles/457667/
  * @param identifier a unique string identifying the object to backup
  * @param version a caller-defined version number
  * @param object the opaque object to store
@@ -45,39 +51,78 @@ static const storage_version_t Storage_version = RWCHCD_STORAGE_VERSION;
  */
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size)
 {
-	FILE * restrict file = NULL;
-	
+	const size_t hdr_size = sizeof(Storage_magic) + sizeof(Storage_version) + sizeof(*version);
+	size_t count = size + hdr_size;
+	int fd, dir_fd, ret = -ESTORE;
+	char tmpfile[] = STORAGE_TMPLATE;
+
 	if (!identifier || !version || !object)
 		return (-EINVALID);
-	
+
+	dir_fd = open(STORAGE_PATH, O_RDONLY);
+	if (dir_fd < 0)
+		return (-ESTORE);
+
 	// make sure we're in target wd
-	if (chdir(STORAGE_PATH))
+	if (fchdir(dir_fd))
 		return (-ESTORE);
-	
-	// open stream
-	file = fopen(identifier, "w");
-	if (!file)
+
+	// create new tmp file
+	fd = mkstemp(tmpfile);
+	if (fd < 0) {
+		dbgmsg("failed to create %s (%s)", tmpfile, identifier);
 		return (-ESTORE);
-	
-	dbgmsg("identifier: %s, v: %d, sz: %zu, ptr: %p",
-	       identifier, *version, size, object);
-	
+	}
+
+	if (posix_fallocate(fd, 0, count)) {
+		dbgmsg("couldn't fallocate %s (%s)", tmpfile, identifier);
+		unlink(tmpfile);
+		return (-ESTORE);
+	}
+
+	// from here, all subsequent writes are guaranteed to not fail due to lack of space
+
 	// write our global magic first
-	fwrite(Storage_magic, sizeof(Storage_magic), 1, file);
-	
+	count -= write(fd, Storage_magic, sizeof(Storage_magic));
+
 	// then our global version
-	fwrite(&Storage_version, sizeof(Storage_version), 1, file);
-	
+	count -= write(fd, &Storage_version, sizeof(Storage_version));
+
 	// then write the caller's version
-	fwrite(version, sizeof(*version), 1, file);
-	
+	count -= write(fd, version, sizeof(*version));
+
 	// then the caller's object
-	fwrite(object, size, 1, file);
+	count -= write(fd, object, size);
+
+	// check all writes were complete and sync data
+	if (count || fdatasync(fd)) {
+		dbgmsg("incomplete write or failed to sync: %s (%s)", tmpfile, identifier);
+		unlink(tmpfile);
+		goto out;
+	}
 
 	// finally close the file
-	fclose(file);
-	
-	return (ALL_OK);
+	if (close(fd)) {
+		unlink(tmpfile);
+		goto out;
+	}
+
+	// atomically move the file in place
+	if (rename(tmpfile, identifier)) {
+		dbgmsg("failed to rename %s to %s", tmpfile, identifier);
+		goto out;
+	}
+
+	dbgmsg("identifier: %s, tmp: %s, v: %d, sz: %zu", identifier, tmpfile, *version, size);
+
+	ret = ALL_OK;
+
+out:
+	// fsync() the containing directory. Works with O_RDONLY
+	fdatasync(dir_fd);
+	close(dir_fd);
+
+	return (ret);
 }
 
 /**
@@ -91,7 +136,8 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
  */
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size)
 {
-	FILE * restrict file = NULL;
+	size_t count = size;
+	int fd;
 	char magic[ARRAY_SIZE(Storage_magic)];
 	storage_version_t sversion = 0;
 	
@@ -103,36 +149,40 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 		return (-ESTORE);
 	
 	// open stream
-	file = fopen(identifier, "r");
-	if (!file)
+	fd = open(identifier, O_RDONLY);
+	if (fd < 0) {
+		dbgmsg("failed to open %s for reading", identifier);
 		return (-ESTORE);
-	
+	}
+
 	// read our global magic first
-	fread(magic, sizeof(Storage_magic), 1, file);
-	
+	read(fd, magic, sizeof(Storage_magic));
+
 	// compare with current global magic
 	if (memcmp(magic, Storage_magic, sizeof(Storage_magic)))
 		return (-ESTORE);
 	
 	// then global version
-	fread(&sversion, sizeof(sversion), 1, file);
-	
+	read(fd, &sversion, sizeof(sversion));
+
 	// compare with current global version
 	if (memcmp(&sversion, &Storage_version, sizeof(Storage_version)))
 		return (-ESTORE);
 	
 	// then read the local version
-	fread(version, sizeof(*version), 1, file);
-	
+	read(fd, version, sizeof(*version));
+
 	// then read the object
-	fread(object, size, 1, file);
-	
-	dbgmsg("identifier: %s, v: %d, sz: %zu, ptr: %p",
-	       identifier, *version, size, object);
-	
+	count -= read(fd, object, size);
+
 	// finally close the file
-	fclose(file);
-	
+	close(fd);
+
+	if (count)
+		return (-ESTORE);
+
+	dbgmsg("identifier: %s, v: %d, sz: %zu", identifier, *version, size);
+
 	return (ALL_OK);
 }
 
