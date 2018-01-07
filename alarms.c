@@ -21,6 +21,8 @@
  * in time where all the alarms are fully collected before being deleted. This
  * happens in alarms_run(). alarms_count() and alarms_msg_iterator() are provided
  * for convenience but should only be used immediately before alarms_run().
+ *
+ * @todo implement a notifier (exec() some external script?)
  */
 
 #include <stdlib.h>
@@ -170,16 +172,25 @@ int alarms_online(void)
 /**
  * Run the alarms subsystem.
  * @return exec status
+ * @bug hardcoded throttle (60s)
+ * @todo hash table, only print a given alarm once? Stateful alarms?
  */
 int alarms_run(void)
 {
+	static time_t last = 0;
+	const time_t now = time(NULL);
+	const time_t dt = now - last;
 	const char * msg;
 
 	if (!Alarms.online)
 		return (-EOFFLINE);
 
-	while ((msg = alarms_msg_iterator(false)))
-		pr_log(_("ALARM: %s"), msg);
+	if (dt >= 60) {
+		while ((msg = alarms_msg_iterator(false))) {
+			pr_log(_("ALARM: %s"), msg);
+			last = now;
+		}
+	}
 
 	alarms_clear();
 
