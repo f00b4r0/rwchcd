@@ -16,7 +16,7 @@
 
 int alarms_online(void);
 int alarms_count(void);
-const char * alarms_msg_iterator(const bool msglcd);
+const char * alarms_last_msg(const bool msglcd);
 int alarms_raise(const enum e_execs type, const char * const msg, const char * const msglcd);
 int alarms_run(void);
 void alarms_offline(void);

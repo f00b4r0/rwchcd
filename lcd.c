@@ -462,7 +462,7 @@ int lcd_run(void)
 		snprintf(alarml1, sizeof(alarml1), _("ALARMS: %d"), alcnt);
 		lcd_buflclear(0);
 		lcd_wline((const uint8_t *)alarml1, strlen(alarml1), 0, 0);
-		alarm_msg16 = alarms_msg_iterator(true);
+		alarm_msg16 = alarms_last_msg(true);
 		len = strlen(alarm_msg16);
 		lcd_handle2ndline(true);
 		lcd_buflclear(1);

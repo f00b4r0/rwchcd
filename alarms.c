@@ -19,7 +19,7 @@
  * The advantage is that there's no need to track the alarms to avoid duplication,
  * the system can remain lightweight. The inconvenient is there's a single point
  * in time where all the alarms are fully collected before being deleted. This
- * happens in alarms_run(). alarms_count() and alarms_msg_iterator() are provided
+ * happens in alarms_run(). alarms_count() and alarms_last_msg() are provided
  * for convenience but should only be used immediately before alarms_run().
  *
  * @todo implement a notifier (exec() some external script?)
@@ -36,8 +36,8 @@ struct s_alarm {
 	//uintptr_t identifier;	///< optional unique identifier
 	//int level;
 	enum e_execs type;	///< error code
-	char * msg;		///< associated message (optional)
-	char * msglcd;		///< associated message (optional), @note @b LCD_LINELEN chars MAX
+	char * restrict msg;	///< associated message (optional)
+	char * restrict msglcd;	///< associated message (optional), @note @b LCD_LINELEN chars MAX
 	struct s_alarm * next;	///< pointer to next entry
 };
 
@@ -89,6 +89,7 @@ static void alarms_clear(void)
 	}
 
 	Alarms.count = 0;
+	Alarms.alarm_head = NULL;
 }
 
 /**
@@ -101,32 +102,28 @@ int alarms_count(void)
 }
 
 /**
- * Iterate over current system alarms messages.
+ * Returns error message for last occuring alarm.
  * @param msglcd if true, short message will be returned.
  * @return alarm message (if any)
  */
-const char * alarms_msg_iterator(const bool msglcd)
+const char * alarms_last_msg(const bool msglcd)
 {
-	static const struct s_alarm * restrict alarm = NULL;
 	const char * msg;
 
 	if (!Alarms.online)
 		return (NULL);
 
-	if (!alarm)
-		alarm = Alarms.alarm_head;
-
-	if (!alarm)
+	if (!Alarms.alarm_head)
 		return (NULL);
 
-	msg = msglcd ? alarm->msglcd : alarm->msg;
-	alarm = alarm->next;
+	msg = msglcd ? Alarms.alarm_head->msglcd : Alarms.alarm_head->msg;
 
 	return (msg);
 }
 
 /**
  * Raise an alarm in the system.
+ * Alarm is added at the beginning of the list: last alarm is always first in the list.
  * @param type alarm error code
  * @param msg optional message string; a local copy is made
  * @param msglcd optional short message string, for LCD display; a local copy is made. No check on length, will be truncated on display if too long.
@@ -171,6 +168,7 @@ int alarms_online(void)
 
 /**
  * Run the alarms subsystem.
+ * Currently only prints active alarms every 60s.
  * @return exec status
  * @bug hardcoded throttle (60s)
  * @todo hash table, only print a given alarm once? Stateful alarms?
@@ -180,18 +178,27 @@ int alarms_run(void)
 	static time_t last = 0;
 	const time_t now = time(NULL);
 	const time_t dt = now - last;
+	const struct s_alarm * alarm;
 	const char * msg;
 
 	if (!Alarms.online)
 		return (-EOFFLINE);
 
+	if (!Alarms.count)	// no active alarm, can stop here
+		return (ALL_OK);
+
 	if (dt >= 60) {
-		while ((msg = alarms_msg_iterator(false))) {
+		alarm = Alarms.alarm_head;
+
+		while (alarm) {
+			msg = alarm->msg;
 			pr_log(_("ALARM: %s"), msg);
+			alarm = alarm->next;
 			last = now;
 		}
 	}
 
+	// must clear active alarms after every run otherwise they would be duplicated
 	alarms_clear();
 
 	return (ALL_OK);
