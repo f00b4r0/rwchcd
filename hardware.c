@@ -645,11 +645,13 @@ __attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_
  */
 __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 {
+#define CHNONE		0x00
+#define CHTURNON	0x01
+#define CHTURNOFF	0x02
 	struct s_stateful_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
-	uint_fast8_t i;
-	enum {CHNONE = 0, CHTURNON, CHTURNOFF } change = CHNONE;
+	uint_fast8_t i, chflags = CHNONE;
 	int ret = -EGENERIC;
 
 	assert(Hardware.ready);
@@ -673,7 +675,7 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 				if (relay->run.off_since)
 					relay->run.off_tottime += now - relay->run.off_since;
 				relay->run.off_since = 0;
-				change = CHTURNON;
+				chflags |= CHTURNON;
 			}
 		}
 		else {	// turn off
@@ -683,7 +685,7 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 				if (relay->run.on_since)
 					relay->run.on_tottime += now - relay->run.on_since;
 				relay->run.on_since = 0;
-				change = CHTURNOFF;
+				chflags |= CHTURNOFF;
 			}
 		}
 
@@ -695,9 +697,10 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 	}
 
 	// save/log relays state if there was a change
-	if (change) {
+	if (chflags) {
 		hardware_relays_log();
-		if (CHTURNOFF == change) {	// only update permanent storage on full cycles (at turn off)
+		if (chflags & CHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
+			// XXX there's no real motive to do this besides lowering storage pressure
 			ret = hardware_save_relays();
 			if (ret)
 				dbgerr("hardware_save failed (%d)", ret);
