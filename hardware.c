@@ -583,8 +583,8 @@ static int hardware_calibrate(void)
 		return (-EINVALID);
 
 	// everything went fine, we can update both calibration values and time
-	Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.10F * (Hardware.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (10% ponderation to new sample) to smooth out sudden bumps
-	Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.10F * (Hardware.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (10% ponderation to new sample) to smooth out sudden bumps
+	Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.20F * (Hardware.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.20F * (Hardware.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
 	Hardware.last_calib = now;
 
 	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
