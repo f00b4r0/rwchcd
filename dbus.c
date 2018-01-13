@@ -176,6 +176,7 @@ static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 			err = true;
 			break;
 	}
+	config_save_hw(runtime->config, false);
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 
 	if (err)
@@ -270,6 +271,7 @@ static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
 			err = true;
 			break;
 	}
+	config_save_hw(runtime->config, false);
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 
 	if (err)

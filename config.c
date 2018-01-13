@@ -212,9 +212,10 @@ int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t s
 /**
  * Save config.
  * @param config target config
+ * @param save_hw true if hardware config must be saved
  * @return exec status
  */
-int config_save(const struct s_config * const config)
+int config_save_hw(const struct s_config * const config, const bool save_hw)
 {
 	int ret;
 
@@ -227,9 +228,9 @@ int config_save(const struct s_config * const config)
 		dbgerr("storage_dump failed (%d)", ret);
 		goto out;
 	}
-	
-	// save to hardware
-	ret = hardware_config_store();
+
+	if (save_hw)
+		ret = hardware_config_store();	// save to hardware
 
 out:
 	return (ret);
