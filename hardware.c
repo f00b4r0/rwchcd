@@ -290,15 +290,16 @@ static int sensor_alarm(const tempid_t id, const int error)
 static void parse_temps(void)
 {
 	struct s_runtime * const runtime = get_runtime();
-	const uint_fast8_t nsamples = runtime->config->temp_nsamples;
+	const typeof(runtime->config->temp_nsamples) nsamples = runtime->config->temp_nsamples;
+	const typeof(runtime->config->nsensors) nsensors = runtime->config->nsensors;
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
 	temp_t previous, current;
 	
-	assert(Hardware.ready && runtime);
+	assert(Hardware.ready);
 	
-	for (i = 0; i < runtime->config->nsensors; i++) {
+	for (i = 0; i < nsensors; i++) {
 		if (!Sensors[i].set.configured) {
 			Sensors[i].run.value = TEMPUNSET;
 			continue;
@@ -1168,6 +1169,7 @@ out:
 	return (ret);
 }
 
+#if 0
 /**
  * Hardware run loop
  */
@@ -1195,6 +1197,7 @@ int hardware_run(void)
 out:
 	return (ret);
 }
+#endif
 
 /**
  * Hardware offline routine.
