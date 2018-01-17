@@ -404,12 +404,16 @@ out:
  * @param sensor target sensor number to be read
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
+ * @warning no check is performed on the size of the provided tsensors array
  */
 int spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
 	int ret;
 	
 	assert(tsensors);
+
+	if (sensor >= RWCHC_NTSENSORS)
+		return (-EINVALID);
 	
 	SPI_RESYNC(sensor);
 
