@@ -190,13 +190,14 @@ int config_set_tfrost(struct s_config * const config, const temp_t tfrost)
 }
 
 /**
- * Set outdoor sensor id.
+ * Set outdoor sensor.
  * @param config target config
  * @param sensorid id of outdoor temperature sensor
+ * @param offset temperature offset to be applied to outdoor sensor
  * @return exec status
  * @warning must be called *AFTER* config_set_nsensors()
  */
-int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
+int config_set_outdoor_sensor(struct s_config * const config, const tempid_t sensorid, const temp_t offset)
 {
 	if (!config)
 		return (-EINVALID);
@@ -205,6 +206,7 @@ int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t s
 		return (-EINVALID);
 
 	config->id_temp_outdoor = sensorid;
+	config->offset_toutdoor = offset;
 
 	return (ALL_OK);
 }

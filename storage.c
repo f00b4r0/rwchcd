@@ -46,7 +46,6 @@ static const storage_version_t Storage_version = RWCHCD_STORAGE_VERSION;
  * @param version a caller-defined version number
  * @param object the opaque object to store
  * @param size size of the object argument
- * @todo XXX TODO ERROR HANDLING
  * @todo add CRC
  */
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size)
@@ -131,7 +130,6 @@ out:
  * @param version a caller-defined version number
  * @param object the opaque object to restore
  * @param size size of the object argument
- * @todo XXX TODO ERROR HANDLING
  * @todo add CRC check
  */
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size)
