@@ -2,7 +2,7 @@
 //  rWCHCd.c
 //  A simple daemon for rWCHC
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -11,10 +11,10 @@
  rwchcd: a central heating controller daemon for rWCHC.
  
  @author Thibaut VARENE
- @date 2016-2017
+ @date 2016-2018
  @copyright GPLv2
  
- Copyright: (C) 2016-2017 Thibaut VARENE
+ Copyright: (C) 2016-2018 Thibaut VARENE
  
  Home page: http://hacks.slashdirt.org/hw/rwchc/
  */
