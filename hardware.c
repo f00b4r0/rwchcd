@@ -63,6 +63,7 @@ struct s_stateful_relay {
 };
 
 static const storage_version_t Hardware_sversion = 1;
+static const storage_version_t Hardware_ssensver = 2;
 
 static struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
 
@@ -71,14 +72,15 @@ typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius functi
 /** software representation of a temperature sensor */
 struct s_sensor {
 	struct {
-		bool configured;
-		enum e_sensor_type type;
+		bool configured;	///< sensor is configured
+		enum e_sensor_type type;///< sensor type
+		temp_t offset;		///< sensor value offset
 	} set;
 	struct {
-		temp_t value;
+		temp_t value;		///< sensor current temperature value (offset applied)
 	} run;
 	ohm_to_celsius_ft * ohm_to_celsius;
-	char * restrict name;
+	char * restrict name;		///< user-defined name for the sensor
 };
 
 static struct s_sensor Sensors[RWCHCD_NTEMPS];		///< physical sensors
@@ -309,7 +311,7 @@ static void parse_temps(void)
 		o_to_c = Sensors[i].ohm_to_celsius;
 		assert(o_to_c);
 
-		current = celsius_to_temp(o_to_c(ohm));
+		current = celsius_to_temp(o_to_c(ohm)) + Sensors[i].set.offset;
 		previous = Sensors[i].run.value;
 
 		if (current <= RWCHCD_TEMPMIN) {
@@ -385,7 +387,7 @@ static int hardware_restore_relays(void)
  */
 static int hardware_save_sensors(void)
 {
-	return (storage_dump("hardware_sensors", &Hardware_sversion, Sensors, sizeof(Sensors)));
+	return (storage_dump("hardware_sensors", &Hardware_ssensver, Sensors, sizeof(Sensors)));
 }
 
 /**
@@ -405,7 +407,7 @@ static int hardware_restore_sensors(void)
 	// try to restore key elements of hardware
 	ret = storage_fetch("hardware_sensors", &sversion, blob, sizeof(blob));
 	if (ALL_OK == ret) {
-		if (Hardware_sversion != sversion)
+		if (Hardware_ssensver != sversion)
 			return (-EMISMATCH);
 
 		for (i=0; i<ARRAY_SIZE(Sensors); i++) {
@@ -743,10 +745,11 @@ __attribute__((warn_unused_result)) static inline int hardware_rwchcperiphs_read
  * Configure a temperature sensor.
  * @param id the physical id of the sensor to configure (starting from 1)
  * @param type the sensor type (PT1000...)
+ * @param offset a temperature offset to apply to this particular sensor value
  * @param name an optional user-defined name describing the sensor
  * @return exec status
  */
-int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const char * const name)
+int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const temp_t offset, const char * const name)
 {
 	char * str = NULL;
 
@@ -770,6 +773,7 @@ int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, 
 	}
 
 	Sensors[id-1].set.type = type;
+	Sensors[id-1].set.offset = offset;
 	Sensors[id-1].set.configured = true;
 
 	return (ALL_OK);

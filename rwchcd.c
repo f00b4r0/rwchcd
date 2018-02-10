@@ -162,7 +162,7 @@ static int init_process()
 	if (!config->restored) {
 		config_set_temp_nsamples(config, 5);	// XXX 5 samples average
 		config_set_nsensors(config, 4);	// XXX 4 sensors
-		config_set_outdoor_sensor(config, SENSOR_OUTDOOR, deltaK_to_temp(-0.5F));
+		config_set_outdoor_sensorid(config, SENSOR_OUTDOOR);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
 		config->summer_maintenance = true;	// enable summer maintenance
@@ -194,7 +194,7 @@ static int init_process()
 		config_save(config);
 	}
 
-	hardware_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, "outdoor");
+	hardware_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-1.0F), "outdoor");
 
 	// attach config to runtime
 	runtime->config = config;
@@ -250,7 +250,7 @@ static int init_process()
 	boiler->set.hysteresis = deltaK_to_temp(8);
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
-	ret = hardware_sensor_configure(SENSOR_BURNER, ST_PT1000, "boiler");
+	ret = hardware_sensor_configure(SENSOR_BURNER, ST_PT1000, deltaK_to_temp(0), "boiler");
 	if (ret)
 		return ret;
 	boiler->set.id_temp = SENSOR_BURNER;
@@ -276,11 +276,11 @@ static int init_process()
 	circuit->set.am_tambient_tK = 60 * 60;	// 1h
 	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
 	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
-	ret = hardware_sensor_configure(SENSOR_WATEROUT, ST_PT1000, "water out");
+	ret = hardware_sensor_configure(SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), "water out");
 	if (ret)
 		return (ret);
 	circuit->set.id_temp_outgoing = SENSOR_WATEROUT;
-	ret = hardware_sensor_configure(SENSOR_WATERRET, ST_PT1000, "water return");
+	ret = hardware_sensor_configure(SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), "water return");
 	if (ret)
 		return (ret);
 	circuit->set.id_temp_return = SENSOR_WATERRET;

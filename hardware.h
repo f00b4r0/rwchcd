@@ -40,7 +40,7 @@ int hardware_relay_request(const relid_t id, const bool failstate, const char * 
 int hardware_relay_release(const relid_t id);
 int hardware_relay_set_state(const relid_t id, bool turn_on, time_t change_delay);
 int hardware_relay_get_state(const relid_t id);
-int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const char * const name) __attribute__((warn_unused_result));
+int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const temp_t offset, const char * const name) __attribute__((warn_unused_result));
 int hardware_sensor_deconfigure(const tempid_t id);
 int hardware_sensor_configured(const tempid_t id) __attribute__((warn_unused_result));
 int hardware_fwversion(void);

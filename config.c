@@ -20,7 +20,7 @@
 #include "storage.h"
 #include "config.h"
 
-static const storage_version_t Config_sversion = 8;
+static const storage_version_t Config_sversion = 9;
 
 /**
  * Allocate new config.
@@ -190,14 +190,13 @@ int config_set_tfrost(struct s_config * const config, const temp_t tfrost)
 }
 
 /**
- * Set outdoor sensor.
+ * Set outdoor sensor ID.
  * @param config target config
  * @param sensorid id of outdoor temperature sensor
- * @param offset temperature offset to be applied to outdoor sensor
  * @return exec status
  * @warning must be called *AFTER* config_set_nsensors()
  */
-int config_set_outdoor_sensor(struct s_config * const config, const tempid_t sensorid, const temp_t offset)
+int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
 {
 	if (!config)
 		return (-EINVALID);
@@ -206,7 +205,6 @@ int config_set_outdoor_sensor(struct s_config * const config, const tempid_t sen
 		return (-EINVALID);
 
 	config->id_temp_outdoor = sensorid;
-	config->offset_toutdoor = offset;
 
 	return (ALL_OK);
 }

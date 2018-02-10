@@ -203,7 +203,7 @@ static void outdoor_temp()
 
 	ret = clone_temp(Runtime.config->id_temp_outdoor, &toutdoor);
 	if (ALL_OK == ret) {
-		Runtime.t_outdoor = toutdoor + Runtime.config->offset_toutdoor;
+		Runtime.t_outdoor = toutdoor;
 		Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt);
 		last = now;
 	}
