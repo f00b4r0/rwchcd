@@ -61,6 +61,7 @@
 		})
 
 static int_fast16_t spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
+static int FWversion = 0;	///< detected firmware version
 
 /**
  * Exchange 8bit data over SPI.
@@ -94,12 +95,7 @@ int spi_keepalive(void)
 		return (-ESPI);
 }
 
-/**
- * Retrieve firmware version number.
- * Delay: none
- * @return negative error code or positive version number
- */
-int spi_fwversion(void)
+static int _spi_fwversion(void)
 {
 	int ret;
 
@@ -114,6 +110,19 @@ int spi_fwversion(void)
 		ret = -ESPI;
 
 	return ret;
+}
+
+/**
+ * Retrieve firmware version number.
+ * Delay: none
+ * @return negative error code or positive version number
+ */
+int spi_fwversion(void)
+{
+	if (FWversion <= 0)
+		FWversion = _spi_fwversion();
+
+	return (FWversion);
 }
 
 /**
@@ -313,13 +322,8 @@ int spi_peripherals_w(const union rwchc_u_periphs * const periphs)
 	return ret;
 }
 
-/**
- * Read relay states.
- * Delay: none
- * @param relays pointer to struct whose values will be populated to match current states
- * @return error code
- */
-int spi_relays_r(union rwchc_u_relays * const relays)
+__attribute__((deprecated))
+static int _spi_relays_r0(union rwchc_u_relays * const relays)
 {
 	int ret = -ESPI;
 	
@@ -350,13 +354,45 @@ out:
 	return ret;
 }
 
+static int _spi_relays_r5(union rwchc_u_relays * const relays)
+{
+	int ret = ALL_OK;
+
+	assert(relays);
+
+	SPI_RESYNC(RWCHC_SPIC_RELAYRL);
+
+	if (!spitout)
+		return (-ESPI);
+
+	relays->LOWB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	relays->HIGHB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+
+	if (!SPI_ASSERT((relays->LOWB^relays->HIGHB), ~RWCHC_SPIC_RELAYRL))
+		ret = -ESPI;
+
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRL))
+		ret = -ESPI;
+
+	return (ret);
+}
+
 /**
- * Write relay states.
+ * Read relay states.
  * Delay: none
- * @param relays pointer to struct whose values are populated with desired states
+ * @param relays pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int spi_relays_w(const union rwchc_u_relays * const relays)
+int spi_relays_r(union rwchc_u_relays * const relays)
+{
+	if (FWversion <= 4)
+		return (_spi_relays_r0(relays));
+	else
+		return (_spi_relays_r5(relays));
+}
+
+__attribute__((deprecated))
+static int _spi_relays_w0(const union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
 	
@@ -395,6 +431,56 @@ int spi_relays_w(const union rwchc_u_relays * const relays)
 
 out:
 	return ret;
+}
+
+static int _spi_relays_w5(const union rwchc_u_relays * const relays)
+{
+	int ret = ALL_OK;
+	uint8_t temp;	// work around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=38341
+
+	assert(relays);
+
+	SPI_RESYNC(RWCHC_SPIC_RELAYWL);
+
+	if (!spitout)
+		return (-ESPI);
+
+	if (!SPI_ASSERT(relays->LOWB, ~RWCHC_SPIC_RELAYWL))
+		ret = -ESPI;
+
+	temp = ~relays->LOWB;
+	if (!SPI_ASSERT(relays->HIGHB, temp))
+		ret = -ESPI;
+
+	temp = ~relays->HIGHB;
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, temp))
+		ret = -ESPI;
+
+	if (ALL_OK == ret) {
+		if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_KEEPALIVE))
+			ret = -ESPI;
+	}
+	else
+		SPI_rw8bit(RWCHC_SPIC_INVALID);
+
+	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWL))
+		ret = -ESPI;
+
+	return (ret);
+}
+
+/**
+ * Write relay states.
+ * Delay: none
+ * @param relays pointer to struct whose values are populated with desired states
+ * @return error code
+ */
+int spi_relays_w(const union rwchc_u_relays * const relays)
+{
+	if (FWversion <= 4)
+		return (_spi_relays_w0(relays));
+	else
+		return (_spi_relays_w5(relays));
 }
 
 /**
@@ -584,9 +670,21 @@ int spi_reset(void)
 
 /**
  * Init spi subsystem
- * @return fd or error code
+ * @return exec status or error code
  */
 int spi_init(void)
 {
-	return (wiringPiSPISetupMode(SPICHAN, SPICLOCK, SPIMODE));
+	int ret;
+
+	ret = wiringPiSPISetupMode(SPICHAN, SPICLOCK, SPIMODE);
+
+	if (ret >= 0)
+		ret = _spi_fwversion();
+
+	if (ret >= 0) {
+		FWversion = ret;
+		ret = ALL_OK;
+	}
+
+	return (ret);
 }

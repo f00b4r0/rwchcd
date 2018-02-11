@@ -194,7 +194,7 @@ static int init_process()
 		config_save(config);
 	}
 
-	hardware_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-1.0F), "outdoor");
+	hardware_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), "outdoor");
 
 	// attach config to runtime
 	runtime->config = config;
