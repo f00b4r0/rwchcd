@@ -120,7 +120,8 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
 
 /**
  * DHWT failsafe routine.
- * By default we stop all pumps and electric self heater.
+ * By default we stop all pumps and electric self heater. If configured for
+ * electric failover the self-heater is turned on unconditionnally.
  * The major inconvenient here is that this failsafe mode COULD provoke a DHWT
  * freeze in the most adverse conditions.
  * @warning DHWT could freeze - TODO: needs review
@@ -132,8 +133,10 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 		pump_set_state(dhwt->feedpump, OFF, FORCE);
 	if (dhwt->recyclepump)
 		pump_set_state(dhwt->recyclepump, OFF, FORCE);
-	if (dhwt->set.rid_selfheater)
-		hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+	if (dhwt->set.rid_selfheater) {
+		hardware_relay_set_state(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF, 0);
+		dhwt->run.electric_mode = dhwt->set.electric_failover;
+	}
 }
 
 /**
@@ -141,9 +144,11 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  * Controls the dhwt's elements to achieve the desired target temperature.
  * If charge time exceeds the limit, the DHWT will be stopped for the duration
  * of the set limit.
+ * Due to implementation in dhwt_failsafe() the DHWT can be configured to operate
+ * purely on electric heating in the event of sensor failure, but this is still
+ * considered a degraded operation mode and it will be reported as an error.
  * @param dhwt target dhwt
  * @return error status
- * @todo XXX TODO: implement working on electric without sensor
  * @bug discharge protection might fail if the input sensor needs water flow
  * in the feedpump. The solution to this is to implement a fallback to an upstream
  * temperature (e.g. the heatsource's).

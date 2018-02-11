@@ -19,7 +19,8 @@
 /** DHWT element structure */
 struct s_dhw_tank {
 	struct {
-		bool configured;		///< true if properly configured
+		bool configured;		///< if true, DHWT is properly configured
+		bool electric_failover;		///< if true, if none of the DHWT sensors are working the electric self-heating relay will be turned on in all active modes
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
 		enum {
