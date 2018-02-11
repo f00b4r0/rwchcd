@@ -309,6 +309,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			dhwt->run.force_on = false;
 
 			// mark heating as done
+			dhwt->run.legionella_on = false;
 			dhwt->run.charge_on = false;
 			dhwt->run.mode_since = now;
 		}
