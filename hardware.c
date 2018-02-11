@@ -714,7 +714,6 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 	ret = spi_relays_w(&rWCHC_relays);
 
 	// update internal runtime state on success
-	// XXX NOTE there will be a discrepancy between internal state and Relays[] if the above fails
 	if (ALL_OK == ret)
 		Hardware.relays.ALL = rWCHC_relays.ALL;
 

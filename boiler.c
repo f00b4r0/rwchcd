@@ -198,7 +198,7 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 
 /**
  * Boiler logic.
- * As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online). XXX REVIEW
+ * As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @todo burner turn-on anticipation
