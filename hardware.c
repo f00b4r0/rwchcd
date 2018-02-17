@@ -415,6 +415,7 @@ static int hardware_restore_sensors(void)
 				continue;
 
 			Sensors[i].set.type = sensorptr->set.type;
+			Sensors[i].set.offset = sensorptr->set.offset;
 			Sensors[i].ohm_to_celsius = sensor_o_to_c(sensorptr->set.type);
 			if (Sensors[i].ohm_to_celsius)
 				Sensors[i].set.configured = true;
