@@ -369,8 +369,10 @@ static int init_process()
 	runtime->plant = plant;
 
 	// bring the hardware online
-	while (hardware_online())
-		dbgerr("hardware_online() failed");
+	while ((ret = hardware_online()) != ALL_OK) {
+		dbgerr("hardware_online() failed: %d", ret);
+		sleep(1);	// don't pound on the hardware if it's not coming up: calibration data may not be immediately available
+	}
 
 	lcd_online();
 	alarms_online();
