@@ -322,39 +322,13 @@ int spi_peripherals_w(const union rwchc_u_periphs * const periphs)
 	return ret;
 }
 
-__attribute__((deprecated))
-static int _spi_relays_r0(union rwchc_u_relays * const relays)
-{
-	int ret = -ESPI;
-	
-	assert(relays);
-	
-	SPI_RESYNC(RWCHC_SPIC_RELAYRL);
-	
-	if (!spitout)
-		goto out;
-	
-	relays->LOWB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
-	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRL))
-		goto out;
-	
-	SPI_RESYNC(RWCHC_SPIC_RELAYRH);	// resync since we have exited the atomic section in firmware
-	
-	if (!spitout)
-		goto out;
-	
-	relays->HIGHB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
-	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRH))
-		goto out;
-	
-	ret = ALL_OK;
-out:
-	return ret;
-}
-
-static int _spi_relays_r5(union rwchc_u_relays * const relays)
+/**
+ * Read relay states.
+ * Delay: none
+ * @param relays pointer to struct whose values will be populated to match current states
+ * @return error code
+ */
+int spi_relays_r(union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
 
@@ -378,62 +352,12 @@ static int _spi_relays_r5(union rwchc_u_relays * const relays)
 }
 
 /**
- * Read relay states.
+ * Write relay states.
  * Delay: none
- * @param relays pointer to struct whose values will be populated to match current states
+ * @param relays pointer to struct whose values are populated with desired states
  * @return error code
  */
-int spi_relays_r(union rwchc_u_relays * const relays)
-{
-	if (FWversion <= 4)
-		return (_spi_relays_r0(relays));
-	else
-		return (_spi_relays_r5(relays));
-}
-
-__attribute__((deprecated))
-static int _spi_relays_w0(const union rwchc_u_relays * const relays)
-{
-	int ret = ALL_OK;
-	
-	assert(relays);
-	
-	SPI_RESYNC(RWCHC_SPIC_RELAYWL);
-	
-	if (!spitout)
-		return (-ESPI);
-	
-	if (!SPI_ASSERT(relays->LOWB, ~RWCHC_SPIC_RELAYWL))
-		ret = -ESPI;
-
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->LOWB))
-		ret = -ESPI;
-
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWL))
-		ret = -ESPI;
-
-	if (ALL_OK != ret)	// don't bother trying to write the other half
-		goto out;
-
-	SPI_RESYNC(RWCHC_SPIC_RELAYWH);	// resync since we have exited the atomic section in firmware
-	
-	if (!spitout)
-		return (-ESPI);
-	
-	if (!SPI_ASSERT(relays->HIGHB, ~RWCHC_SPIC_RELAYWH))
-		ret = -ESPI;
-
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, relays->HIGHB))
-		ret = -ESPI;
-
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWH))
-		ret = -ESPI;
-
-out:
-	return ret;
-}
-
-static int _spi_relays_w5(const union rwchc_u_relays * const relays)
+int spi_relays_w(const union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
 	uint8_t temp;	// work around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=38341
@@ -467,20 +391,6 @@ static int _spi_relays_w5(const union rwchc_u_relays * const relays)
 		ret = -ESPI;
 
 	return (ret);
-}
-
-/**
- * Write relay states.
- * Delay: none
- * @param relays pointer to struct whose values are populated with desired states
- * @return error code
- */
-int spi_relays_w(const union rwchc_u_relays * const relays)
-{
-	if (FWversion <= 4)
-		return (_spi_relays_w0(relays));
-	else
-		return (_spi_relays_w5(relays));
 }
 
 /**
