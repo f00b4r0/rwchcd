@@ -2,7 +2,7 @@
 //  valve.c
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -529,13 +529,22 @@ int valve_run(struct s_valve * const valve)
 
 /**
  * Constructor for bangbang valve control.
+ * This controller requires @b id_tempout to be set.
+ * This controller ignores @b id_temp1 and @b id_temp2
  * @param valve target valve
  * @return exec status
  */
 int valve_make_bangbang(struct s_valve * const valve)
 {
+	int ret;
+
 	if (!valve)
 		return (-EINVALID);
+
+	// ensure required sensors are configured
+	ret = hardware_sensor_configured(valve->set.id_tempout);
+	if (ALL_OK != ret)
+		return (ret);
 
 	valve->valvectrl = valvectrl_bangbang;
 
@@ -544,6 +553,8 @@ int valve_make_bangbang(struct s_valve * const valve)
 
 /**
  * Constructor for sapprox valve control.
+ * This controller requires @b id_tempout to be set.
+ * This controller ignores @b id_temp1 and @b id_temp2
  * @param valve target valve
  * @param amount movement amount in %
  * @param intvl sample interval in seconds
@@ -553,6 +564,7 @@ int valve_make_bangbang(struct s_valve * const valve)
 int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl)
 {
 	struct s_valve_sapprox_priv * priv = NULL;
+	int ret;
 
 	if (!valve)
 		return (-EINVALID);
@@ -562,6 +574,11 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 
 	if (amount > 100)
 		return (-EINVALID);
+
+	// ensure required sensors are configured
+	ret = hardware_sensor_configured(valve->set.id_tempout);
+	if (ALL_OK != ret)
+		return (ret);
 
 	// create priv element
 	priv = calloc(1, sizeof(*priv));
@@ -582,6 +599,8 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 
 /**
  * Constructor for PI valve control.
+ * This controller requires @b id_temp1 and @b id_tempout to be set.
+ * This controller recommends @b id_temp2 to be set.
  * @param valve target valve
  * @param intvl sample interval in seconds
  * @param Td deadtime (time elapsed before any change in output is observed after a step change)
@@ -595,6 +614,7 @@ int valve_make_pi(struct s_valve * const valve,
 		  time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
 {
 	struct s_valve_pi_priv * priv = NULL;
+	int ret;
 
 	if (!valve)
 		return (-EINVALID);
@@ -608,6 +628,15 @@ int valve_make_pi(struct s_valve * const valve,
 	// ensure sample interval <= (Tu/4) [Nyquist]
 	if (intvl > (Tu/4))
 		return (-EMISCONFIGURED);
+
+	// ensure required sensors are configured
+	ret = hardware_sensor_configured(valve->set.id_tempout);
+	if (ALL_OK != ret)
+		return (ret);
+
+	ret = hardware_sensor_configured(valve->set.id_temp1);
+	if (ALL_OK != ret)
+		return (ret);
 
 	// create priv element
 	priv = calloc(1, sizeof(*priv));
