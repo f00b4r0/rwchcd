@@ -2,7 +2,7 @@
 //  boiler.c
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -80,12 +80,12 @@ static void boiler_hscb_del_priv(void * priv)
 }
 
 /**
- * Return current boiler output temperature.
+ * Return current boiler temperature.
  * @param heat heatsource parent structure
- * @return current output temperature
+ * @return current temperature
  * @warning no parameter check
  */
-static temp_t boiler_hscb_temp_out(struct s_heatsource * const heat)
+static temp_t boiler_hscb_temp(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
 	temp_t temp;
@@ -93,7 +93,7 @@ static temp_t boiler_hscb_temp_out(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	clone_temp(boiler->set.id_temp_outgoing, &temp);
+	clone_temp(boiler->set.id_temp, &temp);
 
 	return (temp);
 }
@@ -115,10 +115,6 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	// check that mandatory sensors are working
 	ret = clone_temp(boiler->set.id_temp, NULL);
-	if (ret)
-		goto out;
-
-	ret = clone_temp(boiler->set.id_temp_outgoing, NULL);
 	if (ret)
 		goto out;
 
@@ -427,7 +423,7 @@ int boiler_heatsource(struct s_heatsource * const heat)
 	heat->cb.offline = boiler_hscb_offline;
 	heat->cb.logic = boiler_hscb_logic;
 	heat->cb.run = boiler_hscb_run;
-	heat->cb.temp_out = boiler_hscb_temp_out;
+	heat->cb.temp_out = boiler_hscb_temp;
 	heat->cb.del_priv = boiler_hscb_del_priv;
 
 	heat->set.type = HS_BOILER;

@@ -254,7 +254,6 @@ static int init_process()
 	if (ret)
 		return ret;
 	boiler->set.id_temp = SENSOR_BURNER;
-	boiler->set.id_temp_outgoing = boiler->set.id_temp;
 	ret = hardware_relay_request(RELAY_BURNER, OFF, "burner");
 	if (ret)
 		return (ret);
@@ -298,10 +297,10 @@ static int init_process()
 	circuit->valve->set.tdeadzone = deltaK_to_temp(1);
 	circuit->valve->set.deadband = 20;	// XXX 2% minimum increments
 	circuit->valve->set.ete_time = 120;	// XXX 120 s
-	ret = hardware_sensor_configured(boiler->set.id_temp_outgoing);
+	ret = hardware_sensor_configured(boiler->set.id_temp);
 	if (ret)
 		return (ret);
-	circuit->valve->set.id_temp1 = boiler->set.id_temp_outgoing;
+	circuit->valve->set.id_temp1 = boiler->set.id_temp;
 	ret = hardware_sensor_configured(circuit->set.id_temp_return);
 	if (ret)
 		return (ret);

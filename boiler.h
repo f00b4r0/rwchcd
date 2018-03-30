@@ -34,7 +34,6 @@ struct s_boiler_priv {
 		temp_t t_freeze;		///< boiler temp trip point for antifreeze (+5C)
 		time_t burner_min_time;		///< minimum burner state time (i.e. minimum time spent in either on or off state). Prevents pumping
 		tempid_t id_temp;		///< boiler temp id
-		tempid_t id_temp_outgoing;	///< boiler outflow temp id
 		tempid_t id_temp_return;	///< boiler inflow temp id
 		relid_t rid_burner_1;		///< first stage of burner
 		relid_t rid_burner_2;		///< second stage of burner
