@@ -423,7 +423,7 @@ int boiler_heatsource(struct s_heatsource * const heat)
 	heat->cb.offline = boiler_hscb_offline;
 	heat->cb.logic = boiler_hscb_logic;
 	heat->cb.run = boiler_hscb_run;
-	heat->cb.temp_out = boiler_hscb_temp;
+	heat->cb.temp = boiler_hscb_temp;
 	heat->cb.del_priv = boiler_hscb_del_priv;
 
 	heat->set.type = HS_BOILER;

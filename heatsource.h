@@ -50,7 +50,7 @@ struct s_heatsource {
 		int (*offline)(struct s_heatsource * const);	///< pointer to source private offline() function
 		int (*logic)(struct s_heatsource * const);	///< pointer to source private logic() function
 		int (*run)(struct s_heatsource * const);	///< pointer to source private run() function
-		temp_t (*temp_out)(struct s_heatsource * const);///< pointer to source private temp_out() function (returns current output temperature)
+		temp_t (*temp)(struct s_heatsource * const);	///< pointer to source private temp() function (returns current temperature)
 		void (*del_priv)(void * priv);			///< pointer to source private del() function
 	} cb;		///< heatsource callbacks
 };

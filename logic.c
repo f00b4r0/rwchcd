@@ -409,6 +409,7 @@ settarget:
  * Heat source logic.
  * @param heat target heat source
  * @return exec status
+ * @todo rework DHWT prio when n_heatsources > 1
  */
 int logic_heatsource(struct s_heatsource * restrict const heat)
 {
@@ -436,8 +437,9 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	heat->run.could_sleep = runtime->plant_could_sleep;
 
 	// compute sliding integral in DHW sliding prio
+	// XXX TODO: this logic should move at a higher level in the context of a pool of heatsources (some of which may or may not be connected to the DHWTs)
 	if (runtime->dhwc_sliding) {
-		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp_out(heat), runtime->temps_time);
+		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), runtime->temps_time);
 
 		if (temp < 0) {
 			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
