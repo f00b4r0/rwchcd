@@ -87,7 +87,7 @@
 #define RELAY_BURNER	14
 
 #define SENSOR_OUTDOOR	1
-#define SENSOR_BURNER	2
+#define SENSOR_BOILER	2
 #define SENSOR_WATEROUT	3
 #define SENSOR_WATERRET	4
 
@@ -250,10 +250,10 @@ static int init_process()
 	boiler->set.hysteresis = deltaK_to_temp(8);
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
-	ret = hardware_sensor_configure(SENSOR_BURNER, ST_PT1000, deltaK_to_temp(0), "boiler");
+	ret = hardware_sensor_configure(SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), "boiler");
 	if (ret)
 		return ret;
-	boiler->set.id_temp = SENSOR_BURNER;
+	boiler->set.id_temp = SENSOR_BOILER;
 	ret = hardware_relay_request(RELAY_BURNER, OFF, "burner");
 	if (ret)
 		return (ret);
