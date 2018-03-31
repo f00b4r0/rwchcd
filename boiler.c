@@ -73,9 +73,6 @@ static void boiler_hscb_del_priv(void * priv)
 	if (!boiler)
 		return;
 
-	hardware_relay_release(boiler->set.rid_burner_1);
-	hardware_relay_release(boiler->set.rid_burner_2);
-
 	free(boiler);
 }
 

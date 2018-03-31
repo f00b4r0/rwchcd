@@ -359,7 +359,6 @@ void dhwt_del(struct s_dhw_tank * restrict dhwt)
 	if (!dhwt)
 		return;
 
-	hardware_relay_release(dhwt->set.rid_selfheater);
 	free(dhwt->name);
 	dhwt->name = NULL;
 

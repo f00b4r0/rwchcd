@@ -27,7 +27,6 @@ void pump_del(struct s_pump * restrict pump)
 	if (!pump)
 		return;
 
-	hardware_relay_release(pump->set.rid_relay);
 	free(pump->name);
 	pump->name = NULL;
 	free(pump);

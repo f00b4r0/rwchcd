@@ -59,8 +59,6 @@ void valve_del(struct s_valve * valve)
 	if (!valve)
 		return;
 
-	hardware_relay_release(valve->set.rid_open);
-	hardware_relay_release(valve->set.rid_close);
 	free(valve->priv);
 	valve->priv = NULL;
 	free(valve->name);
