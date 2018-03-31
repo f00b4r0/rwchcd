@@ -155,7 +155,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	vpriv->run.last_time = now;
 
 	// get current outpout
-	ret = clone_temp(valve->set.id_tempout, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.id_tempout, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -166,12 +166,12 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 	}
 
 	// get current high input
-	ret = clone_temp(valve->set.id_temp1, &tempin_h);
+	ret = hardware_sensor_clone_temp(valve->set.id_temp1, &tempin_h);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// if we don't have a sensor for low input, guesstimate it
-	ret = clone_temp(valve->set.id_temp2, &tempin_l);
+	ret = hardware_sensor_clone_temp(valve->set.id_temp2, &tempin_l);
 	if (ALL_OK != ret)
 		tempin_l = tempin_h - vpriv->set.Ksmax;
 
@@ -276,7 +276,7 @@ static int valvectrl_bangbang(struct s_valve * const valve, const temp_t target_
 	int ret;
 	temp_t tempout;
 
-	ret = clone_temp(valve->set.id_tempout, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.id_tempout, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -325,7 +325,7 @@ static int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_t
 
 	vpriv->run.last_time = now;
 
-	ret = clone_temp(valve->set.id_tempout, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.id_tempout, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 

@@ -32,7 +32,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 	int ret;
 
 	// check that mandatory sensors are working
-	ret = clone_temp(boiler->set.id_temp, NULL);
+	ret = hardware_sensor_clone_temp(boiler->set.id_temp, NULL);
 	if (ALL_OK != ret)
 		alarms_raise(ret, _("Boiler sensor failure"), _("Boiler sens fail"));
 
@@ -89,7 +89,7 @@ static temp_t boiler_hscb_temp(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	clone_temp(boiler->set.id_temp, &temp);
+	hardware_sensor_clone_temp(boiler->set.id_temp, &temp);
 
 	return (temp);
 }
@@ -123,7 +123,7 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	assert(boiler);
 
 	// check that mandatory sensors are working
-	ret = clone_temp(boiler->set.id_temp, NULL);
+	ret = hardware_sensor_clone_temp(boiler->set.id_temp, NULL);
 	if (ret)
 		goto out;
 
@@ -188,7 +188,7 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 {
 	temp_t boilertemp;
 
-	clone_temp(boiler->set.id_temp, &boilertemp);
+	hardware_sensor_clone_temp(boiler->set.id_temp, &boilertemp);
 
 	// trip at set.t_freeze point
 	if (boilertemp <= boiler->set.t_freeze)
@@ -332,7 +332,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		return (ret);
 	}
 
-	ret = clone_temp(boiler->set.id_temp, &boiler_temp);
+	ret = hardware_sensor_clone_temp(boiler->set.id_temp, &boiler_temp);
 
 	// ensure boiler is within safety limits
 	if ((ALL_OK != ret) || (boiler_temp > boiler->set.limit_thardmax)) {

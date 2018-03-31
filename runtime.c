@@ -23,6 +23,7 @@
 #include "timer.h"
 #include "models.h"
 #include "alarms.h"	// alarms_raise()
+#include "hardware.h"	// for hardware_sensor_clone_temp()
 
 #define LOG_INTVL_RUNTIME	900	///< log current runtime every X seconds
 
@@ -123,7 +124,7 @@ static void outdoor_temp()
 	temp_t toutdoor;
 	int ret;
 
-	ret = clone_temp(Runtime.config->id_temp_outdoor, &toutdoor);
+	ret = hardware_sensor_clone_temp(Runtime.config->id_temp_outdoor, &toutdoor);
 	if (ALL_OK == ret) {
 		Runtime.t_outdoor = toutdoor;
 		Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt);

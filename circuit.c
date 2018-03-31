@@ -102,7 +102,7 @@ int circuit_online(struct s_heating_circuit * const circuit)
 		return (-EMISCONFIGURED);
 
 	// check that mandatory sensors are working
-	ret = clone_temp(circuit->set.id_temp_outgoing, NULL);
+	ret = hardware_sensor_clone_temp(circuit->set.id_temp_outgoing, NULL);
 	if (ret)
 		goto out;
 
@@ -212,7 +212,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	// if we reached this point then the circuit is active
 
 	// safety checks
-	ret = clone_temp(circuit->set.id_temp_outgoing, &curr_temp);
+	ret = hardware_sensor_clone_temp(circuit->set.id_temp_outgoing, &curr_temp);
 	if (ALL_OK != ret) {
 		circuit_failsafe(circuit);
 		return (ret);
@@ -269,7 +269,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 
 	// interference: apply global power shift
 	if (runtime->consumer_shift) {
-		ret = clone_temp(circuit->set.id_temp_return, &ret_temp);
+		ret = hardware_sensor_clone_temp(circuit->set.id_temp_return, &ret_temp);
 		// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
 		if ((ALL_OK != ret) || (ret_temp >= water_temp))
 			ret_temp = celsius_to_temp(0);

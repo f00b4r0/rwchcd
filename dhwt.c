@@ -40,9 +40,9 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 		return (-ENOTCONFIGURED);
 
 	// check that mandatory sensors are working
-	ret = clone_temp(dhwt->set.id_temp_bottom, NULL);
+	ret = hardware_sensor_clone_temp(dhwt->set.id_temp_bottom, NULL);
 	if (ALL_OK != ret) {
-		ret = clone_temp(dhwt->set.id_temp_top, NULL);
+		ret = hardware_sensor_clone_temp(dhwt->set.id_temp_top, NULL);
 	}
 	if (ret)
 		goto out;
@@ -110,8 +110,7 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (dhwt->recyclepump)
 		pump_offline(dhwt->recyclepump);
 
-	if (dhwt->set.rid_selfheater)
-		hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+	hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 	dhwt->run.runmode = RM_OFF;
 
@@ -129,14 +128,15 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
  */
 static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 {
+	int ret;
+
 	if (dhwt->feedpump)
 		pump_set_state(dhwt->feedpump, OFF, FORCE);
 	if (dhwt->recyclepump)
 		pump_set_state(dhwt->recyclepump, OFF, FORCE);
-	if (dhwt->set.rid_selfheater) {
-		hardware_relay_set_state(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF, 0);
+	ret = hardware_relay_set_state(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF, 0);
+	if (ALL_OK == ret)
 		dhwt->run.electric_mode = dhwt->set.electric_failover;
-	}
 }
 
 /**
@@ -197,10 +197,10 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	// if we reached this point then the dhwt is active
 
 	// check which sensors are available
-	ret = clone_temp(dhwt->set.id_temp_bottom, &bottom_temp);
+	ret = hardware_sensor_clone_temp(dhwt->set.id_temp_bottom, &bottom_temp);
 	if (ALL_OK == ret)
 		valid_tbottom = true;
-	ret = clone_temp(dhwt->set.id_temp_top, &top_temp);
+	ret = hardware_sensor_clone_temp(dhwt->set.id_temp_top, &top_temp);
 	if (ALL_OK == ret)
 		valid_ttop = true;
 
@@ -251,10 +251,11 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// trip condition
 		if (curr_temp < trip_temp) {
-			if (runtime->plant_could_sleep && dhwt->set.rid_selfheater) {
+			if (runtime->plant_could_sleep) {
 				// the plant is sleeping and we have a configured self heater: use it
-				hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
-				dhwt->run.electric_mode = true;
+				ret = hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
+				if (ALL_OK == ret)
+					dhwt->run.electric_mode = true;
 			}
 			else {	// run from plant heat source
 				dhwt->run.electric_mode = false;
@@ -319,7 +320,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (dhwt->feedpump) {
 		if (dhwt->run.charge_on && !dhwt->run.electric_mode) {	// on heatsource charge
 									// if available, test for inlet water temp
-			ret = clone_temp(dhwt->set.id_temp_win, &water_temp);	// XXX REVIEW: if this sensor relies on pump running for accurate read, then this can be a problem
+			ret = hardware_sensor_clone_temp(dhwt->set.id_temp_win, &water_temp);	// XXX REVIEW: if this sensor relies on pump running for accurate read, then this can be a problem
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
@@ -334,7 +335,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			test = FORCE;	// by default, force feedpump immediate turn off
 
 			// if available, test for inlet water temp
-			ret = clone_temp(dhwt->set.id_temp_win, &water_temp);
+			ret = hardware_sensor_clone_temp(dhwt->set.id_temp_win, &water_temp);
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is > dhwt current temp, we can apply cooldown
 				if (water_temp > curr_temp)
