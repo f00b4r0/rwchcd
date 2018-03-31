@@ -19,7 +19,6 @@
 #include "lib.h"
 #include "hardware.h"
 #include "alarms.h"
-#include "runtime.h"	// for temps_time
 
 /**
  * Checklist for safe operation of a boiler.
@@ -93,6 +92,19 @@ static temp_t boiler_hscb_temp(struct s_heatsource * const heat)
 	clone_temp(boiler->set.id_temp, &temp);
 
 	return (temp);
+}
+
+static time_t boiler_hscb_time(struct s_heatsource * const heat)
+{
+	const struct s_boiler_priv * const boiler = heat->priv;
+	time_t ttime;
+
+	assert(HS_BOILER == heat->set.type);
+	assert(boiler);
+
+	hardware_sensor_clone_time(boiler->set.id_temp, &ttime);
+
+	return (ttime);
 }
 
 /**
@@ -287,6 +299,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp;
+	time_t ttime;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
@@ -335,7 +348,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	 * shift signal. Consider handling of loadpump */
 
 	// calculate boiler integral
-	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, get_runtime()->temps_time);
+	hardware_sensor_clone_time(boiler->set.id_temp, &ttime);
+	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime);
 
 	// form consumer shift request if necessary for cold start protection
 	if (temp_intgrl < 0) {
@@ -425,6 +439,7 @@ int boiler_heatsource(struct s_heatsource * const heat)
 	heat->cb.logic = boiler_hscb_logic;
 	heat->cb.run = boiler_hscb_run;
 	heat->cb.temp = boiler_hscb_temp;
+	heat->cb.time = boiler_hscb_time;
 	heat->cb.del_priv = boiler_hscb_del_priv;
 
 	heat->set.type = HS_BOILER;

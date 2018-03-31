@@ -118,7 +118,7 @@ static int runtime_async_log(void)
 static void outdoor_temp()
 {
 	static time_t last = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
-	const time_t now = Runtime.temps_time;	// what matters is the actual update time of the outdoor sensor
+	const time_t now = Runtime.outdoor_time;	// what matters is the actual update time of the outdoor sensor
 	const time_t dt = now - last;
 	temp_t toutdoor;
 	int ret;

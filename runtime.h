@@ -32,7 +32,7 @@ struct s_runtime {
 	temp_t external_hrequest;	///< external heat request (for cascading). @todo XXX NOT IMPLEMENTED
 	time_t start_time;		///< system start time
 	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off
-	time_t temps_time;		///< time of temperatures last update
+	time_t outdoor_time;		///< time for last t_outdoor update
 	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 	struct s_plant * restrict plant;	///< running plant
 	struct s_models * restrict models;	///< running models
