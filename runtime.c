@@ -26,7 +26,7 @@
 
 #define LOG_INTVL_RUNTIME	900	///< log current runtime every X seconds
 
-static const storage_version_t Runtime_sversion = 4;
+static const storage_version_t Runtime_sversion = 5;
 static struct s_runtime Runtime;
 
 /**
@@ -36,59 +36,6 @@ static struct s_runtime Runtime;
 struct s_runtime * get_runtime(void)
 {
 	return (&Runtime);
-}
-
-/**
- * Get temp from a given temp id
- * @param id the physical id (counted from 1) of the sensor
- * @return temp if id valid, TEMPUNSET otherwise
- */
-temp_t get_temp(const tempid_t id)
-{
-	if ((id <= 0) || (id > Runtime.config->nsensors))
-		return (TEMPUNSET);
-
-	return (Runtime.temps[id-1]);	// XXX REVISIT lock
-}
-
-/**
- * Clone temp from a given temp id
- * @param id the physical id (counted from 1) of the sensor
- * @param tclone pointer to target to store the temperature value
- * @return exec status
- */
-int clone_temp(const tempid_t id, temp_t * const tclone)
-{
-	int ret;
-	temp_t temp;
-
-	if ((id <= 0) || (id > Runtime.config->nsensors))
-		return (-EINVALID);
-
-	temp = Runtime.temps[id-1];	// XXX REVISIT lock
-
-	if (tclone)
-		*tclone = temp;
-	
-	switch (temp) {
-		case TEMPUNSET:
-			ret = -ESENSORINVAL;
-			break;
-		case TEMPSHORT:
-			ret = -ESENSORSHORT;
-			break;
-		case TEMPDISCON:
-			ret = -ESENSORDISCON;
-			break;
-		case TEMPINVALID:
-			ret = -EINVALID;
-			break;
-		default:
-			ret = ALL_OK;
-			break;
-	}
-
-	return (ret);
 }
 
 /**

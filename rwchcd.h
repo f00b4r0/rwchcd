@@ -100,7 +100,7 @@ enum {
 };
 
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
-typedef uint_fast8_t	tempid_t;	///< temperature index: if > sizeof(Runtime->temps[]), invalid
+typedef uint_fast8_t	tempid_t;	///< temperature sensor id
 typedef uint_fast8_t	relid_t;	///< relay id matching hardware: 1 to 14, with 13==RL1 and 14==RL2
 
 /** Valid run modes */

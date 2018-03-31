@@ -291,7 +291,7 @@ static int sensor_alarm(const tempid_t id, const int error)
 }
 
 /**
- * Process raw sensor data and extract temperature values into the runtime temps[] array.
+ * Process raw sensor data.
  * Applies a short-window LP filter on raw data to smooth out noise.
  */
 static void parse_temps(void)
@@ -334,11 +334,6 @@ static void parse_temps(void)
 	}
 	pthread_rwlock_unlock(&Sensors_rwlock);
 
-	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
-	for (i = 0; i < runtime->config->nsensors; i++)
-		runtime->temps[i] = Sensors[i].run.value;
-	runtime->temps_time = Hardware.sensors_ftime;
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 }
 
 /**
@@ -1172,9 +1167,6 @@ fail:
 	if ((time(NULL) - Hardware.sensors_ftime) > 30) {
 		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
 		alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
-		pthread_rwlock_wrlock(&runtime->runtime_rwlock);
-		memset(runtime->temps, 0, sizeof(runtime->temps));	// clear temps, will trigger failsafes
-		pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	}
 
 	return (ret);

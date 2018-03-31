@@ -37,7 +37,6 @@ struct s_runtime {
 	struct s_plant * restrict plant;	///< running plant
 	struct s_models * restrict models;	///< running models
 	struct s_config * restrict config;	///< running config
-	temp_t temps[RWCHCD_NTEMPS];		///< array of all the system temperatures
 	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible
 };
 
