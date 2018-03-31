@@ -18,9 +18,6 @@
 #include <time.h>
 #include "rwchcd.h"
 
-#define FORCE	true
-#define NOFORCE	false
-
 #define ON	true
 #define OFF	false
 

@@ -16,6 +16,9 @@
 
 #include "rwchcd.h"
 
+#define FORCE	true
+#define NOFORCE	false
+
 /** Pump element structure */
 struct s_pump {
 	struct {
