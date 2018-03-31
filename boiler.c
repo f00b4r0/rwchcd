@@ -395,7 +395,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
 
 	// as long as the burner is running we reset the cooldown delay
-	if (hardware_relay_get_state(boiler->set.rid_burner_1))
+	if (hardware_relay_get_state(boiler->set.rid_burner_1) > 0)
 		heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
 	dbgmsg("%s: on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
