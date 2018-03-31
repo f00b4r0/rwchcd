@@ -333,6 +333,10 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// we're good to go
 
+	/* todo handle return temp limit (limit low only for boiler):
+	 * if a return mixing valve is available, use it, else form a critical
+	 * shift signal. Consider handling of loadpump */
+
 	// calculate boiler integral
 	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, get_runtime()->temps_time);
 

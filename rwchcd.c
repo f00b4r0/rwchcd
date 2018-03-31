@@ -90,6 +90,7 @@
 #define SENSOR_BOILER	2
 #define SENSOR_WATEROUT	3
 #define SENSOR_WATERRET	4
+#define SENSOR_BOILRET	5
 
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
@@ -161,7 +162,7 @@ static int init_process()
 	
 	if (!config->restored) {
 		config_set_temp_nsamples(config, 5);	// XXX 5 samples average
-		config_set_nsensors(config, 4);	// XXX 4 sensors
+		config_set_nsensors(config, 5);	// XXX 5 sensors
 		config_set_outdoor_sensorid(config, SENSOR_OUTDOOR);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
@@ -254,6 +255,10 @@ static int init_process()
 	if (ret)
 		return ret;
 	boiler->set.id_temp = SENSOR_BOILER;
+	ret = hardware_sensor_configure(SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(0), "boiler return");
+	if (ret)
+		return ret;
+	boiler->set.id_temp_return = SENSOR_BOILRET;
 	ret = hardware_relay_request(RELAY_BURNER, OFF, "burner");
 	if (ret)
 		return (ret);
