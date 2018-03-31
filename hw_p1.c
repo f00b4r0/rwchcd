@@ -77,7 +77,7 @@ typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius functi
 struct s_sensor {
 	struct {
 		bool configured;	///< sensor is configured
-		enum e_sensor_type type;///< sensor type
+		enum e_hw_p1_stype type;///< sensor type
 		temp_t offset;		///< sensor value offset
 	} set;
 	struct {
@@ -234,7 +234,7 @@ __attribute__((const)) static float ni1000_ohm_to_celsius(const uint_fast16_t oh
  * Return a sensor ohm to celsius converter callback based on sensor type.
  * @return correct function pointer for sensor type or NULL if invalid type
  */
-static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
+static ohm_to_celsius_ft * sensor_o_to_c(const enum e_hw_p1_stype type)
 {
 	switch (type) {
 		case ST_PT1000:
@@ -775,7 +775,7 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(vo
  * @param name an optional user-defined name describing the sensor
  * @return exec status
  */
-int hw_p1_sensor_configure(const sid_t id, const enum e_sensor_type type, const temp_t offset, const char * const name)
+int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name)
 {
 	char * str = NULL;
 
