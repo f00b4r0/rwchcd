@@ -1,18 +1,15 @@
 //
-//  lcd.c
+//  hw_p1_lcd.c
 //  rwchcd
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 /**
  * @file
- * LCD implementation.
+ * Hardware Prototype 1 LCD driver.
  *
- * @todo this implementation isn't link-agnostic: it calls the SPI subsystem.
- * This should be reworked so that it becomes abstracted like the rest of the
- * hardware subsystem.
  * @todo most of this is a gross hack, XXX REVIEW.
  */
 
@@ -24,7 +21,8 @@
 #include "lib.h"
 #include "hardware.h"
 #include "alarms.h"
-#include "lcd.h"
+#include "hw_p1.h"
+#include "hw_p1_lcd.h"
 
 #define LCD_LINELEN	16	///< width of LCD display line
 
@@ -51,7 +49,7 @@ static struct {
  * Grab LCD control from the device firmware.
  * @return exec status
  */
-static int lcd_grab(void)
+static int hw_p1_lcd_grab(void)
 {
 	return (spi_lcd_acquire());
 }
@@ -60,7 +58,7 @@ static int lcd_grab(void)
  * Release LCD control from the device firmware.
  * @return exec status
  */
-static int lcd_release(void)
+static int hw_p1_lcd_release(void)
 {
 	if (LCD.L2mngd)
 		return (ALL_OK);	// never relinquish if L2 is managed
@@ -72,7 +70,7 @@ static int lcd_release(void)
  * Request LCD fadeout from firmware.
  * @return exec status
  */
-int lcd_fade(void)
+int hw_p1_lcd_fade(void)
 {
 	return (spi_lcd_fade());
 }
@@ -81,7 +79,7 @@ int lcd_fade(void)
  * Clear LCD display
  * @return exec status
  */
-static int lcd_dispclear(void)
+static int hw_p1_lcd_dispclear(void)
 {
 	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
 	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
@@ -94,7 +92,7 @@ static int lcd_dispclear(void)
  * @param linenb target line to clear (from 0)
  * @return exec status
  */
-static int lcd_buflclear(const uint_fast8_t linenb)
+static int hw_p1_lcd_buflclear(const uint_fast8_t linenb)
 {
 	switch (linenb) {
 		case 0:
@@ -115,11 +113,11 @@ static int lcd_buflclear(const uint_fast8_t linenb)
  * @param on true if under our control
  * @return exec status
  */
-static inline void lcd_handle2ndline(const bool on)
+static inline void hw_p1_lcd_handle2ndline(const bool on)
 {
 	LCD.L2mngd = on;
 
-	// handle reset of "L2 previously under management" flag, set in lcd_update()
+	// handle reset of "L2 previously under management" flag, set in hw_p1_lcd_update()
 	if (!on)
 		LCD.L2mngd_prev = on;
 }
@@ -132,7 +130,7 @@ static inline void lcd_handle2ndline(const bool on)
  * @param pos the target character position in the target line (from 0)
  * @return exec status
  */
-static int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
+static int hw_p1_lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len,
 	      const uint_fast8_t linenb, const uint_fast8_t pos)
 {
 	int ret = ALL_OK;
@@ -183,7 +181,7 @@ static int lcd_wline(const uint8_t * restrict const data, const uint_fast8_t len
  * @param force force refresh of entire line
  * @return exec status
  */
-static int lcd_uline(const uint_fast8_t linenb, const bool force)
+static int hw_p1_lcd_uline(const uint_fast8_t linenb, const bool force)
 {
 	int ret = ALL_OK;
 	uint_fast8_t id;
@@ -223,7 +221,7 @@ static int lcd_uline(const uint_fast8_t linenb, const bool force)
 	//dbgmsg("update line %d from pos %d", linenb+1, id+1);
 	
 	// grab LCD
-	ret = lcd_grab();
+	ret = hw_p1_lcd_grab();
 	if (ret)
 		return (ret);
 	
@@ -246,7 +244,7 @@ static int lcd_uline(const uint_fast8_t linenb, const bool force)
 	}
 	
 	// release LCD
-	ret = lcd_release();
+	ret = hw_p1_lcd_release();
 	
 	return (ret);
 }
@@ -255,7 +253,7 @@ static int lcd_uline(const uint_fast8_t linenb, const bool force)
  * LCD subsystem initialization.
  * @return exec status
  */
-int lcd_init(void)
+int hw_p1_lcd_init(void)
 {
 	memset(LCD.Line1Buf, ' ', LCD_LINELEN);
 	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
@@ -270,11 +268,8 @@ int lcd_init(void)
  * @note requires the hardware layer to be operational (SPI connection)
  * @return exec status
  */
-int lcd_online(void)
+int hw_p1_lcd_online(void)
 {
-	if (!hardware_is_online())
-		return (-EOFFLINE);
-
 	LCD.online = true;
 
 	return (ALL_OK);
@@ -285,7 +280,7 @@ int lcd_online(void)
  * @param force force refresh of entire display
  * @return exec status
  */
-int lcd_update(const bool force)
+int hw_p1_lcd_update(const bool force)
 {
 	bool l2force = force;
 	int ret;
@@ -293,7 +288,7 @@ int lcd_update(const bool force)
 	if (!LCD.online)
 		return (-EOFFLINE);
 	
-	ret = lcd_uline(0, force);
+	ret = hw_p1_lcd_uline(0, force);
 	if (ret)
 		goto out;
 	
@@ -302,7 +297,7 @@ int lcd_update(const bool force)
 			l2force = true;
 			LCD.L2mngd_prev = true;
 		}
-		ret = lcd_uline(1, l2force);
+		ret = hw_p1_lcd_uline(1, l2force);
 	}
 
 out:
@@ -317,7 +312,7 @@ static const char * temp_to_str(const sid_t tempid)
 	float celsius;
 	int ret;
 
-	ret = clone_temp(tempid, &temp);
+	ret = hw_p1_sensor_clone_temp(NULL, tempid, &temp);
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
  #error Non representable minimum temperature
@@ -338,7 +333,7 @@ static const char * temp_to_str(const sid_t tempid)
 }
 
 // XXX quick hack
-static const char * lcd_disp_sysmode(enum e_systemmode sysmode)
+static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 {
 	const char * restrict msg;
 
@@ -373,20 +368,20 @@ static const char * lcd_disp_sysmode(enum e_systemmode sysmode)
 }
 
 // XXX quick hack
-static int lcd_line1(void)
+static int hw_p1_lcd_line1(void)
 {
 	const enum e_systemmode systemmode = get_runtime()->systemmode;
 	static uint8_t buf[LCD_LINELEN];
 
 	memset(buf, ' ', LCD_LINELEN);
 
-	memcpy(buf, lcd_disp_sysmode(systemmode), 4);
+	memcpy(buf, hw_p1_lcd_disp_sysmode(systemmode), 4);
 
 	if (LCD.sysmchg) {
 		if (systemmode != LCD.newsysmode) {
 			buf[5] = '-';
 			buf[6] = '>';
-			memcpy(buf+8, lcd_disp_sysmode(LCD.newsysmode), 4);
+			memcpy(buf+8, hw_p1_lcd_disp_sysmode(LCD.newsysmode), 4);
 		}
 		else
 			LCD.sysmchg = false;
@@ -394,13 +389,13 @@ static int lcd_line1(void)
 	else
 		memcpy(buf+6, temp_to_str(LCD.sensor), 9);
 
-	return (lcd_wline(buf, LCD_LINELEN, 0, 0));
+	return (hw_p1_lcd_wline(buf, LCD_LINELEN, 0, 0));
 }
 
 /**
  * Force full refresh of the lcd display.
  */
-int lcd_reset(void)
+int hw_p1_lcd_reset(void)
 {
 	if (!LCD.online)
 		return (-EOFFLINE);
@@ -416,7 +411,7 @@ int lcd_reset(void)
  * @return exec status
  * @warning no sanitization on tempid
  */
-int lcd_set_tempid(const sid_t tempid)
+int hw_p1_lcd_set_tempid(const sid_t tempid)
 {
 	if (!LCD.online)
 		return (-EOFFLINE);
@@ -431,7 +426,7 @@ int lcd_set_tempid(const sid_t tempid)
  * @param newsysmode the upcoming system mode
  * @return exec status
  */
-int lcd_sysmode_change(enum e_systemmode newsysmode)
+int hw_p1_lcd_sysmode_change(enum e_systemmode newsysmode)
 {
 	LCD.newsysmode = newsysmode;
 	LCD.sysmchg = true;
@@ -443,7 +438,7 @@ int lcd_sysmode_change(enum e_systemmode newsysmode)
  * Run the LCD subsystem.
  * @return exec status
  */
-int lcd_run(void)
+int hw_p1_lcd_run(void)
 {
 	static char alarml1[LCD_LINELEN];
 	const char * alarm_msg16;
@@ -456,20 +451,20 @@ int lcd_run(void)
 	alcnt = alarms_count();
 	if (alcnt) {
 		snprintf(alarml1, sizeof(alarml1), _("ALARMS: %d"), alcnt);
-		lcd_buflclear(0);
-		lcd_wline((const uint8_t *)alarml1, strlen(alarml1), 0, 0);
+		hw_p1_lcd_buflclear(0);
+		hw_p1_lcd_wline((const uint8_t *)alarml1, strlen(alarml1), 0, 0);
 		alarm_msg16 = alarms_last_msg(true);
 		len = strlen(alarm_msg16);
-		lcd_handle2ndline(true);
-		lcd_buflclear(1);
-		lcd_wline((const uint8_t *)alarm_msg16, (len > LCD_LINELEN) ? LCD_LINELEN : len, 1, 0);
+		hw_p1_lcd_handle2ndline(true);
+		hw_p1_lcd_buflclear(1);
+		hw_p1_lcd_wline((const uint8_t *)alarm_msg16, (len > LCD_LINELEN) ? LCD_LINELEN : len, 1, 0);
 	}
 	else {
-		lcd_handle2ndline(false);
-		lcd_line1();
+		hw_p1_lcd_handle2ndline(false);
+		hw_p1_lcd_line1();
 	}
 
-	lcd_update(LCD.reset);
+	hw_p1_lcd_update(LCD.reset);
 
 	LCD.reset = false;
 
@@ -480,7 +475,7 @@ int lcd_run(void)
  * Take LCD subsystem offline.
  * @return exec status
  */
-int lcd_offline(void)
+int hw_p1_lcd_offline(void)
 {
 	LCD.online = false;
 	return (ALL_OK);
@@ -489,7 +484,7 @@ int lcd_offline(void)
 /**
  * LCD exit routine
  */
-void lcd_exit(void)
+void hw_p1_lcd_exit(void)
 {
 	return;
 }

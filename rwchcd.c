@@ -48,7 +48,6 @@
 #include "rwchcd.h"
 #include "lib.h"
 #include "hardware.h"
-#include "lcd.h"
 #include "plant.h"
 #include "config.h"
 #include "runtime.h"
@@ -147,8 +146,6 @@ static int init_process()
 
 	// wait for priviledges to be dropped
 	pthread_barrier_wait(&barr_main);
-
-	lcd_init();
 
 	/* init runtime */
 	ret = runtime_init();
@@ -384,7 +381,6 @@ static int init_process()
 		sleep(1);	// don't pound on the hardware if it's not coming up: calibration data may not be immediately available
 	}
 
-	lcd_online();
 	alarms_online();
 
 	// finally bring the runtime online (resets actuators)
@@ -397,14 +393,12 @@ static void exit_process(void)
 
 	runtime_offline();
 	alarms_offline();
-	lcd_offline();
 	hardware_offline();
 	plant_del(runtime->plant);
 	models_del(runtime->models);
 	config_exit(runtime->config);
 	config_del(runtime->config);
 	runtime_exit();
-	lcd_exit();
 	hardware_exit();
 }
 
@@ -443,10 +437,6 @@ static void * thread_master(void *arg)
 		if (ret)
 			dbgerr("unlock failed: %d", ret);
 
-		ret = lcd_run();
-		if (ret)
-			dbgerr("lcd_run failed: %d", ret);
-		
 		ret = hardware_output();
 		if (ret)
 			dbgerr("hardware_output returned: %d", ret);

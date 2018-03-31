@@ -14,8 +14,6 @@
 #ifndef rwchcd_hw_p1_h
 #define rwchcd_hw_p1_h
 
-#include <stdbool.h>
-#include <time.h>
 #include "rwchcd.h"
 
 /** valid types of temperature sensors */
@@ -35,6 +33,6 @@ int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const 
 int hw_p1_sensor_deconfigure(const sid_t id);
 int hw_p1_sensor_configured(const sid_t id) __attribute__((warn_unused_result));
 int hw_p1_fwversion(void);
-bool hw_p1_is_online(void);
+int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
 
 #endif /* rwchcd_hw_p1_h */

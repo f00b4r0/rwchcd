@@ -24,10 +24,10 @@
 #include "runtime.h"
 #include "lib.h"
 #include "storage.h"
-#include "lcd.h"
 #include "alarms.h"
 #include "hardware.h"
 #include "timer.h"
+#include "hw_p1_lcd.h"
 #include "hw_p1.h"
 
 #include "rwchc_export.h"
@@ -556,6 +556,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 		// fetch hardware config
 		ret = hw_p1_config_fetch(&(Hardware.settings));
 		Hardware.ready = true;
+		hw_p1_lcd_init();
 	}
 	else
 		dbgerr("hw_p1_init failed");
@@ -1017,6 +1018,8 @@ static int hw_p1_online(void * priv)
 	if (ret)
 		goto fail;
 
+	hw_p1_lcd_online();
+
 	Hardware.sensors_ftime = time(NULL);
 
 	parse_temps();
@@ -1025,15 +1028,6 @@ static int hw_p1_online(void * priv)
 
 fail:
 	return (ret);
-}
-
-/**
- * Assert that the hardware is ready.
- * @return true if hardware is ready, false otherwise
- */
-bool hw_p1_is_online(void)
-{
-	return (Hardware.ready);
 }
 
 /**
@@ -1068,7 +1062,7 @@ static int hw_p1_input(void * priv)
 		pr_log(_("Hardware in alarm"));
 		// clear alarm
 		Hardware.peripherals.i_alarm = 0;
-		lcd_reset();
+		hw_p1_lcd_reset();
 		// XXX reset runtime?
 	}
 
@@ -1095,7 +1089,7 @@ static int hw_p1_input(void * priv)
 		if (cursysmode >= SYS_UNKNOWN)	// last valid mode
 			cursysmode = 0;		// first valid mode
 
-		lcd_sysmode_change(cursysmode);	// update LCD
+		hw_p1_lcd_sysmode_change(cursysmode);	// update LCD
 	}
 
 	if (!systout) {
@@ -1123,14 +1117,14 @@ static int hw_p1_input(void * priv)
 		if (tempid > Hardware.settings.nsensors)
 			tempid = 1;
 
-		lcd_set_tempid(tempid);	// update sensor
+		hw_p1_lcd_set_tempid(tempid);	// update sensor
 	}
 	
 	// trigger timed backlight
 	if (count) {
 		Hardware.peripherals.o_LCDbl = 1;
 		if (!--count)
-			lcd_fade();	// apply fadeout
+			hw_p1_lcd_fade();	// apply fadeout
 	}
 	else
 		Hardware.peripherals.o_LCDbl = 0;
@@ -1181,6 +1175,11 @@ int hw_p1_output(void * priv)
 
 	if (!Hardware.ready)
 		return (-EOFFLINE);
+
+	// update LCD
+	ret = hw_p1_lcd_run();
+	if (ALL_OK != ret)
+		dbgerr("hw_p1_lcd_run failed: %d", ret);
 
 	// write relays
 	ret = hw_p1_rwchcrelays_write();
@@ -1241,6 +1240,8 @@ static int hw_p1_offline(void * priv)
 	if (!Hardware.ready)
 		return (-EOFFLINE);
 
+	hw_p1_lcd_offline();
+
 	// turn off each known hardware relay
 	for (i=0; i<ARRAY_SIZE(Relays); i++) {
 		if (!Relays[i].set.configured)
@@ -1274,6 +1275,8 @@ static void hw_p1_exit(void * priv)
 	int ret;
 	uint_fast8_t i;
 
+	hw_p1_lcd_exit();
+
 	// cleanup all resources
 	for (i = 1; i <= ARRAY_SIZE(Relays); i++)
 		hw_p1_relay_release(i);
@@ -1288,7 +1291,7 @@ static void hw_p1_exit(void * priv)
 		dbgerr("reset failed (%d)", ret);
 }
 
-static int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
+int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 {
 	int ret;
 	temp_t temp;
