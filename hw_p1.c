@@ -19,7 +19,6 @@
 #include <assert.h>
 
 #include "rwchcd.h"
-#include "spi.h"
 #include "config.h"
 #include "runtime.h"
 #include "lib.h"
@@ -27,6 +26,7 @@
 #include "alarms.h"
 #include "hardware.h"
 #include "timer.h"
+#include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
 #include "hw_p1.h"
 
@@ -494,7 +494,7 @@ int hw_p1_config_setnsensors(const rid_t lastid)
  */
 static int hw_p1_config_fetch(struct rwchc_s_settings * const settings)
 {
-	return (spi_settings_r(settings));
+	return (hw_p1_spi_settings_r(settings));
 }
 
 /**
@@ -516,12 +516,12 @@ int hw_p1_config_store(void)
 		return (ALL_OK); // don't wear flash down if unnecessary
 	
 	// commit hardware config
-	ret = spi_settings_w(&(Hardware.settings));
+	ret = hw_p1_spi_settings_w(&(Hardware.settings));
 	if (ret)
 		goto out;
 	
 	// save hardware config
-	ret = spi_settings_s();
+	ret = hw_p1_spi_settings_s();
 
 	dbgmsg("HW Config saved.");
 	
@@ -537,7 +537,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 {
 	int ret, i = 0;
 	
-	if (spi_init() < 0)
+	if (hw_p1_spi_init() < 0)
 		return (-EINIT);
 
 	memset(Relays, 0x0, sizeof(Relays));
@@ -547,7 +547,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 
 	// fetch firmware version
 	do {
-		ret = spi_fwversion();
+		ret = hw_p1_spi_fwversion();
 	} while ((ret <= 0) && (i++ < RWCHCD_INIT_MAX_TRIES));
 
 	if (ret > 0) {
@@ -586,7 +586,7 @@ static int hw_p1_calibrate(void)
 
 	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
 	
-	ret = spi_ref_r(&ref, 0);
+	ret = hw_p1_spi_ref_r(&ref, 0);
 	if (ret)
 		return (ret);
 
@@ -599,7 +599,7 @@ static int hw_p1_calibrate(void)
 	else
 		return (-EINVALID);
 
-	ret = spi_ref_r(&ref, 1);
+	ret = hw_p1_spi_ref_r(&ref, 1);
 	if (ret)
 		return (ret);
 
@@ -637,7 +637,7 @@ static int hw_p1_sensors_read(rwchc_sensor_t tsensors[])
 	assert(Hardware.ready);
 
 	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
-		ret = spi_sensor_r(tsensors, sensor);
+		ret = hw_p1_spi_sensor_r(tsensors, sensor);
 		if (ret)
 			goto out;
 	}
@@ -739,7 +739,7 @@ __attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
 	}
 	
 	// send new state to hardware
-	ret = spi_relays_w(&rWCHC_relays);
+	ret = hw_p1_spi_relays_w(&rWCHC_relays);
 
 	// update internal runtime state on success
 	if (ALL_OK == ret)
@@ -755,7 +755,7 @@ __attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
 __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_write(void)
 {
 	assert(Hardware.ready);
-	return (spi_peripherals_w(&(Hardware.peripherals)));
+	return (hw_p1_spi_peripherals_w(&(Hardware.peripherals)));
 }
 
 /**
@@ -765,7 +765,7 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_write(v
 __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(void)
 {
 	assert(Hardware.ready);
-	return (spi_peripherals_r(&(Hardware.peripherals)));
+	return (hw_p1_spi_peripherals_r(&(Hardware.peripherals)));
 }
 
 /**
@@ -1286,7 +1286,7 @@ static void hw_p1_exit(void * priv)
 		hw_p1_sensor_deconfigure(i);
 
 	// reset the hardware
-	ret = spi_reset();
+	ret = hw_p1_spi_reset();
 	if (ret)
 		dbgerr("reset failed (%d)", ret);
 }

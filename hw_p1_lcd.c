@@ -15,7 +15,7 @@
 
 #include <string.h>
 
-#include "spi.h"
+#include "hw_p1_spi.h"
 #include "config.h"
 #include "runtime.h"
 #include "lib.h"
@@ -51,7 +51,7 @@ static struct {
  */
 static int hw_p1_lcd_grab(void)
 {
-	return (spi_lcd_acquire());
+	return (hw_p1_spi_lcd_acquire());
 }
 
 /**
@@ -63,7 +63,7 @@ static int hw_p1_lcd_release(void)
 	if (LCD.L2mngd)
 		return (ALL_OK);	// never relinquish if L2 is managed
 
-	return (spi_lcd_relinquish());
+	return (hw_p1_spi_lcd_relinquish());
 }
 
 /**
@@ -72,7 +72,7 @@ static int hw_p1_lcd_release(void)
  */
 int hw_p1_lcd_fade(void)
 {
-	return (spi_lcd_fade());
+	return (hw_p1_spi_lcd_fade());
 }
 
 /**
@@ -84,7 +84,7 @@ static int hw_p1_lcd_dispclear(void)
 	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
 	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
 
-	return (spi_lcd_cmd_w(0x01));
+	return (hw_p1_spi_lcd_cmd_w(0x01));
 }
 
 /**
@@ -229,13 +229,13 @@ static int hw_p1_lcd_uline(const uint_fast8_t linenb, const bool force)
 	addr += id;
 	addr |= 0b10000000;	// DDRAM op
 	
-	ret = spi_lcd_cmd_w(addr);
+	ret = hw_p1_spi_lcd_cmd_w(addr);
 	if (ret)
 		return (ret);
 	
 	// write data from Buf and update Cur - id already set
 	for (; id < LCD_LINELEN; id++) {
-		ret = spi_lcd_data_w(buf[id]);
+		ret = hw_p1_spi_lcd_data_w(buf[id]);
 		if (ret)
 			return (ret);
 		//dbgmsg("sending: %c", buf[id]);

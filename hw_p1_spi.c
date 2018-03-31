@@ -1,5 +1,5 @@
 //
-//  spi.c
+//  hw_p1_spi.c
 //  rwchcd
 //
 //  (C) 2016-2018 Thibaut VARENE
@@ -8,7 +8,7 @@
 
 /**
  * @file
- * SPI backend implementation for rWCHC hardware.
+ * SPI protocol implementation for rWCHC Prototype 1 hardware.
  *
  * The SPI logic and code flow must ensure that the firmware will never be left
  * in a dangling state where an ongoing SPI call is interrupted.
@@ -29,7 +29,7 @@
 #include <assert.h>
 #include <wiringPiSPI.h>
 
-#include "spi.h"
+#include "hw_p1_spi.h"
 #include "rwchcd.h"	// for error codes
 
 #define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate, allows 800 ISNS on the PIC
@@ -85,7 +85,7 @@ static uint8_t SPI_rw8bit(const uint8_t data)
  * Delay: none
  * @return error status
  */
-int spi_keepalive(void)
+int hw_p1_spi_keepalive(void)
 {
 	SPI_RESYNC(RWCHC_SPIC_KEEPALIVE);
 
@@ -117,7 +117,7 @@ static int _spi_fwversion(void)
  * Delay: none
  * @return negative error code or positive version number
  */
-int spi_fwversion(void)
+int hw_p1_spi_fwversion(void)
 {
 	if (FWversion <= 0)
 		FWversion = _spi_fwversion();
@@ -130,7 +130,7 @@ int spi_fwversion(void)
  * Delay: none
  * @return error code
  */
-int spi_lcd_acquire(void)
+int hw_p1_spi_lcd_acquire(void)
 {
 	int ret = ALL_OK;
 	
@@ -150,7 +150,7 @@ int spi_lcd_acquire(void)
  * Delay: none
  * @return error code
  */
-int spi_lcd_relinquish(void)
+int hw_p1_spi_lcd_relinquish(void)
 {
 	int ret = ALL_OK;
 	
@@ -170,7 +170,7 @@ int spi_lcd_relinquish(void)
  * Delay: none
  * @return error code
  */
-int spi_lcd_fade(void)
+int hw_p1_spi_lcd_fade(void)
 {
 	int ret = ALL_OK;
 
@@ -191,7 +191,7 @@ int spi_lcd_fade(void)
  * @param cmd command byte to send
  * @return error code
  */
-int spi_lcd_cmd_w(const uint8_t cmd)
+int hw_p1_spi_lcd_cmd_w(const uint8_t cmd)
 {
 	int ret = ALL_OK;
 	
@@ -220,7 +220,7 @@ int spi_lcd_cmd_w(const uint8_t cmd)
  * @param data data byte to send
  * @return error code
  */
-int spi_lcd_data_w(const uint8_t data)
+int hw_p1_spi_lcd_data_w(const uint8_t data)
 {
 	int ret = ALL_OK;
 	
@@ -247,7 +247,7 @@ int spi_lcd_data_w(const uint8_t data)
  * @param percent backlight duty cycle in percent
  * @return error code
  */
-int spi_lcd_bl_w(const uint8_t percent)
+int hw_p1_spi_lcd_bl_w(const uint8_t percent)
 {
 	int ret = ALL_OK;
 	
@@ -274,7 +274,7 @@ int spi_lcd_bl_w(const uint8_t percent)
  * @param periphs pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int spi_peripherals_r(union rwchc_u_periphs * const periphs)
+int hw_p1_spi_peripherals_r(union rwchc_u_periphs * const periphs)
 {
 	int ret = ALL_OK;
 	
@@ -299,7 +299,7 @@ int spi_peripherals_r(union rwchc_u_periphs * const periphs)
  * @param periphs pointer to struct whose values are populated with desired states
  * @return error code
  */
-int spi_peripherals_w(const union rwchc_u_periphs * const periphs)
+int hw_p1_spi_peripherals_w(const union rwchc_u_periphs * const periphs)
 {
 	int ret = ALL_OK;
 	
@@ -328,7 +328,7 @@ int spi_peripherals_w(const union rwchc_u_periphs * const periphs)
  * @param relays pointer to struct whose values will be populated to match current states
  * @return error code
  */
-int spi_relays_r(union rwchc_u_relays * const relays)
+int hw_p1_spi_relays_r(union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
 
@@ -357,7 +357,7 @@ int spi_relays_r(union rwchc_u_relays * const relays)
  * @param relays pointer to struct whose values are populated with desired states
  * @return error code
  */
-int spi_relays_w(const union rwchc_u_relays * const relays)
+int hw_p1_spi_relays_w(const union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
 	uint8_t temp;	// work around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=38341
@@ -402,7 +402,7 @@ int spi_relays_w(const union rwchc_u_relays * const relays)
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  * @warning no check is performed on the size of the provided tsensors array
  */
-int spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
+int hw_p1_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 {
 	int ret;
 	
@@ -442,7 +442,7 @@ int spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
  * @return error code
  * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  */
-int spi_ref_r(uint16_t * const refval, const uint8_t refn)
+int hw_p1_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 {
 	int ret;
 	uint8_t cmd;
@@ -465,7 +465,7 @@ int spi_ref_r(uint16_t * const refval, const uint8_t refn)
 	if (!spitout)
 		return (-ESPI);
 
-	/* same logic as spi_sensor_r() */
+	/* same logic as hw_p1_spi_sensor_r() */
 	ret = ALL_OK;
 
 	*refval = SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
@@ -486,7 +486,7 @@ int spi_ref_r(uint16_t * const refval, const uint8_t refn)
  * @param settings pointer to struct whose values will be populated to match current settings
  * @return error code
  */
-int spi_settings_r(struct rwchc_s_settings * const settings)
+int hw_p1_spi_settings_r(struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = ALL_OK;
@@ -513,7 +513,7 @@ int spi_settings_r(struct rwchc_s_settings * const settings)
  * @param settings pointer to struct whose values are populated with desired settings
  * @return error code
  */
-int spi_settings_w(const struct rwchc_s_settings * const settings)
+int hw_p1_spi_settings_w(const struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = ALL_OK;
@@ -540,7 +540,7 @@ int spi_settings_w(const struct rwchc_s_settings * const settings)
  * Delay: none (eeprom write is faster than a SPI cycle)
  * @return error code
  */
-int spi_settings_s(void)
+int hw_p1_spi_settings_s(void)
 {
 	int ret = ALL_OK;
 	
@@ -560,7 +560,7 @@ int spi_settings_s(void)
  * Delay: none (device unavailable until fully restarted: 1-2s delay would be reasonable)
  * @return exec status (ALL_OK if reset is presumably successful)
  */
-int spi_reset(void)
+int hw_p1_spi_reset(void)
 {
 	const uint8_t trig[] = RWCHC_RESET_TRIGGER;
 	unsigned int i;
@@ -582,7 +582,7 @@ int spi_reset(void)
  * Init spi subsystem
  * @return exec status or error code
  */
-int spi_init(void)
+int hw_p1_spi_init(void)
 {
 	int ret;
 

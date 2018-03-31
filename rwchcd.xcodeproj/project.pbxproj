@@ -27,7 +27,7 @@
 		4FC68951206FAB4D00A3A065 /* hardware.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC6894F206FAB4D00A3A065 /* hardware.c */; };
 		4FCD55161D835D04003BB848 /* hw_p1.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD550E1D835D04003BB848 /* hw_p1.c */; };
 		4FCD55171D835D04003BB848 /* plant.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55101D835D04003BB848 /* plant.c */; };
-		4FCD55181D835D04003BB848 /* spi.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55121D835D04003BB848 /* spi.c */; };
+		4FCD55181D835D04003BB848 /* hw_p1_spi.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55121D835D04003BB848 /* hw_p1_spi.c */; };
 		4FCD55191D835D04003BB848 /* rwchcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55141D835D04003BB848 /* rwchcd.c */; };
 /* End PBXBuildFile section */
 
@@ -91,8 +91,8 @@
 		4FCD550F1D835D04003BB848 /* hw_p1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hw_p1.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD55101D835D04003BB848 /* plant.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = plant.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4FCD55111D835D04003BB848 /* plant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = plant.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		4FCD55121D835D04003BB848 /* spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = spi.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		4FCD55131D835D04003BB848 /* spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = spi.h; sourceTree = SOURCE_ROOT; };
+		4FCD55121D835D04003BB848 /* hw_p1_spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hw_p1_spi.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		4FCD55131D835D04003BB848 /* hw_p1_spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hw_p1_spi.h; sourceTree = SOURCE_ROOT; };
 		4FCD55141D835D04003BB848 /* rwchcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4FCD55151D835D04003BB848 /* rwchcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchcd.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 /* End PBXFileReference section */
@@ -136,8 +136,8 @@
 				4FCD550F1D835D04003BB848 /* hw_p1.h */,
 				4F2D5F571D97191C00CF842D /* hw_p1_lcd.c */,
 				4F2D5F581D97191C00CF842D /* hw_p1_lcd.h */,
-				4FCD55121D835D04003BB848 /* spi.c */,
-				4FCD55131D835D04003BB848 /* spi.h */,
+				4FCD55121D835D04003BB848 /* hw_p1_spi.c */,
+				4FCD55131D835D04003BB848 /* hw_p1_spi.h */,
 				4F42A5CE1F967BC3001B0A1F /* pump.c */,
 				4F42A5CF1F967BC3001B0A1F /* pump.h */,
 				4F42A5D11F968069001B0A1F /* valve.c */,
@@ -267,7 +267,7 @@
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,
-				4FCD55181D835D04003BB848 /* spi.c in Sources */,
+				4FCD55181D835D04003BB848 /* hw_p1_spi.c in Sources */,
 				4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */,
 				4FC68951206FAB4D00A3A065 /* hardware.c in Sources */,
 				4F42A5D91F9687F3001B0A1F /* circuit.c in Sources */,
