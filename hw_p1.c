@@ -27,6 +27,7 @@
 #include "lcd.h"
 #include "alarms.h"
 #include "hardware.h"
+#include "timer.h"
 #include "hw_p1.h"
 
 #include "rwchc_export.h"
@@ -43,6 +44,8 @@
 #define VALID_CALIB_MAX		1.1F	///< maximum valid calibration value (+10%)
 
 #define CALIBRATION_PERIOD	600	///< calibration period in seconds: every 10mn
+
+#define LOG_INTVL_TEMPS		60	///< log temperatures every X seconds
 
 /** software representation of a hardware relay */
 struct s_stateful_relay {
@@ -85,6 +88,7 @@ struct s_sensor {
 };
 
 static struct s_sensor Sensors[RWCHCD_NTEMPS];		///< physical sensors
+pthread_rwlock_t Sensors_rwlock;	///< @note having this here prevents using "const" in instances where it would otherwise be possible
 
 static struct {
 	bool ready;			///< hardware is ready
@@ -301,8 +305,9 @@ static void parse_temps(void)
 	temp_t previous, current;
 	
 	assert(Hardware.ready);
-	
-	for (i = 0; i < nsensors; i++) {
+
+	pthread_rwlock_wrlock(&Sensors_rwlock);
+	for (i = 0; i < Hardware.settings.nsensors; i++) {
 		if (!Sensors[i].set.configured) {
 			Sensors[i].run.value = TEMPUNSET;
 			continue;
@@ -327,6 +332,7 @@ static void parse_temps(void)
 			// apply LP filter - ensure we only apply filtering on valid temps
 			Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, nsamples, 1) : current;
 	}
+	pthread_rwlock_unlock(&Sensors_rwlock);
 
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	for (i = 0; i < runtime->config->nsensors; i++)
@@ -428,6 +434,30 @@ static int hw_p1_restore_sensors(void)
 }
 
 /**
+ * Log internal temperatures.
+ * @return exec status
+ * @warning Locks runtime: do not call from master_thread
+ */
+static int hw_p1_async_log_temps(void)
+{
+	const storage_version_t version = 2;
+	static storage_keys_t keys[] = {
+		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
+	};
+	static storage_values_t values[ARRAY_SIZE(keys)];
+	int i = 0;
+
+	assert(ARRAY_SIZE(keys) >= RWCHCD_NTEMPS);
+
+	pthread_rwlock_rdlock(&Sensors_rwlock);
+	for (i = 0; i < Hardware.settings.nsensors; i++)
+		values[i] = Sensors[i].run.value;
+	pthread_rwlock_unlock(&Sensors_rwlock);
+
+	return (storage_log("log_hw_p1_temps", &version, keys, values, i));
+}
+
+/**
  * Set hardware configuration for LCD backlight level.
  * @param percent backlight level (0 = off, 100 = full)
  * @return exec status
@@ -519,6 +549,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	memset(Relays, 0x0, sizeof(Relays));
 	memset(Sensors, 0x0, sizeof(Sensors));
 	memset(&Hardware, 0x0, sizeof(Hardware));
+	pthread_rwlock_init(&Sensors_rwlock, NULL);
 
 	// fetch firmware version
 	do {
@@ -996,6 +1027,8 @@ static int hw_p1_online(void * priv)
 
 	parse_temps();
 
+	timer_add_cb(LOG_INTVL_TEMPS, hw_p1_async_log_temps);
+
 fail:
 	return (ret);
 }
@@ -1278,7 +1311,9 @@ static int hw_p1_sensor_clone_temp(void * priv, const tempid_t id, temp_t * cons
 		return (-EHARDWARE);
 	}
 
+	pthread_rwlock_rdlock(&Sensors_rwlock);
 	temp = Sensors[id-1].run.value;
+	pthread_rwlock_unlock(&Sensors_rwlock);
 
 	if (tclone)
 		*tclone = temp;

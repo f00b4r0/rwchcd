@@ -25,7 +25,6 @@
 #include "alarms.h"	// alarms_raise()
 
 #define LOG_INTVL_RUNTIME	900	///< log current runtime every X seconds
-#define LOG_INTVL_TEMPS		60	///< log temperatures every X seconds
 
 static const storage_version_t Runtime_sversion = 4;
 static struct s_runtime Runtime;
@@ -159,30 +158,6 @@ static int runtime_async_log(void)
 	assert(ARRAY_SIZE(keys) >= i);
 	
 	return (storage_log("log_runtime", &version, keys, values, i));
-}
-
-/**
- * Log internal temperatures.
- * @return exec status
- * @warning Locks runtime: do not call from master_thread
- */
-static int runtime_async_log_temps(void)
-{
-	const storage_version_t version = 2;
-	static storage_keys_t keys[] = {
-		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
-	};
-	static storage_values_t values[ARRAY_SIZE(keys)];
-	int i = 0;
-	
-	assert(ARRAY_SIZE(keys) >= RWCHCD_NTEMPS);
-	
-	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
-	for (i = 0; i < Runtime.config->nsensors; i++)
-		values[i] = Runtime.temps[i];
-	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
-	
-	return (storage_log("log_temps", &version, keys, values, i));
 }
 
 /**
@@ -401,7 +376,6 @@ int runtime_online(void)
 	outdoor_temp();
 
 	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log);
-	timer_add_cb(LOG_INTVL_TEMPS, runtime_async_log_temps);
 
 	models_online(Runtime.models);
 
