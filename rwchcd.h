@@ -75,6 +75,7 @@ enum e_execs {
 	ETRUNC,		///< Truncation occured (LCD output)
 	ESTORE,		///< Storage errors
 	EMISMATCH,	///< version mismatch
+	EHARDWARE,	///< hardware errors
 	EGENERIC,
 };
 

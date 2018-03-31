@@ -8,7 +8,7 @@
 
 /**
  * @file
- * Hardware Prototype 1 interface implementation.
+ * Hardware Prototype 1 driver implementation.
  */
 
 #include <time.h>	// time
@@ -26,6 +26,7 @@
 #include "storage.h"
 #include "lcd.h"
 #include "alarms.h"
+#include "hardware.h"
 #include "hw_p1.h"
 
 #include "rwchc_export.h"
@@ -508,7 +509,7 @@ out:
  * Initialize hardware and ensure connection is set
  * @return error state
  */
-int hw_p1_init(void)
+__attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 {
 	int ret, i = 0;
 	
@@ -882,7 +883,7 @@ int hw_p1_relay_release(const relid_t id)
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
  */
-int hw_p1_relay_set_state(const relid_t id, const bool turn_on, const time_t change_delay)
+static int hw_p1_relay_set_state(const relid_t id, const bool turn_on, const time_t change_delay)
 {
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
@@ -922,7 +923,7 @@ int hw_p1_relay_set_state(const relid_t id, const bool turn_on, const time_t cha
  * @param id id of the internal relay to modify
  * @return run.is_on
  */
-int hw_p1_relay_get_state(const relid_t id)
+static int hw_p1_relay_get_state(const relid_t id)
 {
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
@@ -959,7 +960,7 @@ int hw_p1_fwversion(void)
  * @warning can loop forever
  * @return exec status
  */
-int hw_p1_online(void)
+static int hw_p1_online(void * priv)
 {
 	struct s_runtime * const runtime = get_runtime();
 	int ret;
@@ -1015,7 +1016,7 @@ bool hw_p1_is_online(void)
  * @return exec status
  * @todo review logic
  */
-int hw_p1_input(void)
+static int hw_p1_input(void * priv)
 {
 	struct s_runtime * const runtime = get_runtime();
 	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
@@ -1150,7 +1151,7 @@ fail:
  * Apply commands to hardware.
  * @return exec status
  */
-int hw_p1_output(void)
+int hw_p1_output(void * priv)
 {
 	int ret;
 
@@ -1208,7 +1209,7 @@ out:
  * Forcefully turns all relays off and saves final counters to permanent storage.
  * @return exec status
  */
-int hw_p1_offline(void)
+static int hw_p1_offline(void * priv)
 {
 	uint_fast8_t i;
 	int ret;
@@ -1244,7 +1245,7 @@ int hw_p1_offline(void)
  * Resets the hardware.
  * @warning RESETS THE HARDWARE: no hardware operation after that call.
  */
-void hw_p1_exit(void)
+static void hw_p1_exit(void * priv)
 {
 	int ret;
 	uint_fast8_t i;
@@ -1262,3 +1263,60 @@ void hw_p1_exit(void)
 	if (ret)
 		dbgerr("reset failed (%d)", ret);
 }
+
+static int hw_p1_sensor_clone_temp(void * priv, const tempid_t id, temp_t * const tclone)
+{
+	int ret;
+	temp_t temp;
+
+	if ((id <= 0) || (id > ARRAY_SIZE(Sensors)))
+		return (-EINVALID);
+
+	// make sure available data is valid
+	if ((time(NULL) - Hardware.sensors_ftime) > 30) {
+		*tclone = 0;
+		return (-EHARDWARE);
+	}
+
+	temp = Sensors[id-1].run.value;
+
+	if (tclone)
+		*tclone = temp;
+
+	switch (temp) {
+		case TEMPUNSET:
+			ret = -ESENSORINVAL;
+			break;
+		case TEMPSHORT:
+			ret = -ESENSORSHORT;
+			break;
+		case TEMPDISCON:
+			ret = -ESENSORDISCON;
+			break;
+		case TEMPINVALID:
+			ret = -EINVALID;
+			break;
+		default:
+			ret = ALL_OK;
+			break;
+	}
+
+	return (ret);
+}
+
+static int hw_p1_sensor_clone_time(void * priv, const tempid_t id, time_t * const ctime)
+{
+	*ctime = Hardware.sensors_ftime;
+	return (ALL_OK);
+}
+
+static struct hardware_callbacks hw_p1_callbacks = {
+	.init = hw_p1_init,
+	.exit = hw_p1_exit,
+	.online = hw_p1_online,
+	.offline = hw_p1_offline,
+	.input = hw_p1_input,
+	.output = hw_p1_output,
+	.sensor_clone_temp = hw_p1_sensor_clone_temp,
+	.sensor_clone_time = hw_p1_sensor_clone_time,
+};
