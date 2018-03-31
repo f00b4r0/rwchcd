@@ -1,5 +1,5 @@
 //
-//  hardware.c
+//  hw_p1.c
 //  rwchcd
 //
 //  (C) 2016-2018 Thibaut VARENE
@@ -8,7 +8,7 @@
 
 /**
  * @file
- * Hardware interface implementation.
+ * Hardware Prototype 1 interface implementation.
  */
 
 #include <time.h>	// time
@@ -26,7 +26,7 @@
 #include "storage.h"
 #include "lcd.h"
 #include "alarms.h"
-#include "hardware.h"
+#include "hw_p1.h"
 
 #include "rwchc_export.h"
 
@@ -103,7 +103,7 @@ static struct {
  * @note This function isn't part of the timer system since it's more efficient
  * and more accurate to run it aperiodically (on relay edge).
  */
-static void hardware_relays_log(void)
+static void hw_p1_relays_log(void)
 {
 	const storage_version_t version = 1;
 	static storage_keys_t keys[] = {
@@ -339,9 +339,9 @@ static void parse_temps(void)
  * @return exec status
  * @todo proper save of relay name
  */
-static int hardware_save_relays(void)
+static int hw_p1_save_relays(void)
 {
-	return (storage_dump("hardware_relays", &Hardware_sversion, Relays, sizeof(Relays)));
+	return (storage_dump("hw_p1_relays", &Hardware_sversion, Relays, sizeof(Relays)));
 }
 
 /**
@@ -350,7 +350,7 @@ static int hardware_save_relays(void)
  * @return exec status
  * @todo restore relay name
  */
-static int hardware_restore_relays(void)
+static int hw_p1_restore_relays(void)
 {
 	static typeof (Relays) blob;
 	storage_version_t sversion;
@@ -359,7 +359,7 @@ static int hardware_restore_relays(void)
 	int ret;
 	
 	// try to restore key elements of hardware
-	ret = storage_fetch("hardware_relays", &sversion, blob, sizeof(blob));
+	ret = storage_fetch("hw_p1_relays", &sversion, blob, sizeof(blob));
 	if (ALL_OK == ret) {
 		if (Hardware_sversion != sversion)
 			return (-EMISMATCH);
@@ -385,9 +385,9 @@ static int hardware_restore_relays(void)
  * @return exec status
  * @todo proper save of sensor name
  */
-static int hardware_save_sensors(void)
+static int hw_p1_save_sensors(void)
 {
-	return (storage_dump("hardware_sensors", &Hardware_ssensver, Sensors, sizeof(Sensors)));
+	return (storage_dump("hw_p1_sensors", &Hardware_ssensver, Sensors, sizeof(Sensors)));
 }
 
 /**
@@ -396,7 +396,7 @@ static int hardware_save_sensors(void)
  * @return exec status
  * @todo restore sensor name
  */
-static int hardware_restore_sensors(void)
+static int hw_p1_restore_sensors(void)
 {
 	static typeof (Sensors) blob;
 	storage_version_t sversion;
@@ -405,7 +405,7 @@ static int hardware_restore_sensors(void)
 	int ret;
 
 	// try to restore key elements of hardware
-	ret = storage_fetch("hardware_sensors", &sversion, blob, sizeof(blob));
+	ret = storage_fetch("hw_p1_sensors", &sversion, blob, sizeof(blob));
 	if (ALL_OK == ret) {
 		if (Hardware_ssensver != sversion)
 			return (-EMISMATCH);
@@ -431,7 +431,7 @@ static int hardware_restore_sensors(void)
  * @param percent backlight level (0 = off, 100 = full)
  * @return exec status
  */
-int hardware_config_setbl(const uint8_t percent)
+int hw_p1_config_setbl(const uint8_t percent)
 {
 	if (!Hardware.ready)
 		return (-EOFFLINE);
@@ -449,7 +449,7 @@ int hardware_config_setbl(const uint8_t percent)
  * @param lastid last connected sensor id
  * @return exec status
  */
-int hardware_config_setnsensors(const relid_t lastid)
+int hw_p1_config_setnsensors(const relid_t lastid)
 {
 	if (!Hardware.ready)
 		return (-EOFFLINE);
@@ -467,7 +467,7 @@ int hardware_config_setnsensors(const relid_t lastid)
  * @param settings target hardware configuration
  * @return exec status
  */
-static int hardware_config_fetch(struct rwchc_s_settings * const settings)
+static int hw_p1_config_fetch(struct rwchc_s_settings * const settings)
 {
 	return (spi_settings_r(settings));
 }
@@ -476,7 +476,7 @@ static int hardware_config_fetch(struct rwchc_s_settings * const settings)
  * Commit and save hardware config.
  * @return exec status
  */
-int hardware_config_store(void)
+int hw_p1_config_store(void)
 {
 	struct rwchc_s_settings hw_set;
 	int ret;
@@ -485,7 +485,7 @@ int hardware_config_store(void)
 		return (-EOFFLINE);
 	
 	// grab current config from the hardware
-	hardware_config_fetch(&hw_set);
+	hw_p1_config_fetch(&hw_set);
 	
 	if (!memcmp(&hw_set, &(Hardware.settings), sizeof(hw_set)))
 		return (ALL_OK); // don't wear flash down if unnecessary
@@ -508,7 +508,7 @@ out:
  * Initialize hardware and ensure connection is set
  * @return error state
  */
-int hardware_init(void)
+int hw_p1_init(void)
 {
 	int ret, i = 0;
 	
@@ -528,11 +528,11 @@ int hardware_init(void)
 		pr_log(_("Firmware version %d detected"), ret);
 		Hardware.fwversion = ret;
 		// fetch hardware config
-		ret = hardware_config_fetch(&(Hardware.settings));
+		ret = hw_p1_config_fetch(&(Hardware.settings));
 		Hardware.ready = true;
 	}
 	else
-		dbgerr("hardware_init failed");
+		dbgerr("hw_p1_init failed");
 
 	return (ret);
 }
@@ -544,7 +544,7 @@ int hardware_init(void)
  * to smooth out sudden bumps in calibration reads that could be due to noise.
  * @return error status
  */
-static int hardware_calibrate(void)
+static int hw_p1_calibrate(void)
 {
 	float newcalib_nodac, newcalib_dac;
 	uint_fast16_t refcalib;
@@ -602,7 +602,7 @@ static int hardware_calibrate(void)
  * @return exec status
  * @warning Hardware.settings.addresses.nsensors must be set prior to calling this function
  */
-static int hardware_sensors_read(rwchc_sensor_t tsensors[])
+static int hw_p1_sensors_read(rwchc_sensor_t tsensors[])
 {
 	int_fast8_t sensor;
 	int ret = ALL_OK;
@@ -647,7 +647,7 @@ __attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_
  * @note non-configured hardware relays are turned off.
  * @return status
  */
-__attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
+__attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
 {
 #define CHNONE		0x00
 #define CHTURNON	0x01
@@ -702,12 +702,12 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
 
 	// save/log relays state if there was a change
 	if (chflags) {
-		hardware_relays_log();
+		hw_p1_relays_log();
 		if (chflags & CHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
 			// XXX there's no real motive to do this besides lowering storage pressure
-			ret = hardware_save_relays();
+			ret = hw_p1_save_relays();
 			if (ret)
-				dbgerr("hardware_save failed (%d)", ret);
+				dbgerr("hw_p1_save failed (%d)", ret);
 		}
 	}
 	
@@ -725,7 +725,7 @@ __attribute__((warn_unused_result)) static int hardware_rwchcrelays_write(void)
  * Write all peripherals from internal runtime to hardware
  * @return status
  */
-__attribute__((warn_unused_result)) static inline int hardware_rwchcperiphs_write(void)
+__attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_write(void)
 {
 	assert(Hardware.ready);
 	return (spi_peripherals_w(&(Hardware.peripherals)));
@@ -735,7 +735,7 @@ __attribute__((warn_unused_result)) static inline int hardware_rwchcperiphs_writ
  * Read all peripherals from hardware into internal runtime
  * @return exec status
  */
-__attribute__((warn_unused_result)) static inline int hardware_rwchcperiphs_read(void)
+__attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(void)
 {
 	assert(Hardware.ready);
 	return (spi_peripherals_r(&(Hardware.peripherals)));
@@ -749,7 +749,7 @@ __attribute__((warn_unused_result)) static inline int hardware_rwchcperiphs_read
  * @param name an optional user-defined name describing the sensor
  * @return exec status
  */
-int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, const temp_t offset, const char * const name)
+int hw_p1_sensor_configure(const tempid_t id, const enum e_sensor_type type, const temp_t offset, const char * const name)
 {
 	char * str = NULL;
 
@@ -784,7 +784,7 @@ int hardware_sensor_configure(const tempid_t id, const enum e_sensor_type type, 
  * @param id the physical id of the sensor to deconfigure (starting from 1)
  * @return exec status
  */
-int hardware_sensor_deconfigure(const tempid_t id)
+int hw_p1_sensor_deconfigure(const tempid_t id)
 {
 	if (!id || (id > ARRAY_SIZE(Sensors)))
 		return (-EINVALID);
@@ -806,7 +806,7 @@ int hardware_sensor_deconfigure(const tempid_t id)
  * Finally it checks that the designated sensor is properly configured in software.
  * @return ALL_OK if sensor is properly configured and available for use.
  */
-int hardware_sensor_configured(const tempid_t id)
+int hw_p1_sensor_configured(const tempid_t id)
 {
 	if (!id || (id > ARRAY_SIZE(Sensors)) || (id > get_runtime()->config->nsensors))
 		return (-EINVALID);
@@ -825,7 +825,7 @@ int hardware_sensor_configured(const tempid_t id)
  * @param name the optional user-defined name for this relay (string will be copied locally)
  * @return exec status
  */
-int hardware_relay_request(const relid_t id, const bool failstate, const char * const name)
+int hw_p1_relay_request(const relid_t id, const bool failstate, const char * const name)
 {
 	char * str = NULL;
 
@@ -859,7 +859,7 @@ int hardware_relay_request(const relid_t id, const bool failstate, const char * 
  * @param id target relay id (starting from 1)
  * @return exec status
  */
-int hardware_relay_release(const relid_t id)
+int hw_p1_relay_release(const relid_t id)
 {
 	if (!id || (id > ARRAY_SIZE(Relays)))
 		return (-EINVALID);
@@ -880,9 +880,9 @@ int hardware_relay_release(const relid_t id)
  * @param turn_on true if relay is meant to be turned on
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
- * @note actual (hardware) relay state will only be updated by a call to hardware_rwchcrelays_write()
+ * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
  */
-int hardware_relay_set_state(const relid_t id, const bool turn_on, const time_t change_delay)
+int hw_p1_relay_set_state(const relid_t id, const bool turn_on, const time_t change_delay)
 {
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
@@ -922,7 +922,7 @@ int hardware_relay_set_state(const relid_t id, const bool turn_on, const time_t 
  * @param id id of the internal relay to modify
  * @return run.is_on
  */
-int hardware_relay_get_state(const relid_t id)
+int hw_p1_relay_get_state(const relid_t id)
 {
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
@@ -945,7 +945,7 @@ int hardware_relay_get_state(const relid_t id)
  * Firmware version.
  * @return positive version or negative error
  */
-int hardware_fwversion(void)
+int hw_p1_fwversion(void)
 {
 	if (!Hardware.ready)
 		return (-EOFFLINE);
@@ -959,7 +959,7 @@ int hardware_fwversion(void)
  * @warning can loop forever
  * @return exec status
  */
-int hardware_online(void)
+int hw_p1_online(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	int ret;
@@ -971,23 +971,23 @@ int hardware_online(void)
 		return (-EOFFLINE);
 
 	// save settings - for deffail
-	ret = hardware_config_store();
+	ret = hw_p1_config_store();
 	if (ret)
 		goto fail;
 	
 	// calibrate
-	ret = hardware_calibrate();
+	ret = hw_p1_calibrate();
 	if (ret)
 		goto fail;
 
 	// restore previous state - failure is ignored
-	ret = hardware_restore_relays();
-	ret |= hardware_restore_sensors();
+	ret = hw_p1_restore_relays();
+	ret |= hw_p1_restore_sensors();
 	if (ALL_OK == ret)
 		pr_log(_("Hardware state restored"));
 
 	// read sensors
-	ret = hardware_sensors_read(Hardware.sensors);
+	ret = hw_p1_sensors_read(Hardware.sensors);
 	if (ret)
 		goto fail;
 
@@ -1003,7 +1003,7 @@ fail:
  * Assert that the hardware is ready.
  * @return true if hardware is ready, false otherwise
  */
-bool hardware_is_online(void)
+bool hw_p1_is_online(void)
 {
 	return (Hardware.ready);
 }
@@ -1015,7 +1015,7 @@ bool hardware_is_online(void)
  * @return exec status
  * @todo review logic
  */
-int hardware_input(void)
+int hw_p1_input(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
@@ -1029,9 +1029,9 @@ int hardware_input(void)
 		return (-EOFFLINE);
 
 	// read peripherals
-	ret = hardware_rwchcperiphs_read();
+	ret = hw_p1_rwchcperiphs_read();
 	if (ALL_OK != ret) {
-		dbgerr("hardware_rwchcperiphs_read failed (%d)", ret);
+		dbgerr("hw_p1_rwchcperiphs_read failed (%d)", ret);
 		goto skip_periphs;
 	}
 	
@@ -1076,7 +1076,7 @@ int hardware_input(void)
 			pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 			runtime_set_systemmode(cursysmode);
 			pthread_rwlock_unlock(&runtime->runtime_rwlock);
-			// hardware_beep()
+			// hw_p1_beep()
 			Hardware.peripherals.o_buzz = 1;
 		}
 		syschg = false;
@@ -1109,9 +1109,9 @@ int hardware_input(void)
 
 skip_periphs:
 	// calibrate
-	ret = hardware_calibrate();
+	ret = hw_p1_calibrate();
 	if (ALL_OK != ret) {
-		dbgerr("hardware_calibrate failed (%d)", ret);
+		dbgerr("hw_p1_calibrate failed (%d)", ret);
 		goto fail;
 		/* repeated calibration failure might signal a sensor acquisition circuit
 		 that's broken. Temperature readings may no longer be reliable and
@@ -1119,10 +1119,10 @@ skip_periphs:
 	}
 	
 	// read sensors
-	ret = hardware_sensors_read(rawsensors);
+	ret = hw_p1_sensors_read(rawsensors);
 	if (ALL_OK != ret) {
 		// flag the error but do NOT stop processing here
-		dbgerr("hardware_sensors_read failed (%d)", ret);
+		dbgerr("hw_p1_sensors_read failed (%d)", ret);
 		goto fail;
 	}
 	else {
@@ -1150,7 +1150,7 @@ fail:
  * Apply commands to hardware.
  * @return exec status
  */
-int hardware_output(void)
+int hw_p1_output(void)
 {
 	int ret;
 
@@ -1158,16 +1158,16 @@ int hardware_output(void)
 		return (-EOFFLINE);
 
 	// write relays
-	ret = hardware_rwchcrelays_write();
+	ret = hw_p1_rwchcrelays_write();
 	if (ALL_OK != ret) {
-		dbgerr("hardware_rwchcrelays_write failed (%d)", ret);
+		dbgerr("hw_p1_rwchcrelays_write failed (%d)", ret);
 		goto out;
 	}
 	
 	// write peripherals
-	ret = hardware_rwchcperiphs_write();
+	ret = hw_p1_rwchcperiphs_write();
 	if (ALL_OK != ret)
-		dbgerr("hardware_rwchcperiphs_write failed (%d)", ret);
+		dbgerr("hw_p1_rwchcperiphs_write failed (%d)", ret);
 	
 out:
 	return (ret);
@@ -1177,7 +1177,7 @@ out:
 /**
  * Hardware run loop
  */
-int hardware_run(void)
+int hw_p1_run(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	int ret;
@@ -1187,7 +1187,7 @@ int hardware_run(void)
 		return (-ENOTCONFIGURED);
 	}
 	
-	ret = hardware_input();
+	ret = hw_p1_input();
 	if (ALL_OK != ret)
 		goto out;
 	
@@ -1196,7 +1196,7 @@ int hardware_run(void)
 	//sleep(1);
 
 	// send SPI data
-	ret = hardware_output();
+	ret = hw_p1_output();
 	
 out:
 	return (ret);
@@ -1208,7 +1208,7 @@ out:
  * Forcefully turns all relays off and saves final counters to permanent storage.
  * @return exec status
  */
-int hardware_offline(void)
+int hw_p1_offline(void)
 {
 	uint_fast8_t i;
 	int ret;
@@ -1225,14 +1225,14 @@ int hardware_offline(void)
 	}
 	
 	// update the hardware
-	ret = hardware_rwchcrelays_write();
+	ret = hw_p1_rwchcrelays_write();
 	if (ret)
-		dbgerr("hardware_rwchcrelays_write failed (%d)", ret);
+		dbgerr("hw_p1_rwchcrelays_write failed (%d)", ret);
 	
 	// update permanent storage with final count
-	hardware_save_relays();
+	hw_p1_save_relays();
 
-	hardware_save_sensors();
+	hw_p1_save_sensors();
 	
 	Hardware.ready = false;
 	
@@ -1244,18 +1244,18 @@ int hardware_offline(void)
  * Resets the hardware.
  * @warning RESETS THE HARDWARE: no hardware operation after that call.
  */
-void hardware_exit(void)
+void hw_p1_exit(void)
 {
 	int ret;
 	uint_fast8_t i;
 
 	// cleanup all resources
 	for (i = 1; i <= ARRAY_SIZE(Relays); i++)
-		hardware_relay_release(i);
+		hw_p1_relay_release(i);
 	
 	// deconfigure all sensors
 	for (i = 1; i <= ARRAY_SIZE(Sensors); i++)
-		hardware_sensor_deconfigure(i);
+		hw_p1_sensor_deconfigure(i);
 
 	// reset the hardware
 	ret = spi_reset();

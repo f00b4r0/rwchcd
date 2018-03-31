@@ -24,7 +24,7 @@
 		4FC1847B1DA6809E000E514B /* storage.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC184791DA6809E000E514B /* storage.c */; };
 		4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1847C1DA7B2F9000E514B /* dbus.c */; };
 		4FC304A81EBDCDB900D77AC6 /* models.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC304A61EBDCDB900D77AC6 /* models.c */; };
-		4FCD55161D835D04003BB848 /* hardware.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD550E1D835D04003BB848 /* hardware.c */; };
+		4FCD55161D835D04003BB848 /* hw_p1.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD550E1D835D04003BB848 /* hw_p1.c */; };
 		4FCD55171D835D04003BB848 /* plant.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55101D835D04003BB848 /* plant.c */; };
 		4FCD55181D835D04003BB848 /* spi.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55121D835D04003BB848 /* spi.c */; };
 		4FCD55191D835D04003BB848 /* rwchcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55141D835D04003BB848 /* rwchcd.c */; };
@@ -84,8 +84,8 @@
 		4FC304A71EBDCDB900D77AC6 /* models.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = models.h; sourceTree = SOURCE_ROOT; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchc_export.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		4FCD550E1D835D04003BB848 /* hardware.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hardware.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		4FCD550F1D835D04003BB848 /* hardware.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hardware.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4FCD550E1D835D04003BB848 /* hw_p1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hw_p1.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		4FCD550F1D835D04003BB848 /* hw_p1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = hw_p1.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD55101D835D04003BB848 /* plant.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = plant.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4FCD55111D835D04003BB848 /* plant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = plant.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD55121D835D04003BB848 /* spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = spi.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -127,8 +127,12 @@
 				4F2F7F6A1DDF1DD80095AAEE /* README */,
 				4FCD550D1D835D04003BB848 /* rwchc_export.h */,
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
-				4FCD550E1D835D04003BB848 /* hardware.c */,
-				4FCD550F1D835D04003BB848 /* hardware.h */,
+				4FCD550E1D835D04003BB848 /* hw_p1.c */,
+				4FCD550F1D835D04003BB848 /* hw_p1.h */,
+				4FCD55121D835D04003BB848 /* spi.c */,
+				4FCD55131D835D04003BB848 /* spi.h */,
+				4F2D5F571D97191C00CF842D /* lcd.c */,
+				4F2D5F581D97191C00CF842D /* lcd.h */,
 				4F42A5CE1F967BC3001B0A1F /* pump.c */,
 				4F42A5CF1F967BC3001B0A1F /* pump.h */,
 				4F42A5D11F968069001B0A1F /* valve.c */,
@@ -145,14 +149,10 @@
 				4FCD55111D835D04003BB848 /* plant.h */,
 				4FC304A61EBDCDB900D77AC6 /* models.c */,
 				4FC304A71EBDCDB900D77AC6 /* models.h */,
-				4FCD55121D835D04003BB848 /* spi.c */,
-				4FCD55131D835D04003BB848 /* spi.h */,
 				4F3AFBB01D88867600D86EE7 /* lib.c */,
 				4F3AFBB11D88867600D86EE7 /* lib.h */,
 				4F3AFBAA1D8873C500D86EE7 /* config.c */,
 				4F3AFBAB1D8873C500D86EE7 /* config.h */,
-				4F2D5F571D97191C00CF842D /* lcd.c */,
-				4F2D5F581D97191C00CF842D /* lcd.h */,
 				4F15A85C1EBF74880000507A /* alarms.c */,
 				4F15A85D1EBF74880000507A /* alarms.h */,
 				4F3AFBAD1D8884ED00D86EE7 /* runtime.c */,
@@ -254,7 +254,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4FC1847B1DA6809E000E514B /* storage.c in Sources */,
-				4FCD55161D835D04003BB848 /* hardware.c in Sources */,
+				4FCD55161D835D04003BB848 /* hw_p1.c in Sources */,
 				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,
 				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,
