@@ -100,8 +100,17 @@ enum {
 };
 
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
-typedef uint_fast8_t	tempid_t;	///< temperature sensor id
-typedef uint_fast8_t	relid_t;	///< relay id matching hardware: 1 to 14, with 13==RL1 and 14==RL2
+typedef uint_fast8_t	bid_t;		///< backend id type
+typedef uint_fast8_t	rid_t;		///< relay id type
+typedef uint_fast8_t	sid_t;		///< sensor id type
+typedef struct {
+	bid_t bid;	///< backend id
+	sid_t sid;	///< sensor id - MUST START FROM 1
+} tempid_t;	///< temperature sensor id
+typedef struct {
+	bid_t bid;	///< backend id
+	rid_t rid;	///< relay id - MUST START FROM 1
+} relid_t;	///< relay identifier
 
 /** Valid run modes */
 enum e_runmode {

@@ -225,114 +225,134 @@ void hardware_exit(void)
 
 /**
  * Clone temp from a hardware sensor.
- * @param bendid id of the target hardware backend
- * @param rid id (for the specified backend) of the hardware sensor to query
+ * @param tempid id of the hardware sensor to query
  * @param ctemp pointer to target to store the temperature value
  * @return exec status
  */
-int hardware_sensor_clone_temp(const hwbendid_t bendid, const tempid_t tempid, temp_t * const ctemp)
+int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 {
-	// make sure bendid is valid
-	if (sizeof(HW_backends) < bendid)
+	const bid_t bid = tempid.bid;
+
+	// make sure sid is non null
+	if (!tempid.sid)
 		return (-EINVALID);
 
-	if (!HW_backends[bendid])
+	// make sure bid is valid
+	if (sizeof(HW_backends) < bid)
+		return (-EINVALID);
+
+	if (!HW_backends[bid])
 		return (-ENOTCONFIGURED);
 
 	// make sure backend is online
-	if (!HW_backends[bendid]->run.online)
+	if (!HW_backends[bid]->run.online)
 		return (-EOFFLINE);
 
 	// make sure backend supports sensor_temp_clone
-	if (!HW_backends[bendid]->cb->sensor_clone_temp)
+	if (!HW_backends[bid]->cb->sensor_clone_temp)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends[bendid]->cb->sensor_clone_temp(HW_backends[bendid]->priv, tempid, ctemp));
+	return (HW_backends[bid]->cb->sensor_clone_temp(HW_backends[bid]->priv, tempid.sid, ctemp));
 }
 
 /**
  * Clone hardware sensor last update time.
- * @param bendid id of the target hardware backend
- * @param rid id (for the specified backend) of the hardware sensor to query
+ * @param tempid id (for the specified backend) of the hardware sensor to query
  * @param clast pointer to target to store the time value
  * @return exec status
  */
-int hardware_sensor_clone_time(const hwbendid_t bendid, const tempid_t tempid, time_t * const clast)
+int hardware_sensor_clone_time(const tempid_t tempid, time_t * const clast)
 {
-	// make sure bendid is valid
-	if (sizeof(HW_backends) < bendid)
+	const bid_t bid = tempid.bid;
+
+	// make sure sid is non null
+	if (!tempid.sid)
 		return (-EINVALID);
 
-	if (!HW_backends[bendid])
+	// make sure bid is valid
+	if (sizeof(HW_backends) < bid)
+		return (-EINVALID);
+
+	if (!HW_backends[bid])
 		return (-ENOTCONFIGURED);
 
 	// make sure backend is online
-	if (!HW_backends[bendid]->run.online)
+	if (!HW_backends[bid]->run.online)
 		return (-EOFFLINE);
 
 	// make sure backend supports op
-	if (!HW_backends[bendid]->cb->sensor_clone_time)
+	if (!HW_backends[bid]->cb->sensor_clone_time)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends[bendid]->cb->sensor_clone_time(HW_backends[bendid]->priv, tempid, clast));
+	return (HW_backends[bid]->cb->sensor_clone_time(HW_backends[bid]->priv, tempid.sid, clast));
 }
 
 /**
  * Get relay state (request).
  * Returns current state
- * @param bendid id of the target hardware backend
- * @param rid id (for the specified backend) of the hardware relay to query
+ * @param relid id of the hardware relay to query
  * @return true if relay is on, false if off, negative if error.
  */
-int hardware_relay_get_state(const hwbendid_t bendid, const relid_t rid)
+int hardware_relay_get_state(const relid_t relid)
 {
-	// make sure bendid is valid
-	if (sizeof(HW_backends) < bendid)
+	const bid_t bid = relid.bid;
+
+	// make sure rid is non null
+	if (!relid.rid)
 		return (-EINVALID);
 
-	if (!HW_backends[bendid])
+	// make sure bid is valid
+	if (sizeof(HW_backends) < bid)
+		return (-EINVALID);
+
+	if (!HW_backends[bid])
 		return (-ENOTCONFIGURED);
 
 	// make sure backend is online
-	if (!HW_backends[bendid]->run.online)
+	if (!HW_backends[bid]->run.online)
 		return (-EOFFLINE);
 
 	// make sure backend supports relay_get_state
-	if (!HW_backends[bendid]->cb->relay_get_state)
+	if (!HW_backends[bid]->cb->relay_get_state)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends[bendid]->cb->relay_get_state(HW_backends[bendid]->priv, rid));
+	return (HW_backends[bid]->cb->relay_get_state(HW_backends[bid]->priv, relid.rid));
 }
 
 /**
  * Set relay state (request)
- * @param bendid id of the target hardware backend
- * @param rid id (for the specified backend) of the hardware relay to modify
+ * @param relid id (for the specified backend) of the hardware relay to modify
  * @param turn_on true if relay is meant to be turned on
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @note actual (hardware) relay state will only be updated by a call to hardware_output()
  */
-int hardware_relay_set_state(const hwbendid_t bendid, const relid_t rid, bool turn_on, time_t change_delay)
+int hardware_relay_set_state(const relid_t relid, bool turn_on, time_t change_delay)
 {
-	// make sure bendid is valid
-	if (sizeof(HW_backends) < bendid)
+	const bid_t bid = relid.bid;
+
+	// make sure rid is non null
+	if (!relid.rid)
 		return (-EINVALID);
 
-	if (!HW_backends[bendid])
+	// make sure bid is valid
+	if (sizeof(HW_backends) < bid)
+		return (-EINVALID);
+
+	if (!HW_backends[bid])
 		return (-ENOTCONFIGURED);
 
 	// make sure backend is online
-	if (!HW_backends[bendid]->run.online)
+	if (!HW_backends[bid]->run.online)
 		return (-EOFFLINE);
 
 	// make sure backend supports relay_set_state
-	if (!HW_backends[bendid]->cb->relay_set_state)
+	if (!HW_backends[bid]->cb->relay_set_state)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends[bendid]->cb->relay_set_state(HW_backends[bendid]->priv, rid, turn_on, change_delay));
+	return (HW_backends[bid]->cb->relay_set_state(HW_backends[bid]->priv, relid.rid, turn_on, change_delay));
 }

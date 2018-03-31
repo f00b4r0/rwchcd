@@ -19,7 +19,7 @@
 int lcd_init(void);
 int lcd_online(void);
 int lcd_reset(void);
-int lcd_set_tempid(const tempid_t tempid);
+int lcd_set_tempid(const sid_t tempid);
 int lcd_sysmode_change(enum e_systemmode newsysmode);
 int lcd_fade(void);
 int lcd_run(void);

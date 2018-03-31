@@ -253,7 +253,7 @@ static ohm_to_celsius_ft * sensor_o_to_c(const enum e_sensor_type type)
  * @param error sensor error
  * @return exec status
  */
-static int sensor_alarm(const tempid_t id, const int error)
+static int sensor_alarm(const sid_t id, const int error)
 {
 	const char * restrict const msgf = _("sensor fail: \"%s\" (%d) %s");
 	const char * restrict const msglcdf = _("sensor fail: %d");
@@ -474,7 +474,7 @@ int hw_p1_config_setbl(const uint8_t percent)
  * @param lastid last connected sensor id
  * @return exec status
  */
-int hw_p1_config_setnsensors(const relid_t lastid)
+int hw_p1_config_setnsensors(const rid_t lastid)
 {
 	if (!Hardware.ready)
 		return (-EOFFLINE);
@@ -651,7 +651,7 @@ out:
  * @param id target relay id (from 0)
  * @param state target state
  */
-__attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const relid_t id, const bool state)
+__attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const rid_t id, const bool state)
 {
 	uint_fast8_t rid = id;
 
@@ -775,7 +775,7 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(vo
  * @param name an optional user-defined name describing the sensor
  * @return exec status
  */
-int hw_p1_sensor_configure(const tempid_t id, const enum e_sensor_type type, const temp_t offset, const char * const name)
+int hw_p1_sensor_configure(const sid_t id, const enum e_sensor_type type, const temp_t offset, const char * const name)
 {
 	char * str = NULL;
 
@@ -810,7 +810,7 @@ int hw_p1_sensor_configure(const tempid_t id, const enum e_sensor_type type, con
  * @param id the physical id of the sensor to deconfigure (starting from 1)
  * @return exec status
  */
-int hw_p1_sensor_deconfigure(const tempid_t id)
+int hw_p1_sensor_deconfigure(const sid_t id)
 {
 	if (!id || (id > ARRAY_SIZE(Sensors)))
 		return (-EINVALID);
@@ -832,7 +832,7 @@ int hw_p1_sensor_deconfigure(const tempid_t id)
  * Finally it checks that the designated sensor is properly configured in software.
  * @return ALL_OK if sensor is properly configured and available for use.
  */
-int hw_p1_sensor_configured(const tempid_t id)
+int hw_p1_sensor_configured(const sid_t id)
 {
 	if (!id || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Sensors)))
 		return (-EINVALID);
@@ -851,7 +851,7 @@ int hw_p1_sensor_configured(const tempid_t id)
  * @param name the optional user-defined name for this relay (string will be copied locally)
  * @return exec status
  */
-int hw_p1_relay_request(const relid_t id, const bool failstate, const char * const name)
+int hw_p1_relay_request(const rid_t id, const bool failstate, const char * const name)
 {
 	char * str = NULL;
 
@@ -885,7 +885,7 @@ int hw_p1_relay_request(const relid_t id, const bool failstate, const char * con
  * @param id target relay id (starting from 1)
  * @return exec status
  */
-int hw_p1_relay_release(const relid_t id)
+int hw_p1_relay_release(const rid_t id)
 {
 	if (!id || (id > ARRAY_SIZE(Relays)))
 		return (-EINVALID);
@@ -908,7 +908,7 @@ int hw_p1_relay_release(const relid_t id)
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
  */
-static int hw_p1_relay_set_state(const relid_t id, const bool turn_on, const time_t change_delay)
+static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const time_t change_delay)
 {
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
@@ -948,7 +948,7 @@ static int hw_p1_relay_set_state(const relid_t id, const bool turn_on, const tim
  * @param id id of the internal relay to modify
  * @return run.is_on
  */
-static int hw_p1_relay_get_state(const relid_t id)
+static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
@@ -1048,7 +1048,7 @@ static int hw_p1_input(void * priv)
 	struct s_runtime * const runtime = get_runtime();
 	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
 	static unsigned int count = 0, systout = 0;
-	static tempid_t tempid = 1;
+	static sid_t tempid = 1;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
 	static bool syschg = false;
 	int ret;
@@ -1288,7 +1288,7 @@ static void hw_p1_exit(void * priv)
 		dbgerr("reset failed (%d)", ret);
 }
 
-static int hw_p1_sensor_clone_temp(void * priv, const tempid_t id, temp_t * const tclone)
+static int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 {
 	int ret;
 	temp_t temp;
@@ -1330,7 +1330,7 @@ static int hw_p1_sensor_clone_temp(void * priv, const tempid_t id, temp_t * cons
 	return (ret);
 }
 
-static int hw_p1_sensor_clone_time(void * priv, const tempid_t id, time_t * const ctime)
+static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const ctime)
 {
 	*ctime = Hardware.sensors_ftime;
 	return (ALL_OK);
@@ -1345,4 +1345,6 @@ static struct hardware_callbacks hw_p1_callbacks = {
 	.output = hw_p1_output,
 	.sensor_clone_temp = hw_p1_sensor_clone_temp,
 	.sensor_clone_time = hw_p1_sensor_clone_time,
+	.relay_get_state = hw_p1_relay_get_state,
+	.relay_set_state = hw_p1_relay_set_state,
 };

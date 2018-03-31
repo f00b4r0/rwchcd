@@ -34,7 +34,7 @@ static struct {
 	bool L2mngd;	///< true if 2nd line is managed by software
 	bool L2mngd_prev;	///< this flag is necessary to account for the fact that the firmware will modify the 2nd line
 	bool sysmchg;	///< true if sysmode change in progress
-	tempid_t sensor;	///< current sensor displayed on LCD
+	sid_t sensor;	///< current sensor displayed on LCD
 	enum e_systemmode newsysmode;	///< upcoming system mode
 	uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
 	uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
@@ -310,7 +310,7 @@ out:
 }
 
 // XXX quick hack
-static const char * temp_to_str(const tempid_t tempid)
+static const char * temp_to_str(const sid_t tempid)
 {
 	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
 	temp_t temp;
@@ -416,7 +416,7 @@ int lcd_reset(void)
  * @return exec status
  * @warning no sanitization on tempid
  */
-int lcd_set_tempid(const tempid_t tempid)
+int lcd_set_tempid(const sid_t tempid)
 {
 	if (!LCD.online)
 		return (-EOFFLINE);
