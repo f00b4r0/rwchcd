@@ -414,16 +414,12 @@ int lcd_reset(void)
  * Set current sensor displayed on LCD.
  * @param tempid target sensor id
  * @return exec status
+ * @warning no sanitization on tempid
  */
 int lcd_set_tempid(const tempid_t tempid)
 {
-	const struct s_config * restrict const config = get_runtime()->config;
-
 	if (!LCD.online)
 		return (-EOFFLINE);
-
-	if (tempid > config->nsensors)
-		return (-EINVALID);
 
 	LCD.sensor = tempid;
 

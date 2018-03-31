@@ -20,7 +20,7 @@
 #include "storage.h"
 #include "config.h"
 
-static const storage_version_t Config_sversion = 9;
+static const storage_version_t Config_sversion = 10;
 
 /**
  * Allocate new config.
@@ -66,9 +66,6 @@ static int config_restore(struct s_config * const config)
 
 		memcpy(config, &temp_config, sizeof(*config));
 		
-		// restore hardware bits
-		hardware_config_setnsensors(config->nsensors);
-
 		pr_log(_("System configuration restored"));
 		
 		config->restored = true;
@@ -127,26 +124,6 @@ int config_set_temp_nsamples(struct s_config * const config, const uint_fast8_t 
 	config->temp_nsamples = nsamples;
 
 	return (ALL_OK);
-}
-
-/**
- * Set number of active sensors.
- * @param config target config
- * @param nsensors number of active sensors
- * @return exec status
- * @note nsensors will be treated as the id of the last active sensor.
- */
-int config_set_nsensors(struct s_config * const config, const int_fast8_t nsensors)
-{
-	if (!config)
-		return (-EINVALID);
-
-	if (nsensors > RWCHCD_NTEMPS)
-		return (-EINVALID);
-
-	config->nsensors = nsensors;
-
-	return (hardware_config_setnsensors(nsensors));
 }
 
 /**

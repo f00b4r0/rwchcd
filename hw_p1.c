@@ -298,7 +298,6 @@ static void parse_temps(void)
 {
 	struct s_runtime * const runtime = get_runtime();
 	const typeof(runtime->config->temp_nsamples) nsamples = runtime->config->temp_nsamples;
-	const typeof(runtime->config->nsensors) nsensors = runtime->config->nsensors;
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
@@ -627,7 +626,7 @@ static int hw_p1_calibrate(void)
  * @param tsensors the array to populate with current values
  * @param last the id of the last wanted (connected) sensor
  * @return exec status
- * @warning Hardware.settings.addresses.nsensors must be set prior to calling this function
+ * @warning Hardware.settings.nsensors must be set prior to calling this function
  */
 static int hw_p1_sensors_read(rwchc_sensor_t tsensors[])
 {
@@ -835,7 +834,7 @@ int hw_p1_sensor_deconfigure(const tempid_t id)
  */
 int hw_p1_sensor_configured(const tempid_t id)
 {
-	if (!id || (id > ARRAY_SIZE(Sensors)) || (id > get_runtime()->config->nsensors))
+	if (!id || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Sensors)))
 		return (-EINVALID);
 
 	if (!Sensors[id-1].set.configured)
@@ -1121,7 +1120,7 @@ static int hw_p1_input(void * priv)
 		Hardware.peripherals.i_SW2 = 0;
 		count = 5;
 		
-		if (tempid > runtime->config->nsensors)
+		if (tempid > Hardware.settings.nsensors)
 			tempid = 1;
 
 		lcd_set_tempid(tempid);	// update sensor
