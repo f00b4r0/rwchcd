@@ -174,6 +174,8 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 {
 	hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
 	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
+	// failsafe() is called after runchecklist(), the above can't fail
+
 	if (boiler->loadpump)
 		pump_set_state(boiler->loadpump, ON, FORCE);
 }
@@ -189,6 +191,7 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 	temp_t boilertemp;
 
 	hardware_sensor_clone_temp(boiler->set.id_temp, &boilertemp);
+	// antifreeze() is called after runchecklist(), the above can't fail
 
 	// trip at set.t_freeze point
 	if (boilertemp <= boiler->set.t_freeze)
@@ -401,9 +404,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	/* burner control */
 	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
 	if (boiler_temp < trip_temp)		// trip condition
-		hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
+		ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
 	else if (boiler_temp > untrip_temp)	// untrip condition
-		hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
+		ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
 
 	// as long as the burner is running we reset the cooldown delay
 	if (hardware_relay_get_state(boiler->set.rid_burner_1) > 0)
@@ -413,7 +416,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
 	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp));
 
-	return (ALL_OK);
+	return (ret);
 }
 
 /**
