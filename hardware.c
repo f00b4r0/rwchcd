@@ -46,13 +46,17 @@ int hardware_backend_register(const struct hardware_callbacks * const callbacks,
 	int id, ret;
 	char * str;
 
+	// sanitize input: check that mandatory callbacks are provided
+	if (!callbacks || !callbacks->init || !callbacks->exit || !callbacks->online || !callbacks->offline)
+		return (-EINVALID);
+
 	// find first available spot in array
-	for (id = 0; id < sizeof(HW_backends); id++) {
+	for (id = 0; id < ARRAY_SIZE(HW_backends); id++) {
 		if (!HW_backends[id])
 			break;
 	}
 
-	if (sizeof(HW_backends) == id)
+	if (ARRAY_SIZE(HW_backends) == id)
 		return (-EOOM);		// out of space
 
 	// init backend
@@ -88,7 +92,7 @@ int hardware_online(void)
 	bool fail = false;
 
 	// bring all registered backends online
-	for (id = 0; HW_backends[id] && (id < sizeof(HW_backends)); id++) {
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
 		if (HW_backends[id]->cb->online) {
 			ret = HW_backends[id]->cb->online(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
@@ -120,7 +124,7 @@ int hardware_input(void)
 	bool fail = false;
 
 	// input registered backends
-	for (id = 0; HW_backends[id] && (id < sizeof(HW_backends)); id++) {
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
 		if (!HW_backends[id]->run.online)
 			continue;
 
@@ -153,7 +157,7 @@ int hardware_output(void)
 	bool fail = false;
 
 	// output registered backends
-	for (id = 0; HW_backends[id] && (id < sizeof(HW_backends)); id++) {
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
 		if (!HW_backends[id]->run.online)
 			continue;
 
@@ -186,7 +190,7 @@ int hardware_offline(void)
 	bool fail = false;
 
 	// take all registered backends offline
-	for (id = 0; HW_backends[id] && (id < sizeof(HW_backends)); id++) {
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
 		if (!HW_backends[id]->run.online)
 			continue;
 
@@ -219,7 +223,7 @@ void hardware_exit(void)
 	int id;
 
 	// exit all registered backends
-	for (id = 0; HW_backends[id] && (id < sizeof(HW_backends)); id++)
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++)
 		HW_backends[id]->cb->exit(HW_backends[id]->priv);
 }
 
@@ -238,7 +242,7 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 		return (-EINVALID);
 
 	// make sure bid is valid
-	if (sizeof(HW_backends) < bid)
+	if (ARRAY_SIZE(HW_backends) < bid)
 		return (-EINVALID);
 
 	if (!HW_backends[bid])
@@ -271,7 +275,7 @@ int hardware_sensor_clone_time(const tempid_t tempid, time_t * const clast)
 		return (-EINVALID);
 
 	// make sure bid is valid
-	if (sizeof(HW_backends) < bid)
+	if (ARRAY_SIZE(HW_backends) < bid)
 		return (-EINVALID);
 
 	if (!HW_backends[bid])
@@ -304,7 +308,7 @@ int hardware_relay_get_state(const relid_t relid)
 		return (-EINVALID);
 
 	// make sure bid is valid
-	if (sizeof(HW_backends) < bid)
+	if (ARRAY_SIZE(HW_backends) < bid)
 		return (-EINVALID);
 
 	if (!HW_backends[bid])
@@ -339,7 +343,7 @@ int hardware_relay_set_state(const relid_t relid, bool turn_on, time_t change_de
 		return (-EINVALID);
 
 	// make sure bid is valid
-	if (sizeof(HW_backends) < bid)
+	if (ARRAY_SIZE(HW_backends) < bid)
 		return (-EINVALID);
 
 	if (!HW_backends[bid])

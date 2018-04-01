@@ -20,12 +20,12 @@
 #define OFF	false
 
 struct hardware_callbacks {
-	int (*init)(void * priv);	///< must be provided
-	int (*online)(void * priv);	///< must be provided
+	int (*init)(void * priv);	///< @warning must be provided
+	int (*online)(void * priv);	///< @warning must be provided
 	int (*input)(void * priv);
 	int (*output)(void * priv);
-	int (*offline)(void * priv);	///< must be provided
-	void (*exit)(void * priv);	///< must be provided
+	int (*offline)(void * priv);	///< @warning must be provided
+	void (*exit)(void * priv);	///< @warning must be provided
 	int (*relay_get_state)(void * priv, const rid_t);
 	int (*relay_set_state)(void * priv, const rid_t, bool turn_on, time_t change_delay);
 	int (*sensor_clone_temp)(void * priv, const sid_t, temp_t * const ctemp);
@@ -35,15 +35,15 @@ struct hardware_callbacks {
 
 int hardware_init(void) __attribute__((warn_unused_result));
 int hardware_backend_register(const struct hardware_callbacks * const, void * const priv, const char * const name) __attribute__((warn_unused_result));
-int hardware_online(void);
-int hardware_input(void);
-int hardware_output(void);
+int hardware_online(void) __attribute__((warn_unused_result));
+int hardware_input(void) __attribute__((warn_unused_result));
+int hardware_output(void) __attribute__((warn_unused_result));
 int hardware_offline(void);
 void hardware_exit(void);
 
 // relay ops
 int hardware_relay_get_state(const relid_t);
-int hardware_relay_set_state(const relid_t, bool turn_on, time_t change_delay);
+int hardware_relay_set_state(const relid_t, bool turn_on, time_t change_delay) __attribute__((warn_unused_result));
 
 // sensor ops
 int hardware_sensor_clone_temp(const tempid_t, temp_t * const ctemp) __attribute__((warn_unused_result));
