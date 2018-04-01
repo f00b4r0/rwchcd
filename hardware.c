@@ -12,6 +12,8 @@
  */
 
 #include <string.h>	// memset/strdup
+#include <stdlib.h>	// free
+#include <time.h>	// time_t
 
 #include "hardware.h"
 
@@ -19,15 +21,19 @@
 
 struct hardware_backend {
 	struct {
-		bool online;
+		bool online;		///< true if backend is online
 	} run;
 	const struct hardware_callbacks * cb;	///< hardware backend callbacks
-	void * restrict priv;
-	const char * restrict name;
+	void * restrict priv;		///< backend-specific private data
+	char * restrict name;	///< backend name
 };
 
 struct hardware_backend * HW_backends[HW_MAX_BKENDS];
 
+/**
+ * Init hardware backend management.
+ * This function clears internal backend state.
+ */
 int hardware_init(void)
 {
 	memset(HW_backends, 0x00, sizeof(HW_backends));
@@ -37,8 +43,12 @@ int hardware_init(void)
 
 /**
  * Register a hardware backend.
- * This function will init the backend if registration is possible.
- * @param backend a populated, valid backend structure
+ * This function will init() the backend if registration is possible.
+ * If init callback is successful, the backend will be registered with the system.
+ * @warning must be called @b AFTER calling hardware_init().
+ * @param callbacks a populated, valid backend structure
+ * @param priv backend-specific private data
+ * @param name user-defined name for this backend
  * @return negative error code or positive backend id
  */
 int hardware_backend_register(const struct hardware_callbacks * const callbacks, void * const priv, const char * const name)
@@ -84,6 +94,9 @@ int hardware_backend_register(const struct hardware_callbacks * const callbacks,
 
 /**
  * Bring all registered backends online.
+ * For all registered backends, this function execute the online() backend callback
+ * after sanity checks. If the call is successful, the backend is marked as online.
+ * If the backend has already been online'd, this function does nothing.
  * @return exec status
  */
 int hardware_online(void)
@@ -93,6 +106,9 @@ int hardware_online(void)
 
 	// bring all registered backends online
 	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
+		if (HW_backends[id]->run.online)
+			continue;
+
 		if (HW_backends[id]->cb->online) {
 			ret = HW_backends[id]->cb->online(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
@@ -116,6 +132,9 @@ int hardware_online(void)
 
 /**
  * Collect inputs from hardware.
+ * For all registered backends, this function execute the input() backend callback
+ * after sanity checks.
+ * If the backend isn't online, this function does nothing.
  * @return exec status
  */
 int hardware_input(void)
@@ -148,7 +167,10 @@ int hardware_input(void)
 }
 
 /**
- * Apply commands to hardware.
+ * Output data to hardware.
+ * For all registered backends, this function execute the output() backend callback
+ * after sanity checks.
+ * If the backend isn't online, this function does nothing.
  * @return exec status
  */
 int hardware_output(void)
@@ -182,6 +204,9 @@ int hardware_output(void)
 
 /**
  * Take all registered backends offline.
+ * For all registered backends, this function execute the offline() backend callback
+ * after sanity checks.
+ * If the backend isn't online, this function does nothing.
  * @return exec status
  */
 int hardware_offline(void)
@@ -217,14 +242,22 @@ int hardware_offline(void)
 
 /**
  * Exit hardware subsystem.
+ * For all registered backends, this function execute the exit() backend callback
+ * after sanity checks, and frees resources.
+ * @note Backend's exit() routine MUST release memory in @b priv if necessary.
  */
 void hardware_exit(void)
 {
 	int id;
 
 	// exit all registered backends
-	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++)
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
 		HW_backends[id]->cb->exit(HW_backends[id]->priv);
+		if (HW_backends[id]->name) {
+			free(HW_backends[id]->name);
+			HW_backends[id]->name = NULL;
+		}
+	}
 }
 
 /**
