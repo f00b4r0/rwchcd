@@ -540,7 +540,7 @@ int valve_make_bangbang(struct s_valve * const valve)
 		return (-EINVALID);
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_configured(valve->set.id_tempout);
+	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -574,7 +574,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 		return (-EINVALID);
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_configured(valve->set.id_tempout);
+	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -628,11 +628,11 @@ int valve_make_pi(struct s_valve * const valve,
 		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_configured(valve->set.id_tempout);
+	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = hardware_sensor_configured(valve->set.id_temp1);
+	ret = hardware_sensor_clone_time(valve->set.id_temp1, NULL);
 	if (ALL_OK != ret)
 		return (ret);
 

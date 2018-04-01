@@ -827,24 +827,6 @@ int hw_p1_sensor_deconfigure(const sid_t id)
 }
 
 /**
- * Validate a temperature sensor for use.
- * Checks that the provided hardware id is valid, that is that it is within boundaries
- * of the hardware limits and the configured number of sensors.
- * Finally it checks that the designated sensor is properly configured in software.
- * @return ALL_OK if sensor is properly configured and available for use.
- */
-int hw_p1_sensor_configured(const sid_t id)
-{
-	if (!id || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Sensors)))
-		return (-EINVALID);
-
-	if (!Sensors[id-1].set.configured)
-		return (-ENOTCONFIGURED);
-
-	return (ALL_OK);
-}
-
-/**
  * Request a hardware relay.
  * Ensures that the desired hardware relay is available and grabs it.
  * @param id target relay id (starting from 1)
@@ -1296,8 +1278,11 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 	int ret;
 	temp_t temp;
 
-	if ((id <= 0) || (id > ARRAY_SIZE(Sensors)))
+	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Sensors)))
 		return (-EINVALID);
+
+	if (!Sensors[id-1].set.configured)
+		return (-ENOTCONFIGURED);
 
 	// make sure available data is valid
 	if ((time(NULL) - Hardware.sensors_ftime) > 30) {
@@ -1333,9 +1318,29 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 	return (ret);
 }
 
+/**
+ * Clone sensor last update time.
+ * This function checks that the provided hardware id is valid, that is that it
+ * is within boundaries of the hardware limits and the configured number of sensors.
+ * It also checks that the designated sensor is properly configured in software.
+ * Finally, if parameter @b ctime is non-null, the time of the last sensor update
+ * is copied.
+ * @param priv not used
+ * @param id target sensor id
+ * @param ctime optional location to copy the sensor update time.
+ * @return exec status
+ */
 static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const ctime)
 {
-	*ctime = Hardware.sensors_ftime;
+	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Sensors)))
+		return (-EINVALID);
+
+	if (!Sensors[id-1].set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (ctime)
+		*ctime = Hardware.sensors_ftime;
+
 	return (ALL_OK);
 }
 
