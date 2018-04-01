@@ -41,7 +41,7 @@ int hw_backends_init(void)
  */
 int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * const priv, const char * const name)
 {
-	int id;
+	unsigned int id;
 	char * str = NULL;
 	struct s_hw_backend * bkend;
 
@@ -90,7 +90,7 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
  */
 void hw_backends_exit(void)
 {
-	int id;
+	unsigned int id;
 
 	// exit all registered backends
 	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {

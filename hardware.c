@@ -25,7 +25,8 @@
  */
 int hardware_init(void)
 {
-	int id, ret;
+	int ret;
+	unsigned int id;
 	bool fail = false;
 
 	// init all registered backends
@@ -63,7 +64,8 @@ int hardware_init(void)
  */
 int hardware_online(void)
 {
-	int id, ret;
+	int ret;
+	unsigned int id;
 	bool fail = false;
 
 	// bring all registered backends online
@@ -101,7 +103,8 @@ int hardware_online(void)
  */
 int hardware_input(void)
 {
-	int id, ret;
+	int ret;
+	unsigned int id;
 	bool fail = false;
 
 	// input registered backends
@@ -137,7 +140,8 @@ int hardware_input(void)
  */
 int hardware_output(void)
 {
-	int id, ret;
+	int ret;
+	unsigned int id;
 	bool fail = false;
 
 	// output registered backends
@@ -173,7 +177,8 @@ int hardware_output(void)
  */
 int hardware_offline(void)
 {
-	int id, ret;
+	int ret;
+	unsigned int id;
 	bool fail = false;
 
 	// take all registered backends offline
@@ -210,7 +215,7 @@ int hardware_offline(void)
  */
 void hardware_exit(void)
 {
-	int id;
+	unsigned int id;
 
 	// exit all registered backends
 	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++)
