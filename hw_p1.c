@@ -32,10 +32,6 @@
 
 #include "rwchc_export.h"
 
-#if RWCHC_NTSENSORS != RWCHCD_NTEMPS
- #error Discrepancy in number of hardware sensors
-#endif
-
 #define RWCHCD_INIT_MAX_TRIES	10	///< how many times hardware init should be retried
 
 #define RELAY_MAX_ID		14	///< maximum valid relay id
@@ -87,7 +83,7 @@ struct s_sensor {
 	char * restrict name;		///< user-defined name for the sensor
 };
 
-static struct s_sensor Sensors[RWCHCD_NTEMPS];		///< physical sensors
+static struct s_sensor Sensors[RWCHC_NTSENSORS];		///< physical sensors
 pthread_rwlock_t Sensors_rwlock;	///< @note having this here prevents using "const" in instances where it would otherwise be possible
 
 static struct {
@@ -440,7 +436,7 @@ static int hw_p1_async_log_temps(void)
 	static storage_values_t values[ARRAY_SIZE(keys)];
 	int i = 0;
 
-	assert(ARRAY_SIZE(keys) >= RWCHCD_NTEMPS);
+	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
 
 	pthread_rwlock_rdlock(&Sensors_rwlock);
 	for (i = 0; i < Hardware.settings.nsensors; i++)
