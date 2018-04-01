@@ -48,7 +48,9 @@
 #include "rwchcd.h"
 #include "lib.h"
 #include "hw_backends.h"
-#include "hw_p1.h"
+#ifdef HAS_HWP1
+ #include "hw_backends/hw_p1.h"
+#endif
 #include "hardware.h"
 #include "plant.h"
 #include "config.h"
@@ -150,6 +152,7 @@ static int init_process()
 		return (ret);
 	}
 
+#ifdef HAS_HWP1
 	// instantiate hardware proto 1
 	hw_p1_new();
 
@@ -201,6 +204,7 @@ static int init_process()
 	if (ret) return (ret);
 	rid_pump.bid = bkendid;
 	rid_pump.rid = RELAY_PUMP;
+#endif
 
 	/* init hardware */
 	
