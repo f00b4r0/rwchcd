@@ -28,6 +28,9 @@
 
 #define SETorDEF(set, def)	(set ? set : def)
 
+#define ON	true
+#define OFF	false
+
 /* i18n stuff */
 #ifdef HAVE_GETTEXT
  #include <libintl.h>

@@ -18,9 +18,6 @@
 
 #include "rwchcd.h"
 
-#define ON	true
-#define OFF	false
-
 // basic ops
 int hardware_init(void) __attribute__((warn_unused_result));
 int hardware_online(void) __attribute__((warn_unused_result));
