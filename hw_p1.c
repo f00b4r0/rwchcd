@@ -19,7 +19,6 @@
 #include <assert.h>
 
 #include "rwchcd.h"
-#include "config.h"
 #include "runtime.h"
 #include "lib.h"
 #include "storage.h"
@@ -980,11 +979,7 @@ int hw_p1_fwversion(void)
  */
 static int hw_p1_online(void * priv)
 {
-	struct s_runtime * const runtime = get_runtime();
 	int ret;
-
-	if (!runtime->config || !runtime->config->configured)	// for parse_temps()
-		return (-ENOTCONFIGURED);
 
 	if (!Hardware.ready)
 		return (-EOFFLINE);
@@ -1140,7 +1135,7 @@ skip_periphs:
 		goto fail;
 	}
 	else {
-		// copy valid data to runtime environment
+		// copy valid data to local environment
 		memcpy(Hardware.sensors, rawsensors, sizeof(Hardware.sensors));
 		Hardware.sensors_ftime = time(NULL);
 		parse_temps();
@@ -1195,10 +1190,9 @@ out:
  */
 int hw_p1_run(void)
 {
-	struct s_runtime * const runtime = get_runtime();
 	int ret;
 	
-	if (!runtime->config || !runtime->config->configured || !Hardware.ready) {
+	if (!Hardware.ready) {
 		dbgerr("not configured");
 		return (-ENOTCONFIGURED);
 	}
@@ -1283,6 +1277,19 @@ static void hw_p1_exit(void * priv)
 		dbgerr("reset failed (%d)", ret);
 }
 
+/**
+ * Clone sensor temperature.
+ * This function checks that the provided hardware id is valid, that is that it
+ * is within boundaries of the hardware limits and the configured number of sensors.
+ * It also checks that the designated sensor is properly configured in software.
+ * Finally, if parameter @b tclone is non-null, the temperature of the sensor
+ * is copied if it isn't stale (i.e. less than 30s old).
+ * @todo review hardcoded timeout
+ * @param priv not used
+ * @param id target sensor id
+ * @param ctime optional location to copy the sensor update time.
+ * @return exec status
+ */
 int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 {
 	int ret;
@@ -1294,7 +1301,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 	if (!Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	// make sure available data is valid
+	// make sure available data is valid - XXX 30s timeout hardcoded
 	if ((time(NULL) - Hardware.sensors_ftime) > 30) {
 		*tclone = 0;
 		return (-EHARDWARE);
