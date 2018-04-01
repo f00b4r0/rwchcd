@@ -448,51 +448,6 @@ static int hw_p1_async_log_temps(void)
 }
 
 /**
- * Set hardware configuration for LCD backlight level.
- * @param percent backlight level (0 = off, 100 = full)
- * @return exec status
- */
-int hw_p1_config_setbl(const uint8_t percent)
-{
-	if (percent > 100)
-		return (-EINVALID);
-
-	Hardware.settings.lcdblpct = percent;
-
-	return (ALL_OK);
-}
-
-/**
- * Set hardware configuration for number of sensors.
- * @param lastid last connected sensor id
- * @return exec status
- */
-int hw_p1_config_setnsensors(const rid_t lastid)
-{
-	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
-		return (-EINVALID);
-
-	Hardware.settings.nsensors = lastid;
-
-	return (ALL_OK);
-}
-
-/**
- * Set number of temperature samples for readouts.
- * @param nsamples number of samples
- * @return exec status
- */
-int hw_p1_config_setnsamples(const uint_fast8_t nsamples)
-{
-	if (!nsamples)
-		return (-EINVALID);
-
-	Hardware.set.nsamples = nsamples;
-
-	return (ALL_OK);
-}
-
-/**
  * Read hardware config.
  * @param settings target hardware configuration
  * @return exec status
@@ -531,44 +486,6 @@ static int hw_p1_config_commit(void)
 	dbgmsg("HW Config saved.");
 	
 out:
-	return (ret);
-}
-
-void * hw_p1_new(void)
-{
-	memset(Relays, 0x0, sizeof(Relays));
-	memset(Sensors, 0x0, sizeof(Sensors));
-	memset(&Hardware, 0x0, sizeof(Hardware));
-	pthread_rwlock_init(&Sensors_rwlock, NULL);
-
-	return (NULL);
-}
-
-/**
- * Initialize hardware and ensure connection is set
- * @return error state
- */
-__attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
-{
-	int ret, i = 0;
-
-	if (hw_p1_spi_init() < 0)
-		return (-EINIT);
-
-	// fetch firmware version
-	do {
-		ret = hw_p1_spi_fwversion();
-	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
-
-	if (ret > 0) {
-		pr_log(_("Firmware version %d detected"), ret);
-		Hardware.run.fwversion = ret;
-		Hardware.run.ready = true;
-		hw_p1_lcd_init();
-	}
-	else
-		dbgerr("hw_p1_init failed");
-
 	return (ret);
 }
 
@@ -776,6 +693,68 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(vo
 	return (hw_p1_spi_peripherals_r(&(Hardware.peripherals)));
 }
 
+/* Public interface */
+
+/**
+ * Initialize local data.
+ * Cannot fail.
+ * @return NULL
+ */
+void * hw_p1_new(void)
+{
+	memset(Relays, 0x0, sizeof(Relays));
+	memset(Sensors, 0x0, sizeof(Sensors));
+	memset(&Hardware, 0x0, sizeof(Hardware));
+	pthread_rwlock_init(&Sensors_rwlock, NULL);
+
+	return (NULL);
+}
+
+/**
+ * Set hardware configuration for LCD backlight level.
+ * @param percent backlight level (0 = off, 100 = full)
+ * @return exec status
+ */
+int hw_p1_config_setbl(const uint8_t percent)
+{
+	if (percent > 100)
+		return (-EINVALID);
+
+	Hardware.settings.lcdblpct = percent;
+
+	return (ALL_OK);
+}
+
+/**
+ * Set hardware configuration for number of sensors.
+ * @param lastid last connected sensor id
+ * @return exec status
+ */
+int hw_p1_config_setnsensors(const rid_t lastid)
+{
+	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
+		return (-EINVALID);
+
+	Hardware.settings.nsensors = lastid;
+
+	return (ALL_OK);
+}
+
+/**
+ * Set number of temperature samples for readouts.
+ * @param nsamples number of samples
+ * @return exec status
+ */
+int hw_p1_config_setnsamples(const uint_fast8_t nsamples)
+{
+	if (!nsamples)
+		return (-EINVALID);
+
+	Hardware.set.nsamples = nsamples;
+
+	return (ALL_OK);
+}
+
 /**
  * Configure a temperature sensor.
  * @param id the physical id of the sensor to configure (starting from 1)
@@ -892,73 +871,6 @@ int hw_p1_relay_release(const rid_t id)
 }
 
 /**
- * set internal relay state (request)
- * @param id id of the internal relay to modify
- * @param turn_on true if relay is meant to be turned on
- * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
- * @return 0 on success, positive number for cooldown wait remaining, negative for error
- * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
- */
-static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const time_t change_delay)
-{
-	const time_t now = time(NULL);
-	struct s_stateful_relay * relay = NULL;
-
-	if (!id || (id > ARRAY_SIZE(Relays)))
-		return (-EINVALID);
-	
-	relay = &Relays[id-1];
-	
-	if (!relay->set.configured)
-		return (-ENOTCONFIGURED);
-
-	// update state state request if delay permits
-	if (turn_on) {
-		if (!relay->run.is_on) {
-			if ((now - relay->run.off_since) < change_delay)
-				return (change_delay - (now - relay->run.off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
-
-			relay->run.turn_on = true;
-		}
-	}
-	else {	// turn off
-		if (relay->run.is_on) {
-			if ((now - relay->run.on_since) < change_delay)
-				return (change_delay - (now - relay->run.on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
-
-			relay->run.turn_on = false;
-		}
-	}
-
-	return (ALL_OK);
-}
-
-/**
- * Get internal relay state (request).
- * Updates run.state_time and returns current state
- * @param id id of the internal relay to modify
- * @return run.is_on
- */
-static int hw_p1_relay_get_state(void * priv, const rid_t id)
-{
-	const time_t now = time(NULL);
-	struct s_stateful_relay * relay = NULL;
-	
-	if (!id || (id > ARRAY_SIZE(Relays)))
-		return (-EINVALID);
-	
-	relay = &Relays[id-1];
-	
-	if (!relay->set.configured)
-		return (-ENOTCONFIGURED);
-
-	// update state time counter
-	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
-
-	return (relay->run.is_on);
-}
-
-/**
  * Firmware version.
  * @return positive version or negative error
  */
@@ -968,6 +880,36 @@ int hw_p1_fwversion(void)
 		return (-EOFFLINE);
 
 	return (Hardware.run.fwversion);
+}
+
+/* Backend interface */
+
+/**
+ * Initialize hardware and ensure connection is set
+ * @return error state
+ */
+__attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
+{
+	int ret, i = 0;
+
+	if (hw_p1_spi_init() < 0)
+		return (-EINIT);
+
+	// fetch firmware version
+	do {
+		ret = hw_p1_spi_fwversion();
+	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
+
+	if (ret > 0) {
+		pr_log(_("Firmware version %d detected"), ret);
+		Hardware.run.fwversion = ret;
+		Hardware.run.ready = true;
+		hw_p1_lcd_init();
+	}
+	else
+		dbgerr("hw_p1_init failed");
+
+	return (ret);
 }
 
 /**
@@ -1277,6 +1219,73 @@ static void hw_p1_exit(void * priv)
 	ret = hw_p1_spi_reset();
 	if (ret)
 		dbgerr("reset failed (%d)", ret);
+}
+
+/**
+ * set internal relay state (request)
+ * @param id id of the internal relay to modify
+ * @param turn_on true if relay is meant to be turned on
+ * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
+ * @return 0 on success, positive number for cooldown wait remaining, negative for error
+ * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
+ */
+static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const time_t change_delay)
+{
+	const time_t now = time(NULL);
+	struct s_stateful_relay * relay = NULL;
+
+	if (!id || (id > ARRAY_SIZE(Relays)))
+		return (-EINVALID);
+
+	relay = &Relays[id-1];
+
+	if (!relay->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// update state state request if delay permits
+	if (turn_on) {
+		if (!relay->run.is_on) {
+			if ((now - relay->run.off_since) < change_delay)
+				return (change_delay - (now - relay->run.off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+
+			relay->run.turn_on = true;
+		}
+	}
+	else {	// turn off
+		if (relay->run.is_on) {
+			if ((now - relay->run.on_since) < change_delay)
+				return (change_delay - (now - relay->run.on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+
+			relay->run.turn_on = false;
+		}
+	}
+
+	return (ALL_OK);
+}
+
+/**
+ * Get internal relay state (request).
+ * Updates run.state_time and returns current state
+ * @param id id of the internal relay to modify
+ * @return run.is_on
+ */
+static int hw_p1_relay_get_state(void * priv, const rid_t id)
+{
+	const time_t now = time(NULL);
+	struct s_stateful_relay * relay = NULL;
+
+	if (!id || (id > ARRAY_SIZE(Relays)))
+		return (-EINVALID);
+
+	relay = &Relays[id-1];
+
+	if (!relay->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// update state time counter
+	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
+
+	return (relay->run.is_on);
 }
 
 /**
