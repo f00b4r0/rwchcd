@@ -47,6 +47,8 @@
 
 #include "rwchcd.h"
 #include "lib.h"
+#include "hw_backends.h"
+#include "hw_p1.h"
 #include "hardware.h"
 #include "plant.h"
 #include "config.h"
@@ -119,7 +121,12 @@ static void sig_handler(int signum)
 	}
 }
 
-
+/*
+ describe hardware
+ register hardware
+ set basic config
+ describe plant
+ */
 static int init_process()
 {
 	struct s_runtime * restrict const runtime = get_runtime();
@@ -131,7 +138,69 @@ static int init_process()
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_dhw_tank * restrict dhwt = NULL;
 	struct s_boiler_priv * restrict boiler = NULL;
+	tempid_t tid_out, tid_boil, tid_watout, tid_watret, tid_boilret;
+	relid_t rid_pump, rid_vclose, rid_vopen, rid_burner;
+	bid_t bkendid;
 	int ret;
+
+	/* describe hardware */
+	ret = hw_backends_init();
+	if (ret) {
+		dbgerr("hw_backends init error: %d", ret);
+		return (ret);
+	}
+
+	// instantiate hardware proto 1
+	hw_p1_new();
+
+	// register hardware backend
+	ret = hw_p1_backend_register(NULL, "prototype");
+	if (ret < 0) {
+		dbgmsg("backend registration failed for %s (%d)", "prototype", ret);
+		return (ret);
+	}
+	bkendid = ret;
+
+	// configure hw
+	hw_p1_config_setnsensors(5);	// XXX 5 sensors
+	hw_p1_config_setnsamples(5);	// XXX 5 samples average
+	// describe hw
+	ret = hw_p1_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), "outdoor");
+	if (ret) return (ret);
+	tid_out.bid = bkendid;
+	tid_out.sid = SENSOR_OUTDOOR;
+	ret = hw_p1_sensor_configure(SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), "boiler");
+	if (ret) return (ret);
+	tid_boil.bid = bkendid;
+	tid_boil.sid = SENSOR_BOILER;
+	ret = hw_p1_sensor_configure(SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(+1), "boiler return");
+	if (ret) return (ret);
+	tid_boilret.bid = bkendid;
+	tid_boilret.sid = SENSOR_BOILRET;
+	ret = hw_p1_sensor_configure(SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), "water out");
+	if (ret) return (ret);
+	tid_watout.bid = bkendid;
+	tid_watout.sid = SENSOR_WATEROUT;
+	ret = hw_p1_sensor_configure(SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), "water return");
+	if (ret) return (ret);
+	tid_watret.bid = bkendid;
+	tid_watret.sid = SENSOR_WATERRET;
+	ret = hw_p1_relay_request(RELAY_BURNER, OFF, "burner");
+	if (ret) return (ret);
+	rid_burner.bid = bkendid;
+	rid_burner.rid = RELAY_BURNER;
+	ret = hw_p1_relay_request(RELAY_VOPEN, OFF, "v_open");
+	if (ret) return (ret);
+	rid_vopen.bid = bkendid;
+	rid_vopen.rid = RELAY_VOPEN;
+	ret = hw_p1_relay_request(RELAY_VCLOSE, OFF, "v_close");
+	if (ret) return (ret);
+	rid_vclose.bid = bkendid;
+	rid_vclose.rid = RELAY_VCLOSE;
+	ret = hw_p1_relay_request(RELAY_PUMP, ON, "pump");
+	if (ret) return (ret);
+	rid_pump.bid = bkendid;
+	rid_pump.rid = RELAY_PUMP;
 
 	/* init hardware */
 	
@@ -164,9 +233,7 @@ static int init_process()
 	}
 	
 	if (!config->restored) {
-		config_set_temp_nsamples(config, 5);	// XXX 5 samples average
-		config_set_nsensors(config, 5);	// XXX 5 sensors
-		config_set_outdoor_sensorid(config, SENSOR_OUTDOOR);
+		config_set_outdoor_sensorid(config, tid_out);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
 		config->summer_maintenance = true;	// enable summer maintenance
@@ -197,8 +264,6 @@ static int init_process()
 		config->configured = true;
 		config_save(config);
 	}
-
-	hardware_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), "outdoor");
 
 	// attach config to runtime
 	runtime->config = config;
@@ -254,19 +319,9 @@ static int init_process()
 	boiler->set.hysteresis = deltaK_to_temp(8);
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
-	ret = hardware_sensor_configure(SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), "boiler");
-	if (ret)
-		return ret;
-	boiler->set.id_temp = SENSOR_BOILER;
-	ret = hardware_sensor_configure(SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(0), "boiler return");
-	if (ret)
-		return ret;
-	boiler->set.id_temp_return = SENSOR_BOILRET;
-	ret = hardware_relay_request(RELAY_BURNER, OFF, "burner");
-	if (ret)
-		return (ret);
-	else
-		boiler->set.rid_burner_1 = RELAY_BURNER;
+	boiler->set.id_temp = tid_boil;
+	boiler->set.id_temp_return = tid_boilret;
+	boiler->set.rid_burner_1 = rid_burner;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
 	heatsource->set.consumer_sdelay = 6 * 60;	// 6mn
 	heatsource->set.runmode = RM_AUTO;	// use global setting
@@ -283,14 +338,8 @@ static int init_process()
 	circuit->set.am_tambient_tK = 60 * 60;	// 1h
 	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
 	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
-	ret = hardware_sensor_configure(SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), "water out");
-	if (ret)
-		return (ret);
-	circuit->set.id_temp_outgoing = SENSOR_WATEROUT;
-	ret = hardware_sensor_configure(SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), "water return");
-	if (ret)
-		return (ret);
-	circuit->set.id_temp_return = SENSOR_WATERRET;
+	circuit->set.id_temp_outgoing = tid_watout;
+	circuit->set.id_temp_return = tid_watret;
 	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
 			      celsius_to_temp(15), celsius_to_temp(27), 130);
 
@@ -305,33 +354,15 @@ static int init_process()
 	circuit->valve->set.tdeadzone = deltaK_to_temp(1);
 	circuit->valve->set.deadband = 20;	// XXX 2% minimum increments
 	circuit->valve->set.ete_time = 120;	// XXX 120 s
-	ret = hardware_sensor_configured(boiler->set.id_temp);
-	if (ret)
-		return (ret);
 	circuit->valve->set.id_temp1 = boiler->set.id_temp;
-	ret = hardware_sensor_configured(circuit->set.id_temp_return);
-	if (ret)
-		return (ret);
 	circuit->valve->set.id_temp2 = circuit->set.id_temp_return;
-	ret = hardware_sensor_configured(circuit->set.id_temp_outgoing);
-	if (ret)
-		return (ret);
 	circuit->valve->set.id_tempout = circuit->set.id_temp_outgoing;
 	//valve_make_sapprox(circuit->valve, 50, 20);
 	valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30), 10);
 	
 	// configure two relays for that valve
-	ret = hardware_relay_request(RELAY_VOPEN, OFF, "v_open");
-	if (ret)
-		return (ret);
-	else
-		circuit->valve->set.rid_open = RELAY_VOPEN;
-	
-	ret = hardware_relay_request(RELAY_VCLOSE, OFF, "v_close");
-	if (ret)
-		return (ret);
-	else
-		circuit->valve->set.rid_close = RELAY_VCLOSE;
+	circuit->valve->set.rid_open = rid_vopen;
+	circuit->valve->set.rid_close = rid_vclose;
 	
 	circuit->valve->set.configured = true;
 
@@ -343,11 +374,7 @@ static int init_process()
 	}
 
 	// configure a relay for that pump
-	ret = hardware_relay_request(RELAY_PUMP, ON, "pump");
-	if (ret)
-		return (ret);
-	else
-		circuit->pump->set.rid_relay = RELAY_PUMP;
+	circuit->pump->set.rid_relay = rid_pump;
 
 	circuit->pump->set.configured = true;
 
@@ -400,6 +427,7 @@ static void exit_process(void)
 	config_del(runtime->config);
 	runtime_exit();
 	hardware_exit();
+	hw_backends_exit();
 }
 
 static void * thread_master(void *arg)
