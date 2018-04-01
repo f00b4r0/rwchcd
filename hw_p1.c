@@ -454,9 +454,6 @@ static int hw_p1_async_log_temps(void)
  */
 int hw_p1_config_setbl(const uint8_t percent)
 {
-	if (!Hardware.run.ready)
-		return (-EOFFLINE);
-
 	if (percent > 100)
 		return (-EINVALID);
 
@@ -472,9 +469,6 @@ int hw_p1_config_setbl(const uint8_t percent)
  */
 int hw_p1_config_setnsensors(const rid_t lastid)
 {
-	if (!Hardware.run.ready)
-		return (-EOFFLINE);
-
 	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
 		return (-EINVALID);
 
@@ -490,9 +484,6 @@ int hw_p1_config_setnsensors(const rid_t lastid)
  */
 int hw_p1_config_setnsamples(const uint_fast8_t nsamples)
 {
-	if (!Hardware.run.ready)
-		return (-EOFFLINE);
-
 	if (!nsamples)
 		return (-EINVALID);
 
@@ -543,6 +534,16 @@ out:
 	return (ret);
 }
 
+void * hw_p1_new(void)
+{
+	memset(Relays, 0x0, sizeof(Relays));
+	memset(Sensors, 0x0, sizeof(Sensors));
+	memset(&Hardware, 0x0, sizeof(Hardware));
+	pthread_rwlock_init(&Sensors_rwlock, NULL);
+
+	return (NULL);
+}
+
 /**
  * Initialize hardware and ensure connection is set
  * @return error state
@@ -550,14 +551,9 @@ out:
 __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 {
 	int ret, i = 0;
-	
+
 	if (hw_p1_spi_init() < 0)
 		return (-EINIT);
-
-	memset(Relays, 0x0, sizeof(Relays));
-	memset(Sensors, 0x0, sizeof(Sensors));
-	memset(&Hardware, 0x0, sizeof(Hardware));
-	pthread_rwlock_init(&Sensors_rwlock, NULL);
 
 	// fetch firmware version
 	do {
@@ -567,8 +563,6 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	if (ret > 0) {
 		pr_log(_("Firmware version %d detected"), ret);
 		Hardware.run.fwversion = ret;
-		// fetch hardware config
-		ret = hw_p1_config_fetch(&(Hardware.settings));
 		Hardware.run.ready = true;
 		hw_p1_lcd_init();
 	}
