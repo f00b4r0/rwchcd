@@ -170,6 +170,9 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const time_t now = time(NULL);
 	temp_t water_temp, curr_temp, ret_temp, saved_temp, lwtmin, lwtmax;
+#ifdef DEBUG
+	temp_t out_temp;
+#endif
 	bool interference = false;
 	int ret;
 
@@ -285,10 +288,13 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	if (saved_temp > lwtmax)
 		saved_temp = lwtmax;
 
+#ifdef DEBUG
+	hardware_sensor_clone_temp(circuit->set.id_temp_return, &ret_temp);
+	hardware_sensor_clone_temp(circuit->set.id_temp_outgoing, &out_temp);
 	dbgmsg("%s: rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
-	       temp_to_celsius(water_temp), temp_to_celsius(get_temp(circuit->set.id_temp_outgoing)),
-	       temp_to_celsius(get_temp(circuit->set.id_temp_return)));
+	       temp_to_celsius(water_temp), temp_to_celsius(out_temp), temp_to_celsius(ret_temp));
+#endif
 
 	// heat request is always computed based on non-interfered water_temp value
 	circuit->run.heat_request = saved_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_circuit.temp_inoffset);
