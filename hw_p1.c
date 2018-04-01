@@ -23,7 +23,7 @@
 #include "lib.h"
 #include "storage.h"
 #include "alarms.h"
-#include "hardware.h"
+#include "hw_backends.h"
 #include "timer.h"
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
@@ -1372,7 +1372,7 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const c
 	return (ALL_OK);
 }
 
-static struct hardware_callbacks hw_p1_callbacks = {
+static struct s_hw_callbacks hw_p1_callbacks = {
 	.init = hw_p1_init,
 	.exit = hw_p1_exit,
 	.online = hw_p1_online,

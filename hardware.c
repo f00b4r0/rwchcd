@@ -12,84 +12,46 @@
  */
 
 #include <string.h>	// memset/strdup
-#include <stdlib.h>	// free
-#include <time.h>	// time_t
 
+#include "hw_backends.h"
 #include "hardware.h"
 
-#define HW_MAX_BKENDS	8
-
-struct hardware_backend {
-	struct {
-		bool online;		///< true if backend is online
-	} run;
-	const struct hardware_callbacks * cb;	///< hardware backend callbacks
-	void * restrict priv;		///< backend-specific private data
-	char * restrict name;	///< backend name
-};
-
-struct hardware_backend * HW_backends[HW_MAX_BKENDS];
-
 /**
- * Init hardware backend management.
- * This function clears internal backend state.
+ * Init all registered backends.
+ * For all registered backends, this function execute the init() backend callback
+ * after sanity checks. If the call is successful, the backend is marked as init'd.
+ * If the backend has already been init'd, this function does nothing.
+ * @return exec status
  */
 int hardware_init(void)
 {
-	memset(HW_backends, 0x00, sizeof(HW_backends));
-
-	return (ALL_OK);
-}
-
-/**
- * Register a hardware backend.
- * This function will init() the backend if registration is possible.
- * If init callback is successful, the backend will be registered with the system.
- * @warning must be called @b AFTER calling hardware_init().
- * @param callbacks a populated, valid backend structure
- * @param priv backend-specific private data
- * @param name user-defined name for this backend
- * @return negative error code or positive backend id
- */
-int hardware_backend_register(const struct hardware_callbacks * const callbacks, void * const priv, const char * const name)
-{
 	int id, ret;
-	char * str;
+	bool fail = false;
 
-	// sanitize input: check that mandatory callbacks are provided
-	if (!callbacks || !callbacks->init || !callbacks->exit || !callbacks->online || !callbacks->offline)
+	// init all registered backends
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
+		if (HW_backends[id]->run.initialized)
+			continue;
+
+		if (HW_backends[id]->cb->init) {
+			ret = HW_backends[id]->cb->init(HW_backends[id]->priv);
+			if (ALL_OK != ret) {
+				fail = true;
+				dbgerr("init() failed for %s", HW_backends[id]->name);
+			}
+			else
+				HW_backends[id]->run.initialized = true;
+		}
+	}
+
+	// fail if we have no registered backend
+	if (!id)
 		return (-EINVALID);
-
-	// find first available spot in array
-	for (id = 0; id < ARRAY_SIZE(HW_backends); id++) {
-		if (!HW_backends[id])
-			break;
-	}
-
-	if (ARRAY_SIZE(HW_backends) == id)
-		return (-EOOM);		// out of space
-
-	// init backend
-	ret = callbacks->init(priv);
-
-	if (ALL_OK != ret)
-		return (ret);		// init failed, give up
-
-	// register backend
-
-	if (name) {
-		str = strdup(name);
-		if (!str)
-			return(-EOOM);
-
-		HW_backends[id]->name = str;
-	}
-
-	HW_backends[id]->cb = callbacks;
-	HW_backends[id]->priv = priv;
-
-	// return backend id
-	return (id);
+	// or if one of them returned error
+	else if (fail)
+		return (-EGENERIC);
+	else
+		return (ALL_OK);
 }
 
 /**
@@ -251,13 +213,8 @@ void hardware_exit(void)
 	int id;
 
 	// exit all registered backends
-	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
+	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++)
 		HW_backends[id]->cb->exit(HW_backends[id]->priv);
-		if (HW_backends[id]->name) {
-			free(HW_backends[id]->name);
-			HW_backends[id]->name = NULL;
-		}
-	}
 }
 
 /**

@@ -25,6 +25,7 @@
 		4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1847C1DA7B2F9000E514B /* dbus.c */; };
 		4FC304A81EBDCDB900D77AC6 /* models.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC304A61EBDCDB900D77AC6 /* models.c */; };
 		4FC68951206FAB4D00A3A065 /* hardware.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC6894F206FAB4D00A3A065 /* hardware.c */; };
+		4FC689542071304900A3A065 /* hw_backends.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC689522071304900A3A065 /* hw_backends.c */; };
 		4FCD55161D835D04003BB848 /* hw_p1.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD550E1D835D04003BB848 /* hw_p1.c */; };
 		4FCD55171D835D04003BB848 /* plant.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55101D835D04003BB848 /* plant.c */; };
 		4FCD55181D835D04003BB848 /* hw_p1_spi.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55121D835D04003BB848 /* hw_p1_spi.c */; };
@@ -85,6 +86,8 @@
 		4FC304A71EBDCDB900D77AC6 /* models.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = models.h; sourceTree = SOURCE_ROOT; };
 		4FC6894F206FAB4D00A3A065 /* hardware.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hardware.c; sourceTree = SOURCE_ROOT; };
 		4FC68950206FAB4D00A3A065 /* hardware.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hardware.h; sourceTree = SOURCE_ROOT; };
+		4FC689522071304900A3A065 /* hw_backends.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_backends.c; sourceTree = SOURCE_ROOT; };
+		4FC689532071304900A3A065 /* hw_backends.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_backends.h; sourceTree = SOURCE_ROOT; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchc_export.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD550E1D835D04003BB848 /* hw_p1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = hw_p1.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -132,6 +135,8 @@
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4FC6894F206FAB4D00A3A065 /* hardware.c */,
 				4FC68950206FAB4D00A3A065 /* hardware.h */,
+				4FC689522071304900A3A065 /* hw_backends.c */,
+				4FC689532071304900A3A065 /* hw_backends.h */,
 				4FCD550E1D835D04003BB848 /* hw_p1.c */,
 				4FCD550F1D835D04003BB848 /* hw_p1.h */,
 				4F2D5F571D97191C00CF842D /* hw_p1_lcd.c */,
@@ -275,6 +280,7 @@
 				4F42A5D01F967BC3001B0A1F /* pump.c in Sources */,
 				4F2D5F591D97191C00CF842D /* hw_p1_lcd.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
+				4FC689542071304900A3A065 /* hw_backends.c in Sources */,
 				4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */,
 				4FC304A81EBDCDB900D77AC6 /* models.c in Sources */,
 				4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */,

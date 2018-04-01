@@ -14,39 +14,19 @@
 #ifndef hardware_h
 #define hardware_h
 
+#include <time.h>	// time_t
+
 #include "rwchcd.h"
 
 #define ON	true
 #define OFF	false
 
-/**
- * Backend hardware callbacks.
- * init()/exit()/online()/offline() calls are mandatory.
- * Other calls optional depending on underlying hardware capabilities.
- * All calls take an opaque pointer to implementation-dependent data.
- */
-struct hardware_callbacks {
-	int (*init)(void * priv);	///< @warning must be provided
-	int (*online)(void * priv);	///< @warning must be provided
-	int (*input)(void * priv);	///< reads hardware data
-	int (*output)(void * priv);	///< commits data to hardware
-	int (*offline)(void * priv);	///< @warning must be provided
-	void (*exit)(void * priv);	///< @warning must be provided
-	int (*relay_get_state)(void * priv, const rid_t);
-	int (*relay_set_state)(void * priv, const rid_t, bool turn_on, time_t change_delay);
-	int (*sensor_clone_temp)(void * priv, const sid_t, temp_t * const ctemp);
-	int (*sensor_clone_time)(void * priv, const sid_t, time_t * const ctime);
-	/* display/alarm ops */
-};
-
+// basic ops
 int hardware_init(void) __attribute__((warn_unused_result));
-int hardware_backend_register(const struct hardware_callbacks * const, void * const priv, const char * const name) __attribute__((warn_unused_result));
-
 int hardware_online(void) __attribute__((warn_unused_result));
 int hardware_input(void) __attribute__((warn_unused_result));
 int hardware_output(void) __attribute__((warn_unused_result));
 int hardware_offline(void);
-
 void hardware_exit(void);
 
 // relay ops
