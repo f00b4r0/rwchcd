@@ -15,13 +15,11 @@
 
 #include <string.h>
 
-#include "hw_p1_spi.h"
-#include "config.h"
+#include "lib.h"	// for temp_to_celsius
 #include "runtime.h"
-#include "lib.h"
-#include "hardware.h"
 #include "alarms.h"
 #include "hw_p1.h"
+#include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
 
 #define LCD_LINELEN	16	///< width of LCD display line

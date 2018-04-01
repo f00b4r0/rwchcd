@@ -16,7 +16,7 @@
 #include <assert.h>
 
 #include "lib.h"
-#include "hardware.h"
+#include "hardware.h"	// hardware_sensor_clone_time() for outdoor sensor
 #include "storage.h"
 #include "config.h"
 

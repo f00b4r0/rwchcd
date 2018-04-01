@@ -15,10 +15,6 @@
 #include <assert.h>
 
 #include "heatsource.h"
-#include "pump.h"
-#include "valve.h"
-#include "hardware.h"
-#include "lib.h"
 
 /**
  * Put heatsource online.

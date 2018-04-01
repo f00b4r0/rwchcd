@@ -26,11 +26,8 @@
 #include "config.h"
 #include "runtime.h"
 #include "lib.h"
-#include "hardware.h"
 #include "logic.h"
 #include "plant.h"
-#include "models.h"
-#include "alarms.h"	// alarms_raise()
 #include "pump.h"
 #include "valve.h"
 #include "circuit.h"
