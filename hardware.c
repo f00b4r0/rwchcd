@@ -242,7 +242,7 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 		return (-EINVALID);
 
 	if (!HW_backends[bid])
-		return (-ENOTCONFIGURED);
+		return (-EINVALID);
 
 	// make sure backend is online
 	if (!HW_backends[bid]->run.online)
@@ -275,7 +275,7 @@ int hardware_sensor_clone_time(const tempid_t tempid, time_t * const clast)
 		return (-EINVALID);
 
 	if (!HW_backends[bid])
-		return (-ENOTCONFIGURED);
+		return (-EINVALID);
 
 	// make sure backend is online
 	if (!HW_backends[bid]->run.online)
@@ -308,7 +308,7 @@ int hardware_relay_get_state(const relid_t relid)
 		return (-EINVALID);
 
 	if (!HW_backends[bid])
-		return (-ENOTCONFIGURED);
+		return (-EINVALID);
 
 	// make sure backend is online
 	if (!HW_backends[bid]->run.online)
@@ -343,7 +343,7 @@ int hardware_relay_set_state(const relid_t relid, bool turn_on, time_t change_de
 		return (-EINVALID);
 
 	if (!HW_backends[bid])
-		return (-ENOTCONFIGURED);
+		return (-EINVALID);
 
 	// make sure backend is online
 	if (!HW_backends[bid]->run.online)
