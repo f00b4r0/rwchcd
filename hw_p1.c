@@ -31,7 +31,7 @@
 
 #include "rwchc_export.h"
 
-#define RWCHCD_INIT_MAX_TRIES	10	///< how many times hardware init should be retried
+#define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
 
 #define RELAY_MAX_ID		14	///< maximum valid relay id
 
@@ -69,7 +69,7 @@ static struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
 typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
 
 /** software representation of a temperature sensor */
-struct s_sensor {
+static struct {
 	struct {
 		bool configured;	///< sensor is configured
 		enum e_hw_p1_stype type;///< sensor type
@@ -80,19 +80,21 @@ struct s_sensor {
 	} run;
 	ohm_to_celsius_ft * ohm_to_celsius;
 	char * restrict name;		///< user-defined name for the sensor
-};
-
-static struct s_sensor Sensors[RWCHC_NTSENSORS];		///< physical sensors
-pthread_rwlock_t Sensors_rwlock;	///< @note having this here prevents using "const" in instances where it would otherwise be possible
+} Sensors[RWCHC_NTSENSORS];		///< physical sensors
+pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to @b value
 
 static struct {
-	bool ready;			///< hardware is ready
-	uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
-	time_t sensors_ftime;		///< sensors fetch time
-	time_t last_calib;		///< time of last calibration
-	float calib_nodac;		///< sensor calibration value without dac offset
-	float calib_dac;		///< sensor calibration value with dac offset
-	int fwversion;			///< firmware version
+	struct {
+		uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
+	} set;
+	struct {
+		bool ready;			///< hardware is ready (init succeeded)
+		time_t sensors_ftime;		///< sensors fetch time
+		time_t last_calib;		///< time of last calibration
+		float calib_nodac;		///< sensor calibration value without dac offset
+		float calib_dac;		///< sensor calibration value with dac offset
+		int fwversion;			///< firmware version
+	} run;
 	struct rwchc_s_settings settings;
 	union rwchc_u_relays relays;
 	union rwchc_u_periphs peripherals;
@@ -157,7 +159,7 @@ __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw
 
 	// finally, apply calibration factor
 	if (calib)
-		calibmult = dacoffset ? Hardware.calib_dac : Hardware.calib_nodac;
+		calibmult = dacoffset ? Hardware.run.calib_dac : Hardware.run.calib_nodac;
 	else
 		calibmult = 1.0;
 
@@ -297,7 +299,7 @@ static void parse_temps(void)
 	uint_fast8_t i;
 	temp_t previous, current;
 	
-	assert(Hardware.ready);
+	assert(Hardware.run.ready);
 
 	pthread_rwlock_wrlock(&Sensors_rwlock);
 	for (i = 0; i < Hardware.settings.nsensors; i++) {
@@ -323,7 +325,7 @@ static void parse_temps(void)
 		}
 		else
 			// apply LP filter - ensure we only apply filtering on valid temps
-			Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, Hardware.nsamples, 1) : current;
+			Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, Hardware.set.nsamples, 1) : current;
 	}
 	pthread_rwlock_unlock(&Sensors_rwlock);
 
@@ -452,7 +454,7 @@ static int hw_p1_async_log_temps(void)
  */
 int hw_p1_config_setbl(const uint8_t percent)
 {
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 
 	if (percent > 100)
@@ -470,7 +472,7 @@ int hw_p1_config_setbl(const uint8_t percent)
  */
 int hw_p1_config_setnsensors(const rid_t lastid)
 {
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 
 	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
@@ -488,10 +490,13 @@ int hw_p1_config_setnsensors(const rid_t lastid)
  */
 int hw_p1_config_setnsamples(const uint_fast8_t nsamples)
 {
+	if (!Hardware.run.ready)
+		return (-EOFFLINE);
+
 	if (!nsamples)
 		return (-EINVALID);
 
-	Hardware.nsamples = nsamples;
+	Hardware.set.nsamples = nsamples;
 
 	return (ALL_OK);
 }
@@ -507,15 +512,15 @@ static int hw_p1_config_fetch(struct rwchc_s_settings * const settings)
 }
 
 /**
- * Commit and save hardware config.
+ * Commit hardware config to hardware.
  * @return exec status
  */
-int hw_p1_config_store(void)
+static int hw_p1_config_commit(void)
 {
 	struct rwchc_s_settings hw_set;
 	int ret;
 	
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 	
 	// grab current config from the hardware
@@ -557,14 +562,14 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	// fetch firmware version
 	do {
 		ret = hw_p1_spi_fwversion();
-	} while ((ret <= 0) && (i++ < RWCHCD_INIT_MAX_TRIES));
+	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
 
 	if (ret > 0) {
 		pr_log(_("Firmware version %d detected"), ret);
-		Hardware.fwversion = ret;
+		Hardware.run.fwversion = ret;
 		// fetch hardware config
 		ret = hw_p1_config_fetch(&(Hardware.settings));
-		Hardware.ready = true;
+		Hardware.run.ready = true;
 		hw_p1_lcd_init();
 	}
 	else
@@ -588,12 +593,12 @@ static int hw_p1_calibrate(void)
 	rwchc_sensor_t ref;
 	const time_t now = time(NULL);
 	
-	assert(Hardware.ready);
+	assert(Hardware.run.ready);
 	
-	if ((now - Hardware.last_calib) < CALIBRATION_PERIOD)
+	if ((now - Hardware.run.last_calib) < CALIBRATION_PERIOD)
 		return (ALL_OK);
 
-	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
+	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.run.calib_nodac, Hardware.run.calib_dac);
 	
 	ret = hw_p1_spi_ref_r(&ref, 0);
 	if (ret)
@@ -622,11 +627,11 @@ static int hw_p1_calibrate(void)
 		return (-EINVALID);
 
 	// everything went fine, we can update both calibration values and time
-	Hardware.calib_nodac = Hardware.calib_nodac ? (Hardware.calib_nodac - (0.20F * (Hardware.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
-	Hardware.calib_dac = Hardware.calib_dac ? (Hardware.calib_dac - (0.20F * (Hardware.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
-	Hardware.last_calib = now;
+	Hardware.run.calib_nodac = Hardware.run.calib_nodac ? (Hardware.run.calib_nodac - (0.20F * (Hardware.run.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	Hardware.run.calib_dac = Hardware.run.calib_dac ? (Hardware.run.calib_dac - (0.20F * (Hardware.run.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	Hardware.run.last_calib = now;
 
-	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.calib_nodac, Hardware.calib_dac);
+	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.run.calib_nodac, Hardware.run.calib_dac);
 	
 	return (ALL_OK);
 }
@@ -643,7 +648,7 @@ static int hw_p1_sensors_read(rwchc_sensor_t tsensors[])
 	int_fast8_t sensor;
 	int ret = ALL_OK;
 	
-	assert(Hardware.ready);
+	assert(Hardware.run.ready);
 
 	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
 		ret = hw_p1_spi_sensor_r(tsensors, sensor);
@@ -694,7 +699,7 @@ __attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
 	uint_fast8_t i, chflags = CHNONE;
 	int ret = -EGENERIC;
 
-	assert(Hardware.ready);
+	assert(Hardware.run.ready);
 
 	// start clean
 	rWCHC_relays.ALL = 0;
@@ -763,7 +768,7 @@ __attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
  */
 __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_write(void)
 {
-	assert(Hardware.ready);
+	assert(Hardware.run.ready);
 	return (hw_p1_spi_peripherals_w(&(Hardware.peripherals)));
 }
 
@@ -773,7 +778,7 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_write(v
  */
 __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(void)
 {
-	assert(Hardware.ready);
+	assert(Hardware.run.ready);
 	return (hw_p1_spi_peripherals_r(&(Hardware.peripherals)));
 }
 
@@ -965,10 +970,10 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
  */
 int hw_p1_fwversion(void)
 {
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 
-	return (Hardware.fwversion);
+	return (Hardware.run.fwversion);
 }
 
 /**
@@ -981,11 +986,14 @@ static int hw_p1_online(void * priv)
 {
 	int ret;
 
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 
+	if (!Hardware.set.nsamples)
+		return (-EMISCONFIGURED);
+
 	// save settings - for deffail
-	ret = hw_p1_config_store();
+	ret = hw_p1_config_commit();
 	if (ret)
 		goto fail;
 	
@@ -1007,7 +1015,7 @@ static int hw_p1_online(void * priv)
 
 	hw_p1_lcd_online();
 
-	Hardware.sensors_ftime = time(NULL);
+	Hardware.run.sensors_ftime = time(NULL);
 
 	parse_temps();
 
@@ -1034,7 +1042,7 @@ static int hw_p1_input(void * priv)
 	static bool syschg = false;
 	int ret;
 	
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 
 	// read peripherals
@@ -1137,14 +1145,14 @@ skip_periphs:
 	else {
 		// copy valid data to local environment
 		memcpy(Hardware.sensors, rawsensors, sizeof(Hardware.sensors));
-		Hardware.sensors_ftime = time(NULL);
+		Hardware.run.sensors_ftime = time(NULL);
 		parse_temps();
 	}
 	
 	return (ret);
 
 fail:
-	if ((time(NULL) - Hardware.sensors_ftime) > 30) {
+	if ((time(NULL) - Hardware.run.sensors_ftime) > 30) {
 		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
 		alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
 	}
@@ -1160,7 +1168,7 @@ int hw_p1_output(void * priv)
 {
 	int ret;
 
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 
 	// update LCD
@@ -1192,7 +1200,7 @@ int hw_p1_run(void)
 {
 	int ret;
 	
-	if (!Hardware.ready) {
+	if (!Hardware.run.ready) {
 		dbgerr("not configured");
 		return (-ENOTCONFIGURED);
 	}
@@ -1223,7 +1231,7 @@ static int hw_p1_offline(void * priv)
 	uint_fast8_t i;
 	int ret;
 	
-	if (!Hardware.ready)
+	if (!Hardware.run.ready)
 		return (-EOFFLINE);
 
 	hw_p1_lcd_offline();
@@ -1246,7 +1254,7 @@ static int hw_p1_offline(void * priv)
 
 	hw_p1_save_sensors();
 	
-	Hardware.ready = false;
+	Hardware.run.ready = false;
 	
 	return (ret);
 }
@@ -1302,7 +1310,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 		return (-ENOTCONFIGURED);
 
 	// make sure available data is valid - XXX 30s timeout hardcoded
-	if ((time(NULL) - Hardware.sensors_ftime) > 30) {
+	if ((time(NULL) - Hardware.run.sensors_ftime) > 30) {
 		*tclone = 0;
 		return (-EHARDWARE);
 	}
@@ -1356,7 +1364,7 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const c
 		return (-ENOTCONFIGURED);
 
 	if (ctime)
-		*ctime = Hardware.sensors_ftime;
+		*ctime = Hardware.run.sensors_ftime;
 
 	return (ALL_OK);
 }
