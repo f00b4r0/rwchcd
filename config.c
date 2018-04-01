@@ -87,10 +87,7 @@ int config_init(struct s_config * const config)
 		return (-EINVALID);
 
 	// see if we can restore previous config
-	if (config_restore(config) == ALL_OK)
-		hardware_config_store();	// update hardware if inconsistent
-	
-	return (ALL_OK);
+	return (config_restore(config));
 }
 
 /**
@@ -171,15 +168,18 @@ int config_set_tfrost(struct s_config * const config, const temp_t tfrost)
  * @param config target config
  * @param sensorid id of outdoor temperature sensor
  * @return exec status
- * @warning must be called *AFTER* config_set_nsensors()
  */
 int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
 {
+	int ret;
+
 	if (!config)
 		return (-EINVALID);
 
-	if (!sensorid || (sensorid > config->nsensors))
-		return (-EINVALID);
+	// validate sensor
+	ret = hardware_sensor_clone_time(sensorid, NULL);
+	if (ALL_OK != ret)
+		return (ret);
 
 	config->id_temp_outdoor = sensorid;
 
@@ -189,10 +189,9 @@ int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t s
 /**
  * Save config.
  * @param config target config
- * @param save_hw true if hardware config must be saved
  * @return exec status
  */
-int config_save_hw(const struct s_config * const config, const bool save_hw)
+int config_save(const struct s_config * const config)
 {
 	int ret;
 
@@ -201,14 +200,8 @@ int config_save_hw(const struct s_config * const config, const bool save_hw)
 
 	// save config
 	ret = storage_dump("config", &Config_sversion, config, sizeof(*config));
-	if (ALL_OK != ret) {
+	if (ALL_OK != ret)
 		dbgerr("storage_dump failed (%d)", ret);
-		goto out;
-	}
 
-	if (save_hw)
-		ret = hardware_config_store();	// save to hardware
-
-out:
 	return (ret);
 }

@@ -38,9 +38,7 @@ int config_set_temp_nsamples(struct s_config * const config, const uint_fast8_t 
 int config_set_tsummer(struct s_config * const config, const temp_t tsummer);
 int config_set_tfrost(struct s_config * const config, const temp_t tfrost);
 int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid);
-int config_save_hw(const struct s_config * const config, const bool save_hw);
+int config_save(const struct s_config * const config);
 void config_exit(struct s_config * const config);
-
-#define config_save(config)	config_save_hw(config, true)
 
 #endif /* rwchcd_config_h */
