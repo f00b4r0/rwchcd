@@ -1384,3 +1384,14 @@ static struct s_hw_callbacks hw_p1_callbacks = {
 	.relay_get_state = hw_p1_relay_get_state,
 	.relay_set_state = hw_p1_relay_set_state,
 };
+
+/**
+ * Backend register wrapper.
+ * @param priv private data (unused)
+ * @param name user-defined name
+ * @return exec status
+ */
+int hw_p1_backend_register(void * priv, const char * const name)
+{
+	return (hw_backends_register(&hw_p1_callbacks, priv, name));
+}

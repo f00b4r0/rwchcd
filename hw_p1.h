@@ -35,7 +35,8 @@ int hw_p1_relay_release(const rid_t id);
 int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name) __attribute__((warn_unused_result));
 int hw_p1_sensor_deconfigure(const sid_t id);
 
-int hw_p1_fwversion(void);
+int hw_p1_backend_register(void * priv, const char * const name);
+
 int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
 
 #endif /* rwchcd_hw_p1_h */
