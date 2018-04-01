@@ -499,20 +499,32 @@ int valve_run(struct s_valve * const valve)
 	if (valve->run.request_action != valve->run.actual_action) {
 		switch (valve->run.request_action) {
 			case OPEN:
-				hardware_relay_set_state(valve->set.rid_close, OFF, 0);	// break before make
-				hardware_relay_set_state(valve->set.rid_open, ON, 0);
+				ret = hardware_relay_set_state(valve->set.rid_close, OFF, 0);	// break before make
+				if (ALL_OK != ret)
+					goto fail;
+				ret = hardware_relay_set_state(valve->set.rid_open, ON, 0);
+				if (ALL_OK != ret)
+					goto fail;
 				valve->run.actual_action = OPEN;
 				break;
 			case CLOSE:
-				hardware_relay_set_state(valve->set.rid_open, OFF, 0);	// break before make
-				hardware_relay_set_state(valve->set.rid_close, ON, 0);
+				ret = hardware_relay_set_state(valve->set.rid_open, OFF, 0);	// break before make
+				if (ALL_OK != ret)
+					goto fail;
+				ret = hardware_relay_set_state(valve->set.rid_close, ON, 0);
+				if (ALL_OK != ret)
+					goto fail;
 				valve->run.actual_action = CLOSE;
 				break;
 			default:
 				ret = -EINVALID;
 			case STOP:
-				hardware_relay_set_state(valve->set.rid_open, OFF, 0);
-				hardware_relay_set_state(valve->set.rid_close, OFF, 0);
+				ret = hardware_relay_set_state(valve->set.rid_open, OFF, 0);
+				if (ALL_OK != ret)
+					goto fail;
+				ret = hardware_relay_set_state(valve->set.rid_close, OFF, 0);
+				if (ALL_OK != ret)
+					goto fail;
 				valve->run.actual_action = STOP;
 				break;
 		}
@@ -522,6 +534,7 @@ int valve_run(struct s_valve * const valve)
 	       valve->name, valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
 	       (float)valve->run.target_course/10.0F);
 
+fail:
 	return (ret);
 }
 

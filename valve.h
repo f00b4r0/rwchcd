@@ -66,7 +66,7 @@ int valve_make_pi(struct s_valve * const valve, time_t intvl, time_t Td, time_t 
  * @param target_tout target temperature at output of valve
  * @return exec status
  */
-static inline int valve_control(struct s_valve * const valve, const temp_t target_tout)
+ __attribute__((warn_unused_result)) static inline int valve_control(struct s_valve * const valve, const temp_t target_tout)
 {
 	assert(valve);
 	assert(valve->set.configured);
