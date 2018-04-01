@@ -92,6 +92,7 @@ pthread_rwlock_t Sensors_rwlock;	///< @note having this here prevents using "con
 
 static struct {
 	bool ready;			///< hardware is ready
+	uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
 	time_t sensors_ftime;		///< sensors fetch time
 	time_t last_calib;		///< time of last calibration
 	float calib_nodac;		///< sensor calibration value without dac offset
@@ -296,8 +297,6 @@ static int sensor_alarm(const sid_t id, const int error)
  */
 static void parse_temps(void)
 {
-	struct s_runtime * const runtime = get_runtime();
-	const typeof(runtime->config->temp_nsamples) nsamples = runtime->config->temp_nsamples;
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
@@ -329,7 +328,7 @@ static void parse_temps(void)
 		}
 		else
 			// apply LP filter - ensure we only apply filtering on valid temps
-			Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, nsamples, 1) : current;
+			Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, Hardware.nsamples, 1) : current;
 	}
 	pthread_rwlock_unlock(&Sensors_rwlock);
 
@@ -483,6 +482,21 @@ int hw_p1_config_setnsensors(const rid_t lastid)
 		return (-EINVALID);
 
 	Hardware.settings.nsensors = lastid;
+
+	return (ALL_OK);
+}
+
+/**
+ * Set number of temperature samples for readouts.
+ * @param nsamples number of samples
+ * @return exec status
+ */
+int hw_p1_config_setnsamples(const uint_fast8_t nsamples)
+{
+	if (!nsamples)
+		return (-EINVALID);
+
+	Hardware.nsamples = nsamples;
 
 	return (ALL_OK);
 }
