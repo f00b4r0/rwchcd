@@ -956,7 +956,7 @@ static int hw_p1_online(void * priv)
 
 	parse_temps();
 
-	timer_add_cb(LOG_INTVL_TEMPS, hw_p1_async_log_temps);
+	timer_add_cb(LOG_INTVL_TEMPS, hw_p1_async_log_temps, "log hw_p1 temps");
 
 fail:
 	return (ret);

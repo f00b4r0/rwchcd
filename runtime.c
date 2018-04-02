@@ -330,7 +330,7 @@ int runtime_online(void)
 
 	outdoor_temp();
 
-	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log);
+	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log, "log runtime");
 
 	models_online(Runtime.models);
 

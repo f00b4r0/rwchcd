@@ -13,6 +13,7 @@
 
 #include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// calloc
+#include <string.h>	// strdup
 
 #include "rwchcd.h"
 #include "timer.h"
@@ -22,6 +23,7 @@ struct s_timer_cb {
 	time_t last_call;	///< last time the callback was called
 	unsigned int period;	///< requested timer period
 	int (*cb)(void);	///< timed callback, must lock where necessary
+	char * name;
 	struct s_timer_cb * next;
 };
 
@@ -37,6 +39,7 @@ void * timer_thread(void * arg)
 {
 	struct s_timer_cb * lcb;
 	time_t now;
+	int ret;
 	
 	// wait for first callback to be configured
 	while (!Timer_period_min)
@@ -51,8 +54,9 @@ void * timer_thread(void * arg)
 				break;	// ordered list, first mismatch means we don't need to check further
 			
 			if (lcb->cb) {	// avoid segfault in case for some reason the pointer isn't (yet) valid (due to e.g. memory reordering)
-				if (lcb->cb())
-					dbgerr("cb failed");
+				ret = lcb->cb();
+				if (ALL_OK != ret)
+					pr_log("Timer callback failed: \"%s\" (%d)", lcb->name, ret);
 	
 				lcb->last_call = now;	// only updated here
 			}
@@ -86,11 +90,14 @@ static inline unsigned int ugcd(unsigned int a, unsigned int b)
  * Insert callback ordered (by ascending period) in the callback list.
  * @param period the period at which that callback should be called
  * @param cb the callback function to call
+ * @param name a user-defined name for the timer
  * @return exec status
+ * @todo fence for lockless section
  */
-int timer_add_cb(unsigned int period, int (* cb)(void))
+int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 {
 	struct s_timer_cb * lcb = NULL, * lcb_before, * lcb_after;
+	char * str = NULL;
 	
 	if ((period < 1) || (!cb))
 		return (-EINVALID);
@@ -98,6 +105,12 @@ int timer_add_cb(unsigned int period, int (* cb)(void))
 	lcb = calloc(1, sizeof(*lcb));
 	if (!lcb)
 		return (-EOOM);
+
+	if (name) {
+		str = strdup(name);
+		if (!str)
+			return (-EOOM);
+	}
 
 	lcb_before = NULL;
 	lcb_after = Timer_cb_head;
@@ -111,6 +124,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void))
 		lcb_after = lcb_before->next;
 	}
 
+	lcb->name = str;
 	lcb->cb = cb;
 	lcb->period = period;
 	
@@ -131,7 +145,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void))
 	else
 		Timer_period_min = ugcd(period, Timer_period_min);	// find the GCD period
 	
-	dbgmsg("period: %u, new_min: %u", period, Timer_period_min);
+	dbgmsg("name: \"%s\", period: %u, new_min: %u", name, period, Timer_period_min);
 	
 	return (ALL_OK);
 }
@@ -148,6 +162,8 @@ void timer_clean_callbacks(void)
 	lcb = Timer_cb_head;
 	while (lcb) {
 		lcbn = lcb->next;
+		if (lcb->name)
+			free(lcb->name);
 		free(lcb);
 		lcb = lcbn;
 	}

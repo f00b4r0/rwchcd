@@ -15,7 +15,7 @@
 #define rwchcd_timer_h
 
 void * timer_thread(void * arg);
-int timer_add_cb(unsigned int period, int (* cb)(void));
+int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name);
 void timer_clean_callbacks(void);
 
 #endif /* rwchcd_timer_h */
