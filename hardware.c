@@ -47,7 +47,7 @@ int hardware_init(void)
 
 	// fail if we have no registered backend
 	if (!id)
-		return (-EINVALID);
+		return (-ENOTCONFIGURED);
 	// or if one of them returned error
 	else if (fail)
 		return (-EGENERIC);
@@ -86,7 +86,7 @@ int hardware_online(void)
 
 	// fail if we have no registered backend
 	if (!id)
-		return (-EINVALID);
+		return (-ENOTCONFIGURED);
 	// or if one of them returned error
 	else if (fail)
 		return (-EGENERIC);
@@ -123,7 +123,7 @@ int hardware_input(void)
 
 	// fail if we have no registered backend
 	if (!id)
-		return (-EINVALID);
+		return (-ENOTCONFIGURED);
 	// or if one of them returned error
 	else if (fail)
 		return (-EGENERIC);
@@ -160,7 +160,7 @@ int hardware_output(void)
 
 	// fail if we have no registered backend
 	if (!id)
-		return (-EINVALID);
+		return (-ENOTCONFIGURED);
 	// or if one of them returned error
 	else if (fail)
 		return (-EGENERIC);
@@ -199,7 +199,7 @@ int hardware_offline(void)
 
 	// fail if we have no registered backend
 	if (!id)
-		return (-EINVALID);
+		return (-ENOTCONFIGURED);
 	// or if one of them returned error
 	else if (fail)
 		return (-EGENERIC);
