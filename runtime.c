@@ -112,23 +112,23 @@ static int runtime_async_log(void)
  * Process outdoor temperature.
  * Computes outdoor temperature and "smoothed" outdoor temperature, with a safety
  * fallback in case of sensor failure.
- * @note must run at (ideally) fixed intervals
+ * @note must run at (ideally fixed) intervals >= 1s
  * @note this is part of the synchronous code path because moving it to a separate
  * thread would add overhead (locking) for essentially no performance improvement.
  */
 static void outdoor_temp()
 {
-	static time_t last = 0;	// in temp_expw_mavg, this makes alpha ~ 1, so the return value will be (prev value - 1*(0)) == prev value. Good
-	const time_t now = Runtime.outdoor_time;	// what matters is the actual update time of the outdoor sensor
-	const time_t dt = now - last;
+	const time_t last = Runtime.outdoor_time;	// previous sensor time. At first run: 0 which makes mavg return new sample
+	time_t dt;
 	temp_t toutdoor;
 	int ret;
 
 	ret = hardware_sensor_clone_temp(Runtime.config->id_temp_outdoor, &toutdoor);
 	if (ALL_OK == ret) {
+		hardware_sensor_clone_time(Runtime.config->id_temp_outdoor, &Runtime.outdoor_time);
+		dt = Runtime.outdoor_time - last;
 		Runtime.t_outdoor = toutdoor;
 		Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt);
-		last = now;
 	}
 	else {
 		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
@@ -314,11 +314,18 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
  */
 int runtime_online(void)
 {
+	int ret;
+
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
 		return (-ENOTCONFIGURED);
 	
 	Runtime.start_time = time(NULL);
-	
+
+	// make sure specified outdoor sensor is available
+	ret = hardware_sensor_clone_time(Runtime.config->id_temp_outdoor, NULL);
+	if (ALL_OK != ret)
+		return (ret);
+
 	runtime_restore();
 
 	outdoor_temp();
