@@ -97,6 +97,8 @@ static volatile bool Sem_master_hwinit_done = false;
 
 static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in Makefile
 
+static pthread_barrier_t barr_main;
+
 /**
  * Daemon signal handler.
  * Handles SIGINT and SIGTERM for graceful shutdown.
@@ -140,7 +142,11 @@ static int init_process()
 		return (ret);
 	}
 
-	Sem_master_hwinit_done = true;
+	// signal hw has been inited
+	pthread_barrier_wait(&barr_main);
+
+	// wait for priviledges to be dropped
+	pthread_barrier_wait(&barr_main);
 
 	lcd_init();
 
@@ -540,7 +546,12 @@ int main(void)
 	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
 	pthread_attr_setschedparam(&attr, &sparam);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-	
+
+	// setup main thread barrier
+	ret = pthread_barrier_init(&barr_main, NULL, 2);	// 2 threads to sync: master and current
+	if (ret)
+		errx(ret, "failed to setup main barrier!");
+
 	Sem_master_thread = true;
 
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
@@ -566,9 +577,8 @@ int main(void)
 	pthread_setname_np(watchdog_thr, "watchdog");
 #endif
 
-	/* wait for hardware init to complete before dropping priviledges */
-	while (!Sem_master_hwinit_done)
-		usleep(10000);
+	/* wait for hardware init to sync before dropping privilegdges */
+	pthread_barrier_wait(&barr_main);
 
 	// XXX Dropping priviledges here because we need root to set
 	// SCHED_FIFO during pthread_create(), and for setname().
@@ -580,7 +590,10 @@ int main(void)
 	ret = setuid(RWCHCD_UID);
 	if (ret)
 		err(ret, "failed to setuid()");
-	
+
+	/* signal priviledges have been dropped */
+	pthread_barrier_wait(&barr_main);
+
 #ifdef DEBUG
 	// create the stdout fifo for debugging
 	unlink(RWCHCD_FIFO);
@@ -618,6 +631,7 @@ int main(void)
 #endif
 
 	Sem_master_thread = false;	// signal end of work
+	pthread_barrier_destroy(&barr_main);
 	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
 	pthread_cancel(watchdog_thr);
