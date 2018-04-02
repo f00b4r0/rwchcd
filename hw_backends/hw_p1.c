@@ -128,7 +128,7 @@ static void hw_p1_relays_log(void)
 			values[i] = -1;
 	}
 	
-	storage_log("log_hw_relays", &version, keys, values, i);
+	storage_log("log_hw_p1_relays", &version, keys, values, i);
 }
 
 /**
