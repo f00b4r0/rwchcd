@@ -152,15 +152,8 @@ int config_set_tfrost(struct s_config * const config, const temp_t tfrost)
  */
 int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
 {
-	int ret;
-
 	if (!config)
 		return (-EINVALID);
-
-	// validate sensor
-	ret = hardware_sensor_clone_time(sensorid, NULL);
-	if (ALL_OK != ret)
-		return (ret);
 
 	config->id_temp_outdoor = sensorid;
 
