@@ -233,7 +233,8 @@ static int init_process()
 	ret = config_init(config);
 	if (ret) {
 		dbgerr("config init error: %d", ret);
-		return (ret);
+		if (!((-ESTORE == ret) || (-EMISMATCH == ret)))	// XXX: ignore storage errors
+			return (ret);
 	}
 	
 	if (!config->restored) {
@@ -362,7 +363,11 @@ static int init_process()
 	circuit->valve->set.id_temp2 = circuit->set.id_temp_return;
 	circuit->valve->set.id_tempout = circuit->set.id_temp_outgoing;
 	//valve_make_sapprox(circuit->valve, 50, 20);
-	valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30), 10);
+	ret = valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30), 10);
+	if (ret) {
+		dbgerr("valve_make_pi failed: %d", ret);
+		return (ret);
+	}
 	
 	// configure two relays for that valve
 	circuit->valve->set.rid_open = rid_vopen;
