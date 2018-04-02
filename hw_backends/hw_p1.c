@@ -900,16 +900,17 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 		ret = hw_p1_spi_fwversion();
 	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
 
-	if (ret > 0) {
-		pr_log(_("Firmware version %d detected"), ret);
-		Hardware.run.fwversion = ret;
-		Hardware.run.ready = true;
-		hw_p1_lcd_init();
-	}
-	else
+	if (ret <= 0) {
 		dbgerr("hw_p1_init failed");
+		return (-ESPI);
+	}
 
-	return (ret);
+	pr_log(_("Firmware version %d detected"), ret);
+	Hardware.run.fwversion = ret;
+	Hardware.run.ready = true;
+	hw_p1_lcd_init();
+
+	return (ALL_OK);
 }
 
 /**
