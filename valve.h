@@ -46,7 +46,10 @@ struct s_valve {
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
 	void * restrict priv;	///< private data structure for valvectrl
-	int (*valvectrl)(struct s_valve * restrict const, const temp_t);	///< pointer to valve controller algorithm
+	struct {
+		int (*control)(struct s_valve * restrict const, const temp_t);	///< pointer to valve controller algorithm
+		int (*online)(struct s_valve * restrict const);	///< pointer to valve private online routine (for preflight checks)
+	} cb;
 };
 
 void valve_del(struct s_valve * valve);
@@ -70,9 +73,10 @@ int valve_make_pi(struct s_valve * const valve, time_t intvl, time_t Td, time_t 
 {
 	assert(valve);
 	assert(valve->set.configured);
+	assert(valve->cb.control);
 
 	// apply valve law to determine target position
-	return (valve->valvectrl(valve, target_tout));
+	return (valve->cb.control(valve, target_tout));
 }
 
 #define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open

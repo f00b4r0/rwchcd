@@ -102,6 +102,26 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 }
 
 /**
+ * Online callback for PI valve.
+ * @param valve self
+ * @return exec status
+ */
+static int v_pi_online(struct s_valve * const valve)
+{
+	int ret;
+
+	if (!valve)
+		return (-EINVALID);
+
+	// ensure required sensors are configured
+	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
+	if (ALL_OK != ret)
+		return (ret);
+
+	return (hardware_sensor_clone_time(valve->set.id_temp1, NULL));
+}
+
+/**
  * Implement time-based PI controller in velocity form.
  * We are driving an integrating actuator, so we want to compute a change in output,
  * not the actual output.
@@ -133,7 +153,7 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
  * Therefore, the PI controller will spend a good deal of
  * time reacting to an observed response that doesn't match its required action.
  */
-static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
+static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const time_t now = time(NULL);
@@ -263,6 +283,20 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
 }
 
 /**
+ * Online callback for bang-bang valve.
+ * @param valve self
+ * @return exec status
+ */
+static int v_bangbang_online(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+
+	// ensure required sensors are configured
+	return (hardware_sensor_clone_time(valve->set.id_tempout, NULL));
+}
+
+/**
  * Implement a bang-bang controller for valve position.
  * If target_tout > current tempout, open the valve, otherwise close it
  * @warning in case of sensor failure, NO ACTION is performed
@@ -270,7 +304,7 @@ static int valvectrl_pi(struct s_valve * const valve, const temp_t target_tout)
  * @param target_tout target valve output temperature
  * @return exec status
  */
-static int valvectrl_bangbang(struct s_valve * const valve, const temp_t target_tout)
+static int v_bangbang_control(struct s_valve * const valve, const temp_t target_tout)
 {
 	int ret;
 	temp_t tempout;
@@ -292,6 +326,20 @@ static int valvectrl_bangbang(struct s_valve * const valve, const temp_t target_
 }
 
 /**
+ * Online callback for sapprox valve.
+ * @param valve self
+ * @return exec status
+ */
+static int v_sapprox_online(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+
+	// ensure required sensors are configured
+	return (hardware_sensor_clone_time(valve->set.id_tempout, NULL));
+}
+
+/**
  * Successive approximations controller.
  * Approximate the target temperature by repeatedly trying to converge toward
  * the set point. Priv structure contains sample interval, last sample time and
@@ -303,7 +351,7 @@ static int valvectrl_bangbang(struct s_valve * const valve, const temp_t target_
  * @param target_tout the target output temperature
  * @return exec status
  */
-static int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_tout)
+static int v_sapprox_control(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_sapprox_priv * restrict const vpriv = valve->priv;
 	const time_t now = time(NULL);
@@ -354,11 +402,11 @@ static int valvectrl_sapprox(struct s_valve * const valve, const temp_t target_t
  * Perform all necessary actions to prepare the valve for service.
  * @param valve target valve
  * @return exec status
- * @note no check on temperature sensors because some valves (e.g. zone valves)
- * do not need a sensor to be operated.
  */
 int valve_online(struct s_valve * const valve)
 {
+	int ret = ALL_OK;
+
 	if (!valve)
 		return (-EINVALID);
 
@@ -368,13 +416,19 @@ int valve_online(struct s_valve * const valve)
 	if (!valve->set.ete_time)
 		return (-EMISCONFIGURED);
 
+	if (!valve->cb.control)
+		return (-EMISCONFIGURED);
+
+	if (valve->cb.online)
+		ret = valve->cb.online(valve);
+
 	// return to idle
 	valve_reqstop(valve);
 
 	// reset the control algorithm
 	valve->run.ctrl_reset = true;
 
-	return (ALL_OK);
+	return (ret);
 }
 
 /**
@@ -546,17 +600,11 @@ fail:
  */
 int valve_make_bangbang(struct s_valve * const valve)
 {
-	int ret;
-
 	if (!valve)
 		return (-EINVALID);
 
-	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
-	if (ALL_OK != ret)
-		return (ret);
-
-	valve->valvectrl = valvectrl_bangbang;
+	valve->cb.online = v_bangbang_online;
+	valve->cb.control = v_bangbang_control;
 
 	return (ALL_OK);
 }
@@ -574,7 +622,6 @@ int valve_make_bangbang(struct s_valve * const valve)
 int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl)
 {
 	struct s_valve_sapprox_priv * priv = NULL;
-	int ret;
 
 	if (!valve)
 		return (-EINVALID);
@@ -584,11 +631,6 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 
 	if (amount > 100)
 		return (-EINVALID);
-
-	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
-	if (ALL_OK != ret)
-		return (ret);
 
 	// create priv element
 	priv = calloc(1, sizeof(*priv));
@@ -601,8 +643,9 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 	// attach created priv to valve
 	valve->priv = priv;
 
-	// assign function
-	valve->valvectrl = valvectrl_sapprox;
+	// assign callbacks
+	valve->cb.online = v_sapprox_online;
+	valve->cb.control = v_sapprox_control;
 
 	return (ALL_OK);
 }
@@ -624,7 +667,6 @@ int valve_make_pi(struct s_valve * const valve,
 		  time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
 {
 	struct s_valve_pi_priv * priv = NULL;
-	int ret;
 
 	if (!valve)
 		return (-EINVALID);
@@ -638,15 +680,6 @@ int valve_make_pi(struct s_valve * const valve,
 	// ensure sample interval <= (Tu/4) [Nyquist]
 	if (intvl > (Tu/4))
 		return (-EMISCONFIGURED);
-
-	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
-	if (ALL_OK != ret)
-		return (ret);
-
-	ret = hardware_sensor_clone_time(valve->set.id_temp1, NULL);
-	if (ALL_OK != ret)
-		return (ret);
 
 	// create priv element
 	priv = calloc(1, sizeof(*priv));
@@ -668,8 +701,9 @@ int valve_make_pi(struct s_valve * const valve,
 	// attach created priv to valve
 	valve->priv = priv;
 
-	// assign function
-	valve->valvectrl = valvectrl_pi;
+	// assign callbacks
+	valve->cb.online = v_pi_online;
+	valve->cb.control = v_pi_control;
 
 	return (ALL_OK);
 }
