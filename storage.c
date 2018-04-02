@@ -33,7 +33,9 @@
 
 #define RWCHCD_STORAGE_MAGIC "rwchcd"
 #define RWCHCD_STORAGE_VERSION 1UL
-#define STORAGE_PATH	"/var/lib/rwchcd/"
+#ifndef RWCHCD_STORAGE_PATH
+ #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"
+#endif
 #define STORAGE_TMPLATE	"tmpXXXXXX"
 
 static const char Storage_magic[] = RWCHCD_STORAGE_MAGIC;
@@ -58,7 +60,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	if (!identifier || !version || !object)
 		return (-EINVALID);
 
-	dir_fd = open(STORAGE_PATH, O_RDONLY);
+	dir_fd = open(RWCHCD_STORAGE_PATH, O_RDONLY);
 	if (dir_fd < 0)
 		return (-ESTORE);
 
@@ -143,7 +145,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 		return (-EINVALID);
 	
 	// make sure we're in target wd
-	if (chdir(STORAGE_PATH))
+	if (chdir(RWCHCD_STORAGE_PATH))
 		return (-ESTORE);
 	
 	// open stream
@@ -207,7 +209,7 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		return (-EINVALID);
 	
 	// make sure we're in target wd
-	if (chdir(STORAGE_PATH))
+	if (chdir(RWCHCD_STORAGE_PATH))
 		return (-ESTORE);
 	
 	// open stream
