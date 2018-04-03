@@ -101,8 +101,8 @@ int circuit_online(struct s_heating_circuit * const circuit)
 	if (!circuit->bmodel)
 		return (-EMISCONFIGURED);
 
-	// check that mandatory sensors are working
-	ret = hardware_sensor_clone_temp(circuit->set.id_temp_outgoing, NULL);
+	// check that mandatory sensors are set
+	ret = hardware_sensor_clone_time(circuit->set.id_temp_outgoing, NULL);
 	if (ret)
 		goto out;
 

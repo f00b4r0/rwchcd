@@ -39,11 +39,10 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
-	// check that mandatory sensors are working
-	ret = hardware_sensor_clone_temp(dhwt->set.id_temp_bottom, NULL);
-	if (ALL_OK != ret) {
-		ret = hardware_sensor_clone_temp(dhwt->set.id_temp_top, NULL);
-	}
+	// check that mandatory sensors are set
+	ret = hardware_sensor_clone_time(dhwt->set.id_temp_bottom, NULL);
+	if (ALL_OK != ret)
+		ret = hardware_sensor_clone_time(dhwt->set.id_temp_top, NULL);
 	if (ret)
 		goto out;
 

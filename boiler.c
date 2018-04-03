@@ -122,8 +122,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	// check that mandatory sensors are working
-	ret = hardware_sensor_clone_temp(boiler->set.id_temp, NULL);
+	// check that mandatory sensors are set
+	ret = hardware_sensor_clone_time(boiler->set.id_temp, NULL);
 	if (ret)
 		goto out;
 

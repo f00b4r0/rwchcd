@@ -915,8 +915,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 
 /**
  * Get the hardware ready for run loop.
- * Calibrate, then collect and process sensors.
- * @warning can loop forever
+ * Calibrate, restore hardware state from permanent storage.
  * @return exec status
  */
 static int hw_p1_online(void * priv)
@@ -945,16 +944,7 @@ static int hw_p1_online(void * priv)
 	if (ALL_OK == ret)
 		pr_log(_("Hardware state restored"));
 
-	// read sensors
-	ret = hw_p1_sensors_read(Hardware.sensors);
-	if (ret)
-		goto fail;
-
 	hw_p1_lcd_online();
-
-	Hardware.run.sensors_ftime = time(NULL);
-
-	parse_temps();
 
 	timer_add_cb(LOG_INTVL_TEMPS, hw_p1_async_log_temps, "log hw_p1 temps");
 
@@ -1373,6 +1363,7 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const c
 	return (ALL_OK);
 }
 
+/** Hardware callbacks for Prototype 1 hardware */
 static struct s_hw_callbacks hw_p1_callbacks = {
 	.init = hw_p1_init,
 	.exit = hw_p1_exit,

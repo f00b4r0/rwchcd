@@ -328,8 +328,6 @@ int runtime_online(void)
 
 	runtime_restore();
 
-	outdoor_temp();
-
 	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log, "log runtime");
 
 	models_online(Runtime.models);
