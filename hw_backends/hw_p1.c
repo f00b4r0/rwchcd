@@ -64,24 +64,7 @@ struct s_stateful_relay {
 static const storage_version_t Hardware_sversion = 1;
 static const storage_version_t Hardware_ssensver = 2;
 
-static struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
-
 typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
-
-/** software representation of a temperature sensor */
-static struct {
-	struct {
-		bool configured;	///< sensor is configured
-		enum e_hw_p1_stype type;///< sensor type
-		temp_t offset;		///< sensor value offset
-	} set;
-	struct {
-		temp_t value;		///< sensor current temperature value (offset applied)
-	} run;
-	ohm_to_celsius_ft * ohm_to_celsius;
-	char * restrict name;		///< user-defined name for the sensor
-} Sensors[RWCHC_NTSENSORS];		///< physical sensors
-pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to @b value
 
 static struct {
 	struct {
@@ -99,6 +82,20 @@ static struct {
 	union rwchc_u_relays relays;
 	union rwchc_u_periphs peripherals;
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];
+	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to @b value
+	struct {
+		struct {
+			bool configured;	///< sensor is configured
+			enum e_hw_p1_stype type;///< sensor type
+			temp_t offset;		///< sensor value offset
+		} set;
+		struct {
+			temp_t value;		///< sensor current temperature value (offset applied)
+		} run;
+		ohm_to_celsius_ft * ohm_to_celsius;
+		char * restrict name;		///< user-defined name for the sensor
+	} Sensors[RWCHC_NTSENSORS];		///< physical sensors
+	struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
 } Hardware;
 
 /**
@@ -115,11 +112,11 @@ static void hw_p1_relays_log(void)
 	static storage_values_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 	
-	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(Relays));
+	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(Hardware.Relays));
 	
-	for (i=0; i<ARRAY_SIZE(Relays); i++) {
-		if (Relays[i].set.configured) {
-			if (Relays[i].run.is_on)
+	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
+		if (Hardware.Relays[i].set.configured) {
+			if (Hardware.Relays[i].run.is_on)
 				values[i] = 1;
 			else
 				values[i] = 0;
@@ -263,11 +260,11 @@ static int sensor_alarm(const sid_t id, const int error)
 	switch (error) {
 		case -ESENSORSHORT:
 			fail = _("shorted");
-			name = Sensors[id-1].name;
+			name = Hardware.Sensors[id-1].name;
 			break;
 		case -ESENSORDISCON:
 			fail = _("disconnected");
-			name = Sensors[id-1].name;
+			name = Hardware.Sensors[id-1].name;
 			break;
 		case -ESENSORINVAL:
 			fail = _("invalid");
@@ -301,33 +298,33 @@ static void parse_temps(void)
 	
 	assert(Hardware.run.ready);
 
-	pthread_rwlock_wrlock(&Sensors_rwlock);
+	pthread_rwlock_wrlock(&Hardware.Sensors_rwlock);
 	for (i = 0; i < Hardware.settings.nsensors; i++) {
-		if (!Sensors[i].set.configured) {
-			Sensors[i].run.value = TEMPUNSET;
+		if (!Hardware.Sensors[i].set.configured) {
+			Hardware.Sensors[i].run.value = TEMPUNSET;
 			continue;
 		}
 
 		ohm = sensor_to_ohm(Hardware.sensors[i], true);
-		o_to_c = Sensors[i].ohm_to_celsius;
+		o_to_c = Hardware.Sensors[i].ohm_to_celsius;
 		assert(o_to_c);
 
-		current = celsius_to_temp(o_to_c(ohm)) + Sensors[i].set.offset;
-		previous = Sensors[i].run.value;
+		current = celsius_to_temp(o_to_c(ohm)) + Hardware.Sensors[i].set.offset;
+		previous = Hardware.Sensors[i].run.value;
 
 		if (current <= RWCHCD_TEMPMIN) {
-			Sensors[i].run.value = TEMPSHORT;
+			Hardware.Sensors[i].run.value = TEMPSHORT;
 			sensor_alarm(i+1, -ESENSORSHORT);
 		}
 		else if (current >= RWCHCD_TEMPMAX) {
-			Sensors[i].run.value = TEMPDISCON;
+			Hardware.Sensors[i].run.value = TEMPDISCON;
 			sensor_alarm(i+1, -ESENSORDISCON);
 		}
 		else
 			// apply LP filter - ensure we only apply filtering on valid temps
-			Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, Hardware.set.nsamples, 1) : current;
+			Hardware.Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, Hardware.set.nsamples, 1) : current;
 	}
-	pthread_rwlock_unlock(&Sensors_rwlock);
+	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
 
 }
 
@@ -338,7 +335,7 @@ static void parse_temps(void)
  */
 static int hw_p1_save_relays(void)
 {
-	return (storage_dump("hw_p1_relays", &Hardware_sversion, Relays, sizeof(Relays)));
+	return (storage_dump("hw_p1_relays", &Hardware_sversion, Hardware.Relays, sizeof(Hardware.Relays)));
 }
 
 /**
@@ -349,9 +346,9 @@ static int hw_p1_save_relays(void)
  */
 static int hw_p1_restore_relays(void)
 {
-	static typeof (Relays) blob;
+	static typeof (Hardware.Relays) blob;
 	storage_version_t sversion;
-	typeof(&Relays[0]) relayptr = (typeof(relayptr))&blob;
+	typeof(&Hardware.Relays[0]) relayptr = (typeof(relayptr))&blob;
 	unsigned int i;
 	int ret;
 	
@@ -361,14 +358,14 @@ static int hw_p1_restore_relays(void)
 		if (Hardware_sversion != sversion)
 			return (-EMISMATCH);
 
-		for (i=0; i<ARRAY_SIZE(Relays); i++) {
+		for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
 			if (relayptr->run.is_on)	// account for last known state_time
-				Relays[i].run.on_tottime += relayptr->run.state_time;
+				Hardware.Relays[i].run.on_tottime += relayptr->run.state_time;
 			else
-				Relays[i].run.off_tottime += relayptr->run.state_time;
-			Relays[i].run.on_tottime += relayptr->run.on_tottime;
-			Relays[i].run.off_tottime += relayptr->run.off_tottime;
-			Relays[i].run.cycles += relayptr->run.cycles;
+				Hardware.Relays[i].run.off_tottime += relayptr->run.state_time;
+			Hardware.Relays[i].run.on_tottime += relayptr->run.on_tottime;
+			Hardware.Relays[i].run.off_tottime += relayptr->run.off_tottime;
+			Hardware.Relays[i].run.cycles += relayptr->run.cycles;
 			relayptr++;
 		}
 		dbgmsg("Hardware relay state restored");
@@ -384,7 +381,7 @@ static int hw_p1_restore_relays(void)
  */
 static int hw_p1_save_sensors(void)
 {
-	return (storage_dump("hw_p1_sensors", &Hardware_ssensver, Sensors, sizeof(Sensors)));
+	return (storage_dump("hw_p1_sensors", &Hardware_ssensver, Hardware.Sensors, sizeof(Hardware.Sensors)));
 }
 
 /**
@@ -395,9 +392,9 @@ static int hw_p1_save_sensors(void)
  */
 static int hw_p1_restore_sensors(void)
 {
-	static typeof (Sensors) blob;
+	static typeof (Hardware.Sensors) blob;
 	storage_version_t sversion;
-	typeof(&Sensors[0]) sensorptr = (typeof(sensorptr))&blob;
+	typeof(&Hardware.Sensors[0]) sensorptr = (typeof(sensorptr))&blob;
 	unsigned int i;
 	int ret;
 
@@ -407,15 +404,15 @@ static int hw_p1_restore_sensors(void)
 		if (Hardware_ssensver != sversion)
 			return (-EMISMATCH);
 
-		for (i=0; i<ARRAY_SIZE(Sensors); i++) {
+		for (i=0; i<ARRAY_SIZE(Hardware.Sensors); i++) {
 			if (!sensorptr->set.configured)
 				continue;
 
-			Sensors[i].set.type = sensorptr->set.type;
-			Sensors[i].set.offset = sensorptr->set.offset;
-			Sensors[i].ohm_to_celsius = sensor_o_to_c(sensorptr->set.type);
-			if (Sensors[i].ohm_to_celsius)
-				Sensors[i].set.configured = true;
+			Hardware.Sensors[i].set.type = sensorptr->set.type;
+			Hardware.Sensors[i].set.offset = sensorptr->set.offset;
+			Hardware.Sensors[i].ohm_to_celsius = sensor_o_to_c(sensorptr->set.type);
+			if (Hardware.Sensors[i].ohm_to_celsius)
+				Hardware.Sensors[i].set.configured = true;
 		}
 		dbgmsg("Hardware sensors configuration restored");
 	}
@@ -439,10 +436,10 @@ static int hw_p1_async_log_temps(void)
 
 	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
 
-	pthread_rwlock_rdlock(&Sensors_rwlock);
+	pthread_rwlock_rdlock(&Hardware.Sensors_rwlock);
 	for (i = 0; i < Hardware.settings.nsensors; i++)
-		values[i] = Sensors[i].run.value;
-	pthread_rwlock_unlock(&Sensors_rwlock);
+		values[i] = Hardware.Sensors[i].run.value;
+	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
 
 	return (storage_log("log_hw_p1_temps", &version, keys, values, i));
 }
@@ -616,8 +613,8 @@ __attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
 	rWCHC_relays.ALL = 0;
 
 	// update each known hardware relay
-	for (i=0; i<ARRAY_SIZE(Relays); i++) {
-		relay = &Relays[i];
+	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
+		relay = &Hardware.Relays[i];
 
 		if (!relay->set.configured)
 			continue;
@@ -702,10 +699,8 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(vo
  */
 void * hw_p1_new(void)
 {
-	memset(Relays, 0x0, sizeof(Relays));
-	memset(Sensors, 0x0, sizeof(Sensors));
 	memset(&Hardware, 0x0, sizeof(Hardware));
-	pthread_rwlock_init(&Sensors_rwlock, NULL);
+	pthread_rwlock_init(&Hardware.Sensors_rwlock, NULL);
 
 	return (NULL);
 }
@@ -767,15 +762,15 @@ int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const 
 {
 	char * str = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Sensors)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Sensors)))
 		return (-EINVALID);
 
-	if (Sensors[id-1].set.configured)
+	if (Hardware.Sensors[id-1].set.configured)
 		return (-EEXISTS);
 
-	Sensors[id-1].ohm_to_celsius = sensor_o_to_c(type);
+	Hardware.Sensors[id-1].ohm_to_celsius = sensor_o_to_c(type);
 
-	if (!Sensors[id-1].ohm_to_celsius)
+	if (!Hardware.Sensors[id-1].ohm_to_celsius)
 		return (-EINVALID);
 
 	if (name) {
@@ -783,12 +778,12 @@ int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const 
 		if (!str)
 			return(-EOOM);
 
-		Sensors[id-1].name = str;
+		Hardware.Sensors[id-1].name = str;
 	}
 
-	Sensors[id-1].set.type = type;
-	Sensors[id-1].set.offset = offset;
-	Sensors[id-1].set.configured = true;
+	Hardware.Sensors[id-1].set.type = type;
+	Hardware.Sensors[id-1].set.offset = offset;
+	Hardware.Sensors[id-1].set.configured = true;
 
 	return (ALL_OK);
 }
@@ -800,15 +795,15 @@ int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const 
  */
 int hw_p1_sensor_deconfigure(const sid_t id)
 {
-	if (!id || (id > ARRAY_SIZE(Sensors)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Sensors)))
 		return (-EINVALID);
 
-	if (!Sensors[id-1].set.configured)
+	if (!Hardware.Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free(Sensors[id-1].name);
+	free(Hardware.Sensors[id-1].name);
 
-	memset(&Sensors[id-1], 0x00, sizeof(Sensors[id-1]));
+	memset(&Hardware.Sensors[id-1], 0x00, sizeof(Hardware.Sensors[id-1]));
 
 	return (ALL_OK);
 }
@@ -825,10 +820,10 @@ int hw_p1_relay_request(const rid_t id, const bool failstate, const char * const
 {
 	char * str = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Relays)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
 		return (-EINVALID);
 	
-	if (Relays[id-1].set.configured)
+	if (Hardware.Relays[id-1].set.configured)
 		return (-EEXISTS);
 
 	if (name) {
@@ -836,15 +831,15 @@ int hw_p1_relay_request(const rid_t id, const bool failstate, const char * const
 		if (!str)
 			return(-EOOM);
 
-		Relays[id-1].name = str;
+		Hardware.Relays[id-1].name = str;
 	}
 
 	// register failover state
 	rwchc_relay_set(&Hardware.settings.deffail, id-1, failstate);
 
-	Relays[id-1].run.off_since = time(NULL);	// XXX hack
+	Hardware.Relays[id-1].run.off_since = time(NULL);	// XXX hack
 
-	Relays[id-1].set.configured = true;
+	Hardware.Relays[id-1].set.configured = true;
 	
 	return (ALL_OK);
 }
@@ -857,15 +852,15 @@ int hw_p1_relay_request(const rid_t id, const bool failstate, const char * const
  */
 int hw_p1_relay_release(const rid_t id)
 {
-	if (!id || (id > ARRAY_SIZE(Relays)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
 		return (-EINVALID);
 	
-	if (!Relays[id-1].set.configured)
+	if (!Hardware.Relays[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free(Relays[id-1].name);
+	free(Hardware.Relays[id-1].name);
 	
-	memset(&Relays[id-1], 0x00, sizeof(Relays[id-1]));
+	memset(&Hardware.Relays[id-1], 0x00, sizeof(Hardware.Relays[id-1]));
 	
 	return (ALL_OK);
 }
@@ -1164,11 +1159,11 @@ static int hw_p1_offline(void * priv)
 	hw_p1_lcd_offline();
 
 	// turn off each known hardware relay
-	for (i=0; i<ARRAY_SIZE(Relays); i++) {
-		if (!Relays[i].set.configured)
+	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
+		if (!Hardware.Relays[i].set.configured)
 			continue;
 		
-		Relays[i].run.turn_on = false;
+		Hardware.Relays[i].run.turn_on = false;
 	}
 	
 	// update the hardware
@@ -1199,11 +1194,11 @@ static void hw_p1_exit(void * priv)
 	hw_p1_lcd_exit();
 
 	// cleanup all resources
-	for (i = 1; i <= ARRAY_SIZE(Relays); i++)
+	for (i = 1; i <= ARRAY_SIZE(Hardware.Relays); i++)
 		hw_p1_relay_release(i);
 	
 	// deconfigure all sensors
-	for (i = 1; i <= ARRAY_SIZE(Sensors); i++)
+	for (i = 1; i <= ARRAY_SIZE(Hardware.Sensors); i++)
 		hw_p1_sensor_deconfigure(i);
 
 	// reset the hardware
@@ -1213,7 +1208,7 @@ static void hw_p1_exit(void * priv)
 }
 
 /**
- * set internal relay state (request)
+ * Set internal relay state (request)
  * @param id id of the internal relay to modify
  * @param turn_on true if relay is meant to be turned on
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
@@ -1225,10 +1220,10 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Relays)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
 		return (-EINVALID);
 
-	relay = &Relays[id-1];
+	relay = &Hardware.Relays[id-1];
 
 	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
@@ -1265,10 +1260,10 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Relays)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
 		return (-EINVALID);
 
-	relay = &Relays[id-1];
+	relay = &Hardware.Relays[id-1];
 
 	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
@@ -1297,10 +1292,10 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 	int ret;
 	temp_t temp;
 
-	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Sensors)))
+	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Hardware.Sensors)))
 		return (-EINVALID);
 
-	if (!Sensors[id-1].set.configured)
+	if (!Hardware.Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
 	// make sure available data is valid - XXX 30s timeout hardcoded
@@ -1309,9 +1304,9 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 		return (-EHARDWARE);
 	}
 
-	pthread_rwlock_rdlock(&Sensors_rwlock);
-	temp = Sensors[id-1].run.value;
-	pthread_rwlock_unlock(&Sensors_rwlock);
+	pthread_rwlock_rdlock(&Hardware.Sensors_rwlock);
+	temp = Hardware.Sensors[id-1].run.value;
+	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
 
 	if (tclone)
 		*tclone = temp;
@@ -1351,10 +1346,10 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
  */
 static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const ctime)
 {
-	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Sensors)))
+	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Hardware.Sensors)))
 		return (-EINVALID);
 
-	if (!Sensors[id-1].set.configured)
+	if (!Hardware.Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (ctime)
