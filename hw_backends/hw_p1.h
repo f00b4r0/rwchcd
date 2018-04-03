@@ -37,6 +37,6 @@ int hw_p1_sensor_deconfigure(const sid_t id);
 
 int hw_p1_backend_register(void * priv, const char * const name);
 
-int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
+const char * hw_p1_temp_to_str(const sid_t tempid);
 
 #endif /* rwchcd_hw_p1_h */

@@ -140,6 +140,7 @@ static int init_process()
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_dhw_tank * restrict dhwt = NULL;
 	struct s_boiler_priv * restrict boiler = NULL;
+	void * priv;
 	tempid_t tid_out, tid_boil, tid_watout, tid_watret, tid_boilret;
 	relid_t rid_pump, rid_vclose, rid_vopen, rid_burner;
 	bid_t bkendid;
@@ -154,10 +155,10 @@ static int init_process()
 
 #ifdef HAS_HWP1
 	// instantiate hardware proto 1
-	hw_p1_new();
+	priv = hw_p1_new();
 
 	// register hardware backend
-	ret = hw_p1_backend_register(NULL, "prototype");
+	ret = hw_p1_backend_register(priv, "prototype");
 	if (ret < 0) {
 		dbgmsg("backend registration failed for %s (%d)", "prototype", ret);
 		return (ret);

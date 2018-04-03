@@ -303,34 +303,6 @@ out:
 }
 
 // XXX quick hack
-static const char * temp_to_str(const sid_t tempid)
-{
-	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
-	temp_t temp;
-	float celsius;
-	int ret;
-
-	ret = hw_p1_sensor_clone_temp(NULL, tempid, &temp);
-
-#if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
- #error Non representable minimum temperature
-#endif
-
-	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
-
-	if (-ESENSORDISCON == ret)
-		strncpy(snpbuf+3, _("DISCON"), 6);
-	else if (-ESENSORSHORT == ret)
-		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
-	else {
-		celsius = temp_to_celsius(temp);
-		snprintf(snpbuf+3, 7, "%5.1fC", celsius);	// handles rounding
-	}
-
-	return (&snpbuf);
-}
-
-// XXX quick hack
 static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 {
 	const char * restrict msg;
@@ -385,7 +357,7 @@ static int hw_p1_lcd_line1(void)
 			LCD.sysmchg = false;
 	}
 	else
-		memcpy(buf+6, temp_to_str(LCD.sensor), 9);
+		memcpy(buf+6, hw_p1_temp_to_str(LCD.sensor), 9);
 
 	return (hw_p1_lcd_wline(buf, LCD_LINELEN, 0, 0));
 }

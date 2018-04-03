@@ -9,6 +9,10 @@
 /**
  * @file
  * Hardware Prototype 1 driver implementation.
+ *
+ * @note while the backend interface makes use of the @b priv data pointer for
+ * documentation purposes, behind the scenes the code assumes access to statically
+ * allocated data.
  */
 
 #include <time.h>	// time
@@ -66,7 +70,7 @@ static const storage_version_t Hardware_ssensver = 2;
 
 typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
 
-static struct {
+static struct s_hw_p1_pdata {
 	struct {
 		uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
 	} set;
@@ -690,6 +694,35 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(vo
 	return (hw_p1_spi_peripherals_r(&(Hardware.peripherals)));
 }
 
+static int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
+//* XXX quick hack for LCD
+const char * hw_p1_temp_to_str(const sid_t tempid)
+{
+	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
+	temp_t temp;
+	float celsius;
+	int ret;
+
+	ret = hw_p1_sensor_clone_temp(&Hardware, tempid, &temp);
+
+#if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
+#error Non representable minimum temperature
+#endif
+
+	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
+
+	if (-ESENSORDISCON == ret)
+		strncpy(snpbuf+3, _("DISCON"), 6);
+	else if (-ESENSORSHORT == ret)
+		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
+	else {
+		celsius = temp_to_celsius(temp);
+		snprintf(snpbuf+3, 7, "%5.1fC", celsius);	// handles rounding
+	}
+
+	return (&snpbuf);
+}
+
 /* Public interface */
 
 /**
@@ -702,7 +735,7 @@ void * hw_p1_new(void)
 	memset(&Hardware, 0x0, sizeof(Hardware));
 	pthread_rwlock_init(&Hardware.Sensors_rwlock, NULL);
 
-	return (NULL);
+	return (&Hardware);
 }
 
 /**
@@ -881,11 +914,16 @@ int hw_p1_fwversion(void)
 
 /**
  * Initialize hardware and ensure connection is set
+ * @param priv private hardware data
  * @return error state
  */
 __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	int ret, i = 0;
+
+	if (!hw)
+		return (-EINVALID);
 
 	if (hw_p1_spi_init() < 0)
 		return (-EINIT);
@@ -901,8 +939,8 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	}
 
 	pr_log(_("Firmware version %d detected"), ret);
-	Hardware.run.fwversion = ret;
-	Hardware.run.ready = true;
+	hw->run.fwversion = ret;
+	hw->run.ready = true;
 	hw_p1_lcd_init();
 
 	return (ALL_OK);
@@ -911,16 +949,21 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 /**
  * Get the hardware ready for run loop.
  * Calibrate, restore hardware state from permanent storage.
+ * @param priv private hardware data
  * @return exec status
  */
 static int hw_p1_online(void * priv)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	int ret;
 
-	if (!Hardware.run.ready)
+	if (!hw)
+		return (-EINVALID);
+
+	if (!hw->run.ready)
 		return (-EOFFLINE);
 
-	if (!Hardware.set.nsamples)
+	if (!hw->set.nsamples)
 		return (-EMISCONFIGURED);
 
 	// save settings - for deffail
@@ -951,11 +994,13 @@ fail:
  * Collect inputs from hardware.
  * @note Will process switch inputs.
  * @note Will panic if sensors cannot be read for more than 30s (hardcoded).
+ * @param priv private hardware data
  * @return exec status
  * @todo review logic
  */
 static int hw_p1_input(void * priv)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	struct s_runtime * const runtime = get_runtime();
 	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
 	static unsigned int count = 0, systout = 0;
@@ -964,7 +1009,9 @@ static int hw_p1_input(void * priv)
 	static bool syschg = false;
 	int ret;
 	
-	if (!Hardware.run.ready)
+	assert(hw);
+
+	if (!hw->run.ready)
 		return (-EOFFLINE);
 
 	// read peripherals
@@ -975,28 +1022,28 @@ static int hw_p1_input(void * priv)
 	}
 	
 	// detect hardware alarm condition
-	if (Hardware.peripherals.i_alarm) {
+	if (hw->peripherals.i_alarm) {
 		pr_log(_("Hardware in alarm"));
 		// clear alarm
-		Hardware.peripherals.i_alarm = 0;
+		hw->peripherals.i_alarm = 0;
 		hw_p1_lcd_reset();
 		// XXX reset runtime?
 	}
 
 	// handle software alarm
 	if (alarms_count()) {
-		Hardware.peripherals.o_LED2 = 1;
-		Hardware.peripherals.o_buzz = !Hardware.peripherals.o_buzz;
+		hw->peripherals.o_LED2 = 1;
+		hw->peripherals.o_buzz = !hw->peripherals.o_buzz;
 		count = 2;
 	}
 	else {
-		Hardware.peripherals.o_LED2 = 0;
-		Hardware.peripherals.o_buzz = 0;
+		hw->peripherals.o_LED2 = 0;
+		hw->peripherals.o_buzz = 0;
 	}
 	
 	// handle switch 1
-	if (Hardware.peripherals.i_SW1) {
-		Hardware.peripherals.i_SW1 = 0;
+	if (hw->peripherals.i_SW1) {
+		hw->peripherals.i_SW1 = 0;
 		count = 5;
 		systout = 3;
 		syschg = true;
@@ -1016,7 +1063,7 @@ static int hw_p1_input(void * priv)
 			runtime_set_systemmode(cursysmode);
 			pthread_rwlock_unlock(&runtime->runtime_rwlock);
 			// hw_p1_beep()
-			Hardware.peripherals.o_buzz = 1;
+			hw->peripherals.o_buzz = 1;
 		}
 		syschg = false;
 		cursysmode = runtime->systemmode;
@@ -1025,13 +1072,13 @@ static int hw_p1_input(void * priv)
 		systout--;
 
 	// handle switch 2
-	if (Hardware.peripherals.i_SW2) {
+	if (hw->peripherals.i_SW2) {
 		// increase displayed tempid
 		tempid++;
-		Hardware.peripherals.i_SW2 = 0;
+		hw->peripherals.i_SW2 = 0;
 		count = 5;
 		
-		if (tempid > Hardware.settings.nsensors)
+		if (tempid > hw->settings.nsensors)
 			tempid = 1;
 
 		hw_p1_lcd_set_tempid(tempid);	// update sensor
@@ -1039,12 +1086,12 @@ static int hw_p1_input(void * priv)
 	
 	// trigger timed backlight
 	if (count) {
-		Hardware.peripherals.o_LCDbl = 1;
+		hw->peripherals.o_LCDbl = 1;
 		if (!--count)
 			hw_p1_lcd_fade();	// apply fadeout
 	}
 	else
-		Hardware.peripherals.o_LCDbl = 0;
+		hw->peripherals.o_LCDbl = 0;
 
 skip_periphs:
 	// calibrate
@@ -1066,15 +1113,15 @@ skip_periphs:
 	}
 	else {
 		// copy valid data to local environment
-		memcpy(Hardware.sensors, rawsensors, sizeof(Hardware.sensors));
-		Hardware.run.sensors_ftime = time(NULL);
+		memcpy(hw->sensors, rawsensors, sizeof(hw->sensors));
+		hw->run.sensors_ftime = time(NULL);
 		parse_temps();
 	}
 	
 	return (ret);
 
 fail:
-	if ((time(NULL) - Hardware.run.sensors_ftime) > 30) {
+	if ((time(NULL) - hw->run.sensors_ftime) > 30) {
 		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
 		alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
 	}
@@ -1084,13 +1131,17 @@ fail:
 
 /**
  * Apply commands to hardware.
+ * @param priv private hardware data
  * @return exec status
  */
-int hw_p1_output(void * priv)
+static int hw_p1_output(void * priv)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	int ret;
 
-	if (!Hardware.run.ready)
+	assert(hw);
+
+	if (!hw->run.ready)
 		return (-EOFFLINE);
 
 	// update LCD
@@ -1146,24 +1197,29 @@ out:
 /**
  * Hardware offline routine.
  * Forcefully turns all relays off and saves final counters to permanent storage.
+ * @param priv private hardware data
  * @return exec status
  */
 static int hw_p1_offline(void * priv)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	uint_fast8_t i;
 	int ret;
 	
-	if (!Hardware.run.ready)
+	if (!hw)
+		return (-EINVALID);
+
+	if (!hw->run.ready)
 		return (-EOFFLINE);
 
 	hw_p1_lcd_offline();
 
 	// turn off each known hardware relay
-	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
-		if (!Hardware.Relays[i].set.configured)
+	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
+		if (!hw->Relays[i].set.configured)
 			continue;
 		
-		Hardware.Relays[i].run.turn_on = false;
+		hw->Relays[i].run.turn_on = false;
 	}
 	
 	// update the hardware
@@ -1176,7 +1232,7 @@ static int hw_p1_offline(void * priv)
 
 	hw_p1_save_sensors();
 	
-	Hardware.run.ready = false;
+	hw->run.ready = false;
 	
 	return (ret);
 }
@@ -1185,20 +1241,25 @@ static int hw_p1_offline(void * priv)
  * Hardware exit routine.
  * Resets the hardware.
  * @warning RESETS THE HARDWARE: no hardware operation after that call.
+ * @param priv private hardware data
  */
 static void hw_p1_exit(void * priv)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	int ret;
 	uint_fast8_t i;
+
+	if (!hw)
+		return;
 
 	hw_p1_lcd_exit();
 
 	// cleanup all resources
-	for (i = 1; i <= ARRAY_SIZE(Hardware.Relays); i++)
+	for (i = 1; i <= ARRAY_SIZE(hw->Relays); i++)
 		hw_p1_relay_release(i);
 	
 	// deconfigure all sensors
-	for (i = 1; i <= ARRAY_SIZE(Hardware.Sensors); i++)
+	for (i = 1; i <= ARRAY_SIZE(hw->Sensors); i++)
 		hw_p1_sensor_deconfigure(i);
 
 	// reset the hardware
@@ -1209,6 +1270,7 @@ static void hw_p1_exit(void * priv)
 
 /**
  * Set internal relay state (request)
+ * @param priv private hardware data
  * @param id id of the internal relay to modify
  * @param turn_on true if relay is meant to be turned on
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
@@ -1217,13 +1279,16 @@ static void hw_p1_exit(void * priv)
  */
 static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const time_t change_delay)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
+	assert(hw);
+
+	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	relay = &Hardware.Relays[id-1];
+	relay = &hw->Relays[id-1];
 
 	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
@@ -1252,18 +1317,22 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 /**
  * Get internal relay state (request).
  * Updates run.state_time and returns current state
+ * @param priv private hardware data
  * @param id id of the internal relay to modify
  * @return run.is_on
  */
 static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	const time_t now = time(NULL);
 	struct s_stateful_relay * relay = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
+	assert(hw);
+
+	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	relay = &Hardware.Relays[id-1];
+	relay = &hw->Relays[id-1];
 
 	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
@@ -1282,31 +1351,34 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
  * Finally, if parameter @b tclone is non-null, the temperature of the sensor
  * is copied if it isn't stale (i.e. less than 30s old).
  * @todo review hardcoded timeout
- * @param priv not used
+ * @param priv private hardware data
  * @param id target sensor id
  * @param ctime optional location to copy the sensor update time.
  * @return exec status
  */
-int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
+static int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 {
+	struct s_hw_p1_pdata * const hw = priv;
 	int ret;
 	temp_t temp;
 
-	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Hardware.Sensors)))
+	assert(hw);
+
+	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!Hardware.Sensors[id-1].set.configured)
+	if (!hw->Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
 	// make sure available data is valid - XXX 30s timeout hardcoded
-	if ((time(NULL) - Hardware.run.sensors_ftime) > 30) {
+	if ((time(NULL) - hw->run.sensors_ftime) > 30) {
 		*tclone = 0;
 		return (-EHARDWARE);
 	}
 
-	pthread_rwlock_rdlock(&Hardware.Sensors_rwlock);
-	temp = Hardware.Sensors[id-1].run.value;
-	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
+	pthread_rwlock_rdlock(&hw->Sensors_rwlock);
+	temp = hw->Sensors[id-1].run.value;
+	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 
 	if (tclone)
 		*tclone = temp;
@@ -1339,21 +1411,25 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
  * It also checks that the designated sensor is properly configured in software.
  * Finally, if parameter @b ctime is non-null, the time of the last sensor update
  * is copied.
- * @param priv not used
+ * @param priv private hardware data
  * @param id target sensor id
  * @param ctime optional location to copy the sensor update time.
  * @return exec status
  */
 static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const ctime)
 {
-	if ((id <= 0) || (id > Hardware.settings.nsensors) || (id > ARRAY_SIZE(Hardware.Sensors)))
+	struct s_hw_p1_pdata * const hw = priv;
+
+	assert(hw);
+
+	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!Hardware.Sensors[id-1].set.configured)
+	if (!hw->Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (ctime)
-		*ctime = Hardware.run.sensors_ftime;
+		*ctime = hw->run.sensors_ftime;
 
 	return (ALL_OK);
 }
@@ -1374,11 +1450,14 @@ static struct s_hw_callbacks hw_p1_callbacks = {
 
 /**
  * Backend register wrapper.
- * @param priv private data (unused)
+ * @param priv private hardware data
  * @param name user-defined name
  * @return exec status
  */
 int hw_p1_backend_register(void * priv, const char * const name)
 {
+	if (!priv)
+		return (-EINVALID);
+
 	return (hw_backends_register(&hw_p1_callbacks, priv, name));
 }
