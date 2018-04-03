@@ -106,11 +106,11 @@ typedef uint_fast8_t	rid_t;		///< relay id type
 typedef uint_fast8_t	sid_t;		///< sensor id type
 typedef struct {
 	bid_t bid;	///< backend id
-	sid_t sid;	///< sensor id - MUST START FROM 1
+	sid_t sid;	///< sensor id - @warning MUST START FROM 1
 } tempid_t;	///< temperature sensor id
 typedef struct {
 	bid_t bid;	///< backend id
-	rid_t rid;	///< relay id - MUST START FROM 1
+	rid_t rid;	///< relay id - @warning MUST START FROM 1
 } relid_t;	///< relay identifier
 
 /** Valid run modes */

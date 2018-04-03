@@ -758,6 +758,7 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
  * @return exec status (-EGENERIC if any sub call returned an error)
  * @todo separate error handler
  * @todo XXX TODO: currently supports single heat source, all consummers connected to it
+ * @todo fix potential null dereferences
  */
 int plant_run(struct s_plant * restrict const plant)
 {

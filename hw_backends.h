@@ -18,7 +18,7 @@
 
 #include "rwchcd.h"
 
-#define HW_MAX_BKENDS	8
+#define HW_MAX_BKENDS	8	///< Maximum number of hardware backends allowed
 
 /** Hardware backend */
 struct s_hw_backend {
@@ -38,19 +38,121 @@ struct s_hw_backend {
  * All calls take an opaque pointer to implementation-dependent data.
  */
 struct s_hw_callbacks {
-	int (*init)(void * priv);	///< @warning must be provided
-	int (*online)(void * priv);	///< @warning must be provided
-	int (*input)(void * priv);	///< reads hardware data
-	int (*output)(void * priv);	///< commits data to hardware
-	int (*offline)(void * priv);	///< @warning must be provided
-	void (*exit)(void * priv);	///< @warning must be provided
-	int (*relay_get_state)(void * priv, const rid_t);
-	int (*relay_set_state)(void * priv, const rid_t, bool turn_on, time_t change_delay);
-	int (*sensor_clone_temp)(void * priv, const sid_t, temp_t * const ctemp);
-	int (*sensor_clone_time)(void * priv, const sid_t, time_t * const ctime);
-	/* display/alarm ops */
+	/**
+	 * Hardware backend init callback.
+	 * This callback is expected to initialize the hardware driver.
+	 * Probing/testing hardware presence/communication can be done at this stage if
+	 * it doesn't require prior configuration.
+	 * @warning This callback @b MUST be implemented.
+	 * @param priv hardware backend private data
+	 * @return exec status
+	 */
+	int (*init)(void * priv);
+
+	/**
+	 * Hardware backend online callback.
+	 * When this routine is called the configuration parsing has been performed.
+	 * This callback is expected to validate hardware configuration, then apply it
+	 * to the hardware and bring it to a suitable state for input()/output() operations.
+	 * @warning This callback @b MUST be implemented.
+	 * @note if the backend provides sensors, after online() is executed subsequent
+	 * calls to sensor_clone_time() MUST succeed (sensor is configured) @b EVEN if
+	 * input() hasn't yet been called. This is necessary for other subsystems
+	 * online() checks.
+	 * @param priv hardware backend private data
+	 * @return exec status
+	 */
+	int (*online)(void * priv);
+
+	/**
+	 * Hardware backend input callback.
+	 * This routine should fetch the current sensor values from the
+	 * underlying hardware.
+	 * @param priv hardware backend private data
+	 * @return exec status
+	 */
+	int (*input)(void * priv);
+
+	/**
+	 * Hardware backend output callback.
+	 * This routine should commit the computed actuators state to the
+	 * underlying hardware.
+	 * @param priv hardware backend private data
+	 * @return exec status
+	 */
+	int (*output)(void * priv);
+
+	/**
+	 * Hardware backend offline callback.
+	 * @warning This callback @b MUST be implemented.
+	 * @param priv hardware backend private data
+	 * @return exec status
+	 */
+	int (*offline)(void * priv);
+
+	/**
+	 * Hardware backend exit callback.
+	 * @warning This callback @b MUST be implemented.
+	 * @note This callback must release all memory allocated in the @b priv area.
+	 * @param priv hardware backend private data
+	 */
+	void (*exit)(void * priv);
+
+
+	/**
+	 * Get relay state.
+	 * This callbacks reads the software representation of the state of a
+	 * relay. The state returned by this callback accounts for the last
+	 * execution of hardware_output(), i.e. the returned state corresponds to
+	 * the last enacted hardware state.
+	 * Specifically, if relay_set_state() is called to turn ON a currently OFF
+	 * relay, and then relay_get_state() is called @b before output() has been
+	 * executed, this function will return an OFF state for this relay.
+	 * @param priv hardware backend private data
+	 * @param rid hardware relay id
+	 * @param turn_on true for turn on request
+	 * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
+	 * @return exec status
+	 */
+	int (*relay_get_state)(void * priv, const rid_t rid);
+
+	/**
+	 * Set relay state.
+	 * This callbacks updates the software representation of the state of a
+	 * relay. The hardware will reflect the state matching the last call to
+	 * this function after hardware_output() has been executed.
+	 * @param priv hardware backend private data
+	 * @param rid hardware relay id
+	 * @param turn_on true for turn on request
+	 * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
+	 * @return exec status
+	 */
+	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on, time_t change_delay);
+
+	/**
+	 * Clone sensor temperature value.
+	 * @param priv hardware backend private data
+	 * @param sid hardware sendor id
+	 * @param ctime optional pointer to allocated space for value storage, can be NULL
+	 * @return exec status
+	 */
+	int (*sensor_clone_temp)(void * priv, const sid_t sid, temp_t * const ctemp);
+
+	/**
+	 * Clone sensor update time.
+	 * @param priv hardware backend private data
+	 * @param sid hardware sendor id
+	 * @param ctime optional pointer to allocated space for time storage, can be NULL
+	 * @return exec status
+	 * @note This function must @b ALWAYS return successfully if the target
+	 * sensor is properly configured and the underlying hardware is online.
+	 */
+	int (*sensor_clone_time)(void * priv, const sid_t sid, time_t * const ctime);
+
+	/* TODO other ops (display/alarm?) */
 };
 
+// hardware.c needs access
 extern struct s_hw_backend * HW_backends[HW_MAX_BKENDS];
 
 int hw_backends_init(void);

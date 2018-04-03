@@ -2,7 +2,7 @@
 //  runtime.c
 //  rwchcd
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -309,7 +309,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 
 /**
  * Prepare runtime for run loop.
- * Parse sensors and bring the plant online
+ * Bring models and plant online
  * @return exec status
  */
 int runtime_online(void)

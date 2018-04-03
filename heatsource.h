@@ -50,8 +50,8 @@ struct s_heatsource {
 		int (*offline)(struct s_heatsource * const);	///< pointer to source private offline() function
 		int (*logic)(struct s_heatsource * const);	///< pointer to source private logic() function
 		int (*run)(struct s_heatsource * const);	///< pointer to source private run() function
-		temp_t (*temp)(struct s_heatsource * const);	///< pointer to source private temp() function (returns current temperature)
-		time_t (*time)(struct s_heatsource * const);	///< pointer to source private time() function (returns time of last temperature update)
+		temp_t (*temp)(struct s_heatsource * const);	///< pointer to source private temp() function (returns current temperature) @todo XXX only used in logic_heatsource()
+		time_t (*time)(struct s_heatsource * const);	///< pointer to source private time() function (returns time of last temperature update) @todo XXX only used in logic_heatsource()
 		void (*del_priv)(void * priv);			///< pointer to source private del() function
 	} cb;		///< heatsource callbacks
 };

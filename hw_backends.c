@@ -17,7 +17,7 @@
 
 #include "hw_backends.h"
 
-struct s_hw_backend * HW_backends[];
+struct s_hw_backend * HW_backends[];	///< Array of available hardware backends
 
 /**
  * Init hardware backend management.

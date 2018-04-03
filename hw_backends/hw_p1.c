@@ -100,7 +100,7 @@ static struct s_hw_p1_pdata {
 		char * restrict name;		///< user-defined name for the sensor
 	} Sensors[RWCHC_NTSENSORS];		///< physical sensors
 	struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
-} Hardware;
+} Hardware;	///< Prototype 1 private data
 
 /**
  * Log relays change.
@@ -551,7 +551,6 @@ static int hw_p1_calibrate(void)
 /**
  * Read all sensors
  * @param tsensors the array to populate with current values
- * @param last the id of the last wanted (connected) sensor
  * @return exec status
  * @warning Hardware.settings.nsensors must be set prior to calling this function
  */
@@ -1353,7 +1352,7 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
  * @todo review hardcoded timeout
  * @param priv private hardware data
  * @param id target sensor id
- * @param ctime optional location to copy the sensor update time.
+ * @param tclone optional location to copy the sensor temperature.
  * @return exec status
  */
 static int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)

@@ -60,6 +60,10 @@ int hardware_init(void)
  * For all registered backends, this function execute the online() backend callback
  * after sanity checks. If the call is successful, the backend is marked as online.
  * If the backend has already been online'd, this function does nothing.
+ * @note if the backend provides sensors, after online() is executed subsequent
+ * calls to hardware_sensor_clone_time() must succeed (sensor is configured) @b EVEN if
+ * hardware_input() hasn't yet been called. This is necessary for other subsystems
+ * online() checks.
  * @return exec status
  */
 int hardware_online(void)
@@ -257,6 +261,7 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 
 /**
  * Clone hardware sensor last update time.
+ * @note This function must @b ALWAYS return successfully if the target sensor is properly configured.
  * @param tempid id (for the specified backend) of the hardware sensor to query
  * @param clast pointer to target to store the time value
  * @return exec status
