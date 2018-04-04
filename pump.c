@@ -113,6 +113,7 @@ int pump_offline(struct s_pump * restrict const pump)
 int pump_run(struct s_pump * restrict const pump)
 {
 	time_t cooldown = 0;	// by default, no wait
+	int ret;
 
 	assert(pump);
 
@@ -128,7 +129,11 @@ int pump_run(struct s_pump * restrict const pump)
 		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
 
 	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	pump->run.actual_cooldown_time = hardware_relay_set_state(pump->set.rid_relay, pump->run.req_on, cooldown);
+	ret = hardware_relay_set_state(pump->set.rid_relay, pump->run.req_on, cooldown);
+	if (ret < 0)
+		return (ret);
+
+	pump->run.actual_cooldown_time = ret;
 
 	return (ALL_OK);
 }
