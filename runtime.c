@@ -346,10 +346,11 @@ int runtime_run(void)
 
 	// process data
 
+	outdoor_temp();
+
 	dbgmsg("t_outdoor: %.1f, t_60: %.1f",
 	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60));
 
-	outdoor_temp();
 	runtime_frost();
 
 	models_run(Runtime.models);
