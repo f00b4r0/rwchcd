@@ -75,7 +75,8 @@ static struct s_hw_p1_pdata {
 		uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
 	} set;
 	struct {
-		bool ready;			///< hardware is ready (init succeeded)
+		bool initialized;		///< hardware is initialized (init() succeeded)
+		bool online;			///< hardware is online (online() succeeded)
 		time_t sensors_ftime;		///< sensors fetch time
 		time_t last_calib;		///< time of last calibration
 		float calib_nodac;		///< sensor calibration value without dac offset
@@ -300,7 +301,7 @@ static void parse_temps(void)
 	uint_fast8_t i;
 	temp_t previous, current;
 	
-	assert(Hardware.run.ready);
+	assert(Hardware.run.online);
 
 	pthread_rwlock_wrlock(&Hardware.Sensors_rwlock);
 	for (i = 0; i < Hardware.settings.nsensors; i++) {
@@ -467,7 +468,7 @@ static int hw_p1_config_commit(void)
 	struct rwchc_s_settings hw_set;
 	int ret;
 	
-	if (!Hardware.run.ready)
+	if (!Hardware.run.initialized)
 		return (-EOFFLINE);
 	
 	// grab current config from the hardware
@@ -505,7 +506,7 @@ static int hw_p1_calibrate(void)
 	rwchc_sensor_t ref;
 	const time_t now = time(NULL);
 	
-	assert(Hardware.run.ready);
+	assert(Hardware.run.initialized);
 	
 	if ((now - Hardware.run.last_calib) < CALIBRATION_PERIOD)
 		return (ALL_OK);
@@ -559,7 +560,7 @@ static int hw_p1_sensors_read(rwchc_sensor_t tsensors[])
 	int_fast8_t sensor;
 	int ret = ALL_OK;
 	
-	assert(Hardware.run.ready);
+	assert(Hardware.run.online);
 
 	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
 		ret = hw_p1_spi_sensor_r(tsensors, sensor);
@@ -610,7 +611,7 @@ __attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
 	uint_fast8_t i, chflags = CHNONE;
 	int ret = -EGENERIC;
 
-	assert(Hardware.run.ready);
+	assert(Hardware.run.online);
 
 	// start clean
 	rWCHC_relays.ALL = 0;
@@ -679,7 +680,7 @@ __attribute__((warn_unused_result)) static int hw_p1_rwchcrelays_write(void)
  */
 __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_write(void)
 {
-	assert(Hardware.run.ready);
+	assert(Hardware.run.online);
 	return (hw_p1_spi_peripherals_w(&(Hardware.peripherals)));
 }
 
@@ -689,7 +690,7 @@ __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_write(v
  */
 __attribute__((warn_unused_result)) static inline int hw_p1_rwchcperiphs_read(void)
 {
-	assert(Hardware.run.ready);
+	assert(Hardware.run.online);
 	return (hw_p1_spi_peripherals_r(&(Hardware.peripherals)));
 }
 
@@ -903,7 +904,7 @@ int hw_p1_relay_release(const rid_t id)
  */
 int hw_p1_fwversion(void)
 {
-	if (!Hardware.run.ready)
+	if (!Hardware.run.online)
 		return (-EOFFLINE);
 
 	return (Hardware.run.fwversion);
@@ -939,7 +940,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 
 	pr_log(_("Firmware version %d detected"), ret);
 	hw->run.fwversion = ret;
-	hw->run.ready = true;
+	hw->run.initialized = true;
 	hw_p1_lcd_init();
 
 	return (ALL_OK);
@@ -959,8 +960,8 @@ static int hw_p1_online(void * priv)
 	if (!hw)
 		return (-EINVALID);
 
-	if (!hw->run.ready)
-		return (-EOFFLINE);
+	if (!hw->run.initialized)
+		return (-EINIT);
 
 	if (!hw->set.nsamples)
 		return (-EMISCONFIGURED);
@@ -984,6 +985,9 @@ static int hw_p1_online(void * priv)
 	hw_p1_lcd_online();
 
 	timer_add_cb(LOG_INTVL_TEMPS, hw_p1_async_log_temps, "log hw_p1 temps");
+
+	hw->run.online = true;
+	ret = ALL_OK;
 
 fail:
 	return (ret);
@@ -1010,7 +1014,7 @@ static int hw_p1_input(void * priv)
 	
 	assert(hw);
 
-	if (!hw->run.ready)
+	if (!hw->run.online)
 		return (-EOFFLINE);
 
 	// read peripherals
@@ -1140,7 +1144,7 @@ static int hw_p1_output(void * priv)
 
 	assert(hw);
 
-	if (!hw->run.ready)
+	if (!hw->run.online)
 		return (-EOFFLINE);
 
 	// update LCD
@@ -1172,7 +1176,7 @@ int hw_p1_run(void)
 {
 	int ret;
 	
-	if (!Hardware.run.ready) {
+	if (!Hardware.run.online) {
 		dbgerr("not configured");
 		return (-ENOTCONFIGURED);
 	}
@@ -1208,7 +1212,7 @@ static int hw_p1_offline(void * priv)
 	if (!hw)
 		return (-EINVALID);
 
-	if (!hw->run.ready)
+	if (!hw->run.online)
 		return (-EOFFLINE);
 
 	hw_p1_lcd_offline();
@@ -1231,7 +1235,7 @@ static int hw_p1_offline(void * priv)
 
 	hw_p1_save_sensors();
 	
-	hw->run.ready = false;
+	hw->run.online = false;
 	
 	return (ret);
 }
@@ -1251,6 +1255,14 @@ static void hw_p1_exit(void * priv)
 	if (!hw)
 		return;
 
+	if (hw->run.online) {
+		dbgerr("hardware is still online!");
+		return;
+	}
+
+	if (!hw->run.initialized)
+		return;
+
 	hw_p1_lcd_exit();
 
 	// cleanup all resources
@@ -1265,6 +1277,8 @@ static void hw_p1_exit(void * priv)
 	ret = hw_p1_spi_reset();
 	if (ret)
 		dbgerr("reset failed (%d)", ret);
+
+	hw->run.initialized = false;
 }
 
 /**
@@ -1371,7 +1385,8 @@ static int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const t
 
 	// make sure available data is valid - XXX 30s timeout hardcoded
 	if ((time(NULL) - hw->run.sensors_ftime) > 30) {
-		*tclone = 0;
+		if (tclone)
+			*tclone = 0;
 		return (-EHARDWARE);
 	}
 
