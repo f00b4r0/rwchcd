@@ -135,8 +135,13 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	if (boiler->set.limit_thardmax < boiler->set.limit_tmax)
 		ret = -EMISCONFIGURED;
 
-out:
+	// if pump exists check it's correctly configured
+	if (boiler->loadpump && !boiler->loadpump->set.configured) {
+		dbgerr("\"%s\": loadpump \"%s\" not configured", heat->name, boiler->loadpump->name);
+		ret = -EMISCONFIGURED;
+	}
 
+out:
 	return (ret);
 }
 
@@ -370,8 +375,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	}
 
 	// turn pump on if any
-	if (boiler->loadpump)
-		pump_set_state(boiler->loadpump, ON, 0);
+	if (boiler->loadpump) {
+		ret = pump_set_state(boiler->loadpump, ON, 0);
+		if (ALL_OK != ret) {
+			dbgerr("\"%s\": failed to set loadpump \"%s\" ON (%d)", heat->name, boiler->loadpump->name, ret);
+			boiler_failsafe(boiler);
+			return (ret);	// critical error: stop there
+		}
+	}
 
 	/* un/trip points */
 	// apply trip_temp only if we have a heat request

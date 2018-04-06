@@ -84,6 +84,9 @@ int pump_get_state(const struct s_pump * restrict const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
+	if (!pump->run.online)
+		return (-EOFFLINE);
+
 	// NOTE we could return remaining cooldown time if necessary
 	return (hardware_relay_get_state(pump->set.rid_relay));
 }

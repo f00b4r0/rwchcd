@@ -106,6 +106,12 @@ int circuit_online(struct s_heating_circuit * const circuit)
 	if (ret)
 		goto out;
 
+	// if pump exists check it's correctly configured
+	if (circuit->pump && !circuit->pump->set.configured) {
+		dbgerr("\"%s\": pump \"%s\" not configured", circuit->name, circuit->pump->name);
+		ret = -EMISCONFIGURED;
+	}
+
 out:
 	return (ret);
 }
@@ -226,8 +232,14 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	circuit->run.actual_wtemp = curr_temp;
 
 	// circuit is active, ensure pump is running
-	if (circuit->pump)
-		pump_set_state(circuit->pump, ON, 0);
+	if (circuit->pump) {
+		ret = pump_set_state(circuit->pump, ON, 0);
+		if (ALL_OK != ret) {
+			dbgerr("\"%s\": failed to set pump \"%s\" ON (%d)", circuit->name, circuit->pump->name, ret);
+			circuit_failsafe(circuit);
+			return (ret);	// critical error: stop there
+		}
+	}
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, circuit->bmodel->run.t_out_mix);

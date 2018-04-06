@@ -46,6 +46,17 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 	if (ret)
 		goto out;
 
+	// if pumps exist check they're correctly configured
+	if (dhwt->feedpump && !dhwt->feedpump->set.configured) {
+		dbgerr("\"%s\": feedpump \"%s\" not configured", dhwt->name, dhwt->feedpump->name);
+		ret = -EMISCONFIGURED;
+	}
+
+	if (dhwt->recyclepump && !dhwt->recyclepump->set.configured) {
+		dbgerr("\"%s\": recyclepump \"%s\" not configured", dhwt->name, dhwt->recyclepump->name);
+		ret = -EMISCONFIGURED;
+	}
+
 out:
 	return (ret);
 }
@@ -217,9 +228,12 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	// handle recycle loop
 	if (dhwt->recyclepump) {
 		if (dhwt->run.recycle_on)
-			pump_set_state(dhwt->recyclepump, ON, NOFORCE);
+			ret = pump_set_state(dhwt->recyclepump, ON, NOFORCE);
 		else
-			pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
+			ret = pump_set_state(dhwt->recyclepump, OFF, NOFORCE);
+
+		if (ALL_OK != ret)	// this is a non-critical error, keep going
+			dbgerr("\"%s\": failed to set recyclepump \"%s\" state (%d)", dhwt->name, dhwt->recyclepump->name, ret);
 	}
 
 	/* handle heat charge - NOTE we enforce sensor position, it SEEMS desirable
@@ -315,6 +329,8 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		}
 	}
 
+	ret = ALL_OK;
+
 	// handle feedpump - outside of the trigger since we need to manage inlet temp
 	if (dhwt->feedpump) {
 		if (dhwt->run.charge_on && !dhwt->run.electric_mode) {	// on heatsource charge
@@ -323,12 +339,12 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
-					pump_set_state(dhwt->feedpump, OFF, FORCE);
+					ret = pump_set_state(dhwt->feedpump, OFF, FORCE);
 				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K hysteresis
-					pump_set_state(dhwt->feedpump, ON, NOFORCE);
+					ret = pump_set_state(dhwt->feedpump, ON, NOFORCE);
 			}
 			else
-				pump_set_state(dhwt->feedpump, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
+				ret = pump_set_state(dhwt->feedpump, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
 		}
 		else {				// no charge or electric charge
 			test = FORCE;	// by default, force feedpump immediate turn off
@@ -342,11 +358,14 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			}
 
 			// turn off pump with conditional cooldown
-			pump_set_state(dhwt->feedpump, OFF, test);
+			ret = pump_set_state(dhwt->feedpump, OFF, test);
 		}
+
+		if (ALL_OK != ret)
+			dbgerr("\"%s\": failed to set feedpump \"%s\" state (%d)", dhwt->name, dhwt->feedpump->name, ret);
 	}
 
-	return (ALL_OK);
+	return (ret);
 }
 
 /**
