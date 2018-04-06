@@ -123,23 +123,13 @@ static void sig_handler(int signum)
 	}
 }
 
-/*
- describe hardware
- register hardware
- set basic config
- describe plant
- */
-static int init_process()
+/* new_relid new_tempid find_relid find_tempid find_model */
+
+/** copy matched relid data to target on success, return error code otherwise */
+int find_relid(relid_t * const target, const char * const name);
+
+static int configure_hw()
 {
-	struct s_runtime * restrict const runtime = get_runtime();
-	struct s_config * restrict config = NULL;
-	struct s_plant * restrict plant = NULL;
-	struct s_models * restrict models = NULL;
-	struct s_bmodel * restrict bmodel_house = NULL;
-	struct s_heatsource * restrict heatsource = NULL;
-	struct s_heating_circuit * restrict circuit = NULL;
-	struct s_dhw_tank * restrict dhwt = NULL;
-	struct s_boiler_priv * restrict boiler = NULL;
 	void * priv;
 	tempid_t tid_out, tid_boil, tid_watout, tid_watret, tid_boilret;
 	relid_t rid_pump, rid_vclose, rid_vopen, rid_burner;
@@ -168,6 +158,7 @@ static int init_process()
 	// configure hw
 	hw_p1_config_setnsensors(5);	// XXX 5 sensors
 	hw_p1_config_setnsamples(5);	// XXX 5 samples average
+
 	// describe hw
 	ret = hw_p1_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), "outdoor");
 	if (ret) return (ret);
@@ -207,37 +198,11 @@ static int init_process()
 	rid_pump.rid = RELAY_PUMP;
 #endif
 
-	/* init hardware */
-	
-	ret = hardware_init();
-	if (ret) {
-		dbgerr("hardware init error: %d", ret);
-		return (ret);
-	}
+	return (ALL_OK);
+}
 
-	// signal hw has been inited
-	pthread_barrier_wait(&barr_main);
-
-	// wait for priviledges to be dropped
-	pthread_barrier_wait(&barr_main);
-
-	/* init runtime */
-	ret = runtime_init();
-	if (ret) {
-		dbgerr("runtime init error: %d", ret);
-		return (ret);
-	}
-
-	/* init config */
-
-	config = config_new();
-	ret = config_init(config);
-	if (ret) {
-		dbgerr("config init error: %d", ret);
-		if (!((-ESTORE == ret) || (-EMISMATCH == ret)))	// XXX: ignore storage errors
-			return (ret);
-	}
-	
+static int configure_runtime(struct s_config * restrict config)
+{
 	if (!config->restored) {
 		config_set_outdoor_sensorid(config, tid_out);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
@@ -256,7 +221,7 @@ static int init_process()
 		config->def_circuit.limit_wtmax = celsius_to_temp(80);
 		config->def_circuit.limit_wtmin = celsius_to_temp(20);
 		config->def_circuit.temp_inoffset = deltaK_to_temp(5);
-		
+
 		// DHWT defaults
 		config->def_dhwt.limit_wintmax = celsius_to_temp(90);
 		config->def_dhwt.limit_tmin = celsius_to_temp(5);
@@ -266,22 +231,17 @@ static int init_process()
 		config->def_dhwt.t_frostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
 		config->def_dhwt.hysteresis = deltaK_to_temp(10);
 		config->def_dhwt.temp_inoffset = deltaK_to_temp(10);
-		
+
 		config->configured = true;
 		config_save(config);
 	}
 
-	// attach config to runtime
-	runtime->config = config;
+	return (ALL_OK);
+}
 
-	/* init models */
-
-	// create new models
-	models = models_new();
-	if (!models) {
-		dbgerr("models creation failed");
-		return (-EOOM);
-	}
+static int configure_models(struct s_models * restrict models)
+{
+	struct s_bmodel * restrict bmodel_house = NULL;
 
 	// create a new building model
 	bmodel_house = models_new_bmodel(models, "house");
@@ -295,17 +255,15 @@ static int init_process()
 
 	models->configured = true;
 
-	// attach models to runtime
-	runtime->models = models;
+	return (ALL_OK);
+}
 
-	/* init plant */
-
-	// create a new plant
-	plant = plant_new();
-	if (!plant) {
-		dbgerr("plant creation failed");
-		return (-EOOM);
-	}
+static int configure_plant(struct s_plant * restrict plant)
+{
+	struct s_heatsource * restrict heatsource = NULL;
+	struct s_heating_circuit * restrict circuit = NULL;
+	struct s_dhw_tank * restrict dhwt = NULL;
+	struct s_boiler_priv * restrict boiler = NULL;
 
 	// create a new heat source for the plant
 	heatsource = plant_new_heatsource(plant, "boiler");
@@ -369,11 +327,11 @@ static int init_process()
 		dbgerr("valve_make_pi failed: %d", ret);
 		return (ret);
 	}
-	
+
 	// configure two relays for that valve
 	circuit->valve->set.rid_open = rid_vopen;
 	circuit->valve->set.rid_close = rid_vclose;
-	
+
 	circuit->valve->set.configured = true;
 
 	// create a pump for that circuit
@@ -409,8 +367,93 @@ static int init_process()
 
 	plant->configured = true;
 
+	return (ALL_OK);
+}
+
+/*
+ describe hardware
+ register hardware
+ set basic config
+ describe plant
+
+ init() initialize blank data structures etc
+ online() performs configuration checks and brings subsystem online
+ */
+static int init_process()
+{
+	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_config * restrict config = NULL;
+	struct s_plant * restrict plant = NULL;
+	struct s_models * restrict models = NULL;
+	int ret;
+
+
+	configure_hw();
+
+	/* init hardware */
+	
+	ret = hardware_init();
+	if (ret) {
+		dbgerr("hardware init error: %d", ret);
+		return (ret);
+	}
+
+	// signal hw has been inited
+	pthread_barrier_wait(&barr_main);
+
+	// wait for priviledges to be dropped
+	pthread_barrier_wait(&barr_main);
+
+	/* init config */
+
+	config = config_new();
+	ret = config_init(config);
+	if (ret) {
+		dbgerr("config init error: %d", ret);
+		if (!((-ESTORE == ret) || (-EMISMATCH == ret)))	// XXX: ignore storage errors
+			return (ret);
+	}
+
+	configure_runtime(config);
+
+	/* init models */
+
+	// create new models
+	models = models_new();
+	if (!models) {
+		dbgerr("models creation failed");
+		return (-EOOM);
+	}
+
+	configure_models(models);
+
+	/* init plant */
+
+	// create a new plant
+	plant = plant_new();
+	if (!plant) {
+		dbgerr("plant creation failed");
+		return (-EOOM);
+	}
+
+	configure_plant(plant);
+
+
+	/* init runtime */
+	ret = runtime_init();
+	if (ret) {
+		dbgerr("runtime init error: %d", ret);
+		return (ret);
+	}
+
+	// attach config to runtime
+	runtime->config = config;
+	// attach models to runtime
+	runtime->models = models;
 	// assign plant to runtime
 	runtime->plant = plant;
+
+	/* test and launch */
 
 	// bring the hardware online
 	while ((ret = hardware_online()) != ALL_OK) {
