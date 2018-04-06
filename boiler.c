@@ -362,7 +362,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
 		heat->run.cshift_crit = 2 * temp_intgrl / KPRECISIONI;
-		dbgmsg("%s: integral: %d mKs, cshift_crit: %d%%", heat->name, temp_intgrl, heat->run.cshift_crit);
+		dbgmsg("\"%s\": integral: %d mKs, cshift_crit: %d%%", heat->name, temp_intgrl, heat->run.cshift_crit);
 	}
 	else {
 		heat->run.cshift_crit = 0;		// reset shift
@@ -412,7 +412,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (hardware_relay_get_state(boiler->set.rid_burner_1) > 0)
 		heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
-	dbgmsg("%s: on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
+	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
 	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
 	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp));
 

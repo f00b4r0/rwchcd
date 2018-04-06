@@ -141,7 +141,7 @@ static void bmodel_outdoor(struct s_bmodel * const bmodel)
 	// calculate mixed temp last: makes it work at init
 	bmodel->run.t_out_mix = (runtime->t_outdoor_60 + bmodel->run.t_out_filt)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 
-	dbgmsg("%s: t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f", bmodel->name,
+	dbgmsg("\"%s\": t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f", bmodel->name,
 	       temp_to_celsius(bmodel->run.t_out_filt),
 	       temp_to_celsius(bmodel->run.t_out_mix),
 	       temp_to_celsius(bmodel->run.t_out_att));

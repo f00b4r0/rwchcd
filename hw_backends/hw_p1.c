@@ -1150,7 +1150,7 @@ static int hw_p1_output(void * priv)
 	// update LCD
 	ret = hw_p1_lcd_run();
 	if (ALL_OK != ret)
-		dbgerr("hw_p1_lcd_run failed: %d", ret);
+		dbgerr("hw_p1_lcd_run failed (%d)", ret);
 
 	// write relays
 	ret = hw_p1_rwchcrelays_write();

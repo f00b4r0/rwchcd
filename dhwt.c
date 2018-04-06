@@ -211,7 +211,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	// We're good to go
 
-	dbgmsg("%s: on: %d, mode_since: %ld, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
+	dbgmsg("\"%s\": on: %d, mode_since: %ld, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
 	       dhwt->name, dhwt->run.charge_on, dhwt->run.mode_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	// handle recycle loop

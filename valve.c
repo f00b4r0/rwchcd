@@ -228,7 +228,7 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	Ti = vpriv->set.Tu;
 	Ki = Kp/Ti;
 
-	//dbgmsg("%s: K: %d, Tc: %ld, Kp: %e, Ki: %e", valve->name, K, vpriv->run.Tc, Kp, Ki);
+	//dbgmsg("\"%s\": K: %d, Tc: %ld, Kp: %e, Ki: %e", valve->name, K, vpriv->run.Tc, Kp, Ki);
 
 	// calculate error E: (target - actual)
 	error = target_tout - tempout;
@@ -258,7 +258,7 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	 */
 	perth = truncf(pthfl);
 
-	dbgmsg("%s: E: %d, I: %f, P: %f, O: %f, acc: %f, pthfl: %f, perth: %d",
+	dbgmsg("\"%s\": E: %d, I: %f, P: %f, O: %f, acc: %f, pthfl: %f, perth: %d",
 	       valve->name, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
 
 	/*
@@ -583,7 +583,7 @@ int valve_run(struct s_valve * const valve)
 		}
 	}
 
-	dbgmsg("%s: rq_act: %d, act: %d, pos: %.1f%%, rq_crs: %.1f%%",
+	dbgmsg("\"%s\": rq_act: %d, act: %d, pos: %.1f%%, rq_crs: %.1f%%",
 	       valve->name, valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
 	       (float)valve->run.target_course/10.0F);
 

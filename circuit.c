@@ -73,7 +73,7 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
 	// calculate output at nominal 20C: Y = input*slope + offset
 	t_output = roundf(source_temp * slope) + offset;
 
-	dbgmsg("%s: lin: %.1f, comp: %.1f", circuit->name, temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
+	dbgmsg("\"%s\": lin: %.1f, comp: %.1f", circuit->name, temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
 
 	// shift output based on actual target temperature
 	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - tld->slope);
@@ -191,7 +191,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				water_temp = circuit->run.target_wtemp;
-				dbgmsg("%s: in cooldown, remaining: %ld", circuit->name, runtime->consumer_sdelay);
+				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, runtime->consumer_sdelay);
 				goto valve;	// stop processing
 			}
 			else
@@ -291,7 +291,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 #ifdef DEBUG
 	hardware_sensor_clone_temp(circuit->set.id_temp_return, &ret_temp);
 	hardware_sensor_clone_temp(circuit->set.id_temp_outgoing, &out_temp);
-	dbgmsg("%s: rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
+	dbgmsg("\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(water_temp), temp_to_celsius(out_temp), temp_to_celsius(ret_temp));
 #endif

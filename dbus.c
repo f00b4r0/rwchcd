@@ -312,7 +312,7 @@ static void on_name_lost(GDBusConnection *connection,
 			 const gchar *name,
 			 gpointer user_data)
 {
-	dbgerr("Could not acquire name %s, connection is %p", name, connection);
+	dbgerr("Could not acquire name \"%s\", connection is %p", name, connection);
 }
 
 /**

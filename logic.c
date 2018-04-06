@@ -218,7 +218,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
 			}
-			dbgmsg("%s: off, ambient: %.1f", circuit->name, temp_to_celsius(ambient_temp));
+			dbgmsg("\"%s\": off, ambient: %.1f", circuit->name, temp_to_celsius(ambient_temp));
 		}
 		else {
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
@@ -271,7 +271,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 					break;
 			}
 			if (circuit->run.transition)	// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
-				dbgmsg("%s: Trans: %d, st_amb: %d, cr_amb: %d, active_elapsed: %ld",
+				dbgmsg("\"%s\": Trans: %d, st_amb: %d, cr_amb: %d, active_elapsed: %ld",
 				       circuit->name, circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, circuit->run.trans_active_elapsed);
 		}
 	}
