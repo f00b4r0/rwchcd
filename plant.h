@@ -21,7 +21,7 @@
 /** List of pumps */
 struct s_pump_l {
 	uint_fast8_t id;
-	enum e_execs status;		///< pump actual status (this flag will signal the last run error). @note UNUSED
+	enum e_execs status;		///< pump actual status (this flag will signal the last run error).
 	struct s_pump * restrict pump;
 	struct s_pump_l * next;
 };

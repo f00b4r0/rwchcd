@@ -33,7 +33,6 @@ int hw_backends_init(void)
 /**
  * Register a hardware backend.
  * If registration is possible, the backend will be registered with the system.
- * @warning must be called @b AFTER calling hardware_p().
  * @param callbacks a populated, valid backend structure
  * @param priv backend-specific private data
  * @param name user-defined name for this backend
