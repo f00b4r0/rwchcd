@@ -166,8 +166,12 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 
-	if (!runtime->config->limit_tsummer)
-		return (-ENOTCONFIGURED);	// invalid limit, don't do anything
+	assert(bmodel);	// guaranteed to be called with bmodel configured
+
+	if (!runtime->config->limit_tsummer) {
+		bmodel->run.summer = false;
+		return (-ENOTCONFIGURED);	// invalid limit, stop here
+	}
 
 	if ((runtime->t_outdoor_60 > runtime->config->limit_tsummer)	&&
 	    (bmodel->run.t_out_mix > runtime->config->limit_tsummer)	&&
@@ -361,4 +365,30 @@ int models_run(struct s_models * restrict const models)
 	}
 
 	return (ALL_OK);
+}
+
+/**
+ * Parse building models for summer switch evaluation. Conditions:
+ * - If something's wrong, summer mode is unset.
+ * - If @b ALL configured bmodels are compatible with summer mode, summer mode is set.
+ * - If @b ANY configured bmodel is incompatible with summer mode, summer mode is unset.
+ * @param models model list from which to process the building models
+ * @return summer mode
+ */
+bool models_summer(const struct s_models * restrict const models)
+{
+	struct s_bmodel_l * bmodelelmt;
+	bool summer = true;
+
+	// if something isn't quite right, return false by default
+	if (!models || !models->configured || !models->online)
+		return (false);
+
+	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
+		if (!bmodelelmt->bmodel->set.configured)
+			continue;
+		summer &= bmodelelmt->bmodel->run.summer;
+	}
+
+	return (summer);
 }

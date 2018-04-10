@@ -139,23 +139,16 @@ static void outdoor_temp()
 
 
 /**
- * Conditions for summer switch.
- * If ALL bmodels are compatible with summer mode, summer mode is set.
- * If ANY bmodel is incompatible with summer mode, summer mode is unset.
+ * Toggle runtime summer mode.
+ * Parse all building models currently running to determine summer status.
  * Lockless by design.
  */
 static void runtime_summer(void)
 {
-	struct s_bmodel_l * bmodelelmt;
-	bool summer = true;
-
 	if (!Runtime.config->limit_tsummer)
 		return;	// invalid limit, don't do anything
 
-	for (bmodelelmt = Runtime.models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
-		summer &= bmodelelmt->bmodel->run.summer;
-
-	Runtime.summer = summer;
+	Runtime.summer = models_summer(Runtime.models);
 }
 
 /**
