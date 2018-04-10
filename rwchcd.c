@@ -85,15 +85,26 @@
 #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
 
 #define RELAY_PUMP	9
+#define RELAY_PUMP_N	"pump"
 #define RELAY_VCLOSE	10
+#define RELAY_VCLOSE_N	"v_close"
 #define RELAY_VOPEN	11
+#define RELAY_VOPEN_N	"v_open"
 #define RELAY_BURNER	14
+#define RELAY_BURNER_N	"burner"
 
 #define SENSOR_OUTDOOR	1
+#define SENSOR_OUTDOOR_N	"outdoor"
 #define SENSOR_BOILER	2
+#define SENSOR_BOILER_N		"boiler"
 #define SENSOR_WATEROUT	3
+#define SENSOR_WATEROUT_N	"water out"
 #define SENSOR_WATERRET	4
+#define SENSOR_WATERRET_N	"water return"
 #define SENSOR_BOILRET	5
+#define SENSOR_BOILRET_N	"boiler return"
+
+#define HW_NAME		"prototype"
 
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
@@ -123,18 +134,19 @@ static void sig_handler(int signum)
 	}
 }
 
-/* new_relid new_tempid find_relid find_tempid find_model */
+/*
+ config structure:
+ - describe hardware (name of hw, type of hw, hw-specific config, hw-specific named relays and sensors). Names used for identification later on
+ - describe plant (named elements associated with named sensors/relays)
+ - configure building models
+ - configure runtime
+ */
 
-/** copy matched relid data to target on success, return error code otherwise */
-int find_relid(relid_t * const target, const char * const name);
 
 static int configure_hw()
 {
-	void * priv;
-	tempid_t tid_out, tid_boil, tid_watout, tid_watret, tid_boilret;
-	relid_t rid_pump, rid_vclose, rid_vopen, rid_burner;
-	bid_t bkendid;
 	int ret;
+	void * priv;
 
 	/* describe hardware */
 	ret = hw_backends_init();
@@ -148,54 +160,35 @@ static int configure_hw()
 	priv = hw_p1_new();
 
 	// register hardware backend
-	ret = hw_p1_backend_register(priv, "prototype");
+	ret = hw_p1_backend_register(priv, HW_NAME);
 	if (ret < 0) {
-		dbgmsg("backend registration failed for %s (%d)", "prototype", ret);
+		dbgmsg("backend registration failed for %s (%d)", HW_NAME, ret);
 		return (ret);
 	}
-	bkendid = ret;
 
 	// configure hw
 	hw_p1_config_setnsensors(5);	// XXX 5 sensors
 	hw_p1_config_setnsamples(5);	// XXX 5 samples average
 
 	// describe hw
-	ret = hw_p1_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), "outdoor");
+	ret = hw_p1_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), SENSOR_OUTDOOR_N);
 	if (ret) return (ret);
-	tid_out.bid = bkendid;
-	tid_out.sid = SENSOR_OUTDOOR;
-	ret = hw_p1_sensor_configure(SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), "boiler");
+	ret = hw_p1_sensor_configure(SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), SENSOR_BOILER_N);
 	if (ret) return (ret);
-	tid_boil.bid = bkendid;
-	tid_boil.sid = SENSOR_BOILER;
-	ret = hw_p1_sensor_configure(SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(+1), "boiler return");
+	ret = hw_p1_sensor_configure(SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(+1), SENSOR_BOILRET_N);
 	if (ret) return (ret);
-	tid_boilret.bid = bkendid;
-	tid_boilret.sid = SENSOR_BOILRET;
-	ret = hw_p1_sensor_configure(SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), "water out");
+	ret = hw_p1_sensor_configure(SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), SENSOR_WATEROUT_N);
 	if (ret) return (ret);
-	tid_watout.bid = bkendid;
-	tid_watout.sid = SENSOR_WATEROUT;
-	ret = hw_p1_sensor_configure(SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), "water return");
+	ret = hw_p1_sensor_configure(SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), SENSOR_WATERRET_N);
 	if (ret) return (ret);
-	tid_watret.bid = bkendid;
-	tid_watret.sid = SENSOR_WATERRET;
-	ret = hw_p1_relay_request(RELAY_BURNER, OFF, "burner");
+	ret = hw_p1_relay_request(RELAY_BURNER, OFF, RELAY_BURNER_N);
 	if (ret) return (ret);
-	rid_burner.bid = bkendid;
-	rid_burner.rid = RELAY_BURNER;
-	ret = hw_p1_relay_request(RELAY_VOPEN, OFF, "v_open");
+	ret = hw_p1_relay_request(RELAY_VOPEN, OFF, RELAY_VOPEN_N);
 	if (ret) return (ret);
-	rid_vopen.bid = bkendid;
-	rid_vopen.rid = RELAY_VOPEN;
-	ret = hw_p1_relay_request(RELAY_VCLOSE, OFF, "v_close");
+	ret = hw_p1_relay_request(RELAY_VCLOSE, OFF, RELAY_VCLOSE_N);
 	if (ret) return (ret);
-	rid_vclose.bid = bkendid;
-	rid_vclose.rid = RELAY_VCLOSE;
-	ret = hw_p1_relay_request(RELAY_PUMP, ON, "pump");
+	ret = hw_p1_relay_request(RELAY_PUMP, ON, RELAY_PUMP_N);
 	if (ret) return (ret);
-	rid_pump.bid = bkendid;
-	rid_pump.rid = RELAY_PUMP;
 #endif
 
 	return (ALL_OK);
@@ -203,6 +196,13 @@ static int configure_hw()
 
 static int configure_runtime(struct s_config * restrict config)
 {
+	int ret;
+	tempid_t tid_out;
+
+	ret = hw_backends_sensor_fbn(&tid_out, HW_NAME, SENSOR_OUTDOOR_N);
+	if (ALL_OK != ret)
+		return (ret);
+
 	if (!config->restored) {
 		config_set_outdoor_sensorid(config, tid_out);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
@@ -264,6 +264,9 @@ static int configure_plant(struct s_plant * restrict plant)
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_dhw_tank * restrict dhwt = NULL;
 	struct s_boiler_priv * restrict boiler = NULL;
+	tempid_t tempid;
+	relid_t relid;
+	int ret;
 
 	// create a new heat source for the plant
 	heatsource = plant_new_heatsource(plant, "boiler");
@@ -283,10 +286,18 @@ static int configure_plant(struct s_plant * restrict plant)
 	boiler->set.hysteresis = deltaK_to_temp(8);
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
-	boiler->set.id_temp = tid_boil;
-	boiler->set.id_temp_return = tid_boilret;
-	boiler->set.rid_burner_1 = rid_burner;
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
+
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
+	if (ret) return (ret);
+	boiler->set.id_temp = tempid;
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILRET_N);
+	if (ret) return (ret);
+	boiler->set.id_temp_return = tempid;
+	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_BURNER_N);
+	if (ret) return (ret);
+	boiler->set.rid_burner_1 = relid;
+
 	heatsource->set.consumer_sdelay = 6 * 60;	// 6mn
 	heatsource->set.runmode = RM_AUTO;	// use global setting
 	heatsource->set.configured = true;
@@ -302,8 +313,12 @@ static int configure_plant(struct s_plant * restrict plant)
 	circuit->set.am_tambient_tK = 60 * 60;	// 1h
 	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
 	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
-	circuit->set.id_temp_outgoing = tid_watout;
-	circuit->set.id_temp_return = tid_watret;
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
+	if (ret) return (ret);
+	circuit->set.id_temp_outgoing = tempid;
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
+	if (ret) return (ret);
+	circuit->set.id_temp_return = tempid;
 	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
 			      celsius_to_temp(15), celsius_to_temp(27), 130);
 
@@ -329,8 +344,12 @@ static int configure_plant(struct s_plant * restrict plant)
 	}
 
 	// configure two relays for that valve
-	circuit->valve->set.rid_open = rid_vopen;
-	circuit->valve->set.rid_close = rid_vclose;
+	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VOPEN_N);
+	if (ret) return (ret);
+	circuit->valve->set.rid_open = relid;
+	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VCLOSE_N);
+	if (ret) return (ret);
+	circuit->valve->set.rid_close = relid;
 
 	circuit->valve->set.configured = true;
 
@@ -342,7 +361,9 @@ static int configure_plant(struct s_plant * restrict plant)
 	}
 
 	// configure a relay for that pump
-	circuit->pump->set.rid_relay = rid_pump;
+	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_PUMP_N);
+	if (ret) return (ret);
+	circuit->pump->set.rid_relay = relid;
 
 	circuit->pump->set.configured = true;
 
