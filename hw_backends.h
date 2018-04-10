@@ -100,8 +100,18 @@ struct s_hw_callbacks {
 
 
 	/**
+	 * Find hardware relay id by name.
+	 * This callback looks up a hardware relay in the backend by its name.
+	 * @warning for a given backend, relay names must be unique.
+	 * @param priv hardware backend private data
+	 * @param name target relay name to look for
+	 * @return error if not found or hardware relay id
+	 */
+	int (*relay_ibn)(void * priv, const char * const name);
+
+	/**
 	 * Get relay state.
-	 * This callbacks reads the software representation of the state of a
+	 * This callback reads the software representation of the state of a
 	 * relay. The state returned by this callback accounts for the last
 	 * execution of hardware_output(), i.e. the returned state corresponds to
 	 * the last enacted hardware state.
@@ -118,7 +128,7 @@ struct s_hw_callbacks {
 
 	/**
 	 * Set relay state.
-	 * This callbacks updates the software representation of the state of a
+	 * This callback updates the software representation of the state of a
 	 * relay. The hardware will reflect the state matching the last call to
 	 * this function after hardware_output() has been executed.
 	 * @param priv hardware backend private data
@@ -128,6 +138,16 @@ struct s_hw_callbacks {
 	 * @return exec status
 	 */
 	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on, time_t change_delay);
+
+	/**
+	 * Find hardware sensor id by name.
+	 * This callback looks up a hardware sensor in the backend by its name.
+	 * @warning for a given backend, sensor names must be unique.
+	 * @param priv hardware backend private data
+	 * @param name target sensor name to look for
+	 * @return error if not found or hardware sensor id
+	 */
+	int (*sensor_ibn)(void * priv, const char * const name);
 
 	/**
 	 * Clone sensor temperature value.
@@ -157,6 +177,8 @@ extern struct s_hw_backend * HW_backends[HW_MAX_BKENDS];
 
 int hw_backends_init(void);
 int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * const priv, const char * const name);
+int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, const char * const sensor_name);
+int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const char * const relay_name);
 void hw_backends_exit(void);
 
 #endif /* hw_backends_h */

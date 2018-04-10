@@ -106,6 +106,88 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
 }
 
 /**
+ * Find a registered backend sensor by name.
+ * This function finds the sensor named sensor_name in backend named bkend_name
+ * and populates tempid with these elements.
+ * @param tempid target tempid_t to populate
+ * @param bkend_name name of the backend to look into
+ * @param sensor_name name of the sensor to look for in that backend
+ * @return execution status
+ */
+int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, const char * const sensor_name)
+{
+	bid_t bid;
+	sid_t sid;
+	int ret;
+
+	// input sanitization
+	if (!tempid || !bkend_name || !sensor_name)
+		return (-EINVALID);
+
+	// find backend
+	ret = hw_backends_bid_by_name(bkend_name);
+	if (ret < 0)
+		return (-ENOTFOUND);
+
+	bid = (bid_t)ret;
+
+	if (!HW_backends[bid]->cb->sensor_ibn)
+		return (-ENOTIMPLEMENTED);
+
+	// find sensor in that backend
+	sid = HW_backends[bid]->cb->sensor_ibn(HW_backends[bid]->priv, sensor_name);
+	if (sid <= 0)
+		return (-ENOTFOUND);
+
+	// populate target
+	tempid->bid = bid;
+	tempid->sid = sid;
+
+	return (ALL_OK);
+}
+
+/**
+ * Find a registered backend relay by name.
+ * This function finds the relay named relay_name in backend named bkend_name
+ * and populates relid with these elements.
+ * @param relid target relid_t to populate
+ * @param bkend_name name of the backend to look into
+ * @param relay_name name of the relay to look for in that backend
+ * @return execution status
+ */
+int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const char * const relay_name)
+{
+	bid_t bid;
+	rid_t rid;
+	int ret;
+
+	// input sanitization
+	if (!relid || !bkend_name || !relay_name)
+		return (-EINVALID);
+
+	// find backend
+	ret = hw_backends_bid_by_name(bkend_name);
+	if (ret < 0)
+		return (-ENOTFOUND);
+
+	bid = (bid_t)ret;
+
+	if (!HW_backends[bid]->cb->relay_ibn)
+		return (-ENOTIMPLEMENTED);
+
+	// find relay in that backend
+	rid = HW_backends[bid]->cb->relay_ibn(HW_backends[bid]->priv, relay_name);
+	if (rid <= 0)
+		return (-ENOTFOUND);
+
+	// populate target
+	relid->bid = bid;
+	relid->rid = rid;
+
+	return (ALL_OK);
+}
+
+/**
  * Cleanup hardware backend system
  */
 void hw_backends_exit(void)
