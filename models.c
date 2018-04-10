@@ -351,7 +351,8 @@ int models_run(struct s_models * restrict const models)
 {
 	struct s_bmodel_l * restrict bmodelelmt;
 
-	assert(models);
+	if (!models)
+		return (-EINVALID);
 
 	if (!models->configured)
 		return (-ENOTCONFIGURED);
