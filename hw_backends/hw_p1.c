@@ -1495,6 +1495,34 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const c
 	return (ALL_OK);
 }
 
+/**
+ * Find sensor id by name.
+ * @param priv unused
+ * @param name target name to look for
+ * @return error if not found or sensor id
+ */
+static int hw_p1_sensor_ibn(void * priv, const char * const name)
+{
+	if (!name)
+		return (-EINVALID);
+
+	return (hw_p1_sid_by_name(name));
+}
+
+/**
+ * Find relay id by name.
+ * @param priv unused
+ * @param name target name to look for
+ * @return error if not found or sensor id
+ */
+static int hw_p1_relay_ibn(void * priv, const char * const name)
+{
+	if (!name)
+		return (-EINVALID);
+
+	return (hw_p1_rid_by_name(name));
+}
+
 /** Hardware callbacks for Prototype 1 hardware */
 static struct s_hw_callbacks hw_p1_callbacks = {
 	.init = hw_p1_init,
@@ -1507,6 +1535,8 @@ static struct s_hw_callbacks hw_p1_callbacks = {
 	.sensor_clone_time = hw_p1_sensor_clone_time,
 	.relay_get_state = hw_p1_relay_get_state,
 	.relay_set_state = hw_p1_relay_set_state,
+	.sensor_ibn = hw_p1_sensor_ibn,
+	.relay_ibn = hw_p1_relay_ibn,
 };
 
 /**
