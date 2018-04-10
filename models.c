@@ -225,22 +225,19 @@ struct s_bmodel * models_new_bmodel(struct s_models * restrict const models, con
 	struct s_bmodel_l * restrict bmodelelmt = NULL;
 	char * restrict str = NULL;
 
-	if (!models)
+	if (!models || !name)
 		goto fail;
 
-	// deal with name
-	if (name) {
-		// ensure unique name
-		for (bml = models->bmodels; bml; bml = bml->next) {
-			if (!strcmp(bml->bmodel->name, name))
-				goto fail;
-		}
-
-		str = strdup(name);
-		if (!str)
+	// ensure unique name
+	for (bml = models->bmodels; bml; bml = bml->next) {
+		if (!strcmp(bml->bmodel->name, name))
 			goto fail;
 	}
-	
+
+	str = strdup(name);
+	if (!str)
+		goto fail;
+
 	// create a new bmodel
 	bmodel = calloc(1, sizeof(*bmodel));
 	if (!bmodel)
