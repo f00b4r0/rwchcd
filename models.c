@@ -299,6 +299,9 @@ void models_del(struct s_models * models)
 		models->bmodels_n--;
 		bmodelelmt = bmodelnext;
 	}
+
+	// free resources
+	free(models);
 }
 
 /**
