@@ -62,7 +62,7 @@ struct s_stateful_relay {
 		time_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
 		uint_fast32_t cycles;	///< number of power cycles
 	} run;		///< private runtime (internally handled)
-	char * restrict name;		///< user-defined name for the relay
+	char * restrict name;		///< @b unique user-defined name for the relay
 };
 
 static const storage_version_t Hardware_sversion = 1;
@@ -98,7 +98,7 @@ static struct s_hw_p1_pdata {
 			temp_t value;		///< sensor current temperature value (offset applied)
 		} run;
 		ohm_to_celsius_ft * ohm_to_celsius;
-		char * restrict name;		///< user-defined name for the sensor
+		char * restrict name;		///< @b unique user-defined name for the sensor
 	} Sensors[RWCHC_NTSENSORS];		///< physical sensors
 	struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
 } Hardware;	///< Prototype 1 private data
@@ -723,6 +723,50 @@ const char * hw_p1_temp_to_str(const sid_t tempid)
 	return (&snpbuf);
 }
 
+/**
+ * Find sensor id by name.
+ * @param name name to look for
+ * @return -ENOTFOUND if not found, sensor id if found
+ */
+static int hw_p1_sid_by_name(const char * const name)
+{
+	unsigned int id;
+	int ret = -ENOTFOUND;
+
+	for (id = 0; (id < ARRAY_SIZE(Hardware.Sensors)); id++) {
+		if (!Hardware.Sensors[id].set.configured)
+			continue;
+		if (!strcmp(Hardware.Sensors[id].name, name)) {
+			ret = id+1;
+			break;
+		}
+	}
+
+	return (ret);
+}
+
+/**
+ * Find relay id by name.
+ * @param name name to look for
+ * @return -ENOTFOUND if not found, sensor id if found
+ */
+static int hw_p1_rid_by_name(const char * const name)
+{
+	unsigned int id;
+	int ret = -ENOTFOUND;
+
+	for (id = 0; (id < ARRAY_SIZE(Hardware.Relays)); id++) {
+		if (!Hardware.Relays[id].set.configured)
+			continue;
+		if (!strcmp(Hardware.Relays[id].name, name)) {
+			ret = id+1;
+			break;
+		}
+	}
+
+	return (ret);
+}
+
 /* Public interface */
 
 /**
@@ -788,32 +832,33 @@ int hw_p1_config_setnsamples(const uint_fast8_t nsamples)
  * @param id the physical id of the sensor to configure (starting from 1)
  * @param type the sensor type (PT1000...)
  * @param offset a temperature offset to apply to this particular sensor value
- * @param name an optional user-defined name describing the sensor
+ * @param name @b unique user-defined name describing the sensor
  * @return exec status
  */
 int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name)
 {
 	char * str = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Hardware.Sensors)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Sensors)) || !name)
 		return (-EINVALID);
 
 	if (Hardware.Sensors[id-1].set.configured)
 		return (-EEXISTS);
+
+	// ensure unique name
+	if (hw_p1_sid_by_name(name) > 0)
+		return (-EEXISTS);
+
+	str = strdup(name);
+	if (!str)
+		return(-EOOM);
 
 	Hardware.Sensors[id-1].ohm_to_celsius = sensor_o_to_c(type);
 
 	if (!Hardware.Sensors[id-1].ohm_to_celsius)
 		return (-EINVALID);
 
-	if (name) {
-		str = strdup(name);
-		if (!str)
-			return(-EOOM);
-
-		Hardware.Sensors[id-1].name = str;
-	}
-
+	Hardware.Sensors[id-1].name = str;
 	Hardware.Sensors[id-1].set.type = type;
 	Hardware.Sensors[id-1].set.offset = offset;
 	Hardware.Sensors[id-1].set.configured = true;
@@ -846,26 +891,28 @@ int hw_p1_sensor_deconfigure(const sid_t id)
  * Ensures that the desired hardware relay is available and grabs it.
  * @param id target relay id (starting from 1)
  * @param failstate the state assumed by the hardware relay in standalone failover (controlling software failure)
- * @param name the optional user-defined name for this relay (string will be copied locally)
+ * @param name @b unique user-defined name for this relay (string will be copied locally)
  * @return exec status
  */
 int hw_p1_relay_request(const rid_t id, const bool failstate, const char * const name)
 {
 	char * str = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
+	if (!id || (id > ARRAY_SIZE(Hardware.Relays)) || !name)
 		return (-EINVALID);
 	
 	if (Hardware.Relays[id-1].set.configured)
 		return (-EEXISTS);
 
-	if (name) {
-		str = strdup(name);
-		if (!str)
-			return(-EOOM);
+	// ensure unique name
+	if (hw_p1_rid_by_name(name) > 0)
+		return (-EEXISTS);
 
-		Hardware.Relays[id-1].name = str;
-	}
+	str = strdup(name);
+	if (!str)
+		return(-EOOM);
+
+	Hardware.Relays[id-1].name = str;
 
 	// register failover state
 	rwchc_relay_set(&Hardware.settings.deffail, id-1, failstate);
