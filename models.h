@@ -32,13 +32,6 @@ struct s_bmodel {
 	char * restrict name;		///< name for this bmodel
 };
 
-/** List of building models */
-struct s_bmodel_l {
-	uint_fast8_t id;
-	struct s_bmodel * restrict bmodel;
-	struct s_bmodel_l * next;
-};
-
 /** List of models */
 struct s_models {
 	bool configured;		///< true if the models are configured

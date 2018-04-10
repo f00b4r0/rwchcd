@@ -2,7 +2,7 @@
 //  models.c
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -26,6 +26,13 @@
 #define OUTDOOR_AVG_UPDATE_DT		600	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
 #define MODELS_STORAGE_NAME_LEN		64
 #define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel_"
+
+/** List of building models */
+struct s_bmodel_l {
+	uint_fast8_t id;
+	struct s_bmodel * restrict bmodel;
+	struct s_bmodel_l * next;
+};
 
 static const storage_version_t Models_sversion = 1;
 
@@ -91,6 +98,27 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	}
 
 	return (ret);
+}
+
+/**
+ * Find a building model by name.
+ * @param bmodels list of bmodels to search
+ * @param name target name to find
+ * @return bmodel if found, NULL otherwise
+ */
+static const struct s_bmodel * bmodels_fbn(const struct s_bmodel_l * const bmodels, const char * const name)
+{
+	const struct s_bmodel_l * bml;
+	struct s_bmodel * bmodel = NULL;
+
+	for (bml = bmodels; bml; bml = bml->next) {
+		if (!strcmp(bml->bmodel->name, name)) {
+			bmodel = bml->bmodel;
+			break;
+		}
+	}
+
+	return (bmodel);
 }
 
 /**
@@ -220,7 +248,6 @@ static void models_save(const struct s_models * restrict const models)
  */
 struct s_bmodel * models_new_bmodel(struct s_models * restrict const models, const char * restrict const name)
 {
-	const struct s_bmodel_l * restrict bml;
 	struct s_bmodel * restrict bmodel = NULL;
 	struct s_bmodel_l * restrict bmodelelmt = NULL;
 	char * restrict str = NULL;
@@ -229,10 +256,8 @@ struct s_bmodel * models_new_bmodel(struct s_models * restrict const models, con
 		goto fail;
 
 	// ensure unique name
-	for (bml = models->bmodels; bml; bml = bml->next) {
-		if (!strcmp(bml->bmodel->name, name))
-			goto fail;
-	}
+	if (bmodels_fbn(models->bmodels, name))
+		goto fail;
 
 	str = strdup(name);
 	if (!str)
