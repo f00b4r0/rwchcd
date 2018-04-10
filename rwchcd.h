@@ -79,6 +79,7 @@ enum e_execs {
 	ESTORE,		///< Storage errors
 	EMISMATCH,	///< version mismatch
 	EHARDWARE,	///< hardware errors
+	ENOTFOUND,	///< entity not found
 	EGENERIC,
 };
 
