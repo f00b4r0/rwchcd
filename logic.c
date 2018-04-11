@@ -33,12 +33,12 @@
  * Conditions for running circuit
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
  * Circuit is off in ANY of the following conditions are met:
- * - runtime->summer is true
+ * - building model summer is true
  * - t_out_60 > current temp_trigger
  * - t_out_mix > current temp_trigger
  * - t_out_att > current temp_trigger
  * Circuit is back on if ALL of the following conditions are met:
- * - runtime->summer is false
+ * - building model summer is false
  * - t_out_60 < current temp_trigger - outhoff_histeresis
  * - t_out_mix < current temp_trigger - outhoff_histeresis
  * - t_out_att < current temp_trigger - outhoff_histeresis
