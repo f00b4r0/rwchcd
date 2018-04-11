@@ -273,7 +273,9 @@ int runtime_online(void)
 
 	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log, "log runtime");
 
-	models_online(Runtime.models);
+	ret = models_online(Runtime.models);
+	if (ALL_OK != ret)
+		return (ret);
 
 	return (plant_online(Runtime.plant));
 }
@@ -284,12 +286,16 @@ int runtime_online(void)
  */
 int runtime_run(void)
 {
+	int ret;
+
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
 		return (-ENOTCONFIGURED);
 
 	// process data
 
-	models_run(Runtime.models);
+	ret = models_run(Runtime.models);
+	if (ALL_OK != ret)
+		return (ret);
 
 	Runtime.t_outdoor_60 = models_outtemp(Runtime.models);
 
