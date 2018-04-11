@@ -480,3 +480,21 @@ bool models_summer(const struct s_models * restrict const models)
 
 	return (summer);
 }
+
+/** quick temporary hack for backward compatibility */
+temp_t models_outtemp(const struct s_models * restrict const models)
+{
+	struct s_bmodel_l * bmodelelmt;
+	temp_t temp = 0;
+
+	// if something isn't quite right, return error by default
+	if (!models || !models->configured || !models->online)
+		return (-EGENERIC);
+
+	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
+		temp += bmodelelmt->bmodel->run.t_out;
+
+	temp /= models->bmodels_n;	// average
+
+	return (temp);
+}

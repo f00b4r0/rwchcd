@@ -85,7 +85,6 @@ static int runtime_async_log(void)
 		"dhwmode",
 		"summer",
 		"plant_sleep",
-		"t_outdoor_60",
 		"plant_hrequest",
 	};
 	static storage_values_t values[ARRAY_SIZE(keys)];
@@ -97,7 +96,6 @@ static int runtime_async_log(void)
 	values[i++] = Runtime.dhwmode;
 	values[i++] = Runtime.summer;
 	values[i++] = Runtime.plant_could_sleep;
-	values[i++] = Runtime.t_outdoor_60;
 	values[i++] = Runtime.plant_hrequest;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
 	
@@ -105,36 +103,6 @@ static int runtime_async_log(void)
 	
 	return (storage_log("log_runtime", &version, keys, values, i));
 }
-
-/**
- * Process outdoor temperature.
- * Computes outdoor temperature and "smoothed" outdoor temperature, with a safety
- * fallback in case of sensor failure.
- * @note must run at (ideally fixed) intervals >= 1s
- * @note this is part of the synchronous code path because moving it to a separate
- * thread would add overhead (locking) for essentially no performance improvement.
- */
-static void outdoor_temp()
-{
-	const time_t last = Runtime.outdoor_time;	// previous sensor time. At first run: 0 which makes mavg return new sample
-	time_t dt;
-	temp_t toutdoor;
-	int ret;
-
-	ret = hardware_sensor_clone_temp(Runtime.config->id_temp_outdoor, &toutdoor);
-	if (ALL_OK == ret) {
-		hardware_sensor_clone_time(Runtime.config->id_temp_outdoor, &Runtime.outdoor_time);
-		dt = Runtime.outdoor_time - last;
-		Runtime.t_outdoor = toutdoor;
-		Runtime.t_outdoor_60 = temp_expw_mavg(Runtime.t_outdoor_60, Runtime.t_outdoor, 60, dt);
-	}
-	else {
-		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
-		Runtime.t_outdoor_60 = Runtime.t_outdoor = Runtime.config->limit_tfrost-1;
-		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
-	}
-}
-
 
 /**
  * Toggle runtime summer mode.
@@ -321,12 +289,9 @@ int runtime_run(void)
 
 	// process data
 
-	outdoor_temp();
-
-	dbgmsg("t_outdoor: %.1f, t_60: %.1f",
-	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60));
-
 	models_run(Runtime.models);
+
+	Runtime.t_outdoor_60 = models_outtemp(Runtime.models);
 
 	runtime_summer();
 

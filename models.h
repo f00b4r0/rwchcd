@@ -52,4 +52,6 @@ int models_offline(struct s_models * restrict const models);
 int models_run(struct s_models * restrict const models);
 bool models_summer(const struct s_models * restrict const models);
 
+temp_t models_outtemp(const struct s_models * restrict const models) __attribute__ ((deprecated));
+
 #endif /* rwchcd_models_h */
