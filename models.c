@@ -364,6 +364,19 @@ fail:
 }
 
 /**
+ * Find a building model by name from models.
+ * @param name target name to find
+ * @return bmodel if found, NULL otherwise
+ */
+const struct s_bmodel * models_fbn_bmodel(const char * restrict const name)
+{
+	if (!name)
+		return (NULL);
+
+	return (bmodels_fbn(Models.bmodels, name));
+}
+
+/**
  * Initialize the models subsystem.
  * @return exec status
  */

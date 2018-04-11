@@ -106,6 +106,8 @@
 
 #define HW_NAME		"prototype"
 
+#define HOUSE_BMODEL_N	"house"
+
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
 
@@ -137,9 +139,9 @@ static void sig_handler(int signum)
 /*
  config structure:
  - describe hardware (name of hw, type of hw, hw-specific config, hw-specific named relays and sensors). Names used for identification later on
+ - configure runtime (i.e. global defaults)
+ - describe building models
  - describe plant (named elements associated with named sensors/relays)
- - configure building models
- - configure runtime
  */
 
 
@@ -250,7 +252,7 @@ static int configure_models()
 		return (ret);
 
 	// create a new building model
-	bmodel_house = models_new_bmodel("house");
+	bmodel_house = models_new_bmodel(HOUSE_BMODEL_N);
 	if (!bmodel_house) {
 		dbgerr("bmodel creation failed");
 		return (-EGENERIC);
@@ -374,7 +376,7 @@ static int configure_plant(struct s_plant * restrict plant)
 
 	circuit->set.runmode = RM_AUTO;		// use global setting
 
-	circuit->bmodel = bmodel_house;		// assign building model
+	circuit->bmodel = models_fbn_bmodel(HOUSE_BMODEL_N);	// assign building model
 
 	circuit->set.configured = true;
 

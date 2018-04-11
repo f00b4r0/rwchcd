@@ -37,6 +37,7 @@ struct s_bmodel {
 };
 
 struct s_bmodel * models_new_bmodel(const char * restrict const name);
+const struct s_bmodel * models_fbn_bmodel(const char * restrict const name);
 int models_init(void);
 void models_exit(void);
 int models_online(void);
