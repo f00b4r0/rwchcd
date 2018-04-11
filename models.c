@@ -60,7 +60,7 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 
 	strncat(buf, bmodel->name, MODELS_STORAGE_NAME_LEN-strlen(buf)-1);
 
-	return (storage_dump(buf, &Models_sversion, bmodel, sizeof(*bmodel)));
+	return (storage_dump(buf, &Models_sversion, &bmodel->run, sizeof(bmodel->run)));
 }
 
 /**
@@ -88,7 +88,7 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	strncat(buf, bmodel->name, MODELS_STORAGE_NAME_LEN-strlen(buf)-1);
 
 	// try to restore key elements
-	ret = storage_fetch(buf, &sversion, &temp_bmodel, sizeof(temp_bmodel));
+	ret = storage_fetch(buf, &sversion, &temp_bmodel.run, sizeof(temp_bmodel.run));
 	if (ALL_OK == ret) {
 		if (Models_sversion != sversion)
 			return (-EMISMATCH);
