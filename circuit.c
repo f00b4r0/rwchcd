@@ -106,6 +106,11 @@ int circuit_online(struct s_heating_circuit * const circuit)
 	if (ret)
 		goto out;
 
+	// make sure associated building model is configured
+	if (!circuit->bmodel || !circuit->bmodel->set.configured) {
+		dbgerr("\"%s\": building model not configured", circuit->name);
+		ret = -EMISCONFIGURED;
+	}
 	// if pump exists check it's correctly configured
 	if (circuit->pump && !circuit->pump->set.configured) {
 		dbgerr("\"%s\": pump \"%s\" not configured", circuit->name, circuit->pump->name);
