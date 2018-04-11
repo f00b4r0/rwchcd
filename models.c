@@ -133,6 +133,44 @@ static const struct s_bmodel * bmodels_fbn(const struct s_bmodel_l * const bmode
 }
 
 /**
+ * Bring a building model online.
+ * Checks that outdoor sensor is available
+ * @param bmodel target bmodel
+ * @return exec status
+ */
+static int bmodel_online(struct s_bmodel * restrict const bmodel)
+{
+	int ret;
+
+	if (!bmodel->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// make sure specified outdoor sensor is available
+	ret = hardware_sensor_clone_time(bmodel->set.id_t_out, NULL);
+	if (ALL_OK != ret)
+		return (ret);
+
+	bmodel->run.online = true;
+
+	return (ALL_OK);
+}
+
+/**
+ * Take a building model offline.
+ * @param bmodel target bmodel
+ * @return exec status
+ */
+static int bmodel_offline(struct s_bmodel * restrict const bmodel)
+{
+	if (!bmodel->set.configured)
+		return (-ENOTCONFIGURED);
+
+	bmodel->run.online = false;
+
+	return (ALL_OK);
+}
+
+/**
  * Delete a building model.
  * @param bmodel target model
  */
@@ -187,11 +225,14 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
  * @todo implement variable building tau based on e.g. occupancy/time of day: lower when window/doors can be opened
  * @param bmodel target building model
  */
-static void bmodel_outdoor(struct s_bmodel * const bmodel)
+static int bmodel_outdoor(struct s_bmodel * const bmodel)
 {
 	time_t now, dt;
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
+
+	if (!bmodel->run.online)	// but not necessarily online
+		return (-EOFFLINE);
 
 	bmodel_outdoor_temp(bmodel);
 
@@ -215,6 +256,8 @@ static void bmodel_outdoor(struct s_bmodel * const bmodel)
 	       temp_to_celsius(bmodel->run.t_out_filt),
 	       temp_to_celsius(bmodel->run.t_out_mix),
 	       temp_to_celsius(bmodel->run.t_out_att));
+
+	return (ALL_OK);
 }
 
 /**
@@ -238,9 +281,12 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
+	if (!bmodel->run.online)	// but not necessarily online
+		return (-EOFFLINE);
+
 	if (!runtime->config->limit_tsummer) {
 		bmodel->run.summer = false;
-		return (-ENOTCONFIGURED);	// invalid limit, stop here
+		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
 	if ((bmodel->run.t_out > runtime->config->limit_tsummer)	&&
@@ -272,9 +318,12 @@ static int bmodel_frost(struct s_bmodel * restrict const bmodel)
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
+	if (!bmodel->run.online)	// but not necessarily online
+		return (-EOFFLINE);
+
 	if (!runtime->config->limit_tfrost) {
 		bmodel->run.frost = false;
-		return (-ENOTCONFIGURED);	// invalid limit, stop here
+		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
 	if ((bmodel->run.t_out < runtime->config->limit_tfrost))
@@ -411,7 +460,17 @@ void models_exit(void)
  */
 int models_online(void)
 {
+	struct s_bmodel_l * restrict bmodelelmt;
+	int ret;
+
 	models_restore(&Models);
+
+	// bring building models online
+	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
+		ret = bmodel_online(bmodelelmt->bmodel);
+		if (ALL_OK != ret)
+			return (ret);
+	}
 
 	Models.online = true;
 
@@ -424,7 +483,13 @@ int models_online(void)
  */
 int models_offline(void)
 {
+	struct s_bmodel_l * restrict bmodelelmt;
+
 	models_save(&Models);
+
+	// take building models offline
+	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
+		bmodel_offline(bmodelelmt->bmodel);
 
 	Models.online = false;
 

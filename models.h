@@ -24,6 +24,7 @@ struct s_bmodel {
 		tempid_t id_t_out;	///< outdoor sensor id for this bmodel (smoothed over 60s)
 	} set;
 	struct {
+		bool online;		///< true if bmodel is online
 		bool summer;		///< true if summer mode conditions are met
 		bool frost;		///< true if frost conditions are met
 		time_t t_out_ltime;	///< last update time for t_out
