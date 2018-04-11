@@ -134,7 +134,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		return (-EOFFLINE);
 	
 	// fast cooldown can only be applied if set AND not in frost condition
-	can_fastcool = (circuit->set.fast_cooldown && !runtime->frost);
+	can_fastcool = (circuit->set.fast_cooldown && !bmodel->run.frost);
 
 	// store current status for transition detection
 	prev_runmode = circuit->run.runmode;
@@ -176,7 +176,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	// Check if the circuit meets run.outhoff conditions
 	circuit_outhoff(circuit);
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
-	if (circuit->run.outhoff && !runtime->frost)
+	if (circuit->run.outhoff && !bmodel->run.frost)
 		circuit->run.runmode = RM_OFF;
 
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup

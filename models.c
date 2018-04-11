@@ -37,7 +37,7 @@ struct s_bmodel_l {
 	struct s_bmodel_l * next;
 };
 
-static const storage_version_t Models_sversion = 2;
+static const storage_version_t Models_sversion = 3;
 
 /**
  * Save building model state to permanent storage.
@@ -94,6 +94,7 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 			return (-EMISMATCH);
 
 		bmodel->run.summer = temp_bmodel.run.summer;
+		bmodel->run.frost = temp_bmodel.run.frost;
 		bmodel->run.t_out_faltime = temp_bmodel.run.t_out_faltime;
 		bmodel->run.t_out_filt = temp_bmodel.run.t_out_filt;
 		bmodel->run.t_out_mix = temp_bmodel.run.t_out_mix;
@@ -246,6 +247,33 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
 		    (bmodel->run.t_out_att < runtime->config->limit_tsummer))
 			bmodel->run.summer = false;
 	}
+
+	return (ALL_OK);
+}
+
+/**
+ * Conditions for frost switch.
+ * Trigger frost protection flag when t_outdoor_60 < limit_tfrost.
+ * @note there is a fixed 1K positive hysteresis (on untrip)
+ * @warning if limit_tfrost isn't available, frost is @b disabled.
+ * @param bmodel target building model
+ * @return exec status
+ */
+static int bmodel_frost(struct s_bmodel * restrict const bmodel)
+{
+	const struct s_runtime * restrict const runtime = get_runtime();
+
+	assert(bmodel);	// guaranteed to be called with bmodel configured
+
+	if (!runtime->config->limit_tfrost) {
+		bmodel->run.frost = false;
+		return (-ENOTCONFIGURED);	// invalid limit, stop here
+	}
+
+	if ((bmodel->run.t_out < runtime->config->limit_tfrost))
+		bmodel->run.frost = true;
+	else if ((bmodel->run.t_out > (runtime->config->limit_tfrost + deltaK_to_temp(1))))
+		bmodel->run.frost = false;
 
 	return (ALL_OK);
 }
@@ -421,6 +449,7 @@ int models_run(struct s_models * restrict const models)
 			continue;
 		bmodel_outdoor(bmodelelmt->bmodel);
 		bmodel_summer(bmodelelmt->bmodel);
+		bmodel_frost(bmodelelmt->bmodel);
 	}
 
 	return (ALL_OK);

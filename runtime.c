@@ -78,13 +78,12 @@ static int runtime_restore(void)
  */
 static int runtime_async_log(void)
 {
-	const storage_version_t version = 3;
+	const storage_version_t version = 4;
 	static storage_keys_t keys[] = {
 		"systemmode",
 		"runmode",
 		"dhwmode",
 		"summer",
-		"frost",
 		"plant_sleep",
 		"t_outdoor_60",
 		"plant_hrequest",
@@ -97,7 +96,6 @@ static int runtime_async_log(void)
 	values[i++] = Runtime.runmode;
 	values[i++] = Runtime.dhwmode;
 	values[i++] = Runtime.summer;
-	values[i++] = Runtime.frost;
 	values[i++] = Runtime.plant_could_sleep;
 	values[i++] = Runtime.t_outdoor_60;
 	values[i++] = Runtime.plant_hrequest;
@@ -149,22 +147,6 @@ static void runtime_summer(void)
 		return;	// invalid limit, don't do anything
 
 	Runtime.summer = models_summer(Runtime.models);
-}
-
-/**
- * Conditions for frost switch.
- * Trigger frost protection flag when t_outdoor_60 < limit_tfrost.
- * @note there is a fixed 1K positive hysteresis (on untrip)
- */
-static void runtime_frost(void)
-{
-	if (!Runtime.config->limit_tfrost)
-		return;	// invalid limit, don't do anything
-	
-	if ((Runtime.t_outdoor_60 < Runtime.config->limit_tfrost))
-		Runtime.frost = true;
-	else if ((Runtime.t_outdoor_60 > (Runtime.config->limit_tfrost + deltaK_to_temp(1))))
-		Runtime.frost = false;
 }
 
 /**
@@ -343,8 +325,6 @@ int runtime_run(void)
 
 	dbgmsg("t_outdoor: %.1f, t_60: %.1f",
 	       temp_to_celsius(Runtime.t_outdoor), temp_to_celsius(Runtime.t_outdoor_60));
-
-	runtime_frost();
 
 	models_run(Runtime.models);
 
