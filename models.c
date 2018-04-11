@@ -453,32 +453,6 @@ int models_run(void)
 	return (ALL_OK);
 }
 
-/**
- * Parse building models for summer switch evaluation. Conditions:
- * - If something's wrong, summer mode is unset.
- * - If @b ALL configured bmodels are compatible with summer mode, summer mode is set.
- * - If @b ANY configured bmodel is incompatible with summer mode, summer mode is unset.
- * @param models model list from which to process the building models
- * @return summer mode
- */
-bool models_summer(void)
-{
-	struct s_bmodel_l * bmodelelmt;
-	bool summer = true;
-
-	// if something isn't quite right, return false by default
-	if (!Models.online)
-		return (false);
-
-	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
-		if (!bmodelelmt->bmodel->set.configured)
-			continue;
-		summer &= bmodelelmt->bmodel->run.summer;
-	}
-
-	return (summer);
-}
-
 /** quick temporary hack for backward compatibility */
 temp_t models_outtemp(void)
 {

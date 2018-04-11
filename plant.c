@@ -2,7 +2,7 @@
 //  plant.c
 //  rwchcd
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -33,6 +33,7 @@
 #include "circuit.h"
 #include "dhwt.h"
 #include "heatsource.h"
+#include "models.h"	// s_bmodel for plant_summer_ok()
 
 /**
  * Create a new pump and attach it to the plant.
@@ -688,6 +689,28 @@ static void plant_collect_hrequests(const struct s_plant * restrict const plant)
 }
 
 /**
+ * Check if a plant can enter summer mode.
+ * Parse all the plant's circuits' building models for summer switch evaluation. Conditions:
+ * - If @b ALL online bmodels are compatible with summer mode, summer mode is set.
+ * - If @b ANY online bmodel is incompatible with summer mode, summer mode is unset.
+ * @param plant target plant
+ * @return summer mode
+ */
+static bool plant_summer_ok(const struct s_plant * restrict const plant)
+{
+	struct s_heating_circuit_l * circuitl;
+	bool summer = true;
+
+	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		if (!circuitl->circuit->run.online)
+			continue;
+		summer &= circuitl->circuit->bmodel->run.summer;
+	}
+
+	return (summer);
+}
+
+/**
  * Plant summer maintenance operations.
  * When summer conditions are met, the pumps and valves are periodically actuated.
  * The idea of this function is to run as an override filter in the plant_run()
@@ -711,7 +734,7 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 	assert(plant);
 
 	// don't do anything if summer AND plant asleep aren't in effect
-	if (!(runtime->summer && runtime->plant_could_sleep))
+	if (!(plant_summer_ok(plant) && runtime->plant_could_sleep))
 		timer_start = now;
 
 	// stop running when duration is exceeded (this also prevents running when summer is first triggered)

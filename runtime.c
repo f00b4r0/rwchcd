@@ -78,12 +78,11 @@ static int runtime_restore(void)
  */
 static int runtime_async_log(void)
 {
-	const storage_version_t version = 4;
+	const storage_version_t version = 5;
 	static storage_keys_t keys[] = {
 		"systemmode",
 		"runmode",
 		"dhwmode",
-		"summer",
 		"plant_sleep",
 		"plant_hrequest",
 	};
@@ -94,7 +93,6 @@ static int runtime_async_log(void)
 	values[i++] = Runtime.systemmode;
 	values[i++] = Runtime.runmode;
 	values[i++] = Runtime.dhwmode;
-	values[i++] = Runtime.summer;
 	values[i++] = Runtime.plant_could_sleep;
 	values[i++] = Runtime.plant_hrequest;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
@@ -102,19 +100,6 @@ static int runtime_async_log(void)
 	assert(ARRAY_SIZE(keys) >= i);
 	
 	return (storage_log("log_runtime", &version, keys, values, i));
-}
-
-/**
- * Toggle runtime summer mode.
- * Parse all building models currently running to determine summer status.
- * Lockless by design.
- */
-static void runtime_summer(void)
-{
-	if (!Runtime.config->limit_tsummer)
-		return;	// invalid limit, don't do anything
-
-	Runtime.summer = models_summer();
 }
 
 /**
@@ -299,8 +284,6 @@ int runtime_run(void)
 		return (ret);
 
 	Runtime.t_outdoor_60 = models_outtemp();
-
-	runtime_summer();
 
 	return (plant_run(Runtime.plant));
 }

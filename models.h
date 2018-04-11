@@ -43,7 +43,6 @@ void models_exit(void);
 int models_online(void);
 int models_offline(void);
 int models_run(void);
-bool models_summer(void);
 
 temp_t models_outtemp(void) __attribute__ ((deprecated));
 

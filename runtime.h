@@ -21,7 +21,6 @@ struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
 	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
-	bool summer;			///< outdoor temperature is compatible with summer mode
 	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	bool dhwc_absolute;		///< true if absolute DHWT charge in progress
 	bool dhwc_sliding;		///< true if sliding DHWT charge in progress
