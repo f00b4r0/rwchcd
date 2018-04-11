@@ -114,7 +114,7 @@ static void runtime_summer(void)
 	if (!Runtime.config->limit_tsummer)
 		return;	// invalid limit, don't do anything
 
-	Runtime.summer = models_summer(Runtime.models);
+	Runtime.summer = models_summer();
 }
 
 /**
@@ -259,7 +259,7 @@ int runtime_online(void)
 {
 	int ret;
 
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 	
 	Runtime.start_time = time(NULL);
@@ -273,7 +273,7 @@ int runtime_online(void)
 
 	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log, "log runtime");
 
-	ret = models_online(Runtime.models);
+	ret = models_online();
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -282,22 +282,23 @@ int runtime_online(void)
 
 /**
  * Runtime run loop
+ * @note runs models
  * @return exec status
  */
 int runtime_run(void)
 {
 	int ret;
 
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 
 	// process data
 
-	ret = models_run(Runtime.models);
+	ret = models_run();
 	if (ALL_OK != ret)
 		return (ret);
 
-	Runtime.t_outdoor_60 = models_outtemp(Runtime.models);
+	Runtime.t_outdoor_60 = models_outtemp();
 
 	runtime_summer();
 
@@ -310,7 +311,7 @@ int runtime_run(void)
  */
 int runtime_offline(void)
 {
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant || !Runtime.models)
+	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 
 	if (runtime_save() != ALL_OK)
@@ -319,7 +320,7 @@ int runtime_offline(void)
 	if (plant_offline(Runtime.plant) != ALL_OK)
 		dbgerr("plant offline failed");
 
-	if (models_offline(Runtime.models) != ALL_OK)
+	if (models_offline() != ALL_OK)
 		dbgerr("models offline failed");
 
 	return (ALL_OK);

@@ -36,22 +36,14 @@ struct s_bmodel {
 	char * restrict name;		///< name for this bmodel
 };
 
-/** List of models */
-struct s_models {
-	bool configured;		///< true if the models are configured
-	bool online;			///< true if the models can be run
-	uint_fast8_t bmodels_n;		///< number of building models
-	struct s_bmodel_l * restrict bmodels;	///< building models
-};
+struct s_bmodel * models_new_bmodel(const char * restrict const name);
+int models_init(void);
+void models_exit(void);
+int models_online(void);
+int models_offline(void);
+int models_run(void);
+bool models_summer(void);
 
-struct s_bmodel * models_new_bmodel(struct s_models * restrict const models, const char * restrict const name);
-struct s_models * models_new(void);
-void models_del(struct s_models * models);
-int models_online(struct s_models * restrict const models);
-int models_offline(struct s_models * restrict const models);
-int models_run(struct s_models * restrict const models);
-bool models_summer(const struct s_models * restrict const models);
-
-temp_t models_outtemp(const struct s_models * restrict const models) __attribute__ ((deprecated));
+temp_t models_outtemp(void) __attribute__ ((deprecated));
 
 #endif /* rwchcd_models_h */

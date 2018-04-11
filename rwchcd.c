@@ -239,7 +239,7 @@ static int configure_runtime(struct s_config * restrict config)
 	return (ALL_OK);
 }
 
-static int configure_models(struct s_models * restrict models)
+static int configure_models()
 {
 	struct s_bmodel * restrict bmodel_house = NULL;
 	tempid_t tid_out;
@@ -250,7 +250,7 @@ static int configure_models(struct s_models * restrict models)
 		return (ret);
 
 	// create a new building model
-	bmodel_house = models_new_bmodel(models, "house");
+	bmodel_house = models_new_bmodel("house");
 	if (!bmodel_house) {
 		dbgerr("bmodel creation failed");
 		return (-EGENERIC);
@@ -259,8 +259,6 @@ static int configure_models(struct s_models * restrict models)
 	bmodel_house->set.tau = 10 * 60 * 60;		// XXX 10 hours
 	bmodel_house->set.configured = true;
 	bmodel_house->set.id_t_out = tid_out;
-
-	models->configured = true;
 
 	return (ALL_OK);
 }
@@ -412,7 +410,6 @@ static int init_process()
 	struct s_runtime * restrict const runtime = get_runtime();
 	struct s_config * restrict config = NULL;
 	struct s_plant * restrict plant = NULL;
-	struct s_models * restrict models = NULL;
 	int ret;
 
 
@@ -446,14 +443,13 @@ static int init_process()
 
 	/* init models */
 
-	// create new models
-	models = models_new();
-	if (!models) {
-		dbgerr("models creation failed");
-		return (-EOOM);
+	ret = models_init();
+	if (ret) {
+		dbgerr("models init failed");
+		return (ret);
 	}
 
-	configure_models(models);
+	configure_models();
 
 	/* init plant */
 
@@ -476,8 +472,6 @@ static int init_process()
 
 	// attach config to runtime
 	runtime->config = config;
-	// attach models to runtime
-	runtime->models = models;
 	// assign plant to runtime
 	runtime->plant = plant;
 
@@ -503,7 +497,7 @@ static void exit_process(void)
 	alarms_offline();
 	hardware_offline();
 	plant_del(runtime->plant);
-	models_del(runtime->models);
+	models_exit();
 	config_exit(runtime->config);
 	config_del(runtime->config);
 	runtime_exit();

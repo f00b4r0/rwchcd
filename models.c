@@ -30,6 +30,13 @@
 #define MODELS_STORAGE_NAME_LEN		64
 #define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel_"
 
+/** Models */
+struct s_models {
+	bool online;			///< true if the models can be run
+	uint_fast8_t bmodels_n;		///< number of building models
+	struct s_bmodel_l * restrict bmodels;	///< building models
+} Models;
+
 /** List of building models */
 struct s_bmodel_l {
 	uint_fast8_t id;
@@ -308,17 +315,17 @@ static void models_save(const struct s_models * restrict const models)
  * @param name the model name, @b MUST be unique. A local copy is created
  * @return an allocated building model structure or NULL if failed.
  */
-struct s_bmodel * models_new_bmodel(struct s_models * restrict const models, const char * restrict const name)
+struct s_bmodel * models_new_bmodel(const char * restrict const name)
 {
 	struct s_bmodel * restrict bmodel = NULL;
 	struct s_bmodel_l * restrict bmodelelmt = NULL;
 	char * restrict str = NULL;
 
-	if (!models || !name)
+	if (!name)
 		goto fail;
 
 	// ensure unique name
-	if (bmodels_fbn(models->bmodels, name))
+	if (bmodels_fbn(Models.bmodels, name))
 		goto fail;
 
 	str = strdup(name);
@@ -342,10 +349,10 @@ struct s_bmodel * models_new_bmodel(struct s_models * restrict const models, con
 	bmodelelmt->bmodel = bmodel;
 
 	// insert the element in the models list
-	bmodelelmt->id = models->bmodels_n;
-	bmodelelmt->next = models->bmodels;
-	models->bmodels = bmodelelmt;
-	models->bmodels_n++;
+	bmodelelmt->id = Models.bmodels_n;
+	bmodelelmt->next = Models.bmodels;
+	Models.bmodels = bmodelelmt;
+	Models.bmodels_n++;
 
 	return (bmodel);
 
@@ -357,94 +364,72 @@ fail:
 }
 
 /**
- * Allocate a new list of models.
- * @return an allocated list of models or NULL.
+ * Initialize the models subsystem.
+ * @return exec status
  */
-struct s_models * models_new(void)
+int models_init(void)
 {
-	struct s_models * const models = calloc(1, sizeof(*models));
+	memset(&Models, 0x00, sizeof(Models));
 
-	return (models);
+	return (ALL_OK);
 }
 
 /**
- * Delete a list of models.
- * @param models the list to delete
+ * Cleanup the models subsystem.
  */
-void models_del(struct s_models * models)
+void models_exit(void)
 {
 	struct s_bmodel_l * bmodelelmt, * bmodelnext;
 
-	if (!models)
-		return;
-
 	// clear all bmodels
-	bmodelelmt = models->bmodels;
+	bmodelelmt = Models.bmodels;
 	while (bmodelelmt) {
 		bmodelnext = bmodelelmt->next;
 		bmodel_del(bmodelelmt->bmodel);
 		free(bmodelelmt);
-		models->bmodels_n--;
+		Models.bmodels_n--;
 		bmodelelmt = bmodelnext;
 	}
-
-	// free resources
-	free(models);
 }
 
 /**
  * Bring models online.
- * @param models target models
  * @return exec status
  */
-int models_online(struct s_models * restrict const models)
+int models_online(void)
 {
-	if (!models)
-		return (-EINVALID);
+	models_restore(&Models);
 
-	models_restore(models);
-
-	models->online = true;
+	Models.online = true;
 
 	return (ALL_OK);
 }
 
 /**
  * Take models offline.
- * @param models target models
  * @return exec status
  */
-int models_offline(struct s_models * restrict const models)
+int models_offline(void)
 {
-	if (!models)
-		return (-EINVALID);
+	models_save(&Models);
 
-	models_save(models);
-
-	models->online = false;
+	Models.online = false;
 
 	return (ALL_OK);
 }
 
 /**
  * Run all models.
- * @param models the list of models
  * @return exec status
  */
-int models_run(struct s_models * restrict const models)
+int models_run(void)
 {
 	struct s_bmodel_l * restrict bmodelelmt;
 
-	if (!models)
-		return (-EINVALID);
-
-	if (!models->configured)
-		return (-ENOTCONFIGURED);
-
-	if (!models->online)
+	if (!Models.online)
 		return (-EOFFLINE);
 
-	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
+	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
 		if (!bmodelelmt->bmodel->set.configured)
 			continue;
 		bmodel_outdoor(bmodelelmt->bmodel);
@@ -463,16 +448,16 @@ int models_run(struct s_models * restrict const models)
  * @param models model list from which to process the building models
  * @return summer mode
  */
-bool models_summer(const struct s_models * restrict const models)
+bool models_summer(void)
 {
 	struct s_bmodel_l * bmodelelmt;
 	bool summer = true;
 
 	// if something isn't quite right, return false by default
-	if (!models || !models->configured || !models->online)
+	if (!Models.online)
 		return (false);
 
-	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
+	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
 		if (!bmodelelmt->bmodel->set.configured)
 			continue;
 		summer &= bmodelelmt->bmodel->run.summer;
@@ -482,19 +467,19 @@ bool models_summer(const struct s_models * restrict const models)
 }
 
 /** quick temporary hack for backward compatibility */
-temp_t models_outtemp(const struct s_models * restrict const models)
+temp_t models_outtemp(void)
 {
 	struct s_bmodel_l * bmodelelmt;
 	temp_t temp = 0;
 
 	// if something isn't quite right, return error by default
-	if (!models || !models->configured || !models->online)
-		return (-EGENERIC);
+	if (!Models.online)
+		return (-EOFFLINE);
 
-	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
+	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
 		temp += bmodelelmt->bmodel->run.t_out;
 
-	temp /= models->bmodels_n;	// average
+	temp /= Models.bmodels_n;	// average
 
 	return (temp);
 }
