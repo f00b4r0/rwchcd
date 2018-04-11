@@ -84,14 +84,14 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		return;
 	}
 
-	if ((runtime->t_outdoor_60 > temp_trigger) ||
+	if ((bmodel->run.t_out > temp_trigger) ||
 	    (bmodel->run.t_out_mix > temp_trigger) ||
 	    (bmodel->run.t_out_att > temp_trigger)) {
 		circuit->run.outhoff = true;
 	}
 	else {
 		temp_trigger -= SETorDEF(circuit->set.params.outhoff_histeresis, runtime->config->def_circuit.outhoff_histeresis);
-		if ((runtime->t_outdoor_60 < temp_trigger) &&
+		if ((bmodel->run.t_out < temp_trigger) &&
 		    (bmodel->run.t_out_mix < temp_trigger) &&
 		    (bmodel->run.t_out_att < temp_trigger))
 			circuit->run.outhoff = false;

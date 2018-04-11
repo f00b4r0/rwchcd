@@ -21,10 +21,13 @@ struct s_bmodel {
 	struct {
 		bool configured;	///< true if configured
 		time_t tau;		///< bmodel time constant
+		tempid_t id_t_out;	///< outdoor sensor id for this bmodel (smoothed over 60s)
 	} set;
 	struct {
-		bool summer;
-		time_t t_out_ltime;	///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
+		bool summer;		///< true if summer mode conditions are met
+		time_t t_out_ltime;	///< last update time for t_out
+		time_t t_out_faltime;	///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
+		temp_t t_out;		///< current outdoor temperature
 		temp_t t_out_filt;	///< t_outdoor filtered by bmodel time constant
 		temp_t t_out_mix;	///< mixed outdoor temperature (average of t_outdoor and t_filtered: the moving average of t_outdoor with tau)
 		temp_t t_out_att;	///< attenuated outdoor temperature (moving average of t_filtered with tau: double filter on t_outdoor)

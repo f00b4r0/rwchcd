@@ -242,6 +242,12 @@ static int configure_runtime(struct s_config * restrict config)
 static int configure_models(struct s_models * restrict models)
 {
 	struct s_bmodel * restrict bmodel_house = NULL;
+	tempid_t tid_out;
+	int ret;
+
+	ret = hw_backends_sensor_fbn(&tid_out, HW_NAME, SENSOR_OUTDOOR_N);
+	if (ALL_OK != ret)
+		return (ret);
 
 	// create a new building model
 	bmodel_house = models_new_bmodel(models, "house");
@@ -252,6 +258,7 @@ static int configure_models(struct s_models * restrict models)
 
 	bmodel_house->set.tau = 10 * 60 * 60;		// XXX 10 hours
 	bmodel_house->set.configured = true;
+	bmodel_house->set.id_t_out = tid_out;
 
 	models->configured = true;
 

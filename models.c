@@ -21,8 +21,11 @@
 #include "runtime.h"
 #include "lib.h"
 #include "storage.h"
+#include "hardware.h"
+#include "alarms.h"
 #include "models.h"
 
+#define OUTDOOR_SMOOTH_TIME		60	///< time in seconds over which outdoor temp is smoothed
 #define OUTDOOR_AVG_UPDATE_DT		600	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
 #define MODELS_STORAGE_NAME_LEN		64
 #define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel_"
@@ -34,7 +37,7 @@ struct s_bmodel_l {
 	struct s_bmodel_l * next;
 };
 
-static const storage_version_t Models_sversion = 1;
+static const storage_version_t Models_sversion = 2;
 
 /**
  * Save building model state to permanent storage.
@@ -91,7 +94,7 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 			return (-EMISMATCH);
 
 		bmodel->run.summer = temp_bmodel.run.summer;
-		bmodel->run.t_out_ltime = temp_bmodel.run.t_out_ltime;
+		bmodel->run.t_out_faltime = temp_bmodel.run.t_out_faltime;
 		bmodel->run.t_out_filt = temp_bmodel.run.t_out_filt;
 		bmodel->run.t_out_mix = temp_bmodel.run.t_out_mix;
 		bmodel->run.t_out_att = temp_bmodel.run.t_out_att;
@@ -136,6 +139,32 @@ static void bmodel_del(struct s_bmodel * restrict bmodel)
 }
 
 /**
+ * Process outdoor temperature.
+ * Computes "smoothed" outdoor temperature, with a safety fallback in case of sensor failure.
+ * @note must run at (ideally fixed) intervals >= 1s
+ * @param bmodel target building model
+ */
+static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
+{
+	const time_t last = bmodel->run.t_out_ltime;	// previous sensor time. At first run: 0 which makes mavg return new sample
+	time_t dt;
+	temp_t toutdoor;
+	int ret;
+
+	ret = hardware_sensor_clone_temp(bmodel->set.id_t_out, &toutdoor);
+	if (ALL_OK == ret) {
+		hardware_sensor_clone_time(bmodel->set.id_t_out, &bmodel->run.t_out_ltime);
+		dt = bmodel->run.t_out_ltime - last;
+		bmodel->run.t_out = temp_expw_mavg(bmodel->run.t_out, toutdoor, OUTDOOR_SMOOTH_TIME, dt);
+	}
+	else {
+		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
+		bmodel->run.t_out = get_runtime()->config->limit_tfrost-1;
+		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
+	}
+}
+
+/**
  * Process the building model outdoor temperature.
  * Compute the values of mixed and attenuated outdoor temp based on a
  * weighted moving average and the building time constant.
@@ -147,29 +176,34 @@ static void bmodel_del(struct s_bmodel * restrict bmodel)
  * http://www.emu.systems/en/blog/2015/10/19/whats-the-time-constant-of-a-building
  * https://books.google.fr/books?id=dIYxQkS_SWMC&pg=PA63&lpg=PA63
  * @note must run at (ideally) fixed intervals
- * @note this is part of the synchronous code path because moving it to a separate
- * thread would add overhead (locking) for essentially no performance improvement.
  * @todo implement variable building tau based on e.g. occupancy/time of day: lower when window/doors can be opened
+ * @param bmodel target building model
  */
 static void bmodel_outdoor(struct s_bmodel * const bmodel)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
-	const time_t now = runtime->outdoor_time;	// what matters is the actual update time of the outdoor sensor
-	const time_t dt = now - bmodel->run.t_out_ltime;;
+	time_t now, dt;
+
+	assert(bmodel);	// guaranteed to be called with bmodel configured
+
+	bmodel_outdoor_temp(bmodel);
+
+	now = bmodel->run.t_out_ltime;	// what matters is the actual update time of the outdoor sensor
+	dt = now - bmodel->run.t_out_faltime;
 
 	if (dt >= OUTDOOR_AVG_UPDATE_DT) {
-		bmodel->run.t_out_ltime = now;
+		bmodel->run.t_out_faltime = now;
 
-		bmodel->run.t_out_filt = temp_expw_mavg(bmodel->run.t_out_filt, runtime->t_outdoor_60, bmodel->set.tau, dt);
+		bmodel->run.t_out_filt = temp_expw_mavg(bmodel->run.t_out_filt, bmodel->run.t_out, bmodel->set.tau, dt);
 		bmodel->run.t_out_att = temp_expw_mavg(bmodel->run.t_out_att, bmodel->run.t_out_filt, bmodel->set.tau, dt);
 
 		bmodel_save(bmodel);
 	}
 
 	// calculate mixed temp last: makes it work at init
-	bmodel->run.t_out_mix = (runtime->t_outdoor_60 + bmodel->run.t_out_filt)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
+	bmodel->run.t_out_mix = (bmodel->run.t_out + bmodel->run.t_out_filt)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 
-	dbgmsg("\"%s\": t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f", bmodel->name,
+	dbgmsg("\"%s\": t_out: %.1f, t_filt: %.1f, t_outmixed: %.1f, t_outatt: %.1f", bmodel->name,
+	       temp_to_celsius(bmodel->run.t_out),
 	       temp_to_celsius(bmodel->run.t_out_filt),
 	       temp_to_celsius(bmodel->run.t_out_mix),
 	       temp_to_celsius(bmodel->run.t_out_att));
@@ -201,13 +235,13 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
 		return (-ENOTCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((runtime->t_outdoor_60 > runtime->config->limit_tsummer)	&&
+	if ((bmodel->run.t_out > runtime->config->limit_tsummer)	&&
 	    (bmodel->run.t_out_mix > runtime->config->limit_tsummer)	&&
 	    (bmodel->run.t_out_att > runtime->config->limit_tsummer)) {
 		bmodel->run.summer = true;
 	}
 	else {
-		if ((runtime->t_outdoor_60 < runtime->config->limit_tsummer)	&&
+		if ((bmodel->run.t_out < runtime->config->limit_tsummer)	&&
 		    (bmodel->run.t_out_mix < runtime->config->limit_tsummer)	&&
 		    (bmodel->run.t_out_att < runtime->config->limit_tsummer))
 			bmodel->run.summer = false;
@@ -383,6 +417,8 @@ int models_run(struct s_models * restrict const models)
 		return (-EOFFLINE);
 
 	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
+		if (!bmodelelmt->bmodel->set.configured)
+			continue;
 		bmodel_outdoor(bmodelelmt->bmodel);
 		bmodel_summer(bmodelelmt->bmodel);
 	}
