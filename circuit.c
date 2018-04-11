@@ -232,6 +232,12 @@ int circuit_run(struct s_heating_circuit * const circuit)
 		return (ret);
 	}
 
+	// if building model isn't online, failsafe
+	if (!circuit->bmodel->run.online) {
+		circuit_failsafe(circuit);
+		return (-ESAFETY);
+	}
+
 	// we're good to go
 
 	circuit->run.actual_wtemp = curr_temp;
