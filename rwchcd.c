@@ -415,7 +415,11 @@ static int init_process()
 	int ret;
 
 
-	configure_hw();
+	ret = configure_hw();
+	if (ret) {
+		dbgerr("hardware config error: %d", ret);
+		return (ret);
+	}
 
 	/* init hardware */
 	
@@ -441,7 +445,11 @@ static int init_process()
 			return (ret);
 	}
 
-	configure_runtime(config);
+	ret = configure_runtime(config);
+	if (ret) {
+		dbgerr("runtime config error: %d", ret);
+		return (ret);
+	}
 
 	/* init models */
 
@@ -451,7 +459,11 @@ static int init_process()
 		return (ret);
 	}
 
-	configure_models();
+	ret = configure_models();
+	if (ret) {
+		dbgerr("models config error: %d", ret);
+		return (ret);
+	}
 
 	/* init plant */
 
@@ -462,8 +474,11 @@ static int init_process()
 		return (-EOOM);
 	}
 
-	configure_plant(plant);
-
+	ret = configure_plant(plant);
+	if (ret) {
+		dbgerr("plant config error: %d", ret);
+		return (ret);
+	}
 
 	/* init runtime */
 	ret = runtime_init();
