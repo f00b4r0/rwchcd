@@ -135,6 +135,10 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	if (boiler->set.limit_thardmax < boiler->set.limit_tmax)
 		ret = -EMISCONFIGURED;
 
+	// check that tmax > tmin
+	if (boiler->set.limit_tmax < boiler->set.limit_tmin)
+		ret = -EMISCONFIGURED;
+
 	// if pump exists check it's correctly configured
 	if (boiler->loadpump && !boiler->loadpump->set.configured) {
 		dbgerr("\"%s\": loadpump \"%s\" not configured", heat->name, boiler->loadpump->name);
@@ -355,23 +359,30 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	 * if a return mixing valve is available, use it, else form a critical
 	 * shift signal. Consider handling of loadpump */
 
-	// calculate boiler integral
-	hardware_sensor_clone_time(boiler->set.id_temp, &ttime);
-	temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime);
+	// handle boiler minimum temp if set
+	if (boiler->set.limit_tmin) {
+		// calculate boiler integral
+		hardware_sensor_clone_time(boiler->set.id_temp, &ttime);
+		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime);
 
-	// form consumer shift request if necessary for cold start protection
-	if (temp_intgrl < 0) {
-		// at boiler first start the integral can windup quickly: jacket integral at -200% - XXX hardcoded
-		if (temp_intgrl < (-100 * KPRECISIONI))
-			boiler->run.boil_itg.integral = temp_intgrl = (-100 * KPRECISIONI);
+		// form consumer shift request if necessary for cold start protection
+		if (temp_intgrl < 0) {
+			// at boiler first start the integral can windup quickly: jacket integral at -200% - XXX hardcoded
+			if (temp_intgrl < (-100 * KPRECISIONI))
+				boiler->run.boil_itg.integral = temp_intgrl = (-100 * KPRECISIONI);
 
-		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
-		heat->run.cshift_crit = 2 * temp_intgrl / KPRECISIONI;
-		dbgmsg("\"%s\": integral: %d mKs, cshift_crit: %d%%", heat->name, temp_intgrl, heat->run.cshift_crit);
+			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
+			heat->run.cshift_crit = 2 * temp_intgrl / KPRECISIONI;
+			dbgmsg("\"%s\": integral: %d mKs, cshift_crit: %d%%", heat->name, temp_intgrl, heat->run.cshift_crit);
+		}
+		else {
+			heat->run.cshift_crit = 0;		// reset shift
+			boiler->run.boil_itg.integral = 0;	// reset integral
+		}
 	}
-	else {
-		heat->run.cshift_crit = 0;		// reset shift
-		boiler->run.boil_itg.integral = 0;	// reset integral
+    else {
+        heat->run.cshift_crit = 0;        // reset shift
+        boiler->run.boil_itg.integral = 0;    // reset integral
 	}
 
 	// turn pump on if any

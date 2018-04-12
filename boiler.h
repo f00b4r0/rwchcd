@@ -27,8 +27,8 @@ struct s_boiler_priv {
 			IDLE_ALWAYS,		///< boiler turns off any time there's no heat request
 		} idle_mode;		///< boiler off regime
 		temp_t hysteresis;		///< boiler temp hysteresis
-		temp_t limit_thardmax;		///< "safety" trip temperature. Past this temperature the boiler will (be stopped and) require consumers to maximize their usage to dissipate heat faster.
-		temp_t limit_tmax;		///< maximum boiler temp when operating. Must be < limit_thardmax
+		temp_t limit_thardmax;		///< "safety" trip temperature. Past this temperature the boiler will (be stopped and) require consumers to maximize their usage to dissipate heat faster. @warning required
+		temp_t limit_tmax;		///< maximum boiler temp when operating. Must be < limit_thardmax. @warning required
 		temp_t limit_tmin;		///< minimum boiler temp when operating
 		temp_t limit_treturnmin;	///< minimum boiler return temp (optional) -- XXX NOT IMPLEMENTED
 		temp_t t_freeze;		///< boiler temp trip point for antifreeze (+5C)
