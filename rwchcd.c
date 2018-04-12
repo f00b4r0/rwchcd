@@ -413,6 +413,7 @@ static int configure_plant(struct s_plant * restrict plant)
 	boiler->set.hysteresis = deltaK_to_temp(8);
 	boiler->set.limit_tmax = celsius_to_temp(90);
 	boiler->set.limit_tmin = celsius_to_temp(50);
+	boiler->set.limit_treturnmin = celsius_to_temp(35);
 	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
 
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);

@@ -41,6 +41,13 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 
 /**
  * Create a new boiler.
+ * Will set some sane defaults for:
+ * - hysteresis: 6K
+ * - limit_tmin: 10C
+ * - limit_tmax: 90C
+ * - limit_thardmax: 100C
+ * - t_freeze: 5C
+ * - burner_min_time: 4mn
  * @return pointer to the created boiler
  */
 static struct s_boiler_priv * boiler_new(void)
@@ -143,6 +150,15 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	if (boiler->loadpump && !boiler->loadpump->set.configured) {
 		dbgerr("\"%s\": loadpump \"%s\" not configured", heat->name, boiler->loadpump->name);
 		ret = -EMISCONFIGURED;
+	}
+
+	// if return min is set make sure the associated sensor is configured. XXX TODO check sane value wrt tmax/tmin?
+	if (boiler->set.limit_treturnmin) {
+		ret = hardware_sensor_clone_time(boiler->set.id_temp_return, NULL);
+		if (ALL_OK != ret) {
+			dbgerr("\"%s\": limit_treturnmin is set but return sensor is unavaiable (%d)", heat->name, ret);
+			ret = -EMISCONFIGURED;
+		}
 	}
 
 out:
@@ -310,7 +326,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp;
+	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp, ret_temp = 0;
+	int_fast16_t cshift_boil = 0, cshift_ret = 0;
 	time_t ttime;
 	int ret;
 
@@ -357,7 +374,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	/* todo handle return temp limit (limit low only for boiler):
 	 * if a return mixing valve is available, use it, else form a critical
-	 * shift signal. Consider handling of loadpump */
+	 * shift signal. Consider handling of loadpump. Consider adjusting target temp */
 
 	// handle boiler minimum temp if set
 	if (boiler->set.limit_tmin) {
@@ -372,18 +389,44 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				boiler->run.boil_itg.integral = temp_intgrl = (-100 * KPRECISIONI);
 
 			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
-			heat->run.cshift_crit = 2 * temp_intgrl / KPRECISIONI;
-			dbgmsg("\"%s\": integral: %d mKs, cshift_crit: %d%%", heat->name, temp_intgrl, heat->run.cshift_crit);
+			cshift_boil = 2 * temp_intgrl / KPRECISIONI;
+			dbgmsg("\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
+		}
+		else
+			boiler->run.boil_itg.integral = 0;	// reset integral
+	}
+
+	// handler boiler return temp if set
+	if (boiler->set.limit_treturnmin) {
+		// if we have a valve, use it
+		if (0 && boiler->retvalve) {
+			// TODO
 		}
 		else {
-			heat->run.cshift_crit = 0;		// reset shift
-			boiler->run.boil_itg.integral = 0;	// reset integral
+			// calculate return integral
+			hardware_sensor_clone_time(boiler->set.id_temp_return, &ttime);
+			hardware_sensor_clone_temp(boiler->set.id_temp_return, &ret_temp);
+			temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime);
+
+			// form consumer shift request if necessary for cold start protection
+			if (temp_intgrl < 0) {
+				// at boiler first start the integral can windup quickly: jacket integral at -99% - XXX hardcoded
+				if (temp_intgrl < (-99 * 10 * KPRECISIONI))
+					boiler->run.ret_itg.integral = temp_intgrl = (-99 * 10 * KPRECISIONI);
+
+				// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -0.1% shift - XXX hardcoded
+				cshift_ret = 1 * temp_intgrl / KPRECISIONI / 10;
+				dbgmsg("\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
+			}
+			else
+				boiler->run.ret_itg.integral = 0;	// reset integral
 		}
 	}
-    else {
-        heat->run.cshift_crit = 0;        // reset shift
-        boiler->run.boil_itg.integral = 0;    // reset integral
-	}
+
+	// min each cshift (they're negative) to form the heatsource critical shift
+	heat->run.cshift_crit = (cshift_boil < cshift_ret) ? cshift_boil : cshift_ret;
+	if (heat->run.cshift_crit)
+		dbgmsg("\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
 
 	// turn pump on if any
 	if (boiler->loadpump) {
@@ -434,9 +477,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if ((boiler->set.limit_tmin < boiler_temp) && (hardware_relay_get_state(boiler->set.rid_burner_1) > 0))
 		heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
-	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f",
+	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f",
 	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
-	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp));
+	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp));
 
 	return (ret);
 }
