@@ -38,7 +38,7 @@
 /**
  * Create a new pump and attach it to the plant.
  * @param plant the plant to attach the pump to
- * @param name @b UNIQUE pump name (or NULL). A local copy is created if set
+ * @param name @b UNIQUE pump name. A local copy is created
  * @return pointer to the created pump
  */
 struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char * restrict const name)
@@ -48,21 +48,19 @@ struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char
 	struct s_pump_l * restrict pumpelmt = NULL;
 	char * restrict str = NULL;
 
-	if (!plant)
+	if (!plant || !name)
 		goto fail;
 
 	// deal with name
-	if (name) {
-		// ensure unique name
-		for (pumpl = plant->pump_head; pumpl; pumpl = pumpl->next) {
-			if (!strcmp(pumpl->pump->name, name))
-				goto fail;
-		}
-
-		str = strdup(name);
-		if (!str)
+	// ensure unique name
+	for (pumpl = plant->pump_head; pumpl; pumpl = pumpl->next) {
+		if (!strcmp(pumpl->pump->name, name))
 			goto fail;
 	}
+
+	str = strdup(name);
+	if (!str)
+		goto fail;
 
 	// create a new pump
 	pump = pump_new();
@@ -98,7 +96,7 @@ fail:
 /**
  * Create a new valve and attach it to the plant.
  * @param plant the plant to attach the valve to
- * @param name @b UNIQUE valve name (or NULL). A local copy is created if set
+ * @param name @b UNIQUE valve name. A local copy is created
  * @return pointer to the created valve
  */
 struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const char * restrict const name)
@@ -108,21 +106,19 @@ struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const ch
 	struct s_valve_l * restrict valveelmt = NULL;
 	char * restrict str = NULL;
 
-	if (!plant)
+	if (!plant || !name)
 		goto fail;
 
 	// deal with name
-	if (name) {
-		// ensure unique name
-		for (valvel = plant->valve_head; valvel; valvel = valvel->next) {
-			if (!strcmp(valvel->valve->name, name))
-				goto fail;
-		}
-
-		str = strdup(name);
-		if (!str)
+	// ensure unique name
+	for (valvel = plant->valve_head; valvel; valvel = valvel->next) {
+		if (!strcmp(valvel->valve->name, name))
 			goto fail;
 	}
+
+	str = strdup(name);
+	if (!str)
+		goto fail;
 
 	// create a new valve
 	valve = valve_new();
@@ -158,7 +154,7 @@ fail:
 /**
  * Create a new heating circuit and attach it to the plant.
  * @param plant the plant to attach the circuit to
- * @param name @b UNIQUE circuit name (or NULL). A local copy is created if set
+ * @param name @b UNIQUE circuit name. A local copy is created
  * @return pointer to the created heating circuit
  */
 struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name)
@@ -168,21 +164,19 @@ struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const pla
 	struct s_heating_circuit_l * restrict circuitelement = NULL;
 	char * restrict str = NULL;
 
-	if (!plant)
+	if (!plant || !name)
 		goto fail;
 
 	// deal with name
-	if (name) {
-		// ensure unique name
-		for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
-			if (!strcmp(circuitl->circuit->name, name))
-				goto fail;
-		}
-
-		str = strdup(name);
-		if (!str)
+	// ensure unique name
+	for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
+		if (!strcmp(circuitl->circuit->name, name))
 			goto fail;
 	}
+
+	str = strdup(name);
+	if (!str)
+		goto fail;
 
 	// create a new circuit
 	circuit = circuit_new();
@@ -218,7 +212,7 @@ fail:
 /**
  * Create a new dhw tank and attach it to the plant.
  * @param plant the plant to attach the tank to
- * @param name @b UNIQUE dhwt name (or NULL). A local copy is created if set
+ * @param name @b UNIQUE dhwt name. A local copy is created
  * @return pointer to the created tank
  */
 struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
@@ -228,21 +222,19 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const 
 	struct s_dhw_tank_l * restrict dhwtelement = NULL;
 	char * restrict str = NULL;
 
-	if (!plant)
+	if (!plant || !name)
 		goto fail;
 
 	// deal with name
-	if (name) {
-		// ensure unique name
-		for (dhwtl = plant->dhwt_head; dhwtl; dhwtl = dhwtl->next) {
-			if (!strcmp(dhwtl->dhwt->name, name))
-				goto fail;
-		}
-
-		str = strdup(name);
-		if (!str)
+	// ensure unique name
+	for (dhwtl = plant->dhwt_head; dhwtl; dhwtl = dhwtl->next) {
+		if (!strcmp(dhwtl->dhwt->name, name))
 			goto fail;
 	}
+
+	str = strdup(name);
+	if (!str)
+		goto fail;
 
 	// create a new tank
 	dhwt = dhwt_new();
@@ -278,7 +270,7 @@ fail:
 /**
  * Create a new heatsource in the plant.
  * @param plant the target plant
- * @param name @b UNIQUE heatsource name (or NULL). A local copy is created if set
+ * @param name @b UNIQUE heatsource name. A local copy is created
  * @return pointer to the created source
  */
 struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name)
@@ -288,21 +280,19 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant
 	struct s_heatsource_l * restrict sourceelement = NULL;
 	char * restrict str = NULL;
 
-	if (!plant)
+	if (!plant || !name)
 		goto fail;
 
 	// deal with name
-	if (name) {
-		// ensure unique name
-		for (sourcel = plant->heats_head; sourcel; sourcel = sourcel->next) {
-			if (!strcmp(sourcel->heats->name, name))
-				goto fail;
-		}
-
-		str = strdup(name);
-		if (!str)
+	// ensure unique name
+	for (sourcel = plant->heats_head; sourcel; sourcel = sourcel->next) {
+		if (!strcmp(sourcel->heats->name, name))
 			goto fail;
 	}
+
+	str = strdup(name);
+	if (!str)
+		goto fail;
 
 	// create a new source
 	source = heatsource_new();
