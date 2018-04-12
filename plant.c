@@ -36,6 +36,27 @@
 #include "models.h"	// s_bmodel for plant_summer_ok()
 
 /**
+ * Find a pump by name in a plant.
+ * @param plant the plant to find the pump from
+ * @param name target name to find
+ * @return pump if found, NULL otherwise
+ */
+struct s_pump * plant_fbn_pump(struct s_plant * restrict const plant, const char * restrict const name)
+{
+	const struct s_pump_l * restrict pumpl;
+	struct s_pump * restrict pump = NULL;
+
+	for (pumpl = plant->pump_head; pumpl; pumpl = pumpl->next) {
+		if (!strcmp(pumpl->pump->name, name)) {
+			pump = pumpl->pump;
+			break;
+		}
+	}
+
+	return (pump);
+}
+
+/**
  * Create a new pump and attach it to the plant.
  * @param plant the plant to attach the pump to
  * @param name @b UNIQUE pump name. A local copy is created
@@ -43,7 +64,6 @@
  */
 struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_pump_l * restrict pumpl;
 	struct s_pump * restrict pump = NULL;
 	struct s_pump_l * restrict pumpelmt = NULL;
 	char * restrict str = NULL;
@@ -53,10 +73,8 @@ struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char
 
 	// deal with name
 	// ensure unique name
-	for (pumpl = plant->pump_head; pumpl; pumpl = pumpl->next) {
-		if (!strcmp(pumpl->pump->name, name))
-			goto fail;
-	}
+	if (plant_fbn_pump(plant, name))
+		goto fail;
 
 	str = strdup(name);
 	if (!str)
@@ -94,6 +112,27 @@ fail:
 }
 
 /**
+ * Find a valve by name in a plant.
+ * @param plant the plant to find the valve from
+ * @param name target name to find
+ * @return valve if found, NULL otherwise
+ */
+struct s_valve * plant_fbn_valve(struct s_plant * restrict const plant, const char * restrict const name)
+{
+	const struct s_valve_l * restrict valvel;
+	struct s_valve * restrict valve = NULL;
+
+	for (valvel = plant->valve_head; valvel; valvel = valvel->next) {
+		if (!strcmp(valvel->valve->name, name)) {
+			valve = valvel->valve;
+			break;
+		}
+	}
+
+	return (valve);
+}
+
+/**
  * Create a new valve and attach it to the plant.
  * @param plant the plant to attach the valve to
  * @param name @b UNIQUE valve name. A local copy is created
@@ -101,7 +140,6 @@ fail:
  */
 struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_valve_l * restrict valvel;
 	struct s_valve * restrict valve = NULL;
 	struct s_valve_l * restrict valveelmt = NULL;
 	char * restrict str = NULL;
@@ -111,10 +149,8 @@ struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const ch
 
 	// deal with name
 	// ensure unique name
-	for (valvel = plant->valve_head; valvel; valvel = valvel->next) {
-		if (!strcmp(valvel->valve->name, name))
-			goto fail;
-	}
+	if (plant_fbn_valve(plant, name))
+		goto fail;
 
 	str = strdup(name);
 	if (!str)
@@ -152,6 +188,27 @@ fail:
 }
 
 /**
+ * Find a circuit by name in a plant.
+ * @param plant the plant to find the circuit from
+ * @param name target name to find
+ * @return circuit if found, NULL otherwise
+ */
+struct s_heating_circuit * plant_fbn_circuit(struct s_plant * restrict const plant, const char * restrict const name)
+{
+	const struct s_heating_circuit_l * restrict circuitl;
+	struct s_heating_circuit * restrict circuit = NULL;
+
+	for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
+		if (!strcmp(circuitl->circuit->name, name)) {
+			circuit = circuitl->circuit;
+			break;
+		}
+	}
+
+	return (circuit);
+}
+
+/**
  * Create a new heating circuit and attach it to the plant.
  * @param plant the plant to attach the circuit to
  * @param name @b UNIQUE circuit name. A local copy is created
@@ -159,7 +216,6 @@ fail:
  */
 struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_heating_circuit_l * restrict circuitl;
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_heating_circuit_l * restrict circuitelement = NULL;
 	char * restrict str = NULL;
@@ -169,10 +225,8 @@ struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const pla
 
 	// deal with name
 	// ensure unique name
-	for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
-		if (!strcmp(circuitl->circuit->name, name))
-			goto fail;
-	}
+	if (plant_fbn_circuit(plant, name))
+		goto fail;
 
 	str = strdup(name);
 	if (!str)
@@ -210,6 +264,27 @@ fail:
 }
 
 /**
+ * Find a dhwt by name in a plant.
+ * @param plant the plant to find the dhwt from
+ * @param name target name to find
+ * @return dhwt if found, NULL otherwise
+ */
+struct s_dhw_tank * plant_fbn_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
+{
+	const struct s_dhw_tank_l * restrict dhwtl;
+	struct s_dhw_tank * restrict dhwt = NULL;
+
+	for (dhwtl = plant->dhwt_head; dhwtl; dhwtl = dhwtl->next) {
+		if (!strcmp(dhwtl->dhwt->name, name)) {
+			dhwt = dhwtl->dhwt;
+			break;
+		}
+	}
+
+	return (dhwt);
+}
+
+/**
  * Create a new dhw tank and attach it to the plant.
  * @param plant the plant to attach the tank to
  * @param name @b UNIQUE dhwt name. A local copy is created
@@ -217,7 +292,6 @@ fail:
  */
 struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_dhw_tank_l * restrict dhwtl;
 	struct s_dhw_tank * restrict dhwt = NULL;
 	struct s_dhw_tank_l * restrict dhwtelement = NULL;
 	char * restrict str = NULL;
@@ -227,10 +301,8 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const 
 
 	// deal with name
 	// ensure unique name
-	for (dhwtl = plant->dhwt_head; dhwtl; dhwtl = dhwtl->next) {
-		if (!strcmp(dhwtl->dhwt->name, name))
-			goto fail;
-	}
+	if (plant_fbn_dhwt(plant, name))
+		goto fail;
 
 	str = strdup(name);
 	if (!str)
@@ -268,6 +340,27 @@ fail:
 }
 
 /**
+ * Find a heatsource by name in a plant.
+ * @param plant the plant to find the heatsource from
+ * @param name target name to find
+ * @return heatsource if found, NULL otherwise
+ */
+struct s_heatsource * plant_fbn_heatsource(struct s_plant * restrict const plant, const char * restrict const name)
+{
+	const struct s_heatsource_l * restrict sourcel;
+	struct s_heatsource * restrict source = NULL;
+
+	for (sourcel = plant->heats_head; sourcel; sourcel = sourcel->next) {
+		if (!strcmp(sourcel->heats->name, name)) {
+			source = sourcel->heats;
+			break;
+		}
+	}
+
+	return (source);
+}
+
+/**
  * Create a new heatsource in the plant.
  * @param plant the target plant
  * @param name @b UNIQUE heatsource name. A local copy is created
@@ -275,7 +368,6 @@ fail:
  */
 struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_heatsource_l * restrict sourcel;
 	struct s_heatsource * restrict source = NULL;
 	struct s_heatsource_l * restrict sourceelement = NULL;
 	char * restrict str = NULL;
@@ -285,10 +377,8 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant
 
 	// deal with name
 	// ensure unique name
-	for (sourcel = plant->heats_head; sourcel; sourcel = sourcel->next) {
-		if (!strcmp(sourcel->heats->name, name))
-			goto fail;
-	}
+	if (plant_fbn_heatsource(plant, name))
+		goto fail;
 
 	str = strdup(name);
 	if (!str)
