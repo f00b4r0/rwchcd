@@ -336,7 +336,7 @@ static void parse_temps(void)
 /**
  * Save hardware relays state to permanent storage
  * @return exec status
- * @todo proper save of relay name
+ * @todo online save/restore from .run
  */
 static int hw_p1_save_relays(void)
 {
@@ -374,52 +374,6 @@ static int hw_p1_restore_relays(void)
 			relayptr++;
 		}
 		dbgmsg("Hardware relay state restored");
-	}
-
-	return (ret);
-}
-
-/**
- * Save hardware sensors to permanent storage
- * @return exec status
- * @todo proper save of sensor name
- */
-static int hw_p1_save_sensors(void)
-{
-	return (storage_dump("hw_p1_sensors", &Hardware_ssensver, Hardware.Sensors, sizeof(Hardware.Sensors)));
-}
-
-/**
- * Restore hardware sensor config from permanent storage
- * Restores converter callback for set sensors.
- * @return exec status
- * @todo restore sensor name
- */
-static int hw_p1_restore_sensors(void)
-{
-	static typeof (Hardware.Sensors) blob;
-	storage_version_t sversion;
-	typeof(&Hardware.Sensors[0]) sensorptr = (typeof(sensorptr))&blob;
-	unsigned int i;
-	int ret;
-
-	// try to restore key elements of hardware
-	ret = storage_fetch("hw_p1_sensors", &sversion, blob, sizeof(blob));
-	if (ALL_OK == ret) {
-		if (Hardware_ssensver != sversion)
-			return (-EMISMATCH);
-
-		for (i=0; i<ARRAY_SIZE(Hardware.Sensors); i++) {
-			if (!sensorptr->set.configured)
-				continue;
-
-			Hardware.Sensors[i].set.type = sensorptr->set.type;
-			Hardware.Sensors[i].set.offset = sensorptr->set.offset;
-			Hardware.Sensors[i].ohm_to_celsius = sensor_o_to_c(sensorptr->set.type);
-			if (Hardware.Sensors[i].ohm_to_celsius)
-				Hardware.Sensors[i].set.configured = true;
-		}
-		dbgmsg("Hardware sensors configuration restored");
 	}
 
 	return (ret);
@@ -1025,7 +979,6 @@ static int hw_p1_online(void * priv)
 
 	// restore previous state - failure is ignored
 	ret = hw_p1_restore_relays();
-	ret |= hw_p1_restore_sensors();
 	if (ALL_OK == ret)
 		pr_log(_("Hardware state restored"));
 
@@ -1280,8 +1233,6 @@ static int hw_p1_offline(void * priv)
 	// update permanent storage with final count
 	hw_p1_save_relays();
 
-	hw_p1_save_sensors();
-	
 	hw->run.online = false;
 	
 	return (ret);
