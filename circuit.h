@@ -60,6 +60,7 @@ struct s_heating_circuit {
 	char * restrict name;			///< name for this circuit
 };
 
+struct s_heating_circuit * circuit_new(void) __attribute__((warn_unused_result));
 int circuit_online(struct s_heating_circuit * const circuit) __attribute__((warn_unused_result));
 int circuit_offline(struct s_heating_circuit * const circuit);
 int circuit_run(struct s_heating_circuit * const circuit) __attribute__((warn_unused_result));

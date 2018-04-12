@@ -49,6 +49,16 @@ struct s_valve_pi_priv {
 
 
 /**
+ * Create a valve
+ * @return the newly created valve or NULL
+ */
+struct s_valve * valve_new(void)
+{
+	struct s_valve * const valve = calloc(1, sizeof(*valve));
+	return (valve);
+}
+
+/**
  * Delete a valve.
  * Frees all valve-local resources
  * @param valve the valve to delete

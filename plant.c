@@ -64,8 +64,8 @@ struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char
 			goto fail;
 	}
 
-	// create a new pump. calloc() sets good defaults
-	pump = calloc(1, sizeof(*pump));
+	// create a new pump
+	pump = pump_new();
 	if (!pump)
 		goto fail;
 
@@ -124,8 +124,8 @@ struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const ch
 			goto fail;
 	}
 
-	// create a new valve. calloc() sets good defaults
-	valve = calloc(1, sizeof(*valve));
+	// create a new valve
+	valve = valve_new();
 	if (!valve)
 		goto fail;
 
@@ -184,8 +184,8 @@ struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const pla
 			goto fail;
 	}
 
-	// create a new circuit. calloc() sets good defaults
-	circuit = calloc(1, sizeof(*circuit));
+	// create a new circuit
+	circuit = circuit_new();
 	if (!circuit)
 		goto fail;
 
@@ -244,8 +244,8 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const 
 			goto fail;
 	}
 
-	// create a new tank. calloc() sets good defaults
-	dhwt = calloc(1, sizeof(*dhwt));
+	// create a new tank
+	dhwt = dhwt_new();
 	if (!dhwt)
 		goto fail;
 
@@ -304,8 +304,8 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant
 			goto fail;
 	}
 
-	// create a new source. calloc() sets good defaults
-	source = calloc(1, sizeof(*source));
+	// create a new source
+	source = heatsource_new();
 	if (!source)
 		goto fail;
 

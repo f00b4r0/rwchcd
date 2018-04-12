@@ -18,6 +18,16 @@
 #include "hardware.h"
 
 /**
+ * Create a pump
+ * @return the newly created pump or NULL
+ */
+struct s_pump * pump_new(void)
+{
+	struct s_pump * const pump = calloc(1, sizeof(*pump));
+	return (pump);
+}
+
+/**
  * Delete a pump
  * Frees all pump-local resources
  * @param pump the pump to delete

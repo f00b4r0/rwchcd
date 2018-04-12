@@ -17,6 +17,16 @@
 #include "heatsource.h"
 
 /**
+ * Create a heatsource
+ * @return the newly created heatsource or NULL
+ */
+struct s_heatsource * heatsource_new(void)
+{
+	struct s_heatsource * const heatsource = calloc(1, sizeof(*heatsource));
+	return (heatsource);
+}
+
+/**
  * Put heatsource online.
  * Perform all necessary actions to prepare the heatsource for service but
  * DO NOT MARK IT AS ONLINE.

@@ -82,6 +82,16 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
 }
 
 /**
+ * Create a circuit
+ * @return the newly created circuit or NULL
+ */
+struct s_heating_circuit * circuit_new(void)
+{
+	struct s_heating_circuit * const circuit = calloc(1, sizeof(*circuit));
+	return (circuit);
+}
+
+/**
  * Put circuit online.
  * Perform all necessary actions to prepare the circuit for service but
  * DO NOT MARK IT AS ONLINE.

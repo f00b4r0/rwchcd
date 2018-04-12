@@ -23,6 +23,16 @@
 #include "config.h"
 
 /**
+ * Create a dhwt
+ * @return the newly created dhwt or NULL
+ */
+struct s_dhw_tank * dhwt_new(void)
+{
+	struct s_dhw_tank * const dhwt = calloc(1, sizeof(*dhwt));
+	return (dhwt);
+}
+
+/**
  * Put dhwt online.
  * Perform all necessary actions to prepare the dhwt for service but
  * DO NOT MARK IT AS ONLINE.

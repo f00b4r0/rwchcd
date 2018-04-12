@@ -56,6 +56,7 @@ struct s_heatsource {
 	} cb;		///< heatsource callbacks
 };
 
+struct s_heatsource * heatsource_new(void) __attribute__((warn_unused_result));
 int heatsource_online(struct s_heatsource * const heat) __attribute__((warn_unused_result));
 int heatsource_offline(struct s_heatsource * const heat);
 int heatsource_run(struct s_heatsource * const heat) __attribute__((warn_unused_result));
