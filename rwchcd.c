@@ -108,6 +108,12 @@
 
 #define HOUSE_BMODEL_N	"house"
 
+#define PUMP_CIRCUIT_N	"pump"
+#define VALVE_CIRCUIT_N	"valve"
+#define CIRCUIT_N	"circuit"
+#define DHWT_N		"dhwt"
+#define HEATSOURCE_N	"boiler"
+
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
 
@@ -222,7 +228,7 @@ static int configure_runtime(struct s_config * restrict config)
 		config->def_circuit.outhoff_histeresis = deltaK_to_temp(1);
 		config->def_circuit.limit_wtmax = celsius_to_temp(80);
 		config->def_circuit.limit_wtmin = celsius_to_temp(20);
-		config->def_circuit.temp_inoffset = deltaK_to_temp(5);
+		config->def_circuit.temp_inoffset = deltaK_to_temp(7);
 
 		// DHWT defaults
 		config->def_dhwt.limit_wintmax = celsius_to_temp(90);
@@ -265,8 +271,17 @@ static int configure_models()
 	return (ALL_OK);
 }
 
+/*
+ plant configuration:
+ - describe all pumps
+ - describe all valves
+ - describe all circuits and dhwts
+ - describe all heatsources
+ */
 static int configure_plant(struct s_plant * restrict plant)
 {
+	struct s_pump * restrict pump = NULL;
+	struct s_valve * restrict valve = NULL;
 	struct s_heatsource * restrict heatsource = NULL;
 	struct s_heating_circuit * restrict circuit = NULL;
 	struct s_dhw_tank * restrict dhwt = NULL;
@@ -275,8 +290,120 @@ static int configure_plant(struct s_plant * restrict plant)
 	relid_t relid;
 	int ret;
 
+	/* pumps */
+
+	// create the circuit pump
+	pump = plant_new_pump(plant, PUMP_CIRCUIT_N);
+	if (!pump) {
+		dbgerr("pump creation failed");
+		return (-EOOM);
+	}
+
+	// configure a relay for that pump
+	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_PUMP_N);
+	if (ret) return (ret);
+	pump->set.rid_relay = relid;
+	pump->set.configured = true;
+
+	/* valves */
+
+	// create a valve for that circuit
+	valve = plant_new_valve(plant, VALVE_CIRCUIT_N);
+	if (!valve) {
+		dbgerr("valve creation failed");
+		return (-EOOM);
+	}
+
+	// configure that valve
+	valve->set.tdeadzone = deltaK_to_temp(1);
+	valve->set.deadband = 20;	// XXX 2% minimum increments
+	valve->set.ete_time = 120;	// XXX 120 s
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
+	if (ret) return (ret);
+	valve->set.id_temp1 = tempid;	// boiler out
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
+	if (ret) return (ret);
+	valve->set.id_temp2 = tempid;	// circuit return
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
+	if (ret) return (ret);
+	valve->set.id_tempout = tempid;	// ciruit outgoing
+	// configure two relays for that valve
+	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VOPEN_N);
+	if (ret) return (ret);
+	valve->set.rid_open = relid;
+	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VCLOSE_N);
+	if (ret) return (ret);
+	valve->set.rid_close = relid;
+	ret = valve_make_pi(valve, 1, 5, 18, deltaK_to_temp(30), 10);
+	if (ret) {
+		dbgerr("valve_make_pi failed: %d", ret);
+		return (ret);
+	}
+	valve->set.configured = true;
+
+	/* circuits */
+
+	// create a new circuit for the plant
+	circuit = plant_new_circuit(plant, CIRCUIT_N);
+	if (!circuit) {
+		dbgerr("circuit creation failed");
+		return (-EOOM);
+	}
+
+	// configure that circuit
+	circuit->set.am_tambient_tK = 60 * 60;	// 1h
+	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
+	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
+	if (ret) return (ret);
+	circuit->set.id_temp_outgoing = tempid;
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
+	if (ret) return (ret);
+	circuit->set.id_temp_return = tempid;
+	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
+			      celsius_to_temp(15), celsius_to_temp(27), 130);
+
+	// attach valve to circuit
+	circuit->valve = plant_fbn_valve(plant, VALVE_CIRCUIT_N);
+	if (!circuit->valve) {
+		dbgerr("couldn't find valve %s for circuit %s", VALVE_CIRCUIT_N, circuit->name);
+		return (-ENOTFOUND);
+	}
+
+	// attach the circuit pump
+	circuit->pump = plant_fbn_pump(plant, PUMP_CIRCUIT_N);
+	if (!circuit->pump) {
+		dbgerr("couldn't find pump %s for circuit %s", PUMP_CIRCUIT_N, circuit->name);
+		return (-ENOTFOUND);
+	}
+
+	circuit->set.runmode = RM_AUTO;		// use global setting
+
+	circuit->bmodel = models_fbn_bmodel(HOUSE_BMODEL_N);	// assign building model
+
+	circuit->set.configured = true;
+
+	/* DHWTs */
+
+	// create a new DHWT for the plant
+	dhwt = plant_new_dhwt(plant, DHWT_N);
+	if (!dhwt) {
+		dbgerr("dhwt creation failed");
+		return (-EOOM);
+	}
+
+	// configure that dhwt
+	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
+	if (ret) return (ret);
+	dhwt->set.id_temp_bottom = tempid;	// integrated tank: boiler temp
+	dhwt->set.params.temp_inoffset = deltaK_to_temp(0.01F);	// Integrated tank - non-zero because default would take over otherwise
+	dhwt->set.runmode = RM_AUTO;	// use global setting
+	dhwt->set.configured = true;
+
+	/* heatsources */
+
 	// create a new heat source for the plant
-	heatsource = plant_new_heatsource(plant, "boiler");
+	heatsource = plant_new_heatsource(plant, HEATSOURCE_N);
 	if (!heatsource) {
 		dbgerr("heatsource creation failed");
 		return (-EOOM);
@@ -308,90 +435,6 @@ static int configure_plant(struct s_plant * restrict plant)
 	heatsource->set.consumer_sdelay = 6 * 60;	// 6mn
 	heatsource->set.runmode = RM_AUTO;	// use global setting
 	heatsource->set.configured = true;
-
-	// create a new circuit for the plant
-	circuit = plant_new_circuit(plant, "circuit");
-	if (!circuit) {
-		dbgerr("circuit creation failed");
-		return (-EOOM);
-	}
-
-	// configure that circuit
-	circuit->set.am_tambient_tK = 60 * 60;	// 1h
-	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
-	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
-	if (ret) return (ret);
-	circuit->set.id_temp_outgoing = tempid;
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
-	if (ret) return (ret);
-	circuit->set.id_temp_return = tempid;
-	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
-			      celsius_to_temp(15), celsius_to_temp(27), 130);
-
-	// create a valve for that circuit
-	circuit->valve = plant_new_valve(plant, "valve");
-	if (!circuit->valve) {
-		dbgerr("valve creation failed");
-		return (-EOOM);
-	}
-
-	// configure that valve
-	circuit->valve->set.tdeadzone = deltaK_to_temp(1);
-	circuit->valve->set.deadband = 20;	// XXX 2% minimum increments
-	circuit->valve->set.ete_time = 120;	// XXX 120 s
-	circuit->valve->set.id_temp1 = boiler->set.id_temp;
-	circuit->valve->set.id_temp2 = circuit->set.id_temp_return;
-	circuit->valve->set.id_tempout = circuit->set.id_temp_outgoing;
-	//valve_make_sapprox(circuit->valve, 50, 20);
-	ret = valve_make_pi(circuit->valve, 1, 5, 18, deltaK_to_temp(30), 10);
-	if (ret) {
-		dbgerr("valve_make_pi failed: %d", ret);
-		return (ret);
-	}
-
-	// configure two relays for that valve
-	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VOPEN_N);
-	if (ret) return (ret);
-	circuit->valve->set.rid_open = relid;
-	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VCLOSE_N);
-	if (ret) return (ret);
-	circuit->valve->set.rid_close = relid;
-
-	circuit->valve->set.configured = true;
-
-	// create a pump for that circuit
-	circuit->pump = plant_new_pump(plant, "pump");
-	if (!circuit->pump) {
-		dbgerr("pump creation failed");
-		return (-EOOM);
-	}
-
-	// configure a relay for that pump
-	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_PUMP_N);
-	if (ret) return (ret);
-	circuit->pump->set.rid_relay = relid;
-
-	circuit->pump->set.configured = true;
-
-	circuit->set.runmode = RM_AUTO;		// use global setting
-
-	circuit->bmodel = models_fbn_bmodel(HOUSE_BMODEL_N);	// assign building model
-
-	circuit->set.configured = true;
-
-	// create a new DHWT for the plant
-	dhwt = plant_new_dhwt(plant, NULL);
-	if (!dhwt) {
-		dbgerr("dhwt creation failed");
-		return (-EOOM);
-	}
-
-	// configure that dhwt
-	dhwt->set.id_temp_bottom = boiler->set.id_temp;
-	dhwt->set.params.temp_inoffset = deltaK_to_temp(0.01F);	// Integrated tank - non-zero because default would take over otherwise
-	dhwt->set.runmode = RM_AUTO;	// use global setting
-	dhwt->set.configured = true;
 
 	plant->configured = true;
 
