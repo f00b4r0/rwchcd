@@ -14,6 +14,8 @@
 #ifndef rwchcd_lib_h
 #define rwchcd_lib_h
 
+#include <string.h>	// memset
+
 #include "rwchcd.h"
 
 /** Temperature integral data */
@@ -90,6 +92,15 @@ __attribute__((const, always_inline)) static inline int validate_temp(const temp
 		return (-EINVALID);
 	else
 		return (ALL_OK);
+}
+
+/**
+ * Reset an integral
+ * @param intgrl data to reset
+ */
+__attribute__((always_inline)) static inline void reset_intg(struct s_temp_intgrl * const intgrl)
+{
+	memset(intgrl, 0x00, sizeof(*intgrl));
 }
 
 #endif /* rwchcd_lib_h */

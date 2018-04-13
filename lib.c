@@ -58,7 +58,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 		      const temp_t tlow_jacket, const temp_t thigh_jacket)
 {
 	if ((0 == intgrl->last_time) || (thrsh != intgrl->last_thrsh))	// reset condition
-		intgrl->integral = 0;
+		reset_intg(intgrl);
 	else
 		intgrl->integral += (((new_temp + intgrl->last_temp)/2) - thrsh) * (new_time - intgrl->last_time);
 
