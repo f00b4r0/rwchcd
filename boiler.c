@@ -380,20 +380,13 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (boiler->set.limit_tmin) {
 		// calculate boiler integral
 		hardware_sensor_clone_time(boiler->set.id_temp, &ttime);
-		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime);
+		// jacket integral between 0 and -100Ks - XXX hardcoded
+		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime, deltaK_to_temp(-100), 0);
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
+		cshift_boil = temp_to_deltaK(2 * temp_intgrl);
 
-		// form consumer shift request if necessary for cold start protection
-		if (temp_intgrl < 0) {
-			// at boiler first start the integral can windup quickly: jacket integral at -200% - XXX hardcoded
-			if (temp_intgrl < (-100 * KPRECISIONI))
-				boiler->run.boil_itg.integral = temp_intgrl = (-100 * KPRECISIONI);
-
-			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
-			cshift_boil = 2 * temp_intgrl / KPRECISIONI;
+		if (temp_intgrl < 0)
 			dbgmsg("\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
-		}
-		else
-			boiler->run.boil_itg.integral = 0;	// reset integral
 	}
 
 	// handler boiler return temp if set
@@ -406,20 +399,13 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			// calculate return integral
 			hardware_sensor_clone_time(boiler->set.id_temp_return, &ttime);
 			hardware_sensor_clone_temp(boiler->set.id_temp_return, &ret_temp);
-			temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime);
+			// jacket integral between 0 and -1000Ks - XXX hardcoded
+			temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, deltaK_to_temp(-1000), 0);
+			// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - XXX hardcoded
+			cshift_ret = temp_to_deltaK(temp_intgrl / 10);
 
-			// form consumer shift request if necessary for cold start protection
-			if (temp_intgrl < 0) {
-				// at boiler first start the integral can windup quickly: jacket integral at -99% - XXX hardcoded
-				if (temp_intgrl < (-99 * 10 * KPRECISIONI))
-					boiler->run.ret_itg.integral = temp_intgrl = (-99 * 10 * KPRECISIONI);
-
-				// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -0.1% shift - XXX hardcoded
-				cshift_ret = 1 * temp_intgrl / KPRECISIONI / 10;
+			if (temp_intgrl < 0)
 				dbgmsg("\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
-			}
-			else
-				boiler->run.ret_itg.integral = 0;	// reset integral
 		}
 	}
 

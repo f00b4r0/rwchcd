@@ -412,6 +412,7 @@ settarget:
  * @param heat target heat source
  * @return exec status
  * @todo rework DHWT prio when n_heatsources > 1
+ * @todo fix dhwc_sliding
  */
 int logic_heatsource(struct s_heatsource * restrict const heat)
 {
@@ -440,18 +441,12 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 
 	// compute sliding integral in DHW sliding prio
 	// XXX TODO: this logic should move at a higher level in the context of a pool of heatsources (some of which may or may not be connected to the DHWTs)
+	// XXX FIXME: for this to work the integral must NOT be reset when the threshold changes
 	if (runtime->dhwc_sliding) {
-		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat));
-
-		if (temp < 0) {
-			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
-			heat->run.cshift_noncrit = temp / KPRECISIONI;
-		}
-		else {
-			heat->run.cshift_noncrit = 0;	// reset shift
-			heat->run.sld_itg.integral = 0;	// reset integral
-		}
-
+		// jacket integral between -100Ks and 0
+		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), deltaK_to_temp(-100), 0);
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
+		heat->run.cshift_noncrit = temp_to_deltaK(temp);
 	}
 
 	// decrement consummer stop delay if any
