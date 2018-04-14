@@ -45,6 +45,9 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * The trapezoidal method is used here as it's the easiest to implement in a
  * discrete context.
  * This function applies upper and lower bounds to the integral for jacketing.
+ * The computation accepts a moving threshold, the provided threshold will only
+ * be applied to the provided new value and the previous threshold will be used
+ * for the previous value in the calculation.
  * @note by design this method will underestimate the integral value.
  * @param intgrl integral data
  * @param thrsh threshold value
@@ -57,10 +60,10 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time,
 		      const temp_t tlow_jacket, const temp_t thigh_jacket)
 {
-	if ((0 == intgrl->last_time) || (thrsh != intgrl->last_thrsh))	// reset condition
-		reset_intg(intgrl);
+	if (!intgrl->last_time || !new_time)	// only compute integral over a finite domain
+		intgrl->integral = 0;
 	else
-		intgrl->integral += (((new_temp + intgrl->last_temp)/2) - thrsh) * (new_time - intgrl->last_time);
+		intgrl->integral += (((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * (new_time - intgrl->last_time);
 
 	// apply jackets
 	if (intgrl->integral < tlow_jacket)
