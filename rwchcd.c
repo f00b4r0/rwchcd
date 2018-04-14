@@ -204,15 +204,7 @@ static int configure_hw()
 
 static int configure_runtime(struct s_config * restrict config)
 {
-	int ret;
-	tempid_t tid_out;
-
-	ret = hw_backends_sensor_fbn(&tid_out, HW_NAME, SENSOR_OUTDOOR_N);
-	if (ALL_OK != ret)
-		return (ret);
-
 	if (!config->restored) {
-		config_set_outdoor_sensorid(config, tid_out);
 		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
 		config->summer_maintenance = true;	// enable summer maintenance

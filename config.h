@@ -21,7 +21,6 @@ struct s_config {
 	bool restored;			///< true if config has been restored from storage
 	bool configured;		///< true if properly configured
 	bool summer_maintenance;	///< true if pumps/valves should be run periodically in summer.
-	tempid_t id_temp_outdoor;	///< outdoor temp
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
 	temp_t limit_tfrost;		///< outdoor temp for plant frost protection
 	time_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep
@@ -35,7 +34,6 @@ int config_init(struct s_config * const config);
 
 int config_set_tsummer(struct s_config * const config, const temp_t tsummer);
 int config_set_tfrost(struct s_config * const config, const temp_t tfrost);
-int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid);
 int config_save(const struct s_config * const config);
 void config_exit(struct s_config * const config);
 

@@ -19,7 +19,7 @@
 #include "storage.h"
 #include "config.h"
 
-static const storage_version_t Config_sversion = 11;
+static const storage_version_t Config_sversion = 12;
 
 /**
  * Allocate new config.
@@ -140,22 +140,6 @@ int config_set_tfrost(struct s_config * const config, const temp_t tfrost)
 	
 	config->limit_tfrost = tfrost;
 	
-	return (ALL_OK);
-}
-
-/**
- * Set outdoor sensor ID.
- * @param config target config
- * @param sensorid id of outdoor temperature sensor
- * @return exec status
- */
-int config_set_outdoor_sensorid(struct s_config * const config, const tempid_t sensorid)
-{
-	if (!config)
-		return (-EINVALID);
-
-	config->id_temp_outdoor = sensorid;
-
 	return (ALL_OK);
 }
 

@@ -249,11 +249,6 @@ int runtime_online(void)
 	
 	Runtime.start_time = time(NULL);
 
-	// make sure specified outdoor sensor is available
-	ret = hardware_sensor_clone_time(Runtime.config->id_temp_outdoor, NULL);
-	if (ALL_OK != ret)
-		return (ret);
-
 	runtime_restore();
 
 	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log, "log runtime");
