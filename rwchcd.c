@@ -175,6 +175,7 @@ static int configure_hw()
 	}
 
 	// configure hw
+	hw_p1_config_setbl(75);		// XXX 75% backlight
 	hw_p1_config_setnsensors(5);	// XXX 5 sensors
 	hw_p1_config_setnsamples(5);	// XXX 5 samples average
 

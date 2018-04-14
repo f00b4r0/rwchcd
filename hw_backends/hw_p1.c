@@ -415,6 +415,7 @@ static int hw_p1_config_fetch(struct rwchc_s_settings * const settings)
 
 /**
  * Commit hardware config to hardware.
+ * @note overwrites all hardware settings.
  * @return exec status
  */
 static int hw_p1_config_commit(void)
