@@ -1,8 +1,8 @@
 *.[od]
 *-generated.[ch]
-version.h
-rwchc_export.h
+hw_backends/rwchc_export.h
 rwchcd
+doc/
 
 
 # Created by https://www.gitignore.io/api/xcode
