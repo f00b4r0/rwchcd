@@ -114,4 +114,10 @@ dbus.o:	$(DBUSGEN_BASE).h
 # rebuild rwchcd.o if anything changes to update version
 rwchcd.o:       $(filter-out rwchcd.o,$(OBJS))
 
+tools:	tools/hwp1_prelays
+
+tools/hwp1_prelays:	tools/hwp1_prelays.o $(filter-out rwchcd.o hw_backends/hw_p1/hw_p1.o,$(MAINOBJS))
+	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
+
+
 -include $(DEPS) $(DBUSGEN_DEPS)
