@@ -38,7 +38,7 @@ int hardware_init(void)
 			ret = HW_backends[id]->cb->init(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("init() failed for \"%s\"", HW_backends[id]->name);
+				dbgerr("init() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
 			}
 			else
 				HW_backends[id]->run.initialized = true;
@@ -81,7 +81,7 @@ int hardware_online(void)
 			ret = HW_backends[id]->cb->online(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("online() failed for \"%s\"", HW_backends[id]->name);
+				dbgerr("online() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
 			}
 			else
 				HW_backends[id]->run.online = true;
@@ -120,7 +120,7 @@ int hardware_input(void)
 			ret = HW_backends[id]->cb->input(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("input() failed for \"%s\"", HW_backends[id]->name);
+				dbgerr("input() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
 			}
 		}
 	}
@@ -157,7 +157,7 @@ int hardware_output(void)
 			ret = HW_backends[id]->cb->output(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("output() failed for \"%s\"", HW_backends[id]->name);
+				dbgerr("output() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
 			}
 		}
 	}
@@ -194,7 +194,7 @@ int hardware_offline(void)
 			ret = HW_backends[id]->cb->offline(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("offline() failed for \"%s\"", HW_backends[id]->name);
+				dbgerr("offline() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
 			}
 			else
 				HW_backends[id]->run.online = false;
