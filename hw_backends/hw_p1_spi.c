@@ -285,12 +285,14 @@ int hw_p1_spi_lcd_bl_w(const uint8_t percent)
 /**
  * Read peripheral states.
  * Delay: none
+ * @note will not update the target pointer if a transmission error 
  * @param periphs pointer to struct whose values will be populated to match current states
  * @return error code
  */
 int hw_p1_spi_peripherals_r(union rwchc_u_periphs * const periphs)
 {
 	int ret = ALL_OK;
+	uint8_t byte;
 	
 	assert(periphs);
 	
@@ -298,11 +300,17 @@ int hw_p1_spi_peripherals_r(union rwchc_u_periphs * const periphs)
 	
 	if (!spitout)
 		return (-ESPI);
-	
-	periphs->BYTE = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+
+	byte = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	if (6 == FWversion)
+		if (!SPI_ASSERT(~byte, ~RWCHC_SPIC_PERIPHSR))
+			ret = -ESPI;
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
 		ret = -ESPI;
+
+	if (ALL_OK == ret)
+		periphs->BYTE = byte;
 
 	return ret;
 }
