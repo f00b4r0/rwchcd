@@ -16,6 +16,7 @@
 
 #include "boiler.h"
 #include "pump.h"
+#include "valve.h"
 #include "lib.h"
 #include "hardware.h"
 #include "alarms.h"
@@ -400,9 +401,12 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// handler boiler return temp if set
 	if (boiler->set.limit_treturnmin) {
-		// if we have a valve, use it
-		if (0 && boiler->retvalve) {
-			// TODO
+		// if we have a configured valve, use it
+		if (boiler->retvalve && boiler->retvalve->set.configured) {
+			// set valve for target limit. If return is higher valve will be full closed.
+			ret = valve_control(boiler->retvalve, boiler->set.limit_treturnmin);
+			if ((ALL_OK != ret) && (-EDEADZONE != ret))	// something bad happened. XXX further action?
+				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->retvalve->name, ret);
 		}
 		else {
 			// calculate return integral
