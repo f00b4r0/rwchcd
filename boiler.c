@@ -465,12 +465,18 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (untrip_temp > boiler->set.limit_tmax)
 		untrip_temp = boiler->set.limit_tmax;
 
+	// return value within hysteresis
+	ret = ALL_OK;
+
 	/* burner control */
 	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
 	if (boiler_temp < trip_temp)		// trip condition
 		ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
 	else if (boiler_temp > untrip_temp)	// untrip condition
 		ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
+
+	if (ret > 0)	// cooldown isn't an error
+		ret = ALL_OK;
 
 	// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
 	if ((boiler->set.limit_tmin < boiler_temp) && (hardware_relay_get_state(boiler->set.rid_burner_1) > 0))
