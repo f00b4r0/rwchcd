@@ -60,6 +60,8 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time,
 		      const temp_t tlow_jacket, const temp_t thigh_jacket)
 {
+	intgrl->inuse = true;
+
 	if (!intgrl->last_time || !new_time)	// only compute integral over a finite domain
 		intgrl->integral = 0;
 	else

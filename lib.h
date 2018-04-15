@@ -20,6 +20,7 @@
 
 /** Temperature integral data */
 struct s_temp_intgrl {
+	bool inuse;			///< true if integral is in use
 	temp_t integral;		///< integral value in temp_t * time_t
 	temp_t last_thrsh;		///< temperature threshold for integral calculation
 	temp_t last_temp;		///< last recorded temperature value
@@ -100,7 +101,8 @@ __attribute__((const, always_inline)) static inline int validate_temp(const temp
  */
 __attribute__((always_inline)) static inline void reset_intg(struct s_temp_intgrl * const intgrl)
 {
-	memset(intgrl, 0x00, sizeof(*intgrl));
+	if (intgrl->inuse)
+		memset(intgrl, 0x00, sizeof(*intgrl));
 }
 
 #endif /* rwchcd_lib_h */
