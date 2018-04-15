@@ -427,7 +427,9 @@ static int hw_p1_config_commit(void)
 		return (-EOFFLINE);
 	
 	// grab current config from the hardware
-	hw_p1_config_fetch(&hw_set);
+	ret = hw_p1_config_fetch(&hw_set);
+	if (ret)
+		goto out;
 	
 	if (!memcmp(&hw_set, &(Hardware.settings), sizeof(hw_set)))
 		return (ALL_OK); // don't wear flash down if unnecessary
@@ -436,6 +438,16 @@ static int hw_p1_config_commit(void)
 	ret = hw_p1_spi_settings_w(&(Hardware.settings));
 	if (ret)
 		goto out;
+
+	// check that the data is correct on target
+	ret = hw_p1_config_fetch(&hw_set);
+	if (ret)
+		goto out;
+
+	if (memcmp(&hw_set, &(Hardware.settings), sizeof(hw_set))) {
+		ret = -EHARDWARE;
+		goto out;
+	}
 	
 	// save hardware config
 	ret = hw_p1_spi_settings_s();

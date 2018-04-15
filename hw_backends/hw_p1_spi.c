@@ -36,6 +36,20 @@
 #define SPIRESYNCMAX	250		///< max resync tries -> terminal delay ~125ms including 100us SPIDELAYUS for each exchange
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0		///< RaspberryPi SPI channel 0
+/**
+ * SPI Mode.
+ * See https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
+ * @verbatim
+ Standard SPI Mode | Microchip PIC
+ Terminology       | Control Bits
+ Using CPOL,CPHA   |   CKP CKE
+ ------------------+--------------
+      0,0 (0)      |    0   1
+      0,1 (1)      |    0   0
+      1,0 (2)      |    1   1
+      1,1 (3)      |    1   0
+ * @endverbatim
+ */
 #define SPIMODE		3		///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 
 #define USLEEPLCDFAST	50		///< expected completion time (us) for most LCD ops
