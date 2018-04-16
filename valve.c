@@ -476,9 +476,6 @@ int valve_logic(struct s_valve * const valve)
 {
 	assert(valve);
 
-	if (!valve->set.configured)
-		return (-ENOTCONFIGURED);
-
 	if (!valve->run.online)
 		return (-EOFFLINE);
 
