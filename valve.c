@@ -124,11 +124,11 @@ static int v_pi_online(struct s_valve * const valve)
 		return (-EINVALID);
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.id_tempout, NULL);
+	ret = hardware_sensor_clone_time(valve->set.tid_out, NULL);
 	if (ALL_OK != ret)
 		return (ret);
 
-	return (hardware_sensor_clone_time(valve->set.id_temp1, NULL));
+	return (hardware_sensor_clone_time(valve->set.tid_hot, NULL));
 }
 
 /**
@@ -184,7 +184,7 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	vpriv->run.last_time = now;
 
 	// get current outpout
-	ret = hardware_sensor_clone_temp(valve->set.id_tempout, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -195,12 +195,12 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	}
 
 	// get current high input
-	ret = hardware_sensor_clone_temp(valve->set.id_temp1, &tempin_h);
+	ret = hardware_sensor_clone_temp(valve->set.tid_hot, &tempin_h);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// if we don't have a sensor for low input, guesstimate it
-	ret = hardware_sensor_clone_temp(valve->set.id_temp2, &tempin_l);
+	ret = hardware_sensor_clone_temp(valve->set.tid_cold, &tempin_l);
 	if (ALL_OK != ret)
 		tempin_l = tempin_h - vpriv->set.Ksmax;
 
@@ -303,7 +303,7 @@ static int v_bangbang_online(struct s_valve * const valve)
 		return (-EINVALID);
 
 	// ensure required sensors are configured
-	return (hardware_sensor_clone_time(valve->set.id_tempout, NULL));
+	return (hardware_sensor_clone_time(valve->set.tid_out, NULL));
 }
 
 /**
@@ -319,7 +319,7 @@ static int v_bangbang_control(struct s_valve * const valve, const temp_t target_
 	int ret;
 	temp_t tempout;
 
-	ret = hardware_sensor_clone_temp(valve->set.id_tempout, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -346,7 +346,7 @@ static int v_sapprox_online(struct s_valve * const valve)
 		return (-EINVALID);
 
 	// ensure required sensors are configured
-	return (hardware_sensor_clone_time(valve->set.id_tempout, NULL));
+	return (hardware_sensor_clone_time(valve->set.tid_out, NULL));
 }
 
 /**
@@ -382,7 +382,7 @@ static int v_sapprox_control(struct s_valve * const valve, const temp_t target_t
 
 	vpriv->run.last_time = now;
 
-	ret = hardware_sensor_clone_temp(valve->set.id_tempout, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -559,19 +559,19 @@ int valve_run(struct s_valve * const valve)
 	if (valve->run.request_action != valve->run.actual_action) {
 		switch (valve->run.request_action) {
 			case OPEN:
-				ret = hardware_relay_set_state(valve->set.rid_close, OFF, 0);	// break before make
+				ret = hardware_relay_set_state(valve->set.rid_cold, OFF, 0);	// break before make
 				if (ALL_OK != ret)
 					goto fail;
-				ret = hardware_relay_set_state(valve->set.rid_open, ON, 0);
+				ret = hardware_relay_set_state(valve->set.rid_hot, ON, 0);
 				if (ALL_OK != ret)
 					goto fail;
 				valve->run.actual_action = OPEN;
 				break;
 			case CLOSE:
-				ret = hardware_relay_set_state(valve->set.rid_open, OFF, 0);	// break before make
+				ret = hardware_relay_set_state(valve->set.rid_hot, OFF, 0);	// break before make
 				if (ALL_OK != ret)
 					goto fail;
-				ret = hardware_relay_set_state(valve->set.rid_close, ON, 0);
+				ret = hardware_relay_set_state(valve->set.rid_cold, ON, 0);
 				if (ALL_OK != ret)
 					goto fail;
 				valve->run.actual_action = CLOSE;
@@ -579,10 +579,10 @@ int valve_run(struct s_valve * const valve)
 			default:
 				ret = -EINVALID;
 			case STOP:
-				ret = hardware_relay_set_state(valve->set.rid_open, OFF, 0);
+				ret = hardware_relay_set_state(valve->set.rid_hot, OFF, 0);
 				if (ALL_OK != ret)
 					goto fail;
-				ret = hardware_relay_set_state(valve->set.rid_close, OFF, 0);
+				ret = hardware_relay_set_state(valve->set.rid_cold, OFF, 0);
 				if (ALL_OK != ret)
 					goto fail;
 				valve->run.actual_action = STOP;
@@ -600,8 +600,8 @@ fail:
 
 /**
  * Constructor for bangbang valve control.
- * This controller requires @b id_tempout to be set.
- * This controller ignores @b id_temp1 and @b id_temp2
+ * This controller requires @b tid_out to be set.
+ * This controller ignores @b tid_hot and @b tid_cold
  * @param valve target valve
  * @return exec status
  */
@@ -618,8 +618,8 @@ int valve_make_bangbang(struct s_valve * const valve)
 
 /**
  * Constructor for sapprox valve control.
- * This controller requires @b id_tempout to be set.
- * This controller ignores @b id_temp1 and @b id_temp2
+ * This controller requires @b tid_out to be set.
+ * This controller ignores @b tid_hot and @b tid_cold
  * @param valve target valve
  * @param amount movement amount in %
  * @param intvl sample interval in seconds
@@ -659,8 +659,8 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 
 /**
  * Constructor for PI valve control.
- * This controller requires @b id_temp1 and @b id_tempout to be set.
- * This controller recommends @b id_temp2 to be set.
+ * This controller requires @b tid_hot and @b tid_out to be set.
+ * This controller recommends @b tid_cold to be set.
  * @param valve target valve
  * @param intvl sample interval in seconds
  * @param Td deadtime (time elapsed before any change in output is observed after a step change)

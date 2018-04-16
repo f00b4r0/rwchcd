@@ -313,20 +313,20 @@ static int configure_plant(struct s_plant * restrict plant)
 	valve->set.ete_time = 120;	// XXX 120 s
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
 	if (ret) return (ret);
-	valve->set.id_temp1 = tempid;	// boiler out
+	valve->set.tid_hot = tempid;	// boiler out
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
 	if (ret) return (ret);
-	valve->set.id_temp2 = tempid;	// circuit return
+	valve->set.tid_cold = tempid;	// circuit return
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
 	if (ret) return (ret);
-	valve->set.id_tempout = tempid;	// ciruit outgoing
+	valve->set.tid_out = tempid;	// ciruit outgoing
 	// configure two relays for that valve
 	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VOPEN_N);
 	if (ret) return (ret);
-	valve->set.rid_open = relid;
+	valve->set.rid_hot = relid;
 	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VCLOSE_N);
 	if (ret) return (ret);
-	valve->set.rid_close = relid;
+	valve->set.rid_cold = relid;
 	ret = valve_make_pi(valve, 1, 5, 18, deltaK_to_temp(30), 10);
 	if (ret) {
 		dbgerr("valve_make_pi failed: %d", ret);

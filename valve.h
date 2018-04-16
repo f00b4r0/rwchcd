@@ -25,11 +25,11 @@ struct s_valve {
 		temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
 		uint_fast8_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
 		time_t ete_time;	///< end-to-end run time in seconds
-		tempid_t id_temp1;	///< temp at the "primary" input: when position is 0% (closed) there is 0% flow from this input
-		tempid_t id_temp2;	///< temp at the "secondary" input: when position is 0% (closed) there is 100% flow from this input
-		tempid_t id_tempout;	///< temp at the output
-		relid_t rid_open;	///< relay for opening the valve
-		relid_t rid_close;	///< relay for closing the valve
+		tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
+		tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
+		tempid_t tid_out;	///< temp at the output
+		relid_t rid_hot;	///< relay for opening the valve (increase hot input)
+		relid_t rid_cold;	///< relay for closing the valve (increase cold input)
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
