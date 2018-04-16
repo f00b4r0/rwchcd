@@ -295,7 +295,7 @@ static int configure_plant(struct s_plant * restrict plant)
 	// configure a relay for that pump
 	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_PUMP_N);
 	if (ret) return (ret);
-	pump->set.rid_relay = relid;
+	pump->set.rid_pump = relid;
 	pump->set.configured = true;
 
 	/* valves */
@@ -799,3 +799,4 @@ int main(void)
 
 	return (0);
 }
+

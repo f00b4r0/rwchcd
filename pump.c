@@ -56,7 +56,7 @@ int pump_online(struct s_pump * restrict const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!pump->set.rid_relay.rid)
+	if (!pump->set.rid_pump.rid)
 		return (-EMISCONFIGURED);
 
 	return (ALL_OK);
@@ -101,7 +101,7 @@ int pump_get_state(const struct s_pump * restrict const pump)
 		return (-EOFFLINE);
 
 	// NOTE we could return remaining cooldown time if necessary
-	return (hardware_relay_get_state(pump->set.rid_relay));
+	return (hardware_relay_get_state(pump->set.rid_pump));
 }
 
 /**
@@ -145,7 +145,7 @@ int pump_run(struct s_pump * restrict const pump)
 		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
 
 	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	ret = hardware_relay_set_state(pump->set.rid_relay, pump->run.req_on, cooldown);
+	ret = hardware_relay_set_state(pump->set.rid_pump, pump->run.req_on, cooldown);
 	if (ret < 0)
 		return (ret);
 
@@ -153,3 +153,4 @@ int pump_run(struct s_pump * restrict const pump)
 
 	return (ALL_OK);
 }
+

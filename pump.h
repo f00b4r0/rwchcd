@@ -24,14 +24,14 @@ struct s_pump {
 	struct {
 		bool configured;		///< true if properly configured
 		time_t cooldown_time;		///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
-		relid_t rid_relay;		///< hardware relay controlling that pump
+		relid_t rid_pump;		///< hardware relay controlling that pump
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)
-		bool dwht_use;			///< true if pump is currently used by active DHWT
-		time_t actual_cooldown_time;	///< actual cooldown time remaining
 		bool req_on;			///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
+		bool dwht_use;			///< true if pump is currently used by active DHWT
+		time_t actual_cooldown_time;	///< actual cooldown time remaining
 	} run;		///< private runtime (internally handled)
 	char * restrict name;
 };
