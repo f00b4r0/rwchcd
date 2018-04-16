@@ -153,13 +153,16 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		ret = -EMISCONFIGURED;
 	}
 
-	// if return min is set make sure the associated sensor is configured. XXX TODO check sane value wrt tmax/tmin?
 	if (boiler->set.limit_treturnmin) {
+		// if return min is set make sure the associated sensor is configured.
 		ret = hardware_sensor_clone_time(boiler->set.id_temp_return, NULL);
 		if (ALL_OK != ret) {
 			dbgerr("\"%s\": limit_treturnmin is set but return sensor is unavaiable (%d)", heat->name, ret);
 			ret = -EMISCONFIGURED;
 		}
+		// treturnmin should never be higher than tmax (and possibly not higher than tmin either)
+		if (boiler->set.limit_treturnmin > boiler->set.limit_tmax)
+			ret = -EMISCONFIGURED;
 	}
 
 out:
