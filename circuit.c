@@ -339,7 +339,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 
 valve:
 	// adjust valve position if necessary
-	if (circuit->valve && circuit->valve->set.configured) {
+	if (circuit->valve) {
 		ret = valve_control(circuit->valve, water_temp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
 			goto out;
