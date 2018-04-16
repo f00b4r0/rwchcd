@@ -76,6 +76,9 @@ int valve_make_pi(struct s_valve * const valve, time_t intvl, time_t Td, time_t 
 	assert(valve->set.configured);
 	assert(valve->cb.control);
 
+	if (!valve->run.online)
+		return (-EOFFLINE);
+
 	// apply valve law to determine target position
 	return (valve->cb.control(valve, target_tout));
 }
