@@ -203,7 +203,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, runtime->config->def_circuit.t_offset);
 
 	// Ambient temperature is either read or modelled
-	if (hardware_sensor_clone_temp(circuit->set.id_temp_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
+	if (hardware_sensor_clone_temp(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 		// calculate ambient shift based on measured ambient temp influence in percent
 		ambient_delta = (circuit->set.ambient_factor) * (circuit->run.target_ambient - ambient_temp) / 100;
 	}
@@ -294,7 +294,7 @@ int logic_circuit(struct s_heating_circuit * restrict const circuit)
 		case TRANS_UP:
 			if (ambient_temp < (circuit->run.request_ambient - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
 				// boost is max of set boost (if any) and measured delta (if any)
-				if ((now - circuit->run.trans_since) < circuit->set.max_boost_time)
+				if ((now - circuit->run.trans_since) < circuit->set.boost_maxtime)
 					ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;
 			}
 			else {

@@ -114,7 +114,7 @@ int circuit_online(struct s_heating_circuit * const circuit)
 		return (-EMISCONFIGURED);
 
 	// check that mandatory sensors are set
-	ret = hardware_sensor_clone_time(circuit->set.id_temp_outgoing, NULL);
+	ret = hardware_sensor_clone_time(circuit->set.tid_outgoing, NULL);
 	if (ret)
 		goto out;
 
@@ -243,7 +243,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 	// if we reached this point then the circuit is active
 
 	// safety checks
-	ret = hardware_sensor_clone_temp(circuit->set.id_temp_outgoing, &curr_temp);
+	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);
 	if (ALL_OK != ret) {
 		circuit_failsafe(circuit);
 		return (ret);
@@ -312,7 +312,7 @@ int circuit_run(struct s_heating_circuit * const circuit)
 
 	// interference: apply global power shift
 	if (runtime->consumer_shift) {
-		ret = hardware_sensor_clone_temp(circuit->set.id_temp_return, &ret_temp);
+		ret = hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
 		// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
 		if ((ALL_OK != ret) || (ret_temp >= water_temp))
 			ret_temp = celsius_to_temp(0);
@@ -329,8 +329,8 @@ int circuit_run(struct s_heating_circuit * const circuit)
 		saved_temp = lwtmax;
 
 #ifdef DEBUG
-	hardware_sensor_clone_temp(circuit->set.id_temp_return, &ret_temp);
-	hardware_sensor_clone_temp(circuit->set.id_temp_outgoing, &out_temp);
+	hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
+	hardware_sensor_clone_temp(circuit->set.tid_outgoing, &out_temp);
 	dbgmsg("\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(water_temp), temp_to_celsius(out_temp), temp_to_celsius(ret_temp));
@@ -352,7 +352,7 @@ valve:
 			goto out;
 	}
 
-	// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.id_temp_outgoing) > circuit->run.target_ambient))
+	// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))
 
 	ret = ALL_OK;
 out:

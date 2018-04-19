@@ -345,14 +345,14 @@ static int configure_plant(struct s_plant * restrict plant)
 
 	// configure that circuit
 	circuit->set.am_tambient_tK = 60 * 60;	// 1h
-	circuit->set.max_boost_time = 60 * 60 * 4;	// 4h
+	circuit->set.boost_maxtime = 60 * 60 * 4;	// 4h
 	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
 	if (ret) return (ret);
-	circuit->set.id_temp_outgoing = tempid;
+	circuit->set.tid_outgoing = tempid;
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
 	if (ret) return (ret);
-	circuit->set.id_temp_return = tempid;
+	circuit->set.tid_return = tempid;
 	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
 			      celsius_to_temp(15), celsius_to_temp(27), 130);
 
