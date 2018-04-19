@@ -218,7 +218,7 @@ static int configure_runtime(struct s_config * restrict config)
 		config->def_circuit.outhoff_comfort = config->def_circuit.t_comfort - deltaK_to_temp(2);	// XXX should be deltas and not temps ?
 		config->def_circuit.outhoff_eco = config->def_circuit.t_eco - deltaK_to_temp(2);
 		config->def_circuit.outhoff_frostfree = config->def_circuit.t_frostfree - deltaK_to_temp(3);	// XXX will trip at t-3 untrip at t-4
-		config->def_circuit.outhoff_histeresis = deltaK_to_temp(1);
+		config->def_circuit.outhoff_hysteresis = deltaK_to_temp(1);
 		config->def_circuit.limit_wtmax = celsius_to_temp(80);
 		config->def_circuit.limit_wtmin = celsius_to_temp(20);
 		config->def_circuit.temp_inoffset = deltaK_to_temp(7);

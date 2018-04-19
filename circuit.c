@@ -100,6 +100,8 @@ struct s_heating_circuit * circuit_new(void)
  */
 int circuit_online(struct s_heating_circuit * const circuit)
 {
+	const struct s_runtime * restrict const runtime = get_runtime();
+	temp_t temp;
 	int ret;
 
 	if (!circuit)
@@ -115,6 +117,11 @@ int circuit_online(struct s_heating_circuit * const circuit)
 	ret = hardware_sensor_clone_time(circuit->set.id_temp_outgoing, NULL);
 	if (ret)
 		goto out;
+
+	// limit_wtmax must be > 0C
+	temp = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_circuit.limit_wtmax);
+	if (temp <= celsius_to_temp(0))
+		ret = -EMISCONFIGURED;
 
 	// make sure associated building model is configured
 	if (!circuit->bmodel || !circuit->bmodel->set.configured) {

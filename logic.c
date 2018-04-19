@@ -39,9 +39,9 @@
  * - t_out_att > current temp_trigger
  * Circuit is back on if ALL of the following conditions are met:
  * - building model summer is false
- * - t_out_60 < current temp_trigger - outhoff_histeresis
- * - t_out_mix < current temp_trigger - outhoff_histeresis
- * - t_out_att < current temp_trigger - outhoff_histeresis
+ * - t_out_60 < current temp_trigger - outhoff_hysteresis
+ * - t_out_mix < current temp_trigger - outhoff_hysteresis
+ * - t_out_att < current temp_trigger - outhoff_hysteresis
  * State is preserved in all other cases
  * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
@@ -90,7 +90,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
 		circuit->run.outhoff = true;
 	}
 	else {
-		temp_trigger -= SETorDEF(circuit->set.params.outhoff_histeresis, runtime->config->def_circuit.outhoff_histeresis);
+		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, runtime->config->def_circuit.outhoff_hysteresis);
 		if ((bmodel->run.t_out < temp_trigger) &&
 		    (bmodel->run.t_out_mix < temp_trigger) &&
 		    (bmodel->run.t_out_att < temp_trigger))
