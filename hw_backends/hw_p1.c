@@ -1293,6 +1293,24 @@ static void hw_p1_exit(void * priv)
 }
 
 /**
+ * Return relay name.
+ * @param priv private hardware data
+ * @param id id of the target internal relay
+ * @return target relay name or NULL if error
+ */
+const char * hw_p1_relay_name(void * priv, const rid_t id)
+{
+	struct s_hw_p1_pdata * const hw = priv;
+
+	assert(hw);
+
+	if (!id || (id > ARRAY_SIZE(hw->Relays)))
+		return (NULL);
+
+	return (hw->Relays[id-1].name);
+}
+
+/**
  * Set internal relay state (request)
  * @param priv private hardware data
  * @param id id of the internal relay to modify
@@ -1365,6 +1383,24 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
 	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 	return (relay->run.is_on);
+}
+
+/**
+ * Return sensor name.
+ * @param priv private hardware data
+ * @param id id of the target internal sensor
+ * @return target sensor name or NULL if error
+ */
+const char * hw_p1_sensor_name(void * priv, const sid_t id)
+{
+	struct s_hw_p1_pdata * const hw = priv;
+
+	assert(hw);
+
+	if ((!id) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
+		return (NULL);
+
+	return (hw->Sensors[id-1].name);
 }
 
 /**
@@ -1501,6 +1537,8 @@ static struct s_hw_callbacks hw_p1_callbacks = {
 	.relay_set_state = hw_p1_relay_set_state,
 	.sensor_ibn = hw_p1_sensor_ibn,
 	.relay_ibn = hw_p1_relay_ibn,
+	.sensor_name = hw_p1_sensor_name,
+	.relay_name = hw_p1_relay_name,
 };
 
 /**

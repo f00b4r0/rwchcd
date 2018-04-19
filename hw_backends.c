@@ -206,4 +206,15 @@ void hw_backends_exit(void)
 
 }
 
+/**
+ * Return a backend name.
+ * @param bid target backend id
+ * @return target backend name or NULL if error.
+ */
+const char * hw_backends_name(const bid_t bid)
+{
+	if ((bid >= ARRAY_SIZE(HW_backends)) || !HW_backends[bid])
+		return (NULL);
 
+	return (HW_backends[bid]->name);
+}

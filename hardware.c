@@ -262,7 +262,7 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 /**
  * Clone hardware sensor last update time.
  * @note This function must @b ALWAYS return successfully if the target sensor is properly configured.
- * @param tempid id (for the specified backend) of the hardware sensor to query
+ * @param tempid id of the hardware sensor to query
  * @param clast pointer to target to store the time value
  * @return exec status
  */
@@ -291,6 +291,30 @@ int hardware_sensor_clone_time(const tempid_t tempid, time_t * const clast)
 
 	// call backend callback - input sanitizing left to cb
 	return (HW_backends[bid]->cb->sensor_clone_time(HW_backends[bid]->priv, tempid.sid, clast));
+}
+
+/**
+ * Return hardware sensor name.
+ * @param tempid id of the target hardware sensor
+ * @return target hardware sensor name or NULL if error
+ */
+const char * hardware_sensor_name(const tempid_t tempid)
+{
+	const bid_t bid = tempid.bid;
+
+	// make sure sid is non null
+	if (!tempid.sid)
+		return (NULL);
+
+	// make sure bid is valid
+	if (ARRAY_SIZE(HW_backends) < bid)
+		return (NULL);
+
+	if (!HW_backends[bid])
+		return (NULL);
+
+	// call backend callback - input sanitizing left to cb
+	return (HW_backends[bid]->cb->sensor_name(HW_backends[bid]->priv, tempid.sid));
 }
 
 /**
@@ -328,7 +352,7 @@ int hardware_relay_get_state(const relid_t relid)
 
 /**
  * Set relay state (request)
- * @param relid id (for the specified backend) of the hardware relay to modify
+ * @param relid id of the hardware relay to modify
  * @param turn_on true if relay is meant to be turned on
  * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
@@ -359,4 +383,28 @@ int hardware_relay_set_state(const relid_t relid, bool turn_on, time_t change_de
 
 	// call backend callback - input sanitizing left to cb
 	return (HW_backends[bid]->cb->relay_set_state(HW_backends[bid]->priv, relid.rid, turn_on, change_delay));
+}
+
+/**
+ * Return hardware relay name.
+ * @param relid id of the target hardware relay
+ * @return target hardware relay name or NULL if error
+ */
+const char * hardware_relay_name(const relid_t relid)
+{
+	const bid_t bid = relid.bid;
+
+	// make sure rid is non null
+	if (!relid.rid)
+		return (NULL);
+
+	// make sure bid is valid
+	if (ARRAY_SIZE(HW_backends) < bid)
+		return (NULL);
+
+	if (!HW_backends[bid])
+		return (NULL);
+
+	// call backend callback - input sanitizing left to cb
+	return (HW_backends[bid]->cb->relay_name(HW_backends[bid]->priv, relid.rid));
 }

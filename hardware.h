@@ -29,10 +29,12 @@ void hardware_exit(void);
 // relay ops
 int hardware_relay_get_state(const relid_t);
 int hardware_relay_set_state(const relid_t, bool turn_on, time_t change_delay) __attribute__((warn_unused_result));
+const char * hardware_relay_name(const relid_t);
 
 // sensor ops
 int hardware_sensor_clone_temp(const tempid_t, temp_t * const ctemp) __attribute__((warn_unused_result));
 int hardware_sensor_clone_time(const tempid_t, time_t * const clast);
+const char * hardware_sensor_name(const tempid_t);
 
 /* display/alarm ops */
 

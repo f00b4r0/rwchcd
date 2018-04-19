@@ -98,10 +98,19 @@ struct s_hw_callbacks {
 	 */
 	void (*exit)(void * priv);
 
+	/**
+	 * Return a hardware relay name.
+	 * @warning if the backend implements @b ANY relay callback, this callback is @b MANDATORY.
+	 * @param priv hardware backend private data
+	 * @param rid hardware relay id
+	 * @return target relay name or NULL if error
+	 */
+	const char * (*relay_name)(void * priv, const rid_t rid);
 
 	/**
 	 * Find hardware relay id by name.
 	 * This callback looks up a hardware relay in the backend by its name.
+	 * @warning if the backend implements @b ANY relay callback, this callback is @b MANDATORY.
 	 * @warning for a given backend, relay names must be unique.
 	 * @param priv hardware backend private data
 	 * @param name target relay name to look for
@@ -140,8 +149,18 @@ struct s_hw_callbacks {
 	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on, time_t change_delay);
 
 	/**
+	 * Return a hardware sensor name.
+	 * @warning if the backend implements @b ANY sensor callback, this callback is @b MANDATORY.
+	 * @param priv hardware backend private data
+	 * @param sid hardware sensor id
+	 * @return target sensor name or NULL if error
+	 */
+	const char * (*sensor_name)(void * priv, const sid_t sid);
+
+	/**
 	 * Find hardware sensor id by name.
 	 * This callback looks up a hardware sensor in the backend by its name.
+	 * @warning if the backend implements @b ANY sensor callback, this callback is @b MANDATORY.
 	 * @warning for a given backend, sensor names must be unique.
 	 * @param priv hardware backend private data
 	 * @param name target sensor name to look for
@@ -180,5 +199,6 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
 int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, const char * const sensor_name);
 int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const char * const relay_name);
 void hw_backends_exit(void);
+const char * hw_backends_name(const bid_t bid);
 
 #endif /* hw_backends_h */
