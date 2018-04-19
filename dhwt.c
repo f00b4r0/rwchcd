@@ -41,6 +41,8 @@ struct s_dhw_tank * dhwt_new(void)
  */
 int dhwt_online(struct s_dhw_tank * const dhwt)
 {
+	const struct s_runtime * restrict const runtime = get_runtime();
+	temp_t temp;
 	int ret = -EGENERIC;
 
 	if (!dhwt)
@@ -55,6 +57,32 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 		ret = hardware_sensor_clone_time(dhwt->set.tid_top, NULL);
 	if (ret)
 		goto out;
+
+	// limit_tmin must be > 0C
+	temp = SETorDEF(dhwt->set.params.limit_tmin, runtime->config->def_dhwt.limit_tmin);
+	if (temp <= celsius_to_temp(0))
+		ret = -EMISCONFIGURED;
+
+	// limit_tmax must be > limit_tmin
+	if (SETorDEF(dhwt->set.params.limit_tmax, runtime->config->def_dhwt.limit_tmax) <= temp)
+		ret = -EMISCONFIGURED;
+
+	// hysteresis must be > 0K
+	if (SETorDEF(dhwt->set.params.hysteresis, runtime->config->def_dhwt.hysteresis) <= 0)
+		ret = -EMISCONFIGURED;
+
+	// t_frostfree must be > 0C
+	temp = SETorDEF(dhwt->set.params.t_frostfree, runtime->config->def_dhwt.t_frostfree);
+	if (temp <= celsius_to_temp(0))
+		ret = -EMISCONFIGURED;
+
+	// t_comfort must be > t_frostfree
+	if (SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort) < temp)
+		ret = -EMISCONFIGURED;
+
+	// t_eco must be > t_frostfree
+	if (SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco) < temp)
+		ret = -EMISCONFIGURED;
 
 	// if pumps exist check they're correctly configured
 	if (dhwt->feedpump && !dhwt->feedpump->set.configured) {
