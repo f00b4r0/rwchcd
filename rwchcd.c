@@ -388,7 +388,7 @@ static int configure_plant(struct s_plant * restrict plant)
 	// configure that dhwt
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
 	if (ret) return (ret);
-	dhwt->set.id_temp_bottom = tempid;	// integrated tank: boiler temp
+	dhwt->set.tid_bottom = tempid;	// integrated tank: boiler temp
 	dhwt->set.params.temp_inoffset = deltaK_to_temp(0.01F);	// Integrated tank - non-zero because default would take over otherwise
 	dhwt->set.runmode = RM_AUTO;	// use global setting
 	dhwt->set.configured = true;

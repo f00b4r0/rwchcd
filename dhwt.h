@@ -36,10 +36,10 @@ struct s_dhw_tank {
 			DHWTF_FIRST,		///< force first comfort charge of the day
 			DHWTF_ALWAYS		///< force all comfort charges
 		} force_mode;			///< Programmed force charge when switching to COMFORT
-		tempid_t id_temp_bottom;	///< temp sensor at bottom of dhw tank
-		tempid_t id_temp_top;		///< temp sensor at top of dhw tank
-		tempid_t id_temp_win;		///< temp sensor heatwater inlet
-		tempid_t id_temp_wout;		///< temp sensor heatwater outlet
+		tempid_t tid_bottom;		///< temp sensor id at bottom of dhw tank
+		tempid_t tid_top;		///< temp sensor id at top of dhw tank
+		tempid_t tid_win;		///< temp sensor id heatwater inlet
+		tempid_t tid_wout;		///< temp sensor id heatwater outlet - XXX UNUSED
 		relid_t rid_selfheater;		///< relay for internal electric heater (if available)
 		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 	} set;		///< settings (externally set)
