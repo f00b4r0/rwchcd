@@ -33,7 +33,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 	int ret;
 
 	// check that mandatory sensors are working
-	ret = hardware_sensor_clone_temp(boiler->set.id_temp, NULL);
+	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, NULL);
 	if (ALL_OK != ret)
 		alarms_raise(ret, _("Boiler sensor failure"), _("Boiler sens fail"));
 
@@ -97,7 +97,7 @@ static temp_t boiler_hscb_temp(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	hardware_sensor_clone_temp(boiler->set.id_temp, &temp);
+	hardware_sensor_clone_temp(boiler->set.tid_boiler, &temp);
 
 	return (temp);
 }
@@ -110,7 +110,7 @@ static time_t boiler_hscb_time(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	hardware_sensor_clone_time(boiler->set.id_temp, &ttime);
+	hardware_sensor_clone_time(boiler->set.tid_boiler, &ttime);
 
 	return (ttime);
 }
@@ -131,7 +131,7 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	assert(boiler);
 
 	// check that mandatory sensors are set
-	ret = hardware_sensor_clone_time(boiler->set.id_temp, NULL);
+	ret = hardware_sensor_clone_time(boiler->set.tid_boiler, NULL);
 	if (ret)
 		goto out;
 
@@ -155,7 +155,7 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	if (boiler->set.limit_treturnmin) {
 		// if return min is set make sure the associated sensor is configured.
-		ret = hardware_sensor_clone_time(boiler->set.id_temp_return, NULL);
+		ret = hardware_sensor_clone_time(boiler->set.tid_boiler_return, NULL);
 		if (ALL_OK != ret) {
 			dbgerr("\"%s\": limit_treturnmin is set but return sensor is unavaiable (%d)", heat->name, ret);
 			ret = -EMISCONFIGURED;
@@ -224,7 +224,7 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 {
 	temp_t boilertemp;
 
-	hardware_sensor_clone_temp(boiler->set.id_temp, &boilertemp);
+	hardware_sensor_clone_temp(boiler->set.tid_boiler, &boilertemp);
 	// antifreeze() is called after runchecklist(), the above can't fail
 
 	// trip at set.t_freeze point
@@ -370,7 +370,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		return (ret);
 	}
 
-	ret = hardware_sensor_clone_temp(boiler->set.id_temp, &boiler_temp);
+	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler_temp);
 
 	// ensure boiler is within safety limits
 	if ((ALL_OK != ret) || (boiler_temp > boiler->set.limit_thardmax)) {
@@ -388,7 +388,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// handle boiler minimum temp if set
 	if (boiler->set.limit_tmin) {
 		// calculate boiler integral
-		ret = hardware_sensor_clone_time(boiler->set.id_temp, &ttime);
+		ret = hardware_sensor_clone_time(boiler->set.tid_boiler, &ttime);
 		if (ALL_OK == ret) {
 			// jacket integral between 0 and -100Ks - XXX hardcoded
 			temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime, deltaK_to_temp(-100), 0);
@@ -413,8 +413,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		}
 		else {
 			// calculate return integral
-			ret = hardware_sensor_clone_time(boiler->set.id_temp_return, &ttime);
-			ret = hardware_sensor_clone_temp(boiler->set.id_temp_return, &ret_temp);
+			ret = hardware_sensor_clone_time(boiler->set.tid_boiler_return, &ttime);
+			ret = hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
 			if (ALL_OK == ret) {
 				// jacket integral between 0 and -1000Ks - XXX hardcoded
 				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, deltaK_to_temp(-1000), 0);
@@ -526,3 +526,4 @@ int boiler_heatsource(struct s_heatsource * const heat)
 
 	return (ALL_OK);
 }
+

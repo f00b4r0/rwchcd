@@ -418,10 +418,10 @@ static int configure_plant(struct s_plant * restrict plant)
 
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
 	if (ret) return (ret);
-	boiler->set.id_temp = tempid;
+	boiler->set.tid_boiler = tempid;
 	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILRET_N);
 	if (ret) return (ret);
-	boiler->set.id_temp_return = tempid;
+	boiler->set.tid_boiler_return = tempid;
 	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_BURNER_N);
 	if (ret) return (ret);
 	boiler->set.rid_burner_1 = relid;
