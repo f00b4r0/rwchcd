@@ -123,6 +123,9 @@ static int v_pi_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
+	if (VA_PI != valve->set.algo)
+		return (-EMISCONFIGURED);
+
 	// ensure required sensors are configured
 	ret = hardware_sensor_clone_time(valve->set.tid_out, NULL);
 	if (ALL_OK != ret)
@@ -302,6 +305,9 @@ static int v_bangbang_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
+	if (VA_BANGBANG != valve->set.algo)
+		return (-EMISCONFIGURED);
+
 	// ensure required sensors are configured
 	return (hardware_sensor_clone_time(valve->set.tid_out, NULL));
 }
@@ -344,6 +350,9 @@ static int v_sapprox_online(struct s_valve * const valve)
 {
 	if (!valve)
 		return (-EINVALID);
+
+	if (VA_SAPPROX != valve->set.algo)
+		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
 	return (hardware_sensor_clone_time(valve->set.tid_out, NULL));
@@ -612,6 +621,7 @@ int valve_make_bangbang(struct s_valve * const valve)
 
 	valve->cb.online = v_bangbang_online;
 	valve->cb.control = v_bangbang_control;
+	valve->set.algo = VA_BANGBANG;
 
 	return (ALL_OK);
 }
@@ -653,6 +663,8 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 	// assign callbacks
 	valve->cb.online = v_sapprox_online;
 	valve->cb.control = v_sapprox_control;
+
+	valve->set.algo = VA_SAPPROX;
 
 	return (ALL_OK);
 }
@@ -711,6 +723,8 @@ int valve_make_pi(struct s_valve * const valve,
 	// assign callbacks
 	valve->cb.online = v_pi_online;
 	valve->cb.control = v_pi_control;
+
+	valve->set.algo = VA_PI;
 
 	return (ALL_OK);
 }

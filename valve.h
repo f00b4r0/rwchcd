@@ -17,6 +17,14 @@
 #include <assert.h>
 #include "rwchcd.h"
 
+/** valve control algorithm identifiers */
+enum e_valve_algos {
+	VA_NONE = 0,	///< no algorithm, misconfiguration
+	VA_BANGBANG,	///< bangbang controller
+	VA_SAPPROX,	///< sapprox controller
+	VA_PI,		///< PI controller
+};
+
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
 /** Valve element structure */
 struct s_valve {
@@ -30,6 +38,7 @@ struct s_valve {
 		tempid_t tid_out;	///< temp at the output
 		relid_t rid_hot;	///< relay for opening the valve (increase hot input)
 		relid_t rid_cold;	///< relay for closing the valve (increase cold input)
+		enum e_valve_algos algo;///< valve control algorithm identifier
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
