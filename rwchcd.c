@@ -63,6 +63,8 @@
  #include "dbus.h"
 #endif
 
+#include "filecfg.h"
+
 #include "pump.h"
 #include "valve.h"
 #include "circuit.h"
@@ -550,6 +552,7 @@ static void exit_process(void)
 	runtime_offline();
 	alarms_offline();
 	hardware_offline();
+	filecfg_dump();
 	plant_del(runtime->plant);
 	models_exit();
 	config_exit(runtime->config);
