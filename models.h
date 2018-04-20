@@ -21,7 +21,7 @@ struct s_bmodel {
 	struct {
 		bool configured;	///< true if configured
 		time_t tau;		///< bmodel time constant
-		tempid_t id_t_out;	///< outdoor sensor id for this bmodel (smoothed over 60s)
+		tempid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
 	} set;
 	struct {
 		bool online;		///< true if bmodel is online

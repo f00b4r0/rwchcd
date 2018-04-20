@@ -146,7 +146,7 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 		return (-ENOTCONFIGURED);
 
 	// make sure specified outdoor sensor is available
-	ret = hardware_sensor_clone_time(bmodel->set.id_t_out, NULL);
+	ret = hardware_sensor_clone_time(bmodel->set.tid_outdoor, NULL);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -197,9 +197,9 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 	temp_t toutdoor;
 	int ret;
 
-	ret = hardware_sensor_clone_temp(bmodel->set.id_t_out, &toutdoor);
+	ret = hardware_sensor_clone_temp(bmodel->set.tid_outdoor, &toutdoor);
 	if (ALL_OK == ret) {
-		hardware_sensor_clone_time(bmodel->set.id_t_out, &bmodel->run.t_out_ltime);
+		hardware_sensor_clone_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
 		dt = bmodel->run.t_out_ltime - last;
 		bmodel->run.t_out = temp_expw_mavg(bmodel->run.t_out, toutdoor, OUTDOOR_SMOOTH_TIME, dt);
 	}
