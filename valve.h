@@ -31,7 +31,7 @@ struct s_valve {
 	struct {
 		bool configured;	///< true if properly configured
 		temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
-		uint_fast8_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
+		uint_fast16_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
 		time_t ete_time;	///< end-to-end run time in seconds
 		tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
 		tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
