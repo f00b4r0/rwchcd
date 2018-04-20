@@ -17,8 +17,9 @@
 #include "rwchcd.h"
 #include "lib.h"	// for s_temp_intgrl
 
+/** heatsource type identifiers */
 enum e_heatsource_type {
-	HS_NONE = 0,	///< No heat source: that's a misconfiguration
+	HS_NONE = 0,		///< No heat source: that's a misconfiguration
 	HS_BOILER,		///< boiler type heatsource
 };
 
