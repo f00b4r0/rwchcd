@@ -37,6 +37,7 @@ struct s_valve_pi_priv {
 		time_t Tu;		///< unit response time
 		time_t Td;		///< deadtime
 		temp_t Ksmax;		///< maximum valve output delta. Used if it cannot be measured.
+		uint_fast8_t tune_f;	///< tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
 	} set;		///< settings (externally set)
 	struct {
 		time_t last_time;	///< last time the PI controller algorithm was run
@@ -709,6 +710,7 @@ int valve_make_pi(struct s_valve * const valve,
 	priv->set.Td = Td;
 	priv->set.Tu = Tu;
 	priv->set.Ksmax = Ksmax;
+	priv->set.tune_f = t_factor;
 
 	priv->run.Tc = (1*Tu > 8*Td) ? 1*Tu : 8*Td;	// see valvectrl_pi()
 	priv->run.Tc *= t_factor;
