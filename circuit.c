@@ -57,7 +57,7 @@ struct s_tlaw_bilin20C_priv {
  */
 static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
 {
-	const struct s_tlaw_bilin20C_priv * const tld = circuit->tlaw_data_priv;
+	const struct s_tlaw_bilin20C_priv * const tld = circuit->tlaw_priv;
 	float slope;
 	temp_t offset, t_output;
 
@@ -391,13 +391,13 @@ int circuit_make_bilinear(struct s_heating_circuit * const circuit,
 		return (-EINVALID);
 
 	// create priv element if it doesn't already exist
-	if (!circuit->tlaw_data_priv) {
+	if (!circuit->tlaw_priv) {
 		priv = calloc(1, sizeof(*priv));
 		if (!priv)
 			return (-EOOM);
 	}
-	else if ((templaw_bilinear == circuit->templaw) && circuit->tlaw_data_priv)
-		priv = circuit->tlaw_data_priv;
+	else if ((templaw_bilinear == circuit->templaw) && circuit->tlaw_priv)
+		priv = circuit->tlaw_priv;
 	else
 		return (-EINVALID);
 
@@ -425,7 +425,7 @@ int circuit_make_bilinear(struct s_heating_circuit * const circuit,
 	}
 
 	// attach priv structure
-	circuit->tlaw_data_priv = priv;
+	circuit->tlaw_priv = priv;
 
 	circuit->templaw = templaw_bilinear;
 
