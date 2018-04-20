@@ -396,7 +396,7 @@ int circuit_make_bilinear(struct s_heating_circuit * const circuit,
 		if (!priv)
 			return (-EOOM);
 	}
-	else if ((templaw_bilinear == circuit->templaw) && circuit->tlaw_priv)
+	else if ((HCL_BILINEAR == circuit->set.tlaw) && circuit->tlaw_priv)
 		priv = circuit->tlaw_priv;
 	else
 		return (-EINVALID);
@@ -428,6 +428,8 @@ int circuit_make_bilinear(struct s_heating_circuit * const circuit,
 	circuit->tlaw_priv = priv;
 
 	circuit->templaw = templaw_bilinear;
+
+	circuit->set.tlaw = HCL_BILINEAR;
 
 	return (ALL_OK);
 }
