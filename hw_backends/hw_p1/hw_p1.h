@@ -85,7 +85,7 @@ struct s_hw_p1_pdata {
 
 extern struct s_hw_p1_pdata Hardware;
 
-void parse_temps(void);
+void hw_p1_parse_temps(void);
 int hw_p1_hwconfig_commit(void);
 int hw_p1_calibrate(void);
 int hw_p1_save_relays(void);

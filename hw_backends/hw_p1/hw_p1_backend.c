@@ -241,7 +241,7 @@ skip_periphs:
 		// copy valid data to local environment
 		memcpy(hw->sensors, rawsensors, sizeof(hw->sensors));
 		hw->run.sensors_ftime = time(NULL);
-		parse_temps();
+		hw_p1_parse_temps();
 	}
 
 	return (ret);

@@ -224,7 +224,7 @@ static int sensor_alarm(const sid_t id, const int error)
  * Process raw sensor data.
  * Applies a short-window LP filter on raw data to smooth out noise.
  */
-void parse_temps(void)
+void hw_p1_parse_temps(void)
 {
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
