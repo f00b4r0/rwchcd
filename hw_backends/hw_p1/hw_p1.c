@@ -66,7 +66,6 @@ struct s_stateful_relay {
 };
 
 static const storage_version_t Hardware_sversion = 1;
-static const storage_version_t Hardware_ssensver = 2;
 
 typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
 
