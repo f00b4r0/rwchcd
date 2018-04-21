@@ -501,7 +501,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 #define CHNONE		0x00
 #define CHTURNON	0x01
 #define CHTURNOFF	0x02
-	struct s_stateful_relay * restrict relay;
+	struct s_hw_p1_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
 	uint_fast8_t i, chflags = CHNONE;

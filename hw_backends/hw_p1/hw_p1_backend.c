@@ -404,7 +404,7 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 {
 	struct s_hw_p1_pdata * const hw = priv;
 	const time_t now = time(NULL);
-	struct s_stateful_relay * relay = NULL;
+	struct s_hw_p1_relay * relay = NULL;
 
 	assert(hw);
 
@@ -448,7 +448,7 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
 	struct s_hw_p1_pdata * const hw = priv;
 	const time_t now = time(NULL);
-	struct s_stateful_relay * relay = NULL;
+	struct s_hw_p1_relay * relay = NULL;
 
 	assert(hw);
 

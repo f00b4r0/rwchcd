@@ -26,7 +26,7 @@ enum e_hw_p1_stype {
 };
 
 /** software representation of a hardware relay */
-struct s_stateful_relay {
+struct s_hw_p1_relay {
 	struct {
 		bool configured;	///< true if properly configured
 		uint_fast8_t id;	///< NOT USED
@@ -80,7 +80,7 @@ struct s_hw_p1_pdata {
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];
 	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to @b value
 	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];		///< physical sensors
-	struct s_stateful_relay Relays[RELAY_MAX_ID];	///< physical relays
+	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< physical relays
 };
 
 extern struct s_hw_p1_pdata Hardware;
