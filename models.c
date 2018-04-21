@@ -35,6 +35,15 @@ static struct s_models Models;
 static const storage_version_t Models_sversion = 3;
 
 /**
+ * Get current program models
+ * @return pointer to current models.
+ */
+const struct s_models * models_get(void)
+{
+	return (&Models);
+}
+
+/**
  * Save building model state to permanent storage.
  * @bug name length hack
  * @param bmodel the building model to save, @b MUST be named

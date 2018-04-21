@@ -51,6 +51,7 @@ struct s_bmodel {
 	char * restrict name;		///< name for this bmodel
 };
 
+const struct s_models * models_get(void);
 struct s_bmodel * models_new_bmodel(const char * restrict const name);
 const struct s_bmodel * models_fbn_bmodel(const char * restrict const name);
 int models_init(void);
