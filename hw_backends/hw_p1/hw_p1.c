@@ -564,7 +564,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
  * Write all peripherals from internal runtime to hardware
  * @return status
  */
-__attribute__((warn_unused_result)) inline int hw_p1_rwchcperiphs_write(void)
+__attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_write(void)
 {
 	assert(Hardware.run.online);
 	return (hw_p1_spi_peripherals_w(&(Hardware.peripherals)));
@@ -574,7 +574,7 @@ __attribute__((warn_unused_result)) inline int hw_p1_rwchcperiphs_write(void)
  * Read all peripherals from hardware into internal runtime
  * @return exec status
  */
-__attribute__((warn_unused_result)) inline int hw_p1_rwchcperiphs_read(void)
+__attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_read(void)
 {
 	assert(Hardware.run.online);
 	return (hw_p1_spi_peripherals_r(&(Hardware.peripherals)));
