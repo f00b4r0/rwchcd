@@ -353,11 +353,11 @@ static void hw_p1_exit(void * priv)
 
 	// cleanup all resources
 	for (i = 1; i <= ARRAY_SIZE(hw->Relays); i++)
-		hw_p1_relay_release(i);
+		hw_p1_setup_relay_release(i);
 
 	// deconfigure all sensors
 	for (i = 1; i <= ARRAY_SIZE(hw->Sensors); i++)
-		hw_p1_sensor_deconfigure(i);
+		hw_p1_setup_sensor_deconfigure(i);
 
 	// reset the hardware
 	ret = hw_p1_spi_reset();
