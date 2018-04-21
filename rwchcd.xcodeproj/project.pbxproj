@@ -19,6 +19,7 @@
 		4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DD1F96AD0A001B0A1F /* boiler.c */; };
 		4F961FA21D8D66BF00E2A8AF /* logic.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F961FA01D8D66BF00E2A8AF /* logic.c */; };
 		4F99FD222088D18500DDAB75 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg.c */; };
+		4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */; };
 		4FA61C3E1E06F75100B4D862 /* timer.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3C1E06F75100B4D862 /* timer.c */; };
 		4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3F1E0955AA00B4D862 /* scheduler.c */; };
 		4FC1847B1DA6809E000E514B /* storage.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC184791DA6809E000E514B /* storage.c */; };
@@ -72,6 +73,8 @@
 		4F961FA11D8D66BF00E2A8AF /* logic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logic.h; sourceTree = SOURCE_ROOT; };
 		4F99FD202088D18500DDAB75 /* filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg.c; sourceTree = SOURCE_ROOT; };
 		4F99FD212088D18500DDAB75 /* filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg.h; sourceTree = SOURCE_ROOT; };
+		4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_p1_backend.c; sourceTree = "<group>"; };
+		4F99FD26208B7F0F00DDAB75 /* hw_p1_backend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_p1_backend.h; sourceTree = "<group>"; };
 		4FA61C3C1E06F75100B4D862 /* timer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = timer.c; sourceTree = SOURCE_ROOT; };
 		4FA61C3D1E06F75100B4D862 /* timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = timer.h; sourceTree = SOURCE_ROOT; };
 		4FA61C3F1E0955AA00B4D862 /* scheduler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scheduler.c; sourceTree = SOURCE_ROOT; };
@@ -117,6 +120,8 @@
 		4F99FD24208B7E5800DDAB75 /* hw_p1 */ = {
 			isa = PBXGroup;
 			children = (
+				4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */,
+				4F99FD26208B7F0F00DDAB75 /* hw_p1_backend.h */,
 				4FC6895D207176F800A3A065 /* hw_p1.c */,
 				4FC6895E207176F800A3A065 /* hw_p1.h */,
 				4FC6895F207176F800A3A065 /* hw_p1_lcd.c */,
@@ -285,6 +290,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4FC689632071773800A3A065 /* hw_p1.c in Sources */,
+				4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */,
 				4FC1847B1DA6809E000E514B /* storage.c in Sources */,
 				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,
 				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
