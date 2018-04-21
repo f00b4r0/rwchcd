@@ -260,7 +260,6 @@ void hw_p1_parse_temps(void)
 			Hardware.Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, Hardware.set.nsamples, 1) : current;
 	}
 	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
-
 }
 
 /**

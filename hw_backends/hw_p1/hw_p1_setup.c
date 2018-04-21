@@ -16,7 +16,6 @@
 
 #include "hw_p1_setup.h"
 
-
 /**
  * Initialize local data.
  * Cannot fail.
