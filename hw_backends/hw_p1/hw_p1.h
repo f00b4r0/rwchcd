@@ -29,7 +29,7 @@ enum e_hw_p1_stype {
 struct s_hw_p1_relay {
 	struct {
 		bool configured;	///< true if properly configured
-		uint_fast8_t id;	///< NOT USED
+		bool failstate;		///< default state assumed by hardware in failsafe mode
 	} set;		///< settings (externally set)
 	struct {
 		bool turn_on;		///< state requested by software
