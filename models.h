@@ -16,6 +16,20 @@
 
 #include "rwchcd.h"
 
+/** Models */
+struct s_models {
+	bool online;			///< true if the models can be run
+	uint_fast8_t bmodels_n;		///< number of building models
+	struct s_bmodel_l * restrict bmodels;	///< building models
+};
+
+/** List of building models */
+struct s_bmodel_l {
+	uint_fast8_t id;
+	struct s_bmodel * restrict bmodel;
+	struct s_bmodel_l * next;
+};
+
 /** building model */
 struct s_bmodel {
 	struct {
