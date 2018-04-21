@@ -333,16 +333,6 @@ int hw_p1_async_log_temps(void)
 }
 
 /**
- * Read hardware config.
- * @param settings target hardware configuration
- * @return exec status
- */
-static int hw_p1_hwconfig_fetch(struct rwchc_s_settings * const settings)
-{
-	return (hw_p1_spi_settings_r(settings));
-}
-
-/**
  * Commit hardware config to hardware.
  * @note overwrites all hardware settings.
  * @return exec status
@@ -356,7 +346,7 @@ int hw_p1_hwconfig_commit(void)
 		return (-EOFFLINE);
 	
 	// grab current config from the hardware
-	ret = hw_p1_hwconfig_fetch(&hw_set);
+	ret = hw_p1_spi_settings_r(&hw_set);
 	if (ret)
 		goto out;
 	
@@ -369,7 +359,7 @@ int hw_p1_hwconfig_commit(void)
 		goto out;
 
 	// check that the data is correct on target
-	ret = hw_p1_hwconfig_fetch(&hw_set);
+	ret = hw_p1_spi_settings_r(&hw_set);
 	if (ret)
 		goto out;
 
