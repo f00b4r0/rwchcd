@@ -22,6 +22,7 @@
 #include "hw_p1.h"
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
+#include "hw_p1_setup.h"
 #include "runtime.h"
 #include "alarms.h"
 #include "timer.h"

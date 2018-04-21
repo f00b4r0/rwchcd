@@ -97,17 +97,8 @@ int hw_p1_rwchcperiphs_read(void);
 int hw_p1_async_log_temps(void);
 int hw_p1_sid_by_name(const char * const name);
 int hw_p1_rid_by_name(const char * const name);
-
-void * hw_p1_new(void);
-
-int hw_p1_config_setbl(const uint8_t percent);
-int hw_p1_config_setnsensors(const rid_t lastid);
-int hw_p1_config_setnsamples(const uint_fast8_t nsamples);
-
-int hw_p1_relay_request(const rid_t id, const bool failstate, const char * const name) __attribute__((warn_unused_result));
-int hw_p1_relay_release(const rid_t id);
-int hw_p1_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name) __attribute__((warn_unused_result));
-int hw_p1_sensor_deconfigure(const sid_t id);
+ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const enum e_hw_p1_stype type);
+void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const rid_t id, const bool state);
 
 const char * hw_p1_temp_to_str(const sid_t tempid);
 

@@ -50,7 +50,7 @@
 #include "hw_backends.h"
 #ifdef HAS_HWP1
  #include "hw_backends/hw_p1/hw_p1_backend.h"
- #include "hw_backends/hw_p1/hw_p1.h"
+ #include "hw_backends/hw_p1/hw_p1_setup.h"
 #endif
 #include "hardware.h"
 #include "plant.h"
