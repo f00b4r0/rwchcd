@@ -1,6 +1,6 @@
 *.[od]
 *-generated.[ch]
-hw_backends/rwchc_export.h
+hw_backends/hw_p1/rwchc_export.h
 rwchcd
 doc/
 

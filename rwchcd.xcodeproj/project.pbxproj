@@ -114,7 +114,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		4FC6895C207176F800A3A065 /* hw_backends */ = {
+		4F99FD24208B7E5800DDAB75 /* hw_p1 */ = {
 			isa = PBXGroup;
 			children = (
 				4FC6895D207176F800A3A065 /* hw_p1.c */,
@@ -123,6 +123,14 @@
 				4FC68960207176F800A3A065 /* hw_p1_lcd.h */,
 				4FC68961207176F800A3A065 /* hw_p1_spi.c */,
 				4FC68962207176F800A3A065 /* hw_p1_spi.h */,
+			);
+			path = hw_p1;
+			sourceTree = "<group>";
+		};
+		4FC6895C207176F800A3A065 /* hw_backends */ = {
+			isa = PBXGroup;
+			children = (
+				4F99FD24208B7E5800DDAB75 /* hw_p1 */,
 			);
 			path = hw_backends;
 			sourceTree = SOURCE_ROOT;

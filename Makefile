@@ -33,7 +33,7 @@ endif
 
 ifneq (,$(findstring HAS_HWP1,$(CONFIG)))
 LDLIBS += -lwiringPi
-SRCS += $(wildcard $(HWBACKENDS_DIR)/hw_p1*.c)
+SRCS += $(wildcard $(HWBACKENDS_DIR)/hw_p1/*.c)
 endif
 
 OBJS := $(SRCS:.c=.o)
