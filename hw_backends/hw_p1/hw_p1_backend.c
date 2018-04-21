@@ -67,6 +67,9 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 /**
  * Get the hardware ready for run loop.
  * Calibrate, restore hardware state from permanent storage.
+ * @note this function currently checks that nsamples and nsensors
+ * are set, thus making it currently impossible to run the prototype
+ * hardware without sensors.
  * @param priv private hardware data
  * @return exec status
  */
@@ -82,6 +85,9 @@ static int hw_p1_online(void * priv)
 		return (-EINIT);
 
 	if (!hw->set.nsamples)
+		return (-EMISCONFIGURED);
+
+	if (!hw->settings.nsensors)
 		return (-EMISCONFIGURED);
 
 	// save settings - for deffail
