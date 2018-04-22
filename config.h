@@ -24,7 +24,7 @@ struct s_config {
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
 	temp_t limit_tfrost;		///< outdoor temp for plant frost protection
 	time_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep
-	struct s_hcircuit_params def_circuit;	///< circuit defaults: if individual circuits don't set these values, these defaults will be used
+	struct s_hcircuit_params def_hcircuit;	///< heating circuit defaults: if individual hcircuits don't set these values, these defaults will be used
 	struct s_dhwt_params def_dhwt;		///< DHWT defaults: if individual dhwts don't set these values, these defaults will be used
 };
 

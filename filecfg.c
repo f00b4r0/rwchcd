@@ -634,7 +634,7 @@ static int filecfg_config_dump(FILE * restrict const file, unsigned int il, cons
 	tfprintf(file, il, "limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
 	tfprintf(file, il, "sleeping_delay %ld;\n", config->sleeping_delay);
 
-	tfprintf(file, il, "def_circuit"); filecfg_circuit_params_dump(file, il, &config->def_circuit);
+	tfprintf(file, il, "def_hcircuit"); filecfg_circuit_params_dump(file, il, &config->def_hcircuit);
 	tfprintf(file, il, "def_dhwt"); filecfg_dhwt_params_dump(file, il, &config->def_dhwt);
 
 	il--;

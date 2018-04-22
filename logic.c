@@ -59,14 +59,14 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 	
 	switch (circuit->run.runmode) {
 		case RM_COMFORT:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, runtime->config->def_circuit.outhoff_comfort);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, runtime->config->def_hcircuit.outhoff_comfort);
 			break;
 		case RM_ECO:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_eco, runtime->config->def_circuit.outhoff_eco);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_eco, runtime->config->def_hcircuit.outhoff_eco);
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_frostfree, runtime->config->def_circuit.outhoff_frostfree);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_frostfree, runtime->config->def_hcircuit.outhoff_frostfree);
 			break;
 		case RM_OFF:
 		case RM_AUTO:
@@ -90,7 +90,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 		circuit->run.outhoff = true;
 	}
 	else {
-		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, runtime->config->def_circuit.outhoff_hysteresis);
+		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, runtime->config->def_hcircuit.outhoff_hysteresis);
 		if ((bmodel->run.t_out < temp_trigger) &&
 		    (bmodel->run.t_out_mix < temp_trigger) &&
 		    (bmodel->run.t_out_att < temp_trigger))
@@ -155,14 +155,14 @@ int logic_circuit(struct s_hcircuit * restrict const circuit)
 		case RM_TEST:
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
-			request_temp = SETorDEF(circuit->set.params.t_comfort, runtime->config->def_circuit.t_comfort);
+			request_temp = SETorDEF(circuit->set.params.t_comfort, runtime->config->def_hcircuit.t_comfort);
 			break;
 		case RM_ECO:
-			request_temp = SETorDEF(circuit->set.params.t_eco, runtime->config->def_circuit.t_eco);
+			request_temp = SETorDEF(circuit->set.params.t_eco, runtime->config->def_hcircuit.t_eco);
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			request_temp = SETorDEF(circuit->set.params.t_frostfree, runtime->config->def_circuit.t_frostfree);
+			request_temp = SETorDEF(circuit->set.params.t_frostfree, runtime->config->def_hcircuit.t_frostfree);
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
@@ -200,7 +200,7 @@ int logic_circuit(struct s_hcircuit * restrict const circuit)
 	// XXX OPTIM if return temp is known
 
 	// apply offset and save calculated target ambient temp to circuit
-	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, runtime->config->def_circuit.t_offset);
+	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, runtime->config->def_hcircuit.t_offset);
 
 	// Ambient temperature is either read or modelled
 	if (hardware_sensor_clone_temp(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor

@@ -106,7 +106,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		goto out;
 
 	// limit_wtmax must be > 0C
-	temp = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_circuit.limit_wtmax);
+	temp = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_hcircuit.limit_wtmax);
 	if (temp <= celsius_to_temp(0))
 		ret = -EMISCONFIGURED;
 
@@ -281,8 +281,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 	// enforce limits
-	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_circuit.limit_wtmin);
-	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_circuit.limit_wtmax);
+	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_hcircuit.limit_wtmin);
+	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_hcircuit.limit_wtmax);
 
 	// low limit can be overriden by external interferences
 	if (water_temp < lwtmin)
@@ -324,7 +324,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 #endif
 
 	// heat request is always computed based on non-interfered water_temp value
-	circuit->run.heat_request = saved_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_circuit.temp_inoffset);
+	circuit->run.heat_request = saved_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_hcircuit.temp_inoffset);
 
 	// in the absence of external "interference", update saved target water temp
 	// note: this is necessary to avoid storing the new, cooler saved_temp during TRANS_DOWN cooldown
