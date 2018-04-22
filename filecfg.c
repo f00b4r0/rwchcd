@@ -488,7 +488,7 @@ static int filecfg_c_tlbilin_dump(FILE * restrict const file, unsigned int il, c
 
 	tfprintf(file, il, "toutinfl %.1f;\n", temp_to_celsius(priv->toutinfl));
 	tfprintf(file, il, "twaterinfl %.1f;\n", temp_to_celsius(priv->twaterinfl));
-	tfprintf(file, il, "offset %.1f;\n", temp_to_deltaK(priv->offset));
+	//tfprintf(file, il, "offset %.1f;\n", temp_to_deltaK(priv->offset));	// don't print offset as it's homogenous to internal (meaningless) temperature dimensions
 	tfprintf(file, il, "slope %.1f;\n", priv->slope);
 
 	return (ALL_OK);
