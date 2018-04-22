@@ -468,7 +468,7 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 }
 
 
-static int filecfg_c_tlbilin_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
+static int filecfg_hc_tlbilin_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
 {
 	const struct s_tlaw_bilin20C_priv * restrict priv;
 
@@ -494,7 +494,7 @@ static int filecfg_c_tlbilin_dump(FILE * restrict const file, unsigned int il, c
 	return (ALL_OK);
 }
 
-static int filecfg_circuit_tlaw_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
+static int filecfg_hcircuit_tlaw_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
 {
 	const char * tlawname;
 	int (*privdump)(FILE * restrict const, unsigned int, const struct s_hcircuit * restrict const);
@@ -502,7 +502,7 @@ static int filecfg_circuit_tlaw_dump(FILE * restrict const file, unsigned int il
 	switch (circuit->set.tlaw) {
 		case HCL_BILINEAR:
 			tlawname = "bilinear";
-			privdump = filecfg_c_tlbilin_dump;
+			privdump = filecfg_hc_tlbilin_dump;
 			break;
 		case VA_NONE:
 		default:
@@ -518,7 +518,7 @@ static int filecfg_circuit_tlaw_dump(FILE * restrict const file, unsigned int il
 	return (ALL_OK);
 }
 
-static int filecfg_circuit_params_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit_params * restrict const params)
+static int filecfg_hcircuit_params_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit_params * restrict const params)
 {
 	if (!file || !params)
 		return (-EINVALID);
@@ -555,7 +555,7 @@ static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, co
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	tfprintf(file, il, "circuit \"%s\" {\n", circuit->name);
+	tfprintf(file, il, "hcircuit \"%s\" {\n", circuit->name);
 	il++;
 
 	tfprintf(file, il, "fast_cooldown %s;\n", filecfg_bool_str(circuit->set.fast_cooldown));
@@ -570,9 +570,9 @@ static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, co
 	tfprintf(file, il, "tid_return"); filecfg_tempid_dump(file, il, circuit->set.tid_return);
 	tfprintf(file, il, "tid_ambient"); filecfg_tempid_dump(file, il, circuit->set.tid_ambient);
 
-	tfprintf(file, il, "params"); filecfg_circuit_params_dump(file, il, &circuit->set.params);
+	tfprintf(file, il, "params"); filecfg_hcircuit_params_dump(file, il, &circuit->set.params);
 
-	tfprintf(file, il, "tlaw"); filecfg_circuit_tlaw_dump(file, il, circuit);
+	tfprintf(file, il, "tlaw"); filecfg_hcircuit_tlaw_dump(file, il, circuit);
 
 	tfprintf(file, il, "valve \"%s\";\n", circuit->valve ? circuit->valve->name : "");
 	tfprintf(file, il, "pump \"%s\";\n", circuit->pump ? circuit->pump->name : "");
@@ -634,7 +634,7 @@ static int filecfg_config_dump(FILE * restrict const file, unsigned int il, cons
 	tfprintf(file, il, "limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
 	tfprintf(file, il, "sleeping_delay %ld;\n", config->sleeping_delay);
 
-	tfprintf(file, il, "def_hcircuit"); filecfg_circuit_params_dump(file, il, &config->def_hcircuit);
+	tfprintf(file, il, "def_hcircuit"); filecfg_hcircuit_params_dump(file, il, &config->def_hcircuit);
 	tfprintf(file, il, "def_dhwt"); filecfg_dhwt_params_dump(file, il, &config->def_dhwt);
 
 	il--;
@@ -681,7 +681,7 @@ static int filecfg_plant_dump(FILE * restrict const file, unsigned int il, const
 	il--;
 	tfprintf(file, il, "};\n");	// heatsources
 
-	tfprintf(file, il, "heating_circuits {\n");
+	tfprintf(file, il, "hcircuits {\n");
 	il++;
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next)
 		filecfg_hcircuit_dump(file, il, circuitl->circuit);
