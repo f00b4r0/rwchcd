@@ -14,6 +14,8 @@
  */
 
 #include <string.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "lib.h"	// for temp_to_celsius
 #include "runtime.h"
@@ -335,6 +337,35 @@ static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 			msg = NULL;
 	}
 	return msg;
+}
+
+int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
+//* XXX quick hack for LCD
+static const char * hw_p1_temp_to_str(const sid_t tempid)
+{
+	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
+	temp_t temp;
+	float celsius;
+	int ret;
+
+	ret = hw_p1_sensor_clone_temp(&Hardware, tempid, &temp);
+
+#if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
+ #error Non representable minimum temperature
+#endif
+
+	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
+
+	if (-ESENSORDISCON == ret)
+		strncpy(snpbuf+3, _("DISCON"), 6);
+	else if (-ESENSORSHORT == ret)
+		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
+	else {
+		celsius = temp_to_celsius(temp);
+		snprintf(snpbuf+3, 7, "%5.1fC", celsius);	// handles rounding
+	}
+
+	return (&snpbuf);
 }
 
 // XXX quick hack
