@@ -547,7 +547,7 @@ static int filecfg_circuit_params_dump(FILE * restrict const file, unsigned int 
 	return (ALL_OK);
 }
 
-static int filecfg_circuit_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
+static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
 {
 	if (!file || !circuit)
 		return (-EINVALID);
@@ -684,7 +684,7 @@ static int filecfg_plant_dump(FILE * restrict const file, unsigned int il, const
 	tfprintf(file, il, "heating_circuits {\n");
 	il++;
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next)
-		filecfg_circuit_dump(file, il, circuitl->circuit);
+		filecfg_hcircuit_dump(file, il, circuitl->circuit);
 	il--;
 	tfprintf(file, il, "};\n");	// heating_circuits
 

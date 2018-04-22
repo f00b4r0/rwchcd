@@ -72,7 +72,7 @@ static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const te
  * Create a circuit
  * @return the newly created circuit or NULL
  */
-struct s_hcircuit * circuit_new(void)
+struct s_hcircuit * hcircuit_new(void)
 {
 	struct s_hcircuit * const circuit = calloc(1, sizeof(*circuit));
 	return (circuit);
@@ -85,7 +85,7 @@ struct s_hcircuit * circuit_new(void)
  * @param circuit target circuit
  * @return exec status
  */
-int circuit_online(struct s_hcircuit * const circuit)
+int hcircuit_online(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t temp;
@@ -132,7 +132,7 @@ out:
  * @param circuit target circuit
  * @return error status
  */
-int circuit_offline(struct s_hcircuit * const circuit)
+int hcircuit_offline(struct s_hcircuit * const circuit)
 {
 	if (!circuit)
 		return (-EINVALID);
@@ -165,7 +165,7 @@ int circuit_offline(struct s_hcircuit * const circuit)
  * Turning on the pump mitigates frost risks.
  * @param circuit target circuit
  */
-static void circuit_failsafe(struct s_hcircuit * restrict const circuit)
+static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
 {
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	valve_reqclose_full(circuit->valve);
@@ -180,7 +180,7 @@ static void circuit_failsafe(struct s_hcircuit * restrict const circuit)
  * @return exec status
  * @warning circuit->run.target_ambient must be properly set before this runs
  */
-int circuit_run(struct s_hcircuit * const circuit)
+int hcircuit_run(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const time_t now = time(NULL);
@@ -210,7 +210,7 @@ int circuit_run(struct s_hcircuit * const circuit)
 				goto valve;	// stop processing
 			}
 			else
-				return (circuit_offline(circuit));
+				return (hcircuit_offline(circuit));
 		case RM_TEST:
 			valve_reqstop(circuit->valve);
 			if (circuit->pump)
@@ -232,13 +232,13 @@ int circuit_run(struct s_hcircuit * const circuit)
 	// safety checks
 	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);
 	if (ALL_OK != ret) {
-		circuit_failsafe(circuit);
+		hcircuit_failsafe(circuit);
 		return (ret);
 	}
 
 	// if building model isn't online, failsafe
 	if (!circuit->bmodel->run.online) {
-		circuit_failsafe(circuit);
+		hcircuit_failsafe(circuit);
 		return (-ESAFETY);
 	}
 
@@ -251,7 +251,7 @@ int circuit_run(struct s_hcircuit * const circuit)
 		ret = pump_set_state(circuit->pump, ON, 0);
 		if (ALL_OK != ret) {
 			dbgerr("\"%s\": failed to set pump \"%s\" ON (%d)", circuit->name, circuit->pump->name, ret);
-			circuit_failsafe(circuit);
+			hcircuit_failsafe(circuit);
 			return (ret);	// critical error: stop there
 		}
 	}
@@ -426,7 +426,7 @@ int circuit_make_bilinear(struct s_hcircuit * const circuit,
  * Frees all circuit-local resources
  * @param circuit the circuit to delete
  */
-void circuit_del(struct s_hcircuit * circuit)
+void hcircuit_del(struct s_hcircuit * circuit)
 {
 	if (!circuit)
 		return;

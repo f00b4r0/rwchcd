@@ -56,7 +56,7 @@ struct s_hcircuit {
 		bool online;			///< true if circuit is operational (under software management)
 		bool outhoff;			///< true if no heating conditions are met
 		bool floor_output;		///< true if the current output should not be reduced
-		time_t last_run_time;		///< last time circuit_run() was invoked
+		time_t last_run_time;		///< last time hcircuit_run() was invoked
 		enum e_runmode runmode;		///< circuit actual (computed) runmode
 		temp_t rorh_last_target;	///< previous set point target for rorh control
 		time_t rorh_update_time;	///< last time output was updated with respect to rorh
@@ -80,11 +80,11 @@ struct s_hcircuit {
 	char * restrict name;			///< name for this circuit
 };
 
-struct s_hcircuit * circuit_new(void) __attribute__((warn_unused_result));
-int circuit_online(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
-int circuit_offline(struct s_hcircuit * const circuit);
-int circuit_run(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
-void circuit_del(struct s_hcircuit * circuit);
+struct s_hcircuit * hcircuit_new(void) __attribute__((warn_unused_result));
+int hcircuit_online(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
+int hcircuit_offline(struct s_hcircuit * const circuit);
+int hcircuit_run(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
+void hcircuit_del(struct s_hcircuit * circuit);
 
 int circuit_make_bilinear(struct s_hcircuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
 

@@ -45,7 +45,7 @@
  * State is preserved in all other cases
  * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
-static void circuit_outhoff(struct s_hcircuit * const circuit)
+static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
@@ -174,7 +174,7 @@ int logic_circuit(struct s_hcircuit * restrict const circuit)
 	circuit->run.request_ambient = request_temp;
 
 	// Check if the circuit meets run.outhoff conditions
-	circuit_outhoff(circuit);
+	hcircuit_outhoff(circuit);
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
 	if (circuit->run.outhoff && !bmodel->run.frost)
 		circuit->run.runmode = RM_OFF;

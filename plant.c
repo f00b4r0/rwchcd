@@ -233,7 +233,7 @@ struct s_hcircuit * plant_new_circuit(struct s_plant * restrict const plant, con
 		goto fail;
 
 	// create a new circuit
-	circuit = circuit_new();
+	circuit = hcircuit_new();
 	if (!circuit)
 		goto fail;
 
@@ -468,7 +468,7 @@ void plant_del(struct s_plant * plant)
 	circuitelement = plant->circuit_head;
 	while (circuitelement) {
 		circuitlnext = circuitelement->next;
-		circuit_del(circuitelement->circuit);
+		hcircuit_del(circuitelement->circuit);
 		free(circuitelement);
 		plant->circuit_n--;
 		circuitelement = circuitlnext;
@@ -554,12 +554,12 @@ int plant_online(struct s_plant * restrict const plant)
 	// next deal with the consummers
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		ret = circuit_online(circuitl->circuit);
+		ret = hcircuit_online(circuitl->circuit);
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
 			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
-			circuit_offline(circuitl->circuit);
+			hcircuit_offline(circuitl->circuit);
 			circuitl->circuit->run.online = false;
 			suberror = true;
 		}
@@ -629,7 +629,7 @@ int plant_offline(struct s_plant * restrict const plant)
 	// offline the consummers first
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		ret = circuit_offline(circuitl->circuit);
+		ret = hcircuit_offline(circuitl->circuit);
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
@@ -909,7 +909,7 @@ int plant_run(struct s_plant * restrict const plant)
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		ret = logic_circuit(circuitl->circuit);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
-			ret = circuit_run(circuitl->circuit);
+			ret = hcircuit_run(circuitl->circuit);
 
 		circuitl->status = ret;
 
@@ -917,12 +917,12 @@ int plant_run(struct s_plant * restrict const plant)
 			case ALL_OK:
 				break;
 			default:
-				circuit_offline(circuitl->circuit);
+				hcircuit_offline(circuitl->circuit);
 			case -EINVALIDMODE:
 				circuitl->circuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
 			case -ESENSORINVAL:
 			case -ESENSORSHORT:
-			case -ESENSORDISCON:	// sensor issues are handled by circuit_run()
+			case -ESENSORDISCON:	// sensor issues are handled by hcircuit_run()
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
