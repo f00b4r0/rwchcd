@@ -38,7 +38,7 @@ struct s_valve_l {
 struct s_heating_circuit_l {
 	uint_fast8_t id;
 	enum e_execs status;		///< circuit actual status (this flag will signal the last run error)
-	struct s_heating_circuit * restrict circuit;
+	struct s_hcircuit * restrict circuit;
 	struct s_heating_circuit_l * next;
 };
 
@@ -84,8 +84,8 @@ struct s_pump * plant_fbn_pump(struct s_plant * restrict const plant, const char
 struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_valve * plant_fbn_valve(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const char * restrict const name);
-struct s_heating_circuit * plant_fbn_circuit(struct s_plant * restrict const plant, const char * restrict const name);
-struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name);
+struct s_hcircuit * plant_fbn_circuit(struct s_plant * restrict const plant, const char * restrict const name);
+struct s_hcircuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_dhw_tank * plant_fbn_dhwt(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_heatsource * plant_fbn_heatsource(struct s_plant * restrict const plant, const char * restrict const name);

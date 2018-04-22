@@ -36,7 +36,7 @@ enum e_hcircuit_laws {
 };
 
 /** Heating circuit element structure */
-struct s_heating_circuit {
+struct s_hcircuit {
 	struct {
 		bool configured;		///< true if circuit is configured
 		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target)
@@ -72,7 +72,7 @@ struct s_heating_circuit {
 		temp_t actual_wtemp;		///< actual water temperature
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 	} run;		///< private runtime (internally handled)
-	temp_t (*templaw)(const struct s_heating_circuit * restrict const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
+	temp_t (*templaw)(const struct s_hcircuit * restrict const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
 	void * restrict tlaw_priv;		///< Reference data for templaw
 	struct s_valve * restrict valve;	///< optional valve for circuit (if unavailable -> direct heating)
 	struct s_pump * restrict pump;		///< optional pump for this circuit
@@ -80,12 +80,12 @@ struct s_heating_circuit {
 	char * restrict name;			///< name for this circuit
 };
 
-struct s_heating_circuit * circuit_new(void) __attribute__((warn_unused_result));
-int circuit_online(struct s_heating_circuit * const circuit) __attribute__((warn_unused_result));
-int circuit_offline(struct s_heating_circuit * const circuit);
-int circuit_run(struct s_heating_circuit * const circuit) __attribute__((warn_unused_result));
-void circuit_del(struct s_heating_circuit * circuit);
+struct s_hcircuit * circuit_new(void) __attribute__((warn_unused_result));
+int circuit_online(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
+int circuit_offline(struct s_hcircuit * const circuit);
+int circuit_run(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
+void circuit_del(struct s_hcircuit * circuit);
 
-int circuit_make_bilinear(struct s_heating_circuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
+int circuit_make_bilinear(struct s_hcircuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
 
 #endif /* circuit_h */

@@ -279,7 +279,7 @@ static int configure_plant(struct s_plant * restrict plant)
 	struct s_pump * restrict pump = NULL;
 	struct s_valve * restrict valve = NULL;
 	struct s_heatsource * restrict heatsource = NULL;
-	struct s_heating_circuit * restrict circuit = NULL;
+	struct s_hcircuit * restrict circuit = NULL;
 	struct s_dhw_tank * restrict dhwt = NULL;
 	struct s_boiler_priv * restrict boiler = NULL;
 	tempid_t tempid;

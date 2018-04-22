@@ -193,10 +193,10 @@ fail:
  * @param name target name to find
  * @return circuit if found, NULL otherwise
  */
-struct s_heating_circuit * plant_fbn_circuit(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_hcircuit * plant_fbn_circuit(struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_heating_circuit_l * restrict circuitl;
-	struct s_heating_circuit * restrict circuit = NULL;
+	struct s_hcircuit * restrict circuit = NULL;
 
 	for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
 		if (!strcmp(circuitl->circuit->name, name)) {
@@ -214,9 +214,9 @@ struct s_heating_circuit * plant_fbn_circuit(struct s_plant * restrict const pla
  * @param name @b UNIQUE circuit name. A local copy is created
  * @return pointer to the created heating circuit
  */
-struct s_heating_circuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_hcircuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name)
 {
-	struct s_heating_circuit * restrict circuit = NULL;
+	struct s_hcircuit * restrict circuit = NULL;
 	struct s_heating_circuit_l * restrict circuitelement = NULL;
 	char * restrict str = NULL;
 

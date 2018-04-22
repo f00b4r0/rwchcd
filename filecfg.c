@@ -468,7 +468,7 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 }
 
 
-static int filecfg_c_tlbilin_dump(FILE * restrict const file, unsigned int il, const struct s_heating_circuit * restrict const circuit)
+static int filecfg_c_tlbilin_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
 {
 	const struct s_tlaw_bilin20C_priv * restrict priv;
 
@@ -494,10 +494,10 @@ static int filecfg_c_tlbilin_dump(FILE * restrict const file, unsigned int il, c
 	return (ALL_OK);
 }
 
-static int filecfg_circuit_tlaw_dump(FILE * restrict const file, unsigned int il, const struct s_heating_circuit * restrict const circuit)
+static int filecfg_circuit_tlaw_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
 {
 	const char * tlawname;
-	int (*privdump)(FILE * restrict const, unsigned int, const struct s_heating_circuit * restrict const);
+	int (*privdump)(FILE * restrict const, unsigned int, const struct s_hcircuit * restrict const);
 
 	switch (circuit->set.tlaw) {
 		case HCL_BILINEAR:
@@ -547,7 +547,7 @@ static int filecfg_circuit_params_dump(FILE * restrict const file, unsigned int 
 	return (ALL_OK);
 }
 
-static int filecfg_circuit_dump(FILE * restrict const file, unsigned int il, const struct s_heating_circuit * restrict const circuit)
+static int filecfg_circuit_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
 {
 	if (!file || !circuit)
 		return (-EINVALID);

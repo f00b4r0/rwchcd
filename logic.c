@@ -45,7 +45,7 @@
  * State is preserved in all other cases
  * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
-static void circuit_outhoff(struct s_heating_circuit * const circuit)
+static void circuit_outhoff(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
@@ -114,7 +114,7 @@ static void circuit_outhoff(struct s_heating_circuit * const circuit)
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
  * (including rate of rise limitation). REVIEW
  */
-int logic_circuit(struct s_heating_circuit * restrict const circuit)
+int logic_circuit(struct s_hcircuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;

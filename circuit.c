@@ -42,7 +42,7 @@
  * @return a target water temperature for this circuit
  * @warning no parameter check
  */
-static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, const temp_t source_temp)
+static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const temp_t source_temp)
 {
 	const struct s_tlaw_bilin20C_priv * const tld = circuit->tlaw_priv;
 	float slope;
@@ -72,9 +72,9 @@ static temp_t templaw_bilinear(const struct s_heating_circuit * const circuit, c
  * Create a circuit
  * @return the newly created circuit or NULL
  */
-struct s_heating_circuit * circuit_new(void)
+struct s_hcircuit * circuit_new(void)
 {
-	struct s_heating_circuit * const circuit = calloc(1, sizeof(*circuit));
+	struct s_hcircuit * const circuit = calloc(1, sizeof(*circuit));
 	return (circuit);
 }
 
@@ -85,7 +85,7 @@ struct s_heating_circuit * circuit_new(void)
  * @param circuit target circuit
  * @return exec status
  */
-int circuit_online(struct s_heating_circuit * const circuit)
+int circuit_online(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	temp_t temp;
@@ -132,7 +132,7 @@ out:
  * @param circuit target circuit
  * @return error status
  */
-int circuit_offline(struct s_heating_circuit * const circuit)
+int circuit_offline(struct s_hcircuit * const circuit)
 {
 	if (!circuit)
 		return (-EINVALID);
@@ -165,7 +165,7 @@ int circuit_offline(struct s_heating_circuit * const circuit)
  * Turning on the pump mitigates frost risks.
  * @param circuit target circuit
  */
-static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
+static void circuit_failsafe(struct s_hcircuit * restrict const circuit)
 {
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	valve_reqclose_full(circuit->valve);
@@ -180,7 +180,7 @@ static void circuit_failsafe(struct s_heating_circuit * restrict const circuit)
  * @return exec status
  * @warning circuit->run.target_ambient must be properly set before this runs
  */
-int circuit_run(struct s_heating_circuit * const circuit)
+int circuit_run(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const time_t now = time(NULL);
@@ -364,7 +364,7 @@ out:
  * @param nH100 thermal non-linearity coef *100
  * @return error status
  */
-int circuit_make_bilinear(struct s_heating_circuit * const circuit,
+int circuit_make_bilinear(struct s_hcircuit * const circuit,
 			  temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100)
 {
 	struct s_tlaw_bilin20C_priv * priv = NULL;
@@ -426,7 +426,7 @@ int circuit_make_bilinear(struct s_heating_circuit * const circuit,
  * Frees all circuit-local resources
  * @param circuit the circuit to delete
  */
-void circuit_del(struct s_heating_circuit * circuit)
+void circuit_del(struct s_hcircuit * circuit)
 {
 	if (!circuit)
 		return;
