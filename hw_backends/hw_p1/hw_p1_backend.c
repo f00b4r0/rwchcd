@@ -23,6 +23,7 @@
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
 #include "hw_p1_setup.h"
+#include "hw_p1_filecfg.h"
 #include "runtime.h"
 #include "alarms.h"
 #include "timer.h"
@@ -620,6 +621,7 @@ static struct s_hw_callbacks hw_p1_callbacks = {
 	.relay_ibn = hw_p1_relay_ibn,
 	.sensor_name = hw_p1_sensor_name,
 	.relay_name = hw_p1_relay_name,
+	.filecfg_dump = hw_p1_filecfg_dump,
 };
 
 /**
