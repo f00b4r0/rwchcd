@@ -58,6 +58,26 @@ const char * filecfg_tabs(const unsigned int level)
 	return (indents[level]);
 }
 
+static void filecfg_backends_dump(FILE * restrict file, unsigned int il)
+{
+	unsigned int id;
+
+	tfprintf(file, il, "backends {\n");
+	il++;
+
+	for (id = 0; (id < ARRAY_SIZE(HW_backends) && HW_backends[id]); id++) {
+		tfprintf(file, il, "backend \"%s\" {\n", HW_backends[id]->name);
+		il++;
+		if (HW_backends[id]->cb->filecfg_dump)
+			HW_backends[id]->cb->filecfg_dump(HW_backends[id]->priv, file, il);
+		il--;
+		tfprintf(file, il, "};\n");
+	}
+
+	il--;
+	tfprintf(file, il, "};\n");
+}
+
 static int filecfg_tempid_dump(FILE * restrict file, unsigned int il, const tempid_t tempid)
 {
 	if (!file)
@@ -702,7 +722,8 @@ int filecfg_dump(void)
 	if (!file)
 		return (-ESTORE);
 
-	// todo dump hardware
+	// dump backends
+	filecfg_backends_dump(file, il);
 
 	// dump runtime config
 	filecfg_config_dump(file, il, runtime->config);
