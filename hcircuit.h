@@ -49,7 +49,7 @@ struct s_hcircuit {
 		tempid_t tid_outgoing;		///< outgoing temp sensor id for this circuit
 		tempid_t tid_return;		///< return temp sensor id for this circuit
 		tempid_t tid_ambient;		///< ambient temp sensor id related to this circuit
-		struct s_circuit_params params;	///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
+		struct s_hcircuit_params params;	///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 		enum e_hcircuit_laws tlaw;	///< temperature law identifier
 	} set;		///< settings (externally set)
 	struct {

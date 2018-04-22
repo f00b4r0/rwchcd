@@ -518,7 +518,7 @@ static int filecfg_circuit_tlaw_dump(FILE * restrict const file, unsigned int il
 	return (ALL_OK);
 }
 
-static int filecfg_circuit_params_dump(FILE * restrict const file, unsigned int il, const struct s_circuit_params * restrict const params)
+static int filecfg_circuit_params_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit_params * restrict const params)
 {
 	if (!file || !params)
 		return (-EINVALID);

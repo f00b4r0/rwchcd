@@ -143,7 +143,7 @@ enum e_systemmode {
 };
 
 /** Circuit common parameters */
-struct s_circuit_params {
+struct s_hcircuit_params {
 	temp_t t_comfort;		///< target ambient temp in comfort mode
 	temp_t t_eco;			///< target ambient temp in eco mode
 	temp_t t_frostfree;		///< target ambient temp in frost-free mode
