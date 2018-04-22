@@ -30,7 +30,7 @@
 #include "plant.h"
 #include "pump.h"
 #include "valve.h"
-#include "circuit.h"
+#include "hcircuit.h"
 #include "dhwt.h"
 #include "heatsource.h"
 #include "models.h"	// s_bmodel for plant_summer_ok()

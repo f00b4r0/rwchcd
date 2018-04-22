@@ -23,7 +23,7 @@
 #include "logic.h"
 #include "models.h"
 
-#include "circuit.h"
+#include "hcircuit.h"
 #include "dhwt.h"
 #include "heatsource.h"
 

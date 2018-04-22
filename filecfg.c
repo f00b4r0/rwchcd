@@ -25,7 +25,7 @@
 #include "boiler.h"
 #include "heatsource.h"
 #include "dhwt.h"
-#include "circuit.h"
+#include "hcircuit.h"
 #include "models.h"
 #include "config.h"
 #include "runtime.h"

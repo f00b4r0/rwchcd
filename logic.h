@@ -15,7 +15,7 @@
 #define rwchcd_logic_h
 
 #include "rwchcd.h"
-#include "circuit.h"
+#include "hcircuit.h"
 #include "dhwt.h"
 #include "heatsource.h"
 

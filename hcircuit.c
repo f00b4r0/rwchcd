@@ -1,5 +1,5 @@
 //
-//  circuit.c
+//  hcircuit.c
 //  rwchcd
 //
 //  (C) 2017-2018 Thibaut VARENE
@@ -8,14 +8,14 @@
 
 /**
  * @file
- * Circuit operation implementation.
+ * Heating circuit operation implementation.
  */
 
 #include <stdlib.h>	// calloc/free
 #include <assert.h>
 #include <math.h>	// roundf
 
-#include "circuit.h"
+#include "hcircuit.h"
 #include "hardware.h"
 #include "lib.h"
 #include "pump.h"

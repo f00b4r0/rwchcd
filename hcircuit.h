@@ -1,5 +1,5 @@
 //
-//  circuit.h
+//  hcircuit.h
 //  rwchcd
 //
 //  (C) 2017 Thibaut VARENE
@@ -8,11 +8,11 @@
 
 /**
  * @file
- * Circuit operation API.
+ * Heating circuit operation API.
  */
 
-#ifndef circuit_h
-#define circuit_h
+#ifndef hcircuit_h
+#define hcircuit_h
 
 #include "rwchcd.h"
 

@@ -68,7 +68,7 @@
 
 #include "pump.h"
 #include "valve.h"
-#include "circuit.h"
+#include "hcircuit.h"
 #include "dhwt.h"
 #include "heatsource.h"
 #include "boiler.h"
