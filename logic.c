@@ -30,7 +30,7 @@
 #include "hardware.h"	// for hardware_sensor_clone_temp()
 
 /**
- * Conditions for running circuit
+ * Conditions for running heating circuit.
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
  * Circuit is off in ANY of the following conditions are met:
  * - building model summer is true
@@ -101,7 +101,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 
 #define LOGIC_MIN_POWER_TRANS_UP	75	///< minimum estimate (linear) output power percentage for transition up modelling
 /**
- * Circuit logic.
+ * Heating circuit logic.
  * Sets the target ambient temperature for a circuit based on selected run mode.
  * Runs the ambient model, and applies temperature shift based on mesured or
  * modelled ambient temperature. Handles runmode transitions.
@@ -114,7 +114,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
  * (including rate of rise limitation). REVIEW
  */
-int logic_circuit(struct s_hcircuit * restrict const circuit)
+int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = get_runtime();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;

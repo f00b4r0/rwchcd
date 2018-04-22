@@ -907,7 +907,7 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		ret = logic_circuit(circuitl->circuit);
+		ret = logic_hcircuit(circuitl->circuit);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
 			ret = hcircuit_run(circuitl->circuit);
 
@@ -926,7 +926,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				dbgerr("logic_circuit/run failed on %d (%d)", circuitl->id, ret);
+				dbgerr("logic_hcircuit/run failed on %d (%d)", circuitl->id, ret);
 				continue;
 		}
 	}
