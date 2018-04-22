@@ -62,7 +62,7 @@ $(MAIN): $(MAINOBJS)
 	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
 
 clean:
-	$(RM) $(HWBACKENDS_DIR)/*.[od~]
+	$(RM) $(HWBACKENDS_DIR)/*/*.[od~]
 	$(RM) *.o *.d *~ $(MAIN)
 
 distclean:	clean
