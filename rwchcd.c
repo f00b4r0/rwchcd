@@ -742,9 +742,6 @@ int main(void)
 	if (ret)
 		err(ret, "failed to setuid()");
 
-	/* signal priviledges have been dropped */
-	pthread_barrier_wait(&barr_main);
-
 #ifdef DEBUG
 	// create the stdout fifo for debugging
 	unlink(RWCHCD_FIFO);
@@ -764,6 +761,9 @@ int main(void)
 			abort();	// we can't have a blocking stdout
 	}
 #endif
+
+	/* signal priviledges have been dropped and fifo is ready */
+	pthread_barrier_wait(&barr_main);
 
 	// signal handler for cleanup.
 	// No error checking because it's no big deal if it fails
