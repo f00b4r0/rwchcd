@@ -31,15 +31,12 @@
 
 #include "storage.h"
 
-#define RWCHCD_STORAGE_MAGIC "rwchcd"
-#define RWCHCD_STORAGE_VERSION 1UL
-#ifndef RWCHCD_STORAGE_PATH
- #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"
-#endif
-#define STORAGE_TMPLATE	"tmpXXXXXX"
+#define STORAGE_MAGIC		"rwchcd"
+#define STORAGE_VERSION		1UL
+#define STORAGE_TMPLATE		"tmpXXXXXX"
 
-static const char Storage_magic[] = RWCHCD_STORAGE_MAGIC;
-static const storage_version_t Storage_version = RWCHCD_STORAGE_VERSION;
+static const char Storage_magic[] = STORAGE_MAGIC;
+static const storage_version_t Storage_version = STORAGE_VERSION;
 
 /**
  * Generic storage backend write call.

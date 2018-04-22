@@ -31,6 +31,10 @@
 #define ON	true
 #define OFF	false
 
+#ifndef RWCHCD_STORAGE_PATH
+ #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"	///< filesystem path to permanent storage area
+#endif
+
 /* i18n stuff */
 #ifdef HAVE_GETTEXT
  #include <libintl.h>
