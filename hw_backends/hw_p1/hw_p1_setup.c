@@ -36,10 +36,12 @@ void * hw_p1_setup_new(void)
  */
 int hw_p1_setup_setbl(const uint8_t percent)
 {
+	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+
 	if (percent > 100)
 		return (-EINVALID);
 
-	Hardware.settings.lcdblpct = percent;
+	hw->settings.lcdblpct = percent;
 
 	return (ALL_OK);
 }
@@ -51,10 +53,12 @@ int hw_p1_setup_setbl(const uint8_t percent)
  */
 int hw_p1_setup_setnsensors(const rid_t lastid)
 {
+	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+
 	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
 		return (-EINVALID);
 
-	Hardware.settings.nsensors = lastid;
+	hw->settings.nsensors = lastid;
 
 	return (ALL_OK);
 }
@@ -66,10 +70,12 @@ int hw_p1_setup_setnsensors(const rid_t lastid)
  */
 int hw_p1_setup_setnsamples(const uint_fast8_t nsamples)
 {
+	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+
 	if (!nsamples)
 		return (-EINVALID);
 
-	Hardware.set.nsamples = nsamples;
+	hw->set.nsamples = nsamples;
 
 	return (ALL_OK);
 }
@@ -84,12 +90,13 @@ int hw_p1_setup_setnsamples(const uint_fast8_t nsamples)
  */
 int hw_p1_setup_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name)
 {
+	struct s_hw_p1_pdata * restrict const hw = &Hardware;
 	char * str = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Hardware.Sensors)) || !name)
+	if (!id || (id > ARRAY_SIZE(hw->Sensors)) || !name)
 		return (-EINVALID);
 
-	if (Hardware.Sensors[id-1].set.configured)
+	if (hw->Sensors[id-1].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
@@ -100,15 +107,15 @@ int hw_p1_setup_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, 
 	if (!str)
 		return(-EOOM);
 
-	Hardware.Sensors[id-1].ohm_to_celsius = hw_p1_sensor_o_to_c(type);
+	hw->Sensors[id-1].ohm_to_celsius = hw_p1_sensor_o_to_c(type);
 
-	if (!Hardware.Sensors[id-1].ohm_to_celsius)
+	if (!hw->Sensors[id-1].ohm_to_celsius)
 		return (-EINVALID);
 
-	Hardware.Sensors[id-1].name = str;
-	Hardware.Sensors[id-1].set.type = type;
-	Hardware.Sensors[id-1].set.offset = offset;
-	Hardware.Sensors[id-1].set.configured = true;
+	hw->Sensors[id-1].name = str;
+	hw->Sensors[id-1].set.type = type;
+	hw->Sensors[id-1].set.offset = offset;
+	hw->Sensors[id-1].set.configured = true;
 
 	return (ALL_OK);
 }
@@ -120,15 +127,17 @@ int hw_p1_setup_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, 
  */
 int hw_p1_setup_sensor_deconfigure(const sid_t id)
 {
-	if (!id || (id > ARRAY_SIZE(Hardware.Sensors)))
+	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+
+	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!Hardware.Sensors[id-1].set.configured)
+	if (!hw->Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free(Hardware.Sensors[id-1].name);
+	free(hw->Sensors[id-1].name);
 
-	memset(&Hardware.Sensors[id-1], 0x00, sizeof(Hardware.Sensors[id-1]));
+	memset(&hw->Sensors[id-1], 0x00, sizeof(hw->Sensors[id-1]));
 
 	return (ALL_OK);
 }
@@ -143,12 +152,13 @@ int hw_p1_setup_sensor_deconfigure(const sid_t id)
  */
 int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char * const name)
 {
+	struct s_hw_p1_pdata * restrict const hw = &Hardware;
 	char * str = NULL;
 
-	if (!id || (id > ARRAY_SIZE(Hardware.Relays)) || !name)
+	if (!id || (id > ARRAY_SIZE(hw->Relays)) || !name)
 		return (-EINVALID);
 
-	if (Hardware.Relays[id-1].set.configured)
+	if (hw->Relays[id-1].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
@@ -159,15 +169,15 @@ int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char *
 	if (!str)
 		return(-EOOM);
 
-	Hardware.Relays[id-1].name = str;
+	hw->Relays[id-1].name = str;
 
 	// register failover state
-	Hardware.Relays[id-1].set.failstate = failstate;
-	hw_p1_rwchc_relay_set(&Hardware.settings.deffail, id-1, failstate);
+	hw->Relays[id-1].set.failstate = failstate;
+	hw_p1_rwchc_relay_set(&hw->settings.deffail, id-1, failstate);
 
-	Hardware.Relays[id-1].run.off_since = time(NULL);	// XXX hack
+	hw->Relays[id-1].run.off_since = time(NULL);	// XXX hack
 
-	Hardware.Relays[id-1].set.configured = true;
+	hw->Relays[id-1].set.configured = true;
 
 	return (ALL_OK);
 }
@@ -180,15 +190,17 @@ int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char *
  */
 int hw_p1_setup_relay_release(const rid_t id)
 {
-	if (!id || (id > ARRAY_SIZE(Hardware.Relays)))
+	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+
+	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	if (!Hardware.Relays[id-1].set.configured)
+	if (!hw->Relays[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free(Hardware.Relays[id-1].name);
+	free(hw->Relays[id-1].name);
 
-	memset(&Hardware.Relays[id-1], 0x00, sizeof(Hardware.Relays[id-1]));
+	memset(&hw->Relays[id-1], 0x00, sizeof(hw->Relays[id-1]));
 
 	return (ALL_OK);
 }
