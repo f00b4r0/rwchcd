@@ -380,7 +380,7 @@ static void hw_p1_exit(void * priv)
  * @param id id of the target internal relay
  * @return target relay name or NULL if error
  */
-const char * hw_p1_relay_name(void * priv, const rid_t id)
+static const char * hw_p1_relay_name(void * priv, const rid_t id)
 {
 	struct s_hw_p1_pdata * const hw = priv;
 
@@ -473,7 +473,7 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
  * @param id id of the target internal sensor
  * @return target sensor name or NULL if error
  */
-const char * hw_p1_sensor_name(void * priv, const sid_t id)
+static const char * hw_p1_sensor_name(void * priv, const sid_t id)
 {
 	struct s_hw_p1_pdata * const hw = priv;
 
