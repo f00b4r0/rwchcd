@@ -38,7 +38,7 @@
  */
 __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	int ret, i = 0;
 
 	if (!hw)
@@ -76,7 +76,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
  */
 static int hw_p1_online(void * priv)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	int ret;
 
 	if (!hw)
@@ -127,8 +127,8 @@ fail:
  */
 static int hw_p1_input(void * priv)
 {
-	struct s_hw_p1_pdata * const hw = priv;
-	struct s_runtime * const runtime = get_runtime();
+	struct s_hw_p1_pdata * restrict const hw = priv;
+	struct s_runtime * restrict const runtime = get_runtime();
 	static unsigned int count = 0, systout = 0;
 	static sid_t tempid = 1;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
@@ -256,7 +256,7 @@ fail:
  */
 static int hw_p1_output(void * priv)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	int ret;
 
 	assert(hw);
@@ -293,7 +293,7 @@ out:
  */
 static int hw_p1_offline(void * priv)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	uint_fast8_t i;
 	int ret;
 
@@ -334,7 +334,7 @@ static int hw_p1_offline(void * priv)
  */
 static void hw_p1_exit(void * priv)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	int ret;
 	uint_fast8_t i;
 
@@ -375,7 +375,7 @@ static void hw_p1_exit(void * priv)
  */
 static const char * hw_p1_relay_name(void * priv, const rid_t id)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 
 	assert(hw);
 
@@ -396,7 +396,7 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
  */
 static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const time_t change_delay)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	const time_t now = time(NULL);
 	struct s_hw_p1_relay * relay = NULL;
 
@@ -440,7 +440,7 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
  */
 static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	const time_t now = time(NULL);
 	struct s_hw_p1_relay * relay = NULL;
 
@@ -468,7 +468,7 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
  */
 static const char * hw_p1_sensor_name(void * priv, const sid_t id)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 
 	assert(hw);
 
@@ -493,7 +493,7 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
  */
 int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 	int ret;
 	temp_t temp;
 
@@ -554,7 +554,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
  */
 static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const ctime)
 {
-	struct s_hw_p1_pdata * const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
 
 	assert(hw);
 
