@@ -86,12 +86,11 @@ struct s_hw_p1_pdata {
 
 extern struct s_hw_p1_pdata Hardware;
 
-void hw_p1_parse_temps(void);
 int hw_p1_hwconfig_commit(void);
 int hw_p1_calibrate(void);
 int hw_p1_save_relays(void);
 int hw_p1_restore_relays(void);
-int hw_p1_sensors_read(rwchc_sensor_t tsensors[]);
+int hw_p1_sensors_read(void);
 int hw_p1_rwchcrelays_write(void);
 int hw_p1_rwchcperiphs_write(void);
 int hw_p1_rwchcperiphs_read(void);

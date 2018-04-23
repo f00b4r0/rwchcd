@@ -129,7 +129,6 @@ static int hw_p1_input(void * priv)
 {
 	struct s_hw_p1_pdata * const hw = priv;
 	struct s_runtime * const runtime = get_runtime();
-	static rwchc_sensor_t rawsensors[RWCHC_NTSENSORS];
 	static unsigned int count = 0, systout = 0;
 	static sid_t tempid = 1;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
@@ -232,17 +231,11 @@ skip_periphs:
 	}
 
 	// read sensors
-	ret = hw_p1_sensors_read(rawsensors);
+	ret = hw_p1_sensors_read();
 	if (ALL_OK != ret) {
 		// flag the error but do NOT stop processing here
 		dbgerr("hw_p1_sensors_read failed (%d)", ret);
 		goto fail;
-	}
-	else {
-		// copy valid data to local environment
-		memcpy(hw->sensors, rawsensors, sizeof(hw->sensors));
-		hw->run.sensors_ftime = time(NULL);
-		hw_p1_parse_temps();
 	}
 
 	return (ret);

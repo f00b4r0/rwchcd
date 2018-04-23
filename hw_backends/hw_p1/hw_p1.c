@@ -225,7 +225,7 @@ static int sensor_alarm(const sid_t id, const int error)
  * Applies a short-window LP filter on raw data to smooth out noise.
  * Flag and raise alarm if value is out of #RWCHCD_TEMPMIN and #RWCHCD_TEMPAX bounds.
  */
-void hw_p1_parse_temps(void)
+static void hw_p1_parse_temps(void)
 {
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
@@ -436,23 +436,34 @@ int hw_p1_calibrate(void)
 }
 
 /**
- * Read all sensors
- * @param tsensors the array to populate with current values
+ * Read all temperature sensors.
+ * This function will read all sensors (up to #Hardware.settings.nsensors) and if
+ * no error occurs:
+ * - The values will be copied to #Hardware.sensors,
+ * - #Hardware.run.sensors_ftime will be updated
+ * - Raw values from #Hardware.sensors are processed to atomically update #Hardware.Sensors
+ * otherwise these fields remain unchanged.
  * @return exec status
- * @warning Hardware.settings.nsensors must be set prior to calling this function
+ * @warning #Hardware.settings.nsensors must be set prior to calling this function
  */
-int hw_p1_sensors_read(rwchc_sensor_t tsensors[])
+int hw_p1_sensors_read(void)
 {
+	static typeof (Hardware.sensors) tempsensors;
 	int_fast8_t sensor;
 	int ret = ALL_OK;
 	
 	assert(Hardware.run.online);
 
 	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
-		ret = hw_p1_spi_sensor_r(tsensors, sensor);
+		ret = hw_p1_spi_sensor_r(tempsensors, sensor);
 		if (ret)
 			goto out;
 	}
+
+	memcpy(Hardware.sensors, tempsensors, sizeof(Hardware.sensors));
+	Hardware.run.sensors_ftime = time(NULL);
+
+	hw_p1_parse_temps();
 
 out:
 	return (ret);
