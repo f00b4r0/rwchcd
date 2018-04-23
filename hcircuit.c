@@ -87,7 +87,7 @@ struct s_hcircuit * hcircuit_new(void)
  */
 int hcircuit_online(struct s_hcircuit * const circuit)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	temp_t temp;
 	int ret;
 
@@ -182,7 +182,7 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	const time_t now = time(NULL);
 	temp_t water_temp, curr_temp, ret_temp, saved_temp, lwtmin, lwtmax;
 #ifdef DEBUG

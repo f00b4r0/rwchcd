@@ -38,7 +38,7 @@ static gboolean on_handle_toutdoor_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
 				      gpointer user_data)
 {
-	float temp = temp_to_celsius(get_runtime()->t_outdoor_60);
+	float temp = temp_to_celsius(runtime_get()->t_outdoor_60);
 	
 	dbus_rwchcd_control_complete_toutdoor_get(object, invocation, temp);
 	
@@ -53,7 +53,7 @@ static gboolean on_handle_sysmode_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
 				      gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_systemmode cursys;
 	
 	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
@@ -75,7 +75,7 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 				      guchar Sysmode,
 				      gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_systemmode newsysmode;
 	
 	if (Sysmode < SYS_UNKNOWN)
@@ -104,7 +104,7 @@ static gboolean on_handle_config_temp_mode_get(dbusRwchcdControl *object,
 					       guchar Runmode,
 					       gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_runmode runmode = Runmode;
 	temp_t systemp;
 	float temp;
@@ -153,7 +153,7 @@ static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 					       gdouble NewTemp,
 					       gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	temp_t newtemp = celsius_to_temp(NewTemp);
 	enum e_runmode runmode = Runmode;
 	bool err = false;
@@ -199,7 +199,7 @@ static gboolean on_handle_config_outhoff_mode_get(dbusRwchcdControl *object,
 					       guchar Runmode,
 					       gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_runmode runmode = Runmode;
 	temp_t systemp;
 	float temp;
@@ -248,7 +248,7 @@ static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
 					       gdouble NewTemp,
 					       gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	temp_t newtemp = celsius_to_temp(NewTemp);
 	enum e_runmode runmode = Runmode;
 	bool err = false;

@@ -47,7 +47,7 @@ static struct s_schedule * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NU
  */
 static int scheduler_now(void)
 {
-	struct s_runtime * const runtime = get_runtime();
+	struct s_runtime * const runtime = runtime_get();
 	const time_t now = time(NULL);
 	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	const struct s_schedule * sch;

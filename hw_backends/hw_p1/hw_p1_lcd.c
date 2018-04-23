@@ -371,7 +371,7 @@ static const char * hw_p1_temp_to_str(const sid_t tempid)
 // XXX quick hack
 static int hw_p1_lcd_line1(void)
 {
-	const enum e_systemmode systemmode = get_runtime()->systemmode;
+	const enum e_systemmode systemmode = runtime_get()->systemmode;
 	static uint8_t buf[LCD_LINELEN];
 
 	memset(buf, ' ', LCD_LINELEN);

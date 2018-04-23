@@ -704,7 +704,7 @@ static void plant_collect_hrequests(const struct s_plant * restrict const plant)
 {
 	static time_t last_circuit_reqtime = 0;
 	const time_t now = time(NULL);
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
@@ -806,7 +806,7 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 #define SUMMER_RUN_DURATION	60*5		///< 5 minutes
 	static time_t timer_start = 0;
 	const time_t now = time(NULL);
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	struct s_pump_l * pumpl;
 	struct s_valve_l * valvel;
 	int ret;
@@ -866,7 +866,7 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
  */
 int plant_run(struct s_plant * restrict const plant)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;

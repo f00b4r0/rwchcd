@@ -35,7 +35,7 @@ struct s_runtime {
 	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible
 };
 
-struct s_runtime * get_runtime(void);
+struct s_runtime * runtime_get(void);
 int runtime_init(void);
 int runtime_set_systemmode(const enum e_systemmode sysmode);
 int runtime_set_runmode(const enum e_runmode runmode);

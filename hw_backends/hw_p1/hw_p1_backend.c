@@ -128,7 +128,7 @@ fail:
 static int hw_p1_input(void * priv)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	static unsigned int count = 0, systout = 0;
 	static sid_t tempid = 1;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;

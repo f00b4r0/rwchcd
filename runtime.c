@@ -34,7 +34,7 @@ static struct s_runtime Runtime;
  * Get current program runtime
  * @return pointer to current runtime.
  */
-struct s_runtime * get_runtime(void)
+struct s_runtime * runtime_get(void)
 {
 	return (&Runtime);
 }

@@ -449,7 +449,7 @@ static int configure_plant(struct s_plant * restrict plant)
  */
 static int init_process()
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	struct s_config * restrict config = NULL;
 	struct s_plant * restrict plant = NULL;
 	int ret;
@@ -548,7 +548,7 @@ static int init_process()
 
 static void exit_process(void)
 {
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 
 	runtime_offline();
 	alarms_offline();
@@ -566,7 +566,7 @@ static void exit_process(void)
 static void * thread_master(void *arg)
 {
 	int pipewfd = *((int *)arg);
-	struct s_runtime * restrict const runtime = get_runtime();
+	struct s_runtime * restrict const runtime = runtime_get();
 	int ret;
 	
 	ret = init_process();

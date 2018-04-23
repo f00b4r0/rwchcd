@@ -47,7 +47,7 @@
  */
 static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	temp_t temp_trigger;
 
@@ -116,7 +116,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
  */
 int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	enum e_runmode prev_runmode;
 	temp_t request_temp, diff_temp;
@@ -323,7 +323,7 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
  */
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	const time_t now = time(NULL);
 	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	enum e_runmode prev_runmode;
@@ -415,7 +415,7 @@ settarget:
  */
 int logic_heatsource(struct s_heatsource * restrict const heat)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	const time_t now = time(NULL);
 	const time_t dt = now - heat->run.last_run_time;
 	temp_t temp;

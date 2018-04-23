@@ -202,7 +202,7 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 	}
 	else {
 		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
-		bmodel->run.t_out = get_runtime()->config->limit_tfrost-1;
+		bmodel->run.t_out = runtime_get()->config->limit_tfrost-1;
 		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
 	}
 }
@@ -274,7 +274,7 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
  */
 static int bmodel_summer(struct s_bmodel * const bmodel)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
@@ -311,7 +311,7 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
  */
 static int bmodel_frost(struct s_bmodel * restrict const bmodel)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 

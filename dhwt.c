@@ -41,7 +41,7 @@ struct s_dhw_tank * dhwt_new(void)
  */
 int dhwt_online(struct s_dhw_tank * const dhwt)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	temp_t temp;
 	int ret = -EGENERIC;
 
@@ -203,7 +203,7 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  */
 int dhwt_run(struct s_dhw_tank * const dhwt)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp;
 	bool valid_ttop = false, valid_tbottom = false, test;
 	const time_t now = time(NULL);

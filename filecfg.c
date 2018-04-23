@@ -709,7 +709,7 @@ static int filecfg_plant_dump(FILE * restrict const file, unsigned int il, const
  */
 int filecfg_dump(void)
 {
-	const struct s_runtime * restrict const runtime = get_runtime();
+	const struct s_runtime * restrict const runtime = runtime_get();
 	FILE * restrict file = NULL;
 	unsigned int il = 0;
 
