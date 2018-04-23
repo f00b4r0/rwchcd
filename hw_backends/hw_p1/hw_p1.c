@@ -475,7 +475,7 @@ out:
  * @param id target relay id (from 0)
  * @param state target state
  */
-__attribute__((always_inline)) inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const rid_t id, const bool state)
+__attribute__((always_inline)) inline void hw_p1_rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const rid_t id, const bool state)
 {
 	uint_fast8_t rid = id;
 
@@ -547,7 +547,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 		relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 		// update internal structure
-		rwchc_relay_set(&rWCHC_relays, i, relay->run.turn_on);
+		hw_p1_rwchc_relay_set(&rWCHC_relays, i, relay->run.turn_on);
 	}
 
 	// save/log relays state if there was a change

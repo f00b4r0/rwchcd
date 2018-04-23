@@ -101,6 +101,6 @@ int hw_p1_sid_by_name(const char * const name);
 int hw_p1_rid_by_name(const char * const name);
 
 ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const enum e_hw_p1_stype type);
-void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const rid_t id, const bool state);
+void hw_p1_rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const rid_t id, const bool state);
 
 #endif /* rwchcd_hw_p1_h */
