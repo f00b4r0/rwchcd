@@ -223,6 +223,7 @@ static int sensor_alarm(const sid_t id, const int error)
 /**
  * Process raw sensor data.
  * Applies a short-window LP filter on raw data to smooth out noise.
+ * Flag and raise alarm if value is out of #RWCHCD_TEMPMIN and #RWCHCD_TEMPAX bounds.
  */
 void hw_p1_parse_temps(void)
 {
@@ -263,7 +264,7 @@ void hw_p1_parse_temps(void)
 }
 
 /**
- * Save hardware relays state to permanent storage
+ * Save hardware relays state to permanent storage.
  * @return exec status
  * @todo online save/restore from .run
  */
@@ -273,7 +274,7 @@ int hw_p1_save_relays(void)
 }
 
 /**
- * Restore hardware relays state from permanent storage
+ * Restore hardware relays state from permanent storage.
  * Restores cycles and on/off total time counts for all relays.
  * @return exec status
  * @todo restore relay name
@@ -311,7 +312,6 @@ int hw_p1_restore_relays(void)
 /**
  * Log internal temperatures.
  * @return exec status
- * @warning Locks runtime: do not call from master_thread
  */
 int hw_p1_async_log_temps(void)
 {
@@ -382,7 +382,7 @@ out:
  * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
  * This function uses a hardcoded moving average for all but the first calibration attempt,
  * to smooth out sudden bumps in calibration reads that could be due to noise.
- * @return error status
+ * @return exec status
  */
 int hw_p1_calibrate(void)
 {
@@ -605,7 +605,7 @@ int hw_p1_sid_by_name(const char * const name)
 /**
  * Find relay id by name.
  * @param name name to look for
- * @return -ENOTFOUND if not found, sensor id if found
+ * @return -ENOTFOUND if not found, relay id if found
  */
 int hw_p1_rid_by_name(const char * const name)
 {

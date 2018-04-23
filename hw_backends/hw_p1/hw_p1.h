@@ -51,20 +51,21 @@ struct s_hw_p1_sensor {
 		bool configured;	///< sensor is configured
 		enum e_hw_p1_stype type;///< sensor type
 		temp_t offset;		///< sensor value offset
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		temp_t value;		///< sensor current temperature value (offset applied)
-	} run;
+	} run;		///< private runtime (internally handled)
 	ohm_to_celsius_ft * ohm_to_celsius;
 	char * restrict name;		///< @b unique user-defined name for the sensor
 };
 
 #define RELAY_MAX_ID		14	///< maximum valid relay id
 
+/** driver runtime data */
 struct s_hw_p1_pdata {
 	struct {
 		uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
-	} set;
+	} set;		///< settings (externally set)
 	struct {
 		bool initialized;		///< hardware is initialized (init() succeeded)
 		bool online;			///< hardware is online (online() succeeded)
@@ -73,14 +74,14 @@ struct s_hw_p1_pdata {
 		float calib_nodac;		///< sensor calibration value without dac offset
 		float calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version
-	} run;
-	struct rwchc_s_settings settings;
-	union rwchc_u_relays relays;
-	union rwchc_u_periphs peripherals;
-	rwchc_sensor_t sensors[RWCHC_NTSENSORS];
-	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to @b value
-	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];		///< physical sensors
-	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< physical relays
+	} run;		///< private runtime (internally handled)
+	struct rwchc_s_settings settings;	///< local copy of hardware settings data
+	union rwchc_u_relays relays;		///< local copy of hardware relays data
+	union rwchc_u_periphs peripherals;	///< local copy of hardware peripheral data
+	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
+	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to ::Sensors.value
+	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
+	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
 
 extern struct s_hw_p1_pdata Hardware;

@@ -19,7 +19,7 @@
 /**
  * Initialize local data.
  * Cannot fail.
- * @return NULL
+ * @return #Hardware
  */
 void * hw_p1_setup_new(void)
 {
