@@ -173,7 +173,6 @@ int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char *
 
 	// register failover state
 	hw->Relays[id-1].set.failstate = failstate;
-	hw_p1_rwchc_relay_set(&hw->settings.deffail, id-1, failstate);
 
 	hw->Relays[id-1].run.off_since = time(NULL);	// XXX hack
 

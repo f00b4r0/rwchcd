@@ -277,7 +277,6 @@ int hw_p1_save_relays(void)
  * Restore hardware relays state from permanent storage.
  * Restores cycles and on/off total time counts for all relays.
  * @return exec status
- * @todo restore relay name
  */
 int hw_p1_restore_relays(void)
 {
@@ -333,6 +332,49 @@ int hw_p1_async_log_temps(void)
 }
 
 /**
+ * Update internal relay system based on target state.
+ * This function takes an incremental physical relay id and adjusts
+ * the internal hardware data structure based on the desired relay
+ * state.
+ * @param rWCHC_relays target internal relay system
+ * @param id target relay id (from 0)
+ * @param state target state
+ */
+__attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const uint_fast8_t id, const bool state)
+{
+	uint_fast8_t rid = id;
+
+	// adapt relay id XXX REVISIT
+	if (rid > 6)
+		rid++;	// skip the hole
+
+	// set state for triac control
+	if (state)
+		setbit(rWCHC_relays->ALL, rid);
+	else
+		clrbit(rWCHC_relays->ALL, rid);
+}
+
+/**
+ * Prepare hardware settings 'deffail' data based on Relays configuration.
+ */
+static void hw_p1_rwchcsettings_deffail(void)
+{
+	uint_fast8_t i;
+
+	// start clean
+	Hardware.settings.deffail.ALL = 0;
+
+	// update each known hardware relay
+	for (i = 0; i < ARRAY_SIZE(Hardware.Relays); i++) {
+		if (!Hardware.Relays[i].set.configured)
+			continue;
+
+		// update internal structure
+		rwchc_relay_set(&Hardware.settings.deffail, i, Hardware.Relays[i].set.failstate);
+	}
+}
+/**
  * Commit hardware config to hardware.
  * @note overwrites all hardware settings.
  * @return exec status
@@ -344,6 +386,9 @@ int hw_p1_hwconfig_commit(void)
 	
 	if (!Hardware.run.initialized)
 		return (-EOFFLINE);
+
+	// prepare hardware settings.deffail data
+	hw_p1_rwchcsettings_deffail();
 	
 	// grab current config from the hardware
 	ret = hw_p1_spi_settings_r(&hw_set);
@@ -437,11 +482,11 @@ int hw_p1_calibrate(void)
 
 /**
  * Read all temperature sensors.
- * This function will read all sensors (up to #Hardware.settings.nsensors) and if
+ * This function will read all sensors (up to Hardware.settings.nsensors) and if
  * no error occurs:
  * - The values will be copied to #Hardware.sensors,
- * - #Hardware.run.sensors_ftime will be updated
- * - Raw values from #Hardware.sensors are processed to atomically update #Hardware.Sensors
+ * - Hardware.run.sensors_ftime will be updated
+ * - Raw values from Hardware.sensors are processed to atomically update #Hardware.Sensors
  * otherwise these fields remain unchanged.
  * @return exec status
  * @warning #Hardware.settings.nsensors must be set prior to calling this function
@@ -467,27 +512,6 @@ int hw_p1_sensors_read(void)
 
 out:
 	return (ret);
-}
-
-/**
- * Update internal relay system based on target state.
- * @param rWCHC_relays target internal relay system
- * @param id target relay id (from 0)
- * @param state target state
- */
-__attribute__((always_inline)) inline void hw_p1_rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const rid_t id, const bool state)
-{
-	uint_fast8_t rid = id;
-
-	// adapt relay id XXX REVISIT
-	if (rid > 6)
-		rid++;	// skip the hole
-
-	// set state for triac control
-	if (state)
-		setbit(rWCHC_relays->ALL, rid);
-	else
-		clrbit(rWCHC_relays->ALL, rid);
 }
 
 /**
@@ -547,7 +571,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 		relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 		// update internal structure
-		hw_p1_rwchc_relay_set(&rWCHC_relays, i, relay->run.turn_on);
+		rwchc_relay_set(&rWCHC_relays, i, relay->run.turn_on);
 	}
 
 	// save/log relays state if there was a change
