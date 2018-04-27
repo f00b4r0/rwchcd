@@ -485,7 +485,7 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
  * It also checks that the designated sensor is properly configured in software.
  * Finally, if parameter @b tclone is non-null, the temperature of the sensor
  * is copied if it isn't stale (i.e. less than 30s old).
- * @todo review hardcoded timeout
+ * @todo review hardcoded timeout.
  * @param priv private hardware data
  * @param id target sensor id
  * @param tclone optional location to copy the sensor temperature.

@@ -21,6 +21,8 @@
  * in time where all the alarms are fully collected before being deleted. This
  * happens in alarms_run(). alarms_count() and alarms_last_msg() are provided
  * for convenience but should only be used immediately before alarms_run().
+ * The other inconvenient is that spurious alarms (that happen once and go away)
+ * will be reported. Then again, those /should not/ happen in the first place.
  *
  * @todo implement a notifier (exec() some external script?)
  */
