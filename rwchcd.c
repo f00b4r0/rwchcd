@@ -12,7 +12,6 @@
  
  @author Thibaut VARENE
  @date 2016-2018
- @copyright GPLv2
  
  Copyright: (C) 2016-2018 Thibaut VARENE
  
