@@ -65,6 +65,7 @@ int heatsource_online(struct s_heatsource * const heat)
  */
 int heatsource_offline(struct s_heatsource * const heat)
 {
+	bool online;
 	int ret = -ENOTIMPLEMENTED;
 
 	if (!heat)
@@ -73,7 +74,10 @@ int heatsource_offline(struct s_heatsource * const heat)
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
-	heat->run.runmode = RM_OFF;
+	// reset runtime data while preserving online status
+	online = heat->run.online;
+	memset(&heat->run, 0x0, sizeof(heat->run));
+	heat->run.online = online;
 
 	if (heat->cb.offline)
 		ret = heat->cb.offline(heat);

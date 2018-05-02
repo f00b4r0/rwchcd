@@ -132,23 +132,18 @@ static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active
  */
 int dhwt_offline(struct s_dhw_tank * const dhwt)
 {
+	bool online;
+
 	if (!dhwt)
 		return (-EINVALID);
 
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
-	// clear runtime data
-	dhwt->run.charge_on = false;
-	dhwt->run.recycle_on = false;
-	dhwt->run.force_on = false;
-	dhwt->run.legionella_on = false;
-	dhwt->run.charge_overtime = false;
-	dhwt->run.electric_mode = false;
-	dhwt->run.target_temp = 0;
-	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	dhwt->run.mode_since = 0;
-	dhwt->run.charge_yday = 0;
+	// clear runtime data while preserving online state
+	online = dhwt->run.online;
+	memset(&dhwt->run, 0x0, sizeof(dhwt->run));
+	dhwt->run.online = online;
 
 	dhwt_actuator_use(dhwt, false);
 

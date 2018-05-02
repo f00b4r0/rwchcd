@@ -183,9 +183,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	// reset integrals
-	reset_intg(&boiler->run.boil_itg);
-	reset_intg(&boiler->run.ret_itg);
+	// reset runtime
+	memset(&boiler->run, 0x0, sizeof(boiler->run));
 
 	hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
 	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);

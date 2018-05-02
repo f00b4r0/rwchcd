@@ -95,6 +95,9 @@ static int v_pi_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
+	if (!valve->priv)
+		return (-EMISCONFIGURED);
+
 	if (VA_PI != valve->set.algo)
 		return (-EMISCONFIGURED);
 
@@ -323,6 +326,9 @@ static int v_sapprox_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
+	if (!valve->priv)
+		return (-EMISCONFIGURED);
+
 	if (VA_SAPPROX != valve->set.algo)
 		return (-EMISCONFIGURED);
 
@@ -403,6 +409,9 @@ int valve_online(struct s_valve * const valve)
 
 	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
+
+	if (VA_NONE == valve->set.algo)
+		return (-EMISCONFIGURED);
 
 	if (!valve->set.ete_time)
 		return (-EMISCONFIGURED);
