@@ -12,7 +12,6 @@
  */
 
 #include <stdlib.h>	// calloc/free
-#include <assert.h>
 
 #include "pump.h"
 #include "hardware.h"
@@ -71,10 +70,8 @@ int pump_online(struct s_pump * restrict const pump)
  */
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state)
 {
-	assert(pump);
-
-	if (!pump->set.configured)
-		return (-ENOTCONFIGURED);
+	if (!pump)
+		return (-EINVALID);
 
 	if (!pump->run.online)
 		return (-EOFFLINE);
@@ -92,10 +89,8 @@ int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_
  */
 int pump_get_state(const struct s_pump * restrict const pump)
 {
-	assert(pump);
-
-	if (!pump->set.configured)
-		return (-ENOTCONFIGURED);
+	if (!pump)
+		return (-EINVALID);
 
 	if (!pump->run.online)
 		return (-EOFFLINE);
@@ -131,12 +126,10 @@ int pump_run(struct s_pump * restrict const pump)
 	time_t cooldown = 0;	// by default, no wait
 	int ret;
 
-	assert(pump);
+	if (!pump)
+		return (-EINVALID);
 
-	if (!pump->set.configured)
-		return (-ENOTCONFIGURED);
-
-	if (!pump->run.online)
+	if (!pump->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
 
 	// apply cooldown to turn off, only if not forced.

@@ -2,7 +2,7 @@
 //  dhwt.c
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -44,6 +44,8 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 	const struct s_runtime * restrict const runtime = runtime_get();
 	temp_t temp;
 	int ret = -EGENERIC;
+
+	assert(runtime);
 
 	if (!dhwt)
 		return (-EINVALID);
@@ -116,6 +118,8 @@ out:
  */
 static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active)
 {
+	assert(dhwt);
+
 	if (dhwt->feedpump)
 		dhwt->feedpump->run.dwht_use = active;
 
@@ -173,6 +177,8 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 {
 	int ret;
 
+	assert(dhwt);
+
 	if (dhwt->feedpump)
 		pump_set_state(dhwt->feedpump, OFF, FORCE);
 	if (dhwt->recyclepump)
@@ -205,12 +211,12 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	time_t limit;
 	int ret;
 
-	assert(dhwt);
+	assert(runtime);
 
-	if (!dhwt->set.configured)
-		return (-ENOTCONFIGURED);
+	if (!dhwt)
+		return (-EINVALID);
 
-	if (!dhwt->run.online)
+	if (!dhwt->run.online)	/// implies set.configured == true
 		return (-EOFFLINE);
 
 	switch (dhwt->run.runmode) {

@@ -2,7 +2,7 @@
 //  lib.c
 //  rwchcd
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -12,6 +12,7 @@
  */
 
 #include <math.h>	// roundf
+#include <assert.h>
 
 #include "rwchcd.h"
 #include "lib.h"
@@ -60,6 +61,8 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time,
 		      const temp_t tlow_jacket, const temp_t thigh_jacket)
 {
+	assert(intgrl);
+
 	intgrl->inuse = true;
 
 	if (!intgrl->last_time || !new_time)	// only compute integral over a finite domain

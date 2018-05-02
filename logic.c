@@ -51,6 +51,10 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	temp_t temp_trigger;
 
+	// input sanitization performed in logic_hcircuit()
+	assert(runtime);
+	assert(bmodel);
+
 	// check for summer switch off first
 	if (bmodel->run.summer) {
 		circuit->run.outhoff = true;
@@ -108,7 +112,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
  * @param circuit target circuit
  * @return exec status
  * @todo cleanup
- * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient... p36+)
+ * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient...)
  * @todo XXX TODO: ambient max delta shutdown; optim based on return temp
  * @todo XXX TODO: optimization with return temperature
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
@@ -117,18 +121,21 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
-	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
+	const struct s_bmodel * restrict bmodel;
 	enum e_runmode prev_runmode;
 	temp_t request_temp, diff_temp;
 	temp_t ambient_temp, ambient_delta = 0;
 	time_t elapsed_time, dtmin;
 	const time_t now = time(NULL);
 	bool can_fastcool;
-	
+
+	assert(runtime);
+
+	if (!circuit)
+		return (-EINVALID);
+
+	bmodel = circuit->bmodel;
 	assert(bmodel);
-	
-	if (!circuit->set.configured)
-		return (-ENOTCONFIGURED);
 	
 	if (!circuit->run.online)
 		return (-EOFFLINE);
@@ -329,11 +336,11 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	enum e_runmode prev_runmode;
 	temp_t target_temp, ltmin, ltmax;
 
-	assert(dhwt);
-	
-	if (!dhwt->set.configured)
-		return (-ENOTCONFIGURED);
-	
+	assert(runtime);
+
+	if (!dhwt)
+		return (-EINVALID);
+
 	if (!dhwt->run.online)
 		return (-EOFFLINE);
 	
@@ -421,11 +428,11 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	temp_t temp;
 	int ret = -ENOTIMPLEMENTED;
 	
-	assert(heat);
-	
-	if (!heat->set.configured)
-		return (-ENOTCONFIGURED);
-	
+	assert(runtime);
+
+	if (!heat)
+		return (-EINVALID);
+
 	if (!heat->run.online)
 		return (-EOFFLINE);
 

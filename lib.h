@@ -15,6 +15,7 @@
 #define rwchcd_lib_h
 
 #include <string.h>	// memset
+#include <assert.h>
 
 #include "rwchcd.h"
 
@@ -101,6 +102,7 @@ __attribute__((const, always_inline)) static inline int validate_temp(const temp
  */
 __attribute__((always_inline)) static inline void reset_intg(struct s_temp_intgrl * const intgrl)
 {
+	assert(intgrl);
 	if (intgrl->inuse)
 		memset(intgrl, 0x00, sizeof(*intgrl));
 }

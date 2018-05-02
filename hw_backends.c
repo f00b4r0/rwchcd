@@ -14,6 +14,7 @@
 #include <string.h>	// memset/strdup
 #include <stdlib.h>	// free
 #include <time.h>	// time_t
+#include <assert.h>
 
 #include "hw_backends.h"
 
@@ -28,6 +29,8 @@ static int hw_backends_bid_by_name(const char * const name)
 {
 	unsigned int id;
 	int ret = -ENOTFOUND;
+
+	assert(name);
 
 	for (id = 0; (id < ARRAY_SIZE(HW_backends) && HW_backends[id]); id++) {
 		if (!strcmp(HW_backends[id]->name, name)) {

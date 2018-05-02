@@ -119,6 +119,8 @@ static const struct s_bmodel * bmodels_fbn(const struct s_bmodel_l * const bmode
 	const struct s_bmodel_l * bml;
 	struct s_bmodel * bmodel = NULL;
 
+	assert(name);
+
 	for (bml = bmodels; bml; bml = bml->next) {
 		if (!strcmp(bml->bmodel->name, name)) {
 			bmodel = bml->bmodel;
@@ -138,6 +140,8 @@ static const struct s_bmodel * bmodels_fbn(const struct s_bmodel_l * const bmode
 static int bmodel_online(struct s_bmodel * restrict const bmodel)
 {
 	int ret;
+
+	assert(bmodel);
 
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
@@ -159,6 +163,8 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
  */
 static int bmodel_offline(struct s_bmodel * restrict const bmodel)
 {
+	assert(bmodel);
+
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
 
@@ -339,6 +345,8 @@ static void models_restore(struct s_models * restrict const models)
 {
 	struct s_bmodel_l * restrict bmodelelmt;
 
+	assert(models);
+
 	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
 		bmodel_restore(bmodelelmt->bmodel);
 }
@@ -350,6 +358,8 @@ static void models_restore(struct s_models * restrict const models)
 static void models_save(const struct s_models * restrict const models)
 {
 	struct s_bmodel_l * restrict bmodelelmt;
+
+	assert(models);
 
 	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
 		bmodel_save(bmodelelmt->bmodel);

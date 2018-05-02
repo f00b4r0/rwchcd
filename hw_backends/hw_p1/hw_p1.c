@@ -270,6 +270,7 @@ static void hw_p1_parse_temps(void)
  */
 int hw_p1_save_relays(void)
 {
+	assert(Hardware.run.online);
 	return (storage_dump("hw_p1_relays", &Hardware_sversion, Hardware.Relays, sizeof(Hardware.Relays)));
 }
 
@@ -320,6 +321,9 @@ int hw_p1_async_log_temps(void)
 	};
 	static storage_values_t values[ARRAY_SIZE(keys)];
 	int i = 0;
+
+	if (!Hardware.run.online)
+		return (-EOFFLINE);
 
 	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
 
@@ -384,8 +388,7 @@ int hw_p1_hwconfig_commit(void)
 	struct rwchc_s_settings hw_set;
 	int ret;
 	
-	if (!Hardware.run.initialized)
-		return (-EOFFLINE);
+	assert(Hardware.run.initialized);
 
 	// prepare hardware settings.deffail data
 	hw_p1_rwchcsettings_deffail();

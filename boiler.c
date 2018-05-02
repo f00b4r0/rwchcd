@@ -12,6 +12,7 @@
  */
 
 #include <stdlib.h>	// calloc/free
+#include <string.h>	// memset
 #include <assert.h>
 
 #include "boiler.h"
@@ -32,6 +33,8 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 {
 	int ret;
 
+	assert(boiler);
+
 	// check that mandatory sensors are working
 	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, NULL);
 	if (ALL_OK != ret)
@@ -42,14 +45,14 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 
 /**
  * Create a new boiler.
- * Will set some sane defaults for:
+ * @return pointer to the created boiler
+ * @note Will set some sane defaults for:
  * - hysteresis: 6K
  * - limit_tmin: 10C
  * - limit_tmax: 90C
  * - limit_thardmax: 100C
  * - t_freeze: 5C
  * - burner_min_time: 4mn
- * @return pointer to the created boiler
  */
 static struct s_boiler_priv * boiler_new(void)
 {
@@ -127,8 +130,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	const struct s_boiler_priv * const boiler = heat->priv;
 	int ret;
 
-	assert(HS_BOILER == heat->set.type);
-	assert(boiler);
+	if ((HS_BOILER != heat->set.type) || !boiler)
+		return (-EINVALID);
 
 	// check that mandatory sensors are set
 	ret = hardware_sensor_clone_time(boiler->set.tid_boiler, NULL);
@@ -201,6 +204,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
  */
 static void boiler_failsafe(struct s_boiler_priv * const boiler)
 {
+	assert(boiler);
+
 	// reset integrals
 	reset_intg(&boiler->run.boil_itg);
 	reset_intg(&boiler->run.ret_itg);
@@ -222,6 +227,8 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 {
 	temp_t boilertemp;
+
+	assert(boiler);
 
 	hardware_sensor_clone_temp(boiler->set.tid_boiler, &boilertemp);
 	// antifreeze() is called after runchecklist(), the above can't fail
@@ -506,7 +513,7 @@ int boiler_heatsource(struct s_heatsource * const heat)
 	if (!heat)
 		return (-EINVALID);
 
-	if (heat->priv)
+	if ((HS_NONE != heat->set.type) || (heat->priv))
 		return (-EEXISTS);
 
 	heat->priv = boiler_new();

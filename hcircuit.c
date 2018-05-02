@@ -91,13 +91,15 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	temp_t temp;
 	int ret;
 
+	assert(runtime);
+
 	if (!circuit)
 		return (-EINVALID);
 
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!circuit->bmodel)
+	if (!circuit->bmodel || !circuit->templaw)
 		return (-EMISCONFIGURED);
 
 	// check that mandatory sensors are set
@@ -167,6 +169,7 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
  */
 static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
 {
+	assert(circuit);
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	valve_reqclose_full(circuit->valve);
 	if (circuit->pump)
@@ -191,12 +194,12 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	bool interference = false;
 	int ret;
 
-	assert(circuit);
+	assert(runtime);
 
-	if (!circuit->set.configured)
-		return (-ENOTCONFIGURED);
+	if (!circuit)
+		return (-EINVALID);
 
-	if (!circuit->run.online)
+	if (!circuit->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
 
 	// handle special runmode cases

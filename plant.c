@@ -46,6 +46,9 @@ struct s_pump * plant_fbn_pump(struct s_plant * restrict const plant, const char
 	const struct s_pump_l * restrict pumpl;
 	struct s_pump * restrict pump = NULL;
 
+	if (!plant || !name)
+		return (NULL);
+
 	for (pumpl = plant->pump_head; pumpl; pumpl = pumpl->next) {
 		if (!strcmp(pumpl->pump->name, name)) {
 			pump = pumpl->pump;
@@ -121,6 +124,9 @@ struct s_valve * plant_fbn_valve(struct s_plant * restrict const plant, const ch
 {
 	const struct s_valve_l * restrict valvel;
 	struct s_valve * restrict valve = NULL;
+
+	if (!plant || !name)
+		return (NULL);
 
 	for (valvel = plant->valve_head; valvel; valvel = valvel->next) {
 		if (!strcmp(valvel->valve->name, name)) {
@@ -198,6 +204,9 @@ struct s_hcircuit * plant_fbn_circuit(struct s_plant * restrict const plant, con
 	const struct s_heating_circuit_l * restrict circuitl;
 	struct s_hcircuit * restrict circuit = NULL;
 
+	if (!plant || !name)
+		return (NULL);
+
 	for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
 		if (!strcmp(circuitl->circuit->name, name)) {
 			circuit = circuitl->circuit;
@@ -274,6 +283,9 @@ struct s_dhw_tank * plant_fbn_dhwt(struct s_plant * restrict const plant, const 
 	const struct s_dhw_tank_l * restrict dhwtl;
 	struct s_dhw_tank * restrict dhwt = NULL;
 
+	if (!plant || !name)
+		return (NULL);
+
 	for (dhwtl = plant->dhwt_head; dhwtl; dhwtl = dhwtl->next) {
 		if (!strcmp(dhwtl->dhwt->name, name)) {
 			dhwt = dhwtl->dhwt;
@@ -349,6 +361,9 @@ struct s_heatsource * plant_fbn_heatsource(struct s_plant * restrict const plant
 {
 	const struct s_heatsource_l * restrict sourcel;
 	struct s_heatsource * restrict source = NULL;
+
+	if (!plant || !name)
+		return (NULL);
 
 	for (sourcel = plant->heats_head; sourcel; sourcel = sourcel->next) {
 		if (!strcmp(sourcel->heats->name, name)) {
@@ -711,6 +726,7 @@ static void plant_collect_hrequests(const struct s_plant * restrict const plant)
 	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false;
 
 	assert(plant);
+	assert(runtime);
 
 	// for consummers in runtime scheme, collect heat requests and max them
 	// circuits first
@@ -781,6 +797,8 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 	struct s_heating_circuit_l * circuitl;
 	bool summer = true;
 
+	assert(plant);
+
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		if (!circuitl->circuit->run.online)
 			continue;
@@ -812,6 +830,7 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 	int ret;
 
 	assert(plant);
+	assert(runtime);
 
 	// don't do anything if summer AND plant asleep aren't in effect
 	if (!(plant_summer_ok(plant) && runtime->plant_could_sleep))
@@ -876,7 +895,10 @@ int plant_run(struct s_plant * restrict const plant)
 	bool suberror = false;
 	time_t stop_delay = 0;
 
-	assert(plant);
+	assert(runtime);
+
+	if (!plant)
+		return (-EINVALID);
 	
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);

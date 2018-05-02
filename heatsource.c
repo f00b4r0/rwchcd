@@ -12,6 +12,7 @@
  */
 
 #include <stdlib.h>	// calloc/free
+#include <string.h>	// memset
 #include <assert.h>
 
 #include "heatsource.h"
@@ -93,12 +94,10 @@ int heatsource_offline(struct s_heatsource * const heat)
  */
 int heatsource_run(struct s_heatsource * const heat)
 {
-	assert(heat);
+	if (!heat)
+		return (-EINVALID);
 
-	if (!heat->set.configured)
-		return (-ENOTCONFIGURED);
-
-	if (!heat->run.online)
+	if (!heat->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
 
 	if (heat->cb.run)

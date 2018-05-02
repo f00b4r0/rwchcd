@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #include "lib.h"
 #include "filecfg.h"
@@ -21,6 +22,8 @@
 
 static void config_dump(const struct s_hw_p1_pdata * restrict const hw, FILE * restrict file, unsigned int il)
 {
+	assert(hw && file);
+
 	tfprintf(file, il, "config {\n");
 	il++;
 
@@ -37,6 +40,8 @@ static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw, FILE * 
 	const struct s_hw_p1_sensor * sensor;
 	const char * type;
 	int_fast8_t id;
+
+	assert(hw && file);
 
 	tfprintf(file, il, "sensors {\n");
 	il++;
@@ -75,6 +80,8 @@ static void relays_dump(const struct s_hw_p1_pdata * restrict const hw, FILE * r
 {
 	const struct s_hw_p1_relay * relay;
 	uint_fast8_t id;
+
+	assert(hw && file);
 
 	tfprintf(file, il, "relays {\n");
 	il++;

@@ -72,7 +72,8 @@ int valve_reqstop(struct s_valve * const valve)
  */
 int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 {
-	assert(valve);
+	if (!valve)
+		return (-EINVALID);
 
 	if (abs(perth) < valve->set.deadband)
 		return (-EDEADBAND);
@@ -153,7 +154,7 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	int ret;
 	time_t Ti;
 
-	assert(vpriv);
+	assert(vpriv);	// checked in online()
 
 	// sample window
 	if (dt < vpriv->set.sample_intvl)
@@ -355,7 +356,7 @@ static int v_sapprox_control(struct s_valve * const valve, const temp_t target_t
 	temp_t tempout;
 	int ret;
 
-	assert(vpriv);
+	assert(vpriv);	// checked in online()
 
 	// handle reset
 	if (valve->run.ctrl_reset) {
@@ -464,7 +465,8 @@ int valve_offline(struct s_valve * const valve)
  */
 int valve_logic(struct s_valve * const valve)
 {
-	assert(valve);
+	if (!valve)
+		return (-EINVALID);
 
 	if (!valve->run.online)
 		return (-EOFFLINE);
@@ -503,12 +505,19 @@ int valve_logic(struct s_valve * const valve)
 int valve_run(struct s_valve * const valve)
 {
 	const time_t now = time(NULL);
-	const time_t dt = now - valve->run.last_run_time;
-	const float perth_ps = 1000.0F/valve->set.ete_time;	// ‰ position change per second
+	time_t dt;
+	float perth_ps;	// ‰ position change per second
 	int_fast16_t course;
 	int ret = ALL_OK;
 
-	assert(valve);
+	if (!valve)
+		return (-EINVALID);
+
+	if (!valve->run.online)
+		return (-EOFFLINE);
+
+	dt = now - valve->run.last_run_time;
+	perth_ps = 1000.0F/valve->set.ete_time;
 
 	valve->run.last_run_time = now;
 
@@ -600,6 +609,9 @@ int valve_make_bangbang(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
+	if (VA_NONE != valve->set.algo)
+		return (-EEXISTS);
+
 	valve->cb.online = v_bangbang_online;
 	valve->cb.control = v_bangbang_control;
 	valve->set.algo = VA_BANGBANG;
@@ -624,7 +636,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 	if (!valve)
 		return (-EINVALID);
 
-	if (valve->priv)
+	if ((VA_NONE != valve->set.algo) || (valve->priv))
 		return (-EEXISTS);
 
 	if (amount > 100)
@@ -671,7 +683,7 @@ int valve_make_pi(struct s_valve * const valve,
 	if (!valve)
 		return (-EINVALID);
 
-	if (valve->priv)
+	if ((VA_NONE != valve->set.algo) || (valve->priv))
 		return (-EEXISTS);
 
 	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0) || (t_factor <= 0))
