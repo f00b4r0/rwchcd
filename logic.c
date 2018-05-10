@@ -2,7 +2,7 @@
 //  logic.c
 //  rwchcd
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -34,14 +34,14 @@
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
  * Circuit is off in ANY of the following conditions are met:
  * - building model summer is true
- * - t_out_60 > current temp_trigger
+ * - t_out > current temp_trigger
  * - t_out_mix > current temp_trigger
- * - t_out_att > current temp_trigger
  * Circuit is back on if ALL of the following conditions are met:
  * - building model summer is false
- * - t_out_60 < current temp_trigger - outhoff_hysteresis
+ * - t_out < current temp_trigger - outhoff_hysteresis
  * - t_out_mix < current temp_trigger - outhoff_hysteresis
- * - t_out_att < current temp_trigger - outhoff_hysteresis
+ * Using t_out_mix instead of raw t_out_filt will make it possible to "weigh" the
+ * influence of the building time constant per circuit (assuming a different t_out_mix ratio).
  * State is preserved in all other cases
  * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
@@ -89,15 +89,13 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 	}
 
 	if ((bmodel->run.t_out > temp_trigger) ||
-	    (bmodel->run.t_out_mix > temp_trigger) ||
-	    (bmodel->run.t_out_att > temp_trigger)) {
+	    (bmodel->run.t_out_mix > temp_trigger)) {
 		circuit->run.outhoff = true;
 	}
 	else {
 		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, runtime->config->def_hcircuit.outhoff_hysteresis);
 		if ((bmodel->run.t_out < temp_trigger) &&
-		    (bmodel->run.t_out_mix < temp_trigger) &&
-		    (bmodel->run.t_out_att < temp_trigger))
+		    (bmodel->run.t_out_mix < temp_trigger))
 			circuit->run.outhoff = false;
 	}
 }
