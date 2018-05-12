@@ -212,7 +212,7 @@ static int configure_hw()
 static int configure_runtime(struct s_config * restrict config)
 {
 	if (!config->restored) {
-		config_set_tsummer(config, celsius_to_temp(18));	// XXX summer switch at 18C
+		config_set_tsummer(config, celsius_to_temp(19));	// XXX summer switch at 19C
 		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
 		config->summer_maintenance = true;	// enable summer maintenance
 		config->sleeping_delay = 1 * 24 * 60 * 60;	// XXX 1 day
