@@ -25,7 +25,7 @@ struct s_models {
 
 /** List of building models */
 struct s_bmodel_l {
-	uint_fast8_t id;
+	uint_fast8_t id;		///< unique incremental numeric id of the current bmodel (0 <= id < bmodels_n)
 	struct s_bmodel * restrict bmodel;
 	struct s_bmodel_l * next;
 };
@@ -43,9 +43,9 @@ struct s_bmodel {
 		bool frost;		///< true if frost conditions are met
 		time_t t_out_ltime;	///< last update time for t_out
 		time_t t_out_faltime;	///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
-		temp_t t_out;		///< current outdoor temperature
-		temp_t t_out_filt;	///< t_outdoor filtered by bmodel time constant
-		temp_t t_out_mix;	///< mixed outdoor temperature (average of t_outdoor and t_filtered: the moving average of t_outdoor with tau)
+		temp_t t_out;		///< current outdoor temperature (smoothed over 60s)
+		temp_t t_out_filt;	///< t_outdoor filtered by bmodel time constant (moving average of t_outdoor with tau)
+		temp_t t_out_mix;	///< mixed outdoor temperature (average of t_outdoor and t_filtered)
 		temp_t t_out_att;	///< attenuated outdoor temperature (moving average of t_filtered with tau: double filter on t_outdoor)
 	} run;
 	char * restrict name;		///< name for this bmodel
