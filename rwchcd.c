@@ -125,7 +125,8 @@ static pthread_barrier_t barr_main;
 
 /**
  * Daemon signal handler.
- * Handles SIGINT and SIGTERM for graceful shutdown.
+ * - SIGINT, SIGTERM: graceful shutdown.
+ * - SIGUSR1: configuration dump.
  * @param signum signal to handle.
  */
 static void sig_handler(int signum)
@@ -138,6 +139,9 @@ static void sig_handler(int signum)
 #else
 			Sem_master_thread = false;
 #endif
+			break;
+		case SIGUSR1:
+			filecfg_dump();
 			break;
 		default:
 			break;
@@ -771,7 +775,8 @@ int main(void)
 	saction.sa_flags = SA_RESETHAND; // reset default handler after first call
 	sigaction(SIGINT, &saction, NULL);
 	sigaction(SIGTERM, &saction, NULL);
-	
+	sigaction(SIGUSR1, &saction, NULL);
+
 	create_schedule();
 
 #ifdef HAS_DBUS
