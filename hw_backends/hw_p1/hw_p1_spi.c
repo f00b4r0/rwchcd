@@ -302,12 +302,16 @@ int hw_p1_spi_peripherals_r(union rwchc_u_periphs * const periphs)
 		return (-ESPI);
 
 	byte = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
-	if (6 == FWversion)
+	if (6 <= FWversion)
 		if (!SPI_ASSERT(~byte, ~RWCHC_SPIC_PERIPHSR))
 			ret = -ESPI;
 
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
-		ret = -ESPI;
+	if (6 == FWversion)
+		SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);	// broken firmware result not checked
+	else {
+		if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
+			ret = -ESPI;
+	}
 
 	if (ALL_OK == ret)
 		periphs->BYTE = byte;
