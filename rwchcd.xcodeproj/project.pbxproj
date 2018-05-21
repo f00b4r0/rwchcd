@@ -105,7 +105,7 @@
 		4FC68961207176F800A3A065 /* hw_p1_spi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hw_p1_spi.c; sourceTree = "<group>"; };
 		4FC68962207176F800A3A065 /* hw_p1_spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hw_p1_spi.h; sourceTree = "<group>"; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
-		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchc_export.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = rwchc_export.h; path = hw_backends/hw_p1/rwchc_export.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD55101D835D04003BB848 /* plant.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = plant.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4FCD55111D835D04003BB848 /* plant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = plant.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD55141D835D04003BB848 /* rwchcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -126,6 +126,7 @@
 		4F99FD24208B7E5800DDAB75 /* hw_p1 */ = {
 			isa = PBXGroup;
 			children = (
+				4FCD550D1D835D04003BB848 /* rwchc_export.h */,
 				4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */,
 				4F99FD26208B7F0F00DDAB75 /* hw_p1_backend.h */,
 				4F99FD28208BBE0000DDAB75 /* hw_p1_setup.c */,
@@ -170,7 +171,6 @@
 			isa = PBXGroup;
 			children = (
 				4F2F7F6A1DDF1DD80095AAEE /* README */,
-				4FCD550D1D835D04003BB848 /* rwchc_export.h */,
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4FC6895C207176F800A3A065 /* hw_backends */,
 				4FC689522071304900A3A065 /* hw_backends.c */,
@@ -231,7 +231,7 @@
 			buildConfigurationList = 4FCD54F41D835C0B003BB848 /* Build configuration list for PBXLegacyTarget "rwchcd" */;
 			buildPhases = (
 			);
-			buildToolPath = /usr/bin/true;
+			buildToolPath = /usr/bin/make;
 			buildWorkingDirectory = "";
 			dependencies = (
 			);
