@@ -485,30 +485,30 @@ int hw_p1_calibrate(void)
 
 /**
  * Read all temperature sensors.
- * This function will read all sensors (up to Hardware.settings.nsensors) and if
- * no error occurs:
- * - The values will be copied to #Hardware.sensors,
+ * This function will read all sensors (up to Hardware.settings.nsensors) into
+ * Hardware.sensors and if no error occurs:
  * - Hardware.run.sensors_ftime will be updated
  * - Raw values from Hardware.sensors are processed to atomically update #Hardware.Sensors
  * otherwise these fields remain unchanged.
  * @return exec status
- * @warning #Hardware.settings.nsensors must be set prior to calling this function
+ * @warning #Hardware.settings.nsensors must be set prior to calling this function.
+ * @note calling hw_p1_parse_temps() in the success code path is a design choice that
+ * ensures a consistent view of system temperatures:
+ * either all values are updated coherently or none are.
  */
 int hw_p1_sensors_read(void)
 {
-	static typeof (Hardware.sensors) tempsensors;
 	int_fast8_t sensor;
 	int ret = ALL_OK;
 	
 	assert(Hardware.run.online);
 
 	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
-		ret = hw_p1_spi_sensor_r(tempsensors, sensor);
+		ret = hw_p1_spi_sensor_r(Hardware.sensors, sensor);
 		if (ret)
 			goto out;
 	}
 
-	memcpy(Hardware.sensors, tempsensors, sizeof(Hardware.sensors));
 	Hardware.run.sensors_ftime = time(NULL);
 
 	hw_p1_parse_temps();
