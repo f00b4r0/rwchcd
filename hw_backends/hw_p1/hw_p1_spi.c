@@ -285,8 +285,7 @@ int hw_p1_spi_lcd_bl_w(const uint8_t percent)
 /**
  * Read peripheral states.
  * Delay: none
- * @note will not update the target pointer if a transmission error 
- * @param periphs pointer to struct whose values will be populated to match current states
+ * @param periphs pointer to struct whose values will be populated to match current states if no error occurs
  * @return error code
  */
 int hw_p1_spi_peripherals_r(union rwchc_u_periphs * const periphs)
@@ -351,12 +350,13 @@ int hw_p1_spi_peripherals_w(const union rwchc_u_periphs * const periphs)
 /**
  * Read relay states.
  * Delay: none
- * @param relays pointer to struct whose values will be populated to match current states
+ * @param relays pointer to struct whose values will be populated to match current states if no error occurs
  * @return error code
  */
 int hw_p1_spi_relays_r(union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
+	uint8_t lowb, highb;
 
 	assert(relays);
 
@@ -365,14 +365,19 @@ int hw_p1_spi_relays_r(union rwchc_u_relays * const relays)
 	if (!spitout)
 		return (-ESPI);
 
-	relays->LOWB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
-	relays->HIGHB = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	lowb = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	highb = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
 
-	if (!SPI_ASSERT((relays->LOWB^relays->HIGHB), ~RWCHC_SPIC_RELAYRL))
+	if (!SPI_ASSERT((lowb^highb), ~RWCHC_SPIC_RELAYRL))
 		ret = -ESPI;
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRL))
 		ret = -ESPI;
+
+	if (ALL_OK == ret) {
+		relays->LOWB = lowb;
+		relays->HIGHB = highb;
+	}
 
 	return (ret);
 }
@@ -422,15 +427,15 @@ int hw_p1_spi_relays_w(const union rwchc_u_relays * const relays)
 /**
  * Read a single sensor value.
  * Delay: none
- * @param tsensors pointer to target sensor array whose value will be updated regardless of errors
+ * @param tsensors pointer to target sensor array whose value will be updated if no error occurs
  * @param sensor target sensor number to be read
  * @return error code
- * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  * @warning no check is performed on the size of the provided tsensors array
  */
-int hw_p1_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
+int hw_p1_spi_sensor_r(rwchc_sensor_t tsensors[], const uint8_t sensor)
 {
 	int ret;
+	uint16_t tsval;
 	
 	assert(tsensors);
 
@@ -447,31 +452,35 @@ int hw_p1_spi_sensor_r(uint16_t tsensors[], const uint8_t sensor)
 	 * the loop even if there is a mistransfer, since the firmware expects
 	 * a full transfer regardless of errors. */
 	ret = ALL_OK;
-	
-	tsensors[sensor] = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
-	tsensors[sensor] |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
-	if ((tsensors[sensor] & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
+	tsval = 0;
+	tsval |= SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
+	tsval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+
+	if ((tsval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
 		ret = -ESPI;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, sensor))
 		ret = -ESPI;
-	
+
+	if (ALL_OK == ret)
+		tsensors[sensor] = tsval;
+
 	return ret;
 }
 
 /**
  * Read a single reference value.
  * Delay: none
- * @param refval pointer to target reference whose value will be updated
+ * @param refval pointer to target reference whose value will be updated if no error occurs
  * @param refn target reference number to be read (0 or 1)
  * @return error code
- * @note not using rwchc_sensor_t here so that we get a build warning if the type changes
  */
-int hw_p1_spi_ref_r(uint16_t * const refval, const uint8_t refn)
+int hw_p1_spi_ref_r(rwchc_sensor_t * const refval, const uint8_t refn)
 {
 	int ret;
 	uint8_t cmd;
+	uint16_t value;
 
 	assert(refval);
 	
@@ -494,14 +503,18 @@ int hw_p1_spi_ref_r(uint16_t * const refval, const uint8_t refn)
 	/* same logic as hw_p1_spi_sensor_r() */
 	ret = ALL_OK;
 
-	*refval = SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
-	*refval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+	value = 0;
+	value |= SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
+	value |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
 		ret = -ESPI;
 
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
 		ret = -ESPI;
+
+	if (ALL_OK == ret)
+		*refval = value;
 
 	return ret;
 }
