@@ -362,7 +362,7 @@ static const char * hw_p1_temp_to_str(const sid_t tempid)
 		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
 	else {
 		celsius = temp_to_celsius(temp);
-		snprintf(snpbuf+3, 7, "%5.1fC", celsius);	// handles rounding
+		snprintf(snpbuf+3, 7, "%3.0f C ", celsius);	// handles rounding
 	}
 
 	return (&snpbuf);
