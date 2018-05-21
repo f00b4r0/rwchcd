@@ -446,7 +446,8 @@ int hw_p1_calibrate(void)
 		return (ALL_OK);
 
 	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.run.calib_nodac, Hardware.run.calib_dac);
-	
+
+	ref = 0;
 	ret = hw_p1_spi_ref_r(&ref, 0);
 	if (ret)
 		return (ret);
@@ -460,6 +461,7 @@ int hw_p1_calibrate(void)
 	else
 		return (-EINVALID);
 
+	ref = 0;
 	ret = hw_p1_spi_ref_r(&ref, 1);
 	if (ret)
 		return (ret);
