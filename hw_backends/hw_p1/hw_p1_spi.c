@@ -601,7 +601,7 @@ int hw_p1_spi_settings_s(void)
  */
 int hw_p1_spi_reset(void)
 {
-	const uint8_t trig[] = RWCHC_RESET_TRIGGER;
+	static const uint8_t trig[] = RWCHC_RESET_TRIGGER;
 	unsigned int i;
 	int ret = ALL_OK;
 

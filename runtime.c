@@ -79,7 +79,7 @@ static int runtime_restore(void)
 static int runtime_async_log(void)
 {
 	const storage_version_t version = 5;
-	static storage_keys_t keys[] = {
+	static const storage_keys_t keys[] = {
 		"systemmode",
 		"runmode",
 		"dhwmode",

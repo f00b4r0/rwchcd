@@ -41,7 +41,7 @@ struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
 static void hw_p1_relays_log(void)
 {
 	const storage_version_t version = 1;
-	static storage_keys_t keys[] = {
+	static const storage_keys_t keys[] = {
 		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "R1", "R2",
 	};
 	static storage_values_t values[ARRAY_SIZE(keys)];
@@ -73,7 +73,7 @@ static void hw_p1_relays_log(void)
  */
 __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 {
-	const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
+	static const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
 	uint_fast16_t value, dacoffset;
 	float calibmult;
 
@@ -316,7 +316,7 @@ int hw_p1_restore_relays(void)
 int hw_p1_async_log_temps(void)
 {
 	const storage_version_t version = 2;
-	static storage_keys_t keys[] = {
+	static const storage_keys_t keys[] = {
 		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
 	};
 	static storage_values_t values[ARRAY_SIZE(keys)];
