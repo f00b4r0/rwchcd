@@ -529,7 +529,7 @@ static int filecfg_hcircuit_params_dump(FILE * restrict const file, unsigned int
 	tfprintf(file, il, "t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
 	tfprintf(file, il, "t_eco %.1f;\n", temp_to_celsius(params->t_eco));
 	tfprintf(file, il, "t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
-	tfprintf(file, il, "t_offset %.1f;\n", temp_to_celsius(params->t_offset));
+	tfprintf(file, il, "t_offset %.1f;\n", temp_to_deltaK(params->t_offset));
 
 	tfprintf(file, il, "outhoff_comfort %.1f;\n", temp_to_celsius(params->outhoff_comfort));
 	tfprintf(file, il, "outhoff_eco %.1f;\n", temp_to_celsius(params->outhoff_eco));
