@@ -149,6 +149,7 @@ int hw_p1_setup_sensor_deconfigure(const sid_t id)
  * @param failstate the state assumed by the hardware relay in standalone failover (controlling software failure)
  * @param name @b unique user-defined name for this relay (string will be copied locally)
  * @return exec status
+ * @note sets relay's run.off_since
  */
 int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char * const name)
 {
@@ -174,7 +175,7 @@ int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char *
 	// register failover state
 	hw->Relays[id-1].set.failstate = failstate;
 
-	hw->Relays[id-1].run.off_since = time(NULL);	// XXX hack
+	hw->Relays[id-1].run.off_since = time(NULL);	// relay is by definition OFF since "now"
 
 	hw->Relays[id-1].set.configured = true;
 

@@ -278,6 +278,10 @@ int hw_p1_save_relays(void)
  * Restore hardware relays state from permanent storage.
  * Restores cycles and on/off total time counts for all relays.
  * @return exec status
+ * @note Each relay is "restored" in OFF state (due to initialization in
+ * hw_p1_setup_new()). When restoring relays we must:
+ * - account for elapsed time in last known state (at save time)
+ * - restore off_since to either the saved value or to the current time (if relay was last ON)
  */
 int hw_p1_restore_relays(void)
 {
@@ -294,10 +298,15 @@ int hw_p1_restore_relays(void)
 			return (-EMISMATCH);
 
 		for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
-			if (relayptr->run.is_on)	// account for last known state_time
+			// handle saved state (see @note)
+			if (relayptr->run.is_on) {
 				Hardware.Relays[i].run.on_tottime += relayptr->run.state_time;
-			else
+				Hardware.Relays[i].run.off_since = time(NULL);	// off since "now"
+			}
+			else {
 				Hardware.Relays[i].run.off_tottime += relayptr->run.state_time;
+				Hardware.Relays[i].run.off_since = relayptr->run.off_since;
+			}
 			Hardware.Relays[i].run.on_tottime += relayptr->run.on_tottime;
 			Hardware.Relays[i].run.off_tottime += relayptr->run.off_tottime;
 			Hardware.Relays[i].run.cycles += relayptr->run.cycles;
