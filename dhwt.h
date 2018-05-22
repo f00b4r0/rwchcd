@@ -21,6 +21,7 @@ struct s_dhw_tank {
 	struct {
 		bool configured;		///< if true, DHWT is properly configured
 		bool electric_failover;		///< if true, if none of the DHWT sensors are working the electric self-heating relay will be turned on in all active modes
+		bool anti_legionella;		///< if true, anti-legionella heat charge is allowed for this DHWT
 		bool legionella_recycle;	///< if true, recycle pump will be turned on during anti-legionella heat charge
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
