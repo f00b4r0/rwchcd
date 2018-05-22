@@ -731,6 +731,9 @@ static void plant_collect_hrequests(const struct s_plant * restrict const plant)
 	// for consummers in runtime scheme, collect heat requests and max them
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		if (!circuitl->circuit->run.online)
+			continue;
+
 		temp = circuitl->circuit->run.heat_request;
 		temp_request = (temp > temp_request) ? temp : temp_request;
 		if (RWCHCD_TEMP_NOREQUEST != temp)
@@ -745,6 +748,9 @@ static void plant_collect_hrequests(const struct s_plant * restrict const plant)
 
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
+		if (!dhwtl->dhwt->run.online)
+			continue;
+
 		temp = dhwtl->dhwt->run.heat_request;
 		temp_req_dhw = (temp > temp_req_dhw) ? temp : temp_req_dhw;
 
@@ -851,6 +857,9 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 
 	// open all valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
+		if (!valvel->valve->run.online)
+			continue;
+
 		if (valvel->valve->run.dwht_use)
 			continue;	// don't touch DHWT valves when in use
 
@@ -862,6 +871,9 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 
 	// set all pumps ON
 	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
+		if (!pumpl->pump->run.online)
+			continue;
+
 		if (pumpl->pump->run.dwht_use)
 			continue;	// don't touch DHWT pumps when in use
 
@@ -1040,3 +1052,4 @@ int plant_run(struct s_plant * restrict const plant)
 	else
 		return (ALL_OK);
 }
+
