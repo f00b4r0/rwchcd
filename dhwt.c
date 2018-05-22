@@ -337,8 +337,8 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		// untrip conditions
 		test = false;
 
-		// in non-electric mode: if heating gone overtime, untrip
-		if (!dhwt->run.electric_mode) {
+		// in non-electric mode and no legionella charge: if heating gone overtime, untrip
+		if (!dhwt->run.electric_mode && !dhwt->run.legionella_on) {
 			limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
 			if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
 				test = true;
