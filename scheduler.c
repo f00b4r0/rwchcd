@@ -2,7 +2,7 @@
 //  scheduler.c
 //  rwchcd
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2018 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -22,6 +22,7 @@
 #include <pthread.h>
 
 #include "runtime.h"
+#include "plant.h"
 #include "scheduler.h"
 
 /** A schedule item for a given day. */
@@ -30,6 +31,7 @@ struct s_schedule {
 	int tm_min;		///< minute for this schedule	(0 - 59)
 	enum e_runmode runmode;	///< target runmode. @note Invalid runmode could be used to leave the current mode unchanged
 	enum e_runmode dhwmode;	///< target dhwmode. @note Invalid dhwmode could be used to leave the current mode unchanged
+	bool legionella;	///< true if legionella heat charge is requested
 	struct s_schedule * next;
 };
 
@@ -43,6 +45,7 @@ static struct s_schedule * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NU
  * future, which leaves us with the last valid run/dhw modes in the variables.
  * @bug if the first schedule of the day has either runmode OR dhwmode set to
  * RM_UNKNOWN, the function will not look back to find the correct mode.
+ * @warning legionella trigger is run lockless
  * @return exec status
  */
 static int scheduler_now(void)
@@ -57,6 +60,7 @@ static int scheduler_now(void)
 	const int tm_wday_start = tm_wday;
 	enum e_runmode runmode, dhwmode, rt_runmode, rt_dhwmode;
 	enum e_systemmode rt_sysmode;
+	bool legionella;
 	bool found = false;
 
 	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
@@ -70,6 +74,7 @@ static int scheduler_now(void)
 
 	// start from invalid mode (prevents spurious change with runtime_set_*())
 	runmode = dhwmode = RM_UNKNOWN;
+	legionella = false;
 	
 restart:
 	sch = Schedule_week[tm_wday];
@@ -81,6 +86,7 @@ restart:
 				runmode = sch->runmode;
 			if (RM_UNKNOWN != sch->dhwmode)
 				dhwmode = sch->dhwmode;
+			legionella = sch->legionella;
 			sch = sch->next;
 			found = true;
 			continue;
@@ -91,6 +97,7 @@ restart:
 					runmode = sch->runmode;
 				if (RM_UNKNOWN != sch->dhwmode)
 					dhwmode = sch->dhwmode;
+				legionella = sch->legionella;
 				sch = sch->next;
 				found = true;
 				continue;
@@ -127,7 +134,9 @@ restart:
 		runtime_set_runmode(runmode);
 		pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	}
-	
+	if (legionella)
+		plant_dhwt_legionella_trigger(runtime->plant);	// XXX lockless should work
+
 	return (ALL_OK);
 }
 
