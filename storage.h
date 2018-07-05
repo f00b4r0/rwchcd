@@ -17,11 +17,11 @@
 #include "rwchcd.h"
 
 typedef uint32_t	storage_version_t;	///< storage version type
-typedef const char *	storage_keys_t;		///< storage keys type
-typedef int32_t		storage_values_t;	///< storage values type
+typedef const char *	storage_key_t;		///< storage keys type
+typedef int32_t		storage_value_t;	///< storage values type
 
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size);
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size);
-int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, storage_keys_t keys[], storage_values_t values[], unsigned int npairs);
+int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const storage_key_t keys[], storage_value_t values[], unsigned int npairs);
 
 #endif /* rwchcd_storage_h */

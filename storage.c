@@ -192,7 +192,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
  * @param npairs the number of key/value pairs
  * @todo XXX TODO ERROR HANDLING
  */
-int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, storage_keys_t keys[], storage_values_t values[], unsigned int npairs)
+int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const storage_key_t keys[], storage_value_t values[], unsigned int npairs)
 {
 	FILE * restrict file = NULL;
 	char magic[ARRAY_SIZE(Storage_magic)];

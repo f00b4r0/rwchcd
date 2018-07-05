@@ -79,14 +79,14 @@ static int runtime_restore(void)
 static int runtime_async_log(void)
 {
 	const storage_version_t version = 5;
-	static const storage_keys_t keys[] = {
+	static const storage_key_t keys[] = {
 		"systemmode",
 		"runmode",
 		"dhwmode",
 		"plant_sleep",
 		"plant_hrequest",
 	};
-	static storage_values_t values[ARRAY_SIZE(keys)];
+	static storage_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 	
 	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
