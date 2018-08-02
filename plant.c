@@ -824,11 +824,10 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
  * @return exec status
  * @todo sequential run (instead of parallel)
  */
-static int plant_summer_maintenance(const struct s_plant * restrict const plant)
+static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {
 #define SUMMER_RUN_INTVL	60*60*24*7	///< 1 week
 #define SUMMER_RUN_DURATION	60*5		///< 5 minutes
-	static time_t timer_start = 0;
 	const time_t now = time(NULL);
 	const struct s_runtime * restrict const runtime = runtime_get();
 	struct s_pump_l * pumpl;
@@ -840,17 +839,17 @@ static int plant_summer_maintenance(const struct s_plant * restrict const plant)
 
 	// don't do anything if summer AND plant asleep aren't in effect
 	if (!(plant_summer_ok(plant) && runtime->plant_could_sleep))
-		timer_start = now;
+		plant->run.summer_timer = now;
 
 	// stop running when duration is exceeded (this also prevents running when summer is first triggered)
-	if ((now - timer_start) >= (SUMMER_RUN_INTVL + SUMMER_RUN_DURATION)) {
-		if (timer_start)	// avoid displaying message at startup
+	if ((now - plant->run.summer_timer) >= (SUMMER_RUN_INTVL + SUMMER_RUN_DURATION)) {
+		if (plant->run.summer_timer)	// avoid displaying message at startup
 			pr_log(_("Summer maintenance completed"));
-		timer_start = now;
+		plant->run.summer_timer = now;
 	}
 
 	// don't run too often
-	if ((now - timer_start) < SUMMER_RUN_INTVL)
+	if ((now - plant->run.summer_timer) < SUMMER_RUN_INTVL)
 		return (ALL_OK);
 
 	dbgmsg("summer maintenance active");
