@@ -715,9 +715,8 @@ int plant_offline(struct s_plant * restrict const plant)
  * Updates runtime->plant_hrequest, runtime->plant_could_sleep, runtime->dhwc_sliding
  * @param plant target plant
  */
-static void plant_collect_hrequests(const struct s_plant * restrict const plant)
+static void plant_collect_hrequests(struct s_plant * restrict const plant)
 {
-	static time_t last_circuit_reqtime = 0;
 	const time_t now = time(NULL);
 	struct s_runtime * restrict const runtime = runtime_get();
 	struct s_heating_circuit_l * circuitl;
@@ -737,11 +736,11 @@ static void plant_collect_hrequests(const struct s_plant * restrict const plant)
 		temp = circuitl->circuit->run.heat_request;
 		temp_request = (temp > temp_request) ? temp : temp_request;
 		if (RWCHCD_TEMP_NOREQUEST != temp)
-			last_circuit_reqtime = now;
+			plant->run.last_creqtime = now;
 	}
 
 	// check if last request exceeds timeout
-	if ((now - last_circuit_reqtime) > runtime->config->sleeping_delay)
+	if ((now - plant->run.last_creqtime) > runtime->config->sleeping_delay)
 		runtime->plant_could_sleep = true;
 	else
 		runtime->plant_could_sleep = false;

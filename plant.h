@@ -67,6 +67,7 @@ struct s_plant {
 	bool configured;	///< true if properly configured
 	struct {
 		time_t summer_timer;	///< timer for summer maintenance
+		time_t last_creqtime;	///< last recorded time for circuit heat request
 	} run;
 	uint_fast8_t pump_n;	///< number of pumps in the plant
 	uint_fast8_t valve_n;	///< number of valves in the plant
