@@ -29,7 +29,6 @@
 #include "timer.h"
 
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
-#define LOG_INTVL_TEMPS		60	///< log temperatures every X seconds
 
 /**
  * Initialize hardware and ensure connection is set
@@ -108,7 +107,7 @@ static int hw_p1_online(void * priv)
 
 	hw_p1_lcd_online();
 
-	timer_add_cb(LOG_INTVL_TEMPS, hw_p1_async_log_temps, "log hw_p1 temps");
+	timer_add_cb(HWP1_LOG_INTVL_TEMPS, hw_p1_async_log_temps, "log hw_p1 temps");
 
 	hw->run.online = true;
 	ret = ALL_OK;

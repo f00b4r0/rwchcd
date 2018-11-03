@@ -17,6 +17,8 @@
 #include "rwchcd.h"
 #include "rwchc_export.h"
 
+#define HWP1_LOG_INTVL_TEMPS	60	///< log temperatures every X seconds
+
 /** valid types of temperature sensors */
 enum e_hw_p1_stype {
 	ST_PT1000,

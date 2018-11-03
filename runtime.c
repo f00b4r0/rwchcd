@@ -99,7 +99,7 @@ static int runtime_async_log(void)
 	
 	assert(ARRAY_SIZE(keys) >= i);
 	
-	return (storage_log("log_runtime", &version, keys, values, i));
+	return (storage_log("log_runtime", &version, keys, values, ARRAY_SIZE(keys), i, LOG_INTVL_RUNTIME));
 }
 
 /**

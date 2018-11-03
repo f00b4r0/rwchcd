@@ -9,6 +9,8 @@ OPTIMS := -O0 -g -ggdb3 -march=native -mcpu=native -mtune=native -fstack-protect
 CFLAGS := -I$(CURDIR) -std=gnu99 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"' -DRWCHCD_STORAGE_PATH='"$(VARLIBDIR)"'
 LDLIBS := -lm
 
+LDLIBS += -lrrd
+
 ifeq ($(HOST_OS),Linux)
 CONFIG := -DHAS_DBUS -DHAS_HWP1 -DDEBUG
 CFLAGS += -D_GNU_SOURCE -pthread

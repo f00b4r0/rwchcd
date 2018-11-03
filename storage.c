@@ -22,14 +22,15 @@
 #include <unistd.h>	// chdir/write/close/unlink
 #include <stdio.h>	// rename/fopen...
 #include <string.h>	// memcmp
-#include <time.h>	// time
 #include <errno.h>	// errno
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>	// open/posix_fallocate/fadvise
-#include <stdlib.h>	// mkstemp
+#include <stdlib.h>	// mkstemp/malloc
 
 #include "storage.h"
+#include "log_file.h"
+#include "log_rrd.h"
 
 #define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL
@@ -183,95 +184,123 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	return (ALL_OK);
 }
 
+enum e_storage_bend {
+	SBEND_FILE,
+	SBEND_RRD,
+};
+
 /**
  * Generic storage backend keys/values log call.
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
  * @param keys the keys to log
  * @param values the values to log (1 per key)
- * @param npairs the number of key/value pairs
- * @todo XXX TODO ERROR HANDLING
+ * @param nkeys the number of keys
+ * @param nvalues the number of values (must be <= nkeys)
+ * @param interval a positive fixed interval between log requests or negative for random log events
  */
-int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const storage_key_t keys[], storage_value_t values[], unsigned int npairs)
+int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const storage_key_t keys[], storage_value_t values[], const unsigned int nkeys, const unsigned int nvalues, const int interval)
 {
-	FILE * restrict file = NULL;
-	char magic[ARRAY_SIZE(Storage_magic)];
-	storage_version_t sversion = 0, lversion = 0;
-	const char fmt[] = "%%%us - %%u - %%u - %%u\n";	// magic - sversion - lversion - npairs
-	char headformat[ARRAY_SIZE(fmt)+1];
+	storage_version_t lversion = 0;
+	const enum e_storage_bend bend = (interval > 0) ? SBEND_RRD : SBEND_FILE;	// XXX hack: enable SBEND_RRD when interval is a strictly positive value
+	const struct s_log_data log_data = {
+		.keys = keys,
+		.values = values,
+		.nkeys = nkeys,
+		.nvalues = nvalues,
+		.interval = interval,
+	};
 	bool fcreate = false;
-	unsigned int i;
+	char *fmtfile;
+	int ret;
+	struct {
+		unsigned int nkeys;
+		unsigned int nvalues;
+		int interval;
+		enum e_storage_bend bend;
+	} logfmt;
 	
 	if (!identifier || !version)
 		return (-EINVALID);
-	
-	// make sure we're in target wd
-	if (chdir(RWCHCD_STORAGE_PATH))
-		return (-ESTORE);
-	
-	// open stream
-	file = fopen(identifier, "r+");
-	if (!file) {
-		if (ENOENT == errno)
-			fcreate = true;
-		else
-			return (-ESTORE);
-	}
 
-	// build header format
-	sprintf(headformat, fmt, ARRAY_SIZE(magic));
-	
-	if (!fcreate) {	// we have a file, does it work for us?
-		// read top line first
-		if (fscanf(file, headformat, magic, &sversion, &lversion, &i) != 4)
-			fcreate = true;
-		
-		// compare with current global magic
-		if (memcmp(magic, Storage_magic, sizeof(Storage_magic)))
-			fcreate = true;
-		
-		// compare with current global version
-		if (sversion != Storage_version)
-			fcreate = true;
-		
+	if (nvalues > nkeys)
+		return (-EINVALID);
+
+	fmtfile = malloc(strlen(identifier) + strlen(".fmt") + 1);
+	if (!fmtfile)
+		return (-EOOM);
+
+	strcpy(fmtfile, identifier);
+	strcat(fmtfile, ".fmt");
+
+	ret = storage_fetch(fmtfile, &lversion, &logfmt, sizeof(logfmt));
+	if (ALL_OK != ret)
+		fcreate = true;
+	else {
 		// compare with current local version
 		if (lversion != *version)
 			fcreate = true;
-		
-		// compare with current number of pairs
-		if (i != npairs)
+
+		// compare with current number of keys
+		if (logfmt.nkeys != nkeys)
 			fcreate = true;
-		
-		if (fcreate)
-			fclose(file);
+
+		// compare with current backend
+		if (logfmt.bend != bend)
+			fcreate = true;
 	}
-	
+
 	if (fcreate) {
-		file = fopen(identifier, "w");	// create/truncate
-		if (!file)
-			return (-ESTORE);
+		// make sure we're in target wd
+		if (chdir(RWCHCD_STORAGE_PATH)) {
+			ret = -ESTORE;
+			goto cleanup;
+		}
 
-		// write our header first
-		fprintf(file, headformat, Storage_magic, Storage_version, *version, npairs);
-		// write csv header
-		fprintf(file, "time;");
-		for (i = 0; i < npairs; i++)
-			fprintf(file, "%s;", keys[i]);
-		fprintf(file, "\n");
+		// create backend store
+		switch (bend) {
+			case SBEND_FILE:
+				ret = log_file_create(identifier, &log_data);
+				break;
+			case SBEND_RRD:
+				ret = log_rrd_create(identifier, &log_data);
+				break;
+			default:
+				ret = -EINVALID;
+		}
+
+		if (ALL_OK != ret)
+			goto cleanup;
+
+		// register new format
+		logfmt.nkeys = nkeys;
+		logfmt.nvalues = nvalues;
+		logfmt.interval = interval;
+		logfmt.bend = bend;
+		ret = storage_dump(fmtfile, version, &logfmt, sizeof(logfmt));
+		if (ALL_OK != ret)
+			goto cleanup;
 	}
-	else {
-		if(fseek(file, 0, SEEK_END))	// append
-			return (-ESTORE);
+
+	// make sure we're in target wd
+	if (chdir(RWCHCD_STORAGE_PATH)) {
+		ret = -ESTORE;
+		goto cleanup;
 	}
 
-	// write csv data
-	fprintf(file, "%ld;", time(NULL));
-	for (i = 0; i < npairs; i++)
-		fprintf(file, "%d;", values[i]);
-	fprintf(file, "\n");
+	// log data
+	switch (bend) {
+		case SBEND_FILE:
+			ret = log_file_update(identifier, &log_data);
+			break;
+		case SBEND_RRD:
+			ret = log_rrd_update(identifier, &log_data);
+			break;
+		default:
+			ret = -EINVALID;
+	}
 
-	// finally close the file
-	fclose(file);
-	
-	return (ALL_OK);
+cleanup:
+	free(fmtfile);
+	return (ret);
 }

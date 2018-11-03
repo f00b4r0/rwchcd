@@ -20,8 +20,16 @@ typedef uint32_t	storage_version_t;	///< storage version type
 typedef const char *	storage_key_t;		///< storage keys type
 typedef int32_t		storage_value_t;	///< storage values type
 
+struct s_log_data {
+	const storage_key_t * restrict const keys;
+	const storage_value_t * restrict const values;
+	unsigned int nkeys;
+	unsigned int nvalues;
+	int interval;
+};
+
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size);
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size);
-int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const storage_key_t keys[], storage_value_t values[], unsigned int npairs);
+int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const storage_key_t keys[], storage_value_t values[], const unsigned int nkeys, const unsigned int nvalues, const int interval);
 
 #endif /* rwchcd_storage_h */

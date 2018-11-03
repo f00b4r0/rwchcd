@@ -60,7 +60,7 @@ static void hw_p1_relays_log(void)
 			values[i] = -1;
 	}
 	
-	storage_log("log_hw_p1_relays", &version, keys, values, i);
+	storage_log("log_hw_p1_relays", &version, keys, values, ARRAY_SIZE(keys), i, -1);
 }
 
 /**
@@ -327,7 +327,7 @@ int hw_p1_async_log_temps(void)
 {
 	const storage_version_t version = 2;
 	static const storage_key_t keys[] = {
-		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
+		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
 	};
 	static storage_value_t values[ARRAY_SIZE(keys)];
 	int i = 0;
@@ -345,7 +345,7 @@ int hw_p1_async_log_temps(void)
 		values[i] = Hardware.Sensors[i].run.value;
 	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
 
-	return (storage_log("log_hw_p1_temps", &version, keys, values, i));
+	return (storage_log("log_hw_p1_temps", &version, keys, values, ARRAY_SIZE(keys), i, HWP1_LOG_INTVL_TEMPS));
 }
 
 /**
