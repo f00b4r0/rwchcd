@@ -320,6 +320,7 @@ int hw_p1_restore_relays(void)
 
 /**
  * Log internal temperatures.
+ * @todo use timestamp for logging
  * @return exec status
  */
 int hw_p1_async_log_temps(void)
@@ -333,6 +334,9 @@ int hw_p1_async_log_temps(void)
 
 	if (!Hardware.run.online)
 		return (-EOFFLINE);
+
+	if (!Hardware.run.sensors_ftime)
+		return (-EINVALID);	// data not ready
 
 	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
 
@@ -520,9 +524,9 @@ int hw_p1_sensors_read(void)
 			goto out;
 	}
 
-	Hardware.run.sensors_ftime = time(NULL);
-
 	hw_p1_parse_temps();
+
+	Hardware.run.sensors_ftime = time(NULL);
 
 out:
 	return (ret);
