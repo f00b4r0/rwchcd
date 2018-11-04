@@ -34,6 +34,49 @@
 #include "dhwt.h"
 #include "heatsource.h"
 #include "models.h"	// s_bmodel for plant_summer_ok()
+#include "storage.h"
+
+static const storage_version_t Plant_sversion = 1;
+
+/**
+ * Save plant.
+ * @param plant target plant
+ * @return exec status
+ */
+static int plant_save(const struct s_plant * restrict const plant)
+{
+	assert(plant);
+
+	if (!plant->configured)
+		return (-ENOTCONFIGURED);
+
+	return (storage_dump("plant", &Plant_sversion, &plant->run, sizeof(plant->run)));
+}
+
+/**
+ * Restore plant from permanent storage.
+ * @param plant plant whose run structure will be restored if possible,
+ * left untouched otherwise
+ * @return exec status
+ */
+static int plant_restore(struct s_plant * restrict const plant)
+{
+	struct s_plant temp_plant;
+	storage_version_t sversion;
+	int ret;
+
+	// try to restore key elements of last runtime
+	ret = storage_fetch("plant", &sversion, &temp_plant.run, sizeof(temp_plant.run));
+	if (ALL_OK == ret) {
+		if (Plant_sversion != sversion)
+			return (-EMISMATCH);
+
+		memcpy(&plant->run, &temp_plant.run, sizeof(plant->run));
+		pr_log(_("Plant state restored"));
+	}
+
+	return (ALL_OK);
+}
 
 /**
  * Find a pump by name in a plant.
@@ -535,6 +578,8 @@ int plant_online(struct s_plant * restrict const plant)
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);
 
+	plant_restore(plant);
+
 	// online the actuators first
 	// pumps
 	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
@@ -640,6 +685,8 @@ int plant_offline(struct s_plant * restrict const plant)
 	
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);
+
+	plant_save(plant);
 	
 	// offline the consummers first
 	// circuits first
