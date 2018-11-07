@@ -193,23 +193,11 @@ enum e_storage_bend {
  * Generic storage backend keys/values log call.
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
- * @param keys the keys to log
- * @param values the values to log (1 per key)
- * @param nkeys the number of keys
- * @param nvalues the number of values (must be <= nkeys)
- * @param interval a positive fixed interval between log requests or negative for random log events
  */
-int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const storage_key_t keys[], storage_value_t values[], const unsigned int nkeys, const unsigned int nvalues, const int interval)
+int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	storage_version_t lversion = 0;
-	const enum e_storage_bend bend = (interval > 0) ? SBEND_RRD : SBEND_FILE;	// XXX hack: enable SBEND_RRD when interval is a strictly positive value
-	const struct s_log_data log_data = {
-		.keys = keys,
-		.values = values,
-		.nkeys = nkeys,
-		.nvalues = nvalues,
-		.interval = interval,
-	};
+	const enum e_storage_bend bend = (log_data->interval > 0) ? SBEND_RRD : SBEND_FILE;	// XXX hack: enable SBEND_RRD when interval is a strictly positive value
 	bool fcreate = false;
 	char *fmtfile;
 	int ret;
@@ -220,10 +208,10 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		enum e_storage_bend bend;
 	} logfmt;
 	
-	if (!identifier || !version)
+	if (!identifier || !version || !log_data)
 		return (-EINVALID);
 
-	if (nvalues > nkeys)
+	if (log_data->nvalues > log_data->nkeys)
 		return (-EINVALID);
 
 	fmtfile = malloc(strlen(identifier) + strlen(".fmt") + 1);
@@ -242,7 +230,7 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 			fcreate = true;
 
 		// compare with current number of keys
-		if (logfmt.nkeys != nkeys)
+		if (logfmt.nkeys != log_data->nkeys)
 			fcreate = true;
 
 		// compare with current backend
@@ -260,10 +248,10 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		// create backend store
 		switch (bend) {
 			case SBEND_FILE:
-				ret = log_file_create(identifier, &log_data);
+				ret = log_file_create(identifier, log_data);
 				break;
 			case SBEND_RRD:
-				ret = log_rrd_create(identifier, &log_data);
+				ret = log_rrd_create(identifier, log_data);
 				break;
 			default:
 				ret = -EINVALID;
@@ -273,9 +261,9 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 			goto cleanup;
 
 		// register new format
-		logfmt.nkeys = nkeys;
-		logfmt.nvalues = nvalues;
-		logfmt.interval = interval;
+		logfmt.nkeys = log_data->nkeys;
+		logfmt.nvalues = log_data->nvalues;
+		logfmt.interval = log_data->interval;
 		logfmt.bend = bend;
 		ret = storage_dump(fmtfile, version, &logfmt, sizeof(logfmt));
 		if (ALL_OK != ret)
@@ -291,10 +279,10 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 	// log data
 	switch (bend) {
 		case SBEND_FILE:
-			ret = log_file_update(identifier, &log_data);
+			ret = log_file_update(identifier, log_data);
 			break;
 		case SBEND_RRD:
-			ret = log_rrd_update(identifier, &log_data);
+			ret = log_rrd_update(identifier, log_data);
 			break;
 		default:
 			ret = -EINVALID;

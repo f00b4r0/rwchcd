@@ -60,7 +60,14 @@ static void hw_p1_relays_log(void)
 			values[i] = -1;
 	}
 	
-	storage_log("log_hw_p1_relays", &version, keys, values, ARRAY_SIZE(keys), i, -1);
+	const struct s_log_data data = {
+		.keys = keys,
+		.values = values,
+		.nkeys = ARRAY_SIZE(keys),
+		.nvalues = i,
+		.interval = -1,
+	};
+	storage_log("log_hw_p1_relays", &version, &data);
 }
 
 /**
@@ -332,20 +339,27 @@ int hw_p1_async_log_temps(void)
 	static storage_value_t values[ARRAY_SIZE(keys)];
 	int i = 0;
 
+	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
+
 	if (!Hardware.run.online)
 		return (-EOFFLINE);
 
 	if (!Hardware.run.sensors_ftime)
 		return (-EINVALID);	// data not ready
 
-	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
-
 	pthread_rwlock_rdlock(&Hardware.Sensors_rwlock);
 	for (i = 0; i < Hardware.settings.nsensors; i++)
 		values[i] = Hardware.Sensors[i].run.value;
 	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
 
-	return (storage_log("log_hw_p1_temps", &version, keys, values, ARRAY_SIZE(keys), i, HWP1_LOG_INTVL_TEMPS));
+	const struct s_log_data data = {
+		.keys = keys,
+		.values = values,
+		.nkeys = ARRAY_SIZE(keys),
+		.nvalues = i,
+		.interval = HWP1_LOG_INTVL_TEMPS,
+	};
+	return (storage_log("log_hw_p1_temps", &version, &data));
 }
 
 /**

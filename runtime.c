@@ -99,7 +99,14 @@ static int runtime_async_log(void)
 	
 	assert(ARRAY_SIZE(keys) >= i);
 	
-	return (storage_log("log_runtime", &version, keys, values, ARRAY_SIZE(keys), i, LOG_INTVL_RUNTIME));
+	const struct s_log_data data = {
+		.keys = keys,
+		.values = values,
+		.nkeys = ARRAY_SIZE(keys),
+		.nvalues = i,
+		.interval = LOG_INTVL_RUNTIME,
+	};
+	return (storage_log("log_runtime", &version, &data));
 }
 
 /**
