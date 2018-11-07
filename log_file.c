@@ -18,6 +18,12 @@
 
 #include "log_file.h"
 
+/**
+ * Create the log file (text file).
+ * @param identifier the database identifier
+ * @param log_data the data to be logged
+ * @return exec status
+ */
 int log_file_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	FILE * restrict file = NULL;
@@ -40,6 +46,12 @@ int log_file_create(const char * restrict const identifier, const struct s_log_d
 	return (ALL_OK);
 }
 
+/**
+ * Update the log file (text file).
+ * @param identifier the database identifier
+ * @param log_data the data to be logged
+ * @return exec status
+ */
 int log_file_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	FILE * restrict file = NULL;

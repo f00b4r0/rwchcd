@@ -23,6 +23,7 @@
 #include "storage.h"
 #include "log_rrd.h"
 
+/** Hardcoded RRAs */
 const char *RRAs[] = {
 	"RRA:AVERAGE:0.5:1:2d",		// record 1-step samples for 2d
 	"RRA:MIN:0.5:1:2d",
@@ -38,6 +39,12 @@ const char *RRAs[] = {
 	"RRA:MAX:0.5:1d:10y",
 };
 
+/**
+ * Create the RRD log database.
+ * @param identifier the database identifier
+ * @param log_data the data to be logged
+ * @return exec status
+ */
 int log_rrd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	int ret = -EGENERIC, argc = 0;
@@ -83,6 +90,12 @@ cleanup:
 	return (ret);
 }
 
+/**
+ * Update the RRD log database.
+ * @param identifier the database identifier
+ * @param log_data the data to be logged
+ * @return exec status
+ */
 int log_rrd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	char * buffer;
