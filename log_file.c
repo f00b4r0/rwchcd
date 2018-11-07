@@ -56,23 +56,12 @@ int log_file_update(const char * restrict const identifier, const struct s_log_d
 {
 	FILE * restrict file = NULL;
 	unsigned int i;
-	int ret;
 
 	assert(identifier && log_data);
 
-retry:
 	file = fopen(identifier, "r+");	// r+w, do not create if not exist
-	if (!file) {
-		if (ENOENT == errno) {	// if the file doesn't exist properly create it (with header)
-			ret = log_file_create(identifier, log_data);
-			if (ALL_OK == ret)
-				goto retry;
-			else
-				return (ret);
-		}
-		else
-			return (-ESTORE);
-	}
+	if (!file)
+		return (-ESTORE);
 
 	if(fseek(file, 0, SEEK_END))	// append
 		return (-ESTORE);
