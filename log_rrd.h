@@ -18,5 +18,6 @@
 
 int log_rrd_create(const char * restrict const identifier, const struct s_log_data * const log_data);
 int log_rrd_update(const char * restrict const identifier, const struct s_log_data * const log_data);
+void log_rrd_hook(struct s_log_callbacks * restrict const callbacks);
 
 #endif /* log_rrd_h */

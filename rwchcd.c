@@ -62,6 +62,7 @@
 #ifdef HAS_DBUS
  #include "dbus.h"
 #endif
+#include "storage.h"
 
 #include "filecfg.h"
 
@@ -457,6 +458,12 @@ static int init_process()
 	struct s_plant * restrict plant = NULL;
 	int ret;
 
+
+	ret = storage_config();
+	if (ret) {
+		dbgerr("storage config error: %d", ret);
+		return (ret);
+	}
 
 	ret = configure_hw();
 	if (ret) {

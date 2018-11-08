@@ -9,7 +9,7 @@
 /**
  * @file
  * Persistent storage implementation.
- * Currently a buggy quick hack based on files.
+ * Currently an ugly quick hack based on files.
  * This implementation is very inefficient: among other issues, 
  * we keep open()ing/close()ing files every time. Open once + frequent flush
  * and close at program end would be better, but the fact is that this subsystem
@@ -38,6 +38,7 @@
 
 static const char Storage_magic[] = STORAGE_MAGIC;
 static const storage_version_t Storage_version = STORAGE_VERSION;
+static bool Storage_configured = false;
 
 /**
  * Generic storage backend write call.
@@ -55,15 +56,14 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	int fd, dir_fd, ret = -ESTORE;
 	char tmpfile[] = STORAGE_TMPLATE;
 
+	if (!Storage_configured)
+		return (-ENOTCONFIGURED);
+
 	if (!identifier || !version || !object)
 		return (-EINVALID);
 
 	dir_fd = open(RWCHCD_STORAGE_PATH, O_RDONLY);
 	if (dir_fd < 0)
-		return (-ESTORE);
-
-	// make sure we're in target wd
-	if (fchdir(dir_fd))
 		return (-ESTORE);
 
 	// create new tmp file
@@ -138,13 +138,12 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	int fd;
 	char magic[ARRAY_SIZE(Storage_magic)];
 	storage_version_t sversion = 0;
-	
+
+	if (!Storage_configured)
+		return (-ENOTCONFIGURED);
+
 	if (!identifier || !version || !object)
 		return (-EINVALID);
-	
-	// make sure we're in target wd
-	if (chdir(RWCHCD_STORAGE_PATH))
-		return (-ESTORE);
 	
 	// open stream
 	fd = open(identifier, O_RDONLY);
@@ -184,21 +183,18 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	return (ALL_OK);
 }
 
-enum e_storage_bend {
-	SBEND_FILE,
-	SBEND_RRD,
-};
+static struct s_log_callbacks Log_timed_cb, Log_untimed_cb;
 
 /**
  * Generic storage backend keys/values log call.
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
+ * @param log_data the data to log
  */
 int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	storage_version_t lversion = 0;
-	const enum e_storage_bend bend = (log_data->interval > 0) ? SBEND_RRD : SBEND_FILE;	// XXX hack: enable SBEND_RRD when interval is a strictly positive value
-	bool fcreate = false;
+	bool fcreate = false, timedlog;
 	char *fmtfile;
 	int ret;
 	struct {
@@ -207,7 +203,10 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		int interval;
 		enum e_storage_bend bend;
 	} logfmt;
-	
+
+	if (!Storage_configured)
+		return (-ENOTCONFIGURED);
+
 	if (!identifier || !version || !log_data)
 		return (-EINVALID);
 
@@ -220,6 +219,8 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 
 	strcpy(fmtfile, identifier);
 	strcat(fmtfile, ".fmt");
+
+	timedlog = (log_data->interval > 0) ? true : false;
 
 	ret = storage_fetch(fmtfile, &lversion, &logfmt, sizeof(logfmt));
 	if (ALL_OK != ret)
@@ -234,28 +235,16 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 			fcreate = true;
 
 		// compare with current backend
-		if (logfmt.bend != bend)
+		if (logfmt.bend != timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend)
 			fcreate = true;
 	}
 
 	if (fcreate) {
-		// make sure we're in target wd
-		if (chdir(RWCHCD_STORAGE_PATH)) {
-			ret = -ESTORE;
-			goto cleanup;
-		}
-
 		// create backend store
-		switch (bend) {
-			case SBEND_FILE:
-				ret = log_file_create(identifier, log_data);
-				break;
-			case SBEND_RRD:
-				ret = log_rrd_create(identifier, log_data);
-				break;
-			default:
-				ret = -EINVALID;
-		}
+		if (timedlog)
+			ret = Log_timed_cb.log_create(identifier, log_data);
+		else
+			ret = Log_untimed_cb.log_create(identifier, log_data);
 
 		if (ALL_OK != ret)
 			goto cleanup;
@@ -264,31 +253,39 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		logfmt.nkeys = log_data->nkeys;
 		logfmt.nvalues = log_data->nvalues;
 		logfmt.interval = log_data->interval;
-		logfmt.bend = bend;
+		logfmt.bend = timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend;
 		ret = storage_dump(fmtfile, version, &logfmt, sizeof(logfmt));
 		if (ALL_OK != ret)
 			goto cleanup;
 	}
 
-	// make sure we're in target wd
-	if (chdir(RWCHCD_STORAGE_PATH)) {
-		ret = -ESTORE;
-		goto cleanup;
-	}
-
 	// log data
-	switch (bend) {
-		case SBEND_FILE:
-			ret = log_file_update(identifier, log_data);
-			break;
-		case SBEND_RRD:
-			ret = log_rrd_update(identifier, log_data);
-			break;
-		default:
-			ret = -EINVALID;
-	}
+	if (timedlog)
+		ret = Log_timed_cb.log_update(identifier, log_data);
+	else
+		ret = Log_untimed_cb.log_update(identifier, log_data);
 
 cleanup:
 	free(fmtfile);
 	return (ret);
+}
+
+/** Quick hack */
+int storage_config(void)
+{
+	// make sure we're in target wd. This updates wd for all threads
+	if (chdir(RWCHCD_STORAGE_PATH))
+		return (-ESTORE);
+
+	log_file_hook(&Log_untimed_cb);
+
+#ifdef HAS_RRD
+	log_rrd_hook(&Log_timed_cb);
+#else
+	log_file_hook(&Log_timed_cb);
+#endif
+
+	Storage_configured = true;
+
+	return (ALL_OK);
 }
