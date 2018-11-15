@@ -112,11 +112,11 @@ typedef uint_fast8_t	sid_t;		///< sensor id type
 typedef struct {
 	bid_t bid;	///< backend id
 	sid_t sid;	///< sensor id - @warning MUST START FROM 1
-} tempid_t;	///< temperature sensor id
+} tempid_t;	///< temperature sensor id. @note struct assignment is used in the code: must not embed pointers
 typedef struct {
 	bid_t bid;	///< backend id
 	rid_t rid;	///< relay id - @warning MUST START FROM 1
-} relid_t;	///< relay identifier
+} relid_t;	///< relay identifier. @note struct assignment is used in the code: must not embed pointers
 
 /** Valid run modes */
 enum e_runmode {
