@@ -208,6 +208,13 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 		return (ALL_OK);
 	}
 
+	// stop PI operation if inputs are (temporarily) inverted or too close (would make K==0)
+	if (tempin_h - tempin_l <= 1000) {
+		valve->run.ctrl_reset = true;
+		dbgmsg("\"%s\": inputs inverted or input range too narrow", valve->name);
+		return (-EDEADZONE);
+	}
+
 	// handle algorithm reset
 	if (valve->run.ctrl_reset) {
 		vpriv->run.prev_out = tempout;
@@ -226,7 +233,7 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
-	K = abs(tempin_h - tempin_l)/1000;	// abs() because _h may occasionally be < _l - imprecision: floors
+	K = (tempin_h - tempin_l)/1000;	// imprecision: floors. Make sure K cannot be 0 here.
 	Kp = vpriv->run.Kp_t/K;
 	Ti = vpriv->set.Tu;
 	Ki = Kp/Ti;
