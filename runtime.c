@@ -26,10 +26,18 @@
 #include "alarms.h"	// alarms_raise()
 #include "hardware.h"	// for hardware_sensor_clone_temp()
 
-#define LOG_INTVL_RUNTIME	900	///< log current runtime every X seconds
+static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);
 
 static const storage_version_t Runtime_sversion = 5;
 static struct s_runtime Runtime;
+static const struct s_log_source Runtime_lsrc = {
+	.interval = LOG_INTVL_15mn,
+	.basename = "runtime_",
+	.identifier = "master",
+	.version = 5,
+	.logdata_cb = runtime_logdata_cb,
+	.object = NULL,
+};
 
 /**
  * Get current program runtime
@@ -73,13 +81,14 @@ static int runtime_restore(void)
 }
 
 /**
- * Log key runtime variables.
+ * Runtime variable data log callback.
+ * @param ldata the log data to populate
+ * @param object unused
  * @return exec status
  * @warning Locks runtime: do not call from master_thread
  */
-static int runtime_async_log(void)
+static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object)
 {
-	const log_version_t version = 5;
 	static const log_key_t keys[] = {
 		"systemmode",
 		"runmode",
@@ -100,14 +109,12 @@ static int runtime_async_log(void)
 	
 	assert(ARRAY_SIZE(keys) >= i);
 	
-	const struct s_log_data data = {
-		.keys = keys,
-		.values = values,
-		.nkeys = ARRAY_SIZE(keys),
-		.nvalues = i,
-		.interval = LOG_INTVL_RUNTIME,
-	};
-	return (log_dump("log_runtime", &version, &data));
+	ldata->keys = keys;
+	ldata->values = values;
+	ldata->nkeys = ARRAY_SIZE(keys);
+	ldata->nvalues = i;
+
+	return (ALL_OK);
 }
 
 /**
@@ -259,7 +266,7 @@ int runtime_online(void)
 
 	runtime_restore();
 
-	timer_add_cb(LOG_INTVL_RUNTIME, runtime_async_log, "log runtime");
+	log_register(&Runtime_lsrc);
 
 	ret = models_online();
 	if (ALL_OK != ret)
@@ -302,6 +309,8 @@ int runtime_offline(void)
 
 	if (runtime_save() != ALL_OK)
 		dbgerr("runtime save failed");
+
+	log_deregister(&Runtime_lsrc);
 
 	if (plant_offline(Runtime.plant) != ALL_OK)
 		dbgerr("plant offline failed");
