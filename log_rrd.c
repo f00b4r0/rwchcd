@@ -140,7 +140,7 @@ cleanup:
 	return (ret);
 }
 
-void log_rrd_hook(struct s_log_callbacks * restrict const callbacks)
+void log_rrd_hook(struct s_log_bendcbs * restrict const callbacks)
 {
 	assert(callbacks);
 

@@ -36,7 +36,7 @@ struct s_log_data {
 };
 
 /** Logging backend callbacks */
-struct s_log_callbacks {
+struct s_log_bendcbs {
 	/** backend unique identifier */
 	enum e_log_bend backend;
 	/** backend log create callback */

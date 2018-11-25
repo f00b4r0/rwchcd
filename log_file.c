@@ -81,7 +81,7 @@ int log_file_update(const char * restrict const identifier, const struct s_log_d
 }
 
 
-void log_file_hook(struct s_log_callbacks * restrict const callbacks)
+void log_file_hook(struct s_log_bendcbs * restrict const callbacks)
 {
 	assert(callbacks);
 

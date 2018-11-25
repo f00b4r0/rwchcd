@@ -22,7 +22,7 @@
 #include "config.h"	// config->logging
 
 static bool Log_configured = false;
-static struct s_log_callbacks Log_timed_cb, Log_untimed_cb;
+static struct s_log_bendcbs Log_timed_cb, Log_untimed_cb;
 
 /**
  * Generic log backend keys/values log call.

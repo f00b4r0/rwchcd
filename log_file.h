@@ -18,6 +18,6 @@
 
 int log_file_create(const char * restrict const identifier, const struct s_log_data * const log_data);
 int log_file_update(const char * restrict const identifier, const struct s_log_data * const log_data);
-void log_file_hook(struct s_log_callbacks * restrict const callbacks);
+void log_file_hook(struct s_log_bendcbs * restrict const callbacks);
 
 #endif /* log_file_h */
