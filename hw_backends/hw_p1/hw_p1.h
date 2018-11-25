@@ -16,8 +16,7 @@
 
 #include "rwchcd.h"
 #include "rwchc_export.h"
-
-#define HWP1_LOG_INTVL_TEMPS	60	///< log temperatures every X seconds
+#include "log.h"	// s_log_data
 
 /** valid types of temperature sensors */
 enum e_hw_p1_stype {
@@ -97,7 +96,7 @@ int hw_p1_rwchcrelays_write(void);
 int hw_p1_rwchcperiphs_write(void);
 int hw_p1_rwchcperiphs_read(void);
 
-int hw_p1_async_log_temps(void);
+int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object);
 
 int hw_p1_sid_by_name(const char * const name);
 int hw_p1_rid_by_name(const char * const name);

@@ -26,9 +26,18 @@
 #include "hw_p1_filecfg.h"
 #include "runtime.h"
 #include "alarms.h"
-#include "timer.h"
+#include "log.h"
 
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
+
+static const struct s_log_source HW_P1_temps_lsrc = {
+	.interval = LOG_INTVL_1mn,
+	.basename = "hw_p1_",
+	.identifier = "temps",
+	.version = 2,
+	.logdata_cb = hw_p1_temps_logdata_cb,
+	.object = NULL,
+};
 
 /**
  * Initialize hardware and ensure connection is set
@@ -107,7 +116,7 @@ static int hw_p1_online(void * priv)
 
 	hw_p1_lcd_online();
 
-	timer_add_cb(HWP1_LOG_INTVL_TEMPS, hw_p1_async_log_temps, "log hw_p1 temps");
+	log_register(&HW_P1_temps_lsrc);
 
 	hw->run.online = true;
 	ret = ALL_OK;
@@ -301,6 +310,8 @@ static int hw_p1_offline(void * priv)
 
 	if (!hw->run.online)
 		return (-EOFFLINE);
+
+	log_deregister(&HW_P1_temps_lsrc);
 
 	hw_p1_lcd_offline();
 

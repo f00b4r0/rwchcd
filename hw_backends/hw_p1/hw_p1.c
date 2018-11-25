@@ -327,13 +327,13 @@ int hw_p1_restore_relays(void)
 }
 
 /**
- * Log internal temperatures.
- * @todo use timestamp for logging
+ * HW P1 temperatures log callback.
+ * @param ldata the log data to populate
+ * @param object unused
  * @return exec status
  */
-int hw_p1_async_log_temps(void)
+int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object)
 {
-	const log_version_t version = 2;
 	static const log_key_t keys[] = {
 		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
 	};
@@ -353,14 +353,12 @@ int hw_p1_async_log_temps(void)
 		values[i] = Hardware.Sensors[i].run.value;
 	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
 
-	const struct s_log_data data = {
-		.keys = keys,
-		.values = values,
-		.nkeys = ARRAY_SIZE(keys),
-		.nvalues = i,
-		.interval = HWP1_LOG_INTVL_TEMPS,
-	};
-	return (log_dump("log_hw_p1_temps", &version, &data));
+	ldata->keys = keys;
+	ldata->values = values;
+	ldata->nkeys = ARRAY_SIZE(keys);
+	ldata->nvalues = i;
+
+	return (ALL_OK);
 }
 
 /**
