@@ -380,6 +380,7 @@ static int configure_plant(struct s_plant * restrict plant)
 	}
 
 	circuit->set.runmode = RM_AUTO;		// use global setting
+	circuit->set.logging = true;		// enable logging
 
 	circuit->bmodel = models_fbn_bmodel(HOUSE_BMODEL_N);	// assign building model
 

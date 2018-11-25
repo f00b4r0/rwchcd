@@ -23,7 +23,108 @@
 #include "runtime.h"
 #include "models.h"
 #include "config.h"
+#include "log.h"
 
+
+/**
+ * Heating circuit data log callback.
+ * @warning uses statically allocated data, must not be called concurrently.
+ * @param ldata the log data to populate
+ * @param object the opaque pointer to heating circuit structure
+ * @return exec status
+ */
+static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * const object)
+{
+	const struct s_hcircuit * const circuit = object;
+	static const log_key_t keys[] = {
+		"runmode", "request_ambient", "target_ambient", "actual_ambient", "target_wtemp", "actual_wtemp", "heat_request",
+	};
+	static log_value_t values[ARRAY_SIZE(keys)];
+	unsigned int i = 0;
+
+	assert(ldata);
+
+	if (!circuit)
+		return (-EINVALID);
+
+	if (!circuit->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!circuit->run.online)
+		return (-EOFFLINE);
+
+	values[i++] = circuit->run.runmode;
+	values[i++] = circuit->run.request_ambient;
+	values[i++] = circuit->run.target_ambient;
+	values[i++] = circuit->run.actual_ambient;
+	values[i++] = circuit->run.target_wtemp;
+	values[i++] = circuit->run.actual_wtemp;
+	values[i++] = circuit->run.heat_request;
+
+	ldata->keys = keys;
+	ldata->values = values;
+	ldata->nkeys = ARRAY_SIZE(keys);
+	ldata->nvalues = i;
+
+	return (ALL_OK);
+}
+
+/**
+ * Provide a well formatted log source for a given circuit.
+ * @param circuit the target circuit
+ * @return (statically allocated) s_log_source pointer
+ */
+static const struct s_log_source * hcircuit_lreg(const struct s_hcircuit * const circuit)
+{
+	const log_version_t version = 1;
+	static struct s_log_source Hcircuit_lreg;
+
+	Hcircuit_lreg = (struct s_log_source){
+		.interval = LOG_INTVL_15mn,
+		.basename = "hcircuit_",
+		.identifier = circuit->name,
+		.version = version,
+		.logdata_cb = hcircuit_logdata_cb,
+		.object = circuit,
+	};
+	return (&Hcircuit_lreg);
+}
+
+/**
+ * Register a circuit for logging.
+ * @param circuit the target circuit
+ * @return exec status
+ */
+static int hcircuit_log_register(const struct s_hcircuit * const circuit)
+{
+	assert(circuit);
+
+	if (!circuit->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!circuit->set.logging)
+		return (ALL_OK);
+
+	return (log_register(hcircuit_lreg(circuit)));
+}
+
+/**
+ * Deregister a circuit from logging.
+ * @param circuit the target circuit
+ * @return exec status
+ */
+static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
+{
+	assert(circuit);
+
+	if (!circuit->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!circuit->set.logging)
+		return (ALL_OK);
+
+	return (log_deregister(hcircuit_lreg(circuit)));
+}
 
 /**
  * Bilinear water temperature law.
@@ -123,6 +224,10 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		ret = -EMISCONFIGURED;
 	}
 
+	// log registration shouldn't cause online failure
+	if (hcircuit_log_register(circuit) != ALL_OK)
+		dbgerr("\"%s\": couldn't register for logging", circuit->name);
+
 out:
 	return (ret);
 }
@@ -131,6 +236,7 @@ out:
  * Put circuit offline.
  * Perform all necessary actions to completely shut down the circuit but
  * DO NOT MARK IT AS OFFLINE.
+ * @note will turn off logging for that circuit
  * @param circuit target circuit
  * @return error status
  */
@@ -141,6 +247,8 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
+
+	hcircuit_log_deregister(circuit);
 
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	circuit->run.target_wtemp = 0;
