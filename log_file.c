@@ -85,7 +85,7 @@ void log_file_hook(struct s_log_callbacks * restrict const callbacks)
 {
 	assert(callbacks);
 
-	callbacks->backend = SBEND_FILE;
+	callbacks->backend = LBEND_FILE;
 	callbacks->log_create = log_file_create;
 	callbacks->log_update = log_file_update;
 }

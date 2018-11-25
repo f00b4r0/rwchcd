@@ -63,6 +63,7 @@
  #include "dbus.h"
 #endif
 #include "storage.h"
+#include "log.h"
 
 #include "filecfg.h"
 
@@ -463,6 +464,12 @@ static int init_process()
 	ret = storage_config();
 	if (ret) {
 		dbgerr("storage config error: %d", ret);
+		return (ret);
+	}
+
+	ret = log_config();
+	if (ret) {
+		dbgerr("log config error: %d", ret);
 		return (ret);
 	}
 

@@ -10,6 +10,7 @@
 		4F15A85E1EBF74880000507A /* alarms.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F15A85C1EBF74880000507A /* alarms.c */; };
 		4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8A218E1DBE009DCBC2 /* log_rrd.c */; };
 		4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8D218E4E2E009DCBC2 /* log_file.c */; };
+		4F299C9221AABD2C009DCBC2 /* log.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C9021AABD2C009DCBC2 /* log.c */; };
 		4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAA1D8873C500D86EE7 /* config.c */; };
 		4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAD1D8884ED00D86EE7 /* runtime.c */; };
 		4F3AFBB21D88867600D86EE7 /* lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBB01D88867600D86EE7 /* lib.c */; };
@@ -57,6 +58,8 @@
 		4F299C8B218E1DBE009DCBC2 /* log_rrd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_rrd.h; sourceTree = SOURCE_ROOT; };
 		4F299C8D218E4E2E009DCBC2 /* log_file.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_file.c; sourceTree = SOURCE_ROOT; };
 		4F299C8E218E4E2E009DCBC2 /* log_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_file.h; sourceTree = SOURCE_ROOT; };
+		4F299C9021AABD2C009DCBC2 /* log.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log.c; sourceTree = SOURCE_ROOT; };
+		4F299C9121AABD2C009DCBC2 /* log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = SOURCE_ROOT; };
 		4F2F7F6A1DDF1DD80095AAEE /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = SOURCE_ROOT; };
 		4F3AFBAA1D8873C500D86EE7 /* config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = config.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBAB1D8873C500D86EE7 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = SOURCE_ROOT; };
@@ -211,6 +214,8 @@
 				4F961FA11D8D66BF00E2A8AF /* logic.h */,
 				4FC184791DA6809E000E514B /* storage.c */,
 				4FC1847A1DA6809E000E514B /* storage.h */,
+				4F299C9021AABD2C009DCBC2 /* log.c */,
+				4F299C9121AABD2C009DCBC2 /* log.h */,
 				4F299C8D218E4E2E009DCBC2 /* log_file.c */,
 				4F299C8E218E4E2E009DCBC2 /* log_file.h */,
 				4F299C8A218E1DBE009DCBC2 /* log_rrd.c */,
@@ -321,6 +326,7 @@
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,
+				4F299C9221AABD2C009DCBC2 /* log.c in Sources */,
 				4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */,
 				4FC68951206FAB4D00A3A065 /* hardware.c in Sources */,
 				4F42A5D91F9687F3001B0A1F /* hcircuit.c in Sources */,

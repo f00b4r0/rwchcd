@@ -20,6 +20,7 @@
 #include "config.h"
 #include "runtime.h"
 #include "storage.h"
+#include "log.h"
 #include "timer.h"
 #include "models.h"
 #include "alarms.h"	// alarms_raise()
@@ -78,15 +79,15 @@ static int runtime_restore(void)
  */
 static int runtime_async_log(void)
 {
-	const storage_version_t version = 5;
-	static const storage_key_t keys[] = {
+	const log_version_t version = 5;
+	static const log_key_t keys[] = {
 		"systemmode",
 		"runmode",
 		"dhwmode",
 		"plant_sleep",
 		"plant_hrequest",
 	};
-	static storage_value_t values[ARRAY_SIZE(keys)];
+	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 	
 	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);

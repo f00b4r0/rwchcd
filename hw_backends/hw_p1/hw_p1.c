@@ -19,6 +19,7 @@
 
 #include "lib.h"
 #include "storage.h"
+#include "log.h"
 #include "alarms.h"
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
@@ -40,11 +41,11 @@ struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
  */
 static void hw_p1_relays_log(void)
 {
-	const storage_version_t version = 1;
-	static const storage_key_t keys[] = {
+	const log_version_t version = 1;
+	static const log_key_t keys[] = {
 		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "R1", "R2",
 	};
-	static storage_value_t values[ARRAY_SIZE(keys)];
+	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 	
 	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(Hardware.Relays));
@@ -332,11 +333,11 @@ int hw_p1_restore_relays(void)
  */
 int hw_p1_async_log_temps(void)
 {
-	const storage_version_t version = 2;
-	static const storage_key_t keys[] = {
+	const log_version_t version = 2;
+	static const log_key_t keys[] = {
 		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
 	};
-	static storage_value_t values[ARRAY_SIZE(keys)];
+	static log_value_t values[ARRAY_SIZE(keys)];
 	int i = 0;
 
 	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);

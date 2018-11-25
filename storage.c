@@ -14,8 +14,7 @@
  * we keep open()ing/close()ing files every time. Open once + frequent flush
  * and close at program end would be better, but the fact is that this subsystem
  * probably shouldn't use flat files at all, hence the lack of effort to improve this.
- * Timed logs would be better of an RRD (librrd is sadly completely undocumented),
- * and generally speaking a database with several tables makes more sense.
+ * Generally speaking a database with several tables makes more sense.
  * @bug no check is performed for @b identifier collisions in any of the output functions.
  */
 
@@ -29,10 +28,6 @@
 #include <stdlib.h>	// mkstemp/malloc
 
 #include "storage.h"
-#include "log_file.h"
-#include "log_rrd.h"
-#include "runtime.h"	// to access config->logging
-#include "config.h"	// config->logging
 
 #define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL
@@ -185,113 +180,19 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	return (ALL_OK);
 }
 
-static struct s_log_callbacks Log_timed_cb, Log_untimed_cb;
-
-/**
- * Generic storage backend keys/values log call.
- * @param identifier a unique string identifying the data to log
- * @param version a caller-defined version number
- * @param log_data the data to log
- */
-int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const struct s_log_data * restrict const log_data)
-{
-	const bool logging = runtime_get()->config->logging;
-	storage_version_t lversion = 0;
-	bool fcreate = false, timedlog;
-	char *fmtfile;
-	int ret;
-	struct {
-		unsigned int nkeys;
-		unsigned int nvalues;
-		int interval;
-		enum e_storage_bend bend;
-	} logfmt;
-
-	if (!logging)
-		return (ALL_OK);
-
-	if (!Storage_configured)
-		return (-ENOTCONFIGURED);
-
-	if (!identifier || !version || !log_data)
-		return (-EINVALID);
-
-	if (log_data->nvalues > log_data->nkeys)
-		return (-EINVALID);
-
-	fmtfile = malloc(strlen(identifier) + strlen(".fmt") + 1);
-	if (!fmtfile)
-		return (-EOOM);
-
-	strcpy(fmtfile, identifier);
-	strcat(fmtfile, ".fmt");
-
-	timedlog = (log_data->interval > 0) ? true : false;
-
-	ret = storage_fetch(fmtfile, &lversion, &logfmt, sizeof(logfmt));
-	if (ALL_OK != ret)
-		fcreate = true;
-	else {
-		// compare with current local version
-		if (lversion != *version)
-			fcreate = true;
-
-		// compare with current number of keys
-		if (logfmt.nkeys != log_data->nkeys)
-			fcreate = true;
-
-		// compare with current backend
-		if (logfmt.bend != timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend)
-			fcreate = true;
-	}
-
-	if (fcreate) {
-		// create backend store
-		if (timedlog)
-			ret = Log_timed_cb.log_create(identifier, log_data);
-		else
-			ret = Log_untimed_cb.log_create(identifier, log_data);
-
-		if (ALL_OK != ret)
-			goto cleanup;
-
-		// register new format
-		logfmt.nkeys = log_data->nkeys;
-		logfmt.nvalues = log_data->nvalues;
-		logfmt.interval = log_data->interval;
-		logfmt.bend = timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend;
-		ret = storage_dump(fmtfile, version, &logfmt, sizeof(logfmt));
-		if (ALL_OK != ret)
-			goto cleanup;
-	}
-
-	// log data
-	if (timedlog)
-		ret = Log_timed_cb.log_update(identifier, log_data);
-	else
-		ret = Log_untimed_cb.log_update(identifier, log_data);
-
-cleanup:
-	free(fmtfile);
-	return (ret);
-}
-
 /** Quick hack */
 int storage_config(void)
 {
-	// make sure we're in target wd. This updates wd for all threads
+	// make sure we're in target wd. XXX This updates wd for all threads
 	if (chdir(RWCHCD_STORAGE_PATH))
 		return (-ESTORE);
-
-	log_file_hook(&Log_untimed_cb);
-
-#ifdef HAS_RRD
-	log_rrd_hook(&Log_timed_cb);
-#else
-	log_file_hook(&Log_timed_cb);
-#endif
 
 	Storage_configured = true;
 
 	return (ALL_OK);
+}
+
+bool storage_isconfigured(void)
+{
+	return (Storage_configured);
 }
