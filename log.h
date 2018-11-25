@@ -45,7 +45,7 @@ struct s_log_callbacks {
 	int (*log_update)(const char * restrict const identifier, const struct s_log_data * const log_data);
 };
 
-int storage_log(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data);
 int log_config(void);
+int log_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data);
 
 #endif /* log_h */

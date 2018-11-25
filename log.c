@@ -30,7 +30,7 @@ static struct s_log_callbacks Log_timed_cb, Log_untimed_cb;
  * @param version a caller-defined version number
  * @param log_data the data to log
  */
-int storage_log(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
+int log_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	const bool logging = runtime_get()->config->logging;
 	log_version_t lversion = 0;

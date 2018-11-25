@@ -68,7 +68,7 @@ static void hw_p1_relays_log(void)
 		.nvalues = i,
 		.interval = -1,
 	};
-	storage_log("log_hw_p1_relays", &version, &data);
+	log_dump("log_hw_p1_relays", &version, &data);
 }
 
 /**
@@ -360,7 +360,7 @@ int hw_p1_async_log_temps(void)
 		.nvalues = i,
 		.interval = HWP1_LOG_INTVL_TEMPS,
 	};
-	return (storage_log("log_hw_p1_temps", &version, &data));
+	return (log_dump("log_hw_p1_temps", &version, &data));
 }
 
 /**

@@ -107,7 +107,7 @@ static int runtime_async_log(void)
 		.nvalues = i,
 		.interval = LOG_INTVL_RUNTIME,
 	};
-	return (storage_log("log_runtime", &version, &data));
+	return (log_dump("log_runtime", &version, &data));
 }
 
 /**
