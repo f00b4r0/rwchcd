@@ -38,16 +38,17 @@ static struct s_log_bendcbs Log_timed_cb, Log_untimed_cb;
 
 /**
  * Generic log backend keys/values log call.
+ * @param basename a namespace under which the unique identifier will be registered
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
  * @param log_data the data to log
  */
-int log_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
+static int _log_dump(const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
+	static char ident[256] = LOG_PREFIX;
 	const bool logging = runtime_get()->config->logging;
 	log_version_t lversion = 0;
 	bool fcreate = false, timedlog;
-	char *fmtfile;
 	int ret;
 	struct {
 		unsigned int nkeys;
@@ -62,22 +63,19 @@ int log_dump(const char * restrict const identifier, const log_version_t * restr
 	if (!Log_configured)
 		return (-ENOTCONFIGURED);
 
-	if (!identifier || !version || !log_data)
+	if (!basename || !identifier || !version || !log_data)
 		return (-EINVALID);
 
 	if (log_data->nvalues > log_data->nkeys)
 		return (-EINVALID);
 
-	fmtfile = malloc(strlen(identifier) + strlen(LOG_FMT_SUFFIX) + 1);
-	if (!fmtfile)
-		return (-EOOM);
-
-	strcpy(fmtfile, identifier);
-	strcat(fmtfile, LOG_FMT_SUFFIX);
+	strcpy(ident + strlen(LOG_PREFIX), basename);
+	strcat(ident, identifier);
+	strcat(ident, LOG_FMT_SUFFIX);
 
 	timedlog = (log_data->interval > 0) ? true : false;
 
-	ret = storage_fetch(fmtfile, &lversion, &logfmt, sizeof(logfmt));
+	ret = storage_fetch(ident, &lversion, &logfmt, sizeof(logfmt));
 	if (ALL_OK != ret)
 		fcreate = true;
 	else {
@@ -94,35 +92,53 @@ int log_dump(const char * restrict const identifier, const log_version_t * restr
 			fcreate = true;
 	}
 
+	// strip LOG_FMT_SUFFIX
+	ident[strlen(ident) - strlen(LOG_FMT_SUFFIX)] = '\0';
+
 	if (fcreate) {
 		// create backend store
 		if (timedlog)
-			ret = Log_timed_cb.log_create(identifier, log_data);
+			ret = Log_timed_cb.log_create(ident, log_data);
 		else
-			ret = Log_untimed_cb.log_create(identifier, log_data);
+			ret = Log_untimed_cb.log_create(ident, log_data);
 
 		if (ALL_OK != ret)
-			goto cleanup;
+			return (ret);
 
 		// register new format
 		logfmt.nkeys = log_data->nkeys;
 		logfmt.nvalues = log_data->nvalues;
 		logfmt.interval = log_data->interval;
 		logfmt.bend = timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend;
-		ret = storage_dump(fmtfile, version, &logfmt, sizeof(logfmt));
+
+		// XXX reappend LOG_FMT_SUFFIX
+		strcat(ident, LOG_FMT_SUFFIX);
+		ret = storage_dump(ident, version, &logfmt, sizeof(logfmt));
 		if (ALL_OK != ret)
-			goto cleanup;
+			return (ret);
+		// XXX restrip LOG_FMT_SUFFIX
+		ident[strlen(ident) - strlen(LOG_FMT_SUFFIX)] = '\0';
 	}
 
 	// log data
 	if (timedlog)
-		ret = Log_timed_cb.log_update(identifier, log_data);
+		ret = Log_timed_cb.log_update(ident, log_data);
 	else
-		ret = Log_untimed_cb.log_update(identifier, log_data);
+		ret = Log_untimed_cb.log_update(ident, log_data);
 
-cleanup:
-	free(fmtfile);
 	return (ret);
+}
+
+/**
+ * Generic log backend keys/values asynchronous log call.
+ * @param identifier a unique string identifying the data to log
+ * @param version a caller-defined version number
+ * @param log_data the data to log
+ * @warning no collision check on identifier
+ */
+int log_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
+{
+	return (_log_dump("async_", identifier, version, log_data));
 }
 
 /**
@@ -272,7 +288,6 @@ int log_deregister(const struct s_log_source * restrict const lsource)
  */
 static int log_crawl(const struct s_log_list * restrict const list)
 {
-	static char ident[256] = LOG_PREFIX;
 	const struct s_log_list * lelmt;
 	const struct s_log_source * lsource;
 	struct s_log_data ldata;
@@ -283,13 +298,11 @@ static int log_crawl(const struct s_log_list * restrict const list)
 
 	for (lelmt = list; lelmt; lelmt = lelmt->next) {
 		lsource = lelmt->lsource;
-		strcpy(ident + strlen(LOG_PREFIX), lsource->basename);
-		strcat(ident, lsource->identifier);
 
 		lsource->logdata_cb(&ldata, lsource->object);
 		ldata.interval = lsource->interval;		// XXX
 
-		ret = log_dump(ident, &lsource->version, &ldata);
+		ret = _log_dump(lsource->basename, lsource->identifier, &lsource->version, &ldata);
 		if (ret)
 			dbgmsg("log_dump failed on %s%s: %d", lsource->basename, lsource->identifier, ret);
 	}
