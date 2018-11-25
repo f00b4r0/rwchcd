@@ -630,6 +630,7 @@ static int filecfg_config_dump(FILE * restrict const file, unsigned int il, cons
 	il++;
 
 	tfprintf(file, il, "summer_maintenance %s;\n", filecfg_bool_str(config->summer_maintenance));
+	tfprintf(file, il, "logging %s;\n", filecfg_bool_str(config->logging));
 	tfprintf(file, il, "limit_tsummer %.1f;\n", temp_to_celsius(config->limit_tsummer));
 	tfprintf(file, il, "limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
 	tfprintf(file, il, "sleeping_delay %ld;\n", config->sleeping_delay);

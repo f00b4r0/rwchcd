@@ -31,6 +31,8 @@
 #include "storage.h"
 #include "log_file.h"
 #include "log_rrd.h"
+#include "runtime.h"	// to access config->logging
+#include "config.h"	// config->logging
 
 #define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL
@@ -193,6 +195,7 @@ static struct s_log_callbacks Log_timed_cb, Log_untimed_cb;
  */
 int storage_log(const char * restrict const identifier, const storage_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
+	const bool logging = runtime_get()->config->logging;
 	storage_version_t lversion = 0;
 	bool fcreate = false, timedlog;
 	char *fmtfile;
@@ -203,6 +206,9 @@ int storage_log(const char * restrict const identifier, const storage_version_t 
 		int interval;
 		enum e_storage_bend bend;
 	} logfmt;
+
+	if (!logging)
+		return (ALL_OK);
 
 	if (!Storage_configured)
 		return (-ENOTCONFIGURED);

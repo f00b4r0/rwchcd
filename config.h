@@ -21,6 +21,7 @@ struct s_config {
 	bool restored;			///< true if config has been restored from storage
 	bool configured;		///< true if properly configured
 	bool summer_maintenance;	///< true if pumps/valves should be run periodically in summer.
+	bool logging;			///< true if data logging should be enabled
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
 	temp_t limit_tfrost;		///< outdoor temp for plant frost protection
 	time_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep
