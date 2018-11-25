@@ -467,7 +467,7 @@ static int init_process()
 		return (ret);
 	}
 
-	ret = log_config();
+	ret = log_init();
 	if (ret) {
 		dbgerr("log config error: %d", ret);
 		return (ret);
@@ -579,6 +579,7 @@ static void exit_process(void)
 	runtime_exit();
 	hardware_exit();
 	hw_backends_exit();
+	log_exit();
 }
 
 static void * thread_master(void *arg)
