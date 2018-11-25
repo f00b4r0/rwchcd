@@ -23,7 +23,7 @@
 #include "log_rrd.h"
 
 /** Hardcoded RRAs */
-const char *RRAs[] = {
+const char *RRAs_1mn[] = {
 	"RRA:AVERAGE:0.5:1:2d",		// record 1-step samples for 2d
 	"RRA:MIN:0.5:1:2d",
 	"RRA:MAX:0.5:1:2d",
@@ -33,9 +33,18 @@ const char *RRAs[] = {
 	"RRA:AVERAGE:0.5:1h:1y",
 	"RRA:MIN:0.5:1h:1y",
 	"RRA:MAX:0.5:1h:1y",
-	"RRA:AVERAGE:0.5:1d:10y",
+	/*"RRA:AVERAGE:0.5:1d:10y",	// we really only want 10y for outdoor data
 	"RRA:MIN:0.5:1d:10y",
-	"RRA:MAX:0.5:1d:10y",
+	"RRA:MAX:0.5:1d:10y",*/
+};
+
+const char *RRAs_15mn[] = {
+	"RRA:AVERAGE:0.5:1:1M",		// record 1-step samples for 1M
+	"RRA:MIN:0.5:1:1M",
+	"RRA:MAX:0.5:1:1M",
+	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y
+	"RRA:MIN:0.5:1h:1y",
+	"RRA:MAX:0.5:1h:1y",
 };
 
 /**
@@ -48,20 +57,31 @@ int log_rrd_create(const char * restrict const identifier, const struct s_log_da
 {
 	int ret = -EGENERIC, argc = 0;
 	unsigned int i;
-	const char **argv;
+	const char **argv, **rras;
 	char *temp = NULL;
-	size_t size;
+	size_t size, rrasize;
 	const char * restrict const DSfmt = "DS:%s:GAUGE:%d:U:U";
 
 	assert(identifier && log_data);
 
-	argv = calloc(sizeof(*argv), log_data->nkeys + ARRAY_SIZE(RRAs));
+	switch (log_data->interval) {
+		case LOG_INTVL_1mn:
+			rras = RRAs_1mn;
+			rrasize = ARRAY_SIZE(RRAs_1mn);
+			break;
+		case LOG_INTVL_15mn:
+			rras = RRAs_15mn;
+			rrasize = ARRAY_SIZE(RRAs_15mn);
+			break;
+	}
+
+	argv = calloc(sizeof(*argv), log_data->nkeys + rrasize);
 	if (!argv)
 		return (-EOOM);
 
 	// prepend RRAs
-	for (i = 0; i < ARRAY_SIZE(RRAs); i++) {
-		argv[i] = RRAs[i];
+	for (i = 0; i < rrasize; i++) {
+		argv[i] = rras[i];
 		argc++;
 	}
 
@@ -72,7 +92,7 @@ int log_rrd_create(const char * restrict const identifier, const struct s_log_da
 			ret = -EOOM;
 			goto cleanup;
 		}
-		argv[i+ARRAY_SIZE(RRAs)] = temp;
+		argv[i+rrasize] = temp;
 		argc++;
 	}
 
@@ -83,7 +103,7 @@ int log_rrd_create(const char * restrict const identifier, const struct s_log_da
 
 cleanup:
 	for (i = 0; i < log_data->nkeys; i++)
-		free(argv[i+ARRAY_SIZE(RRAs)]);
+		free(argv[i+rrasize]);
 	free(argv);
 
 	return (ret);
