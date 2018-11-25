@@ -88,7 +88,7 @@ static inline unsigned int ugcd(unsigned int a, unsigned int b)
 /**
  * Add a timer callback.
  * Insert callback ordered (by ascending period) in the callback list.
- * @param period the period at which that callback should be called
+ * @param period the period (seconds) at which that callback should be called
  * @param cb the callback function to call
  * @param name a user-defined name for the timer
  * @return exec status

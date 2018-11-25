@@ -25,7 +25,7 @@ static bool Log_configured = false;
 static struct s_log_callbacks Log_timed_cb, Log_untimed_cb;
 
 /**
- * Generic storage backend keys/values log call.
+ * Generic log backend keys/values log call.
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
  * @param log_data the data to log
