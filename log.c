@@ -136,7 +136,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
  * @param log_data the data to log
  * @warning no collision check on identifier
  */
-int log_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
+int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	return (_log_dump("async_", identifier, version, log_data));
 }

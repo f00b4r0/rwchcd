@@ -68,7 +68,7 @@ static void hw_p1_relays_log(void)
 		.nvalues = i,
 		.interval = -1,
 	};
-	log_dump("log_hw_p1_relays", &version, &data);
+	log_async_dump("hw_p1_relays", &version, &data);
 }
 
 /**

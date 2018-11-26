@@ -65,7 +65,7 @@ struct s_log_bendcbs {
 	int (*log_update)(const char * restrict const identifier, const struct s_log_data * const log_data);
 };
 
-int log_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data);
+int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data);
 int log_register(const struct s_log_source * restrict const lsource);
 int log_deregister(const struct s_log_source * restrict const lsource);
 int log_init(void);
