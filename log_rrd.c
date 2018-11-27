@@ -164,7 +164,7 @@ void log_rrd_hook(struct s_log_bendcbs * restrict const callbacks)
 {
 	assert(callbacks);
 
-	callbacks->backend = LBEND_RRD;
+	callbacks->backend = LOG_BKEND_RRD;
 	callbacks->log_create = log_rrd_create;
 	callbacks->log_update = log_rrd_update;
 }

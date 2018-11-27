@@ -85,7 +85,7 @@ void log_file_hook(struct s_log_bendcbs * restrict const callbacks)
 {
 	assert(callbacks);
 
-	callbacks->backend = LBEND_FILE;
+	callbacks->backend = LOG_BKEND_FILE;
 	callbacks->log_create = log_file_create;
 	callbacks->log_update = log_file_update;
 }

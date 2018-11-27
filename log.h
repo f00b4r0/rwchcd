@@ -22,8 +22,8 @@ typedef int32_t		log_value_t;	///< storage values type
 
 /** backend unique identifiers */
 enum e_log_bend {
-	LBEND_FILE,
-	LBEND_RRD,
+	LOG_BKEND_FILE,
+	LOG_BKEND_RRD,
 };
 
 /** discrete logging intervals (seconds) */
