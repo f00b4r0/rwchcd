@@ -227,6 +227,8 @@ static void log_clear_listelmt(struct s_log_list * restrict lelmt)
 /**
  * Deregister a scheduled log source.
  * Will remove the provided source from the corresponding time-based log list.
+ * If an object exist the match will be made on object && logdata_cb pointers,
+ * otherwise the match will be made on basename/identifier strings.
  * @param lsource the log source description
  * @return exec status (notfound is not reported)
  */
@@ -252,9 +254,9 @@ int log_deregister(const struct s_log_source * restrict const lsource)
 
 	// locate element to deregister
 	for (lelmt = *currlistp; lelmt; prev = lelmt, lelmt = lelmt->next) {
-		// if we have an object, find it in list
+		// if we have an object, find it in list, and make sure it's associated with the same callback
 		if (lsource->object) {
-			if (lelmt->lsource->object == lsource->object) {
+			if ((lelmt->lsource->object == lsource->object) && (lelmt->lsource->logdata_cb == lsource->logdata_cb)) {
 				if (!prev)
 					*currlistp = lelmt->next;
 				else
