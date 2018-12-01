@@ -181,8 +181,8 @@ struct s_hcircuit * hcircuit_new(void)
 
 /**
  * Put circuit online.
- * Perform all necessary actions to prepare the circuit for service but
- * DO NOT MARK IT AS ONLINE.
+ * Perform all necessary actions to prepare the circuit for service and
+ * mark it as online.
  * @param circuit target circuit
  * @return exec status
  */
@@ -228,14 +228,40 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	if (hcircuit_log_register(circuit) != ALL_OK)
 		dbgerr("\"%s\": couldn't register for logging", circuit->name);
 
+	if (ALL_OK == ret)
+		circuit->run.online = true;
+
 out:
 	return (ret);
 }
 
 /**
+ * Shutdown an online circuit.
+ * Perform all necessary actions to completely shut down the circuit.
+ * @param circuit target circuit
+ * @return exec status
+ */
+static int hcircuit_shutdown(struct s_hcircuit * const circuit)
+{
+	assert(circuit);
+	assert(circuit->set.configured);
+
+	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+	circuit->run.target_wtemp = 0;
+
+	if (circuit->pump)
+		pump_offline(circuit->pump);
+
+	if (circuit->valve)
+		valve_offline(circuit->valve);
+
+	return (ALL_OK);
+}
+
+/**
  * Put circuit offline.
- * Perform all necessary actions to completely shut down the circuit but
- * DO NOT MARK IT AS OFFLINE.
+ * Perform all necessary actions to completely shut down the circuit and
+ * mark is as offline.
  * @note will turn off logging for that circuit
  * @param circuit target circuit
  * @return error status
@@ -250,18 +276,10 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 
 	hcircuit_log_deregister(circuit);
 
-	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	circuit->run.target_wtemp = 0;
-
-	if (circuit->pump)
-		pump_offline(circuit->pump);
-
-	if (circuit->valve)
-		valve_offline(circuit->valve);
-
 	circuit->run.runmode = RM_OFF;
+	circuit->run.online = false;
 
-	return (ALL_OK);
+	return (hcircuit_shutdown(circuit));
 }
 
 /**
@@ -321,7 +339,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				goto valve;	// stop processing
 			}
 			else
-				return (hcircuit_offline(circuit));
+				return (hcircuit_shutdown(circuit));
 		case RM_TEST:
 			valve_reqstop(circuit->valve);
 			if (circuit->pump)

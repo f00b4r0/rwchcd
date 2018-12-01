@@ -620,11 +620,8 @@ int plant_online(struct s_plant * restrict const plant)
 		if (ALL_OK != ret) {
 			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
 			hcircuit_offline(circuitl->circuit);
-			circuitl->circuit->run.online = false;
 			suberror = true;
 		}
-		else
-			circuitl->circuit->run.online = true;
 	}
 
 	// then dhwt
@@ -698,7 +695,6 @@ int plant_offline(struct s_plant * restrict const plant)
 			dbgerr("circuit_offline failed, id: %d (%d)", circuitl->id, ret);
 			suberror = true;
 		}
-		circuitl->circuit->run.online = false;
 	}
 	
 	// then dhwt
@@ -996,7 +992,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case ALL_OK:
 				break;
 			default:
-				hcircuit_offline(circuitl->circuit);
+				hcircuit_offline(circuitl->circuit);		// something really bad happened
 			case -EINVALIDMODE:
 				circuitl->circuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
 			case -ESENSORINVAL:
