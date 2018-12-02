@@ -632,11 +632,8 @@ int plant_online(struct s_plant * restrict const plant)
 		if (ALL_OK != ret) {
 			dbgerr("dhwt_online failed, id: %d (%d)", dhwtl->id, ret);
 			dhwt_offline(dhwtl->dhwt);
-			dhwtl->dhwt->run.online = false;
 			suberror = true;
 		}
-		else
-			dhwtl->dhwt->run.online = true;
 	}
 
 	// finally online the heat source
@@ -706,7 +703,6 @@ int plant_offline(struct s_plant * restrict const plant)
 			dbgerr("dhwt_offline failed, id: %d (%d)", dhwtl->id, ret);
 			suberror = true;
 		}
-		dhwtl->dhwt->run.online = false;
 	}
 	
 	// next deal with the heat source
@@ -969,9 +965,12 @@ int plant_run(struct s_plant * restrict const plant)
 			case ALL_OK:
 				break;
 			default:
-				dhwt_offline(dhwtl->dhwt);
+				dhwt_offline(dhwtl->dhwt);			// something really bad happened
 			case -EINVALIDMODE:
 				dhwtl->dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+			case -ESENSORINVAL:
+			case -ESENSORSHORT:
+			case -ESENSORDISCON:	// sensor issues are handled by dhwt_run()
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;

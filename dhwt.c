@@ -34,8 +34,8 @@ struct s_dhw_tank * dhwt_new(void)
 
 /**
  * Put dhwt online.
- * Perform all necessary actions to prepare the dhwt for service but
- * DO NOT MARK IT AS ONLINE.
+ * Perform all necessary actions to prepare the dhwt for service and
+ * mark it as online.
  * @param dhwt target dhwt
  * @return exec status
  */
@@ -97,6 +97,9 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 		ret = -EMISCONFIGURED;
 	}
 
+	if (ALL_OK == ret)
+		dhwt->run.online = true;
+
 out:
 	return (ret);
 }
@@ -129,20 +132,16 @@ static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active
 
 /**
  * Put dhwt offline.
- * Perform all necessary actions to completely shut down the dhwt but
- * DO NOT MARK IT AS OFFLINE.
+ * Perform all necessary actions to completely shut down the dhwt.
  * @param dhwt target dhwt
  * @return error status
  */
-int dhwt_offline(struct s_dhw_tank * const dhwt)
+int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 {
 	bool online;
 
-	if (!dhwt)
-		return (-EINVALID);
-
-	if (!dhwt->set.configured)
-		return (-ENOTCONFIGURED);
+	assert(dhwt);
+	assert(dhwt->set.configured);
 
 	// clear runtime data while preserving online state
 	online = dhwt->run.online;
@@ -159,9 +158,28 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
 
 	hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
-	dhwt->run.runmode = RM_OFF;
-
 	return (ALL_OK);
+}
+
+/**
+ * Put dhwt offline.
+ * Perform all necessary actions to completely shut down the dhwt and
+ * mark it as offline.
+ * @param dhwt target dhwt
+ * @return error status
+ */
+int dhwt_offline(struct s_dhw_tank * const dhwt)
+{
+	if (!dhwt)
+		return (-EINVALID);
+
+	if (!dhwt->set.configured)
+		return (-ENOTCONFIGURED);
+
+	dhwt->run.runmode = RM_OFF;
+	dhwt->run.online = false;
+
+	return (dhwt_shutdown(dhwt));
 }
 
 /**
@@ -178,6 +196,8 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 	int ret;
 
 	assert(dhwt);
+
+	dbgerr("\"%s\": failsafe mode!", dhwt->name);
 
 	if (dhwt->feedpump)
 		pump_set_state(dhwt->feedpump, OFF, FORCE);
@@ -221,7 +241,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	switch (dhwt->run.runmode) {
 		case RM_OFF:
-			return (dhwt_offline(dhwt));
+			return (dhwt_shutdown(dhwt));
 		case RM_COMFORT:
 		case RM_ECO:
 			dhwt_actuator_use(dhwt, true);
