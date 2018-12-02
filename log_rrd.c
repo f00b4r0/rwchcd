@@ -38,6 +38,18 @@ const char *RRAs_1mn[] = {
 	"RRA:MAX:0.5:1d:10y",*/
 };
 
+const char *RRAs_5mn[] = {
+	"RRA:AVERAGE:0.5:1:1w",		// record 1-step samples for 1w
+	"RRA:MIN:0.5:1:1w",
+	"RRA:MAX:0.5:1:1w",
+	"RRA:AVERAGE:0.5:15m:1M",	// record 15mn samples for 1M
+	"RRA:MIN:0.5:15m:1M",
+	"RRA:MAX:0.5:15m:1M",
+	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y
+	"RRA:MIN:0.5:1h:1y",
+	"RRA:MAX:0.5:1h:1y",
+};
+
 const char *RRAs_15mn[] = {
 	"RRA:AVERAGE:0.5:1:1M",		// record 1-step samples for 1M
 	"RRA:MIN:0.5:1:1M",
@@ -68,6 +80,10 @@ int log_rrd_create(const char * restrict const identifier, const struct s_log_da
 		case LOG_INTVL_1mn:
 			rras = RRAs_1mn;
 			rrasize = ARRAY_SIZE(RRAs_1mn);
+			break;
+		case LOG_INTVL_5mn:
+			rras = RRAs_5mn;
+			rrasize = ARRAY_SIZE(RRAs_5mn);
 			break;
 		case LOG_INTVL_15mn:
 			rras = RRAs_15mn;
