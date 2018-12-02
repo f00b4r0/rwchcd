@@ -31,7 +31,7 @@
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
 
 static const struct s_log_source HW_P1_temps_lsrc = {
-	.interval = LOG_INTVL_1mn,
+	.log_sched = LOG_SCHED_1mn,
 	.basename = "hw_p1_",
 	.identifier = "temps",
 	.version = 2,

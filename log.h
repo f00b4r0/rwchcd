@@ -26,11 +26,18 @@ enum e_log_bend {
 	LOG_BKEND_RRD,
 };
 
-/** discrete logging intervals (seconds) */
+/** discrete logging schedules */
+enum e_log_sched {
+	LOG_SCHED_1mn,
+	LOG_SCHED_5mn,
+	LOG_SCHED_15mn,
+};
+
+/** discrete logging intervals (seconds). Must match e_log_sched */
 enum e_log_intvl {
 	LOG_INTVL_1mn = 60,
+	LOG_INTVL_5mn = 300,
 	LOG_INTVL_15mn = 900,
-	LOG_INTVL_1h = 3600,	///< XXX TODO fix log_rrd.c
 };
 
 /** Log data structure */
@@ -47,7 +54,7 @@ typedef int (*log_data_cb_t)(struct s_log_data * const ldata, const void * const
 
 /** Log source description. @warning strlen(basename) + strlen(identifier) must be < 240 */
 struct s_log_source {
-	enum e_log_intvl interval;		///< log interval, constrained by discrete e_log_intvl values, mandatory
+	enum e_log_sched log_sched;		///< log schedule, constrained by discrete e_log_sched values, mandatory
 	const char * restrict basename;		///< log basename (e.g. "valve_" or "hcircuit_" to restrict identifier namespace. @note Used as part of filename. mandatory
 	const char * restrict identifier;	///< log identifier within the basename namespace, must be unique in that namespace. @note Used as part of filename. mandatory
 	log_version_t version;			///< log format version, mandatory

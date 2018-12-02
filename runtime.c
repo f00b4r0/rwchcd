@@ -31,7 +31,7 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 static const storage_version_t Runtime_sversion = 5;
 static struct s_runtime Runtime;
 static const struct s_log_source Runtime_lsrc = {
-	.interval = LOG_INTVL_15mn,
+	.log_sched = LOG_SCHED_15mn,
 	.basename = "runtime_",
 	.identifier = "master",
 	.version = 5,

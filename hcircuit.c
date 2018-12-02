@@ -80,7 +80,7 @@ static const struct s_log_source * hcircuit_lreg(const struct s_hcircuit * const
 	static struct s_log_source Hcircuit_lreg;
 
 	Hcircuit_lreg = (struct s_log_source){
-		.interval = LOG_INTVL_15mn,
+		.log_sched = LOG_SCHED_15mn,
 		.basename = "hcircuit_",
 		.identifier = circuit->name,
 		.version = version,

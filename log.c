@@ -31,7 +31,42 @@ struct s_log_list {
 	struct s_log_list * next;
 };
 
-static struct s_log_list * Log_l1mn = NULL, * Log_l15mn = NULL, * Log_l1h = NULL;
+static int log_crawl(const int log_sched_id);
+
+static int log_crawl_1mn(void)	{ return (log_crawl(LOG_SCHED_1mn)); }
+static int log_crawl_5mn(void)	{ return (log_crawl(LOG_SCHED_5mn)); }
+static int log_crawl_15mn(void)	{ return (log_crawl(LOG_SCHED_15mn)); }
+
+/**
+ * Log schedule array.
+ * Must be kept in sync with e_log_sched.
+ */
+static struct {
+	struct s_log_list * loglist;	///< list of log sources
+	unsigned int interval;		///< interval in seconds
+	timer_cb_t cb;			///< timer callback for that schedule
+	const char * name;		///< name of the schedule
+} Log_sched[] = {
+	{
+		// LOG_SCHED_1mn
+		.loglist = NULL,
+		.interval = LOG_INTVL_1mn,
+		.cb = log_crawl_1mn,
+		.name = "log_crawl_1mn",
+	}, {
+		// LOG_SCHED_5mn
+		.loglist = NULL,
+		.interval = LOG_INTVL_5mn,
+		.cb = log_crawl_5mn,
+		.name = "log_crawl_5mn",
+	}, {
+		// LOG_SCHED_15mn
+		.loglist = NULL,
+		.interval = LOG_INTVL_15mn,
+		.cb = log_crawl_15mn,
+		.name = "log_crawl_15mn",
+	},
+};
 
 static bool Log_configured = false;
 static struct s_log_bendcbs Log_timed_cb, Log_untimed_cb;
@@ -87,7 +122,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 		if (logfmt.nkeys != log_data->nkeys)
 			fcreate = true;
 
-		// compare with current backend
+		// compare with current backend - XXX HACK
 		if (logfmt.bend != timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend)
 			fcreate = true;
 	}
@@ -108,8 +143,8 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 		// register new format
 		logfmt.nkeys = log_data->nkeys;
 		logfmt.nvalues = log_data->nvalues;
-		logfmt.interval = log_data->interval;
-		logfmt.bend = timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend;
+		logfmt.interval = log_data->interval;	// XXX do we need this?
+		logfmt.bend = timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend;	// XXX HACK
 
 		// XXX reappend LOG_FMT_SUFFIX
 		strcat(ident, LOG_FMT_SUFFIX);
@@ -148,6 +183,7 @@ int log_async_dump(const char * restrict const identifier, const log_version_t *
  * @warning XXX TODO no collision checks performed on basename/identifier
  * @param lsource the log source description
  * @return exec status
+ * @todo create log file and log first entry at startup?
  */
 int log_register(const struct s_log_source * restrict const lsource)
 {
@@ -157,20 +193,12 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	assert(lsource);
 
-	switch (lsource->interval) {
-		case LOG_INTVL_1mn:
-			currlistp = &Log_l1mn;
-			break;
-		case LOG_INTVL_15mn:
-			currlistp = &Log_l15mn;
-			break;
-		case LOG_INTVL_1h:
-			currlistp = &Log_l1h;
-			break;
-		default:
-			dbgerr("Invalid log interval for %s%s: %d", lsource->basename, lsource->identifier, lsource->interval);
-			return (-EINVALID);
+	if (lsource->log_sched >= ARRAY_SIZE(Log_sched)) {
+		dbgerr("Invalid log schedule for %s%s: %d", lsource->basename, lsource->identifier, lsource->log_sched);
+		return (-EINVALID);
 	}
+
+	currlistp = &Log_sched[lsource->log_sched].loglist;
 
 	if (!lsource->basename || !lsource->identifier) {
 		dbgerr("Missing basename / identifier");
@@ -208,7 +236,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 	*currlistp = lelmt;
 	// end fence
 
-	dbgmsg("registered \"%s%s\", interval: %d", lsource->basename, lsource->identifier, lsource->interval);
+	dbgmsg("registered \"%s%s\", interval: %d", lsource->basename, lsource->identifier, Log_sched[lsource->log_sched].interval);
 
 	return (ALL_OK);
 
@@ -238,19 +266,10 @@ int log_deregister(const struct s_log_source * restrict const lsource)
 
 	assert(lsource);
 
-	switch (lsource->interval) {
-		case LOG_INTVL_1mn:
-			currlistp = &Log_l1mn;
-			break;
-		case LOG_INTVL_15mn:
-			currlistp = &Log_l15mn;
-			break;
-		case LOG_INTVL_1h:
-			currlistp = &Log_l1h;
-			break;
-		default:
-			return (-EINVALID);
-	}
+	if (lsource->log_sched >= ARRAY_SIZE(Log_sched))
+		return (-EINVALID);
+
+	currlistp = &Log_sched[lsource->log_sched].loglist;
 
 	// locate element to deregister
 	for (lelmt = *currlistp; lelmt; prev = lelmt, lelmt = lelmt->next) {
@@ -288,7 +307,7 @@ int log_deregister(const struct s_log_source * restrict const lsource)
  * @param list the list of log sources to crawl
  * @return exec status
  */
-static int log_crawl(const struct s_log_list * restrict const list)
+static int log_crawl(const int log_sched_id)
 {
 	const struct s_log_list * lelmt;
 	const struct s_log_source * lsource;
@@ -298,11 +317,11 @@ static int log_crawl(const struct s_log_list * restrict const list)
 	if (!Log_configured)	// stop crawling when deconfigured
 		return (-ENOTCONFIGURED);
 
-	for (lelmt = list; lelmt; lelmt = lelmt->next) {
+	for (lelmt = Log_sched[log_sched_id].loglist; lelmt; lelmt = lelmt->next) {
 		lsource = lelmt->lsource;
 
 		lsource->logdata_cb(&ldata, lsource->object);
-		ldata.interval = lsource->interval;		// XXX
+		ldata.interval = Log_sched[log_sched_id].interval;		// XXX
 
 		ret = _log_dump(lsource->basename, lsource->identifier, &lsource->version, &ldata);
 		if (ret)
@@ -312,25 +331,11 @@ static int log_crawl(const struct s_log_list * restrict const list)
 	return (ret);	// XXX
 }
 
-static int log_crawl_1mn(void)
-{
-	return (log_crawl(Log_l1mn));
-}
-
-static int log_crawl_15mn(void)
-{
-	return (log_crawl(Log_l15mn));
-}
-
-static int log_crawl_1h(void)
-{
-	return (log_crawl(Log_l1h));
-}
-
 /* Quick hack */
 int log_init(void)
 {
 	int ret;
+	unsigned int i;
 
 	if (!storage_isconfigured())
 		return (-ENOTCONFIGURED);
@@ -345,17 +350,11 @@ int log_init(void)
 
 	Log_configured = true;
 
-	ret = timer_add_cb(LOG_INTVL_1mn, log_crawl_1mn, "log_crawl_1mn");
-	if (ALL_OK != ret)
-		dbgerr("failed to add 1mn log crawler timer");
-
-	timer_add_cb(LOG_INTVL_15mn, log_crawl_15mn, "log_crawl_15mn");
-	if (ALL_OK != ret)
-		dbgerr("failed to add 15mn log crawler timer");
-
-	timer_add_cb(LOG_INTVL_1h, log_crawl_1h, "log_crawl_1h");
-	if (ALL_OK != ret)
-		dbgerr("failed to add 1h log crawler timer");
+	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
+		ret = timer_add_cb(Log_sched[i].interval, Log_sched[i].cb, Log_sched[i].name);
+		if (ALL_OK != ret)
+			dbgerr("failed to add %s log crawler timer", Log_sched[i].name);
+	}
 
 	return (ALL_OK);
 }
@@ -364,24 +363,15 @@ int log_init(void)
 void log_exit(void)
 {
 	struct s_log_list * lelmt, * next;
+	unsigned int i;
 
 	Log_configured = false;
 
-	for (lelmt = Log_l1mn; lelmt;) {
-		next = lelmt->next;
-		log_clear_listelmt(lelmt);
-		lelmt = next;
-	}
-
-	for (lelmt = Log_l15mn; lelmt;) {
-		next = lelmt->next;
-		log_clear_listelmt(lelmt);
-		lelmt = next;
-	}
-
-	for (lelmt = Log_l1h; lelmt;) {
-		next = lelmt->next;
-		log_clear_listelmt(lelmt);
-		lelmt = next;
+	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
+		for (lelmt = Log_sched[i].loglist; lelmt;) {
+			next = lelmt->next;
+			log_clear_listelmt(lelmt);
+			lelmt = next;
+		}
 	}
 }
