@@ -328,6 +328,16 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	if (!circuit->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
 
+	// safety checks
+	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);
+	if (ALL_OK != ret) {
+		hcircuit_failsafe(circuit);
+		return (ret);
+	}
+
+	// we're good to go - keep updating actual_wtemp when circuit is off
+	circuit->run.actual_wtemp = curr_temp;
+
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
@@ -358,22 +368,11 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// if we reached this point then the circuit is active
 
-	// safety checks
-	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);
-	if (ALL_OK != ret) {
-		hcircuit_failsafe(circuit);
-		return (ret);
-	}
-
 	// if building model isn't online, failsafe
 	if (!circuit->bmodel->run.online) {
 		hcircuit_failsafe(circuit);
 		return (-ESAFETY);
 	}
-
-	// we're good to go
-
-	circuit->run.actual_wtemp = curr_temp;
 
 	// circuit is active, ensure pump is running
 	if (circuit->pump) {
