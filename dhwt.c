@@ -138,15 +138,23 @@ static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active
  */
 int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 {
-	bool online;
-
 	assert(dhwt);
 	assert(dhwt->set.configured);
 
+	if (!dhwt->run.active)
+		return (ALL_OK);
+
 	// clear runtime data while preserving online state
-	online = dhwt->run.online;
-	memset(&dhwt->run, 0x0, sizeof(dhwt->run));
-	dhwt->run.online = online;
+	dhwt->run.charge_on = false;
+	dhwt->run.recycle_on = false;
+	dhwt->run.force_on = false;
+	//dhwt->run.legionella_on = false;
+	dhwt->run.charge_overtime = false;
+	dhwt->run.mode_since = 0;	// XXX
+	dhwt->run.charge_yday = 0;	// XXX
+
+	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+	dhwt->run.target_temp = 0;
 
 	dhwt_actuator_use(dhwt, false);
 
@@ -157,6 +165,8 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 		pump_offline(dhwt->recyclepump);
 
 	hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+
+	dhwt->run.active = false;
 
 	return (ALL_OK);
 }
@@ -176,10 +186,13 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
-	dhwt->run.runmode = RM_OFF;
-	dhwt->run.online = false;
+	dhwt_shutdown(dhwt);
 
-	return (dhwt_shutdown(dhwt));
+	memset(&dhwt->run, 0x0, sizeof(dhwt->run));
+	//dhwt->run.runmode = RM_OFF;	// handled by memset
+	//dhwt->run.online = false;	// handled by memset
+
+	return (ALL_OK);
 }
 
 /**
@@ -264,6 +277,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	}
 
 	// if we reached this point then the dhwt is active
+	dhwt->run.active = true;
 
 	// check which sensors are available
 	ret = hardware_sensor_clone_temp(dhwt->set.tid_bottom, &bottom_temp);

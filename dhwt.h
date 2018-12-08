@@ -46,6 +46,7 @@ struct s_dhw_tank {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if tank is available for use (under software management)
+		bool active;			///< true if tank is active
 		bool charge_on;			///< true if charge ongoing
 		bool recycle_on;		///< true if recycle pump should be running
 		bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
