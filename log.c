@@ -25,6 +25,7 @@
 
 #define LOG_PREFIX	"log_"
 #define LOG_FMT_SUFFIX	".fmt"
+#define LOG_ASYNC_DUMP_BASENAME	"async_"
 
 struct s_log_list {
 	const struct s_log_source * lsource;
@@ -173,7 +174,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
  */
 int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
-	return (_log_dump("async_", identifier, version, log_data));
+	return (_log_dump(LOG_ASYNC_DUMP_BASENAME, identifier, version, log_data));
 }
 
 /**
@@ -202,6 +203,12 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	if (!lsource->basename || !lsource->identifier) {
 		dbgerr("Missing basename / identifier");
+		return (-EINVALID);
+	}
+
+	// forbid specific namespace
+	if (!strcmp(LOG_ASYNC_DUMP_BASENAME, lsource->basename)) {
+		dbgerr("Invalid basename for %s%s: %s", lsource->basename, lsource->identifier, lsource->basename);
 		return (-EINVALID);
 	}
 
