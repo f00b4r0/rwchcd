@@ -193,7 +193,7 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 
 	if (boiler->loadpump)
-		pump_offline(boiler->loadpump);
+		pump_shutdown(boiler->loadpump);
 
 	return (ALL_OK);
 }

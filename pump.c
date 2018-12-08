@@ -12,6 +12,7 @@
  */
 
 #include <stdlib.h>	// calloc/free
+#include <string.h>	// memset
 
 #include "pump.h"
 #include "hardware.h"
@@ -43,7 +44,8 @@ void pump_del(struct s_pump * restrict pump)
 
 /**
  * Put pump online.
- * Perform all necessary actions to prepare the pump for service.
+ * Perform all necessary actions to prepare the pump for service
+ * and mark it as online.
  * @param pump target pump
  * @return exec status
  */
@@ -57,6 +59,8 @@ int pump_online(struct s_pump * restrict const pump)
 
 	if (!pump->set.rid_pump.rid)
 		return (-EMISCONFIGURED);
+
+	pump->run.online = true;
 
 	return (ALL_OK);
 }
@@ -100,8 +104,26 @@ int pump_get_state(const struct s_pump * restrict const pump)
 }
 
 /**
- * Put pump offline.
+ * Shutdown an online pump.
  * Perform all necessary actions to completely shut down the pump.
+ * @param pump target pump
+ * @return exec status
+ */
+int pump_shutdown(struct s_pump * restrict const pump)
+{
+	if (!pump)
+		return (-EINVALID);
+
+	if (!pump->run.active)
+		return (ALL_OK);
+
+	return(pump_set_state(pump, OFF, FORCE));
+}
+
+/**
+ * Put pump offline.
+ * Perform all necessary actions to completely shut down the pump
+ * and mark it as offline.
  * @param pump target pump
  * @return exec status
  */
@@ -113,7 +135,13 @@ int pump_offline(struct s_pump * restrict const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	return(pump_set_state(pump, OFF, FORCE));
+	// unconditionally turn pump off
+	hardware_relay_set_state(pump->set.rid_pump, false, 0);
+
+	memset(&pump->run, 0x00, sizeof(pump->run));
+	//pump->run.online = false;	// handled by memset
+
+	return(ALL_OK);
 }
 
 /**
@@ -131,6 +159,8 @@ int pump_run(struct s_pump * restrict const pump)
 
 	if (!pump->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
+
+	pump->run.active = true;	// XXX never set false because we don't really need to for now
 
 	// apply cooldown to turn off, only if not forced.
 	// If ongoing cooldown, resume it, otherwise restore default value

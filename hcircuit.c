@@ -254,7 +254,7 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	circuit->run.target_wtemp = 0;
 
 	if (circuit->pump)
-		pump_offline(circuit->pump);
+		pump_shutdown(circuit->pump);
 
 	if (circuit->valve)
 		valve_offline(circuit->valve);

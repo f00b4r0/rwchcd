@@ -589,11 +589,8 @@ int plant_online(struct s_plant * restrict const plant)
 		if (ALL_OK != ret) {
 			dbgerr("pump_online failed, id: %d (%d)", pumpl->id, ret);
 			pump_offline(pumpl->pump);
-			pumpl->pump->run.online = false;
 			suberror = true;
 		}
-		else
-			pumpl->pump->run.online = true;
 	}
 
 	// valves
@@ -740,7 +737,6 @@ int plant_offline(struct s_plant * restrict const plant)
 			dbgerr("pump_offline failed, id: %d (%d)", pumpl->id, ret);
 			suberror = true;
 		}
-		pumpl->pump->run.online = false;
 	}
 	
 	if (suberror)
@@ -1075,7 +1071,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case ALL_OK:
 				break;
 			default:	// offline the pump if anything happens
-				pump_offline(pumpl->pump);
+				pump_offline(pumpl->pump);	// something really bad happened
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;

@@ -159,10 +159,10 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 	dhwt_actuator_use(dhwt, false);
 
 	if (dhwt->feedpump)
-		pump_offline(dhwt->feedpump);
+		pump_shutdown(dhwt->feedpump);
 
 	if (dhwt->recyclepump)
-		pump_offline(dhwt->recyclepump);
+		pump_shutdown(dhwt->recyclepump);
 
 	hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 

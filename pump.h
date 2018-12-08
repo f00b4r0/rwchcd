@@ -28,6 +28,7 @@ struct s_pump {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)
+		bool active;			///< true if pump is active (in use by the system)
 		bool req_on;			///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
 		bool dwht_use;			///< true if pump is currently used by active DHWT
@@ -41,6 +42,7 @@ void pump_del(struct s_pump * restrict pump);
 int pump_online(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state) __attribute__((warn_unused_result));
 int pump_get_state(const struct s_pump * restrict const pump);
+int pump_shutdown(struct s_pump * restrict const pump);
 int pump_offline(struct s_pump * restrict const pump);
 int pump_run(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 
