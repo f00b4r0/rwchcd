@@ -14,6 +14,7 @@
 #include <stdlib.h>	// calloc/free
 #include <assert.h>
 #include <math.h>	// truncf
+#include <string.h>	// memset
 
 #include "valve.h"
 #include "hardware.h"
@@ -418,7 +419,8 @@ static int v_sapprox_control(struct s_valve * const valve, const temp_t target_t
 
 /**
  * Put valve online.
- * Perform all necessary actions to prepare the valve for service.
+ * Perform all necessary actions to prepare the valve for service
+ * and mark it online.
  * @param valve target valve
  * @return exec status
  */
@@ -450,12 +452,41 @@ int valve_online(struct s_valve * const valve)
 	// reset the control algorithm
 	valve->run.ctrl_ready = false;
 
+	if (ALL_OK == ret)
+		valve->run.online = true;
+
 	return (ret);
 }
 
 /**
- * Put valve offline.
+ * Shutdown valve.
  * Perform all necessary actions to completely shut down the valve.
+ * @param valve target valve
+ * @return exec status
+ */
+int valve_shutdown(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+
+	if (!valve->run.active)
+		return (ALL_OK);
+
+	// close valve
+	valve_reqclose_full(valve);
+
+	// reset the control algorithm
+	valve->run.ctrl_ready = false;
+
+	valve->run.active = false;
+
+	return (ALL_OK);
+}
+
+/**
+ * Put valve offline.
+ * Perform all necessary actions to completely shut down the valve
+ * and mark it offline.
  * @param valve target valve
  * @return exec status
  */
@@ -467,11 +498,13 @@ int valve_offline(struct s_valve * const valve)
 	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
-	// close valve
-	valve_reqclose_full(valve);
+	// stop the valve uncondiditonally
+	hardware_relay_set_state(valve->set.rid_hot, OFF, 0);
+	hardware_relay_set_state(valve->set.rid_cold, OFF, 0);
 
-	// reset the control algorithm
-	valve->run.ctrl_ready = false;
+	memset(&valve->run, 0x00, sizeof(valve->run));
+	//valve->run.ctrl_ready = false;	// handled by memset
+	//valve->run.online = false;		// handled by memset
 
 	return (ALL_OK);
 }
@@ -541,6 +574,7 @@ int valve_run(struct s_valve * const valve)
 	perth_ps = 1000.0F/valve->set.ete_time;
 
 	valve->run.last_run_time = now;
+	valve->run.active = true;		// XXX never set false because we don't really need to for now
 
 	course = roundf(dt * perth_ps);		// we don't keep track of residual because we're already in ‰.
 

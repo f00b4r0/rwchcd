@@ -257,7 +257,7 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 		pump_shutdown(circuit->pump);
 
 	if (circuit->valve)
-		valve_offline(circuit->valve);
+		valve_shutdown(circuit->valve);
 
 	circuit->run.active = false;
 	

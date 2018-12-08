@@ -71,6 +71,7 @@ struct s_valve {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
+		bool active;		///< true if valve is in active (in use by the system)
 		bool dwht_use;		///< true if valve is currently used by active DHWT
 		bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
 		bool ctrl_ready;	///< false if controller algorithm must be reset
@@ -93,6 +94,7 @@ struct s_valve {
 struct s_valve * valve_new(void) __attribute__((warn_unused_result));
 void valve_del(struct s_valve * valve);
 int valve_online(struct s_valve * const valve) __attribute__((warn_unused_result));
+int valve_shutdown(struct s_valve * const valve);
 int valve_offline(struct s_valve * const valve);
 int valve_logic(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_run(struct s_valve * const valve) __attribute__((warn_unused_result));
