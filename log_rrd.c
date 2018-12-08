@@ -89,6 +89,9 @@ int log_rrd_create(const char * restrict const identifier, const struct s_log_da
 			rras = RRAs_15mn;
 			rrasize = ARRAY_SIZE(RRAs_15mn);
 			break;
+		default:
+			dbgerr("\"%s\": invalid interval (%d)", identifier, log_data->interval);
+			return (-EINVALID);
 	}
 
 	argv = calloc(sizeof(*argv), log_data->nkeys + rrasize);
