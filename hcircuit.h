@@ -57,7 +57,7 @@ struct s_hcircuit {
 		bool online;			///< true if circuit is operational (under software management)
 		bool outhoff;			///< true if no heating conditions are met
 		bool floor_output;		///< true if the current output should not be reduced
-		time_t last_run_time;		///< last time hcircuit_run() was invoked
+		time_t last_run_time;		///< last time hcircuit_run() was invoked. XXX not implemented
 		enum e_runmode runmode;		///< circuit actual (computed) runmode
 		temp_t rorh_last_target;	///< previous set point target for rorh control
 		time_t rorh_update_time;	///< last time output was updated with respect to rorh

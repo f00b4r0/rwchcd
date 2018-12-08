@@ -14,6 +14,7 @@
 #include <stdlib.h>	// calloc/free
 #include <assert.h>
 #include <math.h>	// roundf
+#include <string.h>	// memset
 
 #include "hcircuit.h"
 #include "hardware.h"
@@ -274,12 +275,14 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
+	hcircuit_shutdown(circuit);
 	hcircuit_log_deregister(circuit);
 
-	circuit->run.runmode = RM_OFF;
-	circuit->run.online = false;
+	memset(&circuit->run, 0x00, sizeof(circuit->run));
+	//circuit->run.runmode = RM_OFF;// handled by memset
+	//circuit->run.online = false;	// handled by memset
 
-	return (hcircuit_shutdown(circuit));
+	return (ALL_OK);
 }
 
 /**
