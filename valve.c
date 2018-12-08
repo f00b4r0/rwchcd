@@ -169,7 +169,7 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 
 	// apply deadzone
 	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
-		valve->run.ctrl_reset = true;
+		valve->run.ctrl_ready = false;
 		return (-EDEADZONE);
 	}
 
@@ -200,26 +200,26 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	// jacketing for saturation
 	if (target_tout <= tempin_l) {		// check tempin_l first to prioritize valve closing (useful in case of temporary _h < _l)
 		valve_reqclose_full(valve);
-		valve->run.ctrl_reset = true;
+		valve->run.ctrl_ready = false;
 		return (ALL_OK);
 	} else if (target_tout >= tempin_h) {
 		valve_reqopen_full(valve);
-		valve->run.ctrl_reset = true;
+		valve->run.ctrl_ready = false;
 		return (ALL_OK);
 	}
 
 	// stop PI operation if inputs are (temporarily) inverted or too close (would make K==0)
 	if (tempin_h - tempin_l <= 1000) {
-		valve->run.ctrl_reset = true;
+		valve->run.ctrl_ready = false;
 		dbgmsg("\"%s\": inputs inverted or input range too narrow", valve->name);
 		return (-EDEADZONE);
 	}
 
 	// handle algorithm reset
-	if (valve->run.ctrl_reset) {
+	if (!valve->run.ctrl_ready) {
 		vpriv->run.prev_out = tempout;
 		vpriv->run.db_acc = 0;
-		valve->run.ctrl_reset = false;
+		valve->run.ctrl_ready = true;
 		return (ALL_OK);	// skip until next iteration
 	}
 
@@ -380,9 +380,9 @@ static int v_sapprox_control(struct s_valve * const valve, const temp_t target_t
 	assert(vpriv);	// checked in online()
 
 	// handle reset
-	if (valve->run.ctrl_reset) {
+	if (!valve->run.ctrl_ready) {
 		vpriv->run.last_time = now;
-		valve->run.ctrl_reset = false;
+		valve->run.ctrl_ready = true;
 	}
 
 	// sample window
@@ -448,7 +448,7 @@ int valve_online(struct s_valve * const valve)
 	valve_reqstop(valve);
 
 	// reset the control algorithm
-	valve->run.ctrl_reset = true;
+	valve->run.ctrl_ready = false;
 
 	return (ret);
 }
@@ -471,7 +471,7 @@ int valve_offline(struct s_valve * const valve)
 	valve_reqclose_full(valve);
 
 	// reset the control algorithm
-	valve->run.ctrl_reset = true;
+	valve->run.ctrl_ready = false;
 
 	return (ALL_OK);
 }

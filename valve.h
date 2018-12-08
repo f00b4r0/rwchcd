@@ -73,7 +73,7 @@ struct s_valve {
 		bool online;		///< true if valve is operational (under software management)
 		bool dwht_use;		///< true if valve is currently used by active DHWT
 		bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
-		bool ctrl_reset;	///< true if controller algorithm must be reset
+		bool ctrl_ready;	///< false if controller algorithm must be reset
 		int_fast16_t actual_position;	///< estimated current position in ‰
 		int_fast16_t target_course;	///< current target course in ‰ of set.ete_time
 		time_t acc_open_time;	///< accumulated open time since last close
