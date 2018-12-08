@@ -23,6 +23,7 @@
 #include "lib.h"
 #include "config.h"
 #include "runtime.h"
+#include "models.h"	// models_outtemp()
 #include "dbus.h"
 #include "dbus-generated.h"
 
@@ -38,7 +39,7 @@ static gboolean on_handle_toutdoor_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
 				      gpointer user_data)
 {
-	float temp = temp_to_celsius(runtime_get()->t_outdoor_60);
+	float temp = temp_to_celsius(models_outtemp());
 	
 	dbus_rwchcd_control_complete_toutdoor_get(object, invocation, temp);
 	
