@@ -247,6 +247,9 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	assert(circuit);
 	assert(circuit->set.configured);
 
+	if (!circuit->run.active)
+		return (ALL_OK);
+
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	circuit->run.target_wtemp = 0;
 
@@ -256,6 +259,8 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	if (circuit->valve)
 		valve_offline(circuit->valve);
 
+	circuit->run.active = false;
+	
 	return (ALL_OK);
 }
 
@@ -370,6 +375,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 	// if we reached this point then the circuit is active
+	circuit->run.active = true;
 
 	// if building model isn't online, failsafe
 	if (!circuit->bmodel->run.online) {

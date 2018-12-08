@@ -55,6 +55,7 @@ struct s_hcircuit {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if circuit is operational (under software management)
+		bool active;			///< true if circuit is active
 		bool outhoff;			///< true if no heating conditions are met
 		bool floor_output;		///< true if the current output should not be reduced
 		time_t last_run_time;		///< last time hcircuit_run() was invoked. XXX not implemented
