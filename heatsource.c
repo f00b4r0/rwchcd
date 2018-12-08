@@ -29,8 +29,8 @@ struct s_heatsource * heatsource_new(void)
 
 /**
  * Put heatsource online.
- * Perform all necessary actions to prepare the heatsource for service but
- * DO NOT MARK IT AS ONLINE.
+ * Perform all necessary actions to prepare the heatsource for service and
+ * mark it as online.
  * @param heat target heatsource
  * @return exec status
  */
@@ -54,19 +54,21 @@ int heatsource_online(struct s_heatsource * const heat)
 	if (heat->cb.online)
 		ret = heat->cb.online(heat);
 
+	if (ALL_OK == ret)
+		heat->run.online = true;
+
 	return (ret);
 }
 
 /**
  * Put heatsource offline.
- * Perform all necessary actions to completely shut down the heatsource but
- * DO NOT MARK IT AS OFFLINE.
+ * Perform all necessary actions to completely shut down the heatsource and
+ * mark it as offline.
  * @param heat target heatsource
  * @return exec status
  */
 int heatsource_offline(struct s_heatsource * const heat)
 {
-	bool online;
 	int ret = -ENOTIMPLEMENTED;
 
 	if (!heat)
@@ -75,13 +77,11 @@ int heatsource_offline(struct s_heatsource * const heat)
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
-	// reset runtime data while preserving online status
-	online = heat->run.online;
-	memset(&heat->run, 0x0, sizeof(heat->run));
-	heat->run.online = online;
-
 	if (heat->cb.offline)
 		ret = heat->cb.offline(heat);
+
+	// reset runtime data (resets online status)
+	memset(&heat->run, 0x0, sizeof(heat->run));
 
 	return (ret);
 }

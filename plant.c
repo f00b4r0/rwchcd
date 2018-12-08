@@ -639,11 +639,8 @@ int plant_online(struct s_plant * restrict const plant)
 		if (ALL_OK != ret) {
 			dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
 			heatsource_offline(heatsourcel->heats);
-			heatsourcel->heats->run.online = false;
 			suberror = true;
 		}
-		else
-			heatsourcel->heats->run.online = true;
 	}
 
 	if (suberror)
@@ -709,7 +706,6 @@ int plant_offline(struct s_plant * restrict const plant)
 			dbgerr("heatsource_offline failed, id: %d (%d)", heatsourcel->id, ret);
 			suberror = true;
 		}
-		heatsourcel->heats->run.online = false;
 	}
 	
 	// finally offline the actuators
@@ -1013,7 +1009,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case ALL_OK:
 				break;
 			default:	// offline the source if anything happens
-				heatsource_offline(heatsourcel->heats);
+				heatsource_offline(heatsourcel->heats);	// something really bad happened
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 			case -ESENSORINVAL:
