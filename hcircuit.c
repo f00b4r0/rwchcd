@@ -48,9 +48,6 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
 	if (!circuit)
 		return (-EINVALID);
 
-	if (!circuit->set.configured)
-		return (-ENOTCONFIGURED);
-
 	if (!circuit->run.online)
 		return (-EOFFLINE);
 
