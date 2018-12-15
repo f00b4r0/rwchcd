@@ -596,6 +596,7 @@ static int filecfg_bmodel_dump(FILE * restrict const file, unsigned int il, cons
 	tfprintf(file, il, "bmodel \"%s\" {\n", bmodel->name);
 	il++;
 
+	tfprintf(file, il, "logging %s;\n", filecfg_bool_str(bmodel->set.logging));
 	tfprintf(file, il, "tau %ld;\n", bmodel->set.tau);
 	tfprintf(file, il, "tid_outdoor"); filecfg_tempid_dump(file, il, bmodel->set.tid_outdoor);
 

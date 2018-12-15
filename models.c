@@ -24,6 +24,7 @@
 #include "hardware.h"
 #include "alarms.h"
 #include "models.h"
+#include "log.h"
 
 #define OUTDOOR_SMOOTH_TIME		60	///< time in seconds over which outdoor temp is smoothed
 #define OUTDOOR_AVG_UPDATE_DT		600	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
@@ -41,6 +42,102 @@ static const storage_version_t Models_sversion = 3;
 const struct s_models * models_get(void)
 {
 	return (&Models);
+}
+
+/**
+ * Building model data log callback.
+ * @warning uses statically allocated data, must not be called concurrently.
+ * @param ldata the log data to populate
+ * @param object the opaque pointer to bmodel structure
+ * @return exec status
+ */
+static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const object)
+{
+	const struct s_bmodel * const bmodel = object;
+	static const log_key_t keys[] = {
+		"summer", "frost", "t_out", "t_out_filt", "t_out_mix", "t_out_att",
+	};
+	static log_value_t values[ARRAY_SIZE(keys)];
+	unsigned int i = 0;
+
+	assert(ldata);
+
+	if (!bmodel)
+		return (-EINVALID);
+
+	if (!bmodel->run.online)
+		return (-EOFFLINE);
+
+	values[i++] = bmodel->run.summer;
+	values[i++] = bmodel->run.frost;
+	values[i++] = bmodel->run.t_out;
+	values[i++] = bmodel->run.t_out_filt;
+	values[i++] = bmodel->run.t_out_mix;
+	values[i++] = bmodel->run.t_out_att;
+
+	ldata->keys = keys;
+	ldata->values = values;
+	ldata->nkeys = ARRAY_SIZE(keys);
+	ldata->nvalues = i;
+
+	return (ALL_OK);
+}
+
+/**
+ * Provide a well formatted log source for a given building model.
+ * @param bmodel the target bmodel
+ * @return (statically allocated) s_log_source pointer
+ */
+static const struct s_log_source * bmodel_lreg(const struct s_bmodel * const bmodel)
+{
+	const log_version_t version = 1;
+	static struct s_log_source Bmodel_lreg;
+
+	Bmodel_lreg = (struct s_log_source){
+		.log_sched = LOG_SCHED_15mn,
+		.basename = MODELS_STORAGE_BMODEL_PREFIX,
+		.identifier = bmodel->name,
+		.version = version,
+		.logdata_cb = bmodel_logdata_cb,
+		.object = bmodel,
+	};
+	return (&Bmodel_lreg);
+}
+
+/**
+ * Register a building model for logging.
+ * @param bmodel the target bmodel
+ * @return exec status
+ */
+static int bmodel_log_register(const struct s_bmodel * const bmodel)
+{
+	assert(bmodel);
+
+	if (!bmodel->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!bmodel->set.logging)
+		return (ALL_OK);
+
+	return (log_register(bmodel_lreg(bmodel)));
+}
+
+/**
+ * Deregister a building model from logging.
+ * @param bmodel the target bmodel
+ * @return exec status
+ */
+static int bmodel_log_deregister(const struct s_bmodel * const bmodel)
+{
+	assert(bmodel);
+
+	if (!bmodel->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!bmodel->set.logging)
+		return (ALL_OK);
+
+	return (log_deregister(bmodel_lreg(bmodel)));
 }
 
 /**
@@ -151,6 +248,10 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 	if (ALL_OK != ret)
 		return (ret);
 
+	// log registration shouldn't cause online failure
+	if (bmodel_log_register(bmodel) != ALL_OK)
+		dbgerr("\"%s\": couldn't register for logging", bmodel->name);
+
 	bmodel->run.online = true;
 
 	return (ALL_OK);
@@ -167,6 +268,8 @@ static int bmodel_offline(struct s_bmodel * restrict const bmodel)
 
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
+
+	bmodel_log_deregister(bmodel);
 
 	bmodel->run.online = false;
 
