@@ -109,8 +109,10 @@ int hw_p1_setup_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, 
 
 	hw->Sensors[id-1].ohm_to_celsius = hw_p1_sensor_o_to_c(type);
 
-	if (!hw->Sensors[id-1].ohm_to_celsius)
+	if (!hw->Sensors[id-1].ohm_to_celsius) {
+		free(str);
 		return (-EINVALID);
+	}
 
 	hw->Sensors[id-1].name = str;
 	hw->Sensors[id-1].set.type = type;
