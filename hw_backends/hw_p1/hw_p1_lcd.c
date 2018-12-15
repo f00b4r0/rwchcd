@@ -365,7 +365,7 @@ static const char * hw_p1_temp_to_str(const sid_t tempid)
 		snprintf(snpbuf+3, 7, "%3.0f C ", celsius);	// handles rounding
 	}
 
-	return (&snpbuf);
+	return (snpbuf);
 }
 
 // XXX quick hack
