@@ -108,8 +108,10 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 
 	if (name) {
 		str = strdup(name);
-		if (!str)
+		if (!str) {
+			free(lcb);
 			return (-EOOM);
+		}
 	}
 
 	lcb_before = NULL;
