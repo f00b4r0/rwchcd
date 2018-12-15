@@ -268,6 +268,7 @@ static int configure_models()
 
 	bmodel_house->set.tau = 10 * 60 * 60;		// XXX 10 hours
 	bmodel_house->set.configured = true;
+	bmodel_house->set.logging = true;
 	bmodel_house->set.tid_outdoor = tid_out;
 
 	return (ALL_OK);
