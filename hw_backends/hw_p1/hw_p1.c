@@ -327,41 +327,6 @@ int hw_p1_restore_relays(void)
 }
 
 /**
- * HW P1 temperatures log callback.
- * @param ldata the log data to populate
- * @param object unused
- * @return exec status
- */
-int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object)
-{
-	static const log_key_t keys[] = {
-		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
-	};
-	static log_value_t values[ARRAY_SIZE(keys)];
-	int i = 0;
-
-	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
-
-	if (!Hardware.run.online)
-		return (-EOFFLINE);
-
-	if (!Hardware.run.sensors_ftime)
-		return (-EINVALID);	// data not ready
-
-	pthread_rwlock_rdlock(&Hardware.Sensors_rwlock);
-	for (i = 0; i < Hardware.settings.nsensors; i++)
-		values[i] = Hardware.Sensors[i].run.value;
-	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
-
-	ldata->keys = keys;
-	ldata->values = values;
-	ldata->nkeys = ARRAY_SIZE(keys);
-	ldata->nvalues = i;
-
-	return (ALL_OK);
-}
-
-/**
  * Update internal relay system based on target state.
  * This function takes an incremental physical relay id and adjusts
  * the internal hardware data structure based on the desired relay

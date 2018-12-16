@@ -30,13 +30,50 @@
 
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
 
+/**
+ * HW P1 temperatures log callback.
+ * @param ldata the log data to populate
+ * @param object hw_p1 Hardware object
+ * @return exec status
+ */
+static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object)
+{
+	const struct s_hw_p1_pdata * const hw = object;
+	static const log_key_t keys[] = {
+		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
+	};
+	static log_value_t values[ARRAY_SIZE(keys)];
+	int i = 0;
+
+	assert(ldata);
+	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
+
+	if (!hw->run.online)
+		return (-EOFFLINE);
+
+	if (!hw->run.sensors_ftime)
+		return (-EINVALID);	// data not ready
+
+	pthread_rwlock_rdlock(&hw->Sensors_rwlock);
+	for (i = 0; i < hw->settings.nsensors; i++)
+		values[i] = hw->Sensors[i].run.value;
+	pthread_rwlock_unlock(&hw->Sensors_rwlock);
+
+	ldata->keys = keys;
+	ldata->values = values;
+	ldata->nkeys = ARRAY_SIZE(keys);
+	ldata->nvalues = i;
+
+	return (ALL_OK);
+}
+
 static const struct s_log_source HW_P1_temps_lsrc = {
 	.log_sched = LOG_SCHED_1mn,
 	.basename = "hw_p1_",
 	.identifier = "temps",
 	.version = 2,
 	.logdata_cb = hw_p1_temps_logdata_cb,
-	.object = NULL,
+	.object = &Hardware,
 };
 
 /**
