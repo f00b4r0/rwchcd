@@ -101,7 +101,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 }
 
 
-#define LOGIC_MIN_POWER_TRANS_UP	75	///< minimum estimate (linear) output power percentage for transition up modelling
+#define LOGIC_MIN_POWER_TRANS_UP	85	///< minimum estimate (linear) output power percentage for transition up modelling
 /**
  * Heating circuit logic.
  * Sets the target ambient temperature for a circuit based on selected run mode.
