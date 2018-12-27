@@ -28,7 +28,7 @@
 
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);
 
-static const storage_version_t Runtime_sversion = 6;
+static const storage_version_t Runtime_sversion = 7;
 static struct s_runtime Runtime;
 static const struct s_log_source Runtime_lsrc = {
 	.log_sched = LOG_SCHED_15mn,
