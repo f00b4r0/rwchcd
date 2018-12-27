@@ -346,11 +346,11 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
-			if (circuit->run.target_wtemp && (runtime->consumer_sdelay > 0)) {
+			if (circuit->run.target_wtemp && (circuit->run.consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				water_temp = circuit->run.target_wtemp;
-				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, runtime->consumer_sdelay);
+				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, circuit->run.consumer_sdelay);
 				goto valve;	// stop processing
 			}
 			else

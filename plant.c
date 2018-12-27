@@ -970,6 +970,7 @@ int plant_run(struct s_plant * restrict const plant)
 	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		circuitl->circuit->run.consumer_shift = plant->run.consumer_shift;
+		circuitl->circuit->run.consumer_sdelay = plant->run.consumer_sdelay;
 
 		ret = logic_hcircuit(circuitl->circuit);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
@@ -1075,7 +1076,7 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 
 	// reflect global stop delay
-	runtime->consumer_sdelay = stop_delay;
+	plant->run.consumer_sdelay = stop_delay;
 	
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.

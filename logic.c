@@ -195,11 +195,11 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 
 	// handle extra logic
 	// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
-	if ((TRANS_DOWN == circuit->run.transition) && runtime->consumer_sdelay && !runtime->dhwc_absolute)
+	if ((TRANS_DOWN == circuit->run.transition) && circuit->run.consumer_sdelay && !runtime->dhwc_absolute)
 		circuit->run.floor_output = true;
 
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
-	if (!runtime->consumer_sdelay)
+	if (!circuit->run.consumer_sdelay)
 		circuit->run.floor_output = false;
 
 	// XXX OPTIM if return temp is known

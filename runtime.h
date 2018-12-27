@@ -27,7 +27,6 @@ struct s_runtime {
 	temp_t plant_hrequest;		///< local heat request
 	temp_t external_hrequest;	///< external heat request (for cascading). @todo XXX NOT IMPLEMENTED
 	time_t start_time;		///< system start time
-	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
 	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible
