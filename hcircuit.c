@@ -432,14 +432,14 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 	// interference: apply global power shift
-	if (runtime->consumer_shift) {
+	if (circuit->run.consumer_shift) {
 		ret = hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
 		// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
 		if ((ALL_OK != ret) || (ret_temp >= water_temp))
 			ret_temp = celsius_to_temp(0);
 
 		// X% shift is (current + X*(current - ref)/100). ref is return temp
-		water_temp += runtime->consumer_shift * (water_temp - ret_temp) / 100;
+		water_temp += circuit->run.consumer_shift * (water_temp - ret_temp) / 100;
 		interference = true;
 	}
 

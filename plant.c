@@ -969,6 +969,8 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
+		circuitl->circuit->run.consumer_shift = plant->run.consumer_shift;
+
 		ret = logic_hcircuit(circuitl->circuit);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
 			ret = hcircuit_run(circuitl->circuit);
@@ -1025,7 +1027,7 @@ int plant_run(struct s_plant * restrict const plant)
 		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
 
 		// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
-		runtime->consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
+		plant->run.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
 	}
 
 	if (runtime->config->summer_maintenance)

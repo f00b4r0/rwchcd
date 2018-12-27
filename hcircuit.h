@@ -73,6 +73,7 @@ struct s_hcircuit {
 		temp_t target_wtemp;		///< current target water temp
 		temp_t actual_wtemp;		///< actual water temperature
 		temp_t heat_request;		///< current temp request from heat source for this circuit
+		int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 	} run;		///< private runtime (internally handled)
 	temp_t (*templaw)(const struct s_hcircuit * restrict const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
 	void * restrict tlaw_priv;		///< Reference data for templaw

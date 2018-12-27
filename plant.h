@@ -68,6 +68,7 @@ struct s_plant {
 	struct {
 		time_t summer_timer;	///< timer for summer maintenance
 		time_t last_creqtime;	///< last recorded time for circuit heat request
+		int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 	} run;
 	uint_fast8_t pump_n;	///< number of pumps in the plant
 	uint_fast8_t valve_n;	///< number of valves in the plant
