@@ -171,4 +171,10 @@ struct s_dhwt_params {
 	temp_t temp_inoffset;		///< offset temp for heat source request. This value will be added to the computed target temperature to form the heat request.
 };
 
+/* Plant-wide data */
+struct s_pdata {
+	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off
+	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
+};
+
 #endif /* rwchcd_h */

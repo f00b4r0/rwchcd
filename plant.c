@@ -292,6 +292,9 @@ struct s_hcircuit * plant_new_circuit(struct s_plant * restrict const plant, con
 	// set name
 	circuit->name = str;
 
+	// set plant data
+	circuit->pdata = &plant->pdata;
+
 	// create a new circuit element
 	circuitelement = calloc(1, sizeof(*circuitelement));
 	if (!circuitelement)
@@ -730,6 +733,9 @@ int plant_offline(struct s_plant * restrict const plant)
 			suberror = true;
 		}
 	}
+
+	memset(&plant->run, 0x0, sizeof(plant->run));
+	memset(&plant->pdata, 0x0, sizeof(plant->pdata));
 	
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
@@ -969,9 +975,6 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		circuitl->circuit->run.consumer_shift = plant->run.consumer_shift;
-		circuitl->circuit->run.consumer_sdelay = plant->run.consumer_sdelay;
-
 		ret = logic_hcircuit(circuitl->circuit);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
 			ret = hcircuit_run(circuitl->circuit);
@@ -1028,7 +1031,7 @@ int plant_run(struct s_plant * restrict const plant)
 		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
 
 		// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
-		plant->run.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
+		plant->pdata.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
 	}
 
 	if (runtime->config->summer_maintenance)
@@ -1076,7 +1079,7 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 
 	// reflect global stop delay
-	plant->run.consumer_sdelay = stop_delay;
+	plant->pdata.consumer_sdelay = stop_delay;
 	
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.

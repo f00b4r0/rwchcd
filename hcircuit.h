@@ -73,14 +73,13 @@ struct s_hcircuit {
 		temp_t target_wtemp;		///< current target water temp
 		temp_t actual_wtemp;		///< actual water temperature
 		temp_t heat_request;		///< current temp request from heat source for this circuit
-		int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
-		time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off
 	} run;		///< private runtime (internally handled)
 	temp_t (*templaw)(const struct s_hcircuit * restrict const, temp_t);	///< pointer to temperature law for this circuit, ref at 20C
 	void * restrict tlaw_priv;		///< Reference data for templaw
 	struct s_valve * restrict valve;	///< optional valve for circuit (if unavailable -> direct heating)
 	struct s_pump * restrict pump;		///< optional pump for this circuit
 	const struct s_bmodel * restrict bmodel;///< bmodel corresponding to this circuit
+	const struct s_pdata * restrict pdata;	///< read-only plant data for this circuit
 	char * restrict name;			///< name for this circuit
 };
 
