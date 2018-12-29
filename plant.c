@@ -751,7 +751,6 @@ int plant_offline(struct s_plant * restrict const plant)
 
 /**
  * Collect heat requests from a plant.
- * Updates runtime->plant_hrequest
  * @param plant target plant
  */
 static void plant_collect_hrequests(struct s_plant * restrict const plant)
@@ -822,7 +821,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	temp_request = (temp_req_dhw > temp_request) ? temp_req_dhw : temp_request;
 
 	// select effective heat request
-	runtime->plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
+	plant->pdata.plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
 
 	plant->pdata.dhwc_absolute = dhwt_absolute;
 	plant->pdata.dhwc_sliding = dhwt_sliding;
