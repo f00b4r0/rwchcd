@@ -151,7 +151,7 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 		circuit->run.runmode = circuit->set.runmode;
 
 	// if an absolute priority DHW charge is in progress, switch to dhw-only (will register the transition)
-	if (runtime->dhwc_absolute)
+	if (circuit->pdata->dhwc_absolute)
 		circuit->run.runmode = RM_DHWONLY;
 
 	// depending on circuit run mode, assess circuit target temp
@@ -195,7 +195,7 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 
 	// handle extra logic
 	// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
-	if ((TRANS_DOWN == circuit->run.transition) && circuit->pdata->consumer_sdelay && !runtime->dhwc_absolute)
+	if ((TRANS_DOWN == circuit->run.transition) && circuit->pdata->consumer_sdelay && !circuit->pdata->dhwc_absolute)
 		circuit->run.floor_output = true;
 
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)

@@ -818,7 +818,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	// select effective heat request
 	runtime->plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
 
-	runtime->dhwc_absolute = dhwt_absolute;
+	plant->pdata.dhwc_absolute = dhwt_absolute;
 	runtime->dhwc_sliding = dhwt_sliding;
 }
 
