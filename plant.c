@@ -374,6 +374,9 @@ struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const 
 	// set name
 	dhwt->name = str;
 
+	// set plant data
+	dhwt->pdata = &plant->pdata;
+
 	// create a new tank element
 	dhwtelement = calloc(1, sizeof(*dhwtelement));
 	if (!dhwtelement)
@@ -748,7 +751,7 @@ int plant_offline(struct s_plant * restrict const plant)
 
 /**
  * Collect heat requests from a plant.
- * Updates runtime->plant_hrequest, runtime->plant_could_sleep
+ * Updates runtime->plant_hrequest
  * @param plant target plant
  */
 static void plant_collect_hrequests(struct s_plant * restrict const plant)
@@ -777,9 +780,9 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 
 	// check if last request exceeds timeout
 	if ((now - plant->run.last_creqtime) > runtime->config->sleeping_delay)
-		runtime->plant_could_sleep = true;
+		plant->pdata.plant_could_sleep = true;
 	else
-		runtime->plant_could_sleep = false;
+		plant->pdata.plant_could_sleep = false;
 
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
@@ -873,7 +876,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	assert(runtime);
 
 	// don't do anything if summer AND plant asleep aren't in effect
-	if (!(plant_summer_ok(plant) && runtime->plant_could_sleep))
+	if (!(plant_summer_ok(plant) && plant->pdata.plant_could_sleep))
 		plant->run.summer_timer = now;
 
 	// stop running when duration is exceeded (this also prevents running when summer is first triggered)

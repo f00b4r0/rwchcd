@@ -173,6 +173,7 @@ struct s_dhwt_params {
 
 /* Plant-wide data */
 struct s_pdata {
+	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	bool dhwc_absolute;		///< true if absolute DHWT charge in progress
 	bool dhwc_sliding;		///< true if sliding DHWT charge in progress
 	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off

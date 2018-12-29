@@ -441,7 +441,7 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 		heat->run.runmode = heat->set.runmode;
 
 	heat->run.temp_request = runtime->plant_hrequest;
-	heat->run.could_sleep = runtime->plant_could_sleep;
+	heat->run.could_sleep = heat->pdata->plant_could_sleep;	// XXX
 
 	// compute sliding integral in DHW sliding prio
 	// XXX TODO: this logic should move at a higher level in the context of a pool of heatsources (some of which may or may not be connected to the DHWTs)

@@ -21,7 +21,6 @@ struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
 	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
-	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	temp_t plant_hrequest;		///< local heat request
 	time_t start_time;		///< system start time
 	struct s_plant * restrict plant;	///< running plant

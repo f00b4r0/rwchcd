@@ -28,13 +28,13 @@
 
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);
 
-static const storage_version_t Runtime_sversion = 7;
+static const storage_version_t Runtime_sversion = 8;
 static struct s_runtime Runtime;
 static const struct s_log_source Runtime_lsrc = {
 	.log_sched = LOG_SCHED_15mn,
 	.basename = "runtime_",
 	.identifier = "master",
-	.version = 5,
+	.version = 6,
 	.logdata_cb = runtime_logdata_cb,
 	.object = NULL,
 };
@@ -93,7 +93,6 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 		"systemmode",
 		"runmode",
 		"dhwmode",
-		"plant_sleep",
 		"plant_hrequest",
 	};
 	static log_value_t values[ARRAY_SIZE(keys)];
@@ -103,7 +102,6 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 	values[i++] = Runtime.systemmode;
 	values[i++] = Runtime.runmode;
 	values[i++] = Runtime.dhwmode;
-	values[i++] = Runtime.plant_could_sleep;
 	values[i++] = Runtime.plant_hrequest;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
 	

@@ -61,6 +61,7 @@ struct s_dhw_tank {
 	} run;		///< private runtime (internally handled)
 	struct s_pump * restrict feedpump;	///< feed pump for this tank
 	struct s_pump * restrict recyclepump;	///< dhw recycle pump for this tank
+	const struct s_pdata * restrict pdata;	///< read-only plant data for this tank
 	char * restrict name;			///< name for this tank
 };
 
