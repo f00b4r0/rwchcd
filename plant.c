@@ -453,6 +453,9 @@ struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant
 	// set name
 	source->name = str;
 
+	// set plant data
+	source->pdata = &plant->pdata;
+
 	// create a new source element
 	sourceelement = calloc(1, sizeof(*sourceelement));
 	if (!sourceelement)
@@ -745,7 +748,7 @@ int plant_offline(struct s_plant * restrict const plant)
 
 /**
  * Collect heat requests from a plant.
- * Updates runtime->plant_hrequest, runtime->plant_could_sleep, runtime->dhwc_sliding
+ * Updates runtime->plant_hrequest, runtime->plant_could_sleep
  * @param plant target plant
  */
 static void plant_collect_hrequests(struct s_plant * restrict const plant)
@@ -819,7 +822,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	runtime->plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
 
 	plant->pdata.dhwc_absolute = dhwt_absolute;
-	runtime->dhwc_sliding = dhwt_sliding;
+	plant->pdata.dhwc_sliding = dhwt_sliding;
 }
 
 /**

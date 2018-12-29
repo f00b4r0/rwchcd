@@ -174,6 +174,7 @@ struct s_dhwt_params {
 /* Plant-wide data */
 struct s_pdata {
 	bool dhwc_absolute;		///< true if absolute DHWT charge in progress
+	bool dhwc_sliding;		///< true if sliding DHWT charge in progress
 	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off
 	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 };
