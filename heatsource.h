@@ -37,7 +37,7 @@ struct s_heatsource {
 		bool online;			///< true if source is available for use (under software management)
 		bool could_sleep;		///< true if source is could be sleeping (no recent heat request from circuits)
 		enum e_runmode runmode;		///< heatsource actual (computed) runmode
-		temp_t temp_request;		///< current temperature request for heat source (max of all requests)
+		temp_t temp_request;		///< current temperature request for heat source
 		time_t last_run_time;		///< last time heatsource was run
 		time_t target_consumer_sdelay;	///< calculated stop delay
 		int_fast16_t cshift_crit;	///< critical factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.

@@ -440,7 +440,6 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	else
 		heat->run.runmode = heat->set.runmode;
 
-	heat->run.temp_request = heat->pdata->plant_hrequest;	// XXX
 	heat->run.could_sleep = heat->pdata->plant_could_sleep;	// XXX
 
 	// compute sliding integral in DHW sliding prio

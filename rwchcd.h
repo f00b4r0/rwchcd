@@ -176,7 +176,6 @@ struct s_pdata {
 	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	bool dhwc_absolute;		///< true if absolute DHWT charge in progress
 	bool dhwc_sliding;		///< true if sliding DHWT charge in progress
-	temp_t plant_hrequest;		///< plant heat request
 	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off
 	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 };

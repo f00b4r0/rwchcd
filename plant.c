@@ -639,8 +639,7 @@ int plant_online(struct s_plant * restrict const plant)
 		}
 	}
 
-	// finally online the heat source
-	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
+	// finally online the heat sources
 	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
 		ret = heatsource_online(heatsourcel->heats);
 		heatsourcel->status = ret;
@@ -705,8 +704,7 @@ int plant_offline(struct s_plant * restrict const plant)
 		}
 	}
 	
-	// next deal with the heat source
-	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
+	// next deal with the heat sources
 	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
 		ret = heatsource_offline(heatsourcel->heats);
 		heatsourcel->status = ret;
@@ -821,10 +819,37 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	temp_request = (temp_req_dhw > temp_request) ? temp_req_dhw : temp_request;
 
 	// select effective heat request
-	plant->pdata.plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
+	plant->run.plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
 
 	plant->pdata.dhwc_absolute = dhwt_absolute;
 	plant->pdata.dhwc_sliding = dhwt_sliding;
+}
+
+/**
+ * Dispatch heat requests from a plant.
+ * @warning currently supports single heat source, all consummers connected to it
+ * @todo XXX logic for multiple heatsources (cascade and/or failover)
+ * @param plant target plant
+ */
+static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
+{
+	struct s_heatsource_l * heatsourcel;
+	bool serviced = false;
+
+	assert(plant);
+
+	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
+	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
+		if (!heatsourcel->heats->run.online)
+			continue;
+
+		// XXX function call?
+		heatsourcel->heats->run.temp_request = plant->run.plant_hrequest;
+		serviced = true;
+	}
+
+	if (!serviced)
+		dbgerr("No heatsource available!");
 }
 
 /**
@@ -928,7 +953,6 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
  * @param plant the target plant to run
  * @return exec status (-EGENERIC if any sub call returned an error)
  * @todo separate error handler
- * @todo XXX TODO: currently supports single heat source, all consummers connected to it
  * @todo fix potential null dereferences
  */
 int plant_run(struct s_plant * restrict const plant)
@@ -1004,11 +1028,11 @@ int plant_run(struct s_plant * restrict const plant)
 		}
 	}
 
-	// collect heat requests
+	// collect and dispatch heat requests
 	plant_collect_hrequests(plant);
+	plant_dispatch_hrequests(plant);
 
-	// finally run the heat source
-	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
+	// now run the heat sources
 	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
 		ret = logic_heatsource(heatsourcel->heats);
 		if (ALL_OK == ret)	// run() only if logic() succeeds

@@ -68,6 +68,7 @@ struct s_plant {
 	struct {
 		time_t summer_timer;	///< timer for summer maintenance
 		time_t last_creqtime;	///< last recorded time for circuit heat request
+		temp_t plant_hrequest;	///< plant heat request
 	} run;
 	struct s_pdata pdata;
 	uint_fast8_t pump_n;	///< number of pumps in the plant
