@@ -953,7 +953,6 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
  * @param plant the target plant to run
  * @return exec status (-EGENERIC if any sub call returned an error)
  * @todo separate error handler
- * @todo fix potential null dereferences
  */
 int plant_run(struct s_plant * restrict const plant)
 {
@@ -1037,6 +1036,13 @@ int plant_run(struct s_plant * restrict const plant)
 		ret = logic_heatsource(heatsourcel->heats);
 		if (ALL_OK == ret)	// run() only if logic() succeeds
 			ret = heatsource_run(heatsourcel->heats);
+		if (ALL_OK == ret) {
+			// max stop delay
+			stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
+
+			// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
+			plant->pdata.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
+		}
 
 		heatsourcel->status = ret;
 		
@@ -1055,13 +1061,10 @@ int plant_run(struct s_plant * restrict const plant)
 				dbgerr("logic_heatsource/run failed on %d (%d)", heatsourcel->id, ret);
 				continue;	// no further processing for this source
 		}
-
-		// max stop delay
-		stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
-
-		// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
-		plant->pdata.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
 	}
+
+	// reflect global stop delay
+	plant->pdata.consumer_sdelay = stop_delay;
 
 	if (runtime->config->summer_maintenance)
 		plant_summer_maintenance(plant);
@@ -1107,9 +1110,6 @@ int plant_run(struct s_plant * restrict const plant)
 		}
 	}
 
-	// reflect global stop delay
-	plant->pdata.consumer_sdelay = stop_delay;
-	
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
 	else
