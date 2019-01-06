@@ -79,6 +79,8 @@
 		4F42A5DB1F968AE8001B0A1F /* dhwt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt.h; sourceTree = SOURCE_ROOT; };
 		4F42A5DD1F96AD0A001B0A1F /* boiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = boiler.c; sourceTree = SOURCE_ROOT; };
 		4F42A5DE1F96AD0A001B0A1F /* boiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = boiler.h; sourceTree = SOURCE_ROOT; };
+		4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.lex; path = filecfg_parser.l; sourceTree = SOURCE_ROOT; };
+		4F94475D21DAA14200FCF120 /* filecfg_parser.y */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.yacc; path = filecfg_parser.y; sourceTree = SOURCE_ROOT; };
 		4F961F9F1D899D5100E2A8AF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
 		4F961FA01D8D66BF00E2A8AF /* logic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = logic.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F961FA11D8D66BF00E2A8AF /* logic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logic.h; sourceTree = SOURCE_ROOT; };
@@ -230,6 +232,8 @@
 				4FCD55151D835D04003BB848 /* rwchcd.h */,
 				4F99FD202088D18500DDAB75 /* filecfg.c */,
 				4F99FD212088D18500DDAB75 /* filecfg.h */,
+				4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */,
+				4F94475D21DAA14200FCF120 /* filecfg_parser.y */,
 				4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */,
 				4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */,
 				4FC184831DA7D19D000E514B /* rwchcd.service */,
