@@ -21,6 +21,8 @@
  * hardware to confirm completion of the operation, it would typically be slower
  * due to the embedded delay in SPI_rw8bit().
  *
+ * https://www.raspberrypi.org/documentation/hardware/raspberrypi/spi/README.md
+ *
  * @warning this implementation is NOT thread safe: callers must ensure proper synchronization.
  */
 
@@ -432,6 +434,7 @@ int hw_p1_spi_sensor_r(rwchc_sensor_t tsensors[], const uint8_t sensor)
 {
 	int ret;
 	uint16_t tsval;
+	uint8_t low, high;
 	
 	assert(tsensors);
 
@@ -449,15 +452,21 @@ int hw_p1_spi_sensor_r(rwchc_sensor_t tsensors[], const uint8_t sensor)
 	 * a full transfer regardless of errors. */
 	ret = ALL_OK;
 
-	tsval = 0;
-	tsval |= SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
-	tsval |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+	low = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
+	if (FWversion <= 8)
+		high = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);	// then MSB, sent byte is next command
+	else	// v9
+		high = SPI_rw8bit(low);		// then MSB, sent byte is received LSB
 
-	if ((tsval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
+	if (RWCHC_SPIC_INVALID == high)		// MSB indicates an error
 		ret = -ESPI;
 	
 	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, sensor))
 		ret = -ESPI;
+
+	tsval = 0;
+	tsval |= (high << 8);
+	tsval |= low;
 
 	if (ALL_OK == ret)
 		tsensors[sensor] = tsval;
