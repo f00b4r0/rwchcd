@@ -458,8 +458,8 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 
 	tfprintf(file, il, "params"); filecfg_dhwt_params_dump(file, il, &dhwt->set.params);
 
-	tfprintf(file, il, "feedpump \"%s\";\n", dhwt->feedpump ? dhwt->feedpump->name : "");
-	tfprintf(file, il, "recyclepump \"%s\";\n", dhwt->recyclepump ? dhwt->recyclepump->name : "");
+	tfprintf(file, il, "pump_feed \"%s\";\n", dhwt->pump_feed ? dhwt->pump_feed->name : "");
+	tfprintf(file, il, "pump_recycle \"%s\";\n", dhwt->pump_recycle ? dhwt->pump_recycle->name : "");
 
 	il--;
 	tfprintf(file, il, "};\n");

@@ -59,8 +59,8 @@ struct s_dhw_tank {
 		time_t mode_since;		///< starting time of current mode (if charge_on: charge start time, else charge end time)
 		int charge_yday;		///< last day forced charge was triggered in DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
-	struct s_pump * restrict feedpump;	///< feed pump for this tank
-	struct s_pump * restrict recyclepump;	///< dhw recycle pump for this tank
+	struct s_pump * restrict pump_feed;	///< feed pump for this tank
+	struct s_pump * restrict pump_recycle;	///< dhw recycle pump for this tank
 	const struct s_pdata * restrict pdata;	///< read-only plant data for this tank
 	char * restrict name;			///< name for this tank
 };
