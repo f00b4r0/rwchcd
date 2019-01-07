@@ -368,15 +368,15 @@ static int configure_plant(struct s_plant * restrict plant)
 			      celsius_to_temp(15), celsius_to_temp(27), 130);
 
 	// attach valve to circuit
-	circuit->valve = plant_fbn_valve(plant, VALVE_CIRCUIT_N);
-	if (!circuit->valve) {
+	circuit->valve_mix = plant_fbn_valve(plant, VALVE_CIRCUIT_N);
+	if (!circuit->valve_mix) {
 		dbgerr("couldn't find valve %s for circuit %s", VALVE_CIRCUIT_N, circuit->name);
 		return (-ENOTFOUND);
 	}
 
 	// attach the circuit pump
-	circuit->pump = plant_fbn_pump(plant, PUMP_CIRCUIT_N);
-	if (!circuit->pump) {
+	circuit->pump_feed = plant_fbn_pump(plant, PUMP_CIRCUIT_N);
+	if (!circuit->pump_feed) {
 		dbgerr("couldn't find pump %s for circuit %s", PUMP_CIRCUIT_N, circuit->name);
 		return (-ENOTFOUND);
 	}

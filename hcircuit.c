@@ -217,8 +217,8 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		ret = -EMISCONFIGURED;
 	}
 	// if pump exists check it's correctly configured
-	if (circuit->pump && !circuit->pump->set.configured) {
-		dbgerr("\"%s\": pump \"%s\" not configured", circuit->name, circuit->pump->name);
+	if (circuit->pump_feed && !circuit->pump_feed->set.configured) {
+		dbgerr("\"%s\": pump_feed \"%s\" not configured", circuit->name, circuit->pump_feed->name);
 		ret = -EMISCONFIGURED;
 	}
 
@@ -250,11 +250,11 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	circuit->run.target_wtemp = 0;
 
-	if (circuit->pump)
-		pump_shutdown(circuit->pump);
+	if (circuit->pump_feed)
+		pump_shutdown(circuit->pump_feed);
 
-	if (circuit->valve)
-		valve_shutdown(circuit->valve);
+	if (circuit->valve_mix)
+		valve_shutdown(circuit->valve_mix);
 
 	circuit->run.active = false;
 	
@@ -302,9 +302,9 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
 {
 	assert(circuit);
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	valve_reqclose_full(circuit->valve);
-	if (circuit->pump)
-		pump_set_state(circuit->pump, ON, FORCE);
+	valve_reqclose_full(circuit->valve_mix);
+	if (circuit->pump_feed)
+		pump_set_state(circuit->pump_feed, ON, FORCE);
 }
 
 /**
@@ -356,9 +356,9 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			else
 				return (hcircuit_shutdown(circuit));
 		case RM_TEST:
-			valve_reqstop(circuit->valve);
-			if (circuit->pump)
-				pump_set_state(circuit->pump, ON, FORCE);
+			valve_reqstop(circuit->valve_mix);
+			if (circuit->pump_feed)
+				pump_set_state(circuit->pump_feed, ON, FORCE);
 			return (ALL_OK);
 		case RM_COMFORT:
 		case RM_ECO:
@@ -381,10 +381,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 	// circuit is active, ensure pump is running
-	if (circuit->pump) {
-		ret = pump_set_state(circuit->pump, ON, 0);
+	if (circuit->pump_feed) {
+		ret = pump_set_state(circuit->pump_feed, ON, 0);
 		if (ALL_OK != ret) {
-			dbgerr("\"%s\": failed to set pump \"%s\" ON (%d)", circuit->name, circuit->pump->name, ret);
+			dbgerr("\"%s\": failed to set pump_feed \"%s\" ON (%d)", circuit->name, circuit->pump_feed->name, ret);
 			hcircuit_failsafe(circuit);
 			return (ret);	// critical error: stop there
 		}
@@ -467,8 +467,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 valve:
 	// adjust valve position if necessary
-	if (circuit->valve) {
-		ret = valve_tcontrol(circuit->valve, water_temp);
+	if (circuit->valve_mix) {
+		ret = valve_tcontrol(circuit->valve_mix, water_temp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
 			goto out;
 	}

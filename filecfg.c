@@ -575,8 +575,8 @@ static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, co
 
 	tfprintf(file, il, "tlaw"); filecfg_hcircuit_tlaw_dump(file, il, circuit);
 
-	tfprintf(file, il, "valve \"%s\";\n", circuit->valve ? circuit->valve->name : "");
-	tfprintf(file, il, "pump \"%s\";\n", circuit->pump ? circuit->pump->name : "");
+	tfprintf(file, il, "valve_mix \"%s\";\n", circuit->valve_mix ? circuit->valve_mix->name : "");
+	tfprintf(file, il, "pump_feed \"%s\";\n", circuit->pump_feed ? circuit->pump_feed->name : "");
 	tfprintf(file, il, "model \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
 
 	il--;
