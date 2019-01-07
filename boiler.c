@@ -151,8 +151,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		ret = -EMISCONFIGURED;
 
 	// if pump exists check it's correctly configured
-	if (boiler->loadpump && !boiler->loadpump->set.configured) {
-		dbgerr("\"%s\": loadpump \"%s\" not configured", heat->name, boiler->loadpump->name);
+	if (boiler->pump_load && !boiler->pump_load->set.configured) {
+		dbgerr("\"%s\": pump_load \"%s\" not configured", heat->name, boiler->pump_load->name);
 		ret = -EMISCONFIGURED;
 	}
 
@@ -192,8 +192,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
 	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 
-	if (boiler->loadpump)
-		pump_shutdown(boiler->loadpump);
+	if (boiler->pump_load)
+		pump_shutdown(boiler->pump_load);
 
 	return (ALL_OK);
 }
@@ -214,8 +214,8 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 	hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 	// failsafe() is called after runchecklist(), the above can't fail
 
-	if (boiler->loadpump)
-		pump_set_state(boiler->loadpump, ON, FORCE);
+	if (boiler->pump_load)
+		pump_set_state(boiler->pump_load, ON, FORCE);
 }
 
 /**
@@ -389,7 +389,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	/* todo handle return temp limit (limit low only for boiler):
 	 * if a return mixing valve is available, use it, else form a critical
-	 * shift signal. Consider handling of loadpump. Consider adjusting target temp */
+	 * shift signal. Consider handling of pump_load. Consider adjusting target temp */
 
 	// handle boiler minimum temp if set
 	if (boiler->set.limit_tmin) {
@@ -411,11 +411,11 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// handler boiler return temp if set
 	if (boiler->set.limit_treturnmin) {
 		// if we have a configured valve, use it
-		if (boiler->retvalve) {
+		if (boiler->valve_ret) {
 			// set valve for target limit. If return is higher valve will be full closed.
-			ret = valve_tcontrol(boiler->retvalve, boiler->set.limit_treturnmin);
+			ret = valve_tcontrol(boiler->valve_ret, boiler->set.limit_treturnmin);
 			if ((ALL_OK != ret) && (-EDEADZONE != ret))	// something bad happened. XXX further action?
-				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->retvalve->name, ret);
+				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->valve_ret->name, ret);
 		}
 		else {
 			// calculate return integral
@@ -441,10 +441,10 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		dbgmsg("\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
 
 	// turn pump on if any
-	if (boiler->loadpump) {
-		ret = pump_set_state(boiler->loadpump, ON, 0);
+	if (boiler->pump_load) {
+		ret = pump_set_state(boiler->pump_load, ON, 0);
 		if (ALL_OK != ret) {
-			dbgerr("\"%s\": failed to set loadpump \"%s\" ON (%d)", heat->name, boiler->loadpump->name, ret);
+			dbgerr("\"%s\": failed to set pump_load \"%s\" ON (%d)", heat->name, boiler->pump_load->name, ret);
 			boiler_failsafe(boiler);
 			return (ret);	// critical error: stop there
 		}

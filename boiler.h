@@ -44,8 +44,8 @@ struct s_boiler_priv {
 		struct s_temp_intgrl boil_itg;	///< boiler integral (for cold start protection)
 		struct s_temp_intgrl ret_itg;	///< return integral (for return temp management)
 	} run;		///< private runtime (internally handled)
-	struct s_pump * restrict loadpump;	///< load pump for the boiler, if present
-	struct s_valve * restrict retvalve;	///< return valve for the boiler, if present -- XXX NOT IMPLEMENTED
+	struct s_pump * restrict pump_load;	///< load pump for the boiler, if present
+	struct s_valve * restrict valve_ret;	///< return valve for the boiler, if present -- XXX NOT IMPLEMENTED
 };
 
 int boiler_heatsource(struct s_heatsource * const heat) __attribute__((warn_unused_result));

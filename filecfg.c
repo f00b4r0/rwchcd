@@ -317,8 +317,8 @@ static int filecfg_boiler_hs_dump(FILE * restrict const file, unsigned int il, c
 	tfprintf(file, il, "rid_burner_1"); filecfg_relid_dump(file, il, priv->set.rid_burner_1);
 	tfprintf(file, il, "rid_burner_2"); filecfg_relid_dump(file, il, priv->set.rid_burner_2);
 
-	tfprintf(file, il, "loadpump \"%s\";\n", priv->loadpump ? priv->loadpump->name : "");
-	tfprintf(file, il, "retvalve \"%s\";\n", priv->retvalve ? priv->retvalve->name : "");
+	tfprintf(file, il, "pump_load \"%s\";\n", priv->pump_load ? priv->pump_load->name : "");
+	tfprintf(file, il, "valve_ret \"%s\";\n", priv->valve_ret ? priv->valve_ret->name : "");
 
 	il--;
 	tfprintf(file, il, "};\n");
