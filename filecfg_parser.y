@@ -9,9 +9,15 @@
 %{
 	#include <stdio.h>
 	#include <stdbool.h>
+	#include <string.h>
+	#include "filecfg_parser.h"
+	extern int yylineno;
+
 %}
 
 %union {
+	struct s_filecfg_opt *opt;
+	struct s_filecfg_optlist *optlist;
 	bool boolval;
 	int ival;
 	float dval;
@@ -70,6 +76,9 @@
 %token <strval> IDENTIFIER
 %token <strval> STRING
 
+%type <opt> option pump_ident valve_ident rid_ident tid_ident type_list
+%type <optlist> option_list tidrid_opts
+
 %%
 /* store lineno for each ast to spray error message such as "missing id field for sensor \"foo\" line xx" */
 
@@ -83,7 +92,7 @@ backends: BACKENDS '{' backend_list '}' ';'	{ printf("new backend list\n"); } ;
 backend: BACKEND STRING '{' backend_opts '}' ';' { printf("new backend: %s\n", $2); } ;
 
 backend_opts: /* empty */
-	| backend_opts type
+	| backend_opts type_list
 	| backend_opts sensors
 	| backend_opts relays
 ;
@@ -224,34 +233,41 @@ dhwts_list: | dhwts_list dhwt;
 
 // end plant
 
-type: TYPE STRING '{' option_list '}' ';'	{ printf("new type: %s\n", $2); } ;
+type_list: TYPE STRING '{' option_list '}' ';'	{ $$ = filecfg_new_opt(yylineno, OPTTYPE, $2, (union u_filecfg_optval)$4); } ;
 
-tid_ident: TID_IDENT '{' tidrid_opts '}' ';'	{ printf("tid %s\n", $1); } ;
-rid_ident: RID_IDENT '{' tidrid_opts '}' ';'	{ printf("rid %s\n", $1); } ;
-pump_ident: PUMP_IDENT STRING ';' ;
-valve_ident: VALVE_IDENT STRING ';' ;
+tid_ident: TID_IDENT '{' tidrid_opts '}' ';'	{ $$ = filecfg_new_opt(yylineno, OPTTIDRID, $1, (union u_filecfg_optval)$3); } ;
+rid_ident: RID_IDENT '{' tidrid_opts '}' ';'	{ $$ = filecfg_new_opt(yylineno, OPTTIDRID, $1, (union u_filecfg_optval)$3); } ;
+pump_ident: PUMP_IDENT STRING ';'		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, $1, (union u_filecfg_optval)$2); } ;
+valve_ident: VALVE_IDENT STRING ';' 		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, $1, (union u_filecfg_optval)$2); } ;
 
-tidrid_opts: /* empty */
-	| BACKEND STRING ';' NAME STRING ';'
-	| NAME STRING ';' BACKEND STRING ';'
+tidrid_opts: /* empty */		{ $$ = NULL; }
+	| BACKEND STRING ';' NAME STRING ';'	{
+						struct s_filecfg_opt * opt1 = filecfg_new_opt(yylineno, OPTSTRING, strdup("backend"), (union u_filecfg_optval)$2);
+						struct s_filecfg_optlist *litem = filecfg_new_optlistitem(NULL, opt1);
+						struct s_filecfg_opt * opt2 = filecfg_new_opt(yylineno, OPTSTRING, strdup("name"), (union u_filecfg_optval)$5);
+						$$ = filecfg_new_optlistitem(litem, opt2);
+					}
+	| NAME STRING ';' BACKEND STRING ';'	{
+						struct s_filecfg_opt * opt1 = filecfg_new_opt(yylineno, OPTSTRING, strdup("name"), (union u_filecfg_optval)$2);
+						struct s_filecfg_optlist *litem = filecfg_new_optlistitem(NULL, opt1);
+						struct s_filecfg_opt * opt2 = filecfg_new_opt(yylineno, OPTSTRING, strdup("backend"), (union u_filecfg_optval)$5);
+						$$ = filecfg_new_optlistitem(litem, opt2);
+					}
 ;
 
-option_list: /* empty */
-	| option_list option
+option_list: /* empty */		{ $$ = NULL; }
+	| option_list option		{ $$ = filecfg_new_optlistitem($1, $2); }
 ;
 
-option:	IDENTIFIER BOOL ';'		{ printf("option bool: %s %d\n", $1, $2); }
-	| IDENTIFIER INT ';'		{ printf("option int: %s %d\n", $1, $2); }
-	| IDENTIFIER FLOAT ';'		{ printf("option float: %s %f\n", $1, $2); }
-	| IDENTIFIER STRING ';'		{ printf("option string: %s %s\n", $1, $2); }
-	| TYPE STRING ';'		{ printf("option string: type %s\n", $2); }
+option:	IDENTIFIER BOOL ';'		{ $$ = filecfg_new_opt(yylineno, OPTBOOL, $1, (union u_filecfg_optval)$2); }
+	| IDENTIFIER INT ';'		{ $$ = filecfg_new_opt(yylineno, OPTINT, $1, (union u_filecfg_optval)$2); }
+	| IDENTIFIER FLOAT ';'		{ $$ = filecfg_new_opt(yylineno, OPTFLOAT, $1, (union u_filecfg_optval)$2); }
+	| IDENTIFIER STRING ';'		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, $1, (union u_filecfg_optval)$2); }
+	| TYPE STRING ';'		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, strdup("type"), (union u_filecfg_optval)$2); }
 ;
-
-//uint: INT				{ if ( yylval.integer < 0 ) { yyerror("negative values not allowed"); YYERROR; } } ;
 
 %%
 
-extern int yylineno;
 
 int main(int argc, char **argv)
 {

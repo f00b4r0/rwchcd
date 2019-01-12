@@ -26,7 +26,7 @@ https://gitlab.isc.org/isc-projects/kea/wikis/designs/simple-parser-design
 
 /* Enables debug mode. To see the debug messages, one needs to also set
  yy_flex_debug to 1, then the debug messages will be printed on stderr. */
-%option debug
+%option nodebug
 
 %option yylineno
 
@@ -76,14 +76,14 @@ plant			{ return PLANT; }
 
 pumps			{ return PUMPS; }
 pump			{ return PUMP; }
-pump_{IDENTPART}+	{ yylval.strval = strdup(yytext+5); return PUMP_IDENT; }
+pump_{IDENTPART}+	{ yylval.strval = strdup(yytext); return PUMP_IDENT; }
 
-rid_{IDENTPART}+	{ yylval.strval = strdup(yytext+4); return RID_IDENT; }
-tid_{IDENTPART}+	{ yylval.strval = strdup(yytext+4); return TID_IDENT; }
+rid_{IDENTPART}+	{ yylval.strval = strdup(yytext); return RID_IDENT; }
+tid_{IDENTPART}+	{ yylval.strval = strdup(yytext); return TID_IDENT; }
 
 valves			{ return VALVES; }
 valve			{ return VALVE; }
-valve_{IDENTPART}+	{ yylval.strval = strdup(yytext+6); return VALVE_IDENT; }
+valve_{IDENTPART}+	{ yylval.strval = strdup(yytext); return VALVE_IDENT; }
 algo			{ return ALGO; }
 
 heatsources		{ return HEATSOURCES; }
