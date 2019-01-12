@@ -24,7 +24,7 @@ static void config_dump(const struct s_hw_p1_pdata * restrict const hw, FILE * r
 {
 	assert(hw && file);
 
-	tfprintf(file, il, "config {\n");
+	tfprintf(file, il, "type \"hw_p1\" {\n");
 	il++;
 
 	tfprintf(file, il, "nsamples %" PRIdFAST8 ";\n", hw->set.nsamples);
