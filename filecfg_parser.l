@@ -1,3 +1,11 @@
+/*
+//  filecfg_parser.l
+//  rwchcd
+//
+//  (C) 2019 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
+*/
+
 /* https://fossies.org/dox/kea-1.5.0/parser.html
 https://gitlab.isc.org/isc-projects/kea/wikis/designs/simple-parser-design
  https://github.com/lijiansong/ConfigFileParser
@@ -50,14 +58,13 @@ IDENTPART		[A-Za-z0-9_]
 
 backends		{ return BACKENDS; }
 backend			{ return BACKEND; }
-config			{ return CONFIG; }
 
 sensors			{ return SENSORS; }
 sensor			{ return SENSOR; }
 
 relays			{ return RELAYS; }
 relay			{ return RELAY; }
-/*
+
 defconfig		{ return DEFCONFIG; }
 def_hcircuit		{ return DEF_HCIRCUIT; }
 def_dhwt		{ return DEF_DHWT; }
@@ -69,23 +76,31 @@ plant			{ return PLANT; }
 
 pumps			{ return PUMPS; }
 pump			{ return PUMP; }
-pump_{IDENTPART}+	{ yylval.strval = strdup(yytext); return PUMP_IDENT; }
+pump_{IDENTPART}+	{ yylval.strval = strdup(yytext+5); return PUMP_IDENT; }
 
-rid_{IDENTPART}+	{ yylval.strval = strdup(yytext); return RID_IDENT; }
-tid_{IDENTPART}+	{ yylval.strval = strdup(yytext); return TID_IDENT; }
+rid_{IDENTPART}+	{ yylval.strval = strdup(yytext+4); return RID_IDENT; }
+tid_{IDENTPART}+	{ yylval.strval = strdup(yytext+4); return TID_IDENT; }
 
 valves			{ return VALVES; }
 valve			{ return VALVE; }
-valve_{IDENTPART}+	{ yylval.strval = strdup(yytext); return VALVE_IDENT; }
-
+valve_{IDENTPART}+	{ yylval.strval = strdup(yytext+6); return VALVE_IDENT; }
 algo			{ return ALGO; }
 
 heatsources		{ return HEATSOURCES; }
 heatsource		{ return HEATSOURCE; }
 
+hcircuits		{ return HCIRCUITS; }
+hcircuit		{ return HCIRCUIT; }
+
+dhwts			{ return DHWTS; }
+dhwt			{ return DHWT; }
+
 params			{ return PARAMS; }
 tlaw			{ return TLAW; }
-*/
+
+name			{ return NAME; }
+type			{ return TYPE; }
+
 	/* booleans */
 true			|
 on			|
