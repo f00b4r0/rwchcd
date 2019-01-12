@@ -577,7 +577,7 @@ static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, co
 
 	tfprintf(file, il, "valve_mix \"%s\";\n", circuit->valve_mix ? circuit->valve_mix->name : "");
 	tfprintf(file, il, "pump_feed \"%s\";\n", circuit->pump_feed ? circuit->pump_feed->name : "");
-	tfprintf(file, il, "model \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
+	tfprintf(file, il, "bmodel \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
 
 	il--;
 	tfprintf(file, il, "};\n");
