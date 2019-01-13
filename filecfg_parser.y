@@ -53,7 +53,7 @@ node:	IDENTIFIER BOOL ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno,
 
 %%
 
-
+#if 0
 int main(int argc, char **argv)
 {
 	#ifdef YYDEBUG
@@ -63,6 +63,7 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+#endif
 
 void filecfg_parser_error(const char *s)
 {
