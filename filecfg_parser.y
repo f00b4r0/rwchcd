@@ -10,6 +10,8 @@
 	#include <stdio.h>
 	#include "filecfg_parser.h"
 	extern int yylineno;
+	int yylex();
+	void yyerror(char *);
 %}
 
 %union {
@@ -35,6 +37,8 @@
 
 %%
 
+start: node_list			{ filecfg_parser_process_nodelist($1); }
+
 node_list: /* empty */			{ $$ = NULL; }
 	| node_list node		{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
 ;
@@ -56,10 +60,11 @@ int main(int argc, char **argv)
 	//yydebug = 1;
 	#endif
 	yyparse();
+
 	return 0;
 }
 
-yyerror(char *s)
+void yyerror(char *s)
 {
 	fprintf(stderr, "error: line %d: %s\n", yylineno, s);
 }
