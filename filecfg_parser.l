@@ -98,7 +98,7 @@ dhwt			{ return DHWT; }
 params			{ return PARAMS; }
 tlaw			{ return TLAW; }
 
-name			{ return NAME; }
+name            { return NAME; }
 type			{ return TYPE; }
 
 	/* booleans */
@@ -119,11 +119,13 @@ no			{ yylval.boolval=false; return BOOL; }
 	/* option identifiers */
 [A-Za-z_]{IDENTPART}*	{ yylval.strval = strdup(yytext); return IDENTIFIER; }
 
-	/* user strings: must be printable with no escape sequence: disallow '\' */
-'[^'\\\n]*'	|
-\"[^\"\\\n]*\"		{ yylval.strval = strdup(yytext+1); yylval.strval[yyleng-2]='\0'; return STRING; }
+	/* user strings */
+'[^'\n]*'		|
+\"[^\"\n]*\"		{ yylval.strval = strdup(yytext+1); yylval.strval[yyleng-2]='\0'; return STRING; }
 
 [ \t\n]+		/* ignore whitespace */;
+
+.			{ printf("%d: spurious character %c\n", yylineno, *yytext); return 0; }
 
 <<EOF>>			{ yyterminate(); }
 %%
