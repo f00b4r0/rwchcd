@@ -20,13 +20,13 @@
 void * hw_p1_setup_new(void);
 void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw);
 
-int hw_p1_setup_setbl(const uint8_t percent);
-int hw_p1_setup_setnsensors(const rid_t lastid);
-int hw_p1_setup_setnsamples(const uint_fast8_t nsamples);
+int hw_p1_setup_setbl(struct s_hw_p1_pdata * restrict const hw, const uint8_t percent);
+int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const rid_t lastid);
+int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t nsamples);
 
-int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char * const name) __attribute__((warn_unused_result));
-int hw_p1_setup_relay_release(const rid_t id);
-int hw_p1_setup_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name) __attribute__((warn_unused_result));
-int hw_p1_setup_sensor_deconfigure(const sid_t id);
+int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const rid_t id, const bool failstate, const char * const name) __attribute__((warn_unused_result));
+int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const rid_t id);
+int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name) __attribute__((warn_unused_result));
+int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, const sid_t id);
 
 #endif /* hw_p1_setup_h */

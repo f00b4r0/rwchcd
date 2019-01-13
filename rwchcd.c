@@ -184,28 +184,28 @@ static int configure_hw()
 	}
 
 	// configure hw
-	hw_p1_setup_setbl(75);		// XXX 75% backlight
-	hw_p1_setup_setnsensors(5);	// XXX 5 sensors
-	hw_p1_setup_setnsamples(5);	// XXX 5 samples average
+	hw_p1_setup_setbl(priv, 75);		// XXX 75% backlight
+	hw_p1_setup_setnsensors(priv, 5);	// XXX 5 sensors
+	hw_p1_setup_setnsamples(priv, 5);	// XXX 5 samples average
 
 	// describe hw
-	ret = hw_p1_setup_sensor_configure(SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), SENSOR_OUTDOOR_N);
+	ret = hw_p1_setup_sensor_configure(priv, SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), SENSOR_OUTDOOR_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), SENSOR_BOILER_N);
+	ret = hw_p1_setup_sensor_configure(priv, SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), SENSOR_BOILER_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(+1), SENSOR_BOILRET_N);
+	ret = hw_p1_setup_sensor_configure(priv, SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(+1), SENSOR_BOILRET_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), SENSOR_WATEROUT_N);
+	ret = hw_p1_setup_sensor_configure(priv, SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), SENSOR_WATEROUT_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), SENSOR_WATERRET_N);
+	ret = hw_p1_setup_sensor_configure(priv, SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), SENSOR_WATERRET_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(RELAY_BURNER, OFF, RELAY_BURNER_N);
+	ret = hw_p1_setup_relay_request(priv, RELAY_BURNER, OFF, RELAY_BURNER_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(RELAY_VOPEN, OFF, RELAY_VOPEN_N);
+	ret = hw_p1_setup_relay_request(priv, RELAY_VOPEN, OFF, RELAY_VOPEN_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(RELAY_VCLOSE, OFF, RELAY_VCLOSE_N);
+	ret = hw_p1_setup_relay_request(priv, RELAY_VCLOSE, OFF, RELAY_VCLOSE_N);
 	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(RELAY_PUMP, ON, RELAY_PUMP_N);
+	ret = hw_p1_setup_relay_request(priv, RELAY_PUMP, ON, RELAY_PUMP_N);
 	if (ret) return (ret);
 #endif
 
