@@ -75,6 +75,9 @@
 #include "heatsource.h"
 #include "boiler.h"
 
+#include "filecfg_parser.tab.h"
+extern FILE *filecfg_parser_in;
+
 #ifndef RWCHCD_PRIO
  #define RWCHCD_PRIO	20	///< Desired run priority
 #endif
@@ -149,67 +152,6 @@ static void sig_handler(int signum)
 		default:
 			break;
 	}
-}
-
-/*
- config structure:
- - describe hardware (name of hw, type of hw, hw-specific config, hw-specific named relays and sensors). Names used for identification later on
- - configure runtime (i.e. global defaults)
- - describe building models
- - describe plant (named elements associated with named sensors/relays)
- */
-
-
-static int configure_hw()
-{
-	int ret;
-	void * priv;
-
-	/* describe hardware */
-	ret = hw_backends_init();
-	if (ret) {
-		dbgerr("hw_backends init error: %d", ret);
-		return (ret);
-	}
-
-#ifdef HAS_HWP1
-	// instantiate hardware proto 1
-	priv = hw_p1_setup_new();
-
-	// register hardware backend
-	ret = hw_p1_backend_register(priv, HW_NAME);
-	if (ret < 0) {
-		dbgmsg("backend registration failed for %s (%d)", HW_NAME, ret);
-		return (ret);
-	}
-
-	// configure hw
-	hw_p1_setup_setbl(priv, 75);		// XXX 75% backlight
-	hw_p1_setup_setnsensors(priv, 5);	// XXX 5 sensors
-	hw_p1_setup_setnsamples(priv, 5);	// XXX 5 samples average
-
-	// describe hw
-	ret = hw_p1_setup_sensor_configure(priv, SENSOR_OUTDOOR, ST_PT1000, deltaK_to_temp(-0.5F), SENSOR_OUTDOOR_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(priv, SENSOR_BOILER, ST_PT1000, deltaK_to_temp(0), SENSOR_BOILER_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(priv, SENSOR_BOILRET, ST_PT1000, deltaK_to_temp(+1), SENSOR_BOILRET_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(priv, SENSOR_WATEROUT, ST_PT1000, deltaK_to_temp(0), SENSOR_WATEROUT_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_sensor_configure(priv, SENSOR_WATERRET, ST_PT1000, deltaK_to_temp(0), SENSOR_WATERRET_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(priv, RELAY_BURNER, OFF, RELAY_BURNER_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(priv, RELAY_VOPEN, OFF, RELAY_VOPEN_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(priv, RELAY_VCLOSE, OFF, RELAY_VCLOSE_N);
-	if (ret) return (ret);
-	ret = hw_p1_setup_relay_request(priv, RELAY_PUMP, ON, RELAY_PUMP_N);
-	if (ret) return (ret);
-#endif
-
-	return (ALL_OK);
 }
 
 static int configure_runtime(struct s_config * restrict config)
@@ -463,7 +405,21 @@ static int init_process()
 	struct s_plant * restrict plant = NULL;
 	int ret;
 
+	/* init hardware backend subsystem */
+	ret = hw_backends_init();
+	if (ret) {
+		dbgerr("hw_backends init error: %d", ret);
+		return (ret);
+	}
 
+	// this is where we should call the parser
+	if (!(filecfg_parser_in = fopen("/etc/rwchcd.conf", "r"))) {
+		perror("/etc/rwchcd.conf");
+		exit(-1);
+	}
+	filecfg_parser_parse();
+
+#if 0
 	ret = storage_config();
 	if (ret) {
 		dbgerr("storage config error: %d", ret);
@@ -476,11 +432,7 @@ static int init_process()
 		return (ret);
 	}
 
-	ret = configure_hw();
-	if (ret) {
-		dbgerr("hardware config error: %d", ret);
-		return (ret);
-	}
+//	ret = configure_hw();
 
 	/* init hardware */
 	
@@ -565,6 +517,7 @@ static int init_process()
 
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
+#endif
 }
 
 static void exit_process(void)
@@ -707,7 +660,9 @@ int main(void)
 #endif
 
 	pr_log(_("Revision %s starting"), Version);
+	init_process();
 
+#if 0
 	// create a pipe for the watchdog
 	ret = pipe(pipefd);
 	if (ret)
@@ -822,6 +777,8 @@ int main(void)
 	if (outpipe)
 		fclose(outpipe);
 	unlink(RWCHCD_FIFO);
+#endif
+
 #endif
 
 	return (0);
