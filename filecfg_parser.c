@@ -118,3 +118,26 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 
 	return 0;
 }
+
+void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist)
+{
+	struct s_filecfg_parser_node *node;
+	struct s_filecfg_parser_nodelist *next;
+
+	if (!nodelist)
+		return;
+
+	node = nodelist->node;
+	next = nodelist->next;
+
+	free(nodelist);
+
+	if (node) {
+		free(node->name);
+		if (NODESTRING == node->type)
+			free(node->value.stringval);
+		filecfg_parser_free_nodelist(node->children);
+	}
+
+	filecfg_parser_free_nodelist(next);
+}
