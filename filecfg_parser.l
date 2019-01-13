@@ -98,7 +98,6 @@ dhwt			{ return DHWT; }
 params			{ return PARAMS; }
 tlaw			{ return TLAW; }
 
-name            { return NAME; }
 type			{ return TYPE; }
 
 	/* booleans */

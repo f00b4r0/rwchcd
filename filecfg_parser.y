@@ -12,12 +12,11 @@
 	#include <string.h>
 	#include "filecfg_parser.h"
 	extern int yylineno;
-
 %}
 
 %union {
-	struct s_filecfg_opt *opt;
-	struct s_filecfg_optlist *optlist;
+	struct s_filecfg_parser_node *node;
+	struct s_filecfg_parser_nodelist *nodelist;
 	bool boolval;
 	int ival;
 	float dval;
@@ -65,7 +64,6 @@
 %token PARAMS
 %token ALGO
 %token TYPE
-%token NAME
 
 %token <strval> RID_IDENT
 %token <strval> TID_IDENT
@@ -76,8 +74,8 @@
 %token <strval> IDENTIFIER
 %token <strval> STRING
 
-%type <opt> option pump_ident valve_ident rid_ident tid_ident type_list
-%type <optlist> option_list tidrid_opts
+%type <node> option pump_ident valve_ident rid_ident tid_ident type_list dhwt dhwts
+%type <nodelist> option_list dhwt_opts dhwts_list
 
 %%
 /* store lineno for each ast to spray error message such as "missing id field for sensor \"foo\" line xx" */
@@ -219,51 +217,40 @@ hcircuits_list: | hcircuits_list hcircuit;
 
 // dhwts
 
-dhwts: DHWTS '{' dhwts_list '}' ';' ;
-dhwt: DHWT STRING '{' dhwt_opts '}' ';' ;
-dhwt_opts: | dhwt_opts option
-	| dhwt_opts tid_ident
-	| dhwt_opts rid_ident
-	| dhwt_opts pump_ident
-	| dhwt_opts PARAMS '{' option_list '}' ';'
+dhwts: DHWTS '{' dhwts_list '}' ';' 		{ $$ = filecfg_parser_new_node(yylineno, OPTLIST, strdup("dhwts"), (u_filecfg_p_nodeval_t)0, $3); }  ;
+dhwt: DHWT STRING '{' dhwt_opts '}' ';' 	{ $$ = filecfg_parser_new_node(yylineno, OPTSTRING, strdup("dhwt"), (u_filecfg_p_nodeval_t)$2, $4); } ;
+dhwt_opts: /* empty */				{ $$ = NULL; }
+	| dhwt_opts option			{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
+	| dhwt_opts tid_ident			{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
+	| dhwt_opts rid_ident			{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
+	| dhwt_opts pump_ident			{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
+	| dhwt_opts PARAMS '{' option_list '}' ';' { $$ = filecfg_parser_new_nodelistelmt($1, filecfg_parser_new_node(yylineno, OPTLIST, strdup("params"), (u_filecfg_p_nodeval_t)0, $4)); }
 ;
-dhwts_list: | dhwts_list dhwt;
+dhwts_list: /* empty */				{ $$ = NULL; }
+	| dhwts_list dhwt			{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
+;
 
 // end dhwts
 
 // end plant
 
-type_list: TYPE STRING '{' option_list '}' ';'	{ $$ = filecfg_new_opt(yylineno, OPTTYPE, $2, (union u_filecfg_optval)$4); } ;
+type_list: TYPE STRING '{' option_list '}' ';'	{ $$ = filecfg_parser_new_node(yylineno, OPTSTRING, strdup("type"), (u_filecfg_p_nodeval_t)$2, $4); } ;
 
-tid_ident: TID_IDENT '{' tidrid_opts '}' ';'	{ $$ = filecfg_new_opt(yylineno, OPTTIDRID, $1, (union u_filecfg_optval)$3); } ;
-rid_ident: RID_IDENT '{' tidrid_opts '}' ';'	{ $$ = filecfg_new_opt(yylineno, OPTTIDRID, $1, (union u_filecfg_optval)$3); } ;
-pump_ident: PUMP_IDENT STRING ';'		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, $1, (union u_filecfg_optval)$2); } ;
-valve_ident: VALVE_IDENT STRING ';' 		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, $1, (union u_filecfg_optval)$2); } ;
-
-tidrid_opts: /* empty */		{ $$ = NULL; }
-	| BACKEND STRING ';' NAME STRING ';'	{
-						struct s_filecfg_opt * opt1 = filecfg_new_opt(yylineno, OPTSTRING, strdup("backend"), (union u_filecfg_optval)$2);
-						struct s_filecfg_optlist *litem = filecfg_new_optlistitem(NULL, opt1);
-						struct s_filecfg_opt * opt2 = filecfg_new_opt(yylineno, OPTSTRING, strdup("name"), (union u_filecfg_optval)$5);
-						$$ = filecfg_new_optlistitem(litem, opt2);
-					}
-	| NAME STRING ';' BACKEND STRING ';'	{
-						struct s_filecfg_opt * opt1 = filecfg_new_opt(yylineno, OPTSTRING, strdup("name"), (union u_filecfg_optval)$2);
-						struct s_filecfg_optlist *litem = filecfg_new_optlistitem(NULL, opt1);
-						struct s_filecfg_opt * opt2 = filecfg_new_opt(yylineno, OPTSTRING, strdup("backend"), (union u_filecfg_optval)$5);
-						$$ = filecfg_new_optlistitem(litem, opt2);
-					}
-;
+tid_ident: TID_IDENT '{' option_list '}' ';'	{ $$ = filecfg_parser_new_node(yylineno, OPTLIST, $1, (u_filecfg_p_nodeval_t)0, $3); } ;
+rid_ident: RID_IDENT '{' option_list '}' ';'	{ $$ = filecfg_parser_new_node(yylineno, OPTLIST, $1, (u_filecfg_p_nodeval_t)0, $3); } ;
+pump_ident: PUMP_IDENT STRING ';'		{ $$ = filecfg_parser_new_node(yylineno, OPTSTRING, $1, (u_filecfg_p_nodeval_t)$2, NULL); } ;
+valve_ident: VALVE_IDENT STRING ';' 		{ $$ = filecfg_parser_new_node(yylineno, OPTSTRING, $1, (u_filecfg_p_nodeval_t)$2, NULL); } ;
 
 option_list: /* empty */		{ $$ = NULL; }
-	| option_list option		{ $$ = filecfg_new_optlistitem($1, $2); }
+	| option_list option		{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
 ;
 
-option:	IDENTIFIER BOOL ';'		{ $$ = filecfg_new_opt(yylineno, OPTBOOL, $1, (union u_filecfg_optval)$2); }
-	| IDENTIFIER INT ';'		{ $$ = filecfg_new_opt(yylineno, OPTINT, $1, (union u_filecfg_optval)$2); }
-	| IDENTIFIER FLOAT ';'		{ $$ = filecfg_new_opt(yylineno, OPTFLOAT, $1, (union u_filecfg_optval)$2); }
-	| IDENTIFIER STRING ';'		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, $1, (union u_filecfg_optval)$2); }
-	| TYPE STRING ';'		{ $$ = filecfg_new_opt(yylineno, OPTSTRING, strdup("type"), (union u_filecfg_optval)$2); }
+option:	IDENTIFIER BOOL ';'		{ $$ = filecfg_parser_new_node(yylineno, OPTBOOL, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
+	| IDENTIFIER INT ';'		{ $$ = filecfg_parser_new_node(yylineno, OPTINT, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
+	| IDENTIFIER FLOAT ';'		{ $$ = filecfg_parser_new_node(yylineno, OPTFLOAT, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
+	| IDENTIFIER STRING ';'		{ $$ = filecfg_parser_new_node(yylineno, OPTSTRING, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
+	| TYPE STRING ';'		{ $$ = filecfg_parser_new_node(yylineno, OPTSTRING, strdup("type"), (u_filecfg_p_nodeval_t)$2, NULL); }
+	| BACKEND STRING ';'		{ $$ = filecfg_parser_new_node(yylineno, OPTSTRING, strdup("backend"), (u_filecfg_p_nodeval_t)$2, NULL); }
 ;
 
 %%

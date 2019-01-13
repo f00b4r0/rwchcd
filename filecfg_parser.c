@@ -16,16 +16,16 @@
 
 #include "filecfg_parser.h"
 
-struct s_filecfg_opt * filecfg_new_opt(int lineno, int type, char *name, union u_filecfg_optval value)
+struct s_filecfg_parser_node * filecfg_parser_new_node(int lineno, int type, char *name, union u_filecfg_parser_nodeval value, struct s_filecfg_parser_nodelist *children)
 {
-	struct s_filecfg_opt * opt = calloc(1, sizeof(*opt));
+	struct s_filecfg_parser_node * node = calloc(1, sizeof(*node));
 
-	if (!opt) {
+	if (!node) {
 		perror(NULL);
 		exit(-1);
 	}
 
-	printf("new_opt: %d, %d, %s, ", lineno, type, name);
+	printf("new_node: %d, %d, %s, ", lineno, type, name);
 	switch (type) {
 		case OPTINT:
 		case OPTBOOL:
@@ -37,28 +37,23 @@ struct s_filecfg_opt * filecfg_new_opt(int lineno, int type, char *name, union u
 		case OPTSTRING:
 			printf("%s\n", value.stringval);
 			break;
-		case OPTTIDRID:
-			if (value.optlist)
-				printf("%s->%s, %s->%s\n", value.optlist->option->name, value.optlist->option->value.stringval, value.optlist->next->option->name, value.optlist->next->option->value.stringval);
-			else
-				printf("\n");
-			break;
-		case OPTTYPE:
+		case OPTLIST:
 			printf("{list}\n");
 			break;
 	}
 
-	opt->lineno = lineno;
-	opt->type = type;
-	opt->name = name;
-	opt->value = value;
+	node->lineno = lineno;
+	node->type = type;
+	node->name = name;
+	node->value = value;
+	node->children = children;
 
-	return (opt);
+	return (node);
 }
 
-struct s_filecfg_optlist * filecfg_new_optlistitem(struct s_filecfg_optlist *next, struct s_filecfg_opt *option)
+struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_filecfg_parser_nodelist *next, struct s_filecfg_parser_node *node)
 {
-	struct s_filecfg_optlist * listelmt = calloc(1, sizeof(*listelmt));
+	struct s_filecfg_parser_nodelist * listelmt = calloc(1, sizeof(*listelmt));
 
 	if (!listelmt) {
 		perror(NULL);
@@ -66,7 +61,7 @@ struct s_filecfg_optlist * filecfg_new_optlistitem(struct s_filecfg_optlist *nex
 	}
 
 	listelmt->next = next;
-	listelmt->option = option;
+	listelmt->option = node;
 
 	return (listelmt);
 }

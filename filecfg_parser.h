@@ -16,29 +16,31 @@
 
 #include <stdbool.h>
 
-union u_filecfg_optval {
+union u_filecfg_parser_nodeval {
 	bool boolval;
 	int intval;
 	float floatval;
 	char *stringval;
-	struct s_filecfg_optlist *optlist;
 };
 
-enum e_filecfg_opttype { OPTBOOL, OPTINT, OPTFLOAT, OPTSTRING, OPTTIDRID, OPTTYPE };
+typedef union u_filecfg_parser_nodeval u_filecfg_p_nodeval_t;
 
-struct s_filecfg_opt {
+enum e_filecfg_opttype { OPTBOOL, OPTINT, OPTFLOAT, OPTSTRING, OPTLIST };
+
+struct s_filecfg_parser_node {
 	int lineno;
 	enum e_filecfg_opttype type;
 	char * name;
-	union u_filecfg_optval value;
+	union u_filecfg_parser_nodeval value;
+	struct s_filecfg_parser_nodelist *children;
 };
 
-struct s_filecfg_optlist {
-	struct s_filecfg_opt *option;
-	struct s_filecfg_optlist *next;
+struct s_filecfg_parser_nodelist {
+	struct s_filecfg_parser_node *option;
+	struct s_filecfg_parser_nodelist *next;
 };
 
-struct s_filecfg_opt * filecfg_new_opt(int lineno, int type, char *name, union u_filecfg_optval value);
-struct s_filecfg_optlist * filecfg_new_optlistitem(struct s_filecfg_optlist *next, struct s_filecfg_opt *option);
+struct s_filecfg_parser_node * filecfg_parser_new_node(int lineno, int type, char *name, union u_filecfg_parser_nodeval value, struct s_filecfg_parser_nodelist *children);
+struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_filecfg_parser_nodelist *next, struct s_filecfg_parser_node *node);
 
 #endif /* filecfg_parser_h */
