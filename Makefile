@@ -3,6 +3,8 @@ VARLIBDIR := /var/lib/rwchcd
 REVISION := $(shell git describe --tags --always --dirty)
 HOST_OS := $(shell uname)
 CC := gcc
+FLEX := flex
+BISON := bison
 #add -Wconversion when ready - -Wdouble-promotion should be checked but triggers warnings with printf
 WFLAGS := -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wno-double-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla
 OPTIMS := -O0 -g -ggdb3 -march=native -mcpu=native -mtune=native -fstack-protector -Wstack-protector -fstrict-aliasing -Wstrict-aliasing
@@ -51,7 +53,7 @@ DBUSGEN_OBJS := $(DBUSGEN_SRCS:.c=.o)
 DBUSGEN_DEPS := $(DBUSGEN_SRCS:.c=.d)
 
 MAIN := rwchcd
-MAINOBJS := $(OBJS)
+MAINOBJS := $(OBJS) filecfg_parser.tab.o filecfg_parser.lex.o
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
 MAINOBJS += $(DBUSGEN_OBJS)
 CFLAGS += $(shell pkg-config --cflags gio-unix-2.0)
@@ -66,12 +68,18 @@ all:	$(MAIN)
 $(MAIN): $(MAINOBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
 
+%.lex.c: %.l %.tab.h
+	$(FLEX) -s -P$*_ -o$@ $<
+
+%.tab.h %.tab.c: %.y
+	$(BISON) -b $* -p $*_ -d $<
+
 .c.o:
 	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
 
 clean:
 	$(RM) $(HWBACKENDS_DIR)/*/*.[od~]
-	$(RM) *.o *.d *~ $(MAIN)
+	$(RM) *.o *.d *~ *.output $(MAIN)
 
 distclean:	clean
 	$(RM) *-generated.[ch]

@@ -44,7 +44,7 @@ IDENTPART		[A-Za-z0-9_]
 	/* literal tokens */
 "{"			|
 "}"			|
-";"			{ return yytext[0]; }
+";"			{ return filecfg_parser_text[0]; }
 
 	/* comments */
 "#".*\n
@@ -52,33 +52,33 @@ IDENTPART		[A-Za-z0-9_]
 "/*"			{ BEGIN(COMMENT); }
 <COMMENT>"*/"		{ BEGIN(INITIAL); }
 <COMMENT>([^*]|\n)+|.
-<COMMENT><<EOF>>	{ printf("%d: Unterminated comment\n", yylineno); return 0; }
+<COMMENT><<EOF>>	{ printf("%d: Unterminated comment\n", filecfg_parser_lineno); return 0; }
 
 	/* booleans */
 true			|
 on			|
-yes			{ yylval.boolval=true; return BOOL; }
+yes			{ filecfg_parser_lval.boolval=true; return BOOL; }
 
 false			|
 off			|
-no			{ yylval.boolval=false; return BOOL; }
+no			{ filecfg_parser_lval.boolval=false; return BOOL; }
 
 	/* integers */
-[-+]?[0-9]+		{ yylval.ival=atoi(yytext); return INT; }
+[-+]?[0-9]+		{ filecfg_parser_lval.ival=atoi(filecfg_parser_text); return INT; }
 
 	/* decimals */
-[-+]?([0-9]*\.[0-9]+|[0-9]+\.)	{ yylval.dval=atof(yytext); return FLOAT; }
+[-+]?([0-9]*\.[0-9]+|[0-9]+\.)	{ filecfg_parser_lval.dval=atof(filecfg_parser_text); return FLOAT; }
 
 	/* option identifiers */
-[A-Za-z_]{IDENTPART}*	{ yylval.strval = strdup(yytext); return IDENTIFIER; }
+[A-Za-z_]{IDENTPART}*	{ filecfg_parser_lval.strval = strdup(filecfg_parser_text); return IDENTIFIER; }
 
 	/* user strings */
 '[^'\n]*'		|
-\"[^\"\n]*\"		{ yylval.strval = strdup(yytext+1); yylval.strval[yyleng-2]='\0'; return STRING; }
+\"[^\"\n]*\"		{ filecfg_parser_lval.strval = strdup(filecfg_parser_text+1); filecfg_parser_lval.strval[filecfg_parser_leng-2]='\0'; return STRING; }
 
 [ \t\n]+		/* ignore whitespace */;
 
-.			{ printf("%d: spurious character %c\n", yylineno, *yytext); return 0; }
+.			{ printf("%d: spurious character %c\n", filecfg_parser_lineno, *filecfg_parser_text); return 0; }
 
 <<EOF>>			{ yyterminate(); }
 %%
