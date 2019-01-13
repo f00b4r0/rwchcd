@@ -15,7 +15,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "hw_backends.h"
 #include "filecfg_parser.h"
+
+#ifdef HAS_HWP1		// XXX
+ #include "hw_backends/hw_p1/hw_p1_filecfg.h"
+#endif
 
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
@@ -90,6 +95,47 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 	return (listelmt);
 }
 
+static int hardware_backend_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	const struct s_filecfg_parser_nodelist *bkdlist;
+	const struct s_filecfg_parser_node *bkdnode;
+	const char *bkdname = NULL;
+
+	if (!node || !node->children)
+		return (-EINVALID);
+
+	for (bkdlist = node->children; bkdlist; bkdlist = bkdlist->next) {
+		bkdnode = bkdlist->node;
+		if (!bkdnode) {
+			printf("invalid node\n");	// xxx assert this can't happen
+			continue;
+		}
+
+		if (NODESTR != bkdnode->type) {
+			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", bkdnode->name, bkdnode->lineno);
+			continue;	// skip invalid node
+		}
+		if (strcmp("backend", bkdnode->name)) {
+			dbgerr("Ignoring unknown node \"%s\" closing at line %d", bkdnode->name, bkdnode->lineno);
+			continue;	// skip invalid node
+		}
+
+		bkdname = bkdnode->value.stringval;
+
+		if (strlen(bkdname) < 1) {
+			dbgerr("Ignoring backend with empty name closing at line %d", bkdnode->lineno);
+			continue;
+		}
+
+		dbgmsg("Trying %s node \"%s\"", bkdnode->name, bkdname);
+
+		// test backend parsers
+		if (ALL_OK == hw_p1_filecfg_parse(bkdnode))	// XXX HACK
+			dbgmsg("HW P1 found!");
+	}
+	return (ALL_OK);
+}
+
 static struct s_filecfg_parser_parsers Parsers[] = {	// order matters we want to parse backends first and plant last
 	{ NODELST, "backends", false, hardware_backend_parse, false, NULL, },
 	{ NODELST, "defconfig", false, NULL, false, NULL, },
@@ -117,6 +163,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 			continue;	// skip invalid node type
 
 		if (!strcmp(parsers[i].identifier, node->name)) {
+			dbgmsg("matched %s", node->name);
 			matched = true;
 			if (parsers[i].seen) {
 				dbgerr("Ignoring duplicate node \"%s\" closing at line %d", node->name, node->lineno);
