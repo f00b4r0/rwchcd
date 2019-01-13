@@ -27,17 +27,17 @@ struct s_filecfg_parser_node * filecfg_parser_new_node(int lineno, int type, cha
 
 	printf("new_node: %d, %d, %s, ", lineno, type, name);
 	switch (type) {
-		case OPTINT:
-		case OPTBOOL:
+		case NODEINT:
+		case NODEBOOL:
 			printf("%d\n", value.intval);
 			break;
-		case OPTFLOAT:
+		case NODEFLOAT:
 			printf("%f\n", value.floatval);
 			break;
-		case OPTSTRING:
+		case NODESTRING:
 			printf("%s\n", value.stringval);
 			break;
-		case OPTLIST:
+		case NODELIST:
 			printf("{list}\n");
 			break;
 	}
@@ -61,7 +61,7 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 	}
 
 	listelmt->next = next;
-	listelmt->option = node;
+	listelmt->node = node;
 
 	return (listelmt);
 }

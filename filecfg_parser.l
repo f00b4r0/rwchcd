@@ -54,52 +54,6 @@ IDENTPART		[A-Za-z0-9_]
 <COMMENT>([^*]|\n)+|.
 <COMMENT><<EOF>>	{ printf("%d: Unterminated comment\n", yylineno); return 0; }
 
-	/* keywords */
-
-backends		{ return BACKENDS; }
-backend			{ return BACKEND; }
-
-sensors			{ return SENSORS; }
-sensor			{ return SENSOR; }
-
-relays			{ return RELAYS; }
-relay			{ return RELAY; }
-
-defconfig		{ return DEFCONFIG; }
-def_hcircuit		{ return DEF_HCIRCUIT; }
-def_dhwt		{ return DEF_DHWT; }
-
-models			{ return MODELS; }
-bmodel			{ return BMODEL; }
-
-plant			{ return PLANT; }
-
-pumps			{ return PUMPS; }
-pump			{ return PUMP; }
-pump_{IDENTPART}+	{ yylval.strval = strdup(yytext); return PUMP_IDENT; }
-
-rid_{IDENTPART}+	{ yylval.strval = strdup(yytext); return RID_IDENT; }
-tid_{IDENTPART}+	{ yylval.strval = strdup(yytext); return TID_IDENT; }
-
-valves			{ return VALVES; }
-valve			{ return VALVE; }
-valve_{IDENTPART}+	{ yylval.strval = strdup(yytext); return VALVE_IDENT; }
-algo			{ return ALGO; }
-
-heatsources		{ return HEATSOURCES; }
-heatsource		{ return HEATSOURCE; }
-
-hcircuits		{ return HCIRCUITS; }
-hcircuit		{ return HCIRCUIT; }
-
-dhwts			{ return DHWTS; }
-dhwt			{ return DHWT; }
-
-params			{ return PARAMS; }
-tlaw			{ return TLAW; }
-
-type			{ return TYPE; }
-
 	/* booleans */
 true			|
 on			|

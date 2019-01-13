@@ -25,18 +25,18 @@ union u_filecfg_parser_nodeval {
 
 typedef union u_filecfg_parser_nodeval u_filecfg_p_nodeval_t;
 
-enum e_filecfg_opttype { OPTBOOL, OPTINT, OPTFLOAT, OPTSTRING, OPTLIST };
+enum e_filecfg_nodetype { NODEBOOL, NODEINT, NODEFLOAT, NODESTRING, NODELIST };
 
 struct s_filecfg_parser_node {
 	int lineno;
-	enum e_filecfg_opttype type;
+	enum e_filecfg_nodetype type;
 	char * name;
 	union u_filecfg_parser_nodeval value;
 	struct s_filecfg_parser_nodelist *children;
 };
 
 struct s_filecfg_parser_nodelist {
-	struct s_filecfg_parser_node *option;
+	struct s_filecfg_parser_node *node;
 	struct s_filecfg_parser_nodelist *next;
 };
 
