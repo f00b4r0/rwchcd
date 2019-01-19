@@ -8,7 +8,7 @@
 
 /**
  * @file
- * filecfg_parser.
+ * File config parser implementation.
  */
 
 #include <stdlib.h>

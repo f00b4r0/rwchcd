@@ -8,7 +8,7 @@
 
 /**
  * @file
- * filecfg_parser.
+ * File config parser API.
  */
 
 #ifndef filecfg_parser_h
@@ -16,6 +16,7 @@
 
 #include <stdbool.h>
 
+/** Union for node value */
 union u_filecfg_parser_nodeval {
 	bool boolval;
 	int intval;
@@ -23,35 +24,40 @@ union u_filecfg_parser_nodeval {
 	char *stringval;
 };
 
+/** Node value union type */
 typedef union u_filecfg_parser_nodeval u_filecfg_p_nodeval_t;
 
 enum e_filecfg_nodetype { NODEBOL, NODEINT, NODEFLT, NODESTR, NODELST };
 
+/** Config node structure */
 struct s_filecfg_parser_node {
-	int lineno;
-	enum e_filecfg_nodetype type;
-	char * name;
-	union u_filecfg_parser_nodeval value;
-	struct s_filecfg_parser_nodelist *children;
+	int lineno;					///< Line number for this node
+	enum e_filecfg_nodetype type;			///< Type of this node
+	char * name;					///< Name of this node
+	union u_filecfg_parser_nodeval value;		///< Value of this node
+	struct s_filecfg_parser_nodelist *children;	///< Children of this node (if any)
 };
 
+/** Structure for linked list of nodes */
 struct s_filecfg_parser_nodelist {
-	struct s_filecfg_parser_node *node;
-	struct s_filecfg_parser_nodelist *next;
+	struct s_filecfg_parser_node *node;		///< current node
+	struct s_filecfg_parser_nodelist *next;		///< next list member
 };
 
+/** Structure for node parsers */
 struct s_filecfg_parser_parsers {
-	const enum e_filecfg_nodetype type;
-	const char * const identifier;
-	const bool required;
-	int (* const parser)(void * restrict const priv, const struct s_filecfg_parser_node * const);
-	// the next two elements will be dynamically updated
-	bool seen;
-	const struct s_filecfg_parser_node *node;
+	const enum e_filecfg_nodetype type;		///< Expected node type for this parser
+	const char * const identifier;			///< Expected node name for this parser
+	const bool required;				///< True if node is required to exist
+	int (* const parser)(void * restrict const priv, const struct s_filecfg_parser_node * const);	///< node data parser callback
+	// the next two elements will be dynamically updated by filecfg_parser_match_*()
+	bool seen;					///< True if the identifier has been matched
+	const struct s_filecfg_parser_node *node;	///< Pointer to matched node
 };
 
 struct s_filecfg_parser_node * filecfg_parser_new_node(int lineno, int type, char *name, union u_filecfg_parser_nodeval value, struct s_filecfg_parser_nodelist *children);
 struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_filecfg_parser_nodelist *next, struct s_filecfg_parser_node *node);
+
 int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *nodelist);
 void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist);
 int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
