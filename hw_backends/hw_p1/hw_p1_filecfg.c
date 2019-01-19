@@ -163,7 +163,7 @@ static int parse_type(void * restrict const priv, const struct s_filecfg_parser_
 		return (ret);
 	}
 
-	filecfg_parser_parse_all(priv, parsers, ARRAY_SIZE(parsers));
+	filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers));
 
 	return (ret);
 }
@@ -328,7 +328,7 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 	hw = hw_p1_setup_new();
 
 	// parse node list in specified order
-	filecfg_parser_parse_all(hw, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
+	filecfg_parser_run_parsers(hw, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
 
 	// register hardware backend
 	ret = hw_p1_backend_register(hw, node->value.stringval);

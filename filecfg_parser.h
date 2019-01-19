@@ -56,6 +56,6 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist);
 int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
-void filecfg_parser_parse_all(void * const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
+void filecfg_parser_run_parsers(void * const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 
 #endif /* filecfg_parser_h */

@@ -136,13 +136,6 @@ static int hardware_backend_parse(void * restrict const priv, const struct s_fil
 	return (ALL_OK);
 }
 
-static struct s_filecfg_parser_parsers Parsers[] = {	// order matters we want to parse backends first and plant last
-	{ NODELST, "backends", false, hardware_backend_parse, false, NULL, },
-	{ NODELST, "defconfig", false, NULL, false, NULL, },
-	{ NODELST, "models", false, NULL, false, NULL, },
-	{ NODELST, "plant", true, NULL, false, NULL, },
-};
-
 /**
  * Match an indidual node against a list of parsers.
  * @param node the target node to match from
@@ -222,64 +215,28 @@ int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const
  * @param parsers the parsers to trigger, with their respective .seen and .node elements correctly set
  * @param nparsers the number of parsers available in parsers[]
  */
-void filecfg_parser_parse_all(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
+void filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
 {
-	const struct s_filecfg_parser_parsers *parser;
 	unsigned int i;
 
 	for (i = 0; i < nparsers; i++) {
-		parser = &parsers[i];
-		if (parser->seen && parser->parser)
-			parser->parser(priv, parser->node);
+		if (parsers[i].seen && parsers[i].parser)
+			parsers[i].parser(priv, parsers[i].node);
 	}
 }
 
 int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *nodelist)
 {
-	const struct s_filecfg_parser_nodelist *list;
-	const struct s_filecfg_parser_node *node;
-	struct s_filecfg_parser_parsers *parser;
-	bool matched;
-	unsigned int i;
+	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
+		{ NODELST, "backends", false, hardware_backend_parse, false, NULL, },
+		{ NODELST, "defconfig", false, NULL, false, NULL, },
+		{ NODELST, "models", false, NULL, false, NULL, },
+		{ NODELST, "plant", true, NULL, false, NULL, },
+	};
 
 	printf("\n\nBegin parse\n");
-	filecfg_parser_match_nodelist(nodelist, Parsers, ARRAY_SIZE(Parsers));
-	for (list = nodelist; list; list = list->next) {
-		node = list->node;
-		if (!node)
-			dbgerr("Empty node!");	// xxx assert cannot happen
-
-		if (NODELST != node->type) {
-			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", node->name, node->lineno);
-			continue;	// skip invalid node
-		}
-
-		matched = false;
-		printf("seen: %s ", list->node->name);
-		for (i = 0; i < ARRAY_SIZE(Parsers); i++) {
-			parser = &Parsers[i];
-			if (!strcmp(parser->identifier, list->node->name)) {
-				matched = true;
-				if (parser->seen) {
-					dbgerr("Ignoring duplicate node \"%s\" closing at line %d", node->name, node->lineno);
-					continue;
-				}
-				printf("matched.\n");
-				parser->node = list->node;
-				parser->seen = true;
-			}
-		}
-		if (!matched)
-			dbgerr("Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
-	}
-
-	// parse root list in specified order
-	for (i = 0; i < ARRAY_SIZE(Parsers); i++) {
-		parser = &Parsers[i];
-		if (parser->seen && parser->parser) {
-			parser->parser(NULL, parser->node);
-		}
-	}
+	filecfg_parser_match_nodelist(nodelist, root_parsers, ARRAY_SIZE(root_parsers));
+	filecfg_parser_run_parsers(NULL, root_parsers, ARRAY_SIZE(root_parsers));
 
 	return (ALL_OK);
 }
