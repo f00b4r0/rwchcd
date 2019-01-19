@@ -73,14 +73,21 @@ int valve_reqstop(struct s_valve * const valve)
  */
 int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 {
+	uint_fast16_t tcourse;
+
 	if (!valve)
 		return (-EINVALID);
 
-	if (abs(perth) < valve->set.deadband)
+	tcourse = abs(perth);
+	// jacket to 100%
+	if (tcourse >= 1000)
+		tcourse = 1000;
+
+	if (tcourse < valve->set.deadband)
 		return (-EDEADBAND);
 
 	valve->run.request_action = (perth < 0) ? CLOSE : OPEN;
-	valve->run.target_course = abs(perth);
+	valve->run.target_course = tcourse;
 
 	return (ALL_OK);
 }
