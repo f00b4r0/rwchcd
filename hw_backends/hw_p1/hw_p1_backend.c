@@ -375,9 +375,9 @@ static int hw_p1_offline(void * priv)
 
 /**
  * Hardware exit routine.
- * Resets the hardware.
+ * Resets the hardware and frees all private memory.
  * @warning RESETS THE HARDWARE: no hardware operation after that call.
- * @param priv private hardware data
+ * @param priv private hardware data. Will be invalid after the call.
  */
 static void hw_p1_exit(void * priv)
 {
@@ -412,6 +412,9 @@ static void hw_p1_exit(void * priv)
 		dbgerr("reset failed (%d)", ret);
 
 	hw->run.initialized = false;
+
+	// delete private data created with hw_p1_setup_new()
+	hw_p1_setup_del(hw);
 }
 
 /**

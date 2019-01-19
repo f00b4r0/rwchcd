@@ -206,3 +206,13 @@ int hw_p1_setup_relay_release(const rid_t id)
 
 	return (ALL_OK);
 }
+
+/**
+ * Fake destructor.
+ * For the sake of API consistency, this simulates a destructor
+ * to the "allocated" data in hw_p1_setup_new().
+ */
+void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw)
+{
+	return;
+}

@@ -18,6 +18,7 @@
 #include "hw_p1.h"
 
 void * hw_p1_setup_new(void);
+void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw);
 
 int hw_p1_setup_setbl(const uint8_t percent);
 int hw_p1_setup_setnsensors(const rid_t lastid);
