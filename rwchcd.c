@@ -29,6 +29,7 @@
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
+ * @bug all time() calls will return shit if time changes: fix!
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
