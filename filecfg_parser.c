@@ -16,6 +16,8 @@
 #include <string.h>
 
 #include "hw_backends.h"
+#include "config.h"
+#include "lib.h"
 #include "filecfg_parser.h"
 
 #ifdef HAS_HWP1		// XXX
@@ -136,6 +138,196 @@ static int hardware_backend_parse(void * restrict const priv, const struct s_fil
 	return (ALL_OK);
 }
 
+static int def_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_config * restrict const config = priv;
+	const struct s_filecfg_parser_nodelist *deflist;
+	const struct s_filecfg_parser_node *defnode;
+	const char * n;
+	float fval;
+	int ret = ALL_OK;
+
+	// we only expect to parse floats (or ints that should be floats) and ints
+	for (deflist = node->children; deflist; deflist = deflist->next) {
+		defnode = deflist->node;
+
+		// use a proxy for float values, needed to parse "expected floats typed as ints"
+		if (NODEFLT == defnode->type)
+			fval = defnode->value.floatval;
+		else if (NODEINT == defnode->type)
+			fval = defnode->value.intval;
+		else
+			goto invalidtype;
+
+		n = defnode->name;
+
+		// test each parameter
+		if (!strcmp("t_comfort", n))
+			config->def_dhwt.t_comfort = celsius_to_temp(fval);
+		else if (!strcmp("t_eco", n))
+			config->def_dhwt.t_eco = celsius_to_temp(fval);
+		else if (!strcmp("t_frostfree", n))
+			config->def_dhwt.t_frostfree = celsius_to_temp(fval);
+		else if (!strcmp("t_legionella", n))
+			config->def_dhwt.t_legionella = celsius_to_temp(fval);
+		else if (!strcmp("limit_tmin", n))
+			config->def_dhwt.limit_tmin = celsius_to_temp(fval);
+		else if (!strcmp("limit_tmax", n))
+			config->def_dhwt.limit_tmax = celsius_to_temp(fval);
+		else if (!strcmp("limit_wintmax", n))
+			config->def_dhwt.limit_wintmax = celsius_to_temp(fval);
+		else if (!strcmp("hysteresis", n))
+			config->def_dhwt.hysteresis = deltaK_to_temp(fval);
+		else if (!strcmp("temp_inoffset", n))
+			config->def_dhwt.temp_inoffset = deltaK_to_temp(fval);
+		else if (!strcmp("limit_chargetime", n) && (NODEINT == defnode->type))
+			config->def_dhwt.temp_inoffset = deltaK_to_temp(defnode->value.intval);
+		else {
+invalidtype:
+			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
+			ret = -EINVALID;
+		}
+		if (ALL_OK == ret)
+			dbgmsg("matched \"%s\": %f", n, fval);
+	}
+
+	return (ret);
+}
+
+static int def_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_config * restrict const config = priv;
+	const struct s_filecfg_parser_nodelist *deflist;
+	const struct s_filecfg_parser_node *defnode;
+	const char * n;
+	float fval;
+	int ret = ALL_OK;
+
+	// we only expect to parse floats (or ints that should be floats)
+	for (deflist = node->children; deflist; deflist = deflist->next) {
+		defnode = deflist->node;
+
+		// use a proxy for float values, needed to parse "expected floats typed as ints"
+		if (NODEFLT == defnode->type)
+			fval = defnode->value.floatval;
+		else if (NODEINT == defnode->type)
+			fval = defnode->value.intval;
+		else
+			goto invalidtype;
+
+		n = defnode->name;
+
+		// test each parameter
+		if (!strcmp("t_comfort", n))
+			config->def_hcircuit.t_comfort = celsius_to_temp(fval);
+		else if (!strcmp("t_eco", n))
+			config->def_hcircuit.t_eco = celsius_to_temp(fval);
+		else if (!strcmp("t_frostfree", n))
+			config->def_hcircuit.t_frostfree = celsius_to_temp(fval);
+		else if (!strcmp("t_offset", n))
+			config->def_hcircuit.t_offset = deltaK_to_temp(fval);
+		else if (!strcmp("outhoff_comfort", n))
+			config->def_hcircuit.outhoff_comfort = celsius_to_temp(fval);
+		else if (!strcmp("outhoff_eco", n))
+			config->def_hcircuit.outhoff_eco = celsius_to_temp(fval);
+		else if (!strcmp("outhoff_frostfree", n))
+			config->def_hcircuit.outhoff_frostfree = celsius_to_temp(fval);
+		else if (!strcmp("outhoff_hysteresis", n))
+			config->def_hcircuit.outhoff_hysteresis = deltaK_to_temp(fval);
+		else if (!strcmp("limit_wtmin", n))
+			config->def_hcircuit.limit_wtmin = celsius_to_temp(fval);
+		else if (!strcmp("limit_wtmax", n))
+			config->def_hcircuit.limit_wtmax = celsius_to_temp(fval);
+		else if (!strcmp("temp_inoffset", n))
+			config->def_hcircuit.temp_inoffset = deltaK_to_temp(fval);
+		else {
+invalidtype:
+			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
+			ret = -EINVALID;
+		}
+		if (ALL_OK == ret)
+			dbgmsg("matched \"%s\": %f", n, fval);
+	}
+
+	return (ret);
+}
+
+static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers def_parsers[] = {
+		{ NODELST, "def_hcircuit", false, def_hcircuit_parse, false, NULL, },
+		{ NODELST, "def_dhwt", false, def_dhwt_parse, false, NULL, },
+	};
+	struct s_config * restrict const config = config_new();
+	const struct s_filecfg_parser_nodelist *deflist;
+	const struct s_filecfg_parser_node *defnode;
+	float fval;
+	int ret;
+
+	if (!node || !node->children)
+		return (-EINVALID);
+
+	for (deflist = node->children; deflist; deflist = deflist->next) {
+		defnode = deflist->node;
+
+		// use a proxy for float values, needed to parse "expected floats typed as ints"
+		if (NODEFLT == defnode->type)
+			fval = defnode->value.floatval;
+
+		switch (defnode->type) {
+			case NODEBOL:
+				if (!strcmp("summer_maintenance", defnode->name))
+					config->summer_maintenance = defnode->value.boolval;
+				else if (!strcmp("logging", defnode->name))
+					config->logging = defnode->value.boolval;
+				else
+					goto invalidnode;
+				break;
+			case NODEINT:
+				if (!strcmp("sleeping_delay", defnode->name)) {
+					if (defnode->value.intval < 0)
+						goto invaliddata;
+					else
+						config->sleeping_delay = defnode->value.intval;
+					break;	// match found
+				}
+				// attempt to parse int values as float arguments
+				fval = defnode->value.intval;
+			case NODEFLT:
+				if (!strcmp("limit_tsummer", defnode->name))
+					ret = config_set_tsummer(config, celsius_to_temp(fval));
+				else if (!strcmp("limit_tfrost", defnode->name))
+					ret = config_set_tfrost(config, celsius_to_temp(fval));
+				else
+					goto invalidnode;
+				if (ALL_OK != ret)
+					goto invaliddata;
+				break;
+			case NODELST:
+				// process def_dhwt and def_hcircuit
+				if (ALL_OK != filecfg_parser_match_node(defnode, def_parsers, ARRAY_SIZE(def_parsers)))
+					goto invalidnode;
+				break;
+			case NODESTR:
+			default:
+				goto invalidnode;
+		}
+		dbgmsg("matched \"%s\"", defnode->name);
+	}
+	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
+	filecfg_parser_run_parsers(config, def_parsers, ARRAY_SIZE(def_parsers));
+	return (ALL_OK);
+
+	// we choose to interrupt parsing if an error occurs in this function, but let the subparsers run to the end
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", defnode->name, defnode->lineno);
+	return (-EINVALID);
+
+invalidnode:
+	dbgerr("Invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
+	return (-EINVALID);
+}
+
 /**
  * Match an indidual node against a list of parsers.
  * @param node the target node to match from
@@ -229,7 +421,7 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST, "backends", false, hardware_backend_parse, false, NULL, },
-		{ NODELST, "defconfig", false, NULL, false, NULL, },
+		{ NODELST, "defconfig", false, defconfig_parse, false, NULL, },
 		{ NODELST, "models", false, NULL, false, NULL, },
 		{ NODELST, "plant", true, NULL, false, NULL, },
 	};
