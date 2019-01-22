@@ -138,6 +138,46 @@ static int hardware_backend_parse(void * restrict const priv, const struct s_fil
 	return (ALL_OK);
 }
 
+static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	tempid_t * restrict const tempid = priv;
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "backend", true, NULL, false, NULL, },
+		{ NODESTR, "name", true, NULL, false, NULL, },
+	};
+	const char * backend, * name;
+	int ret;
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	backend = parsers[0].node->value.stringval;
+	name = parsers[1].node->value.stringval;
+
+	return (hw_backends_sensor_fbn(tempid, backend, name));
+}
+
+static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	relid_t * restrict const relid = priv;
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "backend", true, NULL, false, NULL, },
+		{ NODESTR, "name", true, NULL, false, NULL, },
+	};
+	const char * backend, * name;
+	int ret;
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	backend = parsers[0].node->value.stringval;
+	name = parsers[1].node->value.stringval;
+
+	return (hw_backends_relay_fbn(relid, backend, name));
+}
+
 static int def_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_config * restrict const config = priv;
