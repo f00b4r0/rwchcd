@@ -24,6 +24,8 @@
  #include "hw_backends/hw_p1/hw_p1_filecfg.h"
 #endif
 
+#include "models.h"
+
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
@@ -368,6 +370,86 @@ invalidnode:
 	return (-EINVALID);
 }
 
+static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_bmodel * restrict const bmodel = priv;
+	const struct s_filecfg_parser_nodelist * nodelist;
+	const struct s_filecfg_parser_node * bmdlnode;
+	const char * n;
+	int ret = ALL_OK;
+
+	// we only expect to parse floats (or ints that should be floats)
+	for (nodelist = node->children; nodelist; nodelist = nodelist->next) {
+		bmdlnode = nodelist->node;
+		n = bmdlnode->name;
+
+		// test each parameter
+		if ((NODEBOL == bmdlnode->type) && !strcmp("logging", n))
+			bmodel->set.logging = bmdlnode->value.boolval;
+		else if ((NODEINT == bmdlnode->type) && !strcmp("tau", n)) {
+			if (bmdlnode->value.intval < 0) {
+				dbgerr("Invalid negative value for \"%s\" closing at line %d", bmdlnode->name, bmdlnode->lineno);
+				ret = -EINVALID;
+				goto fail;
+			}
+			else
+				bmodel->set.tau = bmdlnode->value.intval;
+		}
+		else if ((NODELST == bmdlnode->type) && !strcmp("tid_outdoor", n)) {
+			ret = tid_parse(&bmodel->set.tid_outdoor, bmdlnode);
+			if (ALL_OK != ret)
+				dbgerr("tid_parse failed"); goto fail;
+		}
+		else {
+			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", bmdlnode->name, bmdlnode->lineno);
+			ret = -EUNKNOWN;
+		}
+		if (ALL_OK == ret)
+			dbgmsg("matched \"%s\"", n);
+	}
+fail:
+	return (ret);
+}
+
+static int models_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	const struct s_filecfg_parser_nodelist *bmdllist;
+	const struct s_filecfg_parser_node *bmdlnode;
+	struct s_bmodel * bmodel;
+	const char * bmdlname;
+
+	if (!node || !node->children)
+		return (-EINVALID);
+
+	for (bmdllist = node->children; bmdllist; bmdllist = bmdllist->next) {
+		bmdlnode = bmdllist->node;
+		if (strcmp("bmodel", bmdlnode->name)) {
+			dbgerr("Ignoring unknown node \"%s\" closing at line %d", bmdlnode->name, bmdlnode->lineno);
+			continue;	// skip invalid node
+		}
+		if (NODESTR != bmdlnode->type) {
+			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", bmdlnode->name, bmdlnode->lineno);
+			continue;	// skip invalid node
+		}
+
+		bmdlname = bmdlnode->value.stringval;
+		if (strlen(bmdlname) < 1) {
+			dbgerr("Ignoring bmodel with empty name closing at line %d", bmdlnode->lineno);
+			continue;
+		}
+
+		dbgmsg("Trying %s node \"%s\"", bmdlnode->name, bmdlname);
+
+		// test bmodel parser
+		bmodel = models_new_bmodel(bmdlname);
+		if (ALL_OK == bmodel_parse(bmodel, bmdlnode))
+			dbgmsg("bmodel \"%s\" found!", bmdlname);
+		//else
+			//bmodel_del(bmodel);
+	}
+	return (ALL_OK);
+}
+
 /**
  * Match an indidual node against a list of parsers.
  * @param node the target node to match from
@@ -462,7 +544,7 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST, "backends", false, hardware_backend_parse, false, NULL, },
 		{ NODELST, "defconfig", false, defconfig_parse, false, NULL, },
-		{ NODELST, "models", false, NULL, false, NULL, },
+		{ NODELST, "models", false, models_parse, false, NULL, },
 		{ NODELST, "plant", true, NULL, false, NULL, },
 	};
 
