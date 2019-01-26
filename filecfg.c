@@ -158,7 +158,7 @@ static int filecfg_pump_dump(FILE * restrict const file, unsigned int il, const 
 	tfprintf(file, il, "pump \"%s\" {\n", pump->name);
 	il++;
 	tfprintf(file, il, "cooldown_time %ld;\n", pump->set.cooldown_time);
-	tfprintf(file, il, "rid_relay"); filecfg_relid_dump(file, il, pump->set.rid_pump);
+	tfprintf(file, il, "rid_pump"); filecfg_relid_dump(file, il, pump->set.rid_pump);
 	il--;
 	tfprintf(file, il, "};\n");
 
