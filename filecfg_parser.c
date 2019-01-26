@@ -157,6 +157,12 @@ static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 
 	dbgmsg("Trying \"%s\"", node->name);
 
+	// don't report error on empty config
+	if (!node->children) {
+		dbgmsg("empty");
+		return (ALL_OK);
+	}
+
 	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
@@ -178,6 +184,12 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	int ret;
 
 	dbgmsg("Trying \"%s\"", node->name);
+
+	// don't report error on empty config
+	if (!node->children) {
+		dbgmsg("empty");
+		return (ALL_OK);
+	}
 
 	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
