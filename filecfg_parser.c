@@ -29,6 +29,7 @@
 #include "plant.h"
 #include "pump.h"
 #include "valve.h"
+#include "dhwt.h"
 
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
@@ -697,11 +698,201 @@ static int valves_parse(void * restrict const priv, const struct s_filecfg_parse
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "valve", valve_parse));
 }
 
+static int runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	enum e_runmode * restrict const runmode = priv;
+	const char * n;
+
+	n = node->value.stringval;
+
+	if (!strcmp("off", n))
+		*runmode = RM_OFF;
+	else if (!strcmp("auto", n))
+		*runmode = RM_AUTO;
+	else if (!strcmp("comfort", n))
+		*runmode = RM_COMFORT;
+	else if (!strcmp("eco", n))
+		*runmode = RM_ECO;
+	else if (!strcmp("frostfree", n))
+		*runmode = RM_FROSTFREE;
+	else if (!strcmp("test", n))
+		*runmode = RM_TEST;
+	else if (!strcmp("dhwonly", n))
+		*runmode = RM_DHWONLY;
+	else {
+		*runmode = RM_UNKNOWN;
+		dbgerr("Unknown runmode \"%s\" at line %d", n, node->lineno);
+		return (-EINVALID);
+	}
+
+	return (ALL_OK);
+}
+
+static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL, "electric_failover", false, NULL, false, NULL, },	// 0
+		{ NODEBOL, "anti_legionella", false, NULL, false, NULL, },
+		{ NODEBOL, "legionella_recycle", false, NULL, false, NULL, },	// 2
+		{ NODEINT, "prio", false, NULL, false, NULL, },
+		{ NODESTR, "runmode", true, NULL, false, NULL, },		// 4
+		{ NODESTR, "dhwt_cprio", false, NULL, false, NULL, },
+		{ NODESTR, "force_mode", false, NULL, false, NULL, },		// 6
+		{ NODELST, "tid_bottom", false, NULL, false, NULL, },
+		{ NODELST, "tid_top", false, NULL, false, NULL, },		// 8
+		{ NODELST, "tid_win", false, NULL, false, NULL, },
+		{ NODELST, "tid_wout", false, NULL, false, NULL, },		// 10
+		{ NODELST, "rid_selfheater", false, NULL, false, NULL, },
+		{ NODELST, "params", false, NULL, false, NULL, },		// 12
+		{ NODESTR, "pump_feed", false, NULL, false, NULL, },
+		{ NODESTR, "pump_recycle", false, NULL, false, NULL, },		// 14
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_pump * pump;
+	struct s_plant * restrict const plant = priv;
+	struct s_dhw_tank * dhwt;
+	const char * n;
+	int iv, ret;
+	unsigned int i;
+
+	// we receive a 'dhwt' node with a valid string attribute which is the dhwt name
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
+
+	// create the dhwt
+	dhwt = plant_new_dhwt(plant, node->value.stringval);
+	if (!dhwt) {
+		dbgerr("dhwt creation failed");
+		return (-EOOM);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				dhwt->set.electric_failover = currnode->value.boolval;
+				break;
+			case 1:
+				dhwt->set.anti_legionella = currnode->value.boolval;
+				break;
+			case 2:
+				dhwt->set.legionella_recycle = currnode->value.boolval;
+				break;
+
+			case 3:
+				iv = currnode->value.intval;
+				if (iv < 0)
+					goto invaliddata;
+				dhwt->set.prio = currnode->value.intval;
+				break;
+			case 4:
+				ret = runmode_parse(&dhwt->set.runmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 5:
+				n = currnode->value.stringval;
+				if (!strcmp("paralmax", n))
+					dhwt->set.dhwt_cprio = DHWTP_PARALMAX;
+				else if (!strcmp("paraldhw", n))
+					dhwt->set.dhwt_cprio = DHWTP_PARALDHW;
+				else if (!strcmp("slidmax", n))
+					dhwt->set.dhwt_cprio = DHWTP_SLIDMAX;
+				else if (!strcmp("sliddhw", n))
+					dhwt->set.dhwt_cprio = DHWTP_SLIDDHW;
+				else if (!strcmp("absolute", n))
+					dhwt->set.dhwt_cprio = DHWTP_ABSOLUTE;
+				else {
+					dbgerr("Unknown DHW priority \"%s\" at line %d", n, currnode->lineno);
+					return (-EINVALID);
+				}
+				break;
+			case 6:
+				n = currnode->value.stringval;
+				if (!strcmp("never", n))
+					dhwt->set.force_mode = DHWTF_NEVER;
+				else if (!strcmp("first", n))
+					dhwt->set.force_mode = DHWTF_FIRST;
+				else if (!strcmp("always", n))
+					dhwt->set.force_mode = DHWTF_ALWAYS;
+				else {
+					dbgerr("Unknown DHW force mode \"%s\" at line %d", n, currnode->lineno);
+					return (-EINVALID);
+				}
+				break;
+			case 7:
+				if (ALL_OK != tid_parse(&dhwt->set.tid_bottom, currnode))
+					goto invaliddata;
+				break;
+			case 8:
+				if (ALL_OK != tid_parse(&dhwt->set.tid_top, currnode))
+					goto invaliddata;
+				break;
+			case 9:
+				if (ALL_OK != tid_parse(&dhwt->set.tid_win, currnode))
+					goto invaliddata;
+				break;
+			case 10:
+				if (ALL_OK != tid_parse(&dhwt->set.tid_wout, currnode))
+					goto invaliddata;
+				break;
+			case 11:
+				if (ALL_OK != rid_parse(&dhwt->set.rid_selfheater, currnode))
+					goto invaliddata;
+				break;
+			case 12:
+				if (ALL_OK != dhwt_params_parse(&dhwt->set.params, currnode))
+					goto invaliddata;
+				break;
+			case 13:
+			case 14:
+				n = currnode->value.stringval;
+				if (strlen(n) < 1)
+					break;	// nothing to do
+
+				pump = plant_fbn_pump(plant, n);
+				if (!pump)
+					goto invaliddata;	// pump not found
+
+				dbgmsg("%s: \"%s\" found", currnode->name, n);
+				if (13 == i)
+					dhwt->pump_feed = pump;
+				else	// i == 14
+					dhwt->pump_recycle = pump;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	if (ALL_OK == ret)
+		dhwt->set.configured = true;
+
+	return (ret);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (-EINVALID);
+}
+
+static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "dhwt", dhwt_parse));
+}
+
 static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODELST, "pumps", false, pumps_parse, false, NULL, },
 		{ NODELST, "valves", false, valves_parse, false, NULL, },
+		{ NODELST, "dhwts", false, dhwts_parse, false, NULL, },
 	};
 	struct s_plant * plant;
 	int ret;
