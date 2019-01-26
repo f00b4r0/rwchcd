@@ -444,6 +444,7 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 	il++;
 
 	tfprintf(file, il, "electric_failover %s;\n", filecfg_bool_str(dhwt->set.electric_failover));
+	tfprintf(file, il, "anti_legionella %s;\n", filecfg_bool_str(dhwt->set.anti_legionella));
 	tfprintf(file, il, "legionella_recycle %s;\n", filecfg_bool_str(dhwt->set.legionella_recycle));
 	tfprintf(file, il, "prio %hd;\n", dhwt->set.prio);
 	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(dhwt->set.runmode));
