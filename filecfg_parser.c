@@ -153,6 +153,8 @@ static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	const char * backend, * name;
 	int ret;
 
+	dbgmsg("Trying \"%s\"", node->name);
+
 	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
@@ -172,6 +174,8 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	};
 	const char * backend, * name;
 	int ret;
+
+	dbgmsg("Trying \"%s\"", node->name);
 
 	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
@@ -381,7 +385,6 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 	const char * n;
 	int ret = ALL_OK;
 
-	// we only expect to parse floats (or ints that should be floats)
 	for (nodelist = node->children; nodelist; nodelist = nodelist->next) {
 		bmdlnode = nodelist->node;
 		n = bmdlnode->name;
@@ -400,8 +403,10 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 		}
 		else if ((NODELST == bmdlnode->type) && !strcmp("tid_outdoor", n)) {
 			ret = tid_parse(&bmodel->set.tid_outdoor, bmdlnode);
-			if (ALL_OK != ret)
-				dbgerr("tid_parse failed"); goto fail;
+			if (ALL_OK != ret) {
+				dbgerr("tid_parse failed");
+				goto fail;
+			}
 		}
 		else {
 			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", bmdlnode->name, bmdlnode->lineno);
@@ -596,7 +601,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 			continue;	// skip invalid node type
 
 		if (!strcmp(parsers[i].identifier, node->name)) {
-			dbgmsg("matched %s", node->name);
+			dbgmsg("matched %s, %d", node->name, node->lineno);
 			matched = true;
 			if (parsers[i].seen) {
 				dbgerr("Ignoring duplicate node \"%s\" closing at line %d", node->name, node->lineno);
