@@ -26,6 +26,9 @@
 
 #include "models.h"
 
+#include "plant.h"
+#include "pump.h"
+
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
@@ -450,6 +453,129 @@ static int models_parse(void * restrict const priv, const struct s_filecfg_parse
 	return (ALL_OK);
 }
 
+#define filecfg_for_node_filter_typename(NODE, TYPE, NAME)							\
+	({													\
+	if (TYPE != NODE->type) {										\
+		dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", NODE->name, NODE->lineno);	\
+		continue;											\
+	}													\
+	if (strcmp(NAME, NODE->name)) {										\
+		dbgerr("Ignoring unknown node \"%s\" closing at line %d", NODE->name, NODE->lineno);		\
+		continue;											\
+	}													\
+	})
+
+static int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const parser_t parser)
+{
+	const struct s_filecfg_parser_nodelist *nlist;
+	const struct s_filecfg_parser_node *node;
+	const char * sname;
+	int ret = -EEMPTY;	// immediate return if nodelist is empty
+
+	for (nlist = nodelist; nlist; nlist = nlist->next) {
+		node = nlist->node;
+		filecfg_for_node_filter_typename(node, NODESTR, nname);
+
+		sname = node->value.stringval;
+
+		if (strlen(sname) < 1) {
+			dbgerr("Ignoring \"%s\" with empty name closing at line %d", node->name, node->lineno);
+			continue;
+		}
+
+		dbgmsg("Trying %s node \"%s\"", node->name, sname);
+
+		// test parser
+		ret = parser(priv, node);
+		if (ALL_OK == ret)
+			dbgmsg("found!");
+		else
+			break;	// stop processing at first fault
+	}
+
+	return (ret);
+}
+
+static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT, "cooldown_time", false, NULL, false, NULL, },
+		{ NODELST, "rid_pump", true, NULL, false, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_plant * restrict const plant = priv;
+	struct s_pump * pump;
+	int ret = ALL_OK;
+
+	// we receive a 'pump' node with a valid string attribute which is the pump name
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
+
+	// create the pump
+	pump = plant_new_pump(plant, node->value.stringval);
+	if (!pump) {
+		dbgerr("pump creation failed");
+		return (-EOOM);
+	}
+
+	currnode = parsers[0].node;
+	if (currnode) {
+		if (currnode->value.intval < 0) {
+			ret = -EINVALID;
+			goto invaliddata;
+		}
+		else
+			pump->set.cooldown_time = currnode->value.intval;
+	}
+
+	currnode = parsers[1].node;
+	ret = rid_parse(&pump->set.rid_pump, currnode);
+	if (ALL_OK != ret)
+		goto invaliddata;
+
+	pump->set.configured = true;
+
+	return (ret);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (ret);
+}
+
+static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "pump", pump_parse));
+}
+
+static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODELST, "pumps", false, pumps_parse, false, NULL, },
+	};
+	struct s_plant * plant;
+	int ret;
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	// create a new plant
+	plant = plant_new();
+	if (!plant) {
+		dbgerr("plant creation failed");
+		return (-EOOM);
+	}
+
+	filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
+
+	return (0);
+}
+
+
 /**
  * Match an indidual node against a list of parsers.
  * @param node the target node to match from
@@ -545,7 +671,7 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 		{ NODELST, "backends", false, hardware_backend_parse, false, NULL, },
 		{ NODELST, "defconfig", false, defconfig_parse, false, NULL, },
 		{ NODELST, "models", false, models_parse, false, NULL, },
-		{ NODELST, "plant", true, NULL, false, NULL, },
+		{ NODELST, "plant", true, plant_parse, false, NULL, },
 	};
 
 	printf("\n\nBegin parse\n");

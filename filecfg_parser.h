@@ -38,6 +38,8 @@ struct s_filecfg_parser_node {
 	struct s_filecfg_parser_nodelist *children;	///< Children of this node (if any)
 };
 
+typedef int (* const parser_t)(void * restrict const priv, const struct s_filecfg_parser_node * const);
+
 /** Structure for linked list of nodes */
 struct s_filecfg_parser_nodelist {
 	struct s_filecfg_parser_node *node;		///< current node
@@ -49,7 +51,7 @@ struct s_filecfg_parser_parsers {
 	const enum e_filecfg_nodetype type;		///< Expected node type for this parser
 	const char * const identifier;			///< Expected node name for this parser
 	const bool required;				///< True if node is required to exist
-	int (* const parser)(void * restrict const priv, const struct s_filecfg_parser_node * const);	///< node data parser callback
+	parser_t parser;				///< node data parser callback
 	// the next two elements will be dynamically updated by filecfg_parser_match_*()
 	bool seen;					///< True if the identifier has been matched
 	const struct s_filecfg_parser_node *node;	///< Pointer to matched node
