@@ -30,6 +30,7 @@
 #include "pump.h"
 #include "valve.h"
 #include "dhwt.h"
+#include "hcircuit.h"
 
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
@@ -899,12 +900,211 @@ static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "dhwt", dhwt_parse));
 }
 
+static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEFLT, "tout1", true, NULL, false, NULL, },
+		{ NODEFLT, "twater1", true, NULL, false, NULL, },
+		{ NODEFLT, "tout2", true, NULL, false, NULL, },
+		{ NODEFLT, "twater2", true, NULL, false, NULL, },
+		{ NODEINT, "nH100", false, NULL, false, NULL, },
+		// these shouldn't be user-configurable
+/*		{ NODEFLT, "toutinfl", false, NULL, false, NULL, },
+		{ NODEFLT, "twaterinfl", false, NULL, false, NULL, },
+		{ NODEFLT, "offset", false, NULL, false, NULL, },
+		{ NODEFLT, "slope", false, NULL, false, NULL, },*/
+	};
+	struct s_hcircuit * restrict const hcircuit = priv;
+	temp_t tout1, twater1, tout2, twater2;
+	int ret, nH100;
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
+
+	tout1 = celsius_to_temp(parsers[0].node->value.floatval);
+	twater1 = celsius_to_temp(parsers[1].node->value.floatval);
+	tout2 = celsius_to_temp(parsers[2].node->value.floatval);
+	twater2 = celsius_to_temp(parsers[3].node->value.floatval);
+	nH100 = parsers[4].node->value.intval;
+
+	return (circuit_make_bilinear(hcircuit, tout1, twater1, tout2, twater2, nH100));
+}
+
+static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL, "fast_cooldown", false, NULL, false, NULL, },	// 0
+		{ NODEBOL, "logging", false, NULL, false, NULL, },
+		{ NODESTR, "runmode", true, NULL, false, NULL, },		// 2
+		{ NODEINT, "ambient_factor", false, NULL, false, NULL, },
+		{ NODEFLT, "wtemp_rorh", false, NULL, false, NULL, },		// 4
+		{ NODEINT, "am_tambient_tK", false, NULL, false, NULL, },
+		{ NODEFLT, "tambient_boostdelta", false, NULL, false, NULL, },	// 6
+		{ NODEINT, "boost_maxtime", false, NULL, false, NULL, },
+		{ NODELST, "tid_outgoing", true, NULL, false, NULL, },		// 8
+		{ NODELST, "tid_return", false, NULL, false, NULL, },
+		{ NODELST, "tid_ambient", false, NULL, false, NULL, },		// 10
+		{ NODELST, "params", false, NULL, false, NULL, },
+		{ NODESTR, "tlaw", true, NULL, false, NULL, },			// 12
+		{ NODESTR, "valve_mix", false, NULL, false, NULL, },
+		{ NODESTR, "pump_feed", false, NULL, false, NULL, },		// 14
+		{ NODESTR, "bmodel", false, NULL, false, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_plant * restrict const plant = priv;
+	struct s_hcircuit * hcircuit;
+	const char * n;
+	float fv;
+	int iv, ret;
+	unsigned int i;
+
+	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
+
+	// create the hcircuit
+	hcircuit = plant_new_circuit(plant, node->value.stringval);
+	if (!hcircuit) {
+		dbgerr("hcircuit creation failed");
+		return (-EOOM);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				hcircuit->set.fast_cooldown = currnode->value.boolval;
+				break;
+			case 1:
+				hcircuit->set.logging = currnode->value.boolval;
+				break;
+			case 2:
+				ret = runmode_parse(&hcircuit->set.runmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 3:
+				iv = currnode->value.intval;
+				if (abs(iv) > 100)
+					goto invaliddata;
+				hcircuit->set.ambient_factor = iv;
+				break;
+			case 4:
+				fv = currnode->value.floatval;
+				if (fv < 0)
+					goto invaliddata;
+				hcircuit->set.wtemp_rorh = deltaK_to_temp(fv);
+				break;
+			case 5:
+				iv = currnode->value.intval;
+				if (iv < 0)
+					goto invaliddata;
+				hcircuit->set.am_tambient_tK = iv;
+				break;
+			case 6:
+				fv = currnode->value.floatval;
+				hcircuit->set.tambient_boostdelta = deltaK_to_temp(fv);	// allow negative values because why not
+				break;
+			case 7:
+				iv = currnode->value.intval;
+				if (iv < 0)
+					goto invaliddata;
+				hcircuit->set.boost_maxtime = iv;
+				break;
+			case 8:
+				if (ALL_OK != tid_parse(&hcircuit->set.tid_outgoing, currnode))
+					goto invaliddata;
+				break;
+			case 9:
+				if (ALL_OK != tid_parse(&hcircuit->set.tid_return, currnode))
+					goto invaliddata;
+				break;
+			case 10:
+				if (ALL_OK != tid_parse(&hcircuit->set.tid_ambient, currnode))
+					goto invaliddata;
+				break;
+			case 11:
+				if (ALL_OK != hcircuit_params_parse(&hcircuit->set.params, currnode))
+					goto invaliddata;
+				break;
+			case 12:
+				n = currnode->value.stringval;
+				if (!strcmp("bilinear", n))
+					ret = hcircuit_tlaw_bilinear_parser(hcircuit, currnode);
+				else {
+					dbgerr("Unknown %s \"%s\" closing at line %d", currnode->name, n, currnode->lineno);
+					return (-EUNKNOWN);
+				}
+				if (ALL_OK == ret)
+					dbgmsg("parsed tlaw \"%s\"", n);
+				else
+					dbgerr("failed to parse tlaw: %d", ret);
+				break;
+			case 13:
+			case 14:
+			case 15:
+				n = currnode->value.stringval;
+				if (strlen(n) < 1)
+					break;	// nothing to do
+
+				switch (i) {
+					case 13:
+						hcircuit->valve_mix = plant_fbn_valve(plant, n);
+						if (!hcircuit->valve_mix)
+							goto invaliddata;
+						break;
+					case 14:
+						hcircuit->pump_feed = plant_fbn_pump(plant, n);
+						if (!hcircuit->pump_feed)
+							goto invaliddata;
+						break;
+					case 15:
+						hcircuit->bmodel = models_fbn_bmodel(n);
+						if (!hcircuit->bmodel)
+							goto invaliddata;
+						break;
+					default:
+						break;	// should never happen
+				}
+				dbgmsg("%s: \"%s\" found", currnode->name, n);
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	if (ALL_OK == ret)
+		hcircuit->set.configured = true;
+
+	return (ret);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (-EINVALID);
+}
+
+static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "hcircuit", hcircuit_parse));
+}
+
 static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODELST, "pumps", false, pumps_parse, false, NULL, },
 		{ NODELST, "valves", false, valves_parse, false, NULL, },
 		{ NODELST, "dhwts", false, dhwts_parse, false, NULL, },
+		{ NODELST, "hcircuits", false, hcircuits_parse, false, NULL, },
 	};
 	struct s_plant * plant;
 	int ret;
