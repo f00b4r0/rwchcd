@@ -486,12 +486,12 @@ static int filecfg_hc_tlbilin_dump(FILE * restrict const file, unsigned int il, 
 	tfprintf(file, il, "tout2 %.1f;\n", temp_to_celsius(priv->tout2));
 	tfprintf(file, il, "twater2 %.1f;\n", temp_to_celsius(priv->twater2));
 	tfprintf(file, il, "nH100 %" PRIdFAST16 ";\n", priv->nH100);
-
+/*
 	tfprintf(file, il, "toutinfl %.1f;\n", temp_to_celsius(priv->toutinfl));
 	tfprintf(file, il, "twaterinfl %.1f;\n", temp_to_celsius(priv->twaterinfl));
 	//tfprintf(file, il, "offset %.1f;\n", temp_to_deltaK(priv->offset));	// don't print offset as it's homogenous to internal (meaningless) temperature dimensions
 	tfprintf(file, il, "slope %.1f;\n", priv->slope);
-
+*/
 	return (ALL_OK);
 }
 
