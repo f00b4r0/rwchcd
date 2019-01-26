@@ -188,9 +188,9 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	return (hw_backends_relay_fbn(relid, backend, name));
 }
 
-static int def_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_config * restrict const config = priv;
+	struct s_dhwt_params * restrict const dhwt_params = priv;
 	const struct s_filecfg_parser_nodelist *deflist;
 	const struct s_filecfg_parser_node *defnode;
 	const char * n;
@@ -213,25 +213,25 @@ static int def_dhwt_parse(void * restrict const priv, const struct s_filecfg_par
 
 		// test each parameter
 		if (!strcmp("t_comfort", n))
-			config->def_dhwt.t_comfort = celsius_to_temp(fval);
+			dhwt_params->t_comfort = celsius_to_temp(fval);
 		else if (!strcmp("t_eco", n))
-			config->def_dhwt.t_eco = celsius_to_temp(fval);
+			dhwt_params->t_eco = celsius_to_temp(fval);
 		else if (!strcmp("t_frostfree", n))
-			config->def_dhwt.t_frostfree = celsius_to_temp(fval);
+			dhwt_params->t_frostfree = celsius_to_temp(fval);
 		else if (!strcmp("t_legionella", n))
-			config->def_dhwt.t_legionella = celsius_to_temp(fval);
+			dhwt_params->t_legionella = celsius_to_temp(fval);
 		else if (!strcmp("limit_tmin", n))
-			config->def_dhwt.limit_tmin = celsius_to_temp(fval);
+			dhwt_params->limit_tmin = celsius_to_temp(fval);
 		else if (!strcmp("limit_tmax", n))
-			config->def_dhwt.limit_tmax = celsius_to_temp(fval);
+			dhwt_params->limit_tmax = celsius_to_temp(fval);
 		else if (!strcmp("limit_wintmax", n))
-			config->def_dhwt.limit_wintmax = celsius_to_temp(fval);
+			dhwt_params->limit_wintmax = celsius_to_temp(fval);
 		else if (!strcmp("hysteresis", n))
-			config->def_dhwt.hysteresis = deltaK_to_temp(fval);
+			dhwt_params->hysteresis = deltaK_to_temp(fval);
 		else if (!strcmp("temp_inoffset", n))
-			config->def_dhwt.temp_inoffset = deltaK_to_temp(fval);
+			dhwt_params->temp_inoffset = deltaK_to_temp(fval);
 		else if (!strcmp("limit_chargetime", n) && (NODEINT == defnode->type))
-			config->def_dhwt.temp_inoffset = deltaK_to_temp(defnode->value.intval);
+			dhwt_params->temp_inoffset = deltaK_to_temp(defnode->value.intval);
 		else {
 invalidtype:
 			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
@@ -244,9 +244,9 @@ invalidtype:
 	return (ret);
 }
 
-static int def_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_config * restrict const config = priv;
+	struct s_hcircuit_params * restrict const hcircuit_params = priv;
 	const struct s_filecfg_parser_nodelist *deflist;
 	const struct s_filecfg_parser_node *defnode;
 	const char * n;
@@ -269,27 +269,27 @@ static int def_hcircuit_parse(void * restrict const priv, const struct s_filecfg
 
 		// test each parameter
 		if (!strcmp("t_comfort", n))
-			config->def_hcircuit.t_comfort = celsius_to_temp(fval);
+			hcircuit_params->t_comfort = celsius_to_temp(fval);
 		else if (!strcmp("t_eco", n))
-			config->def_hcircuit.t_eco = celsius_to_temp(fval);
+			hcircuit_params->t_eco = celsius_to_temp(fval);
 		else if (!strcmp("t_frostfree", n))
-			config->def_hcircuit.t_frostfree = celsius_to_temp(fval);
+			hcircuit_params->t_frostfree = celsius_to_temp(fval);
 		else if (!strcmp("t_offset", n))
-			config->def_hcircuit.t_offset = deltaK_to_temp(fval);
+			hcircuit_params->t_offset = deltaK_to_temp(fval);
 		else if (!strcmp("outhoff_comfort", n))
-			config->def_hcircuit.outhoff_comfort = celsius_to_temp(fval);
+			hcircuit_params->outhoff_comfort = celsius_to_temp(fval);
 		else if (!strcmp("outhoff_eco", n))
-			config->def_hcircuit.outhoff_eco = celsius_to_temp(fval);
+			hcircuit_params->outhoff_eco = celsius_to_temp(fval);
 		else if (!strcmp("outhoff_frostfree", n))
-			config->def_hcircuit.outhoff_frostfree = celsius_to_temp(fval);
+			hcircuit_params->outhoff_frostfree = celsius_to_temp(fval);
 		else if (!strcmp("outhoff_hysteresis", n))
-			config->def_hcircuit.outhoff_hysteresis = deltaK_to_temp(fval);
+			hcircuit_params->outhoff_hysteresis = deltaK_to_temp(fval);
 		else if (!strcmp("limit_wtmin", n))
-			config->def_hcircuit.limit_wtmin = celsius_to_temp(fval);
+			hcircuit_params->limit_wtmin = celsius_to_temp(fval);
 		else if (!strcmp("limit_wtmax", n))
-			config->def_hcircuit.limit_wtmax = celsius_to_temp(fval);
+			hcircuit_params->limit_wtmax = celsius_to_temp(fval);
 		else if (!strcmp("temp_inoffset", n))
-			config->def_hcircuit.temp_inoffset = deltaK_to_temp(fval);
+			hcircuit_params->temp_inoffset = deltaK_to_temp(fval);
 		else {
 invalidtype:
 			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
@@ -305,8 +305,8 @@ invalidtype:
 static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers def_parsers[] = {
-		{ NODELST, "def_hcircuit", false, def_hcircuit_parse, false, NULL, },
-		{ NODELST, "def_dhwt", false, def_dhwt_parse, false, NULL, },
+		{ NODELST, "def_hcircuit", false, NULL, false, NULL, },
+		{ NODELST, "def_dhwt", false, NULL, false, NULL, },
 	};
 	struct s_config * restrict const config = config_new();
 	const struct s_filecfg_parser_nodelist *deflist;
@@ -364,8 +364,12 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 		}
 		dbgmsg("matched \"%s\"", defnode->name);
 	}
+	if (def_parsers[0].node)
+		hcircuit_params_parse(&config->def_hcircuit, def_parsers[0].node);
+	if (def_parsers[1].node)
+		dhwt_params_parse(&config->def_dhwt, def_parsers[1].node);
+
 	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
-	filecfg_parser_run_parsers(config, def_parsers, ARRAY_SIZE(def_parsers));
 	return (ALL_OK);
 
 	// we choose to interrupt parsing if an error occurs in this function, but let the subparsers run to the end
