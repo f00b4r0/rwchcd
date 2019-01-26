@@ -380,83 +380,51 @@ invalidnode:
 
 static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_bmodel * restrict const bmodel = priv;
-	const struct s_filecfg_parser_nodelist * nodelist;
-	const struct s_filecfg_parser_node * bmdlnode;
-	const char * n;
-	int ret = ALL_OK;
-
-	for (nodelist = node->children; nodelist; nodelist = nodelist->next) {
-		bmdlnode = nodelist->node;
-		n = bmdlnode->name;
-
-		// test each parameter
-		if ((NODEBOL == bmdlnode->type) && !strcmp("logging", n))
-			bmodel->set.logging = bmdlnode->value.boolval;
-		else if ((NODEINT == bmdlnode->type) && !strcmp("tau", n)) {
-			if (bmdlnode->value.intval < 0) {
-				dbgerr("Invalid negative value for \"%s\" closing at line %d", bmdlnode->name, bmdlnode->lineno);
-				ret = -EINVALID;
-				goto fail;
-			}
-			else
-				bmodel->set.tau = bmdlnode->value.intval;
-		}
-		else if ((NODELST == bmdlnode->type) && !strcmp("tid_outdoor", n)) {
-			ret = tid_parse(&bmodel->set.tid_outdoor, bmdlnode);
-			if (ALL_OK != ret) {
-				dbgerr("tid_parse failed");
-				goto fail;
-			}
-		}
-		else {
-			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", bmdlnode->name, bmdlnode->lineno);
-			ret = -EUNKNOWN;
-		}
-		if (ALL_OK == ret)
-			dbgmsg("matched \"%s\"", n);
-	}
-fail:
-	return (ret);
-}
-
-static int models_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	const struct s_filecfg_parser_nodelist *bmdllist;
-	const struct s_filecfg_parser_node *bmdlnode;
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL, "logging", false, NULL, false, NULL, },
+		{ NODEINT, "tau", true, NULL, false, NULL, },
+		{ NODELST, "tid_outdoor", true, NULL, false, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
 	struct s_bmodel * bmodel;
-	const char * bmdlname;
+	const char * bmdlname = node->value.stringval;
+	int iv, ret;
 
-	if (!node || !node->children)
-		return (-EINVALID);
+	// we receive a 'bmodel' node with a valid string attribute which is the bmodel name
 
-	for (bmdllist = node->children; bmdllist; bmdllist = bmdllist->next) {
-		bmdlnode = bmdllist->node;
-		if (strcmp("bmodel", bmdlnode->name)) {
-			dbgerr("Ignoring unknown node \"%s\" closing at line %d", bmdlnode->name, bmdlnode->lineno);
-			continue;	// skip invalid node
-		}
-		if (NODESTR != bmdlnode->type) {
-			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", bmdlnode->name, bmdlnode->lineno);
-			continue;	// skip invalid node
-		}
-
-		bmdlname = bmdlnode->value.stringval;
-		if (strlen(bmdlname) < 1) {
-			dbgerr("Ignoring bmodel with empty name closing at line %d", bmdlnode->lineno);
-			continue;
-		}
-
-		dbgmsg("Trying %s node \"%s\"", bmdlnode->name, bmdlname);
-
-		// test bmodel parser
-		bmodel = models_new_bmodel(bmdlname);
-		if (ALL_OK == bmodel_parse(bmodel, bmdlnode))
-			dbgmsg("bmodel \"%s\" found!", bmdlname);
-		//else
-			//bmodel_del(bmodel);
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
 	}
-	return (ALL_OK);
+
+	bmodel = models_new_bmodel(bmdlname);
+	if (!bmodel)
+		return (-EOOM);
+
+	currnode = parsers[0].node;
+	if (currnode)
+		bmodel->set.logging = currnode->value.boolval;
+
+	currnode = parsers[1].node;
+	iv = currnode->value.intval;
+	if (iv < 0) {
+		dbgerr("Invalid negative value for \"%s\" closing at line %d", currnode->name, currnode->lineno);
+		return (-EINVALID);
+	}
+
+	currnode = parsers[2].node;
+	ret = tid_parse(&bmodel->set.tid_outdoor, currnode);
+	if (ALL_OK != ret) {
+		dbgerr("tid_parse failed");
+		return (ret);
+	}
+
+	bmodel->set.configured = true;
+
+	dbgmsg("matched \"%s\"", bmdlname);
+
+	return (ret);
 }
 
 #define filecfg_for_node_filter_typename(NODE, TYPE, NAME)							\
@@ -500,6 +468,11 @@ static int filecfg_parser_parse_namedsiblings(void * restrict const priv, const 
 	}
 
 	return (ret);
+}
+
+static int models_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "bmodel", bmodel_parse));
 }
 
 static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
