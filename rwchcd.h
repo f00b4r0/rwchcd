@@ -85,6 +85,7 @@ enum e_execs {
 	EHARDWARE,	///< hardware errors
 	ENOTFOUND,	///< entity not found
 	EUNKNOWN,	///< entity is unknown
+	EEMPTY,		///< entity is empty
 	EGENERIC,
 };
 
