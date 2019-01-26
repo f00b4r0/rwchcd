@@ -204,116 +204,163 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 
 static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEFLT, "t_comfort", false, NULL, false, NULL, },		// 0
+		{ NODEFLT, "t_eco", false, NULL, false, NULL, },
+		{ NODEFLT, "t_frostfree", false, NULL, false, NULL, },		// 2
+		{ NODEFLT, "t_legionella", false, NULL, false, NULL, },
+		{ NODEFLT, "limit_tmin", false, NULL, false, NULL, },		// 4
+		{ NODEFLT, "limit_tmax", false, NULL, false, NULL, },
+		{ NODEFLT, "limit_wintmax", false, NULL, false, NULL, },	// 6
+		{ NODEFLT, "hysteresis", false, NULL, false, NULL, },
+		{ NODEFLT, "temp_inoffset", false, NULL, false, NULL, },	// 8
+		{ NODEINT, "limit_chargetime", false, NULL, false, NULL, },
+	};
 	struct s_dhwt_params * restrict const dhwt_params = priv;
-	const struct s_filecfg_parser_nodelist *deflist;
-	const struct s_filecfg_parser_node *defnode;
-	const char * n;
-	float fval;
-	int ret = ALL_OK;
+	const struct s_filecfg_parser_node *currnode;
+	unsigned int i;
+	float fv;
+	temp_t delta, celsius;
 
-	// we only expect to parse floats (or ints that should be floats) and ints
-	for (deflist = node->children; deflist; deflist = deflist->next) {
-		defnode = deflist->node;
+	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 
-		// use a proxy for float values, needed to parse "expected floats typed as ints"
-		if (NODEFLT == defnode->type)
-			fval = defnode->value.floatval;
-		else if (NODEINT == defnode->type)
-			fval = defnode->value.intval;
-		else
-			goto invalidtype;
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
 
-		n = defnode->name;
+		fv = currnode->value.floatval;
+		delta = deltaK_to_temp(fv);
+		celsius = celsius_to_temp(fv);
 
-		// test each parameter
-		if (!strcmp("t_comfort", n))
-			dhwt_params->t_comfort = celsius_to_temp(fval);
-		else if (!strcmp("t_eco", n))
-			dhwt_params->t_eco = celsius_to_temp(fval);
-		else if (!strcmp("t_frostfree", n))
-			dhwt_params->t_frostfree = celsius_to_temp(fval);
-		else if (!strcmp("t_legionella", n))
-			dhwt_params->t_legionella = celsius_to_temp(fval);
-		else if (!strcmp("limit_tmin", n))
-			dhwt_params->limit_tmin = celsius_to_temp(fval);
-		else if (!strcmp("limit_tmax", n))
-			dhwt_params->limit_tmax = celsius_to_temp(fval);
-		else if (!strcmp("limit_wintmax", n))
-			dhwt_params->limit_wintmax = celsius_to_temp(fval);
-		else if (!strcmp("hysteresis", n))
-			dhwt_params->hysteresis = deltaK_to_temp(fval);
-		else if (!strcmp("temp_inoffset", n))
-			dhwt_params->temp_inoffset = deltaK_to_temp(fval);
-		else if (!strcmp("limit_chargetime", n) && (NODEINT == defnode->type))
-			dhwt_params->temp_inoffset = deltaK_to_temp(defnode->value.intval);
-		else {
-invalidtype:
-			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
-			ret = -EINVALID;
+		switch (i) {
+			case 0:
+				dhwt_params->t_comfort = celsius;
+				break;
+			case 1:
+				dhwt_params->t_eco = celsius;
+				break;
+			case 2:
+				dhwt_params->t_frostfree = celsius;
+				break;
+			case 3:
+				dhwt_params->t_legionella = celsius;
+				break;
+			case 4:
+				dhwt_params->limit_tmin = celsius;
+				break;
+			case 5:
+				dhwt_params->limit_tmax = celsius;
+				break;
+			case 6:
+				dhwt_params->limit_wintmax = celsius;
+				break;
+			case 7:
+				if (fv < 0)
+					goto invaliddata;
+				else
+					dhwt_params->hysteresis = delta;
+				break;
+			case 8:
+				dhwt_params->temp_inoffset = delta;
+				break;
+			case 9:
+				if (currnode->value.intval < 0)
+					goto invaliddata;
+				else
+					dhwt_params->limit_chargetime = currnode->value.intval;
+				break;
+			default:
+				break;	// never happen
 		}
-		if (ALL_OK == ret)
-			dbgmsg("matched \"%s\": %f", n, fval);
 	}
 
-	return (ret);
+	return (ALL_OK);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (-EINVALID);
 }
 
 static int hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEFLT, "t_comfort", false, NULL, false, NULL, },		// 0
+		{ NODEFLT, "t_eco", false, NULL, false, NULL, },
+		{ NODEFLT, "t_frostfree", false, NULL, false, NULL, },		// 2
+		{ NODEFLT, "t_offset", false, NULL, false, NULL, },
+		{ NODEFLT, "outhoff_comfort", false, NULL, false, NULL, },	// 4
+		{ NODEFLT, "outhoff_eco", false, NULL, false, NULL, },
+		{ NODEFLT, "outhoff_frostfree", false, NULL, false, NULL, },	// 6
+		{ NODEFLT, "outhoff_hysteresis", false, NULL, false, NULL, },
+		{ NODEFLT, "limit_wtmin", false, NULL, false, NULL, },		// 8
+		{ NODEFLT, "limit_wtmax", false, NULL, false, NULL, },
+		{ NODEFLT, "temp_inoffset", false, NULL, false, NULL, },	// 10
+	};
 	struct s_hcircuit_params * restrict const hcircuit_params = priv;
-	const struct s_filecfg_parser_nodelist *deflist;
-	const struct s_filecfg_parser_node *defnode;
-	const char * n;
-	float fval;
-	int ret = ALL_OK;
+	const struct s_filecfg_parser_node *currnode;
+	unsigned int i;
+	float fv;
+	temp_t delta, celsius;
 
-	// we only expect to parse floats (or ints that should be floats)
-	for (deflist = node->children; deflist; deflist = deflist->next) {
-		defnode = deflist->node;
+	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 
-		// use a proxy for float values, needed to parse "expected floats typed as ints"
-		if (NODEFLT == defnode->type)
-			fval = defnode->value.floatval;
-		else if (NODEINT == defnode->type)
-			fval = defnode->value.intval;
-		else
-			goto invalidtype;
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
 
-		n = defnode->name;
+		fv = currnode->value.floatval;
+		delta = deltaK_to_temp(fv);
+		celsius = celsius_to_temp(fv);
 
-		// test each parameter
-		if (!strcmp("t_comfort", n))
-			hcircuit_params->t_comfort = celsius_to_temp(fval);
-		else if (!strcmp("t_eco", n))
-			hcircuit_params->t_eco = celsius_to_temp(fval);
-		else if (!strcmp("t_frostfree", n))
-			hcircuit_params->t_frostfree = celsius_to_temp(fval);
-		else if (!strcmp("t_offset", n))
-			hcircuit_params->t_offset = deltaK_to_temp(fval);
-		else if (!strcmp("outhoff_comfort", n))
-			hcircuit_params->outhoff_comfort = celsius_to_temp(fval);
-		else if (!strcmp("outhoff_eco", n))
-			hcircuit_params->outhoff_eco = celsius_to_temp(fval);
-		else if (!strcmp("outhoff_frostfree", n))
-			hcircuit_params->outhoff_frostfree = celsius_to_temp(fval);
-		else if (!strcmp("outhoff_hysteresis", n))
-			hcircuit_params->outhoff_hysteresis = deltaK_to_temp(fval);
-		else if (!strcmp("limit_wtmin", n))
-			hcircuit_params->limit_wtmin = celsius_to_temp(fval);
-		else if (!strcmp("limit_wtmax", n))
-			hcircuit_params->limit_wtmax = celsius_to_temp(fval);
-		else if (!strcmp("temp_inoffset", n))
-			hcircuit_params->temp_inoffset = deltaK_to_temp(fval);
-		else {
-invalidtype:
-			dbgerr("Ignoring invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
-			ret = -EINVALID;
+		switch (i) {
+			case 0:
+				hcircuit_params->t_comfort = celsius;
+				break;
+			case 1:
+				hcircuit_params->t_eco = celsius;
+				break;
+			case 2:
+				hcircuit_params->t_frostfree = celsius;
+				break;
+			case 3:
+				hcircuit_params->t_offset = delta;
+				break;
+			case 4:
+				hcircuit_params->outhoff_comfort = celsius;
+				break;
+			case 5:
+				hcircuit_params->outhoff_eco = celsius;
+				break;
+			case 6:
+				hcircuit_params->outhoff_frostfree = celsius;
+				break;
+			case 7:
+				if (fv < 0)
+					goto invaliddata;
+				else
+					hcircuit_params->outhoff_hysteresis = delta;
+				break;
+			case 8:
+				hcircuit_params->limit_wtmin = celsius;
+				break;
+			case 9:
+				hcircuit_params->limit_wtmax = celsius;
+				break;
+			case 10:
+				hcircuit_params->temp_inoffset = delta;
+				break;
+			default:
+				break;	// never happen
 		}
-		if (ALL_OK == ret)
-			dbgmsg("matched \"%s\": %f", n, fval);
 	}
 
-	return (ret);
+	return (ALL_OK);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (-EINVALID);
 }
 
 static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
