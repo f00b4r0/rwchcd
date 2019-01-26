@@ -28,6 +28,7 @@
 
 #include "plant.h"
 #include "pump.h"
+#include "valve.h"
 
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
@@ -556,10 +557,174 @@ static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "pump", pump_parse));
 }
 
+static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT, "sample_intvl", true, NULL, false, NULL, },
+		{ NODEINT, "amount", true, NULL, false, NULL, },
+	};
+	struct s_valve * restrict const valve = priv;
+	int ret, sample_intvl, amount;
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
+
+	sample_intvl = parsers[0].node->value.intval;
+	amount = parsers[1].node->value.intval;
+
+	return (valve_make_sapprox(valve, amount, sample_intvl));
+}
+
+static int valve_algo_PI_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT, "sample_intvl", true, NULL, false, NULL, },
+		{ NODEINT, "Tu", true, NULL, false, NULL, },
+		{ NODEINT, "Td", true, NULL, false, NULL, },
+		{ NODEINT, "tune_f", true, NULL, false, NULL, },
+		{ NODEFLT, "Ksmax", true, NULL, false, NULL, },
+	};
+	struct s_valve * restrict const valve = priv;
+	int ret, sample_intvl, Tu, Td, tune_f;
+	float Ksmax;
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
+
+	sample_intvl = parsers[0].node->value.intval;
+	Tu = parsers[1].node->value.intval;
+	Td = parsers[2].node->value.intval;
+	tune_f = parsers[3].node->value.intval;
+	Ksmax = parsers[4].node->value.floatval;
+
+	return (valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, tune_f));
+}
+
+static int valve_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT, "deadband", false, NULL, false, NULL, },	// 0
+		{ NODEINT, "ete_time", true, NULL, false, NULL, },
+		{ NODEFLT, "tdeadzone", false, NULL, false, NULL, },	// 2
+		{ NODELST, "tid_hot", false, NULL, false, NULL, },
+		{ NODELST, "tid_cold", false, NULL, false, NULL, },	// 4
+		{ NODELST, "tid_out", true, NULL, false, NULL, },
+		{ NODELST, "rid_hot", true, NULL, false, NULL, },	// 6
+		{ NODELST, "rid_cold", true, NULL, false, NULL, },
+		{ NODESTR, "algo", true, NULL, false, NULL, },		// 8
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_plant * restrict const plant = priv;
+	struct s_valve * valve;
+	const char * n;
+	float fv;
+	int iv, ret;
+	unsigned int i;
+
+	// we receive a 'valve' node with a valid string attribute which is the valve name
+
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
+
+	// create the valve
+	valve = plant_new_valve(plant, node->value.stringval);
+	if (!valve) {
+		dbgerr("valve creation failed");
+		return (-EOOM);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+			case 1:
+				iv = currnode->value.intval;
+				if (iv < 0)
+					goto invaliddata;
+				if (0 == i)
+					valve->set.deadband = iv;
+				else	// i == 1
+					valve->set.ete_time = iv;
+				break;
+			case 2:
+				fv = currnode->value.floatval;
+				if (fv < 0)
+					goto invaliddata;
+				else
+					valve->set.tdeadzone = deltaK_to_temp(fv);
+				break;
+			case 3:
+				if (ALL_OK != tid_parse(&valve->set.tid_hot, currnode))
+					goto invaliddata;
+				break;
+			case 4:
+				if (ALL_OK != tid_parse(&valve->set.tid_cold, currnode))
+					goto invaliddata;
+				break;
+			case 5:
+				if (ALL_OK != tid_parse(&valve->set.tid_out, currnode))
+					goto invaliddata;
+				break;
+			case 6:
+				if (ALL_OK != rid_parse(&valve->set.rid_hot, currnode))
+					goto invaliddata;
+				break;
+			case 7:
+				if (ALL_OK != rid_parse(&valve->set.rid_cold, currnode))
+					goto invaliddata;
+				break;
+			case 8:
+				n = currnode->value.stringval;
+				if (!strcmp("PI", n))
+					ret = valve_algo_PI_parser(valve, currnode);
+				else if (!strcmp("sapprox", n))
+					ret = valve_algo_sapprox_parser(valve, currnode);
+				else if (!strcmp("bangbang", n))
+					ret = valve_make_bangbang(valve);
+				else {
+					dbgerr("Unknown algo \"%s\" closing at line %d", n, currnode->lineno);
+					return (-EUNKNOWN);
+				}
+				if (ALL_OK == ret)
+					dbgmsg("parsed algo \"%s\"", n);
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	if (ALL_OK == ret)
+		valve->set.configured = true;
+
+	return (ret);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (-EINVALID);
+}
+
+static int valves_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "valve", valve_parse));
+}
+
 static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODELST, "pumps", false, pumps_parse, false, NULL, },
+		{ NODELST, "valves", false, valves_parse, false, NULL, },
 	};
 	struct s_plant * plant;
 	int ret;
