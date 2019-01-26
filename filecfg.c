@@ -564,7 +564,7 @@ static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, co
 	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(circuit->set.runmode));
 	tfprintf(file, il, "ambient_factor %" PRIdFAST16 ";\n", circuit->set.ambient_factor);
 	tfprintf(file, il, "wtemp_rorh %.1f;\n", temp_to_deltaK(circuit->set.wtemp_rorh));
-	tfprintf(file, il, "am_ambient_tK %ld;\n", circuit->set.am_tambient_tK);
+	tfprintf(file, il, "am_tambient_tK %ld;\n", circuit->set.am_tambient_tK);
 	tfprintf(file, il, "tambient_boostdelta %.1f;\n", temp_to_deltaK(circuit->set.tambient_boostdelta));
 	tfprintf(file, il, "boost_maxtime %ld;\n", circuit->set.boost_maxtime);
 
