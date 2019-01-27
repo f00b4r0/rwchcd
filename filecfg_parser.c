@@ -365,81 +365,74 @@ invaliddata:
 
 static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_filecfg_parser_parsers def_parsers[] = {
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL, "summer_maintenance", false, NULL, false, NULL, },	// 0
+		{ NODEBOL, "logging", false, NULL, false, NULL, },
+		{ NODEFLT, "limit_tsummer", false, NULL, false, NULL, },	// 2
+		{ NODEFLT, "limit_tfrost", false, NULL, false, NULL, },
+		{ NODEINT, "sleeping_delay", false, NULL, false, NULL, },	// 4
 		{ NODELST, "def_hcircuit", false, NULL, false, NULL, },
-		{ NODELST, "def_dhwt", false, NULL, false, NULL, },
+		{ NODELST, "def_dhwt", false, NULL, false, NULL, },		// 6
 	};
-	struct s_config * restrict const config = config_new();
-	const struct s_filecfg_parser_nodelist *deflist;
-	const struct s_filecfg_parser_node *defnode;
-	float fval;
+	struct s_config * restrict config;
+	const struct s_filecfg_parser_node *currnode;
+	unsigned int i;
 	int ret;
 
-	if (!node || !node->children)
-		return (-EINVALID);
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
+	}
 
-	for (deflist = node->children; deflist; deflist = deflist->next) {
-		defnode = deflist->node;
+	config = config_new();
+	if (!config)
+		return (-EOOM);
 
-		// use a proxy for float values, needed to parse "expected floats typed as ints"
-		if (NODEFLT == defnode->type)
-			fval = defnode->value.floatval;
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
 
-		switch (defnode->type) {
-			case NODEBOL:
-				if (!strcmp("summer_maintenance", defnode->name))
-					config->summer_maintenance = defnode->value.boolval;
-				else if (!strcmp("logging", defnode->name))
-					config->logging = defnode->value.boolval;
-				else
-					goto invalidnode;
+		switch (i) {
+			case 0:
+				config->summer_maintenance = currnode->value.boolval;
 				break;
-			case NODEINT:
-				if (!strcmp("sleeping_delay", defnode->name)) {
-					if (defnode->value.intval < 0)
-						goto invaliddata;
-					else
-						config->sleeping_delay = defnode->value.intval;
-					break;	// match found
-				}
-				// attempt to parse int values as float arguments
-				fval = defnode->value.intval;
-			case NODEFLT:
-				if (!strcmp("limit_tsummer", defnode->name))
-					ret = config_set_tsummer(config, celsius_to_temp(fval));
-				else if (!strcmp("limit_tfrost", defnode->name))
-					ret = config_set_tfrost(config, celsius_to_temp(fval));
+			case 1:
+				config->logging = currnode->value.boolval;
+				break;
+			case 2:
+				ret = config_set_tsummer(config, celsius_to_temp(currnode->value.floatval));
+				break;
+			case 3:
+				ret = config_set_tfrost(config, celsius_to_temp(currnode->value.floatval));
+				break;
+			case 4:
+				if (currnode->value.intval < 0)
+					goto invaliddata;
 				else
-					goto invalidnode;
-				if (ALL_OK != ret)
+					config->sleeping_delay = currnode->value.intval;
+			case 5:
+				if (ALL_OK != hcircuit_params_parse(&config->def_hcircuit, currnode))
 					goto invaliddata;
 				break;
-			case NODELST:
-				// process def_dhwt and def_hcircuit
-				if (ALL_OK != filecfg_parser_match_node(defnode, def_parsers, ARRAY_SIZE(def_parsers)))
-					goto invalidnode;
+			case 6:
+				if (ALL_OK != dhwt_params_parse(&config->def_dhwt, currnode))
+					goto invaliddata;
 				break;
-			case NODESTR:
 			default:
-				goto invalidnode;
+				break;
 		}
-		dbgmsg("matched \"%s\"", defnode->name);
 	}
-	if (def_parsers[0].node)
-		hcircuit_params_parse(&config->def_hcircuit, def_parsers[0].node);
-	if (def_parsers[1].node)
-		dhwt_params_parse(&config->def_dhwt, def_parsers[1].node);
+
+	config->configured = true;
 
 	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
 	return (ALL_OK);
 
 	// we choose to interrupt parsing if an error occurs in this function, but let the subparsers run to the end
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", defnode->name, defnode->lineno);
-	return (-EINVALID);
-
-invalidnode:
-	dbgerr("Invalid node or node type for \"%s\" closing at line %d", defnode->name, defnode->lineno);
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
 	return (-EINVALID);
 }
 
