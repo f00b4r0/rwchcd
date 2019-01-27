@@ -33,6 +33,8 @@
 #include "hcircuit.h"
 #include "heatsource.h"
 
+#include "runtime.h"
+
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
@@ -343,6 +345,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODELST, "def_hcircuit", false, NULL, false, NULL, },
 		{ NODELST, "def_dhwt", false, NULL, false, NULL, },		// 6
 	};
+	struct s_runtime * const runtime = priv;
 	struct s_config * restrict config;
 	const struct s_filecfg_parser_node *currnode;
 	unsigned int i;
@@ -393,6 +396,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 	}
 
 	config->configured = true;
+	runtime->config = config;
 
 	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
 	return (ALL_OK);
@@ -1336,6 +1340,7 @@ static int plant_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODELST, "hcircuits", false, hcircuits_parse, false, NULL, },
 		{ NODELST, "heatsources", false, heatsources_parse, false, NULL, },
 	};
+	struct s_runtime * const runtime = priv;
 	struct s_plant * plant;
 	int ret;
 
@@ -1353,6 +1358,8 @@ static int plant_parse(void * restrict const priv, const struct s_filecfg_parser
 	ret = filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK == ret)
 		plant->configured = true;
+
+	runtime->plant = plant;
 
 	return (ret);
 }
@@ -1489,6 +1496,7 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 		{ NODELST, "models", false, models_parse, false, NULL, },
 		{ NODELST, "plant", true, plant_parse, false, NULL, },
 	};
+	struct s_runtime * const runtime = runtime_get();
 	int ret;
 
 	printf("\n\nBegin parse\n");
@@ -1496,7 +1504,7 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = filecfg_parser_run_parsers(NULL, root_parsers, ARRAY_SIZE(root_parsers));
+	ret = filecfg_parser_run_parsers(runtime, root_parsers, ARRAY_SIZE(root_parsers));
 
 	return (ret);
 }
