@@ -43,7 +43,8 @@ node_list: /* empty */			{ $$ = NULL; }
 	| node_list node		{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
 ;
 
-node:	IDENTIFIER BOOL ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEBOL, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
+node:	IDENTIFIER ';'			{ filecfg_parser_error("missing argument"); YYABORT; }
+	| IDENTIFIER BOOL ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEBOL, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 	| IDENTIFIER INT ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEINT, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 	| IDENTIFIER FLOAT ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEFLT, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 	| IDENTIFIER STRING ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODESTR, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
