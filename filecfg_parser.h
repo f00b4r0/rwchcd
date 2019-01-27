@@ -75,4 +75,6 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 int filecfg_parser_run_parsers(void * const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const parser_t parser);
 
+#define filecfg_parser_report_invaliddata(NODE)		dbgerr("Invalid data for node \"%s\" closing at line %d", NODE->name, NODE->lineno)
+
 #endif /* filecfg_parser_h */

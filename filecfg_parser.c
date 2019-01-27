@@ -247,7 +247,7 @@ static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_
 	return (ALL_OK);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
 
@@ -328,7 +328,7 @@ static int hcircuit_params_parse(void * restrict const priv, const struct s_file
 	return (ALL_OK);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
 
@@ -399,7 +399,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 
 	// we choose to interrupt parsing if an error occurs in this function, but let the subparsers run to the end
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
 
@@ -542,7 +542,7 @@ static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_
 	return (ret);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (ret);
 }
 
@@ -699,7 +699,7 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 	return (ret);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
 
@@ -886,7 +886,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 	return (ret);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
 
@@ -1080,7 +1080,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 	return (ret);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
 
@@ -1236,7 +1236,7 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 	return (ALL_OK);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 
 }
@@ -1318,7 +1318,7 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 	return (ret);
 
 invaliddata:
-	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
 
