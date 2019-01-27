@@ -84,7 +84,7 @@ static int plant_restore(struct s_plant * restrict const plant)
  * @param name target name to find
  * @return pump if found, NULL otherwise
  */
-struct s_pump * plant_fbn_pump(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_pump * plant_fbn_pump(const struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_pump_l * restrict pumpl;
 	struct s_pump * restrict pump = NULL;
@@ -163,7 +163,7 @@ fail:
  * @param name target name to find
  * @return valve if found, NULL otherwise
  */
-struct s_valve * plant_fbn_valve(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_valve * plant_fbn_valve(const struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_valve_l * restrict valvel;
 	struct s_valve * restrict valve = NULL;
@@ -242,7 +242,7 @@ fail:
  * @param name target name to find
  * @return circuit if found, NULL otherwise
  */
-struct s_hcircuit * plant_fbn_circuit(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_hcircuit * plant_fbn_circuit(const struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_heating_circuit_l * restrict circuitl;
 	struct s_hcircuit * restrict circuit = NULL;
@@ -324,7 +324,7 @@ fail:
  * @param name target name to find
  * @return dhwt if found, NULL otherwise
  */
-struct s_dhw_tank * plant_fbn_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_dhw_tank * plant_fbn_dhwt(const struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_dhw_tank_l * restrict dhwtl;
 	struct s_dhw_tank * restrict dhwt = NULL;
@@ -406,7 +406,7 @@ fail:
  * @param name target name to find
  * @return heatsource if found, NULL otherwise
  */
-struct s_heatsource * plant_fbn_heatsource(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_heatsource * plant_fbn_heatsource(const struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_heatsource_l * restrict sourcel;
 	struct s_heatsource * restrict source = NULL;
