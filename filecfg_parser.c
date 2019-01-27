@@ -31,6 +31,7 @@
 #include "valve.h"
 #include "dhwt.h"
 #include "hcircuit.h"
+#include "heatsource.h"
 
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
@@ -1088,6 +1089,244 @@ static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_pa
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "hcircuit", hcircuit_parse));
 }
 
+#include "boiler.h"
+static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "idle_mode", false, NULL, false, NULL, },		// 0
+		{ NODEFLT, "hysteresis", true, NULL, false, NULL, },
+		{ NODEFLT, "limit_thardmax", true, NULL, false, NULL, },	// 2
+		{ NODEFLT, "limit_tmax", false, NULL, false, NULL, },
+		{ NODEFLT, "limit_tmin", false, NULL, false, NULL, },		// 4
+		{ NODEFLT, "limit_treturnmin", false, NULL, false, NULL, },
+		{ NODEFLT, "t_freeze", true, NULL, false, NULL, },		// 6
+		{ NODEINT, "burner_min_time", false, NULL, false, NULL, },
+		{ NODELST, "tid_boiler", true, NULL, false, NULL, },		// 8
+		{ NODELST, "tid_boiler_return", false, NULL, false, NULL, },
+		{ NODELST, "rid_burner_1", true, NULL, false, NULL, },		// 10
+		{ NODELST, "rid_burner_2", false, NULL, false, NULL, },
+		{ NODESTR, "pump_load", false, NULL, false, NULL, },		// 12
+		{ NODESTR, "valve_ret", false, NULL, false, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_boiler_priv * boiler;
+	temp_t temp;
+	const char * n;
+	float fv;
+	int iv, ret;
+	unsigned int i;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	// make that heatsource a boiler
+	ret = boiler_heatsource(heatsource);
+	if (ret)
+		return (ret);
+
+	// configure that boiler
+	boiler = heatsource->priv;
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				n = currnode->value.stringval;
+				if (!strcmp("never", n))
+					boiler->set.idle_mode = IDLE_NEVER;
+				else if (!strcmp("always", n))
+					boiler->set.idle_mode = IDLE_FROSTONLY;
+				else if (!strcmp("frostonly", n))
+					boiler->set.idle_mode = IDLE_ALWAYS;
+				else {
+					dbgerr("Unknown boiler idle mode \"%s\" at line %d", n, currnode->lineno);
+					return (-EINVALID);
+				}
+				break;
+			case 1:
+				fv = currnode->value.floatval;
+				if (fv < 0)
+					goto invaliddata;
+				else
+					boiler->set.hysteresis = deltaK_to_temp(fv);
+				break;
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+			case 6:
+				fv = currnode->value.floatval;
+				if (fv < 0)
+					goto invaliddata;
+				temp = celsius_to_temp(fv);
+				switch (i) {
+					case 2:
+						boiler->set.limit_thardmax = temp;
+						break;
+					case 3:
+						boiler->set.limit_tmax = temp;
+						break;
+					case 4:
+						boiler->set.limit_tmin = temp;
+						break;
+					case 5:
+						boiler->set.limit_treturnmin = temp;
+						break;
+					case 6:
+						boiler->set.t_freeze = temp;
+						break;
+					default:
+						break;
+				}
+				break;
+			case 7:
+				iv = currnode->value.intval;
+				if (iv < 0)
+					goto invaliddata;
+				else
+					boiler->set.burner_min_time = iv;
+				break;
+			case 8:
+				if (ALL_OK != tid_parse(&boiler->set.tid_boiler, currnode))
+					goto invaliddata;
+				break;
+			case 9:
+				if (ALL_OK != tid_parse(&boiler->set.tid_boiler_return, currnode))
+					goto invaliddata;
+				break;
+			case 10:
+				if (ALL_OK != rid_parse(&boiler->set.rid_burner_1, currnode))
+					goto invaliddata;
+				break;
+			case 11:
+				if (ALL_OK != rid_parse(&boiler->set.rid_burner_2, currnode))
+					goto invaliddata;
+				break;
+			case 12:
+			case 13:
+				n = currnode->value.stringval;
+				if (strlen(n) < 1)
+					break;	// nothing to do
+
+				switch (i) {
+					case 12:
+						boiler->pump_load = plant_fbn_pump(plant, n);
+						if (!boiler->pump_load)
+							goto invaliddata;
+						break;
+					case 13:
+						boiler->valve_ret = plant_fbn_valve(plant, n);
+						if (!boiler->valve_ret)
+							goto invaliddata;
+						break;
+					default:
+						break;	// should never happen
+				}
+				dbgmsg("%s: \"%s\" found", currnode->name, n);
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	return (ALL_OK);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (-EINVALID);
+
+}
+
+static int heatsource_type_parse(const struct s_plant * const plant, struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
+{
+	int ret;
+
+	if (!strcmp("boiler", node->value.stringval))
+		ret = hs_boiler_parse(plant, heatsource, node);
+	else
+		ret = -EUNKNOWN;
+
+	return (ret);
+}
+
+static int heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "runmode", true, NULL, false, NULL, },		// 0
+		{ NODESTR, "type", true, NULL, false, NULL, },
+		{ NODEINT, "prio", false, NULL, false, NULL, },			// 2
+		{ NODEINT, "consumer_sdelay", false, NULL, false, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_plant * restrict const plant = priv;
+	struct s_heatsource * heatsource;
+	int iv, ret;
+	unsigned int i;
+
+	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	// create the heatsource
+	heatsource = plant_new_heatsource(plant, node->value.stringval);
+	if (!heatsource) {
+		dbgerr("heatsource creation failed");
+		return (-EOOM);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				ret = runmode_parse(&heatsource->set.runmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 1:
+				if (ALL_OK != heatsource_type_parse(plant, heatsource, currnode))
+					goto invaliddata;
+				break;
+			case 2:
+				iv = currnode->value.intval;
+				if (iv < 0)
+					goto invaliddata;
+				heatsource->set.prio = iv;
+				break;
+			case 3:
+				iv = currnode->value.intval;
+				if (iv < 0)
+					goto invaliddata;
+				heatsource->set.consumer_sdelay = iv;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	if (ALL_OK == ret)
+		heatsource->set.configured = true;
+
+	return (ret);
+
+invaliddata:
+	dbgerr("Invalid data for node \"%s\" closing at line %d", currnode->name, currnode->lineno);
+	return (-EINVALID);
+}
+
+static int heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "heatsource", heatsource_parse));
+}
+
 static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
@@ -1095,6 +1334,7 @@ static int plant_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODELST, "valves", false, valves_parse, false, NULL, },
 		{ NODELST, "dhwts", false, dhwts_parse, false, NULL, },
 		{ NODELST, "hcircuits", false, hcircuits_parse, false, NULL, },
+		{ NODELST, "heatsources", false, heatsources_parse, false, NULL, },
 	};
 	struct s_plant * plant;
 	int ret;
