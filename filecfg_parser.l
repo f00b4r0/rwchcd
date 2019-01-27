@@ -64,10 +64,10 @@ off			|
 no			{ filecfg_parser_lval.boolval=false; return BOOL; }
 
 	/* integers */
-[-+]?[0-9]+		{ filecfg_parser_lval.ival=atoi(filecfg_parser_text); return INT; }
+[-+]?[0-9]+		{ filecfg_parser_lval.ival=(int)strtol(filecfg_parser_text, NULL, 10); return INT; }
 
 	/* decimals */
-[-+]?([0-9]*\.[0-9]+|[0-9]+\.)	{ filecfg_parser_lval.dval=atof(filecfg_parser_text); return FLOAT; }
+[-+]?([0-9]*\.[0-9]+|[0-9]+\.)	{ filecfg_parser_lval.dval=strtof(filecfg_parser_text, NULL); return FLOAT; }
 
 	/* option identifiers */
 [A-Za-z_]{IDENTPART}*	{ filecfg_parser_lval.strval = strdup(filecfg_parser_text); return IDENTIFIER; }
