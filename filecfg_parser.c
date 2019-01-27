@@ -1460,15 +1460,23 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
  * @param priv optional private data
  * @param parsers the parsers to trigger, with their respective .seen and .node elements correctly set
  * @param nparsers the number of parsers available in parsers[]
+ * @return exec status. @note will abort execution at first error
  */
-void filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
+int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
 {
 	unsigned int i;
+	int ret;
 
 	for (i = 0; i < nparsers; i++) {
-		if (parsers[i].seen && parsers[i].parser)
-			parsers[i].parser(priv, parsers[i].node);
+		if (parsers[i].seen && parsers[i].parser) {
+			dbgmsg("running parser \"%s\"", parsers[i].identifier);
+			ret = parsers[i].parser(priv, parsers[i].node);
+			if (ALL_OK != ret)
+				return (ret);
+		}
 	}
+
+	return (ret);
 }
 
 int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *nodelist)
