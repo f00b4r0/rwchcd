@@ -161,7 +161,7 @@ static int parse_type(void * restrict const priv, const struct s_filecfg_parser_
 	if (ALL_OK != ret)
 		return (ret);
 
-	filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers));
+	ret = filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers));
 
 	return (ret);
 }
@@ -308,13 +308,17 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 	hw = hw_p1_setup_new();
 
 	// parse node list in specified order
-	filecfg_parser_run_parsers(hw, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
+	ret = filecfg_parser_run_parsers(hw, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Config parse error");
+		return (ret);
+	}
 
 	// register hardware backend
 	ret = hw_p1_backend_register(hw, node->value.stringval);
 	if (ret < 0) {
 		hw_p1_setup_del(hw);
-		dbgmsg("backend registration failed for %s (%d)", node->value.stringval, ret);
+		dbgerr("Backend registration failed for %s (%d)", node->value.stringval, ret);
 	}
 
 	return (ret);
