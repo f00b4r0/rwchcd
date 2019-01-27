@@ -454,7 +454,7 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 	return (ret);
 }
 
-#define filecfg_for_node_filter_typename(NODE, TYPE, NAME)							\
+#define filecfg_for_node_filter_typename_continue(NODE, TYPE, NAME)						\
 	({													\
 	if (TYPE != NODE->type) {										\
 		dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", NODE->name, NODE->lineno);	\
@@ -475,7 +475,7 @@ int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct 
 
 	for (nlist = nodelist; nlist; nlist = nlist->next) {
 		node = nlist->node;
-		filecfg_for_node_filter_typename(node, NODESTR, nname);
+		filecfg_for_node_filter_typename_continue(node, NODESTR, nname);
 
 		sname = node->value.stringval;
 
