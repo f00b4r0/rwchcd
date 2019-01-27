@@ -107,43 +107,12 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 
 static int hardware_backend_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	const struct s_filecfg_parser_nodelist *bkdlist;
-	const struct s_filecfg_parser_node *bkdnode;
-	const char *bkdname = NULL;
+	int ret;
+	ret = hw_p1_filecfg_parse(node);
+	if (ALL_OK == ret)	// XXX HACK
+		dbgmsg("HW P1 found!");
 
-	if (!node || !node->children)
-		return (-EINVALID);
-
-	for (bkdlist = node->children; bkdlist; bkdlist = bkdlist->next) {
-		bkdnode = bkdlist->node;
-		if (!bkdnode) {
-			printf("invalid node\n");	// xxx assert this can't happen
-			continue;
-		}
-
-		if (NODESTR != bkdnode->type) {
-			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", bkdnode->name, bkdnode->lineno);
-			continue;	// skip invalid node
-		}
-		if (strcmp("backend", bkdnode->name)) {
-			dbgerr("Ignoring unknown node \"%s\" closing at line %d", bkdnode->name, bkdnode->lineno);
-			continue;	// skip invalid node
-		}
-
-		bkdname = bkdnode->value.stringval;
-
-		if (strlen(bkdname) < 1) {
-			dbgerr("Ignoring backend with empty name closing at line %d", bkdnode->lineno);
-			continue;
-		}
-
-		dbgmsg("Trying %s node \"%s\"", bkdnode->name, bkdname);
-
-		// test backend parsers
-		if (ALL_OK == hw_p1_filecfg_parse(bkdnode))	// XXX HACK
-			dbgmsg("HW P1 found!");
-	}
-	return (ALL_OK);
+	return (ret);
 }
 
 static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1165,6 +1134,10 @@ static int plant_parse(void * restrict const priv, const struct s_filecfg_parser
 	return (0);
 }
 
+static int hardware_backends_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "backend", hardware_backend_parse));
+}
 
 /**
  * Match an indidual node against a list of parsers.
@@ -1258,7 +1231,7 @@ void filecfg_parser_run_parsers(void * restrict const priv, const struct s_filec
 int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
-		{ NODELST, "backends", false, hardware_backend_parse, false, NULL, },
+		{ NODELST, "backends", false, hardware_backends_parse, false, NULL, },
 		{ NODELST, "defconfig", false, defconfig_parse, false, NULL, },
 		{ NODELST, "models", false, models_parse, false, NULL, },
 		{ NODELST, "plant", true, plant_parse, false, NULL, },
