@@ -1350,9 +1350,11 @@ static int plant_parse(void * restrict const priv, const struct s_filecfg_parser
 		return (-EOOM);
 	}
 
-	filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
+	ret = filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK == ret)
+		plant->configured = true;
 
-	return (0);
+	return (ret);
 }
 
 static int hardware_backends_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1487,12 +1489,16 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 		{ NODELST, "models", false, models_parse, false, NULL, },
 		{ NODELST, "plant", true, plant_parse, false, NULL, },
 	};
+	int ret;
 
 	printf("\n\nBegin parse\n");
-	filecfg_parser_match_nodelist(nodelist, root_parsers, ARRAY_SIZE(root_parsers));
-	filecfg_parser_run_parsers(NULL, root_parsers, ARRAY_SIZE(root_parsers));
+	ret = filecfg_parser_match_nodelist(nodelist, root_parsers, ARRAY_SIZE(root_parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
-	return (ALL_OK);
+	ret = filecfg_parser_run_parsers(NULL, root_parsers, ARRAY_SIZE(root_parsers));
+
+	return (ret);
 }
 
 /**
