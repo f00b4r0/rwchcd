@@ -133,7 +133,7 @@ static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 		return (ALL_OK);
 	}
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -161,7 +161,7 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 		return (ALL_OK);
 	}
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -348,11 +348,9 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 	unsigned int i;
 	int ret;
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	config = config_new();
 	if (!config)
@@ -419,11 +417,9 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 
 	// we receive a 'bmodel' node with a valid string attribute which is the bmodel name
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	bmodel = models_new_bmodel(bmdlname);
 	if (!bmodel)
@@ -515,11 +511,9 @@ static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 	// we receive a 'pump' node with a valid string attribute which is the pump name
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	// create the pump
 	pump = plant_new_pump(plant, node->value.stringval);
@@ -566,11 +560,9 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 	struct s_valve * restrict const valve = priv;
 	int ret, sample_intvl, amount;
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	sample_intvl = parsers[0].node->value.intval;
 	amount = parsers[1].node->value.intval;
@@ -591,11 +583,9 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	int ret, sample_intvl, Tu, Td, tune_f;
 	float Ksmax;
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	sample_intvl = parsers[0].node->value.intval;
 	Tu = parsers[1].node->value.intval;
@@ -629,11 +619,9 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 
 	// we receive a 'valve' node with a valid string attribute which is the valve name
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	// create the valve
 	valve = plant_new_valve(plant, node->value.stringval);
@@ -779,11 +767,9 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 	// we receive a 'dhwt' node with a valid string attribute which is the dhwt name
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	// create the dhwt
 	dhwt = plant_new_dhwt(plant, node->value.stringval);
@@ -927,11 +913,9 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	temp_t tout1, twater1, tout2, twater2;
 	int ret, nH100;
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	tout1 = celsius_to_temp(parsers[0].node->value.floatval);
 	twater1 = celsius_to_temp(parsers[1].node->value.floatval);
@@ -972,11 +956,9 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 
 	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	// create the hcircuit
 	hcircuit = plant_new_circuit(plant, node->value.stringval);

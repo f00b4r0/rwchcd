@@ -157,11 +157,9 @@ static int parse_type(void * restrict const priv, const struct s_filecfg_parser_
 
 	assert(priv && node);
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);
-	}
 
 	filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers));
 
@@ -184,11 +182,9 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	dbgmsg("parsing sensor %d", node->lineno);
 
 	// match children
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-	}
 
 	sensor_name = node->value.stringval;
 	sensor_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
@@ -245,11 +241,9 @@ static int relay_parse(void * restrict const priv, const struct s_filecfg_parser
 	dbgmsg("parsing relay %d", node->lineno);
 
 	// match children
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret) {
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
 		return (ret);	// return if invalid config
-	}
 
 	relay_name = node->value.stringval;
 	relay_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
@@ -300,7 +294,7 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 		return (-EINVALID);	// we only accept NODESTR backend node with children
 
 	// match children
-	ret = filecfg_parser_match_nodelist(node->children, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
+	ret = filecfg_parser_match_nodechildren(node, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
