@@ -127,5 +127,8 @@ tools:	tools/hwp1_prelays
 tools/hwp1_prelays:	tools/hwp1_prelays.o $(filter-out rwchcd.o hw_backends/hw_p1/hw_p1.o,$(MAINOBJS))
 	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
 
+# disable implicit rules we don't want
+%.c: %.y
+%.c: %.l
 
 -include $(DEPS) $(DBUSGEN_DEPS)
