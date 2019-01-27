@@ -154,241 +154,6 @@ static void sig_handler(int signum)
 	}
 }
 
-static int configure_runtime(struct s_config * restrict config)
-{
-	if (!config->restored) {
-		config_set_tsummer(config, celsius_to_temp(19));	// XXX summer switch at 19C
-		config_set_tfrost(config, celsius_to_temp(3));		// frost at 3C
-		config->summer_maintenance = true;	// enable summer maintenance
-		config->logging = true;			// enable logging
-		config->sleeping_delay = 1 * 24 * 60 * 60;	// XXX 1 day
-
-		// circuit defaults
-		config->def_hcircuit.t_comfort = celsius_to_temp(20.0F);
-		config->def_hcircuit.t_eco = celsius_to_temp(16);
-		config->def_hcircuit.t_frostfree = celsius_to_temp(7);
-		config->def_hcircuit.outhoff_comfort = config->def_hcircuit.t_comfort - deltaK_to_temp(2);	// XXX should be deltas and not temps ?
-		config->def_hcircuit.outhoff_eco = config->def_hcircuit.t_eco - deltaK_to_temp(2);
-		config->def_hcircuit.outhoff_frostfree = config->def_hcircuit.t_frostfree - deltaK_to_temp(3);	// XXX will trip at t-3 untrip at t-4
-		config->def_hcircuit.outhoff_hysteresis = deltaK_to_temp(1);
-		config->def_hcircuit.limit_wtmax = celsius_to_temp(80);
-		config->def_hcircuit.limit_wtmin = celsius_to_temp(20);
-		config->def_hcircuit.temp_inoffset = deltaK_to_temp(7);
-
-		// DHWT defaults
-		config->def_dhwt.limit_wintmax = celsius_to_temp(90);
-		config->def_dhwt.limit_tmin = celsius_to_temp(5);
-		config->def_dhwt.limit_tmax = celsius_to_temp(60);
-		config->def_dhwt.t_comfort = celsius_to_temp(55);
-		config->def_dhwt.t_eco = celsius_to_temp(40);
-		config->def_dhwt.t_frostfree = celsius_to_temp(10);	// XXX REVISIT RELATIONS BETWEEN TEMPS
-		config->def_dhwt.hysteresis = deltaK_to_temp(10);
-		config->def_dhwt.temp_inoffset = deltaK_to_temp(10);
-
-		config->configured = true;
-		config_save(config);
-	}
-
-	return (ALL_OK);
-}
-
-static int configure_models()
-{
-	struct s_bmodel * restrict bmodel_house = NULL;
-	tempid_t tid_out;
-	int ret;
-
-	ret = hw_backends_sensor_fbn(&tid_out, HW_NAME, SENSOR_OUTDOOR_N);
-	if (ALL_OK != ret)
-		return (ret);
-
-	// create a new building model
-	bmodel_house = models_new_bmodel(HOUSE_BMODEL_N);
-	if (!bmodel_house) {
-		dbgerr("bmodel creation failed");
-		return (-EGENERIC);
-	}
-
-	bmodel_house->set.tau = 10 * 60 * 60;		// XXX 10 hours
-	bmodel_house->set.configured = true;
-	bmodel_house->set.logging = true;
-	bmodel_house->set.tid_outdoor = tid_out;
-
-	return (ALL_OK);
-}
-
-/*
- plant configuration:
- - describe all pumps
- - describe all valves
- - describe all circuits and dhwts
- - describe all heatsources
- */
-static int configure_plant(struct s_plant * restrict plant)
-{
-	struct s_pump * restrict pump = NULL;
-	struct s_valve * restrict valve = NULL;
-	struct s_heatsource * restrict heatsource = NULL;
-	struct s_hcircuit * restrict circuit = NULL;
-	struct s_dhw_tank * restrict dhwt = NULL;
-	struct s_boiler_priv * restrict boiler = NULL;
-	tempid_t tempid;
-	relid_t relid;
-	int ret;
-
-	/* pumps */
-
-	// create the circuit pump
-	pump = plant_new_pump(plant, PUMP_CIRCUIT_N);
-	if (!pump) {
-		dbgerr("pump creation failed");
-		return (-EOOM);
-	}
-
-	// configure a relay for that pump
-	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_PUMP_N);
-	if (ret) return (ret);
-	pump->set.rid_pump = relid;
-	pump->set.configured = true;
-
-	/* valves */
-
-	// create a valve for that circuit
-	valve = plant_new_valve(plant, VALVE_CIRCUIT_N);
-	if (!valve) {
-		dbgerr("valve creation failed");
-		return (-EOOM);
-	}
-
-	// configure that valve
-	valve->set.tdeadzone = deltaK_to_temp(1);
-	valve->set.deadband = 20;	// XXX 2% minimum increments
-	valve->set.ete_time = 120;	// XXX 120 s
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
-	if (ret) return (ret);
-	valve->set.tid_hot = tempid;	// boiler out
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
-	if (ret) return (ret);
-	valve->set.tid_cold = tempid;	// circuit return
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
-	if (ret) return (ret);
-	valve->set.tid_out = tempid;	// ciruit outgoing
-	// configure two relays for that valve
-	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VOPEN_N);
-	if (ret) return (ret);
-	valve->set.rid_hot = relid;
-	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_VCLOSE_N);
-	if (ret) return (ret);
-	valve->set.rid_cold = relid;
-	ret = valve_make_pi(valve, 1, 5, 18, deltaK_to_temp(30), 10);
-	if (ret) {
-		dbgerr("valve_make_pi failed: %d", ret);
-		return (ret);
-	}
-	valve->set.configured = true;
-
-	/* circuits */
-
-	// create a new circuit for the plant
-	circuit = plant_new_circuit(plant, CIRCUIT_N);
-	if (!circuit) {
-		dbgerr("circuit creation failed");
-		return (-EOOM);
-	}
-
-	// configure that circuit
-	circuit->set.am_tambient_tK = 60 * 60;	// 1h
-	circuit->set.boost_maxtime = 60 * 60 * 4;	// 4h
-	circuit->set.tambient_boostdelta = deltaK_to_temp(2);	// +2K
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATEROUT_N);
-	if (ret) return (ret);
-	circuit->set.tid_outgoing = tempid;
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_WATERRET_N);
-	if (ret) return (ret);
-	circuit->set.tid_return = tempid;
-	circuit_make_bilinear(circuit, celsius_to_temp(-5), celsius_to_temp(66.5F),
-			      celsius_to_temp(15), celsius_to_temp(27), 130);
-
-	// attach valve to circuit
-	circuit->valve_mix = plant_fbn_valve(plant, VALVE_CIRCUIT_N);
-	if (!circuit->valve_mix) {
-		dbgerr("couldn't find valve %s for circuit %s", VALVE_CIRCUIT_N, circuit->name);
-		return (-ENOTFOUND);
-	}
-
-	// attach the circuit pump
-	circuit->pump_feed = plant_fbn_pump(plant, PUMP_CIRCUIT_N);
-	if (!circuit->pump_feed) {
-		dbgerr("couldn't find pump %s for circuit %s", PUMP_CIRCUIT_N, circuit->name);
-		return (-ENOTFOUND);
-	}
-
-	circuit->set.runmode = RM_AUTO;		// use global setting
-	circuit->set.logging = true;		// enable logging
-
-	circuit->bmodel = models_fbn_bmodel(HOUSE_BMODEL_N);	// assign building model
-
-	circuit->set.configured = true;
-
-	/* DHWTs */
-
-	// create a new DHWT for the plant
-	dhwt = plant_new_dhwt(plant, DHWT_N);
-	if (!dhwt) {
-		dbgerr("dhwt creation failed");
-		return (-EOOM);
-	}
-
-	// configure that dhwt
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
-	if (ret) return (ret);
-	dhwt->set.tid_bottom = tempid;	// integrated tank: boiler temp
-	dhwt->set.params.temp_inoffset = deltaK_to_temp(0.01F);	// Integrated tank - non-zero because default would take over otherwise
-	dhwt->set.runmode = RM_AUTO;	// use global setting
-	dhwt->set.configured = true;
-
-	/* heatsources */
-
-	// create a new heat source for the plant
-	heatsource = plant_new_heatsource(plant, HEATSOURCE_N);
-	if (!heatsource) {
-		dbgerr("heatsource creation failed");
-		return (-EOOM);
-	}
-
-	// make that heatsource a boiler
-	ret = boiler_heatsource(heatsource);
-	if (ret)
-		return (ret);
-
-	// configure that source	XXX REVISIT
-	boiler = heatsource->priv;
-	boiler->set.idle_mode = IDLE_FROSTONLY;
-	boiler->set.hysteresis = deltaK_to_temp(8);
-	boiler->set.limit_tmax = celsius_to_temp(90);
-	boiler->set.limit_tmin = celsius_to_temp(50);
-	boiler->set.limit_treturnmin = celsius_to_temp(35);
-	boiler->set.burner_min_time = 2 * 60;	// XXX 2 minutes
-
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILER_N);
-	if (ret) return (ret);
-	boiler->set.tid_boiler = tempid;
-	ret = hw_backends_sensor_fbn(&tempid, HW_NAME, SENSOR_BOILRET_N);
-	if (ret) return (ret);
-	boiler->set.tid_boiler_return = tempid;
-	ret = hw_backends_relay_fbn(&relid, HW_NAME, RELAY_BURNER_N);
-	if (ret) return (ret);
-	boiler->set.rid_burner_1 = relid;
-
-	heatsource->set.consumer_sdelay = 6 * 60;	// 6mn
-	heatsource->set.runmode = RM_AUTO;	// use global setting
-	heatsource->set.configured = true;
-
-	plant->configured = true;
-
-	return (ALL_OK);
-}
-
 /*
  describe hardware
  register hardware
@@ -400,9 +165,6 @@ static int configure_plant(struct s_plant * restrict plant)
  */
 static int init_process()
 {
-	struct s_runtime * restrict const runtime = runtime_get();
-	struct s_config * restrict config = NULL;
-	struct s_plant * restrict plant = NULL;
 	int ret;
 
 	/* init hardware backend subsystem */
@@ -412,14 +174,29 @@ static int init_process()
 		return (ret);
 	}
 
+	/* init runtime */
+	ret = runtime_init();
+	if (ret) {
+		dbgerr("runtime init error: %d", ret);
+		return (ret);
+	}
+
+	/* init models */
+	ret = models_init();
+	if (ret) {
+		dbgerr("models init failed");
+		return (ret);
+	}
+
 	// this is where we should call the parser
 	if (!(filecfg_parser_in = fopen("/etc/rwchcd.conf", "r"))) {
 		perror("/etc/rwchcd.conf");
 		exit(-1);
 	}
-	filecfg_parser_parse();
+	ret = filecfg_parser_parse();	// XXX REVIEW happens as root
+	if (ret)
+		exit (ret);
 
-#if 0
 	ret = storage_config();
 	if (ret) {
 		dbgerr("storage config error: %d", ret);
@@ -431,8 +208,6 @@ static int init_process()
 		dbgerr("log config error: %d", ret);
 		return (ret);
 	}
-
-//	ret = configure_hw();
 
 	/* init hardware */
 	
@@ -448,63 +223,6 @@ static int init_process()
 	// wait for priviledges to be dropped
 	pthread_barrier_wait(&barr_main);
 
-	/* init config */
-
-	config = config_new();
-	ret = config_init(config);
-	if (ret) {
-		dbgerr("config init error: %d", ret);
-		if (!((-ESTORE == ret) || (-EMISMATCH == ret)))	// XXX: ignore storage errors
-			return (ret);
-	}
-
-	ret = configure_runtime(config);
-	if (ret) {
-		dbgerr("runtime config error: %d", ret);
-		return (ret);
-	}
-
-	/* init models */
-
-	ret = models_init();
-	if (ret) {
-		dbgerr("models init failed");
-		return (ret);
-	}
-
-	ret = configure_models();
-	if (ret) {
-		dbgerr("models config error: %d", ret);
-		return (ret);
-	}
-
-	/* init plant */
-
-	// create a new plant
-	plant = plant_new();
-	if (!plant) {
-		dbgerr("plant creation failed");
-		return (-EOOM);
-	}
-
-	ret = configure_plant(plant);
-	if (ret) {
-		dbgerr("plant config error: %d", ret);
-		return (ret);
-	}
-
-	/* init runtime */
-	ret = runtime_init();
-	if (ret) {
-		dbgerr("runtime init error: %d", ret);
-		return (ret);
-	}
-
-	// attach config to runtime
-	runtime->config = config;
-	// assign plant to runtime
-	runtime->plant = plant;
-
 	/* test and launch */
 
 	// bring the hardware online
@@ -517,7 +235,6 @@ static int init_process()
 
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
-#endif
 }
 
 static void exit_process(void)
@@ -660,9 +377,7 @@ int main(void)
 #endif
 
 	pr_log(_("Revision %s starting"), Version);
-	init_process();
 
-#if 0
 	// create a pipe for the watchdog
 	ret = pipe(pipefd);
 	if (ret)
@@ -777,8 +492,6 @@ int main(void)
 	if (outpipe)
 		fclose(outpipe);
 	unlink(RWCHCD_FIFO);
-#endif
-
 #endif
 
 	return (0);
