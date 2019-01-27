@@ -1182,7 +1182,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 		return (-EINVALID);
 
 	for (i = 0; i < nparsers; i++) {
-		if (parsers[i].type != node->type)	// XXX this will enforce floats where ints are input. Possible fix via bitfield instead of enum
+		if (!(parsers[i].type & node->type))
 			continue;	// skip invalid node type
 
 		if (!strcmp(parsers[i].identifier, node->name)) {

@@ -27,7 +27,14 @@ union u_filecfg_parser_nodeval {
 /** Node value union type */
 typedef union u_filecfg_parser_nodeval u_filecfg_p_nodeval_t;
 
-enum e_filecfg_nodetype { NODEBOL, NODEINT, NODEFLT, NODESTR, NODELST };
+/** Valid node types, value used as bitfield */
+enum e_filecfg_nodetype {
+	NODEBOL = 0x01,		///< Boolean node
+	NODEINT = 0x02,		///< Integer node
+	NODEFLT = 0x04,		///< Float node
+	NODESTR = 0x08,		///< String node
+	NODELST = 0x10,		///< List node
+};
 
 /** Config node structure */
 struct s_filecfg_parser_node {
