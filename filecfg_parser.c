@@ -466,7 +466,7 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 	}													\
 	})
 
-static int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const parser_t parser)
+int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const parser_t parser)
 {
 	const struct s_filecfg_parser_nodelist *nlist;
 	const struct s_filecfg_parser_node *node;

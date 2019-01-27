@@ -168,129 +168,114 @@ static int parse_type(void * restrict const priv, const struct s_filecfg_parser_
 	return (ret);
 }
 
-static int parse_sensors(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int sensor_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "id", true, NULL, false, NULL, },
 		{ NODESTR, "type", true, NULL, false, NULL, },
 		{ NODEFLT, "offset", false, NULL, false, NULL, },
 	};
-	const struct s_filecfg_parser_nodelist *list;
 	const char * sensor_name, *sensor_model;
 	float sensor_offset;
 	sid_t sensor_id;
 	enum e_hw_p1_stype stype;
 	int ret;
 
-	dbgmsg("parsing sensors %d", node->lineno);
+	dbgmsg("parsing sensor %d", node->lineno);
 
-	// node children are 'sensor' list
-	for (list = node->children; list; list = list->next) {
-		dbgmsg("lineno: %d", list->node->lineno);
-		if (NODESTR != list->node->type)
-			continue;	// skip invalid node type
-
-		if (strcmp("sensor", list->node->name)) {
-			dbgerr("Ignoring unknown node \"%s\" closing at line %d", list->node->name, list->node->lineno);
-			continue;
-		}
-
-
-		// match children
-		ret = filecfg_parser_match_nodelist(list->node->children, parsers, ARRAY_SIZE(parsers));
-		if (ALL_OK != ret) {
-			dbgerr("Incomplete \"%s\" node configuration closing at line %d", list->node->name, list->node->lineno);
-			return (ret);	// break if invalid config
-		}
-
-		sensor_name = list->node->value.stringval;
-		sensor_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
-		sensor_model = parsers[1].node->value.stringval;
-		if (parsers[2].seen)
-			sensor_offset = parsers[2].node->value.floatval;
-		else
-			sensor_offset = 0;
-
-		// match stype - XXX TODO REWORK
-		if (!strcmp("PT1000", sensor_model))
-			stype = ST_PT1000;
-		else if (!strcmp("NI1000", sensor_model))
-			stype = ST_NI1000;
-		else {
-			dbgerr("Unknown sensor model \"%s\" at line %d", sensor_model, parsers[1].node->lineno);
-			continue;
-		}
-
-		ret = hw_p1_setup_sensor_configure(priv, sensor_id, stype, deltaK_to_temp(sensor_offset), sensor_name);
-		switch (ret) {
-			case -EINVALID:
-				dbgerr("Line %d: invalid sensor id '%d'", list->node->lineno, sensor_id);
-				return (ret);
-			case -EEXISTS:
-				dbgerr("Line %d: a sensor with the same name or id is already configured", list->node->lineno);
-				return (ret);
-			case -EOOM:
-				dbgerr("Out of memory!");
-				return (ret);
-			default:
-				break;
-		}
+	// match children
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// break if invalid config
 	}
-	return (ALL_OK);
+
+	sensor_name = node->value.stringval;
+	sensor_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
+	sensor_model = parsers[1].node->value.stringval;
+	if (parsers[2].seen)
+		sensor_offset = parsers[2].node->value.floatval;
+	else
+		sensor_offset = 0;
+
+	// match stype - XXX TODO REWORK
+	if (!strcmp("PT1000", sensor_model))
+		stype = ST_PT1000;
+	else if (!strcmp("NI1000", sensor_model))
+		stype = ST_NI1000;
+	else {
+		dbgerr("Unknown sensor model \"%s\" at line %d", sensor_model, parsers[1].node->lineno);
+		return (-EUNKNOWN);
+	}
+
+	ret = hw_p1_setup_sensor_configure(priv, sensor_id, stype, deltaK_to_temp(sensor_offset), sensor_name);
+	switch (ret) {
+		case -EINVALID:
+			dbgerr("Line %d: invalid sensor id '%d'", node->lineno, sensor_id);
+			return (ret);
+		case -EEXISTS:
+			dbgerr("Line %d: a sensor with the same name or id is already configured", node->lineno);
+			return (ret);
+		case -EOOM:
+			dbgerr("Out of memory!");
+			return (ret);
+		default:
+			break;
+	}
+
+	return (ret);
 }
 
-static int parse_relays(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int sensors_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "sensor", sensor_parse));
+}
+
+static int relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "id", true, NULL, false, NULL, },
 		{ NODEBOL, "failstate", true, NULL, false, NULL, },
 	};
-	const struct s_filecfg_parser_nodelist *list;
 	const char * relay_name;
 	rid_t relay_id;
 	bool failstate;
 	int ret, retval;
 
-	dbgmsg("parsing relays %d", node->lineno);
+	dbgmsg("parsing relay %d", node->lineno);
 
-	// node children are 'relay' list
-	for (list = node->children; list; list = list->next) {
-		dbgmsg("lineno: %d", list->node->lineno);
-		if (NODESTR != list->node->type)
-			continue;	// skip invalid node type
-
-		if (strcmp("relay", list->node->name)) {
-			dbgerr("Ignoring unknown node \"%s\" closing at line %d", list->node->name, list->node->lineno);
-			continue;
-		}
-
-		// match children
-		ret = filecfg_parser_match_nodelist(list->node->children, parsers, ARRAY_SIZE(parsers));
-		if (ALL_OK != ret) {
-			dbgerr("Incomplete \"%s\" node configuration closing at line %d", list->node->name, list->node->lineno);
-			return (ret);	// return if invalid config
-		}
-
-		relay_name = list->node->value.stringval;
-		relay_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
-		failstate = parsers[1].node->value.boolval;
-
-		ret = hw_p1_setup_relay_request(priv, relay_id, failstate, relay_name);
-		switch (ret) {
-			case -EINVALID:
-				dbgerr("Line %d: invalid relay id '%d'", list->node->lineno, relay_id);
-				return (ret);
-			case -EEXISTS:
-				dbgerr("Line %d: a relay with the same name or id is already configured", list->node->lineno);
-				return (ret);
-			case -EOOM:
-				dbgerr("Out of memory!");
-				return (ret);
-			default:
-				break;
-		}
+	// match children
+	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret) {
+		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		return (ret);	// return if invalid config
 	}
-	return (ALL_OK);
+
+	relay_name = node->value.stringval;
+	relay_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
+	failstate = parsers[1].node->value.boolval;
+
+	ret = hw_p1_setup_relay_request(priv, relay_id, failstate, relay_name);
+	switch (ret) {
+		case -EINVALID:
+			dbgerr("Line %d: invalid relay id '%d'", node->lineno, relay_id);
+			return (ret);
+		case -EEXISTS:
+			dbgerr("Line %d: a relay with the same name or id is already configured", node->lineno);
+			return (ret);
+		case -EOOM:
+			dbgerr("Out of memory!");
+			return (ret);
+		default:
+			break;
+	}
+
+	return (ret);
+}
+
+static int relays_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "relay", relay_parse));
 }
 
 /**
@@ -302,8 +287,8 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers hw_p1_parsers[] = {
 		{ NODESTR, "type", true, parse_type, false, NULL, },
-		{ NODELST, "sensors", false, parse_sensors, false, NULL, },
-		{ NODELST, "relays", false, parse_relays, false, NULL, },
+		{ NODELST, "sensors", false, sensors_parse, false, NULL, },
+		{ NODELST, "relays", false, relays_parse, false, NULL, },
 	};
 	void * hw;
 	int ret;
