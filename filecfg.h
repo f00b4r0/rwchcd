@@ -17,6 +17,8 @@
 /** tabbed fprintf() */
 #define tfprintf(file, il, format, ...)	fprintf(file, "%s" format, filecfg_tabs(il), ## __VA_ARGS__)
 
+extern bool FCD_Exhaustive;
+
 const char * filecfg_tabs(const unsigned int level);
 int filecfg_dump(void);
 

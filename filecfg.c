@@ -33,6 +33,8 @@
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
+bool FCD_Exhaustive = false;
+
 /**
  * Programmatically indent with tabs.
  * @param level desired indentation level
@@ -156,8 +158,9 @@ static int filecfg_pump_dump(FILE * restrict const file, unsigned int il, const 
 
 	tfprintf(file, il, "pump \"%s\" {\n", pump->name);
 	il++;
-	tfprintf(file, il, "cooldown_time %ld;\n", pump->set.cooldown_time);
-	tfprintf(file, il, "rid_pump"); filecfg_relid_dump(file, il, pump->set.rid_pump);
+	if (FCD_Exhaustive || pump->set.cooldown_time)
+		tfprintf(file, il, "cooldown_time %ld;\n", pump->set.cooldown_time);
+	tfprintf(file, il, "rid_pump"); filecfg_relid_dump(file, il, pump->set.rid_pump);	// mandatory
 	il--;
 	tfprintf(file, il, "};\n");
 
@@ -257,18 +260,21 @@ static int filecfg_valve_dump(FILE * restrict const file, unsigned int il, const
 	tfprintf(file, il, "valve \"%s\" {\n", valve->name);
 	il++;
 
-	tfprintf(file, il, "tdeadzone %.1f;\n", temp_to_deltaK(valve->set.tdeadzone));
-	tfprintf(file, il, "deadband %" PRIdFAST16 ";\n", valve->set.deadband);
-	tfprintf(file, il, "ete_time %ld;\n", valve->set.ete_time);
+	if (FCD_Exhaustive || valve->set.tdeadzone)
+		tfprintf(file, il, "tdeadzone %.1f;\n", temp_to_deltaK(valve->set.tdeadzone));
+	if (FCD_Exhaustive || valve->set.deadband)
+		tfprintf(file, il, "deadband %" PRIdFAST16 ";\n", valve->set.deadband);
+	tfprintf(file, il, "ete_time %ld;\n", valve->set.ete_time);				// mandatory
+	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_hot))
+		tfprintf(file, il, "tid_hot"), filecfg_tempid_dump(file, il, valve->set.tid_hot);
+	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_cold))
+		tfprintf(file, il, "tid_cold"), filecfg_tempid_dump(file, il, valve->set.tid_cold);
+	tfprintf(file, il, "tid_out"); filecfg_tempid_dump(file, il, valve->set.tid_out);	// mandatory
 
-	tfprintf(file, il, "tid_hot"); filecfg_tempid_dump(file, il, valve->set.tid_hot);
-	tfprintf(file, il, "tid_cold"); filecfg_tempid_dump(file, il, valve->set.tid_cold);
-	tfprintf(file, il, "tid_out"); filecfg_tempid_dump(file, il, valve->set.tid_out);
+	tfprintf(file, il, "rid_hot"); filecfg_relid_dump(file, il, valve->set.rid_hot);	// mandatory
+	tfprintf(file, il, "rid_cold"); filecfg_relid_dump(file, il, valve->set.rid_cold);	// mandatory
 
-	tfprintf(file, il, "rid_hot"); filecfg_relid_dump(file, il, valve->set.rid_hot);
-	tfprintf(file, il, "rid_cold"); filecfg_relid_dump(file, il, valve->set.rid_cold);
-
-	tfprintf(file, il, "algo"); filecfg_valve_algo_dump(file, il, valve);
+	tfprintf(file, il, "algo"); filecfg_valve_algo_dump(file, il, valve);			// mandatory
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -310,21 +316,29 @@ static int filecfg_boiler_hs_dump(FILE * restrict const file, unsigned int il, c
 	il++;
 
 	tfprintf(file, il, "idle_mode \"%s\";\n", idlemode);
-	tfprintf(file, il, "hysteresis %.1f;\n", temp_to_deltaK(priv->set.hysteresis));
-	tfprintf(file, il, "limit_thardmax %.1f;\n", temp_to_celsius(priv->set.limit_thardmax));
-	tfprintf(file, il, "limit_tmax %.1f;\n", temp_to_celsius(priv->set.limit_tmax));
-	tfprintf(file, il, "limit_tmin %.1f;\n", temp_to_celsius(priv->set.limit_tmin));
-	tfprintf(file, il, "limit_treturnmin %.1f;\n", temp_to_celsius(priv->set.limit_treturnmin));
-	tfprintf(file, il, "t_freeze %.1f;\n", temp_to_celsius(priv->set.t_freeze));
-	tfprintf(file, il, "burner_min_time %ld;\n", priv->set.burner_min_time);
+	tfprintf(file, il, "hysteresis %.1f;\n", temp_to_deltaK(priv->set.hysteresis));				// mandatory
+	tfprintf(file, il, "limit_thardmax %.1f;\n", temp_to_celsius(priv->set.limit_thardmax));		// mandatory
+	if (FCD_Exhaustive || priv->set.limit_tmax)
+		tfprintf(file, il, "limit_tmax %.1f;\n", temp_to_celsius(priv->set.limit_tmax));
+	if (FCD_Exhaustive || priv->set.limit_tmin)
+		tfprintf(file, il, "limit_tmin %.1f;\n", temp_to_celsius(priv->set.limit_tmin));
+	if (FCD_Exhaustive || priv->set.limit_treturnmin)
+		tfprintf(file, il, "limit_treturnmin %.1f;\n", temp_to_celsius(priv->set.limit_treturnmin));
+	tfprintf(file, il, "t_freeze %.1f;\n", temp_to_celsius(priv->set.t_freeze));				// mandatory
+	if (FCD_Exhaustive || priv->set.burner_min_time)
+		tfprintf(file, il, "burner_min_time %ld;\n", priv->set.burner_min_time);
 
-	tfprintf(file, il, "tid_boiler"); filecfg_tempid_dump(file, il, priv->set.tid_boiler);
-	tfprintf(file, il, "tid_boiler_return"); filecfg_tempid_dump(file, il, priv->set.tid_boiler_return);
-	tfprintf(file, il, "rid_burner_1"); filecfg_relid_dump(file, il, priv->set.rid_burner_1);
-	tfprintf(file, il, "rid_burner_2"); filecfg_relid_dump(file, il, priv->set.rid_burner_2);
+	tfprintf(file, il, "tid_boiler"); filecfg_tempid_dump(file, il, priv->set.tid_boiler);			// mandatory
+	if (FCD_Exhaustive || hardware_sensor_name(priv->set.tid_boiler_return))
+		tfprintf(file, il, "tid_boiler_return"), filecfg_tempid_dump(file, il, priv->set.tid_boiler_return);
+	tfprintf(file, il, "rid_burner_1"); filecfg_relid_dump(file, il, priv->set.rid_burner_1);		// mandatory
+	if (FCD_Exhaustive || hardware_relay_name(priv->set.rid_burner_2))
+		tfprintf(file, il, "rid_burner_2"), filecfg_relid_dump(file, il, priv->set.rid_burner_2);
 
-	tfprintf(file, il, "pump_load \"%s\";\n", priv->pump_load ? priv->pump_load->name : "");
-	tfprintf(file, il, "valve_ret \"%s\";\n", priv->valve_ret ? priv->valve_ret->name : "");
+	if (FCD_Exhaustive || priv->pump_load)
+		tfprintf(file, il, "pump_load \"%s\";\n", priv->pump_load ? priv->pump_load->name : "");
+	if (FCD_Exhaustive || priv->valve_ret)
+		tfprintf(file, il, "valve_ret \"%s\";\n", priv->valve_ret ? priv->valve_ret->name : "");
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -369,10 +383,12 @@ static int filecfg_heatsource_dump(FILE * restrict const file, unsigned int il, 
 	tfprintf(file, il, "heatsource \"%s\" {\n", heat->name);
 	il++;
 
-	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(heat->set.runmode));
-	tfprintf(file, il, "type"); filecfg_heatsource_type_dump(file, il, heat);
-	tfprintf(file, il, "prio %hd;\n", heat->set.prio);
-	tfprintf(file, il, "consumer_sdelay %ld;\n", heat->set.consumer_sdelay);
+	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(heat->set.runmode));	// mandatory
+	tfprintf(file, il, "type"); filecfg_heatsource_type_dump(file, il, heat);		// mandatory
+	if (FCD_Exhaustive || heat->set.prio)
+		tfprintf(file, il, "prio %hd;\n", heat->set.prio);
+	if (FCD_Exhaustive || heat->set.consumer_sdelay)
+		tfprintf(file, il, "consumer_sdelay %ld;\n", heat->set.consumer_sdelay);
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -388,18 +404,28 @@ static int filecfg_dhwt_params_dump(FILE * restrict const file, unsigned int il,
 	fprintf(file, " {\n");
 	il++;
 
-	tfprintf(file, il, "limit_chargetime %ld;\n", params->limit_chargetime);
-	tfprintf(file, il, "limit_wintmax %.1f;\n", temp_to_celsius(params->limit_wintmax));
-	tfprintf(file, il, "limit_tmin %.1f;\n", temp_to_celsius(params->limit_tmin));
-	tfprintf(file, il, "limit_tmax %.1f;\n", temp_to_celsius(params->limit_tmax));
+	if (FCD_Exhaustive || params->limit_chargetime)
+		tfprintf(file, il, "limit_chargetime %ld;\n", params->limit_chargetime);
+	if (FCD_Exhaustive || params->limit_wintmax)
+		tfprintf(file, il, "limit_wintmax %.1f;\n", temp_to_celsius(params->limit_wintmax));
+	if (FCD_Exhaustive || params->limit_tmin)
+		tfprintf(file, il, "limit_tmin %.1f;\n", temp_to_celsius(params->limit_tmin));
+	if (FCD_Exhaustive || params->limit_tmax)
+		tfprintf(file, il, "limit_tmax %.1f;\n", temp_to_celsius(params->limit_tmax));
 
-	tfprintf(file, il, "t_legionella %.1f;\n", temp_to_celsius(params->t_legionella));
-	tfprintf(file, il, "t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
-	tfprintf(file, il, "t_eco %.1f;\n", temp_to_celsius(params->t_eco));
-	tfprintf(file, il, "t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
+	if (FCD_Exhaustive || params->t_legionella)
+		tfprintf(file, il, "t_legionella %.1f;\n", temp_to_celsius(params->t_legionella));
+	if (FCD_Exhaustive || params->t_comfort)
+		tfprintf(file, il, "t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
+	if (FCD_Exhaustive || params->t_eco)
+		tfprintf(file, il, "t_eco %.1f;\n", temp_to_celsius(params->t_eco));
+	if (FCD_Exhaustive || params->t_frostfree)
+		tfprintf(file, il, "t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
 
-	tfprintf(file, il, "hysteresis %.1f;\n", temp_to_deltaK(params->hysteresis));
-	tfprintf(file, il, "temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
+	if (FCD_Exhaustive || params->hysteresis)
+		tfprintf(file, il, "hysteresis %.1f;\n", temp_to_deltaK(params->hysteresis));
+	if (FCD_Exhaustive || params->temp_inoffset)
+		tfprintf(file, il, "temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -459,24 +485,35 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 	tfprintf(file, il, "dhwt \"%s\" {\n", dhwt->name);
 	il++;
 
-	tfprintf(file, il, "electric_failover %s;\n", filecfg_bool_str(dhwt->set.electric_failover));
-	tfprintf(file, il, "anti_legionella %s;\n", filecfg_bool_str(dhwt->set.anti_legionella));
-	tfprintf(file, il, "legionella_recycle %s;\n", filecfg_bool_str(dhwt->set.legionella_recycle));
-	tfprintf(file, il, "prio %hd;\n", dhwt->set.prio);
-	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(dhwt->set.runmode));
+	if (FCD_Exhaustive || dhwt->set.electric_failover)
+		tfprintf(file, il, "electric_failover %s;\n", filecfg_bool_str(dhwt->set.electric_failover));
+	if (FCD_Exhaustive || dhwt->set.anti_legionella)
+		tfprintf(file, il, "anti_legionella %s;\n", filecfg_bool_str(dhwt->set.anti_legionella));
+	if (FCD_Exhaustive || dhwt->set.legionella_recycle)
+		tfprintf(file, il, "legionella_recycle %s;\n", filecfg_bool_str(dhwt->set.legionella_recycle));
+	if (FCD_Exhaustive || dhwt->set.prio)
+		tfprintf(file, il, "prio %hd;\n", dhwt->set.prio);
+	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(dhwt->set.runmode));		// mandatory
 	tfprintf(file, il, "dhwt_cprio \"%s\";\n", cpriostr);
 	tfprintf(file, il, "force_mode \"%s\";\n", fmode);
 
-	tfprintf(file, il, "tid_bottom"); filecfg_tempid_dump(file, il, dhwt->set.tid_bottom);
-	tfprintf(file, il, "tid_top"); filecfg_tempid_dump(file, il, dhwt->set.tid_top);
-	tfprintf(file, il, "tid_win"); filecfg_tempid_dump(file, il, dhwt->set.tid_win);
-	tfprintf(file, il, "tid_wout"); filecfg_tempid_dump(file, il, dhwt->set.tid_wout);
-	tfprintf(file, il, "rid_selfheater"); filecfg_relid_dump(file, il, dhwt->set.rid_selfheater);
+	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_bottom))
+		tfprintf(file, il, "tid_bottom"), filecfg_tempid_dump(file, il, dhwt->set.tid_bottom);
+	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_top))
+		tfprintf(file, il, "tid_top"), filecfg_tempid_dump(file, il, dhwt->set.tid_top);
+	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_win))
+		tfprintf(file, il, "tid_win"), filecfg_tempid_dump(file, il, dhwt->set.tid_win);
+	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_wout))
+		tfprintf(file, il, "tid_wout"), filecfg_tempid_dump(file, il, dhwt->set.tid_wout);
+	if (FCD_Exhaustive || hardware_relay_name(dhwt->set.rid_selfheater))
+		tfprintf(file, il, "rid_selfheater"), filecfg_relid_dump(file, il, dhwt->set.rid_selfheater);
 
 	tfprintf(file, il, "params"); filecfg_dhwt_params_dump(file, il, &dhwt->set.params);
 
-	tfprintf(file, il, "pump_feed \"%s\";\n", dhwt->pump_feed ? dhwt->pump_feed->name : "");
-	tfprintf(file, il, "pump_recycle \"%s\";\n", dhwt->pump_recycle ? dhwt->pump_recycle->name : "");
+	if (FCD_Exhaustive || dhwt->pump_feed)
+		tfprintf(file, il, "pump_feed \"%s\";\n", dhwt->pump_feed ? dhwt->pump_feed->name : "");
+	if (FCD_Exhaustive || dhwt->pump_recycle)
+		tfprintf(file, il, "pump_recycle \"%s\";\n", dhwt->pump_recycle ? dhwt->pump_recycle->name : "");
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -497,17 +534,19 @@ static int filecfg_hc_tlbilin_dump(FILE * restrict const file, unsigned int il, 
 
 	priv = circuit->tlaw_priv;
 
+	// all params mandatory
 	tfprintf(file, il, "tout1 %.1f;\n", temp_to_celsius(priv->tout1));
 	tfprintf(file, il, "twater1 %.1f;\n", temp_to_celsius(priv->twater1));
 	tfprintf(file, il, "tout2 %.1f;\n", temp_to_celsius(priv->tout2));
 	tfprintf(file, il, "twater2 %.1f;\n", temp_to_celsius(priv->twater2));
 	tfprintf(file, il, "nH100 %" PRIdFAST16 ";\n", priv->nH100);
-/*
+
+#if 0	// do not print these 'internal' parameters as for now they are not meant to be set externally
 	tfprintf(file, il, "toutinfl %.1f;\n", temp_to_celsius(priv->toutinfl));
 	tfprintf(file, il, "twaterinfl %.1f;\n", temp_to_celsius(priv->twaterinfl));
 	//tfprintf(file, il, "offset %.1f;\n", temp_to_deltaK(priv->offset));	// don't print offset as it's homogenous to internal (meaningless) temperature dimensions
 	tfprintf(file, il, "slope %.1f;\n", priv->slope);
-*/
+#endif
 	return (ALL_OK);
 }
 
@@ -548,20 +587,31 @@ static int filecfg_hcircuit_params_dump(FILE * restrict const file, unsigned int
 	fprintf(file, " {\n");
 	il++;
 
-	tfprintf(file, il, "t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
-	tfprintf(file, il, "t_eco %.1f;\n", temp_to_celsius(params->t_eco));
-	tfprintf(file, il, "t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
-	tfprintf(file, il, "t_offset %.1f;\n", temp_to_deltaK(params->t_offset));
+	if (FCD_Exhaustive || params->t_comfort)
+		tfprintf(file, il, "t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
+	if (FCD_Exhaustive || params->t_eco)
+		tfprintf(file, il, "t_eco %.1f;\n", temp_to_celsius(params->t_eco));
+	if (FCD_Exhaustive || params->t_frostfree)
+		tfprintf(file, il, "t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
+	if (FCD_Exhaustive || params->t_offset)
+		tfprintf(file, il, "t_offset %.1f;\n", temp_to_deltaK(params->t_offset));
 
-	tfprintf(file, il, "outhoff_comfort %.1f;\n", temp_to_celsius(params->outhoff_comfort));
-	tfprintf(file, il, "outhoff_eco %.1f;\n", temp_to_celsius(params->outhoff_eco));
-	tfprintf(file, il, "outhoff_frostfree %.1f;\n", temp_to_celsius(params->outhoff_frostfree));
-	tfprintf(file, il, "outhoff_hysteresis %.1f;\n", temp_to_deltaK(params->outhoff_hysteresis));
+	if (FCD_Exhaustive || params->outhoff_comfort)
+		tfprintf(file, il, "outhoff_comfort %.1f;\n", temp_to_celsius(params->outhoff_comfort));
+	if (FCD_Exhaustive || params->outhoff_eco)
+		tfprintf(file, il, "outhoff_eco %.1f;\n", temp_to_celsius(params->outhoff_eco));
+	if (FCD_Exhaustive || params->outhoff_frostfree)
+		tfprintf(file, il, "outhoff_frostfree %.1f;\n", temp_to_celsius(params->outhoff_frostfree));
+	if (FCD_Exhaustive || params->outhoff_hysteresis)
+		tfprintf(file, il, "outhoff_hysteresis %.1f;\n", temp_to_deltaK(params->outhoff_hysteresis));
 
-	tfprintf(file, il, "limit_wtmin %.1f;\n", temp_to_celsius(params->limit_wtmin));
-	tfprintf(file, il, "limit_wtmax %.1f;\n", temp_to_celsius(params->limit_wtmax));
+	if (FCD_Exhaustive || params->limit_wtmin)
+		tfprintf(file, il, "limit_wtmin %.1f;\n", temp_to_celsius(params->limit_wtmin));
+	if (FCD_Exhaustive || params->limit_wtmax)
+		tfprintf(file, il, "limit_wtmax %.1f;\n", temp_to_celsius(params->limit_wtmax));
 
-	tfprintf(file, il, "temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
+	if (FCD_Exhaustive || params->temp_inoffset)
+		tfprintf(file, il, "temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -580,26 +630,38 @@ static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, co
 	tfprintf(file, il, "hcircuit \"%s\" {\n", circuit->name);
 	il++;
 
-	tfprintf(file, il, "fast_cooldown %s;\n", filecfg_bool_str(circuit->set.fast_cooldown));
-	tfprintf(file, il, "logging %s;\n", filecfg_bool_str(circuit->set.logging));
-	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(circuit->set.runmode));
-	tfprintf(file, il, "ambient_factor %" PRIdFAST16 ";\n", circuit->set.ambient_factor);
-	tfprintf(file, il, "wtemp_rorh %.1f;\n", temp_to_deltaK(circuit->set.wtemp_rorh));
-	tfprintf(file, il, "am_tambient_tK %ld;\n", circuit->set.am_tambient_tK);
-	tfprintf(file, il, "tambient_boostdelta %.1f;\n", temp_to_deltaK(circuit->set.tambient_boostdelta));
-	tfprintf(file, il, "boost_maxtime %ld;\n", circuit->set.boost_maxtime);
+	if (FCD_Exhaustive || circuit->set.fast_cooldown)
+		tfprintf(file, il, "fast_cooldown %s;\n", filecfg_bool_str(circuit->set.fast_cooldown));
+	if (FCD_Exhaustive || circuit->set.logging)
+		tfprintf(file, il, "logging %s;\n", filecfg_bool_str(circuit->set.logging));
+	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(circuit->set.runmode));			// mandatory
+	if (FCD_Exhaustive || circuit->set.ambient_factor)
+		tfprintf(file, il, "ambient_factor %" PRIdFAST16 ";\n", circuit->set.ambient_factor);
+	if (FCD_Exhaustive || circuit->set.wtemp_rorh)
+		tfprintf(file, il, "wtemp_rorh %.1f;\n", temp_to_deltaK(circuit->set.wtemp_rorh));
+	if (FCD_Exhaustive || circuit->set.am_tambient_tK)
+		tfprintf(file, il, "am_tambient_tK %ld;\n", circuit->set.am_tambient_tK);
+	if (FCD_Exhaustive || circuit->set.tambient_boostdelta)
+		tfprintf(file, il, "tambient_boostdelta %.1f;\n", temp_to_deltaK(circuit->set.tambient_boostdelta));
+	if (FCD_Exhaustive || circuit->set.boost_maxtime)
+		tfprintf(file, il, "boost_maxtime %ld;\n", circuit->set.boost_maxtime);
 
-	tfprintf(file, il, "tid_outgoing"); filecfg_tempid_dump(file, il, circuit->set.tid_outgoing);
-	tfprintf(file, il, "tid_return"); filecfg_tempid_dump(file, il, circuit->set.tid_return);
-	tfprintf(file, il, "tid_ambient"); filecfg_tempid_dump(file, il, circuit->set.tid_ambient);
+	tfprintf(file, il, "tid_outgoing"); filecfg_tempid_dump(file, il, circuit->set.tid_outgoing);		// mandatory
+	if (FCD_Exhaustive || hardware_sensor_name(circuit->set.tid_return))
+		tfprintf(file, il, "tid_return"), filecfg_tempid_dump(file, il, circuit->set.tid_return);
+	if (FCD_Exhaustive || hardware_sensor_name(circuit->set.tid_ambient))
+		tfprintf(file, il, "tid_ambient"), filecfg_tempid_dump(file, il, circuit->set.tid_ambient);
 
 	tfprintf(file, il, "params"); filecfg_hcircuit_params_dump(file, il, &circuit->set.params);
 
-	tfprintf(file, il, "tlaw"); filecfg_hcircuit_tlaw_dump(file, il, circuit);
+	tfprintf(file, il, "tlaw"); filecfg_hcircuit_tlaw_dump(file, il, circuit);				// mandatory
 
-	tfprintf(file, il, "valve_mix \"%s\";\n", circuit->valve_mix ? circuit->valve_mix->name : "");
-	tfprintf(file, il, "pump_feed \"%s\";\n", circuit->pump_feed ? circuit->pump_feed->name : "");
-	tfprintf(file, il, "bmodel \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
+	if (FCD_Exhaustive || circuit->valve_mix)
+		tfprintf(file, il, "valve_mix \"%s\";\n", circuit->valve_mix ? circuit->valve_mix->name : "");
+	if (FCD_Exhaustive || circuit->pump_feed)
+		tfprintf(file, il, "pump_feed \"%s\";\n", circuit->pump_feed ? circuit->pump_feed->name : "");
+	if (FCD_Exhaustive || circuit->bmodel)
+		tfprintf(file, il, "bmodel \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -618,9 +680,10 @@ static int filecfg_bmodel_dump(FILE * restrict const file, unsigned int il, cons
 	tfprintf(file, il, "bmodel \"%s\" {\n", bmodel->name);
 	il++;
 
-	tfprintf(file, il, "logging %s;\n", filecfg_bool_str(bmodel->set.logging));
-	tfprintf(file, il, "tau %ld;\n", bmodel->set.tau);
-	tfprintf(file, il, "tid_outdoor"); filecfg_tempid_dump(file, il, bmodel->set.tid_outdoor);
+	if (FCD_Exhaustive || bmodel->set.logging)
+		tfprintf(file, il, "logging %s;\n", filecfg_bool_str(bmodel->set.logging));
+	tfprintf(file, il, "tau %ld;\n", bmodel->set.tau);						// mandatory
+	tfprintf(file, il, "tid_outdoor"); filecfg_tempid_dump(file, il, bmodel->set.tid_outdoor);	// mandatory
 
 	il--;
 	tfprintf(file, il, "};\n");
@@ -653,11 +716,16 @@ static int filecfg_config_dump(FILE * restrict const file, unsigned int il, cons
 	tfprintf(file, il, "defconfig {\n");
 	il++;
 
-	tfprintf(file, il, "summer_maintenance %s;\n", filecfg_bool_str(config->summer_maintenance));
-	tfprintf(file, il, "logging %s;\n", filecfg_bool_str(config->logging));
-	tfprintf(file, il, "limit_tsummer %.1f;\n", temp_to_celsius(config->limit_tsummer));
-	tfprintf(file, il, "limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
-	tfprintf(file, il, "sleeping_delay %ld;\n", config->sleeping_delay);
+	if (FCD_Exhaustive || config->summer_maintenance)
+		tfprintf(file, il, "summer_maintenance %s;\n", filecfg_bool_str(config->summer_maintenance));
+	if (FCD_Exhaustive || config->logging)
+		tfprintf(file, il, "logging %s;\n", filecfg_bool_str(config->logging));
+	if (FCD_Exhaustive || config->limit_tsummer)
+		tfprintf(file, il, "limit_tsummer %.1f;\n", temp_to_celsius(config->limit_tsummer));
+	if (FCD_Exhaustive || config->limit_tfrost)
+		tfprintf(file, il, "limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
+	if (FCD_Exhaustive || config->sleeping_delay)
+		tfprintf(file, il, "sleeping_delay %ld;\n", config->sleeping_delay);
 
 	tfprintf(file, il, "def_hcircuit"); filecfg_hcircuit_params_dump(file, il, &config->def_hcircuit);
 	tfprintf(file, il, "def_dhwt"); filecfg_dhwt_params_dump(file, il, &config->def_dhwt);
@@ -685,40 +753,50 @@ static int filecfg_plant_dump(FILE * restrict const file, unsigned int il, const
 	tfprintf(file, il, "plant {\n");
 	il++;
 
-	tfprintf(file, il, "pumps {\n");
-	il++;
-	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next)
-		filecfg_pump_dump(file, il, pumpl->pump);
-	il--;
-	tfprintf(file, il, "};\n");	// pumps
+	if (FCD_Exhaustive || plant->pump_head) {
+		tfprintf(file, il, "pumps {\n");
+		il++;
+		for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next)
+			filecfg_pump_dump(file, il, pumpl->pump);
+		il--;
+		tfprintf(file, il, "};\n");	// pumps
+	}
 
-	tfprintf(file, il, "valves {\n");
-	il++;
-	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next)
-		filecfg_valve_dump(file, il, valvel->valve);
-	il--;
-	tfprintf(file, il, "};\n");	// valves
+	if (FCD_Exhaustive || plant->valve_head) {
+		tfprintf(file, il, "valves {\n");
+		il++;
+		for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next)
+			filecfg_valve_dump(file, il, valvel->valve);
+		il--;
+		tfprintf(file, il, "};\n");	// valves
+	}
 
-	tfprintf(file, il, "heatsources {\n");
-	il++;
-	for (heatsl = plant->heats_head; heatsl != NULL; heatsl = heatsl->next)
-		filecfg_heatsource_dump(file, il, heatsl->heats);
-	il--;
-	tfprintf(file, il, "};\n");	// heatsources
+	if (FCD_Exhaustive || plant->heats_head) {
+		tfprintf(file, il, "heatsources {\n");
+		il++;
+		for (heatsl = plant->heats_head; heatsl != NULL; heatsl = heatsl->next)
+			filecfg_heatsource_dump(file, il, heatsl->heats);
+		il--;
+		tfprintf(file, il, "};\n");	// heatsources
+	}
 
-	tfprintf(file, il, "hcircuits {\n");
-	il++;
-	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next)
-		filecfg_hcircuit_dump(file, il, circuitl->circuit);
-	il--;
-	tfprintf(file, il, "};\n");	// heating_circuits
+	if (FCD_Exhaustive || plant->circuit_head) {
+		tfprintf(file, il, "hcircuits {\n");
+		il++;
+		for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next)
+			filecfg_hcircuit_dump(file, il, circuitl->circuit);
+		il--;
+		tfprintf(file, il, "};\n");	// heating_circuits
+	}
 
-	tfprintf(file, il, "dhwts {\n");
-	il++;
-	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next)
-		filecfg_dhwt_dump(file, il, dhwtl->dhwt);
-	il--;
-	tfprintf(file, il, "};\n");	// dhwts
+	if (FCD_Exhaustive || plant->dhwt_head) {
+		tfprintf(file, il, "dhwts {\n");
+		il++;
+		for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next)
+			filecfg_dhwt_dump(file, il, dhwtl->dhwt);
+		il--;
+		tfprintf(file, il, "};\n");	// dhwts
+	}
 
 	il--;
 	tfprintf(file, il, "};\n");	// plant
