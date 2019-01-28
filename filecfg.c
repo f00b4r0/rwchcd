@@ -2,14 +2,13 @@
 //  filecfg.c
 //  rwchcd
 //
-//  (C) 2018 Thibaut VARENE
+//  (C) 2018-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
 /**
  * @file
- * File configuration interface implementation.
- * Currently only configuration dump is implemented.
+ * File configuration dump interface implementation.
  */
 
 #include <inttypes.h>
@@ -142,7 +141,7 @@ static const char * filecfg_runmode_str(const enum e_runmode runmode)
 			return ("dhwonly");
 		case RM_UNKNOWN:
 		default:
-			return (NULL);
+			return ("");
 	}
 }
 
@@ -214,6 +213,7 @@ static int filecfg_valve_algo_dump(FILE * restrict const file, unsigned int il, 
 {
 	const char * algoname;
 	int (* privdump)(FILE * restrict const, unsigned int, const struct s_valve * restrict const);
+	int ret = ALL_OK;
 
 	switch (valve->set.algo) {
 		case VA_BANGBANG:
@@ -230,16 +230,20 @@ static int filecfg_valve_algo_dump(FILE * restrict const file, unsigned int il, 
 			break;
 		case VA_NONE:
 		default:
-			return (-EMISCONFIGURED);
+			algoname = "";
+			privdump = NULL;
+			ret = -EMISCONFIGURED;
+			break;
 	}
 
 	fprintf(file, " \"%s\" {\n", algoname);
 	il++;
-	privdump(file, il, valve);
+	if (privdump)
+		privdump(file, il, valve);
 	il--;
 	tfprintf(file, il, "};\n");
 
-	return (ALL_OK);
+	return (ret);
 }
 
 static int filecfg_valve_dump(FILE * restrict const file, unsigned int il, const struct s_valve * restrict const valve)
@@ -277,6 +281,7 @@ static int filecfg_boiler_hs_dump(FILE * restrict const file, unsigned int il, c
 {
 	const char * idlemode;
 	const struct s_boiler_priv * restrict priv;
+	int ret = ALL_OK;
 
 	if (!file || !heat)
 		return (-EINVALID);
@@ -297,7 +302,8 @@ static int filecfg_boiler_hs_dump(FILE * restrict const file, unsigned int il, c
 			idlemode = "frostonly";
 			break;
 		default:
-			return (-EMISCONFIGURED);
+			idlemode = "";
+			ret = -EMISCONFIGURED;
 	}
 
 	fprintf(file, " {\n");
@@ -323,13 +329,14 @@ static int filecfg_boiler_hs_dump(FILE * restrict const file, unsigned int il, c
 	il--;
 	tfprintf(file, il, "};\n");
 
-	return (ALL_OK);
+	return (ret);
 }
 
 static int filecfg_heatsource_type_dump(FILE * restrict const file, unsigned int il, const struct s_heatsource * restrict const heat)
 {
 	const char * typename;
 	int (*privdump)(FILE * restrict const, unsigned int, const struct s_heatsource * restrict const);
+	int ret = ALL_OK;
 
 	switch (heat->set.type) {
 		case HS_BOILER:
@@ -338,13 +345,17 @@ static int filecfg_heatsource_type_dump(FILE * restrict const file, unsigned int
 			break;
 		case HS_NONE:
 		default:
-			return (-EINVALID);
+			ret = -EINVALID;
+			typename = "";
+			privdump = NULL;
+			break;
 	}
 
 	fprintf(file, " \"%s\"", typename);
-	privdump(file, il, heat);
+	if (privdump)
+		privdump(file, il, heat);
 
-	return (ALL_OK);
+	return (ret);
 }
 
 static int filecfg_heatsource_dump(FILE * restrict const file, unsigned int il, const struct s_heatsource * restrict const heat)
@@ -399,6 +410,7 @@ static int filecfg_dhwt_params_dump(FILE * restrict const file, unsigned int il,
 static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const struct s_dhw_tank * restrict const dhwt)
 {
 	const char * cpriostr, * fmode;
+	int ret = ALL_OK;
 
 	if (!file || !dhwt)
 		return (-EINVALID);
@@ -423,7 +435,9 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 			cpriostr = "absolute";
 			break;
 		default:
-			return (-EMISCONFIGURED);
+			cpriostr = "";
+			ret = -EMISCONFIGURED;
+			break;
 	}
 
 	switch (dhwt->set.force_mode) {
@@ -437,7 +451,9 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 			fmode = "always";
 			break;
 		default:
-			return (-EMISCONFIGURED);
+			fmode = "";
+			ret = -EMISCONFIGURED;
+			break;
 	}
 
 	tfprintf(file, il, "dhwt \"%s\" {\n", dhwt->name);
@@ -465,7 +481,7 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 	il--;
 	tfprintf(file, il, "};\n");
 
-	return (ALL_OK);
+	return (ret);
 }
 
 
@@ -499,6 +515,7 @@ static int filecfg_hcircuit_tlaw_dump(FILE * restrict const file, unsigned int i
 {
 	const char * tlawname;
 	int (*privdump)(FILE * restrict const, unsigned int, const struct s_hcircuit * restrict const);
+	int ret = ALL_OK;
 
 	switch (circuit->set.tlaw) {
 		case HCL_BILINEAR:
@@ -507,16 +524,20 @@ static int filecfg_hcircuit_tlaw_dump(FILE * restrict const file, unsigned int i
 			break;
 		case VA_NONE:
 		default:
-			return (-EMISCONFIGURED);
+			tlawname = "";
+			privdump = NULL;
+			ret = -EMISCONFIGURED;
+			break;
 	}
 
 	fprintf(file, " \"%s\" {\n", tlawname);
 	il++;
-	privdump(file, il, circuit);
+	if (privdump)
+		privdump(file, il, circuit);
 	il--;
 	tfprintf(file, il, "};\n");
 
-	return (ALL_OK);
+	return (ret);
 }
 
 static int filecfg_hcircuit_params_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit_params * restrict const params)
