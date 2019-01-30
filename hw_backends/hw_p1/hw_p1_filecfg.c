@@ -43,6 +43,9 @@ static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw, FILE * 
 
 	assert(hw && file);
 
+	if (!FCD_Exhaustive && !hw->settings.nsensors)
+		return;
+
 	tfprintf(file, il, "sensors {\n");
 	il++;
 
@@ -67,7 +70,8 @@ static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw, FILE * 
 		il++;
 		tfprintf(file, il, "id %d;\n", id+1);
 		tfprintf(file, il, "type \"%s\";\n", type);
-		tfprintf(file, il, "offset %.1f;\n", temp_to_deltaK(sensor->set.offset));
+		if (FCD_Exhaustive || sensor->set.offset)
+			tfprintf(file, il, "offset %.1f;\n", temp_to_deltaK(sensor->set.offset));
 		il--;
 		tfprintf(file, il, "};\n");
 	}
