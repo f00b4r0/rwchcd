@@ -454,7 +454,7 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 	return (ret);
 }
 
-int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const parser_t parser)
+int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser)
 {
 	const struct s_filecfg_parser_nodelist *nlist;
 	const struct s_filecfg_parser_node *node;
@@ -463,7 +463,7 @@ int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct 
 
 	for (nlist = nodelist; nlist; nlist = nlist->next) {
 		node = nlist->node;
-		if (NODESTR != node->type) {
+		if (ntype != node->type) {
 			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", node->name, node->lineno);
 			continue;
 		}
@@ -472,14 +472,18 @@ int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct 
 			continue;
 		}
 
-		sname = node->value.stringval;
+		if (NODESTR == ntype) {
+			sname = node->value.stringval;
 
-		if (strlen(sname) < 1) {
-			dbgerr("Ignoring \"%s\" with empty name closing at line %d", node->name, node->lineno);
-			continue;
+			if (strlen(sname) < 1) {
+				dbgerr("Ignoring \"%s\" with empty name closing at line %d", node->name, node->lineno);
+				continue;
+			}
+
+			dbgmsg("Trying %s node \"%s\"", node->name, sname);
 		}
-
-		dbgmsg("Trying %s node \"%s\"", node->name, sname);
+		else
+			dbgmsg("Trying %s node", node->name);
 
 		// test parser
 		ret = parser(priv, node);
