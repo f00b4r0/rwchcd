@@ -1426,7 +1426,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	}
 
 	if (ALL_OK == ret)
-		ret = scheduler_add(wday, hour, min, runmode, dhwmode);
+		ret = scheduler_add(wday, hour, min, runmode, dhwmode, legionella);
 
 	return (ret);
 }

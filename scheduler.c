@@ -167,8 +167,10 @@ void * scheduler_thread(void * arg)
  * @param tm_min target min of the hour (0 - 59)
  * @param runmode target runmode for this schedule entry
  * @param dhwmode target dhwmode for this schedule entry
+ * @param legionella true if legionella charge should be triggered for this entry
+ * @warning will not report duplicate entries
  */
-int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode)
+int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella)
 {
 	struct s_schedule * sch = NULL, * sch_before, * sch_after;
 	
@@ -210,6 +212,7 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	sch->tm_min = tm_min;
 	sch->runmode = runmode;
 	sch->dhwmode = dhwmode;
+	sch->legionella = legionella;
 	
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
@@ -223,8 +226,8 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 		sch_before->next = sch;
 	/* End fence section */
 	
-	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d",
-	       tm_wday, tm_hour, tm_min, runmode, dhwmode);
+	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d, legionella: %d",
+	       tm_wday, tm_hour, tm_min, runmode, dhwmode, legionella);
 	
 	return (ALL_OK);
 }

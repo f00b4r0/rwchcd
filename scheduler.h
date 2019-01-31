@@ -17,6 +17,6 @@
 #include "rwchcd.h"
 
 void * scheduler_thread(void * arg);
-int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode);
+int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella);
 
 #endif /* rwchcd_scheduler_h */
