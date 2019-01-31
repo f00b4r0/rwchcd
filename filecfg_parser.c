@@ -454,18 +454,6 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 	return (ret);
 }
 
-#define filecfg_for_node_filter_typename_continue(NODE, TYPE, NAME)						\
-	({													\
-	if (TYPE != NODE->type) {										\
-		dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", NODE->name, NODE->lineno);	\
-		continue;											\
-	}													\
-	if (strcmp(NAME, NODE->name)) {										\
-		dbgerr("Ignoring unknown node \"%s\" closing at line %d", NODE->name, NODE->lineno);		\
-		continue;											\
-	}													\
-	})
-
 int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const parser_t parser)
 {
 	const struct s_filecfg_parser_nodelist *nlist;
@@ -475,7 +463,14 @@ int filecfg_parser_parse_namedsiblings(void * restrict const priv, const struct 
 
 	for (nlist = nodelist; nlist; nlist = nlist->next) {
 		node = nlist->node;
-		filecfg_for_node_filter_typename_continue(node, NODESTR, nname);
+		if (NODESTR != node->type) {
+			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", node->name, node->lineno);
+			continue;
+		}
+		if (strcmp(nname, node->name)) {
+			dbgerr("Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
+			continue;
+		}
 
 		sname = node->value.stringval;
 
