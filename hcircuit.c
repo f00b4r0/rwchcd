@@ -322,7 +322,6 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 #ifdef DEBUG
 	temp_t out_temp;
 #endif
-	bool interference = false;
 	int ret;
 
 	assert(runtime);
@@ -390,10 +389,25 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		}
 	}
 
+	// fetch limits
+	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_hcircuit.limit_wtmin);
+	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_hcircuit.limit_wtmax);
+
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, circuit->bmodel->run.t_out_mix);
 
-	// apply rate of rise limitation if any: update temp every minute
+	// enforce limits
+
+	if (water_temp < lwtmin)
+		water_temp = lwtmin;
+	else if (water_temp > lwtmax)
+		water_temp = lwtmax;
+
+	// save "non-interfered" target water temp, i.e. the real target (within enforced limits)
+	saved_temp = water_temp;
+	circuit->run.target_wtemp = saved_temp;
+
+	// interference: apply rate of rise limitation if any: update temp every minute
 	if (circuit->set.wtemp_rorh) {
 		if (!circuit->run.rorh_update_time) {	// first sample: init to current
 			water_temp = curr_temp;
@@ -416,22 +430,9 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		}
 	}
 
-	// enforce limits
-	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_hcircuit.limit_wtmin);
-	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_hcircuit.limit_wtmax);
-
-	// low limit can be overriden by external interferences
-	if (water_temp < lwtmin)
-		water_temp = lwtmin;
-
-	// save "non-interfered" target water temp
-	saved_temp = water_temp;
-
 	// interference: handle output flooring requests: maintain current or higher wtemp
-	if (circuit->run.floor_output) {
+	if (circuit->run.floor_output)
 		water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
-		interference = true;
-	}
 
 	// interference: apply global power shift
 	if (circuit->pdata->consumer_shift) {
@@ -442,14 +443,12 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 		// X% shift is (current + X*(current - ref)/100). ref is return temp
 		water_temp += circuit->pdata->consumer_shift * (water_temp - ret_temp) / 100;
-		interference = true;
 	}
 
-	// high limit can never be overriden
+	// low limit can be overriden by external interferences
+	// but high limit can never be overriden: re-enact it
 	if (water_temp > lwtmax)
 		water_temp = lwtmax;
-	if (saved_temp > lwtmax)
-		saved_temp = lwtmax;
 
 #ifdef DEBUG
 	hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
@@ -461,11 +460,6 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// heat request is always computed based on non-interfered water_temp value
 	circuit->run.heat_request = saved_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_hcircuit.temp_inoffset);
-
-	// in the absence of external "interference", update saved target water temp
-	// note: this is necessary to avoid storing the new, cooler saved_temp during TRANS_DOWN cooldown
-	if (!interference)
-		circuit->run.target_wtemp = saved_temp;
 
 valve:
 	// adjust valve position if necessary
