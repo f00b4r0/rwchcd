@@ -162,7 +162,7 @@ void * scheduler_thread(void * arg)
 
 /**
  * Add a schedule entry.
- * @param tm_wday target day of the week (0 = Sunday)
+ * @param tm_wday target day of the week (0 = Sunday = 7)
  * @param tm_hour target hour of the day (0 - 23)
  * @param tm_min target min of the hour (0 - 59)
  * @param runmode target runmode for this schedule entry
@@ -173,8 +173,10 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	struct s_schedule * sch = NULL, * sch_before, * sch_after;
 	
 	// sanity checks on params
-	if ((tm_wday < 0) || (tm_wday > 6))
+	if ((tm_wday < 0) || (tm_wday > 7))
 		return (-EINVALID);
+	if (7 == tm_wday)		// convert sunday
+		tm_wday = 0;
 	if ((tm_hour < 0) || (tm_hour > 23))
 		return (-EINVALID);
 	if ((tm_min < 0) || (tm_min > 59))
