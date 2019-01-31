@@ -316,17 +316,6 @@ static void * thread_master(void *arg)
 	pthread_exit(NULL);		// exit
 }
 
-static void create_schedule(void)
-{
-	int i;
-	
-	for (i = 0; i < 7; i++) {
-		// every day start comfort at 6:00 and switch to eco at 23:00
-		scheduler_add(i, 6, 0, RM_COMFORT, RM_COMFORT);	// comfort at 6:00
-		scheduler_add(i, 23, 0, RM_ECO, RM_ECO);	// eco at 23:00
-	}
-}
-
 /**
  * Simple watchdog thread.
  * Will abort if timeout is reached.
@@ -465,8 +454,6 @@ int main(void)
 	sigaction(SIGINT, &saction, NULL);
 	sigaction(SIGTERM, &saction, NULL);
 	sigaction(SIGUSR1, &saction, NULL);
-
-	create_schedule();
 
 #ifdef HAS_DBUS
 	dbus_main();	// launch dbus main loop, blocks execution until termination
