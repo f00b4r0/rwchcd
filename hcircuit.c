@@ -407,6 +407,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				circuit->run.rorh_last_target = water_temp;
 				circuit->run.rorh_update_time = now;
 			}
+			else
+				water_temp = circuit->run.rorh_last_target;	// maintain current target
 		}
 		else {	// request for cooler or same temp
 			circuit->run.rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
