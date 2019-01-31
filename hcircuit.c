@@ -222,6 +222,12 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		ret = -EMISCONFIGURED;
 	}
 
+	// if ror is requested and valve is not available report misconfiguration
+	if (circuit->set.wtemp_rorh && !circuit->valve_mix) {
+		dbgerr("\"%\": rate of rise control requested but no mixing valve is available", circuit->name);
+		ret = -EMISCONFIGURED;
+	}
+
 	// log registration shouldn't cause online failure
 	if (hcircuit_log_register(circuit) != ALL_OK)
 		dbgerr("\"%s\": couldn't register for logging", circuit->name);
@@ -407,48 +413,52 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	saved_temp = water_temp;
 	circuit->run.target_wtemp = saved_temp;
 
-	// interference: apply rate of rise limitation if any: update temp every minute
-	if (circuit->set.wtemp_rorh) {
-		if (!circuit->run.rorh_update_time) {	// first sample: init to current
-			water_temp = curr_temp;
-			circuit->run.rorh_last_target = water_temp;
-			circuit->run.rorh_update_time = now;
-		}
-		else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
-			if (now - circuit->run.rorh_update_time >= 60) {	// 1mn has past, update target - XXX hardcoded 60s resolution
-				curr_temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);	// we hijack curr_temp here to save a variable
-				water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
+	// alterations to the computed value only make sense if a mixing valve is available
+	if (circuit->valve_mix) {
+		// interference: apply rate of rise limitation if any: update temp every minute
+		// applied first so it's not impacted by the next interferences (in particular power shift). XXX REVIEW: might be needed to move after if ror control is desired on cshift rising edges
+		if (circuit->set.wtemp_rorh) {
+			if (!circuit->run.rorh_update_time) {	// first sample: init to current
+				water_temp = curr_temp;
 				circuit->run.rorh_last_target = water_temp;
 				circuit->run.rorh_update_time = now;
 			}
-			else
-				water_temp = circuit->run.rorh_last_target;	// maintain current target
+			else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
+				if (now - circuit->run.rorh_update_time >= 60) {	// 1mn has past, update target - XXX hardcoded 60s resolution
+					curr_temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);	// we hijack curr_temp here to save a variable
+					water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
+					circuit->run.rorh_last_target = water_temp;
+					circuit->run.rorh_update_time = now;
+				}
+				else
+					water_temp = circuit->run.rorh_last_target;	// maintain current target
+			}
+			else {	// request for cooler or same temp
+				circuit->run.rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
+				circuit->run.rorh_update_time = now;
+			}
 		}
-		else {	// request for cooler or same temp
-			circuit->run.rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
-			circuit->run.rorh_update_time = now;
+
+		// interference: handle output flooring requests: maintain current or higher wtemp
+		if (circuit->run.floor_output)
+			water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
+
+		// interference: apply global power shift
+		if (circuit->pdata->consumer_shift) {
+			ret = hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
+			// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
+			if ((ALL_OK != ret) || (ret_temp >= water_temp))
+				ret_temp = celsius_to_temp(0);
+
+			// X% shift is (current + X*(current - ref)/100). ref is return temp
+			water_temp += circuit->pdata->consumer_shift * (water_temp - ret_temp) / 100;
 		}
+
+		// low limit can be overriden by external interferences
+		// but high limit can never be overriden: re-enact it
+		if (water_temp > lwtmax)
+			water_temp = lwtmax;
 	}
-
-	// interference: handle output flooring requests: maintain current or higher wtemp
-	if (circuit->run.floor_output)
-		water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
-
-	// interference: apply global power shift
-	if (circuit->pdata->consumer_shift) {
-		ret = hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
-		// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
-		if ((ALL_OK != ret) || (ret_temp >= water_temp))
-			ret_temp = celsius_to_temp(0);
-
-		// X% shift is (current + X*(current - ref)/100). ref is return temp
-		water_temp += circuit->pdata->consumer_shift * (water_temp - ret_temp) / 100;
-	}
-
-	// low limit can be overriden by external interferences
-	// but high limit can never be overriden: re-enact it
-	if (water_temp > lwtmax)
-		water_temp = lwtmax;
 
 #ifdef DEBUG
 	hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
