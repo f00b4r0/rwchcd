@@ -77,5 +77,6 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 
 #define filecfg_parser_report_invaliddata(NODE)		dbgerr("Invalid data for node \"%s\" closing at line %d", NODE->name, NODE->lineno)
 #define filecfg_parser_parse_namedsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODESTR, parser)
+#define filecfg_parser_parse_listsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODELST, parser)
 
 #endif /* filecfg_parser_h */

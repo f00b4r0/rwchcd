@@ -33,6 +33,8 @@
 #include "hcircuit.h"
 #include "heatsource.h"
 
+#include "scheduler.h"
+
 #include "runtime.h"
 
 #ifndef ARRAY_SIZE
@@ -1368,6 +1370,72 @@ static int hardware_backends_parse(void * restrict const priv, const struct s_fi
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "backend", hardware_backend_parse));
 }
 
+static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT, "wday", true, NULL, false, NULL, },		// 0
+		{ NODEINT, "hour", true, NULL, false, NULL, },
+		{ NODEINT, "min", true, NULL, false, NULL, },		// 2
+		{ NODESTR, "runmode", false, NULL, false, NULL, },
+		{ NODESTR, "dhwmode", false, NULL, false, NULL, },	// 4
+		{ NODEBOL, "legionella", false, NULL, false, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	int wday, hour, min, ret;
+	enum e_runmode runmode = RM_UNKNOWN, dhwmode = RM_UNKNOWN;
+	bool legionella = false;
+	unsigned int i;
+
+	// we receive an 'entry' node
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				wday = currnode->value.intval;
+				break;
+			case 1:
+				hour = currnode->value.intval;
+				break;
+			case 2:
+				min = currnode->value.intval;
+				break;
+			case 3:
+				ret = runmode_parse(&runmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 4:
+				ret = runmode_parse(&dhwmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 5:
+				legionella = currnode->value.boolval;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	if (ALL_OK == ret)
+		ret = scheduler_add(wday, hour, min, runmode, dhwmode);
+
+	return (ret);
+}
+
+static int scheduler_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_listsiblings(priv, node->children, "entry", scheduler_entry_parse));
+}
+
 /**
  * Match an indidual node against a list of parsers.
  * @param node the target node to match from
@@ -1494,6 +1562,7 @@ int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *node
 		{ NODELST, "defconfig", false, defconfig_parse, false, NULL, },
 		{ NODELST, "models", false, models_parse, false, NULL, },
 		{ NODELST, "plant", true, plant_parse, false, NULL, },
+		{ NODELST, "scheduler", false, scheduler_parse, false, NULL, },
 	};
 	struct s_runtime * const runtime = runtime_get();
 	int ret;
