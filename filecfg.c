@@ -30,6 +30,7 @@
 #include "config.h"
 #include "runtime.h"
 #include "plant.h"
+#include "scheduler.h"
 #include "filecfg.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
@@ -890,6 +891,9 @@ int filecfg_dump(void)
 
 	// dump plant
 	filecfg_plant_dump(runtime->plant);
+
+	// dump scheduler
+	scheduler_filecfg_dump();
 
 	fclose(FCD_File);
 	FCD_File = NULL;

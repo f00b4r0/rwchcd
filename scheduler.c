@@ -2,7 +2,7 @@
 //  scheduler.c
 //  rwchcd
 //
-//  (C) 2016-2018 Thibaut VARENE
+//  (C) 2016-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -24,6 +24,7 @@
 #include "runtime.h"
 #include "plant.h"
 #include "scheduler.h"
+#include "filecfg.h"
 
 /** A schedule item for a given day. */
 struct s_schedule {
@@ -227,3 +228,41 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	return (ALL_OK);
 }
 
+/**
+ * Dump the full schedule to config file.
+ * @return exec status
+ * @warning not thread safe
+ */
+int scheduler_filecfg_dump(void)
+{
+	struct s_schedule * sch;
+	unsigned int i;
+
+	filecfg_iprintf("scheduler {\n");
+	filecfg_ilevel_inc();
+
+	for (i = 0; i < ARRAY_SIZE(Schedule_week); i++) {
+		for (sch = Schedule_week[i]; sch; sch = sch->next) {
+			filecfg_iprintf("entry {\n");
+			filecfg_ilevel_inc();
+
+			filecfg_iprintf("wday %d;\n", i);			// mandatory
+			filecfg_iprintf("hour %d;\n", sch->tm_hour);		// mandatory
+			filecfg_iprintf("min %d;\n", sch->tm_min);		// mandatory
+			if (RM_UNKNOWN != sch->runmode)
+				filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(sch->runmode));
+			if (RM_UNKNOWN != sch->dhwmode)
+				filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(sch->runmode));
+			if (sch->legionella)
+				filecfg_iprintf("legionella %s;\n", filecfg_bool_str(sch->legionella));
+
+			filecfg_ilevel_dec();
+			filecfg_iprintf("};\n");
+		}
+	}
+
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ALL_OK);
+}
