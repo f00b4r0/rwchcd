@@ -119,12 +119,22 @@ static int filecfg_relid_dump(FILE * restrict file, unsigned int il, const relid
 	return (ALL_OK);
 }
 
-static const char * filecfg_bool_str(const bool test)
+/**
+ * Print filecfg representation of a bool.
+ * @param test the value to represent
+ * @return a statically allocated string
+ */
+const char * filecfg_bool_str(const bool test)
 {
 	return (test ? "yes" : "no");
 }
 
-static const char * filecfg_runmode_str(const enum e_runmode runmode)
+/**
+ * Print filecfg representation of a given runmode.
+ * @param runmode the value to represent
+ * @return a statically allocated string
+ */
+const char * filecfg_runmode_str(const enum e_runmode runmode)
 {
 	switch (runmode) {
 		case RM_OFF:

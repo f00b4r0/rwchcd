@@ -20,6 +20,9 @@
 extern bool FCD_Exhaustive;
 
 const char * filecfg_tabs(const unsigned int level);
+const char * filecfg_bool_str(const bool test);
+const char * filecfg_runmode_str(const enum e_runmode runmode);
+
 int filecfg_dump(void);
 
 #endif /* filecfg_h */
