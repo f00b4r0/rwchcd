@@ -14,6 +14,7 @@
 #include <inttypes.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "rwchcd.h"
 #include "lib.h"
@@ -35,12 +36,15 @@
 
 bool FCD_Exhaustive = false;
 
+static FILE * FCD_File = NULL;
+static unsigned int FCD_ilevel;
+
 /**
  * Programmatically indent with tabs.
  * @param level desired indentation level
  * @return a string containing the required number of '\t'
  */
-const char * filecfg_tabs(const unsigned int level)
+static const char * filecfg_tabs(const unsigned int level)
 {
 	const char * const indents[] = {
 		"",
@@ -57,6 +61,52 @@ const char * filecfg_tabs(const unsigned int level)
 		return ("");
 
 	return (indents[level]);
+}
+
+/**
+ * fprintf() wrapper to config file output.
+ * This function will write to the set FCD_File and handle
+ * indentation level based on the value of FCD_ilevel.
+ * @param indent true if the output should be indented
+ * @param format the printf-style format style
+ * @return exec status
+ */
+int filecfg_printf_wrapper(const bool indent, const char * restrict format, ...)
+{
+	FILE * file = FCD_File;
+	int ret;
+	va_list args;
+
+	if (!file)
+		return (-EINVALID);
+
+	va_start(args, format);
+
+	if (indent)
+		fprintf(file, "%s", filecfg_tabs(FCD_ilevel));
+	ret = vfprintf(file, format, args);
+
+	va_end(args);
+
+	return (ret);
+}
+
+/** Increase indentation level */
+int filecfg_ilevel_inc(void)
+{
+	FCD_ilevel++;
+	return (ALL_OK);
+}
+
+/** Decrease indentation level */
+int filecfg_ilevel_dec(void)
+{
+	if (!FCD_ilevel)
+		return (-EINVALID);
+
+	FCD_ilevel--;
+
+	return (ALL_OK);
 }
 
 static void filecfg_backends_dump(FILE * restrict file, unsigned int il)
