@@ -14,9 +14,6 @@
 #ifndef filecfg_h
 #define filecfg_h
 
-/** tabbed fprintf() */
-#define tfprintf(file, il, format, ...)	fprintf(file, "%s" format, filecfg_tabs(il), ## __VA_ARGS__)
-
 extern bool FCD_Exhaustive;
 
 int filecfg_printf_wrapper(const bool indent, const char * restrict format, ...);

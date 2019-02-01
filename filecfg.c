@@ -113,58 +113,52 @@ static void filecfg_backends_dump(FILE * restrict file, unsigned int il)
 {
 	unsigned int id;
 
-	tfprintf(file, il, "backends {\n");
-	il++;
+	filecfg_iprintf("backends {\n");
+	filecfg_ilevel_inc();
 
 	for (id = 0; (id < ARRAY_SIZE(HW_backends) && HW_backends[id]); id++) {
-		tfprintf(file, il, "backend \"%s\" {\n", HW_backends[id]->name);
-		il++;
+		filecfg_iprintf("backend \"%s\" {\n", HW_backends[id]->name);
+		filecfg_ilevel_inc();
 		if (HW_backends[id]->cb->filecfg_dump)
 			HW_backends[id]->cb->filecfg_dump(HW_backends[id]->priv, file, il);
-		il--;
-		tfprintf(file, il, "};\n");
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");
 	}
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 }
 
-static int filecfg_tempid_dump(FILE * restrict file, unsigned int il, const tempid_t tempid)
+static int filecfg_tempid_dump(const tempid_t tempid)
 {
-	if (!file)
-		return (-EINVALID);
-
 	if (!hardware_sensor_name(tempid)) {
-		fprintf(file, " {};\n");
+		filecfg_printf(" {};\n");
 		return (-EINVALID);
 	}
 
-	fprintf(file, " {\n");
-	il++;
-	tfprintf(file, il, "backend \"%s\";\n", hw_backends_name(tempid.bid));
-	tfprintf(file, il, "name \"%s\";\n", hardware_sensor_name(tempid));
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_printf(" {\n");
+	filecfg_ilevel_inc();
+	filecfg_iprintf("backend \"%s\";\n", hw_backends_name(tempid.bid));
+	filecfg_iprintf("name \"%s\";\n", hardware_sensor_name(tempid));
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_relid_dump(FILE * restrict file, unsigned int il, const relid_t relid)
+static int filecfg_relid_dump(const relid_t relid)
 {
-	if (!file)
-		return (-EINVALID);
-
 	if (!hardware_relay_name(relid)) {
-		fprintf(file, " {};\n");
+		filecfg_printf(" {};\n");
 		return (-EINVALID);
 	}
 
-	fprintf(file, " {\n");
-	il++;
-	tfprintf(file, il, "backend \"%s\";\n", hw_backends_name(relid.bid));
-	tfprintf(file, il, "name \"%s\";\n", hardware_relay_name(relid));
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_printf(" {\n");
+	filecfg_ilevel_inc();
+	filecfg_iprintf("backend \"%s\";\n", hw_backends_name(relid.bid));
+	filecfg_iprintf("name \"%s\";\n", hardware_relay_name(relid));
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
@@ -208,36 +202,36 @@ const char * filecfg_runmode_str(const enum e_runmode runmode)
 }
 
 
-static int filecfg_pump_dump(FILE * restrict const file, unsigned int il, const struct s_pump * restrict const pump)
+static int filecfg_pump_dump(const struct s_pump * restrict const pump)
 {
-	if (!file || !pump)
+	if (!pump)
 		return (-EINVALID);
 
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	tfprintf(file, il, "pump \"%s\" {\n", pump->name);
-	il++;
+	filecfg_iprintf("pump \"%s\" {\n", pump->name);
+	filecfg_ilevel_inc();
 	if (FCD_Exhaustive || pump->set.cooldown_time)
-		tfprintf(file, il, "cooldown_time %ld;\n", pump->set.cooldown_time);
-	tfprintf(file, il, "rid_pump"); filecfg_relid_dump(file, il, pump->set.rid_pump);	// mandatory
-	il--;
-	tfprintf(file, il, "};\n");
+		filecfg_iprintf("cooldown_time %ld;\n", pump->set.cooldown_time);
+	filecfg_iprintf("rid_pump"); filecfg_relid_dump(pump->set.rid_pump);	// mandatory
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
 
-static int filecfg_v_bangbang_dump(FILE * restrict const file, unsigned int il, const struct s_valve * restrict const valve)
+static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve)
 {
 	return (ALL_OK);
 }
 
-static int filecfg_v_sapprox_dump(FILE * restrict const file, unsigned int il, const struct s_valve * restrict const valve)
+static int filecfg_v_sapprox_dump(const struct s_valve * restrict const valve)
 {
 	const struct s_valve_sapprox_priv * restrict priv;
 
-	if (!file || !valve)
+	if (!valve)
 		return (-EINVALID);
 
 	if (VA_SAPPROX != valve->set.algo)
@@ -245,17 +239,17 @@ static int filecfg_v_sapprox_dump(FILE * restrict const file, unsigned int il, c
 
 	priv = valve->priv;
 
-	tfprintf(file, il, "amount %" PRIdFAST16 ";\n", priv->set.amount);
-	tfprintf(file, il, "sample_intvl %ld;\n", priv->set.sample_intvl);
+	filecfg_iprintf("amount %" PRIdFAST16 ";\n", priv->set.amount);
+	filecfg_iprintf("sample_intvl %ld;\n", priv->set.sample_intvl);
 
 	return (ALL_OK);
 }
 
-static int filecfg_v_pi_dump(FILE * restrict const file, unsigned int il, const struct s_valve * restrict const valve)
+static int filecfg_v_pi_dump(const struct s_valve * restrict const valve)
 {
 	const struct s_valve_pi_priv * restrict priv;
 
-	if (!file || !valve)
+	if (!valve)
 		return (-EINVALID);
 
 	if (VA_PI != valve->set.algo)
@@ -263,19 +257,19 @@ static int filecfg_v_pi_dump(FILE * restrict const file, unsigned int il, const 
 
 	priv = valve->priv;
 
-	tfprintf(file, il, "sample_intvl %ld;\n", priv->set.sample_intvl);
-	tfprintf(file, il, "Tu %ld;\n", priv->set.Tu);
-	tfprintf(file, il, "Td %ld;\n", priv->set.Td);
-	tfprintf(file, il, "Ksmax %.1f;\n", temp_to_deltaK(priv->set.Ksmax));
-	tfprintf(file, il, "tune_f %" PRIdFAST8 ";\n", priv->set.tune_f);
+	filecfg_iprintf("sample_intvl %ld;\n", priv->set.sample_intvl);
+	filecfg_iprintf("Tu %ld;\n", priv->set.Tu);
+	filecfg_iprintf("Td %ld;\n", priv->set.Td);
+	filecfg_iprintf("Ksmax %.1f;\n", temp_to_deltaK(priv->set.Ksmax));
+	filecfg_iprintf("tune_f %" PRIdFAST8 ";\n", priv->set.tune_f);
 
 	return (ALL_OK);
 }
 
-static int filecfg_valve_algo_dump(FILE * restrict const file, unsigned int il, const struct s_valve * restrict const valve)
+static int filecfg_valve_algo_dump(const struct s_valve * restrict const valve)
 {
 	const char * algoname;
-	int (* privdump)(FILE * restrict const, unsigned int, const struct s_valve * restrict const);
+	int (* privdump)(const struct s_valve * restrict const);
 	int ret = ALL_OK;
 
 	switch (valve->set.algo) {
@@ -299,57 +293,57 @@ static int filecfg_valve_algo_dump(FILE * restrict const file, unsigned int il, 
 			break;
 	}
 
-	fprintf(file, " \"%s\" {\n", algoname);
-	il++;
+	filecfg_printf(" \"%s\" {\n", algoname);
+	filecfg_ilevel_inc();
 	if (privdump)
-		privdump(file, il, valve);
-	il--;
-	tfprintf(file, il, "};\n");
+		privdump(valve);
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ret);
 }
 
-static int filecfg_valve_dump(FILE * restrict const file, unsigned int il, const struct s_valve * restrict const valve)
+static int filecfg_valve_dump(const struct s_valve * restrict const valve)
 {
-	if (!file || !valve)
+	if (!valve)
 		return (-EINVALID);
 
 	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
-	tfprintf(file, il, "valve \"%s\" {\n", valve->name);
-	il++;
+	filecfg_iprintf("valve \"%s\" {\n", valve->name);
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || valve->set.tdeadzone)
-		tfprintf(file, il, "tdeadzone %.1f;\n", temp_to_deltaK(valve->set.tdeadzone));
+		filecfg_iprintf("tdeadzone %.1f;\n", temp_to_deltaK(valve->set.tdeadzone));
 	if (FCD_Exhaustive || valve->set.deadband)
-		tfprintf(file, il, "deadband %" PRIdFAST16 ";\n", valve->set.deadband);
-	tfprintf(file, il, "ete_time %ld;\n", valve->set.ete_time);				// mandatory
+		filecfg_iprintf("deadband %" PRIdFAST16 ";\n", valve->set.deadband);
+	filecfg_iprintf("ete_time %ld;\n", valve->set.ete_time);			// mandatory
 	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_hot))
-		tfprintf(file, il, "tid_hot"), filecfg_tempid_dump(file, il, valve->set.tid_hot);
+		filecfg_iprintf("tid_hot"), filecfg_tempid_dump(valve->set.tid_hot);
 	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_cold))
-		tfprintf(file, il, "tid_cold"), filecfg_tempid_dump(file, il, valve->set.tid_cold);
-	tfprintf(file, il, "tid_out"); filecfg_tempid_dump(file, il, valve->set.tid_out);	// mandatory
+		filecfg_iprintf("tid_cold"), filecfg_tempid_dump(valve->set.tid_cold);
+	filecfg_iprintf("tid_out"); filecfg_tempid_dump(valve->set.tid_out);		// mandatory
 
-	tfprintf(file, il, "rid_hot"); filecfg_relid_dump(file, il, valve->set.rid_hot);	// mandatory
-	tfprintf(file, il, "rid_cold"); filecfg_relid_dump(file, il, valve->set.rid_cold);	// mandatory
+	filecfg_iprintf("rid_hot"); filecfg_relid_dump(valve->set.rid_hot);		// mandatory
+	filecfg_iprintf("rid_cold"); filecfg_relid_dump(valve->set.rid_cold);		// mandatory
 
-	tfprintf(file, il, "algo"); filecfg_valve_algo_dump(file, il, valve);			// mandatory
+	filecfg_iprintf("algo"); filecfg_valve_algo_dump(valve);			// mandatory
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
 
-static int filecfg_boiler_hs_dump(FILE * restrict const file, unsigned int il, const struct s_heatsource * restrict const heat)
+static int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat)
 {
 	const char * idlemode;
 	const struct s_boiler_priv * restrict priv;
 	int ret = ALL_OK;
 
-	if (!file || !heat)
+	if (!heat)
 		return (-EINVALID);
 
 	if (HS_BOILER != heat->set.type)
@@ -372,44 +366,44 @@ static int filecfg_boiler_hs_dump(FILE * restrict const file, unsigned int il, c
 			ret = -EMISCONFIGURED;
 	}
 
-	fprintf(file, " {\n");
-	il++;
+	filecfg_printf(" {\n");
+	filecfg_ilevel_inc();
 
-	tfprintf(file, il, "idle_mode \"%s\";\n", idlemode);
-	tfprintf(file, il, "hysteresis %.1f;\n", temp_to_deltaK(priv->set.hysteresis));				// mandatory
-	tfprintf(file, il, "limit_thardmax %.1f;\n", temp_to_celsius(priv->set.limit_thardmax));		// mandatory
+	filecfg_iprintf("idle_mode \"%s\";\n", idlemode);
+	filecfg_iprintf("hysteresis %.1f;\n", temp_to_deltaK(priv->set.hysteresis));				// mandatory
+	filecfg_iprintf("limit_thardmax %.1f;\n", temp_to_celsius(priv->set.limit_thardmax));			// mandatory
 	if (FCD_Exhaustive || priv->set.limit_tmax)
-		tfprintf(file, il, "limit_tmax %.1f;\n", temp_to_celsius(priv->set.limit_tmax));
+		filecfg_iprintf("limit_tmax %.1f;\n", temp_to_celsius(priv->set.limit_tmax));
 	if (FCD_Exhaustive || priv->set.limit_tmin)
-		tfprintf(file, il, "limit_tmin %.1f;\n", temp_to_celsius(priv->set.limit_tmin));
+		filecfg_iprintf("limit_tmin %.1f;\n", temp_to_celsius(priv->set.limit_tmin));
 	if (FCD_Exhaustive || priv->set.limit_treturnmin)
-		tfprintf(file, il, "limit_treturnmin %.1f;\n", temp_to_celsius(priv->set.limit_treturnmin));
-	tfprintf(file, il, "t_freeze %.1f;\n", temp_to_celsius(priv->set.t_freeze));				// mandatory
+		filecfg_iprintf("limit_treturnmin %.1f;\n", temp_to_celsius(priv->set.limit_treturnmin));
+	filecfg_iprintf("t_freeze %.1f;\n", temp_to_celsius(priv->set.t_freeze));				// mandatory
 	if (FCD_Exhaustive || priv->set.burner_min_time)
-		tfprintf(file, il, "burner_min_time %ld;\n", priv->set.burner_min_time);
+		filecfg_iprintf("burner_min_time %ld;\n", priv->set.burner_min_time);
 
-	tfprintf(file, il, "tid_boiler"); filecfg_tempid_dump(file, il, priv->set.tid_boiler);			// mandatory
+	filecfg_iprintf("tid_boiler"); filecfg_tempid_dump(priv->set.tid_boiler);				// mandatory
 	if (FCD_Exhaustive || hardware_sensor_name(priv->set.tid_boiler_return))
-		tfprintf(file, il, "tid_boiler_return"), filecfg_tempid_dump(file, il, priv->set.tid_boiler_return);
-	tfprintf(file, il, "rid_burner_1"); filecfg_relid_dump(file, il, priv->set.rid_burner_1);		// mandatory
+		filecfg_iprintf("tid_boiler_return"), filecfg_tempid_dump(priv->set.tid_boiler_return);
+	filecfg_iprintf("rid_burner_1"); filecfg_relid_dump(priv->set.rid_burner_1);				// mandatory
 	if (FCD_Exhaustive || hardware_relay_name(priv->set.rid_burner_2))
-		tfprintf(file, il, "rid_burner_2"), filecfg_relid_dump(file, il, priv->set.rid_burner_2);
+		filecfg_iprintf("rid_burner_2"), filecfg_relid_dump(priv->set.rid_burner_2);
 
 	if (FCD_Exhaustive || priv->pump_load)
-		tfprintf(file, il, "pump_load \"%s\";\n", priv->pump_load ? priv->pump_load->name : "");
+		filecfg_iprintf("pump_load \"%s\";\n", priv->pump_load ? priv->pump_load->name : "");
 	if (FCD_Exhaustive || priv->valve_ret)
-		tfprintf(file, il, "valve_ret \"%s\";\n", priv->valve_ret ? priv->valve_ret->name : "");
+		filecfg_iprintf("valve_ret \"%s\";\n", priv->valve_ret ? priv->valve_ret->name : "");
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ret);
 }
 
-static int filecfg_heatsource_type_dump(FILE * restrict const file, unsigned int il, const struct s_heatsource * restrict const heat)
+static int filecfg_heatsource_type_dump(const struct s_heatsource * restrict const heat)
 {
 	const char * typename;
-	int (*privdump)(FILE * restrict const, unsigned int, const struct s_heatsource * restrict const);
+	int (*privdump)(const struct s_heatsource * restrict const);
 	int ret = ALL_OK;
 
 	switch (heat->set.type) {
@@ -425,80 +419,80 @@ static int filecfg_heatsource_type_dump(FILE * restrict const file, unsigned int
 			break;
 	}
 
-	fprintf(file, " \"%s\"", typename);
+	filecfg_printf(" \"%s\"", typename);
 	if (privdump)
-		privdump(file, il, heat);
+		privdump(heat);
 
 	return (ret);
 }
 
-static int filecfg_heatsource_dump(FILE * restrict const file, unsigned int il, const struct s_heatsource * restrict const heat)
+static int filecfg_heatsource_dump(const struct s_heatsource * restrict const heat)
 {
-	if (!file || !heat)
+	if (!heat)
 		return (-EINVALID);
 
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
-	tfprintf(file, il, "heatsource \"%s\" {\n", heat->name);
-	il++;
+	filecfg_iprintf("heatsource \"%s\" {\n", heat->name);
+	filecfg_ilevel_inc();
 
-	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(heat->set.runmode));	// mandatory
-	tfprintf(file, il, "type"); filecfg_heatsource_type_dump(file, il, heat);		// mandatory
+	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(heat->set.runmode));	// mandatory
+	filecfg_iprintf("type"); filecfg_heatsource_type_dump(heat);			// mandatory
 	if (FCD_Exhaustive || heat->set.prio)
-		tfprintf(file, il, "prio %hd;\n", heat->set.prio);
+		filecfg_iprintf("prio %hd;\n", heat->set.prio);
 	if (FCD_Exhaustive || heat->set.consumer_sdelay)
-		tfprintf(file, il, "consumer_sdelay %ld;\n", heat->set.consumer_sdelay);
+		filecfg_iprintf("consumer_sdelay %ld;\n", heat->set.consumer_sdelay);
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_dhwt_params_dump(FILE * restrict const file, unsigned int il, const struct s_dhwt_params * restrict const params)
+static int filecfg_dhwt_params_dump(const struct s_dhwt_params * restrict const params)
 {
-	if (!file || !params)
+	if (!params)
 		return (-EINVALID);
 
-	fprintf(file, " {\n");
-	il++;
+	filecfg_printf(" {\n");
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || params->limit_chargetime)
-		tfprintf(file, il, "limit_chargetime %ld;\n", params->limit_chargetime);
+		filecfg_iprintf("limit_chargetime %ld;\n", params->limit_chargetime);
 	if (FCD_Exhaustive || params->limit_wintmax)
-		tfprintf(file, il, "limit_wintmax %.1f;\n", temp_to_celsius(params->limit_wintmax));
+		filecfg_iprintf("limit_wintmax %.1f;\n", temp_to_celsius(params->limit_wintmax));
 	if (FCD_Exhaustive || params->limit_tmin)
-		tfprintf(file, il, "limit_tmin %.1f;\n", temp_to_celsius(params->limit_tmin));
+		filecfg_iprintf("limit_tmin %.1f;\n", temp_to_celsius(params->limit_tmin));
 	if (FCD_Exhaustive || params->limit_tmax)
-		tfprintf(file, il, "limit_tmax %.1f;\n", temp_to_celsius(params->limit_tmax));
+		filecfg_iprintf("limit_tmax %.1f;\n", temp_to_celsius(params->limit_tmax));
 
 	if (FCD_Exhaustive || params->t_legionella)
-		tfprintf(file, il, "t_legionella %.1f;\n", temp_to_celsius(params->t_legionella));
+		filecfg_iprintf("t_legionella %.1f;\n", temp_to_celsius(params->t_legionella));
 	if (FCD_Exhaustive || params->t_comfort)
-		tfprintf(file, il, "t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
+		filecfg_iprintf("t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
 	if (FCD_Exhaustive || params->t_eco)
-		tfprintf(file, il, "t_eco %.1f;\n", temp_to_celsius(params->t_eco));
+		filecfg_iprintf("t_eco %.1f;\n", temp_to_celsius(params->t_eco));
 	if (FCD_Exhaustive || params->t_frostfree)
-		tfprintf(file, il, "t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
+		filecfg_iprintf("t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
 
 	if (FCD_Exhaustive || params->hysteresis)
-		tfprintf(file, il, "hysteresis %.1f;\n", temp_to_deltaK(params->hysteresis));
+		filecfg_iprintf("hysteresis %.1f;\n", temp_to_deltaK(params->hysteresis));
 	if (FCD_Exhaustive || params->temp_inoffset)
-		tfprintf(file, il, "temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
+		filecfg_iprintf("temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const struct s_dhw_tank * restrict const dhwt)
+static int filecfg_dhwt_dump(const struct s_dhw_tank * restrict const dhwt)
 {
 	const char * cpriostr, * fmode;
 	int ret = ALL_OK;
 
-	if (!file || !dhwt)
+	if (!dhwt)
 		return (-EINVALID);
 
 	if (!dhwt->set.configured)
@@ -542,51 +536,51 @@ static int filecfg_dhwt_dump(FILE * restrict const file, unsigned int il, const 
 			break;
 	}
 
-	tfprintf(file, il, "dhwt \"%s\" {\n", dhwt->name);
-	il++;
+	filecfg_iprintf("dhwt \"%s\" {\n", dhwt->name);
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || dhwt->set.electric_failover)
-		tfprintf(file, il, "electric_failover %s;\n", filecfg_bool_str(dhwt->set.electric_failover));
+		filecfg_iprintf("electric_failover %s;\n", filecfg_bool_str(dhwt->set.electric_failover));
 	if (FCD_Exhaustive || dhwt->set.anti_legionella)
-		tfprintf(file, il, "anti_legionella %s;\n", filecfg_bool_str(dhwt->set.anti_legionella));
+		filecfg_iprintf("anti_legionella %s;\n", filecfg_bool_str(dhwt->set.anti_legionella));
 	if (FCD_Exhaustive || dhwt->set.legionella_recycle)
-		tfprintf(file, il, "legionella_recycle %s;\n", filecfg_bool_str(dhwt->set.legionella_recycle));
+		filecfg_iprintf("legionella_recycle %s;\n", filecfg_bool_str(dhwt->set.legionella_recycle));
 	if (FCD_Exhaustive || dhwt->set.prio)
-		tfprintf(file, il, "prio %hd;\n", dhwt->set.prio);
-	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(dhwt->set.runmode));		// mandatory
-	tfprintf(file, il, "dhwt_cprio \"%s\";\n", cpriostr);
-	tfprintf(file, il, "force_mode \"%s\";\n", fmode);
+		filecfg_iprintf("prio %hd;\n", dhwt->set.prio);
+	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(dhwt->set.runmode));		// mandatory
+	filecfg_iprintf("dhwt_cprio \"%s\";\n", cpriostr);
+	filecfg_iprintf("force_mode \"%s\";\n", fmode);
 
 	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_bottom))
-		tfprintf(file, il, "tid_bottom"), filecfg_tempid_dump(file, il, dhwt->set.tid_bottom);
+		filecfg_iprintf("tid_bottom"), filecfg_tempid_dump(dhwt->set.tid_bottom);
 	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_top))
-		tfprintf(file, il, "tid_top"), filecfg_tempid_dump(file, il, dhwt->set.tid_top);
+		filecfg_iprintf("tid_top"), filecfg_tempid_dump(dhwt->set.tid_top);
 	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_win))
-		tfprintf(file, il, "tid_win"), filecfg_tempid_dump(file, il, dhwt->set.tid_win);
+		filecfg_iprintf("tid_win"), filecfg_tempid_dump(dhwt->set.tid_win);
 	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_wout))
-		tfprintf(file, il, "tid_wout"), filecfg_tempid_dump(file, il, dhwt->set.tid_wout);
+		filecfg_iprintf("tid_wout"), filecfg_tempid_dump(dhwt->set.tid_wout);
 	if (FCD_Exhaustive || hardware_relay_name(dhwt->set.rid_selfheater))
-		tfprintf(file, il, "rid_selfheater"), filecfg_relid_dump(file, il, dhwt->set.rid_selfheater);
+		filecfg_iprintf("rid_selfheater"), filecfg_relid_dump(dhwt->set.rid_selfheater);
 
-	tfprintf(file, il, "params"); filecfg_dhwt_params_dump(file, il, &dhwt->set.params);
+	filecfg_iprintf("params"); filecfg_dhwt_params_dump(&dhwt->set.params);
 
 	if (FCD_Exhaustive || dhwt->pump_feed)
-		tfprintf(file, il, "pump_feed \"%s\";\n", dhwt->pump_feed ? dhwt->pump_feed->name : "");
+		filecfg_iprintf("pump_feed \"%s\";\n", dhwt->pump_feed ? dhwt->pump_feed->name : "");
 	if (FCD_Exhaustive || dhwt->pump_recycle)
-		tfprintf(file, il, "pump_recycle \"%s\";\n", dhwt->pump_recycle ? dhwt->pump_recycle->name : "");
+		filecfg_iprintf("pump_recycle \"%s\";\n", dhwt->pump_recycle ? dhwt->pump_recycle->name : "");
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ret);
 }
 
 
-static int filecfg_hc_tlbilin_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
+static int filecfg_hc_tlbilin_dump(const struct s_hcircuit * restrict const circuit)
 {
 	const struct s_tlaw_bilin20C_priv * restrict priv;
 
-	if (!file || !circuit)
+	if (!circuit)
 		return (-EINVALID);
 
 	if (HCL_BILINEAR != circuit->set.tlaw)
@@ -595,25 +589,25 @@ static int filecfg_hc_tlbilin_dump(FILE * restrict const file, unsigned int il, 
 	priv = circuit->tlaw_priv;
 
 	// all params mandatory
-	tfprintf(file, il, "tout1 %.1f;\n", temp_to_celsius(priv->tout1));
-	tfprintf(file, il, "twater1 %.1f;\n", temp_to_celsius(priv->twater1));
-	tfprintf(file, il, "tout2 %.1f;\n", temp_to_celsius(priv->tout2));
-	tfprintf(file, il, "twater2 %.1f;\n", temp_to_celsius(priv->twater2));
-	tfprintf(file, il, "nH100 %" PRIdFAST16 ";\n", priv->nH100);
+	filecfg_iprintf("tout1 %.1f;\n", temp_to_celsius(priv->tout1));
+	filecfg_iprintf("twater1 %.1f;\n", temp_to_celsius(priv->twater1));
+	filecfg_iprintf("tout2 %.1f;\n", temp_to_celsius(priv->tout2));
+	filecfg_iprintf("twater2 %.1f;\n", temp_to_celsius(priv->twater2));
+	filecfg_iprintf("nH100 %" PRIdFAST16 ";\n", priv->nH100);
 
 #if 0	// do not print these 'internal' parameters as for now they are not meant to be set externally
-	tfprintf(file, il, "toutinfl %.1f;\n", temp_to_celsius(priv->toutinfl));
-	tfprintf(file, il, "twaterinfl %.1f;\n", temp_to_celsius(priv->twaterinfl));
-	//tfprintf(file, il, "offset %.1f;\n", temp_to_deltaK(priv->offset));	// don't print offset as it's homogenous to internal (meaningless) temperature dimensions
-	tfprintf(file, il, "slope %.1f;\n", priv->slope);
+	filecfg_iprintf("toutinfl %.1f;\n", temp_to_celsius(priv->toutinfl));
+	filecfg_iprintf("twaterinfl %.1f;\n", temp_to_celsius(priv->twaterinfl));
+	//filecfg_iprintf("offset %.1f;\n", temp_to_deltaK(priv->offset));	// don't print offset as it's homogenous to internal (meaningless) temperature dimensions
+	filecfg_iprintf("slope %.1f;\n", priv->slope);
 #endif
 	return (ALL_OK);
 }
 
-static int filecfg_hcircuit_tlaw_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
+static int filecfg_hcircuit_tlaw_dump(const struct s_hcircuit * restrict const circuit)
 {
 	const char * tlawname;
-	int (*privdump)(FILE * restrict const, unsigned int, const struct s_hcircuit * restrict const);
+	int (*privdump)(const struct s_hcircuit * restrict const);
 	int ret = ALL_OK;
 
 	switch (circuit->set.tlaw) {
@@ -629,174 +623,174 @@ static int filecfg_hcircuit_tlaw_dump(FILE * restrict const file, unsigned int i
 			break;
 	}
 
-	fprintf(file, " \"%s\" {\n", tlawname);
-	il++;
+	filecfg_printf(" \"%s\" {\n", tlawname);
+	filecfg_ilevel_inc();
 	if (privdump)
-		privdump(file, il, circuit);
-	il--;
-	tfprintf(file, il, "};\n");
+		privdump(circuit);
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ret);
 }
 
-static int filecfg_hcircuit_params_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit_params * restrict const params)
+static int filecfg_hcircuit_params_dump(const struct s_hcircuit_params * restrict const params)
 {
-	if (!file || !params)
+	if (!params)
 		return (-EINVALID);
 
-	fprintf(file, " {\n");
-	il++;
+	filecfg_printf(" {\n");
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || params->t_comfort)
-		tfprintf(file, il, "t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
+		filecfg_iprintf("t_comfort %.1f;\n", temp_to_celsius(params->t_comfort));
 	if (FCD_Exhaustive || params->t_eco)
-		tfprintf(file, il, "t_eco %.1f;\n", temp_to_celsius(params->t_eco));
+		filecfg_iprintf("t_eco %.1f;\n", temp_to_celsius(params->t_eco));
 	if (FCD_Exhaustive || params->t_frostfree)
-		tfprintf(file, il, "t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
+		filecfg_iprintf("t_frostfree %.1f;\n", temp_to_celsius(params->t_frostfree));
 	if (FCD_Exhaustive || params->t_offset)
-		tfprintf(file, il, "t_offset %.1f;\n", temp_to_deltaK(params->t_offset));
+		filecfg_iprintf("t_offset %.1f;\n", temp_to_deltaK(params->t_offset));
 
 	if (FCD_Exhaustive || params->outhoff_comfort)
-		tfprintf(file, il, "outhoff_comfort %.1f;\n", temp_to_celsius(params->outhoff_comfort));
+		filecfg_iprintf("outhoff_comfort %.1f;\n", temp_to_celsius(params->outhoff_comfort));
 	if (FCD_Exhaustive || params->outhoff_eco)
-		tfprintf(file, il, "outhoff_eco %.1f;\n", temp_to_celsius(params->outhoff_eco));
+		filecfg_iprintf("outhoff_eco %.1f;\n", temp_to_celsius(params->outhoff_eco));
 	if (FCD_Exhaustive || params->outhoff_frostfree)
-		tfprintf(file, il, "outhoff_frostfree %.1f;\n", temp_to_celsius(params->outhoff_frostfree));
+		filecfg_iprintf("outhoff_frostfree %.1f;\n", temp_to_celsius(params->outhoff_frostfree));
 	if (FCD_Exhaustive || params->outhoff_hysteresis)
-		tfprintf(file, il, "outhoff_hysteresis %.1f;\n", temp_to_deltaK(params->outhoff_hysteresis));
+		filecfg_iprintf("outhoff_hysteresis %.1f;\n", temp_to_deltaK(params->outhoff_hysteresis));
 
 	if (FCD_Exhaustive || params->limit_wtmin)
-		tfprintf(file, il, "limit_wtmin %.1f;\n", temp_to_celsius(params->limit_wtmin));
+		filecfg_iprintf("limit_wtmin %.1f;\n", temp_to_celsius(params->limit_wtmin));
 	if (FCD_Exhaustive || params->limit_wtmax)
-		tfprintf(file, il, "limit_wtmax %.1f;\n", temp_to_celsius(params->limit_wtmax));
+		filecfg_iprintf("limit_wtmax %.1f;\n", temp_to_celsius(params->limit_wtmax));
 
 	if (FCD_Exhaustive || params->temp_inoffset)
-		tfprintf(file, il, "temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
+		filecfg_iprintf("temp_inoffset %.1f;\n", temp_to_deltaK(params->temp_inoffset));
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_hcircuit_dump(FILE * restrict const file, unsigned int il, const struct s_hcircuit * restrict const circuit)
+static int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 {
-	if (!file || !circuit)
+	if (!circuit)
 		return (-EINVALID);
 
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	tfprintf(file, il, "hcircuit \"%s\" {\n", circuit->name);
-	il++;
+	filecfg_iprintf("hcircuit \"%s\" {\n", circuit->name);
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || circuit->set.fast_cooldown)
-		tfprintf(file, il, "fast_cooldown %s;\n", filecfg_bool_str(circuit->set.fast_cooldown));
+		filecfg_iprintf("fast_cooldown %s;\n", filecfg_bool_str(circuit->set.fast_cooldown));
 	if (FCD_Exhaustive || circuit->set.logging)
-		tfprintf(file, il, "logging %s;\n", filecfg_bool_str(circuit->set.logging));
-	tfprintf(file, il, "runmode \"%s\";\n", filecfg_runmode_str(circuit->set.runmode));			// mandatory
+		filecfg_iprintf("logging %s;\n", filecfg_bool_str(circuit->set.logging));
+	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(circuit->set.runmode));		// mandatory
 	if (FCD_Exhaustive || circuit->set.ambient_factor)
-		tfprintf(file, il, "ambient_factor %" PRIdFAST16 ";\n", circuit->set.ambient_factor);
+		filecfg_iprintf("ambient_factor %" PRIdFAST16 ";\n", circuit->set.ambient_factor);
 	if (FCD_Exhaustive || circuit->set.wtemp_rorh)
-		tfprintf(file, il, "wtemp_rorh %.1f;\n", temp_to_deltaK(circuit->set.wtemp_rorh));
+		filecfg_iprintf("wtemp_rorh %.1f;\n", temp_to_deltaK(circuit->set.wtemp_rorh));
 	if (FCD_Exhaustive || circuit->set.am_tambient_tK)
-		tfprintf(file, il, "am_tambient_tK %ld;\n", circuit->set.am_tambient_tK);
+		filecfg_iprintf("am_tambient_tK %ld;\n", circuit->set.am_tambient_tK);
 	if (FCD_Exhaustive || circuit->set.tambient_boostdelta)
-		tfprintf(file, il, "tambient_boostdelta %.1f;\n", temp_to_deltaK(circuit->set.tambient_boostdelta));
+		filecfg_iprintf("tambient_boostdelta %.1f;\n", temp_to_deltaK(circuit->set.tambient_boostdelta));
 	if (FCD_Exhaustive || circuit->set.boost_maxtime)
-		tfprintf(file, il, "boost_maxtime %ld;\n", circuit->set.boost_maxtime);
+		filecfg_iprintf("boost_maxtime %ld;\n", circuit->set.boost_maxtime);
 
-	tfprintf(file, il, "tid_outgoing"); filecfg_tempid_dump(file, il, circuit->set.tid_outgoing);		// mandatory
+	filecfg_iprintf("tid_outgoing"); filecfg_tempid_dump(circuit->set.tid_outgoing);		// mandatory
 	if (FCD_Exhaustive || hardware_sensor_name(circuit->set.tid_return))
-		tfprintf(file, il, "tid_return"), filecfg_tempid_dump(file, il, circuit->set.tid_return);
+		filecfg_iprintf("tid_return"), filecfg_tempid_dump(circuit->set.tid_return);
 	if (FCD_Exhaustive || hardware_sensor_name(circuit->set.tid_ambient))
-		tfprintf(file, il, "tid_ambient"), filecfg_tempid_dump(file, il, circuit->set.tid_ambient);
+		filecfg_iprintf("tid_ambient"), filecfg_tempid_dump(circuit->set.tid_ambient);
 
-	tfprintf(file, il, "params"); filecfg_hcircuit_params_dump(file, il, &circuit->set.params);
+	filecfg_iprintf("params"); filecfg_hcircuit_params_dump(&circuit->set.params);
 
-	tfprintf(file, il, "tlaw"); filecfg_hcircuit_tlaw_dump(file, il, circuit);				// mandatory
+	filecfg_iprintf("tlaw"); filecfg_hcircuit_tlaw_dump(circuit);					// mandatory
 
 	if (FCD_Exhaustive || circuit->valve_mix)
-		tfprintf(file, il, "valve_mix \"%s\";\n", circuit->valve_mix ? circuit->valve_mix->name : "");
+		filecfg_iprintf("valve_mix \"%s\";\n", circuit->valve_mix ? circuit->valve_mix->name : "");
 	if (FCD_Exhaustive || circuit->pump_feed)
-		tfprintf(file, il, "pump_feed \"%s\";\n", circuit->pump_feed ? circuit->pump_feed->name : "");
+		filecfg_iprintf("pump_feed \"%s\";\n", circuit->pump_feed ? circuit->pump_feed->name : "");
 	if (FCD_Exhaustive || circuit->bmodel)
-		tfprintf(file, il, "bmodel \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
+		filecfg_iprintf("bmodel \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_bmodel_dump(FILE * restrict const file, unsigned int il, const struct s_bmodel * restrict const bmodel)
+static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
 {
-	if (!file || !bmodel)
+	if (!bmodel)
 		return (-EINVALID);
 
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
 
-	tfprintf(file, il, "bmodel \"%s\" {\n", bmodel->name);
-	il++;
+	filecfg_iprintf("bmodel \"%s\" {\n", bmodel->name);
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || bmodel->set.logging)
-		tfprintf(file, il, "logging %s;\n", filecfg_bool_str(bmodel->set.logging));
-	tfprintf(file, il, "tau %ld;\n", bmodel->set.tau);						// mandatory
-	tfprintf(file, il, "tid_outdoor"); filecfg_tempid_dump(file, il, bmodel->set.tid_outdoor);	// mandatory
+		filecfg_iprintf("logging %s;\n", filecfg_bool_str(bmodel->set.logging));
+	filecfg_iprintf("tau %ld;\n", bmodel->set.tau);						// mandatory
+	filecfg_iprintf("tid_outdoor"); filecfg_tempid_dump(bmodel->set.tid_outdoor);		// mandatory
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_models_dump(FILE* restrict const file, unsigned int il, const struct s_models * restrict const models)
+static int filecfg_models_dump(const struct s_models * restrict const models)
 {
 	struct s_bmodel_l * restrict bmodelelmt;
 
-	tfprintf(file, il, "models {\n");
-	il++;
+	filecfg_iprintf("models {\n");
+	filecfg_ilevel_inc();
 	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
 		if (!bmodelelmt->bmodel->set.configured)
 			continue;
-		filecfg_bmodel_dump(file, il, bmodelelmt->bmodel);
+		filecfg_bmodel_dump(bmodelelmt->bmodel);
 	}
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_config_dump(FILE * restrict const file, unsigned int il, const struct s_config * restrict const config)
+static int filecfg_config_dump(const struct s_config * restrict const config)
 {
-	if (!file || !config)
+	if (!config)
 		return (-EINVALID);
 
-	tfprintf(file, il, "defconfig {\n");
-	il++;
+	filecfg_iprintf("defconfig {\n");
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || config->summer_maintenance)
-		tfprintf(file, il, "summer_maintenance %s;\n", filecfg_bool_str(config->summer_maintenance));
+		filecfg_iprintf("summer_maintenance %s;\n", filecfg_bool_str(config->summer_maintenance));
 	if (FCD_Exhaustive || config->logging)
-		tfprintf(file, il, "logging %s;\n", filecfg_bool_str(config->logging));
+		filecfg_iprintf("logging %s;\n", filecfg_bool_str(config->logging));
 	if (FCD_Exhaustive || config->limit_tsummer)
-		tfprintf(file, il, "limit_tsummer %.1f;\n", temp_to_celsius(config->limit_tsummer));
+		filecfg_iprintf("limit_tsummer %.1f;\n", temp_to_celsius(config->limit_tsummer));
 	if (FCD_Exhaustive || config->limit_tfrost)
-		tfprintf(file, il, "limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
+		filecfg_iprintf("limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
 	if (FCD_Exhaustive || config->sleeping_delay)
-		tfprintf(file, il, "sleeping_delay %ld;\n", config->sleeping_delay);
+		filecfg_iprintf("sleeping_delay %ld;\n", config->sleeping_delay);
 
-	tfprintf(file, il, "def_hcircuit"); filecfg_hcircuit_params_dump(file, il, &config->def_hcircuit);
-	tfprintf(file, il, "def_dhwt"); filecfg_dhwt_params_dump(file, il, &config->def_dhwt);
+	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&config->def_hcircuit);
+	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&config->def_dhwt);
 
-	il--;
-	tfprintf(file, il, "};\n");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-static int filecfg_plant_dump(FILE * restrict const file, unsigned int il, const struct s_plant * restrict const plant)
+static int filecfg_plant_dump(const struct s_plant * restrict const plant)
 {
 	struct s_pump_l * pumpl;
 	struct s_valve_l * valvel;
@@ -804,62 +798,62 @@ static int filecfg_plant_dump(FILE * restrict const file, unsigned int il, const
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 
-	if (!file || !plant)
+	if (!plant)
 		return (-EINVALID);
 
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);
 
-	tfprintf(file, il, "plant {\n");
-	il++;
+	filecfg_iprintf("plant {\n");
+	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || plant->pump_head) {
-		tfprintf(file, il, "pumps {\n");
-		il++;
+		filecfg_iprintf("pumps {\n");
+		filecfg_ilevel_inc();
 		for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next)
-			filecfg_pump_dump(file, il, pumpl->pump);
-		il--;
-		tfprintf(file, il, "};\n");	// pumps
+			filecfg_pump_dump(pumpl->pump);
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");	// pumps
 	}
 
 	if (FCD_Exhaustive || plant->valve_head) {
-		tfprintf(file, il, "valves {\n");
-		il++;
+		filecfg_iprintf("valves {\n");
+		filecfg_ilevel_inc();
 		for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next)
-			filecfg_valve_dump(file, il, valvel->valve);
-		il--;
-		tfprintf(file, il, "};\n");	// valves
+			filecfg_valve_dump(valvel->valve);
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");	// valves
 	}
 
 	if (FCD_Exhaustive || plant->heats_head) {
-		tfprintf(file, il, "heatsources {\n");
-		il++;
+		filecfg_iprintf("heatsources {\n");
+		filecfg_ilevel_inc();
 		for (heatsl = plant->heats_head; heatsl != NULL; heatsl = heatsl->next)
-			filecfg_heatsource_dump(file, il, heatsl->heats);
-		il--;
-		tfprintf(file, il, "};\n");	// heatsources
+			filecfg_heatsource_dump(heatsl->heats);
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");	// heatsources
 	}
 
 	if (FCD_Exhaustive || plant->circuit_head) {
-		tfprintf(file, il, "hcircuits {\n");
-		il++;
+		filecfg_iprintf("hcircuits {\n");
+		filecfg_ilevel_inc();
 		for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next)
-			filecfg_hcircuit_dump(file, il, circuitl->circuit);
-		il--;
-		tfprintf(file, il, "};\n");	// heating_circuits
+			filecfg_hcircuit_dump(circuitl->circuit);
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");	// heating_circuits
 	}
 
 	if (FCD_Exhaustive || plant->dhwt_head) {
-		tfprintf(file, il, "dhwts {\n");
-		il++;
+		filecfg_iprintf("dhwts {\n");
+		filecfg_ilevel_inc();
 		for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next)
-			filecfg_dhwt_dump(file, il, dhwtl->dhwt);
-		il--;
-		tfprintf(file, il, "};\n");	// dhwts
+			filecfg_dhwt_dump(dhwtl->dhwt);
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");	// dhwts
 	}
 
-	il--;
-	tfprintf(file, il, "};\n");	// plant
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");	// plant
 
 	return (ALL_OK);
 }
@@ -873,31 +867,32 @@ static int filecfg_plant_dump(FILE * restrict const file, unsigned int il, const
 int filecfg_dump(void)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
-	FILE * restrict file = NULL;
-	unsigned int il = 0;
 
 	// make sure we're in target wd
 	if (chdir(RWCHCD_STORAGE_PATH))
 		return (-ESTORE);
 
 	// open stream
-	file = fopen(FILECONFIG_NAME, "w");
-	if (!file)
+	FCD_File = fopen(FILECONFIG_NAME, "w");
+	if (!FCD_File)
 		return (-ESTORE);
 
+	FCD_ilevel = 0;
+
 	// dump backends
-	filecfg_backends_dump(file, il);
+	filecfg_backends_dump(FCD_File, FCD_ilevel);
 
 	// dump runtime config
-	filecfg_config_dump(file, il, runtime->config);
+	filecfg_config_dump(runtime->config);
 
 	// dump models
-	filecfg_models_dump(file, il, models_get());
+	filecfg_models_dump(models_get());
 
 	// dump plant
-	filecfg_plant_dump(file, il, runtime->plant);
+	filecfg_plant_dump(runtime->plant);
 
-	fclose(file);
+	fclose(FCD_File);
+	FCD_File = NULL;
 
 	return (ALL_OK);
 }
