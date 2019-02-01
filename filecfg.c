@@ -109,7 +109,7 @@ int filecfg_ilevel_dec(void)
 	return (ALL_OK);
 }
 
-static void filecfg_backends_dump(FILE * restrict file, unsigned int il)
+static void filecfg_backends_dump()
 {
 	unsigned int id;
 
@@ -120,7 +120,7 @@ static void filecfg_backends_dump(FILE * restrict file, unsigned int il)
 		filecfg_iprintf("backend \"%s\" {\n", HW_backends[id]->name);
 		filecfg_ilevel_inc();
 		if (HW_backends[id]->cb->filecfg_dump)
-			HW_backends[id]->cb->filecfg_dump(HW_backends[id]->priv, file, il);
+			HW_backends[id]->cb->filecfg_dump(HW_backends[id]->priv);
 		filecfg_ilevel_dec();
 		filecfg_iprintf("};\n");
 	}
@@ -880,7 +880,7 @@ int filecfg_dump(void)
 	FCD_ilevel = 0;
 
 	// dump backends
-	filecfg_backends_dump(FCD_File, FCD_ilevel);
+	filecfg_backends_dump();
 
 	// dump runtime config
 	filecfg_config_dump(runtime->config);

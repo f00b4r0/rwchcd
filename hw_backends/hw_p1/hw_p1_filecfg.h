@@ -14,6 +14,6 @@
 #ifndef hw_p1_filecfg_h
 #define hw_p1_filecfg_h
 
-int hw_p1_filecfg_dump(void * priv, FILE * restrict file, unsigned int il);
+int hw_p1_filecfg_dump(void * priv);
 
 #endif /* hw_p1_filecfg_h */

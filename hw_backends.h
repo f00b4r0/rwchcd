@@ -189,13 +189,11 @@ struct s_hw_callbacks {
 	int (*sensor_clone_time)(void * priv, const sid_t sid, time_t * const ctime);
 
 	/**
-	 * Dump hardware backend configuration to file.
+	 * Dump hardware backend configuration.
 	 * @param priv hardware backend private data
-	 * @param file target file
-	 * @param il indentation level
 	 * @return exec status
 	 */
-	int (*filecfg_dump)(void * priv, FILE * restrict file, unsigned int il);
+	int (*filecfg_dump)(void * priv);
 
 	/* TODO other ops (display/alarm?) */
 };
