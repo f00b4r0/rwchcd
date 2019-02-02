@@ -1483,10 +1483,12 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 		return (-EINVALID);
 
 	for (i = 0; i < nparsers; i++) {
-		if (!(parsers[i].type & node->type))
-			continue;	// skip invalid node type
-
 		if (!strcmp(parsers[i].identifier, node->name)) {
+			if (!(parsers[i].type & node->type)) {
+				dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", node->name, node->lineno);
+				return (-EINVALID);
+			}
+
 			dbgmsg("matched %s, %d", node->name, node->lineno);
 			matched = true;
 			if (parsers[i].node) {
@@ -1499,7 +1501,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 	if (!matched) {
 		// dbgmsg as there can be legit mismatch e.g. when parsing foreign backend config
 		dbgmsg("Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
-		return (-ENOTFOUND);
+		return (-EUNKNOWN);
 	}
 
 	return (ALL_OK);
