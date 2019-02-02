@@ -243,6 +243,11 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
 
+	if (bmodel->set.tau <= 0) {
+		dbgerr("\"%s\": invalid value for tau", bmodel->name);
+		return (-EMISCONFIGURED);
+	}
+
 	// make sure specified outdoor sensor is available
 	ret = hardware_sensor_clone_time(bmodel->set.tid_outdoor, NULL);
 	if (ALL_OK != ret)
