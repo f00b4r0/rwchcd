@@ -2,7 +2,7 @@
 //  rWCHCd.c
 //  A simple daemon for rWCHC
 //
-//  (C) 2016-2018 Thibaut VARENE
+//  (C) 2016-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -11,9 +11,9 @@
  rwchcd: a central heating controller daemon for rWCHC.
  
  @author Thibaut VARENE
- @date 2016-2018
+ @date 2016-2019
  
- Copyright: (C) 2016-2018 Thibaut VARENE
+ Copyright: (C) 2016-2019 Thibaut VARENE
  
  Home page: http://hacks.slashdirt.org/hw/rwchc/
  */
@@ -22,14 +22,13 @@
  * @file
  * Main program.
  * @todo:
- * - Setup
  * - Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
- * - UI + dynamic plant creation / setup
- * - Config files
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
  * @bug all time() calls will return shit if time changes: fix!
+ * @todo config reload
+ * @todo ^2 fixed-point arithmetic
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
@@ -68,13 +67,6 @@
 
 #include "filecfg.h"
 
-#include "pump.h"
-#include "valve.h"
-#include "hcircuit.h"
-#include "dhwt.h"
-#include "heatsource.h"
-#include "boiler.h"
-
 #include "filecfg_parser.tab.h"
 extern FILE *filecfg_parser_in;
 
@@ -91,36 +83,6 @@ extern FILE *filecfg_parser_in;
 #endif
 
 #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
-
-#define RELAY_PUMP	9
-#define RELAY_PUMP_N	"pump"
-#define RELAY_VCLOSE	10
-#define RELAY_VCLOSE_N	"v_close"
-#define RELAY_VOPEN	11
-#define RELAY_VOPEN_N	"v_open"
-#define RELAY_BURNER	14
-#define RELAY_BURNER_N	"burner"
-
-#define SENSOR_OUTDOOR	1
-#define SENSOR_OUTDOOR_N	"outdoor"
-#define SENSOR_BOILER	2
-#define SENSOR_BOILER_N		"boiler"
-#define SENSOR_WATEROUT	3
-#define SENSOR_WATEROUT_N	"water out"
-#define SENSOR_WATERRET	4
-#define SENSOR_WATERRET_N	"water return"
-#define SENSOR_BOILRET	5
-#define SENSOR_BOILRET_N	"boiler return"
-
-#define HW_NAME		"prototype"
-
-#define HOUSE_BMODEL_N	"house"
-
-#define PUMP_CIRCUIT_N	"pump"
-#define VALVE_CIRCUIT_N	"valve"
-#define CIRCUIT_N	"circuit"
-#define DHWT_N		"dhwt"
-#define HEATSOURCE_N	"boiler"
 
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
@@ -155,11 +117,6 @@ static void sig_handler(int signum)
 }
 
 /*
- describe hardware
- register hardware
- set basic config
- describe plant
-
  init() initialize blank data structures etc
  online() performs configuration checks and brings subsystem online
  */

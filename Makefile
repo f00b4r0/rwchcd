@@ -120,7 +120,7 @@ doc:	Doxyfile
 # quick hack
 dbus.o:	$(DBUSGEN_BASE).h
 # rebuild rwchcd.o if anything changes to update version
-rwchcd.o:       $(filter-out rwchcd.o,$(OBJS))
+rwchcd.o:       $(filter-out rwchcd.o,$(OBJS)) filecfg_parser.tab.h
 
 tools:	tools/hwp1_prelays
 
