@@ -123,8 +123,8 @@ static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 {
 	tempid_t * restrict const tempid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "backend", true, NULL, false, NULL, },
-		{ NODESTR, "name", true, NULL, false, NULL, },
+		{ NODESTR, "backend", true, NULL, NULL, },
+		{ NODESTR, "name", true, NULL, NULL, },
 	};
 	const char * backend, * name;
 	int ret;
@@ -151,8 +151,8 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 {
 	relid_t * restrict const relid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "backend", true, NULL, false, NULL, },
-		{ NODESTR, "name", true, NULL, false, NULL, },
+		{ NODESTR, "backend", true, NULL, NULL, },
+		{ NODESTR, "name", true, NULL, NULL, },
 	};
 	const char * backend, * name;
 	int ret;
@@ -178,16 +178,16 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT, "t_comfort", false, NULL, false, NULL, },		// 0
-		{ NODEFLT|NODEINT, "t_eco", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, false, NULL, },		// 2
-		{ NODEFLT|NODEINT, "t_legionella", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, false, NULL, },		// 4
-		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "limit_wintmax", false, NULL, false, NULL, },	// 6
-		{ NODEFLT|NODEINT, "hysteresis", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, false, NULL, },	// 8
-		{ NODEINT, "limit_chargetime", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "t_comfort", false, NULL, NULL, },		// 0
+		{ NODEFLT|NODEINT, "t_eco", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, NULL, },		// 2
+		{ NODEFLT|NODEINT, "t_legionella", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, NULL, },		// 4
+		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "limit_wintmax", false, NULL, NULL, },	// 6
+		{ NODEFLT|NODEINT, "hysteresis", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, NULL, },	// 8
+		{ NODEINT, "limit_chargetime", false, NULL, NULL, },
 	};
 	struct s_dhwt_params * restrict const dhwt_params = priv;
 	const struct s_filecfg_parser_node *currnode;
@@ -266,17 +266,17 @@ invaliddata:
 static int hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT, "t_comfort", false, NULL, false, NULL, },		// 0
-		{ NODEFLT|NODEINT, "t_eco", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, false, NULL, },		// 2
-		{ NODEFLT|NODEINT, "t_offset", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "outhoff_comfort", false, NULL, false, NULL, },	// 4
-		{ NODEFLT|NODEINT, "outhoff_eco", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "outhoff_frostfree", false, NULL, false, NULL, },	// 6
-		{ NODEFLT|NODEINT, "outhoff_hysteresis", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "limit_wtmin", false, NULL, false, NULL, },		// 8
-		{ NODEFLT|NODEINT, "limit_wtmax", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, false, NULL, },	// 10
+		{ NODEFLT|NODEINT, "t_comfort", false, NULL, NULL, },		// 0
+		{ NODEFLT|NODEINT, "t_eco", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, NULL, },		// 2
+		{ NODEFLT|NODEINT, "t_offset", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "outhoff_comfort", false, NULL, NULL, },	// 4
+		{ NODEFLT|NODEINT, "outhoff_eco", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "outhoff_frostfree", false, NULL, NULL, },	// 6
+		{ NODEFLT|NODEINT, "outhoff_hysteresis", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "limit_wtmin", false, NULL, NULL, },		// 8
+		{ NODEFLT|NODEINT, "limit_wtmax", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, NULL, },	// 10
 	};
 	struct s_hcircuit_params * restrict const hcircuit_params = priv;
 	const struct s_filecfg_parser_node *currnode;
@@ -355,13 +355,13 @@ invaliddata:
 static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "summer_maintenance", false, NULL, false, NULL, },	// 0
-		{ NODEBOL, "logging", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "limit_tsummer", false, NULL, false, NULL, },	// 2
-		{ NODEFLT|NODEINT, "limit_tfrost", false, NULL, false, NULL, },
-		{ NODEINT, "sleeping_delay", false, NULL, false, NULL, },	// 4
-		{ NODELST, "def_hcircuit", false, NULL, false, NULL, },
-		{ NODELST, "def_dhwt", false, NULL, false, NULL, },		// 6
+		{ NODEBOL, "summer_maintenance", false, NULL, NULL, },	// 0
+		{ NODEBOL, "logging", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "limit_tsummer", false, NULL, NULL, },	// 2
+		{ NODEFLT|NODEINT, "limit_tfrost", false, NULL, NULL, },
+		{ NODEINT, "sleeping_delay", false, NULL, NULL, },	// 4
+		{ NODELST, "def_hcircuit", false, NULL, NULL, },
+		{ NODELST, "def_dhwt", false, NULL, NULL, },		// 6
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_config * restrict config;
@@ -436,9 +436,9 @@ invaliddata:
 static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "logging", false, NULL, false, NULL, },
-		{ NODEINT, "tau", true, NULL, false, NULL, },
-		{ NODELST, "tid_outdoor", true, NULL, false, NULL, },
+		{ NODEBOL, "logging", false, NULL, NULL, },
+		{ NODEINT, "tau", true, NULL, NULL, },
+		{ NODELST, "tid_outdoor", true, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_bmodel * bmodel;
@@ -530,8 +530,8 @@ static int models_parse(void * restrict const priv, const struct s_filecfg_parse
 static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "cooldown_time", false, NULL, false, NULL, },
-		{ NODELST, "rid_pump", true, NULL, false, NULL, },
+		{ NODEINT, "cooldown_time", false, NULL, NULL, },
+		{ NODELST, "rid_pump", true, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
@@ -583,8 +583,8 @@ static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser
 static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "sample_intvl", true, NULL, false, NULL, },
-		{ NODEINT, "amount", true, NULL, false, NULL, },
+		{ NODEINT, "sample_intvl", true, NULL, NULL, },
+		{ NODEINT, "amount", true, NULL, NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
 	int ret, sample_intvl, amount;
@@ -602,11 +602,11 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 static int valve_algo_PI_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "sample_intvl", true, NULL, false, NULL, },
-		{ NODEINT, "Tu", true, NULL, false, NULL, },
-		{ NODEINT, "Td", true, NULL, false, NULL, },
-		{ NODEINT, "tune_f", true, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "Ksmax", true, NULL, false, NULL, },
+		{ NODEINT, "sample_intvl", true, NULL, NULL, },
+		{ NODEINT, "Tu", true, NULL, NULL, },
+		{ NODEINT, "Td", true, NULL, NULL, },
+		{ NODEINT, "tune_f", true, NULL, NULL, },
+		{ NODEFLT|NODEINT, "Ksmax", true, NULL, NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
 	int ret, sample_intvl, Tu, Td, tune_f;
@@ -628,15 +628,15 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 static int valve_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "deadband", false, NULL, false, NULL, },	// 0
-		{ NODEINT, "ete_time", true, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "tdeadzone", false, NULL, false, NULL, },	// 2
-		{ NODELST, "tid_hot", false, NULL, false, NULL, },
-		{ NODELST, "tid_cold", false, NULL, false, NULL, },	// 4
-		{ NODELST, "tid_out", true, NULL, false, NULL, },
-		{ NODELST, "rid_hot", true, NULL, false, NULL, },	// 6
-		{ NODELST, "rid_cold", true, NULL, false, NULL, },
-		{ NODESTR, "algo", true, NULL, false, NULL, },		// 8
+		{ NODEINT, "deadband", false, NULL, NULL, },	// 0
+		{ NODEINT, "ete_time", true, NULL, NULL, },
+		{ NODEFLT|NODEINT, "tdeadzone", false, NULL, NULL, },	// 2
+		{ NODELST, "tid_hot", false, NULL, NULL, },
+		{ NODELST, "tid_cold", false, NULL, NULL, },	// 4
+		{ NODELST, "tid_out", true, NULL, NULL, },
+		{ NODELST, "rid_hot", true, NULL, NULL, },	// 6
+		{ NODELST, "rid_cold", true, NULL, NULL, },
+		{ NODESTR, "algo", true, NULL, NULL, },		// 8
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
@@ -770,21 +770,21 @@ static int runmode_parse(void * restrict const priv, const struct s_filecfg_pars
 static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "electric_failover", false, NULL, false, NULL, },	// 0
-		{ NODEBOL, "anti_legionella", false, NULL, false, NULL, },
-		{ NODEBOL, "legionella_recycle", false, NULL, false, NULL, },	// 2
-		{ NODEINT, "prio", false, NULL, false, NULL, },
-		{ NODESTR, "runmode", true, NULL, false, NULL, },		// 4
-		{ NODESTR, "dhwt_cprio", false, NULL, false, NULL, },
-		{ NODESTR, "force_mode", false, NULL, false, NULL, },		// 6
-		{ NODELST, "tid_bottom", false, NULL, false, NULL, },
-		{ NODELST, "tid_top", false, NULL, false, NULL, },		// 8
-		{ NODELST, "tid_win", false, NULL, false, NULL, },
-		{ NODELST, "tid_wout", false, NULL, false, NULL, },		// 10
-		{ NODELST, "rid_selfheater", false, NULL, false, NULL, },
-		{ NODELST, "params", false, NULL, false, NULL, },		// 12
-		{ NODESTR, "pump_feed", false, NULL, false, NULL, },
-		{ NODESTR, "pump_recycle", false, NULL, false, NULL, },		// 14
+		{ NODEBOL, "electric_failover", false, NULL, NULL, },	// 0
+		{ NODEBOL, "anti_legionella", false, NULL, NULL, },
+		{ NODEBOL, "legionella_recycle", false, NULL, NULL, },	// 2
+		{ NODEINT, "prio", false, NULL, NULL, },
+		{ NODESTR, "runmode", true, NULL, NULL, },		// 4
+		{ NODESTR, "dhwt_cprio", false, NULL, NULL, },
+		{ NODESTR, "force_mode", false, NULL, NULL, },		// 6
+		{ NODELST, "tid_bottom", false, NULL, NULL, },
+		{ NODELST, "tid_top", false, NULL, NULL, },		// 8
+		{ NODELST, "tid_win", false, NULL, NULL, },
+		{ NODELST, "tid_wout", false, NULL, NULL, },		// 10
+		{ NODELST, "rid_selfheater", false, NULL, NULL, },
+		{ NODELST, "params", false, NULL, NULL, },		// 12
+		{ NODESTR, "pump_feed", false, NULL, NULL, },
+		{ NODESTR, "pump_recycle", false, NULL, NULL, },		// 14
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_pump * pump;
@@ -927,16 +927,16 @@ static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser
 static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT, "tout1", true, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "twater1", true, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "tout2", true, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "twater2", true, NULL, false, NULL, },
-		{ NODEINT, "nH100", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "tout1", true, NULL, NULL, },
+		{ NODEFLT|NODEINT, "twater1", true, NULL, NULL, },
+		{ NODEFLT|NODEINT, "tout2", true, NULL, NULL, },
+		{ NODEFLT|NODEINT, "twater2", true, NULL, NULL, },
+		{ NODEINT, "nH100", false, NULL, NULL, },
 		// these shouldn't be user-configurable
-/*		{ NODEFLT, "toutinfl", false, NULL, false, NULL, },
-		{ NODEFLT, "twaterinfl", false, NULL, false, NULL, },
-		{ NODEFLT, "offset", false, NULL, false, NULL, },
-		{ NODEFLT, "slope", false, NULL, false, NULL, },*/
+/*		{ NODEFLT, "toutinfl", false, NULL, NULL, },
+		{ NODEFLT, "twaterinfl", false, NULL, NULL, },
+		{ NODEFLT, "offset", false, NULL, NULL, },
+		{ NODEFLT, "slope", false, NULL, NULL, },*/
 	};
 	struct s_hcircuit * restrict const hcircuit = priv;
 	temp_t tout1, twater1, tout2, twater2;
@@ -958,22 +958,22 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "fast_cooldown", false, NULL, false, NULL, },	// 0
-		{ NODEBOL, "logging", false, NULL, false, NULL, },
-		{ NODESTR, "runmode", true, NULL, false, NULL, },		// 2
-		{ NODEINT, "ambient_factor", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "wtemp_rorh", false, NULL, false, NULL, },		// 4
-		{ NODEINT, "am_tambient_tK", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "tambient_boostdelta", false, NULL, false, NULL, },	// 6
-		{ NODEINT, "boost_maxtime", false, NULL, false, NULL, },
-		{ NODELST, "tid_outgoing", true, NULL, false, NULL, },		// 8
-		{ NODELST, "tid_return", false, NULL, false, NULL, },
-		{ NODELST, "tid_ambient", false, NULL, false, NULL, },		// 10
-		{ NODELST, "params", false, NULL, false, NULL, },
-		{ NODESTR, "tlaw", true, NULL, false, NULL, },			// 12
-		{ NODESTR, "valve_mix", false, NULL, false, NULL, },
-		{ NODESTR, "pump_feed", false, NULL, false, NULL, },		// 14
-		{ NODESTR, "bmodel", false, NULL, false, NULL, },
+		{ NODEBOL, "fast_cooldown", false, NULL, NULL, },	// 0
+		{ NODEBOL, "logging", false, NULL, NULL, },
+		{ NODESTR, "runmode", true, NULL, NULL, },		// 2
+		{ NODEINT, "ambient_factor", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "wtemp_rorh", false, NULL, NULL, },		// 4
+		{ NODEINT, "am_tambient_tK", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "tambient_boostdelta", false, NULL, NULL, },	// 6
+		{ NODEINT, "boost_maxtime", false, NULL, NULL, },
+		{ NODELST, "tid_outgoing", true, NULL, NULL, },		// 8
+		{ NODELST, "tid_return", false, NULL, NULL, },
+		{ NODELST, "tid_ambient", false, NULL, NULL, },		// 10
+		{ NODELST, "params", false, NULL, NULL, },
+		{ NODESTR, "tlaw", true, NULL, NULL, },			// 12
+		{ NODESTR, "valve_mix", false, NULL, NULL, },
+		{ NODESTR, "pump_feed", false, NULL, NULL, },		// 14
+		{ NODESTR, "bmodel", false, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
@@ -1122,20 +1122,20 @@ static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_pa
 static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "idle_mode", false, NULL, false, NULL, },		// 0
-		{ NODEFLT|NODEINT, "hysteresis", true, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "limit_thardmax", true, NULL, false, NULL, },	// 2
-		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, false, NULL, },		// 4
-		{ NODEFLT|NODEINT, "limit_treturnmin", false, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "t_freeze", true, NULL, false, NULL, },		// 6
-		{ NODEINT, "burner_min_time", false, NULL, false, NULL, },
-		{ NODELST, "tid_boiler", true, NULL, false, NULL, },		// 8
-		{ NODELST, "tid_boiler_return", false, NULL, false, NULL, },
-		{ NODELST, "rid_burner_1", true, NULL, false, NULL, },		// 10
-		{ NODELST, "rid_burner_2", false, NULL, false, NULL, },
-		{ NODESTR, "pump_load", false, NULL, false, NULL, },		// 12
-		{ NODESTR, "valve_ret", false, NULL, false, NULL, },
+		{ NODESTR, "idle_mode", false, NULL, NULL, },		// 0
+		{ NODEFLT|NODEINT, "hysteresis", true, NULL, NULL, },
+		{ NODEFLT|NODEINT, "limit_thardmax", true, NULL, NULL, },	// 2
+		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, NULL, },		// 4
+		{ NODEFLT|NODEINT, "limit_treturnmin", false, NULL, NULL, },
+		{ NODEFLT|NODEINT, "t_freeze", true, NULL, NULL, },		// 6
+		{ NODEINT, "burner_min_time", false, NULL, NULL, },
+		{ NODELST, "tid_boiler", true, NULL, NULL, },		// 8
+		{ NODELST, "tid_boiler_return", false, NULL, NULL, },
+		{ NODELST, "rid_burner_1", true, NULL, NULL, },		// 10
+		{ NODELST, "rid_burner_2", false, NULL, NULL, },
+		{ NODESTR, "pump_load", false, NULL, NULL, },		// 12
+		{ NODESTR, "valve_ret", false, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_boiler_priv * boiler;
@@ -1282,10 +1282,10 @@ static int heatsource_type_parse(const struct s_plant * const plant, struct s_he
 static int heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "runmode", true, NULL, false, NULL, },		// 0
-		{ NODESTR, "type", true, NULL, false, NULL, },
-		{ NODEINT, "prio", false, NULL, false, NULL, },			// 2
-		{ NODEINT, "consumer_sdelay", false, NULL, false, NULL, },
+		{ NODESTR, "runmode", true, NULL, NULL, },		// 0
+		{ NODESTR, "type", true, NULL, NULL, },
+		{ NODEINT, "prio", false, NULL, NULL, },			// 2
+		{ NODEINT, "consumer_sdelay", false, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
@@ -1356,11 +1356,11 @@ static int heatsources_parse(void * restrict const priv, const struct s_filecfg_
 static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST, "pumps", false, pumps_parse, false, NULL, },
-		{ NODELST, "valves", false, valves_parse, false, NULL, },
-		{ NODELST, "dhwts", false, dhwts_parse, false, NULL, },
-		{ NODELST, "hcircuits", false, hcircuits_parse, false, NULL, },
-		{ NODELST, "heatsources", false, heatsources_parse, false, NULL, },
+		{ NODELST, "pumps", false, pumps_parse, NULL, },
+		{ NODELST, "valves", false, valves_parse, NULL, },
+		{ NODELST, "dhwts", false, dhwts_parse, NULL, },
+		{ NODELST, "hcircuits", false, hcircuits_parse, NULL, },
+		{ NODELST, "heatsources", false, heatsources_parse, NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_plant * plant;
@@ -1394,12 +1394,12 @@ static int hardware_backends_parse(void * restrict const priv, const struct s_fi
 static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "wday", true, NULL, false, NULL, },		// 0
-		{ NODEINT, "hour", true, NULL, false, NULL, },
-		{ NODEINT, "min", true, NULL, false, NULL, },		// 2
-		{ NODESTR, "runmode", false, NULL, false, NULL, },
-		{ NODESTR, "dhwmode", false, NULL, false, NULL, },	// 4
-		{ NODEBOL, "legionella", false, NULL, false, NULL, },
+		{ NODEINT, "wday", true, NULL, NULL, },		// 0
+		{ NODEINT, "hour", true, NULL, NULL, },
+		{ NODEINT, "min", true, NULL, NULL, },		// 2
+		{ NODESTR, "runmode", false, NULL, NULL, },
+		{ NODESTR, "dhwmode", false, NULL, NULL, },	// 4
+		{ NODEBOL, "legionella", false, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	int wday, hour, min, ret;
@@ -1479,12 +1479,11 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 		if (!strcmp(parsers[i].identifier, node->name)) {
 			dbgmsg("matched %s, %d", node->name, node->lineno);
 			matched = true;
-			if (parsers[i].seen) {
+			if (parsers[i].node) {
 				dbgerr("Ignoring duplicate node \"%s\" closing at line %d", node->name, node->lineno);
 				continue;
 			}
 			parsers[i].node = node;
-			parsers[i].seen = true;
 		}
 	}
 	if (!matched) {
@@ -1509,11 +1508,9 @@ int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const
 	unsigned int i;
 	int ret = ALL_OK;
 
-	// cleanup the parsers before run
-	for (i = 0; i < nparsers; i++) {
-		parsers[i].seen = false;
+	// cleanup the parsers nodes before run
+	for (i = 0; i < nparsers; i++)
 		parsers[i].node = NULL;
-	}
 
 	// attempt matching
 	for (list = nodelist; list; list = list->next)
@@ -1521,7 +1518,7 @@ int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const
 
 	// report missing required nodes
 	for (i = 0; i < nparsers; i++) {
-		if (parsers[i].required && (!parsers[i].seen || !parsers[i].node)) {
+		if (parsers[i].required && !parsers[i].node) {
 			dbgerr("Missing required configuration node \"%s\"", parsers[i].identifier);
 			ret = -ENOTFOUND;
 		}
@@ -1555,7 +1552,7 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 /**
  * Trigger all parsers from a parser list.
  * @param priv optional private data
- * @param parsers the parsers to trigger, with their respective .seen and .node elements correctly set
+ * @param parsers the parsers to trigger, with their respective .node elements correctly set
  * @param nparsers the number of parsers available in parsers[]
  * @return exec status. @note will abort execution at first error
  */
@@ -1565,7 +1562,7 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 	int ret;
 
 	for (i = 0; i < nparsers; i++) {
-		if (parsers[i].seen && parsers[i].parser) {
+		if (parsers[i].node && parsers[i].parser) {
 			dbgmsg("running parser \"%s\"", parsers[i].identifier);
 			ret = parsers[i].parser(priv, parsers[i].node);
 			if (ALL_OK != ret)
@@ -1579,11 +1576,11 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
-		{ NODELST, "backends", false, hardware_backends_parse, false, NULL, },
-		{ NODELST, "defconfig", false, defconfig_parse, false, NULL, },
-		{ NODELST, "models", false, models_parse, false, NULL, },
-		{ NODELST, "plant", true, plant_parse, false, NULL, },
-		{ NODELST, "scheduler", false, scheduler_parse, false, NULL, },
+		{ NODELST, "backends", false, hardware_backends_parse, NULL, },
+		{ NODELST, "defconfig", false, defconfig_parse, NULL, },
+		{ NODELST, "models", false, models_parse, NULL, },
+		{ NODELST, "plant", true, plant_parse, NULL, },
+		{ NODELST, "scheduler", false, scheduler_parse, NULL, },
 	};
 	struct s_runtime * const runtime = runtime_get();
 	int ret;

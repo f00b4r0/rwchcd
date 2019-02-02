@@ -149,9 +149,9 @@ static int parse_type_lcdbl(void * restrict const priv, const struct s_filecfg_p
 static int parse_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "nsamples", true, parse_type_nsamples, false, NULL, },
-		{ NODEINT, "nsensors", true, parse_type_nsensors, false, NULL, },
-		{ NODEINT, "lcdbl", false, parse_type_lcdbl, false, NULL, },
+		{ NODEINT, "nsamples", true, parse_type_nsamples, NULL, },
+		{ NODEINT, "nsensors", true, parse_type_nsensors, NULL, },
+		{ NODEINT, "lcdbl", false, parse_type_lcdbl, NULL, },
 	};
 	int ret = ALL_OK;
 
@@ -169,9 +169,9 @@ static int parse_type(void * restrict const priv, const struct s_filecfg_parser_
 static int sensor_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "id", true, NULL, false, NULL, },
-		{ NODESTR, "type", true, NULL, false, NULL, },
-		{ NODEFLT|NODEINT, "offset", false, NULL, false, NULL, },
+		{ NODEINT, "id", true, NULL, NULL, },
+		{ NODESTR, "type", true, NULL, NULL, },
+		{ NODEFLT|NODEINT, "offset", false, NULL, NULL, },
 	};
 	const char * sensor_name, *sensor_model;
 	float sensor_offset;
@@ -189,7 +189,7 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	sensor_name = node->value.stringval;
 	sensor_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
 	sensor_model = parsers[1].node->value.stringval;
-	if (parsers[2].seen)
+	if (parsers[2].node)
 		sensor_offset = (NODEFLT == parsers[2].node->type) ? parsers[2].node->value.floatval : parsers[2].node->value.intval;
 	else
 		sensor_offset = 0;
@@ -230,8 +230,8 @@ static int sensors_parse(void * restrict const priv, const struct s_filecfg_pars
 static int relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "id", true, NULL, false, NULL, },
-		{ NODEBOL, "failstate", true, NULL, false, NULL, },
+		{ NODEINT, "id", true, NULL, NULL, },
+		{ NODEBOL, "failstate", true, NULL, NULL, },
 	};
 	const char * relay_name;
 	rid_t relay_id;
@@ -280,9 +280,9 @@ static int relays_parse(void * restrict const priv, const struct s_filecfg_parse
 int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers hw_p1_parsers[] = {
-		{ NODESTR, "type", true, parse_type, false, NULL, },
-		{ NODELST, "sensors", false, sensors_parse, false, NULL, },
-		{ NODELST, "relays", false, relays_parse, false, NULL, },
+		{ NODESTR, "type", true, parse_type, NULL, },
+		{ NODELST, "sensors", false, sensors_parse, NULL, },
+		{ NODELST, "relays", false, relays_parse, NULL, },
 	};
 	void * hw;
 	int ret;

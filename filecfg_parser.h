@@ -59,8 +59,7 @@ struct s_filecfg_parser_parsers {
 	const char * const identifier;			///< Expected node name for this parser
 	const bool required;				///< True if node is required to exist
 	parser_t parser;				///< node data parser callback
-	// the next two elements will be dynamically updated by filecfg_parser_match_*()
-	bool seen;					///< True if the identifier has been matched
+	// the next element will be dynamically updated by filecfg_parser_match_*()
 	const struct s_filecfg_parser_node *node;	///< Pointer to matched node
 };
 
