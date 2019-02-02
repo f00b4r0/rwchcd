@@ -324,10 +324,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
 	const time_t now = time(NULL);
-	temp_t water_temp, curr_temp, ret_temp, saved_temp, lwtmin, lwtmax;
-#ifdef DEBUG
-	temp_t out_temp;
-#endif
+	temp_t water_temp, curr_temp, ret_temp, lwtmin, lwtmax, temp;
 	int ret;
 
 	assert(runtime);
@@ -410,8 +407,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		water_temp = lwtmax;
 
 	// save "non-interfered" target water temp, i.e. the real target (within enforced limits)
-	saved_temp = water_temp;
-	circuit->run.target_wtemp = saved_temp;
+	circuit->run.target_wtemp = water_temp;
 
 	// alterations to the computed value only make sense if a mixing valve is available
 	if (circuit->valve_mix) {
@@ -425,8 +421,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			}
 			else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
 				if (now - circuit->run.rorh_update_time >= 60) {	// 1mn has past, update target - XXX hardcoded 60s resolution
-					curr_temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);	// we hijack curr_temp here to save a variable
-					water_temp = (curr_temp < water_temp) ? curr_temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
+					temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);
+					water_temp = (temp < water_temp) ? temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
 					circuit->run.rorh_last_target = water_temp;
 					circuit->run.rorh_update_time = now;
 				}
@@ -462,14 +458,13 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 #ifdef DEBUG
 	hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
-	hardware_sensor_clone_temp(circuit->set.tid_outgoing, &out_temp);
-	dbgmsg("\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
+	dbgmsg("\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
-	       temp_to_celsius(water_temp), temp_to_celsius(out_temp), temp_to_celsius(ret_temp));
+	       temp_to_celsius(circuit->run.target_wtemp), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));
 #endif
 
 	// heat request is always computed based on non-interfered water_temp value
-	circuit->run.heat_request = saved_temp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_hcircuit.temp_inoffset);
+	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_hcircuit.temp_inoffset);
 
 valve:
 	// adjust valve position if necessary
