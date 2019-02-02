@@ -178,21 +178,22 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT, "t_comfort", false, NULL, false, NULL, },		// 0
-		{ NODEFLT, "t_eco", false, NULL, false, NULL, },
-		{ NODEFLT, "t_frostfree", false, NULL, false, NULL, },		// 2
-		{ NODEFLT, "t_legionella", false, NULL, false, NULL, },
-		{ NODEFLT, "limit_tmin", false, NULL, false, NULL, },		// 4
-		{ NODEFLT, "limit_tmax", false, NULL, false, NULL, },
-		{ NODEFLT, "limit_wintmax", false, NULL, false, NULL, },	// 6
-		{ NODEFLT, "hysteresis", false, NULL, false, NULL, },
-		{ NODEFLT, "temp_inoffset", false, NULL, false, NULL, },	// 8
+		{ NODEFLT|NODEINT, "t_comfort", false, NULL, false, NULL, },		// 0
+		{ NODEFLT|NODEINT, "t_eco", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, false, NULL, },		// 2
+		{ NODEFLT|NODEINT, "t_legionella", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, false, NULL, },		// 4
+		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "limit_wintmax", false, NULL, false, NULL, },	// 6
+		{ NODEFLT|NODEINT, "hysteresis", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, false, NULL, },	// 8
 		{ NODEINT, "limit_chargetime", false, NULL, false, NULL, },
 	};
 	struct s_dhwt_params * restrict const dhwt_params = priv;
 	const struct s_filecfg_parser_node *currnode;
 	unsigned int i;
 	float fv;
+	int iv;
 	temp_t delta, celsius;
 
 	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
@@ -202,9 +203,16 @@ static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_
 		if (!currnode)
 			continue;
 
-		fv = currnode->value.floatval;
-		delta = deltaK_to_temp(fv);
-		celsius = celsius_to_temp(fv);
+		if (NODEFLT == currnode->type) {
+			fv = currnode->value.floatval;
+			delta = deltaK_to_temp(fv);
+			celsius = celsius_to_temp(fv);
+		}
+		else {	// NODEINT
+			iv = currnode->value.intval;
+			delta = deltaK_to_temp(iv);
+			celsius = celsius_to_temp(iv);
+		}
 
 		switch (i) {
 			case 0:
@@ -258,22 +266,23 @@ invaliddata:
 static int hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT, "t_comfort", false, NULL, false, NULL, },		// 0
-		{ NODEFLT, "t_eco", false, NULL, false, NULL, },
-		{ NODEFLT, "t_frostfree", false, NULL, false, NULL, },		// 2
-		{ NODEFLT, "t_offset", false, NULL, false, NULL, },
-		{ NODEFLT, "outhoff_comfort", false, NULL, false, NULL, },	// 4
-		{ NODEFLT, "outhoff_eco", false, NULL, false, NULL, },
-		{ NODEFLT, "outhoff_frostfree", false, NULL, false, NULL, },	// 6
-		{ NODEFLT, "outhoff_hysteresis", false, NULL, false, NULL, },
-		{ NODEFLT, "limit_wtmin", false, NULL, false, NULL, },		// 8
-		{ NODEFLT, "limit_wtmax", false, NULL, false, NULL, },
-		{ NODEFLT, "temp_inoffset", false, NULL, false, NULL, },	// 10
+		{ NODEFLT|NODEINT, "t_comfort", false, NULL, false, NULL, },		// 0
+		{ NODEFLT|NODEINT, "t_eco", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, false, NULL, },		// 2
+		{ NODEFLT|NODEINT, "t_offset", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "outhoff_comfort", false, NULL, false, NULL, },	// 4
+		{ NODEFLT|NODEINT, "outhoff_eco", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "outhoff_frostfree", false, NULL, false, NULL, },	// 6
+		{ NODEFLT|NODEINT, "outhoff_hysteresis", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "limit_wtmin", false, NULL, false, NULL, },		// 8
+		{ NODEFLT|NODEINT, "limit_wtmax", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, false, NULL, },	// 10
 	};
 	struct s_hcircuit_params * restrict const hcircuit_params = priv;
 	const struct s_filecfg_parser_node *currnode;
 	unsigned int i;
 	float fv;
+	int iv;
 	temp_t delta, celsius;
 
 	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
@@ -283,9 +292,16 @@ static int hcircuit_params_parse(void * restrict const priv, const struct s_file
 		if (!currnode)
 			continue;
 
-		fv = currnode->value.floatval;
-		delta = deltaK_to_temp(fv);
-		celsius = celsius_to_temp(fv);
+		if (NODEFLT == currnode->type) {
+			fv = currnode->value.floatval;
+			delta = deltaK_to_temp(fv);
+			celsius = celsius_to_temp(fv);
+		}
+		else {	// NODEINT
+			iv = currnode->value.intval;
+			delta = deltaK_to_temp(iv);
+			celsius = celsius_to_temp(iv);
+		}
 
 		switch (i) {
 			case 0:
@@ -341,8 +357,8 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL, "summer_maintenance", false, NULL, false, NULL, },	// 0
 		{ NODEBOL, "logging", false, NULL, false, NULL, },
-		{ NODEFLT, "limit_tsummer", false, NULL, false, NULL, },	// 2
-		{ NODEFLT, "limit_tfrost", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "limit_tsummer", false, NULL, false, NULL, },	// 2
+		{ NODEFLT|NODEINT, "limit_tfrost", false, NULL, false, NULL, },
 		{ NODEINT, "sleeping_delay", false, NULL, false, NULL, },	// 4
 		{ NODELST, "def_hcircuit", false, NULL, false, NULL, },
 		{ NODELST, "def_dhwt", false, NULL, false, NULL, },		// 6
@@ -351,6 +367,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 	struct s_config * restrict config;
 	const struct s_filecfg_parser_node *currnode;
 	unsigned int i;
+	temp_t celsius;
 	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
@@ -374,11 +391,18 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 				config->logging = currnode->value.boolval;
 				break;
 			case 2:
-				ret = config_set_tsummer(config, celsius_to_temp(currnode->value.floatval));
-				break;
 			case 3:
-				ret = config_set_tfrost(config, celsius_to_temp(currnode->value.floatval));
-				break;
+				celsius = (NODEFLT == currnode->type) ? celsius_to_temp(currnode->value.floatval) : celsius_to_temp(currnode->value.intval);
+				switch (i) {
+					case 2:
+						ret = config_set_tsummer(config, celsius);
+						break;
+					case 3:
+						ret = config_set_tfrost(config, celsius);
+						break;
+					default:
+						break;
+				}
 			case 4:
 				if (currnode->value.intval < 0)
 					goto invaliddata;
@@ -582,7 +606,7 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 		{ NODEINT, "Tu", true, NULL, false, NULL, },
 		{ NODEINT, "Td", true, NULL, false, NULL, },
 		{ NODEINT, "tune_f", true, NULL, false, NULL, },
-		{ NODEFLT, "Ksmax", true, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "Ksmax", true, NULL, false, NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
 	int ret, sample_intvl, Tu, Td, tune_f;
@@ -596,7 +620,7 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	Tu = parsers[1].node->value.intval;
 	Td = parsers[2].node->value.intval;
 	tune_f = parsers[3].node->value.intval;
-	Ksmax = parsers[4].node->value.floatval;
+	Ksmax = (NODEFLT == parsers[4].node->type) ? parsers[4].node->value.floatval : parsers[4].node->value.intval;
 
 	return (valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, tune_f));
 }
@@ -606,7 +630,7 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "deadband", false, NULL, false, NULL, },	// 0
 		{ NODEINT, "ete_time", true, NULL, false, NULL, },
-		{ NODEFLT, "tdeadzone", false, NULL, false, NULL, },	// 2
+		{ NODEFLT|NODEINT, "tdeadzone", false, NULL, false, NULL, },	// 2
 		{ NODELST, "tid_hot", false, NULL, false, NULL, },
 		{ NODELST, "tid_cold", false, NULL, false, NULL, },	// 4
 		{ NODELST, "tid_out", true, NULL, false, NULL, },
@@ -652,7 +676,7 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 					valve->set.ete_time = iv;
 				break;
 			case 2:
-				fv = currnode->value.floatval;
+				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
 				if (fv < 0)
 					goto invaliddata;
 				else
@@ -903,10 +927,10 @@ static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser
 static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT, "tout1", true, NULL, false, NULL, },
-		{ NODEFLT, "twater1", true, NULL, false, NULL, },
-		{ NODEFLT, "tout2", true, NULL, false, NULL, },
-		{ NODEFLT, "twater2", true, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "tout1", true, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "twater1", true, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "tout2", true, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "twater2", true, NULL, false, NULL, },
 		{ NODEINT, "nH100", false, NULL, false, NULL, },
 		// these shouldn't be user-configurable
 /*		{ NODEFLT, "toutinfl", false, NULL, false, NULL, },
@@ -922,10 +946,10 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	tout1 = celsius_to_temp(parsers[0].node->value.floatval);
-	twater1 = celsius_to_temp(parsers[1].node->value.floatval);
-	tout2 = celsius_to_temp(parsers[2].node->value.floatval);
-	twater2 = celsius_to_temp(parsers[3].node->value.floatval);
+	tout1 = (NODEFLT == parsers[0].node->type) ? celsius_to_temp(parsers[0].node->value.floatval) : celsius_to_temp(parsers[0].node->value.intval);
+	twater1 = (NODEFLT == parsers[1].node->type) ? celsius_to_temp(parsers[1].node->value.floatval) : celsius_to_temp(parsers[1].node->value.intval);
+	tout2 = (NODEFLT == parsers[2].node->type) ? celsius_to_temp(parsers[2].node->value.floatval) : celsius_to_temp(parsers[2].node->value.intval);
+	twater2 = (NODEFLT == parsers[3].node->type) ? celsius_to_temp(parsers[3].node->value.floatval) : celsius_to_temp(parsers[3].node->value.intval);
 	nH100 = parsers[4].node->value.intval;
 
 	return (circuit_make_bilinear(hcircuit, tout1, twater1, tout2, twater2, nH100));
@@ -938,9 +962,9 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 		{ NODEBOL, "logging", false, NULL, false, NULL, },
 		{ NODESTR, "runmode", true, NULL, false, NULL, },		// 2
 		{ NODEINT, "ambient_factor", false, NULL, false, NULL, },
-		{ NODEFLT, "wtemp_rorh", false, NULL, false, NULL, },		// 4
+		{ NODEFLT|NODEINT, "wtemp_rorh", false, NULL, false, NULL, },		// 4
 		{ NODEINT, "am_tambient_tK", false, NULL, false, NULL, },
-		{ NODEFLT, "tambient_boostdelta", false, NULL, false, NULL, },	// 6
+		{ NODEFLT|NODEINT, "tambient_boostdelta", false, NULL, false, NULL, },	// 6
 		{ NODEINT, "boost_maxtime", false, NULL, false, NULL, },
 		{ NODELST, "tid_outgoing", true, NULL, false, NULL, },		// 8
 		{ NODELST, "tid_return", false, NULL, false, NULL, },
@@ -996,7 +1020,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				hcircuit->set.ambient_factor = iv;
 				break;
 			case 4:
-				fv = currnode->value.floatval;
+				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
 				if (fv < 0)
 					goto invaliddata;
 				hcircuit->set.wtemp_rorh = deltaK_to_temp(fv);
@@ -1008,7 +1032,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				hcircuit->set.am_tambient_tK = iv;
 				break;
 			case 6:
-				fv = currnode->value.floatval;
+				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
 				hcircuit->set.tambient_boostdelta = deltaK_to_temp(fv);	// allow negative values because why not
 				break;
 			case 7:
@@ -1099,12 +1123,12 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR, "idle_mode", false, NULL, false, NULL, },		// 0
-		{ NODEFLT, "hysteresis", true, NULL, false, NULL, },
-		{ NODEFLT, "limit_thardmax", true, NULL, false, NULL, },	// 2
-		{ NODEFLT, "limit_tmax", false, NULL, false, NULL, },
-		{ NODEFLT, "limit_tmin", false, NULL, false, NULL, },		// 4
-		{ NODEFLT, "limit_treturnmin", false, NULL, false, NULL, },
-		{ NODEFLT, "t_freeze", true, NULL, false, NULL, },		// 6
+		{ NODEFLT|NODEINT, "hysteresis", true, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "limit_thardmax", true, NULL, false, NULL, },	// 2
+		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, false, NULL, },		// 4
+		{ NODEFLT|NODEINT, "limit_treturnmin", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "t_freeze", true, NULL, false, NULL, },		// 6
 		{ NODEINT, "burner_min_time", false, NULL, false, NULL, },
 		{ NODELST, "tid_boiler", true, NULL, false, NULL, },		// 8
 		{ NODELST, "tid_boiler_return", false, NULL, false, NULL, },
@@ -1153,22 +1177,19 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 				}
 				break;
 			case 1:
-				fv = currnode->value.floatval;
-				if (fv < 0)
-					goto invaliddata;
-				else
-					boiler->set.hysteresis = deltaK_to_temp(fv);
-				break;
 			case 2:
 			case 3:
 			case 4:
 			case 5:
 			case 6:
-				fv = currnode->value.floatval;
+				fv = (NODEFLT == currnode->type) ?  currnode->value.floatval : currnode->value.intval;
 				if (fv < 0)
 					goto invaliddata;
 				temp = celsius_to_temp(fv);
 				switch (i) {
+					case 1:
+						boiler->set.hysteresis = deltaK_to_temp(fv);
+						break;
 					case 2:
 						boiler->set.limit_thardmax = temp;
 						break;

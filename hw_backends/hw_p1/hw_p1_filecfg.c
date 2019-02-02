@@ -171,7 +171,7 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "id", true, NULL, false, NULL, },
 		{ NODESTR, "type", true, NULL, false, NULL, },
-		{ NODEFLT, "offset", false, NULL, false, NULL, },
+		{ NODEFLT|NODEINT, "offset", false, NULL, false, NULL, },
 	};
 	const char * sensor_name, *sensor_model;
 	float sensor_offset;
@@ -190,7 +190,7 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	sensor_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
 	sensor_model = parsers[1].node->value.stringval;
 	if (parsers[2].seen)
-		sensor_offset = parsers[2].node->value.floatval;
+		sensor_offset = (NODEFLT == parsers[2].node->type) ? parsers[2].node->value.floatval : parsers[2].node->value.intval;
 	else
 		sensor_offset = 0;
 
