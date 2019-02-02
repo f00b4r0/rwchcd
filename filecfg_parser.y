@@ -37,7 +37,7 @@
 
 %%
 
-start: node_list			{ filecfg_parser_process_nodelist($1); filecfg_parser_free_nodelist($1); }
+start: node_list			{ filecfg_parser_process_config($1); filecfg_parser_free_nodelist($1); }
 
 node_list: /* empty */			{ $$ = NULL; }
 	| node_list node		{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }

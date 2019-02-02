@@ -66,7 +66,7 @@ struct s_filecfg_parser_parsers {
 struct s_filecfg_parser_node * filecfg_parser_new_node(int lineno, int type, char *name, union u_filecfg_parser_nodeval value, struct s_filecfg_parser_nodelist *children);
 struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_filecfg_parser_nodelist *next, struct s_filecfg_parser_node *node);
 
-int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *nodelist);
+int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodelist);
 void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist);
 int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);

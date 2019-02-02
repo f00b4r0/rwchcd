@@ -1573,7 +1573,7 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 	return (ret);
 }
 
-int filecfg_parser_process_nodelist(const struct s_filecfg_parser_nodelist *nodelist)
+int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST, "backends", false, hardware_backends_parse, NULL, },
