@@ -18,7 +18,6 @@
 
 /** Config structure */
 struct s_config {
-	bool restored;			///< true if config has been restored from storage
 	bool configured;		///< true if properly configured
 	bool summer_maintenance;	///< true if pumps/valves should be run periodically in summer.
 	bool logging;			///< true if data logging should be enabled
@@ -31,11 +30,8 @@ struct s_config {
 
 struct s_config * config_new(void);
 void config_del(struct s_config * config);
-int config_init(struct s_config * const config);
 
 int config_set_tsummer(struct s_config * const config, const temp_t tsummer);
 int config_set_tfrost(struct s_config * const config, const temp_t tfrost);
-int config_save(const struct s_config * const config);
-void config_exit(struct s_config * const config);
 
 #endif /* rwchcd_config_h */

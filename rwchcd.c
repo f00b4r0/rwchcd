@@ -247,7 +247,6 @@ static void exit_process(void)
 	filecfg_dump();
 	plant_del(runtime->plant);
 	models_exit();
-	config_exit(runtime->config);
 	config_del(runtime->config);
 	runtime_exit();
 	hardware_exit();
