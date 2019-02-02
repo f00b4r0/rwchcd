@@ -60,7 +60,7 @@ struct s_filecfg_parser_node * filecfg_parser_new_node(int lineno, int type, cha
 		perror(NULL);
 		exit(-1);
 	}
-
+#if 0
 	printf("new_node: %d, %d, %s, ", lineno, type, name);
 	switch (type) {
 		case NODEINT:
@@ -77,7 +77,7 @@ struct s_filecfg_parser_node * filecfg_parser_new_node(int lineno, int type, cha
 			printf("{list}\n");
 			break;
 	}
-
+#endif
 	node->lineno = lineno;
 	node->type = type;
 	node->name = name;
@@ -480,7 +480,17 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 	return (ret);
 }
 
-int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser)
+/**
+ * Parse a list of sibling nodes.
+ * @param priv opaque private data pointer
+ * @param nodelist the list of sibling nodes
+ * @param nname the expected name for sibling nodes
+ * @param ntype the expected type for sibling nodes
+ * @param parser the parser to apply to each sibling node
+ * @return exec status
+ */
+int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist,
+				  const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser)
 {
 	const struct s_filecfg_parser_nodelist *nlist;
 	const struct s_filecfg_parser_node *node;
@@ -1573,6 +1583,11 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 	return (ret);
 }
 
+/**
+ * Process the root list of config nodes.
+ * @param nodelist the root nodelist for all the configuration nodes
+ * @return exec status
+ */
 int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
@@ -1585,12 +1600,13 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodeli
 	struct s_runtime * const runtime = runtime_get();
 	int ret;
 
-	printf("\n\nBegin parse\n");
+	dbgmsg("Begin parsing config");
 	ret = filecfg_parser_match_nodelist(nodelist, root_parsers, ARRAY_SIZE(root_parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
 	ret = filecfg_parser_run_parsers(runtime, root_parsers, ARRAY_SIZE(root_parsers));
+	dbgmsg("Done parsing config");
 
 	return (ret);
 }

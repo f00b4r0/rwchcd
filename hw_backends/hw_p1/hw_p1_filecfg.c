@@ -236,7 +236,7 @@ static int relay_parse(void * restrict const priv, const struct s_filecfg_parser
 	const char * relay_name;
 	rid_t relay_id;
 	bool failstate;
-	int ret, retval;
+	int ret;
 
 	dbgmsg("parsing relay %d", node->lineno);
 
