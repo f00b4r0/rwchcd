@@ -12,7 +12,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "hw_backends.h"

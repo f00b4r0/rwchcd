@@ -11,7 +11,6 @@
  * Hardware Prototype 1 file configuration implementation.
  */
 
-#include <stdio.h>
 #include <inttypes.h>
 #include <assert.h>
 

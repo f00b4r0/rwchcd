@@ -26,7 +26,6 @@
  * @warning this implementation is NOT thread safe: callers must ensure proper synchronization.
  */
 
-#include <stdio.h>
 #include <unistd.h>	// sleep/usleep
 #include <assert.h>
 #include <wiringPiSPI.h>
