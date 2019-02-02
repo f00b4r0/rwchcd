@@ -465,6 +465,7 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 		dbgerr("Invalid negative value for \"%s\" closing at line %d", currnode->name, currnode->lineno);
 		return (-EINVALID);
 	}
+	bmodel->set.tau = iv;
 
 	currnode = parsers[2].node;
 	ret = tid_parse(&bmodel->set.tid_outdoor, currnode);
