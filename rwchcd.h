@@ -84,6 +84,8 @@ enum e_execs {
 	EMISMATCH,	///< version mismatch
 	EHARDWARE,	///< hardware errors
 	ENOTFOUND,	///< entity not found
+	EUNKNOWN,	///< entity is unknown
+	EEMPTY,		///< entity is empty
 	EGENERIC,
 };
 

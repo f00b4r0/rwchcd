@@ -9,6 +9,7 @@
 /**
  * @file
  * Hardware Prototype 1 driver implementation.
+ * @note This driver can only accomodate a @b SINGLE instance of the hardware.
  */
 
 #include <time.h>	// time

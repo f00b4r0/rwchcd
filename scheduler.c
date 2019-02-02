@@ -163,19 +163,23 @@ void * scheduler_thread(void * arg)
 
 /**
  * Add a schedule entry.
- * @param tm_wday target day of the week (0 = Sunday)
+ * @param tm_wday target day of the week (0 = Sunday = 7)
  * @param tm_hour target hour of the day (0 - 23)
  * @param tm_min target min of the hour (0 - 59)
  * @param runmode target runmode for this schedule entry
  * @param dhwmode target dhwmode for this schedule entry
+ * @param legionella true if legionella charge should be triggered for this entry
+ * @warning will not report duplicate entries
  */
-int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode)
+int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella)
 {
 	struct s_schedule * sch = NULL, * sch_before, * sch_after;
 	
 	// sanity checks on params
-	if ((tm_wday < 0) || (tm_wday > 6))
+	if ((tm_wday < 0) || (tm_wday > 7))
 		return (-EINVALID);
+	if (7 == tm_wday)		// convert sunday
+		tm_wday = 0;
 	if ((tm_hour < 0) || (tm_hour > 23))
 		return (-EINVALID);
 	if ((tm_min < 0) || (tm_min > 59))
@@ -209,6 +213,7 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	sch->tm_min = tm_min;
 	sch->runmode = runmode;
 	sch->dhwmode = dhwmode;
+	sch->legionella = legionella;
 	
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
@@ -222,8 +227,8 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 		sch_before->next = sch;
 	/* End fence section */
 	
-	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d",
-	       tm_wday, tm_hour, tm_min, runmode, dhwmode);
+	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d, legionella: %d",
+	       tm_wday, tm_hour, tm_min, runmode, dhwmode, legionella);
 	
 	return (ALL_OK);
 }

@@ -1,5 +1,8 @@
 *.[od]
 *-generated.[ch]
+*.tab.[ch]
+*.lex.[ch]
+*.output
 hw_backends/hw_p1/rwchc_export.h
 rwchcd
 doc/

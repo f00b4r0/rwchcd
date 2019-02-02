@@ -701,7 +701,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
 	if ((VA_NONE != valve->set.algo) || (valve->priv))
 		return (-EEXISTS);
 
-	if (amount > 100)
+	if ((amount > 100) || (intvl < 1))
 		return (-EINVALID);
 
 	// create priv element

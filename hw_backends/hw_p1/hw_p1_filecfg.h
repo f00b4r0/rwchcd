@@ -15,5 +15,6 @@
 #define hw_p1_filecfg_h
 
 int hw_p1_filecfg_dump(void * priv);
+int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node);
 
 #endif /* hw_p1_filecfg_h */

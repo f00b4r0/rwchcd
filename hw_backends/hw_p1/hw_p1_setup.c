@@ -13,6 +13,7 @@
 
 #include <stdlib.h>	// calloc/free
 #include <string.h>	// memset/strdup
+#include <assert.h>
 
 #include "hw_p1_setup.h"
 
@@ -31,12 +32,13 @@ void * hw_p1_setup_new(void)
 
 /**
  * Set hardware configuration for LCD backlight level.
+ * @param hw private hw_p1 hardware data
  * @param percent backlight level (0 = off, 100 = full)
  * @return exec status
  */
-int hw_p1_setup_setbl(const uint8_t percent)
+int hw_p1_setup_setbl(struct s_hw_p1_pdata * restrict const hw, const uint8_t percent)
 {
-	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+	assert(hw);
 
 	if (percent > 100)
 		return (-EINVALID);
@@ -48,12 +50,13 @@ int hw_p1_setup_setbl(const uint8_t percent)
 
 /**
  * Set hardware configuration for number of sensors.
+ * @param hw private hw_p1 hardware data
  * @param lastid last connected sensor id
  * @return exec status
  */
-int hw_p1_setup_setnsensors(const rid_t lastid)
+int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const rid_t lastid)
 {
-	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+	assert(hw);
 
 	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
 		return (-EINVALID);
@@ -65,12 +68,13 @@ int hw_p1_setup_setnsensors(const rid_t lastid)
 
 /**
  * Set number of temperature samples for readouts.
+ * @param hw private hw_p1 hardware data
  * @param nsamples number of samples
  * @return exec status
  */
-int hw_p1_setup_setnsamples(const uint_fast8_t nsamples)
+int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t nsamples)
 {
-	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+	assert(hw);
 
 	if (!nsamples)
 		return (-EINVALID);
@@ -82,16 +86,18 @@ int hw_p1_setup_setnsamples(const uint_fast8_t nsamples)
 
 /**
  * Configure a temperature sensor.
+ * @param hw private hw_p1 hardware data
  * @param id the physical id of the sensor to configure (starting from 1)
  * @param type the sensor type (PT1000...)
  * @param offset a temperature offset to apply to this particular sensor value
  * @param name @b unique user-defined name describing the sensor
  * @return exec status
  */
-int hw_p1_setup_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name)
+int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name)
 {
-	struct s_hw_p1_pdata * restrict const hw = &Hardware;
 	char * str = NULL;
+
+	assert(hw);
 
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)) || !name)
 		return (-EINVALID);
@@ -124,12 +130,13 @@ int hw_p1_setup_sensor_configure(const sid_t id, const enum e_hw_p1_stype type, 
 
 /**
  * Deconfigure a temperature sensor.
+ * @param hw private hw_p1 hardware data
  * @param id the physical id of the sensor to deconfigure (starting from 1)
  * @return exec status
  */
-int hw_p1_setup_sensor_deconfigure(const sid_t id)
+int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, const sid_t id)
 {
-	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+	assert(hw);
 
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
@@ -147,16 +154,18 @@ int hw_p1_setup_sensor_deconfigure(const sid_t id)
 /**
  * Request a hardware relay.
  * Ensures that the desired hardware relay is available and grabs it.
+ * @param hw private hw_p1 hardware data
  * @param id target relay id (starting from 1)
  * @param failstate the state assumed by the hardware relay in standalone failover (controlling software failure)
  * @param name @b unique user-defined name for this relay (string will be copied locally)
  * @return exec status
  * @note sets relay's run.off_since
  */
-int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char * const name)
+int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const rid_t id, const bool failstate, const char * const name)
 {
-	struct s_hw_p1_pdata * restrict const hw = &Hardware;
 	char * str = NULL;
+
+	assert(hw);
 
 	if (!id || (id > ARRAY_SIZE(hw->Relays)) || !name)
 		return (-EINVALID);
@@ -186,13 +195,14 @@ int hw_p1_setup_relay_request(const rid_t id, const bool failstate, const char *
 
 /**
  * Release a hardware relay.
+ * @param hw private hw_p1 hardware data
  * Frees and cleans up the target hardware relay.
  * @param id target relay id (starting from 1)
  * @return exec status
  */
-int hw_p1_setup_relay_release(const rid_t id)
+int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const rid_t id)
 {
-	struct s_hw_p1_pdata * restrict const hw = &Hardware;
+	assert(hw);
 
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
@@ -205,4 +215,14 @@ int hw_p1_setup_relay_release(const rid_t id)
 	memset(&hw->Relays[id-1], 0x00, sizeof(hw->Relays[id-1]));
 
 	return (ALL_OK);
+}
+
+/**
+ * Fake destructor.
+ * For the sake of API consistency, this simulates a destructor
+ * to the "allocated" data in hw_p1_setup_new().
+ */
+void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw)
+{
+	return;
 }

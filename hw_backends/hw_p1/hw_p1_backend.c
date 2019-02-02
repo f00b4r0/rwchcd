@@ -375,9 +375,9 @@ static int hw_p1_offline(void * priv)
 
 /**
  * Hardware exit routine.
- * Resets the hardware.
+ * Resets the hardware and frees all private memory.
  * @warning RESETS THE HARDWARE: no hardware operation after that call.
- * @param priv private hardware data
+ * @param priv private hardware data. Will be invalid after the call.
  */
 static void hw_p1_exit(void * priv)
 {
@@ -400,11 +400,11 @@ static void hw_p1_exit(void * priv)
 
 	// cleanup all resources
 	for (i = 1; i <= ARRAY_SIZE(hw->Relays); i++)
-		hw_p1_setup_relay_release(i);
+		hw_p1_setup_relay_release(hw, i);
 
 	// deconfigure all sensors
 	for (i = 1; i <= ARRAY_SIZE(hw->Sensors); i++)
-		hw_p1_setup_sensor_deconfigure(i);
+		hw_p1_setup_sensor_deconfigure(hw, i);
 
 	// reset the hardware
 	ret = hw_p1_spi_reset();
@@ -412,6 +412,9 @@ static void hw_p1_exit(void * priv)
 		dbgerr("reset failed (%d)", ret);
 
 	hw->run.initialized = false;
+
+	// delete private data created with hw_p1_setup_new()
+	hw_p1_setup_del(hw);
 }
 
 /**

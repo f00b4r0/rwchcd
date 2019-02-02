@@ -19,8 +19,6 @@
 #include "storage.h"
 #include "config.h"
 
-static const storage_version_t Config_sversion = 13;
-
 /**
  * Allocate new config.
  * @return pointer to config
@@ -39,68 +37,6 @@ struct s_config * config_new(void)
 void config_del(struct s_config * config)
 {
 	free(config);
-}
-
-/**
- * Restore config from permanent storage.
- * @param config config that will be populated with restored elements if possible,
- * left untouched otherwise
- * @return exec status
- */
-static int config_restore(struct s_config * const config)
-{
-	struct s_config temp_config;
-	storage_version_t sversion;
-	int ret;
-	
-	assert(config);
-	
-	config->restored = false;
-	
-	// try to restore last config
-	ret = storage_fetch("config", &sversion, &temp_config, sizeof(temp_config));
-	if (ALL_OK == ret) {
-		if (Config_sversion != sversion)
-			return (-EMISMATCH);
-
-		memcpy(config, &temp_config, sizeof(*config));
-		
-		pr_log(_("System configuration restored"));
-		
-		config->restored = true;
-	}
-	
-	return (ret);
-}
-
-/**
- * Init config.
- * Tries to restore config from permanent storage, otherwise will get current
- * hardware config
- * @param config config
- * @return exec status
- */
-int config_init(struct s_config * const config)
-{
-	if (!config)
-		return (-EINVALID);
-
-	// see if we can restore previous config
-	return (config_restore(config));
-}
-
-/**
- * Config exit.
- * Saves current config
- * @param config config
- */
-void config_exit(struct s_config * const config)
-{
-	if (!config)
-		return;
-	
-	// save current config
-	config_save(config);
 }
 
 /**
@@ -141,24 +77,4 @@ int config_set_tfrost(struct s_config * const config, const temp_t tfrost)
 	config->limit_tfrost = tfrost;
 	
 	return (ALL_OK);
-}
-
-/**
- * Save config.
- * @param config target config
- * @return exec status
- */
-int config_save(const struct s_config * const config)
-{
-	int ret;
-
-	if (!config)
-		return (-EINVALID);
-
-	// save config
-	ret = storage_dump("config", &Config_sversion, config, sizeof(*config));
-	if (ALL_OK != ret)
-		dbgerr("storage_dump failed (%d)", ret);
-
-	return (ret);
 }
