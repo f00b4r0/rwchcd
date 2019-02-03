@@ -415,24 +415,27 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		// interference: apply rate of rise limitation if any: update temp every minute
 		// applied first so it's not impacted by the next interferences (in particular power shift). XXX REVIEW: might be needed to move after if ror control is desired on cshift rising edges
 		if (circuit->set.wtemp_rorh) {
-			if (!circuit->run.rorh_update_time) {	// first sample: init to current
+			// first sample: init target to current temp and set water_temp to current
+			if (!circuit->run.rorh_update_time) {
 				water_temp = curr_temp;
-				circuit->run.rorh_last_target = water_temp;
+				circuit->run.rorh_last_target = curr_temp;
 				circuit->run.rorh_update_time = now;
 			}
-			else if (water_temp > curr_temp) {	// request for hotter water: apply rate only to rise
-				if (now - circuit->run.rorh_update_time >= 60) {	// 1mn has past, update target - XXX hardcoded 60s resolution
+			// request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
+			else if (water_temp <= curr_temp) {
+				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
+				circuit->run.rorh_update_time = now;
+			}
+			// else: request for higher temp: apply rate limiter - XXX BUG: if current temp decreases (e.g. after pump turn on) the target won't be lowered.
+			else {
+				if ((now - circuit->run.rorh_update_time) >= 60) {	// 1mn has past, update target - XXX hardcoded 60s resolution
+					// compute next target step
 					temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);
-					water_temp = (temp < water_temp) ? temp : water_temp;	// target is min of circuit->templaw() and rorh-limited temp
-					circuit->run.rorh_last_target = water_temp;
+					// new request is min of next target step and actual request
+					circuit->run.rorh_last_target = (temp < water_temp) ? temp : water_temp;
 					circuit->run.rorh_update_time = now;
 				}
-				else
-					water_temp = circuit->run.rorh_last_target;	// maintain current target
-			}
-			else {	// request for cooler or same temp
-				circuit->run.rorh_last_target = curr_temp;	// update last target to current temp so that the next hotter run starts from "current position"
-				circuit->run.rorh_update_time = now;
+				water_temp = circuit->run.rorh_last_target;	// apply current step
 			}
 		}
 
