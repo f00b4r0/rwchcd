@@ -263,6 +263,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			dhwt_actuator_use(dhwt, false);
 			break;
 		case RM_TEST:
+			dhwt->run.active = true;
 			if (dhwt->pump_feed)
 				pump_set_state(dhwt->pump_feed, ON, FORCE);
 			if (dhwt->pump_recycle)

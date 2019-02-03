@@ -358,6 +358,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			else
 				return (hcircuit_shutdown(circuit));
 		case RM_TEST:
+			circuit->run.active = true;
 			valve_reqstop(circuit->valve_mix);
 			if (circuit->pump_feed)
 				pump_set_state(circuit->pump_feed, ON, FORCE);
