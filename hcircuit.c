@@ -437,7 +437,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 		// interference: handle output flooring requests: maintain current or higher wtemp
 		if (circuit->run.floor_output)
-			water_temp = (water_temp > circuit->run.target_wtemp) ? water_temp : circuit->run.target_wtemp;
+			water_temp = (water_temp > curr_temp) ? water_temp : curr_temp;
 
 		// interference: apply global power shift
 		if (circuit->pdata->consumer_shift) {
