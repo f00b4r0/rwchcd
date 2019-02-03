@@ -255,6 +255,7 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	circuit->run.target_wtemp = 0;
+	circuit->run.rorh_update_time = 0;
 
 	if (circuit->pump_feed)
 		pump_shutdown(circuit->pump_feed);
