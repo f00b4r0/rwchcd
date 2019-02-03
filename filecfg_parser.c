@@ -630,7 +630,7 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	Tu = parsers[1].node->value.intval;
 	Td = parsers[2].node->value.intval;
 	tune_f = parsers[3].node->value.intval;
-	Ksmax = (NODEFLT == parsers[4].node->type) ? parsers[4].node->value.floatval : parsers[4].node->value.intval;
+	Ksmax = (NODEFLT == parsers[4].node->type) ? deltaK_to_temp(parsers[4].node->value.floatval) : deltaK_to_temp(parsers[4].node->value.intval);
 
 	return (valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, tune_f));
 }
@@ -1177,9 +1177,9 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 				n = currnode->value.stringval;
 				if (!strcmp("never", n))
 					boiler->set.idle_mode = IDLE_NEVER;
-				else if (!strcmp("always", n))
-					boiler->set.idle_mode = IDLE_FROSTONLY;
 				else if (!strcmp("frostonly", n))
+					boiler->set.idle_mode = IDLE_FROSTONLY;
+				else if (!strcmp("always", n))
 					boiler->set.idle_mode = IDLE_ALWAYS;
 				else {
 					dbgerr("Unknown boiler idle mode \"%s\" at line %d", n, currnode->lineno);
