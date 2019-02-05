@@ -16,30 +16,31 @@
 
 #include <assert.h>
 #include "rwchcd.h"
+#include "timekeep.h"
 
 /** private structure for sapprox valve control */
 struct s_valve_sapprox_priv {
 	struct {
 		uint_fast16_t amount;		///< amount to move in ‰
-		time_t sample_intvl;		///< sample interval in seconds
+		timekeep_t sample_intvl;	///< sample interval
 	} set;		///< settings (externally set)
 	struct {
-		time_t last_time;		///< last time the sapprox controller was run
+		timekeep_t last_time;		///< last time the sapprox controller was run
 	} run;		///< private runtime (internally handled)
 };
 
 /** Private structure for PI valve control */
 struct s_valve_pi_priv {
 	struct {
-		time_t sample_intvl;	///< sample interval (s)
-		time_t Tu;		///< unit response time
-		time_t Td;		///< deadtime
+		timekeep_t sample_intvl;///< sample interval
+		timekeep_t Tu;		///< unit response time
+		timekeep_t Td;		///< deadtime
 		temp_t Ksmax;		///< maximum valve output delta. Used if it cannot be measured.
 		uint_fast8_t tune_f;	///< tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
 	} set;		///< settings (externally set)
 	struct {
-		time_t last_time;	///< last time the PI controller algorithm was run
-		time_t Tc;		///< closed loop time constant
+		timekeep_t last_time;	///< last time the PI controller algorithm was run
+		timekeep_t Tc;		///< closed loop time constant
 		temp_t prev_out;	///< previous run output temperature
 		float Kp_t;		///< Kp time factor: Kp = Kp_t / K, K process gain, Kp proportional coefficient
 		float db_acc;		///< deadband accumulator. Needed to integrate when valve is not actuated despite request.
@@ -61,7 +62,7 @@ struct s_valve {
 		bool configured;	///< true if properly configured
 		temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
 		uint_fast16_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
-		time_t ete_time;	///< end-to-end run time in seconds
+		timekeep_t ete_time;	///< end-to-end run time
 		tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
 		tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
 		tempid_t tid_out;	///< temp at the output
@@ -77,9 +78,9 @@ struct s_valve {
 		bool ctrl_ready;	///< false if controller algorithm must be reset
 		int_fast16_t actual_position;	///< estimated current position in ‰
 		int_fast16_t target_course;	///< current target course in ‰ of set.ete_time
-		time_t acc_open_time;	///< accumulated open time since last close
-		time_t acc_close_time;	///< accumulated close time since last open
-		time_t last_run_time;	///< last time valve_run() was invoked
+		timekeep_t acc_open_time;	///< accumulated open time since last close
+		timekeep_t acc_close_time;	///< accumulated close time since last open
+		timekeep_t last_run_time;	///< last time valve_run() was invoked
 		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 		request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
@@ -101,8 +102,8 @@ int valve_run(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_reqstop(struct s_valve * const valve);
 int valve_request_pth(struct s_valve * const valve, int_fast16_t perth);
 int valve_make_bangbang(struct s_valve * const valve) __attribute__((warn_unused_result));
-int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl) __attribute__((warn_unused_result));
-int valve_make_pi(struct s_valve * const valve, time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
+int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timekeep_t intvl) __attribute__((warn_unused_result));
+int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
 
 /**
  * Call valve control algorithm based on target temperature.

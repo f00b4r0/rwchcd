@@ -16,6 +16,7 @@
 
 #include "rwchcd.h"
 #include "rwchc_export.h"
+#include "timekeep.h"
 
 /** valid types of temperature sensors */
 enum e_hw_p1_stype {
@@ -34,11 +35,11 @@ struct s_hw_p1_relay {
 	struct {
 		bool turn_on;		///< state requested by software
 		bool is_on;		///< current hardware active state
-		time_t on_since;	///< last time on state was triggered, 0 if off
-		time_t off_since;	///< last time off state was triggered, 0 if on
-		time_t state_time;	///< time spent in current state
-		time_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
-		time_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
+		timekeep_t on_since;	///< last time on state was triggered, 0 if off
+		timekeep_t off_since;	///< last time off state was triggered, 0 if on
+		timekeep_t state_time;	///< time spent in current state
+		timekeep_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
+		timekeep_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
 		uint_fast32_t cycles;	///< number of power cycles
 	} run;		///< private runtime (internally handled)
 	char * restrict name;		///< @b unique user-defined name for the relay
@@ -69,8 +70,8 @@ struct s_hw_p1_pdata {
 	struct {
 		bool initialized;		///< hardware is initialized (init() succeeded)
 		bool online;			///< hardware is online (online() succeeded)
-		time_t sensors_ftime;		///< sensors fetch time
-		time_t last_calib;		///< time of last calibration
+		timekeep_t sensors_ftime;	///< sensors fetch time
+		timekeep_t last_calib;		///< time of last calibration
 		float calib_nodac;		///< sensor calibration value without dac offset
 		float calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version

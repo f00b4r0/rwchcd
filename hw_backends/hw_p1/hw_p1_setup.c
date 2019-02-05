@@ -186,7 +186,7 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const ri
 	// register failover state
 	hw->Relays[id-1].set.failstate = failstate;
 
-	hw->Relays[id-1].run.off_since = time(NULL);	// relay is by definition OFF since "now"
+	hw->Relays[id-1].run.off_since = timekeep_now();	// relay is by definition OFF since "now"
 
 	hw->Relays[id-1].set.configured = true;
 

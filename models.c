@@ -25,14 +25,14 @@
 #include "models.h"
 #include "log.h"
 
-#define OUTDOOR_SMOOTH_TIME		60	///< time in seconds over which outdoor temp is smoothed
-#define OUTDOOR_AVG_UPDATE_DT		600	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
+#define OUTDOOR_SMOOTH_TIME		(60*TIMEKEEP_SMULT)	///< time in seconds over which outdoor temp is smoothed
+#define OUTDOOR_AVG_UPDATE_DT		(600*TIMEKEEP_SMULT)	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
 #define MODELS_STORAGE_NAME_LEN		64
 #define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel_"
 
 static struct s_models Models;
 
-static const storage_version_t Models_sversion = 3;
+static const storage_version_t Models_sversion = 4;
 
 /**
  * Get current program models
@@ -302,8 +302,8 @@ static void bmodel_del(struct s_bmodel * restrict bmodel)
  */
 static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 {
-	const time_t last = bmodel->run.t_out_ltime;	// previous sensor time. At first run: 0 which makes mavg return new sample
-	time_t dt;
+	const timekeep_t last = bmodel->run.t_out_ltime;	// previous sensor time. At first run: 0 which makes mavg return new sample
+	timekeep_t dt;
 	temp_t toutdoor;
 	int ret;
 
@@ -337,7 +337,7 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
  */
 static int bmodel_outdoor(struct s_bmodel * const bmodel)
 {
-	time_t now, dt;
+	timekeep_t now, dt;
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 

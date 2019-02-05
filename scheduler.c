@@ -25,6 +25,7 @@
 #include "plant.h"
 #include "scheduler.h"
 #include "filecfg.h"
+#include "timekeep.h"
 
 /** A schedule item for a given day. */
 struct s_schedule {
@@ -156,7 +157,7 @@ void * scheduler_thread(void * arg)
 		 * set a timer until the next schedule change, timer which could be
 		 * updated by scheduler_add() if the added schedule comes before
 		 * the currently scheduled wake. */
-		sleep(60);
+		timekeep_sleep(60);
 	}
 }
 

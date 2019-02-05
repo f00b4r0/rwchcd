@@ -267,7 +267,7 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
  * @param clast pointer to target to store the time value
  * @return exec status
  */
-int hardware_sensor_clone_time(const tempid_t tempid, time_t * const clast)
+int hardware_sensor_clone_time(const tempid_t tempid, timekeep_t * const clast)
 {
 	const bid_t bid = tempid.bid;
 
@@ -359,7 +359,7 @@ int hardware_relay_get_state(const relid_t relid)
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @note actual (hardware) relay state will only be updated by a call to hardware_output()
  */
-int hardware_relay_set_state(const relid_t relid, bool turn_on, time_t change_delay)
+int hardware_relay_set_state(const relid_t relid, bool turn_on, timekeep_t change_delay)
 {
 	const bid_t bid = relid.bid;
 

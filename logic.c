@@ -125,8 +125,8 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 	enum e_runmode prev_runmode;
 	temp_t request_temp, diff_temp;
 	temp_t ambient_temp, ambient_delta = 0;
-	time_t elapsed_time, dtmin;
-	const time_t now = time(NULL);
+	timekeep_t elapsed_time, dtmin;
+	const timekeep_t now = timekeep_now();
 	bool can_fastcool;
 
 	assert(runtime);
@@ -279,7 +279,7 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 			}
 			if (circuit->run.transition)	// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
 				dbgmsg("\"%s\": Trans: %d, st_amb: %d, cr_amb: %d, active_elapsed: %ld",
-				       circuit->name, circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, circuit->run.trans_active_elapsed);
+				       circuit->name, circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
 		}
 	}
 	
@@ -331,8 +331,8 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
-	const time_t now = time(NULL);
-	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
+	const time_t tnow = time(NULL);
+	const struct tm * const ltime = localtime(&tnow);	// localtime handles DST and TZ for us
 	enum e_runmode prev_runmode;
 	temp_t target_temp, ltmin, ltmax;
 
@@ -423,8 +423,8 @@ settarget:
 int logic_heatsource(struct s_heatsource * restrict const heat)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
-	const time_t now = time(NULL);
-	const time_t dt = now - heat->run.last_run_time;
+	const timekeep_t now = timekeep_now();
+	const timekeep_t dt = now - heat->run.last_run_time;
 	temp_t temp;
 	int ret = -ENOTIMPLEMENTED;
 	

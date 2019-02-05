@@ -153,14 +153,14 @@ static int v_pi_online(struct s_valve * const valve)
 static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
-	const time_t now = time(NULL);
+	const timekeep_t now = timekeep_now();
 	int_fast16_t perth;
 	temp_t tempin_h, tempin_l, tempout, error, K;
 	float iterm, pterm, output, pthfl;
 	float Kp, Ki;
-	const time_t dt = now - vpriv->run.last_time;
+	const timekeep_t dt = now - vpriv->run.last_time;
 	int ret;
-	time_t Ti;
+	timekeep_t Ti;
 
 	assert(vpriv);	// checked in online()
 
@@ -381,7 +381,7 @@ static int v_sapprox_online(struct s_valve * const valve)
 static int v_sapprox_control(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_sapprox_priv * restrict const vpriv = valve->priv;
-	const time_t now = time(NULL);
+	const timekeep_t now = timekeep_now();
 	temp_t tempout;
 	int ret;
 
@@ -565,9 +565,9 @@ int valve_logic(struct s_valve * const valve)
  */
 int valve_run(struct s_valve * const valve)
 {
-	const time_t now = time(NULL);
-	time_t dt;
-	float perth_ps;	// ‰ position change per second
+	const timekeep_t now = timekeep_now();
+	timekeep_t dt;
+	float perth_ptk;	// ‰ position change per tick
 	int_fast16_t course;
 	int ret = ALL_OK;
 
@@ -578,12 +578,12 @@ int valve_run(struct s_valve * const valve)
 		return (-EOFFLINE);
 
 	dt = now - valve->run.last_run_time;
-	perth_ps = 1000.0F/valve->set.ete_time;
+	perth_ptk = 1000.0F/valve->set.ete_time;
 
 	valve->run.last_run_time = now;
 	valve->run.active = true;		// XXX never set false because we don't really need to for now
 
-	course = roundf(dt * perth_ps);		// we don't keep track of residual because we're already in ‰.
+	course = roundf(dt * perth_ptk);		// we don't keep track of residual because we're already in ‰.
 
 	// update counters
 	switch (valve->run.actual_action) {
@@ -687,11 +687,11 @@ int valve_make_bangbang(struct s_valve * const valve)
  * This controller ignores @b tid_hot and @b tid_cold
  * @param valve target valve
  * @param amount movement amount in %
- * @param intvl sample interval in seconds
+ * @param intvl sample interval
  * @return exec status
  * @warning should ensure that the sample interval allows full amount movement
  */
-int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t intvl)
+int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timekeep_t intvl)
 {
 	struct s_valve_sapprox_priv * priv = NULL;
 
@@ -729,7 +729,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
  * This controller requires @b tid_hot and @b tid_out to be set.
  * This controller recommends @b tid_cold to be set.
  * @param valve target valve
- * @param intvl sample interval in seconds
+ * @param intvl sample interval
  * @param Td deadtime (time elapsed before any change in output is observed after a step change)
  * @param Tu unit step response time
  * @param Ksmax 100% step response output difference. Used if it cannot be measured.
@@ -738,7 +738,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, time_t
  * @note refer to valvectrl_pi() for calculation details
  */
 int valve_make_pi(struct s_valve * const valve,
-		  time_t intvl, time_t Td, time_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
+		  timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
 {
 	struct s_valve_pi_priv * priv = NULL;
 

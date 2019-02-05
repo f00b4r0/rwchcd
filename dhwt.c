@@ -240,8 +240,8 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	const struct s_runtime * restrict const runtime = runtime_get();
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp;
 	bool valid_ttop = false, valid_tbottom = false, test;
-	const time_t now = time(NULL);
-	time_t limit;
+	const timekeep_t now = timekeep_now();
+	timekeep_t limit;
 	int ret;
 
 	assert(runtime);
@@ -297,7 +297,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	// We're good to go
 
 	dbgmsg("\"%s\": on: %d, mode_since: %ld, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
-	       dhwt->name, dhwt->run.charge_on, dhwt->run.mode_since, temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+	       dhwt->name, dhwt->run.charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	// handle recycle loop
 	if (dhwt->pump_recycle) {

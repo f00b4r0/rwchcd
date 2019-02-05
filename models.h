@@ -15,6 +15,7 @@
 #define rwchcd_models_h
 
 #include "rwchcd.h"
+#include "timekeep.h"
 
 /** Models */
 struct s_models {
@@ -35,15 +36,15 @@ struct s_bmodel {
 	struct {
 		bool configured;	///< true if configured
 		bool logging;		///< true if logging must be enabled for this bmodel
-		time_t tau;		///< bmodel time constant
+		timekeep_t tau;		///< bmodel time constant
 		tempid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
 	} set;
 	struct {
 		bool online;		///< true if bmodel is online
 		bool summer;		///< true if summer mode conditions are met
 		bool frost;		///< true if frost conditions are met
-		time_t t_out_ltime;	///< last update time for t_out
-		time_t t_out_faltime;	///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
+		timekeep_t t_out_ltime;	///< last update time for t_out
+		timekeep_t t_out_faltime;///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
 		temp_t t_out;		///< current outdoor temperature (smoothed over 60s)
 		temp_t t_out_filt;	///< t_outdoor filtered by bmodel time constant (moving average of t_outdoor with tau)
 		temp_t t_out_mix;	///< mixed outdoor temperature (average of t_outdoor and t_filtered)

@@ -26,7 +26,6 @@
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
- * @bug all time() calls will return shit if time changes: fix!
  * @todo config reload
  * @todo ^2 fixed-point arithmetic
  */
@@ -64,6 +63,7 @@
 #endif
 #include "storage.h"
 #include "log.h"
+#include "timekeep.h"
 
 #include "filecfg.h"
 
@@ -185,7 +185,7 @@ static int init_process()
 	// bring the hardware online
 	while ((ret = hardware_online()) != ALL_OK) {
 		dbgerr("hardware_online() failed: %d", ret);
-		sleep(1);	// don't pound on the hardware if it's not coming up: calibration data may not be immediately available
+		timekeep_sleep(1);	// don't pound on the hardware if it's not coming up: calibration data may not be immediately available
 	}
 
 	alarms_online();
@@ -263,7 +263,7 @@ static void * thread_master(void *arg)
 		
 		/* this sleep determines the maximum time resolution for the loop,
 		 * with significant impact on temp_expw_mavg() and hardware routines. */
-		sleep(1);
+		timekeep_sleep(1);
 	}
 	
 	// cleanup
@@ -327,6 +327,10 @@ int main(void)
 	ret = pipe(pipefd);
 	if (ret)
 		err(ret, "failed to setup pipe!");
+
+	ret = timekeep_init();
+	if (ret)
+		errx(ret, "failed to setup timekeeping!");
 	
 	// setup threads
 	pthread_attr_init(&attr);
@@ -429,6 +433,7 @@ int main(void)
 	timer_clean_callbacks();
 	close(pipefd[0]);
 	close(pipefd[1]);
+	timekeep_exit();
 
 #ifdef DEBUG
 	// cleanup fifo

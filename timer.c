@@ -17,10 +17,11 @@
 
 #include "rwchcd.h"
 #include "timer.h"
+#include "timekeep.h"
 
 /** timer callbacks */
 struct s_timer_cb {
-	time_t last_call;	///< last time the callback was called
+	timekeep_t last_call;	///< last time the callback was called
 	unsigned int period;	///< requested timer period
 	int (*cb)(void);	///< timed callback, must lock where necessary
 	char * name;
@@ -38,19 +39,19 @@ static volatile unsigned int Timer_period_min = 0;	///< time between runs in sec
 void * timer_thread(void * arg)
 {
 	struct s_timer_cb * lcb;
-	time_t now;
+	timekeep_t now;
 	int ret;
 	
 	// wait for first callback to be configured
 	while (!Timer_period_min)
-		sleep(1);
+		timekeep_sleep(1);
 	
 	// start logging
 	while (1) {
-		now = time(NULL);
+		now = timekeep_now();
 		
 		for (lcb = Timer_cb_head; lcb != NULL; lcb = lcb->next) {
-			if ((now - lcb->last_call) < lcb->period)
+			if ((now - lcb->last_call) < timekeep_sec_to_tk(lcb->period))
 				break;	// ordered list, first mismatch means we don't need to check further
 			
 			if (lcb->cb) {	// avoid segfault in case for some reason the pointer isn't (yet) valid (due to e.g. memory reordering)
@@ -62,7 +63,7 @@ void * timer_thread(void * arg)
 			}
 		}
 		
-		sleep(Timer_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
+		timekeep_sleep(Timer_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
 	}
 }
 

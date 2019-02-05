@@ -13,7 +13,6 @@
 
 #include <string.h>	// memset/strdup
 #include <stdlib.h>	// free
-#include <time.h>	// time_t
 #include <assert.h>
 
 #include "hw_backends.h"

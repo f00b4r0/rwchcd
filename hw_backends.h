@@ -14,9 +14,8 @@
 #ifndef hw_backends_h
 #define hw_backends_h
 
-#include <time.h>
-
 #include "rwchcd.h"
+#include "timekeep.h"
 
 #define HW_MAX_BKENDS	8	///< Maximum number of hardware backends allowed
 
@@ -146,7 +145,7 @@ struct s_hw_callbacks {
 	 * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
 	 * @return exec status
 	 */
-	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on, time_t change_delay);
+	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on, timekeep_t change_delay);
 
 	/**
 	 * Return a hardware sensor name.
@@ -186,7 +185,7 @@ struct s_hw_callbacks {
 	 * @note This function must @b ALWAYS return successfully if the target
 	 * sensor is properly configured and the underlying hardware is online.
 	 */
-	int (*sensor_clone_time)(void * priv, const sid_t sid, time_t * const ctime);
+	int (*sensor_clone_time)(void * priv, const sid_t sid, timekeep_t * const ctime);
 
 	/**
 	 * Dump hardware backend configuration.

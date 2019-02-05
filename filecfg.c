@@ -32,6 +32,7 @@
 #include "plant.h"
 #include "scheduler.h"
 #include "filecfg.h"
+#include "timekeep.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
@@ -214,7 +215,7 @@ static int filecfg_pump_dump(const struct s_pump * restrict const pump)
 	filecfg_iprintf("pump \"%s\" {\n", pump->name);
 	filecfg_ilevel_inc();
 	if (FCD_Exhaustive || pump->set.cooldown_time)
-		filecfg_iprintf("cooldown_time %ld;\n", pump->set.cooldown_time);
+		filecfg_iprintf("cooldown_time %ld;\n", timekeep_tk_to_sec(pump->set.cooldown_time));
 	filecfg_iprintf("rid_pump"); filecfg_relid_dump(pump->set.rid_pump);	// mandatory
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -241,7 +242,7 @@ static int filecfg_v_sapprox_dump(const struct s_valve * restrict const valve)
 	priv = valve->priv;
 
 	filecfg_iprintf("amount %" PRIdFAST16 ";\n", priv->set.amount);
-	filecfg_iprintf("sample_intvl %ld;\n", priv->set.sample_intvl);
+	filecfg_iprintf("sample_intvl %ld;\n", timekeep_tk_to_sec(priv->set.sample_intvl));
 
 	return (ALL_OK);
 }
@@ -258,9 +259,9 @@ static int filecfg_v_pi_dump(const struct s_valve * restrict const valve)
 
 	priv = valve->priv;
 
-	filecfg_iprintf("sample_intvl %ld;\n", priv->set.sample_intvl);
-	filecfg_iprintf("Tu %ld;\n", priv->set.Tu);
-	filecfg_iprintf("Td %ld;\n", priv->set.Td);
+	filecfg_iprintf("sample_intvl %ld;\n", timekeep_tk_to_sec(priv->set.sample_intvl));
+	filecfg_iprintf("Tu %ld;\n", timekeep_tk_to_sec(priv->set.Tu));
+	filecfg_iprintf("Td %ld;\n", timekeep_tk_to_sec(priv->set.Td));
 	filecfg_iprintf("Ksmax %.1f;\n", temp_to_deltaK(priv->set.Ksmax));
 	filecfg_iprintf("tune_f %" PRIdFAST8 ";\n", priv->set.tune_f);
 
@@ -319,7 +320,7 @@ static int filecfg_valve_dump(const struct s_valve * restrict const valve)
 		filecfg_iprintf("tdeadzone %.1f;\n", temp_to_deltaK(valve->set.tdeadzone));
 	if (FCD_Exhaustive || valve->set.deadband)
 		filecfg_iprintf("deadband %" PRIdFAST16 ";\n", valve->set.deadband);
-	filecfg_iprintf("ete_time %ld;\n", valve->set.ete_time);			// mandatory
+	filecfg_iprintf("ete_time %ld;\n", timekeep_tk_to_sec(valve->set.ete_time));			// mandatory
 	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_hot))
 		filecfg_iprintf("tid_hot"), filecfg_tempid_dump(valve->set.tid_hot);
 	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_cold))
@@ -381,7 +382,7 @@ static int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const hea
 		filecfg_iprintf("limit_treturnmin %.1f;\n", temp_to_celsius(priv->set.limit_treturnmin));
 	filecfg_iprintf("t_freeze %.1f;\n", temp_to_celsius(priv->set.t_freeze));				// mandatory
 	if (FCD_Exhaustive || priv->set.burner_min_time)
-		filecfg_iprintf("burner_min_time %ld;\n", priv->set.burner_min_time);
+		filecfg_iprintf("burner_min_time %ld;\n", timekeep_tk_to_sec(priv->set.burner_min_time));
 
 	filecfg_iprintf("tid_boiler"); filecfg_tempid_dump(priv->set.tid_boiler);				// mandatory
 	if (FCD_Exhaustive || hardware_sensor_name(priv->set.tid_boiler_return))
@@ -443,7 +444,7 @@ static int filecfg_heatsource_dump(const struct s_heatsource * restrict const he
 	if (FCD_Exhaustive || heat->set.prio)
 		filecfg_iprintf("prio %hd;\n", heat->set.prio);
 	if (FCD_Exhaustive || heat->set.consumer_sdelay)
-		filecfg_iprintf("consumer_sdelay %ld;\n", heat->set.consumer_sdelay);
+		filecfg_iprintf("consumer_sdelay %ld;\n", timekeep_tk_to_sec(heat->set.consumer_sdelay));
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -460,7 +461,7 @@ static int filecfg_dhwt_params_dump(const struct s_dhwt_params * restrict const 
 	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || params->limit_chargetime)
-		filecfg_iprintf("limit_chargetime %ld;\n", params->limit_chargetime);
+		filecfg_iprintf("limit_chargetime %ld;\n", timekeep_tk_to_sec(params->limit_chargetime));
 	if (FCD_Exhaustive || params->limit_wintmax)
 		filecfg_iprintf("limit_wintmax %.1f;\n", temp_to_celsius(params->limit_wintmax));
 	if (FCD_Exhaustive || params->limit_tmin)
@@ -695,11 +696,11 @@ static int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circui
 	if (FCD_Exhaustive || circuit->set.wtemp_rorh)
 		filecfg_iprintf("wtemp_rorh %.1f;\n", temp_to_deltaK(circuit->set.wtemp_rorh));
 	if (FCD_Exhaustive || circuit->set.am_tambient_tK)
-		filecfg_iprintf("am_tambient_tK %ld;\n", circuit->set.am_tambient_tK);
+		filecfg_iprintf("am_tambient_tK %ld;\n", timekeep_tk_to_sec(circuit->set.am_tambient_tK));
 	if (FCD_Exhaustive || circuit->set.tambient_boostdelta)
 		filecfg_iprintf("tambient_boostdelta %.1f;\n", temp_to_deltaK(circuit->set.tambient_boostdelta));
 	if (FCD_Exhaustive || circuit->set.boost_maxtime)
-		filecfg_iprintf("boost_maxtime %ld;\n", circuit->set.boost_maxtime);
+		filecfg_iprintf("boost_maxtime %ld;\n", timekeep_tk_to_sec(circuit->set.boost_maxtime));
 
 	filecfg_iprintf("tid_outgoing"); filecfg_tempid_dump(circuit->set.tid_outgoing);		// mandatory
 	if (FCD_Exhaustive || hardware_sensor_name(circuit->set.tid_return))
@@ -737,7 +738,7 @@ static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
 
 	if (FCD_Exhaustive || bmodel->set.logging)
 		filecfg_iprintf("logging %s;\n", filecfg_bool_str(bmodel->set.logging));
-	filecfg_iprintf("tau %ld;\n", bmodel->set.tau);						// mandatory
+	filecfg_iprintf("tau %ld;\n", timekeep_tk_to_sec(bmodel->set.tau));						// mandatory
 	filecfg_iprintf("tid_outdoor"); filecfg_tempid_dump(bmodel->set.tid_outdoor);		// mandatory
 
 	filecfg_ilevel_dec();
@@ -780,7 +781,7 @@ static int filecfg_config_dump(const struct s_config * restrict const config)
 	if (FCD_Exhaustive || config->limit_tfrost)
 		filecfg_iprintf("limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
 	if (FCD_Exhaustive || config->sleeping_delay)
-		filecfg_iprintf("sleeping_delay %ld;\n", config->sleeping_delay);
+		filecfg_iprintf("sleeping_delay %ld;\n", timekeep_tk_to_sec(config->sleeping_delay));
 
 	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&config->def_hcircuit);
 	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&config->def_dhwt);

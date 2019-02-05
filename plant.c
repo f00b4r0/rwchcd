@@ -36,7 +36,7 @@
 #include "models.h"	// s_bmodel for plant_summer_ok()
 #include "storage.h"
 
-static const storage_version_t Plant_sversion = 1;
+static const storage_version_t Plant_sversion = 2;
 
 /**
  * Save plant.
@@ -753,7 +753,7 @@ int plant_offline(struct s_plant * restrict const plant)
  */
 static void plant_collect_hrequests(struct s_plant * restrict const plant)
 {
-	const time_t now = time(NULL);
+	const timekeep_t now = timekeep_now();
 	struct s_runtime * restrict const runtime = runtime_get();
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
@@ -888,9 +888,9 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
  */
 static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {
-#define SUMMER_RUN_INTVL	60*60*24*7	///< 1 week
-#define SUMMER_RUN_DURATION	60*5		///< 5 minutes
-	const time_t now = time(NULL);
+#define SUMMER_RUN_INTVL	(60*60*24*7*TIMEKEEP_SMULT)	///< 1 week
+#define SUMMER_RUN_DURATION	(60*5*TIMEKEEP_SMULT)		///< 5 minutes
+	const timekeep_t now = timekeep_now();
 	const struct s_runtime * restrict const runtime = runtime_get();
 	struct s_pump_l * pumpl;
 	struct s_valve_l * valvel;
@@ -964,7 +964,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_pump_l * pumpl;
 	int ret;
 	bool suberror = false;
-	time_t stop_delay = 0;
+	timekeep_t stop_delay = 0;
 
 	assert(runtime);
 

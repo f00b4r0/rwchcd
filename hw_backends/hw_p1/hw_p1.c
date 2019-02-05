@@ -29,9 +29,9 @@
 #define VALID_CALIB_MIN		0.9F	///< minimum valid calibration value (-10%)
 #define VALID_CALIB_MAX		1.1F	///< maximum valid calibration value (+10%)
 
-#define CALIBRATION_PERIOD	600	///< calibration period in seconds: every 10mn
+#define CALIBRATION_PERIOD	(600 * TIMEKEEP_SMULT)	///< calibration period in seconds: every 10mn
 
-static const storage_version_t Hardware_sversion = 1;
+static const storage_version_t Hardware_sversion = 2;
 
 struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
 
@@ -310,11 +310,11 @@ int hw_p1_restore_relays(void)
 			// handle saved state (see @note)
 			if (relayptr->run.is_on) {
 				Hardware.Relays[i].run.on_tottime += relayptr->run.state_time;
-				Hardware.Relays[i].run.off_since = time(NULL);	// off since "now"
+				Hardware.Relays[i].run.off_since = timekeep_now();	// off since "now"
 			}
 			else {
 				Hardware.Relays[i].run.off_tottime += relayptr->run.state_time;
-				Hardware.Relays[i].run.off_since = relayptr->run.off_since;
+				Hardware.Relays[i].run.off_since = timekeep_now();	// off since "now"
 			}
 			Hardware.Relays[i].run.on_tottime += relayptr->run.on_tottime;
 			Hardware.Relays[i].run.off_tottime += relayptr->run.off_tottime;
@@ -430,11 +430,11 @@ int hw_p1_calibrate(void)
 	uint_fast16_t refcalib;
 	int ret;
 	rwchc_sensor_t ref;
-	const time_t now = time(NULL);
+	const timekeep_t now = timekeep_now();
 	
 	assert(Hardware.run.initialized);
 	
-	if ((now - Hardware.run.last_calib) < CALIBRATION_PERIOD)
+	if (Hardware.run.last_calib && (now - Hardware.run.last_calib) < CALIBRATION_PERIOD)
 		return (ALL_OK);
 
 	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.run.calib_nodac, Hardware.run.calib_dac);
@@ -505,7 +505,7 @@ int hw_p1_sensors_read(void)
 
 	hw_p1_parse_temps();
 
-	Hardware.run.sensors_ftime = time(NULL);
+	Hardware.run.sensors_ftime = timekeep_now();
 
 out:
 	return (ret);
@@ -525,7 +525,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 #define CHTURNOFF	0x02
 	struct s_hw_p1_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
-	const time_t now = time(NULL);	// we assume the whole thing will take much less than a second
+	const timekeep_t now = timekeep_now();	// we assume the whole thing will take much less than a second
 	uint_fast8_t i, chflags = CHNONE;
 	int ret = -EGENERIC;
 

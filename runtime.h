@@ -21,7 +21,7 @@ struct s_runtime {
 	enum e_systemmode systemmode;	///< current operation mode
 	enum e_runmode runmode;		///< CANNOT BE RM_AUTO
 	enum e_runmode dhwmode;		///< CANNOT BE RM_AUTO or RM_DHWONLY
-	time_t start_time;		///< system start time
+	timekeep_t start_time;		///< system start time
 	struct s_plant * restrict plant;	///< running plant
 	struct s_config * restrict config;	///< running config
 	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible

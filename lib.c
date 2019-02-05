@@ -28,12 +28,12 @@
  * @param tau time constant over which to average
  * @param dt time elapsed since last average
  */
-__attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt)
+__attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt)
 {
 	float alpha = (float)dt / (tau+dt);	// dt sampling itvl, tau = constante de temps
 	
 	if (alpha <= 1.0F/KPRECISIONF)
-		dbgerr("WARNING: rounding error. tau: %ld, dt: %ld", tau, dt);
+		dbgerr("WARNING: rounding error. tau: %lld, dt: %lld", tau, dt);
 	
 	return (filtered - roundf(alpha * (filtered - new_sample)));
 }
@@ -56,9 +56,9 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * @param new_time new temperature time
  * @param tlow_jacket low boundary for integral jacket
  * @param thigh_jacket high boundary for integral jacket
- * @return the integral value in temp_t units * time_t units (millikelvins second)
+ * @return the integral value in temp_t units * timekeep_t units (millikelvins second)
  */
-temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time,
+temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
 		      const temp_t tlow_jacket, const temp_t thigh_jacket)
 {
 	assert(intgrl);

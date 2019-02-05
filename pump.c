@@ -151,7 +151,7 @@ int pump_offline(struct s_pump * restrict const pump)
  */
 int pump_run(struct s_pump * restrict const pump)
 {
-	time_t cooldown = 0;	// by default, no wait
+	timekeep_t cooldown = 0;	// by default, no wait
 	int ret;
 
 	if (!pump)

@@ -11,7 +11,7 @@
  * Runtime implementation.
  */
 
-#include <time.h>	// time_t
+#include <time.h>	// timekeep_t
 #include <string.h>	// memset/memcpy
 #include <assert.h>
 
@@ -258,7 +258,7 @@ int runtime_online(void)
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 	
-	Runtime.start_time = time(NULL);
+	Runtime.start_time = timekeep_now();
 
 	runtime_restore();
 

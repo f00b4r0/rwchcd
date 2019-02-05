@@ -286,7 +286,7 @@ skip_periphs:
 	return (ret);
 
 fail:
-	if ((time(NULL) - hw->run.sensors_ftime) > 30) {
+	if ((timekeep_now() - hw->run.sensors_ftime) > 30) {
 		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
 		alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
 	}
@@ -444,10 +444,10 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
  * @return 0 on success, positive number for cooldown wait remaining, negative for error
  * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
  */
-static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const time_t change_delay)
+static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const timekeep_t change_delay)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	const time_t now = time(NULL);
+	const timekeep_t now = timekeep_now();
 	struct s_hw_p1_relay * relay = NULL;
 
 	assert(hw);
@@ -491,7 +491,7 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	const time_t now = time(NULL);
+	const timekeep_t now = timekeep_now();
 	struct s_hw_p1_relay * relay = NULL;
 
 	assert(hw);
@@ -556,7 +556,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 		return (-ENOTCONFIGURED);
 
 	// make sure available data is valid - XXX 30s timeout hardcoded
-	if ((time(NULL) - hw->run.sensors_ftime) > 30) {
+	if ((timekeep_now() - hw->run.sensors_ftime) > 30) {
 		if (tclone)
 			*tclone = 0;
 		return (-EHARDWARE);
@@ -602,7 +602,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
  * @param ctime optional location to copy the sensor update time.
  * @return exec status
  */
-static int hw_p1_sensor_clone_time(void * priv, const sid_t id, time_t * const ctime)
+static int hw_p1_sensor_clone_time(void * priv, const sid_t id, timekeep_t * const ctime)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 

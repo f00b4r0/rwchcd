@@ -18,18 +18,19 @@
 #include <assert.h>
 
 #include "rwchcd.h"
+#include "timekeep.h"
 
 /** Temperature integral data */
 struct s_temp_intgrl {
 	bool inuse;			///< true if integral is in use
-	temp_t integral;		///< integral value in temp_t * time_t
+	temp_t integral;		///< integral value in temp_t * timekeep_t
 	temp_t last_thrsh;		///< temperature threshold for integral calculation
 	temp_t last_temp;		///< last recorded temperature value
-	time_t last_time;		///< last recorded temperature time
+	timekeep_t last_time;		///< last recorded temperature time
 };
 
-temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const time_t tau, const time_t dt);
-temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const time_t new_time,
+temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt);
+temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
 		      const temp_t tlow_jacket, const temp_t thigh_jacket);
 
 /**
@@ -78,7 +79,7 @@ __attribute__((const, always_inline)) static inline float temp_to_deltaK(const t
  * @param tau target tau
  * @return minimum usable time interval
  */
-__attribute__((const, always_inline)) static inline time_t expw_mavg_dtmin(const time_t tau)
+__attribute__((const, always_inline)) static inline timekeep_t expw_mavg_dtmin(const timekeep_t tau)
 {
 	return (/*ceilf*/(((1.0F/KPRECISIONF)*tau)/(1.0F-(1.0F/KPRECISIONF))) * 2);
 }

@@ -325,7 +325,7 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
-	const time_t now = time(NULL);
+	const timekeep_t now = timekeep_now();
 	temp_t water_temp, curr_temp, ret_temp, lwtmin, lwtmax, temp;
 	int ret;
 
@@ -354,7 +354,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 				water_temp = circuit->run.target_wtemp;
-				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, circuit->pdata->consumer_sdelay);
+				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->consumer_sdelay));
 				goto valve;	// stop processing
 			}
 			else
@@ -430,9 +430,9 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			}
 			// else: request for higher temp: apply rate limiter - XXX BUG: if current temp decreases (e.g. after pump turn on) the target won't be lowered.
 			else {
-				if ((now - circuit->run.rorh_update_time) >= 60) {	// 1mn has past, update target - XXX hardcoded 60s resolution
+				if ((now - circuit->run.rorh_update_time) >= timekeep_sec_to_tk(60)) {	// 1mn has past, update target - XXX hardcoded 60s resolution
 					// compute next target step
-					temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, 3600, now - circuit->run.rorh_update_time);
+					temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, timekeep_sec_to_tk(3600), now - circuit->run.rorh_update_time);
 					// new request is min of next target step and actual request
 					circuit->run.rorh_last_target = (temp < water_temp) ? temp : water_temp;
 					circuit->run.rorh_update_time = now;

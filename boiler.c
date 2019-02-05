@@ -105,10 +105,10 @@ static temp_t boiler_hscb_temp(struct s_heatsource * const heat)
 	return (temp);
 }
 
-static time_t boiler_hscb_time(struct s_heatsource * const heat)
+static timekeep_t boiler_hscb_time(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
-	time_t ttime;
+	timekeep_t ttime;
 
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
@@ -343,7 +343,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp, ret_temp = 0;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
-	time_t ttime;
+	timekeep_t ttime;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);

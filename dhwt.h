@@ -15,6 +15,7 @@
 #define dhwt_h
 
 #include "rwchcd.h"
+#include "timekeep.h"
 
 /** DHWT element structure */
 struct s_dhw_tank {
@@ -56,7 +57,7 @@ struct s_dhw_tank {
 		enum e_runmode runmode;		///< dhwt actual (computed) runmode
 		temp_t target_temp;		///< current target temp for this tank
 		temp_t heat_request;		///< current temp request from heat source for this circuit
-		time_t mode_since;		///< starting time of current mode (if charge_on: charge start time, else charge end time)
+		timekeep_t mode_since;		///< starting time of current mode (if charge_on: charge start time, else charge end time)
 		int charge_yday;		///< last day forced charge was triggered in DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
 	struct s_pump * restrict pump_feed;	///< feed pump for this tank

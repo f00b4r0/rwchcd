@@ -15,6 +15,7 @@
 #define rwchcd_plant_h
 
 #include "rwchcd.h"
+#include "timekeep.h"
 
 // https://www.lysator.liu.se/c/restrict.html#linked-lists
 
@@ -66,8 +67,8 @@ struct s_heatsource_l {
 struct s_plant {
 	bool configured;	///< true if properly configured
 	struct {
-		time_t summer_timer;	///< timer for summer maintenance
-		time_t last_creqtime;	///< last recorded time for circuit heat request
+		timekeep_t summer_timer;	///< timer for summer maintenance
+		timekeep_t last_creqtime;	///< last recorded time for circuit heat request
 		temp_t plant_hrequest;	///< plant heat request
 	} run;
 	struct s_pdata pdata;

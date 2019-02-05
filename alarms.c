@@ -32,6 +32,7 @@
 
 #include "rwchcd.h"
 #include "alarms.h"
+#include "timekeep.h"
 
 /** alarm entry */
 struct s_alarm {
@@ -177,9 +178,9 @@ int alarms_online(void)
  */
 int alarms_run(void)
 {
-	static time_t last = 0;
-	const time_t now = time(NULL);
-	const time_t dt = now - last;
+	static timekeep_t last = 0;
+	const timekeep_t now = timekeep_now();
+	const timekeep_t dt = now - last;
 	const struct s_alarm * alarm;
 	const char * msg;
 
@@ -189,7 +190,7 @@ int alarms_run(void)
 	if (!Alarms.count)	// no active alarm, can stop here
 		return (ALL_OK);
 
-	if (dt >= 60) {
+	if (dt >= timekeep_sec_to_tk(60)) {
 		alarm = Alarms.alarm_head;
 
 		while (alarm) {

@@ -17,6 +17,7 @@
 #include "hw_backends.h"
 #include "config.h"
 #include "lib.h"
+#include "timekeep.h"
 #include "filecfg_parser.h"
 
 #ifdef HAS_HWP1		// XXX
@@ -248,7 +249,7 @@ static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_
 				if (currnode->value.intval < 0)
 					goto invaliddata;
 				else
-					dhwt_params->limit_chargetime = currnode->value.intval;
+					dhwt_params->limit_chargetime = timekeep_sec_to_tk(currnode->value.intval);
 				break;
 			default:
 				break;	// never happen
@@ -408,7 +409,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 				if (currnode->value.intval < 0)
 					goto invaliddata;
 				else
-					config->sleeping_delay = currnode->value.intval;
+					config->sleeping_delay = timekeep_sec_to_tk(currnode->value.intval);
 			case 5:
 				if (ALL_OK != hcircuit_params_parse(&config->def_hcircuit, currnode))
 					goto invaliddata;
@@ -466,7 +467,7 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 		dbgerr("Invalid negative value for \"%s\" closing at line %d", currnode->name, currnode->lineno);
 		return (-EINVALID);
 	}
-	bmodel->set.tau = iv;
+	bmodel->set.tau = timekeep_sec_to_tk(iv);
 
 	currnode = parsers[2].node;
 	ret = tid_parse(&bmodel->set.tid_outdoor, currnode);
@@ -570,7 +571,7 @@ static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_
 			goto invaliddata;
 		}
 		else
-			pump->set.cooldown_time = currnode->value.intval;
+			pump->set.cooldown_time = timekeep_sec_to_tk(currnode->value.intval);
 	}
 
 	currnode = parsers[1].node;
@@ -599,13 +600,14 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 		{ NODEINT, "amount", true, NULL, NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
-	int ret, sample_intvl, amount;
+	timekeep_t sample_intvl;
+	int ret, amount;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	sample_intvl = parsers[0].node->value.intval;
+	sample_intvl = timekeep_sec_to_tk(parsers[0].node->value.intval);
 	amount = parsers[1].node->value.intval;
 
 	return (valve_make_sapprox(valve, amount, sample_intvl));
@@ -621,16 +623,17 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 		{ NODEFLT|NODEINT, "Ksmax", true, NULL, NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
-	int ret, sample_intvl, Tu, Td, tune_f;
+	timekeep_t sample_intvl, Tu, Td;
+	int ret, tune_f;
 	float Ksmax;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	sample_intvl = parsers[0].node->value.intval;
-	Tu = parsers[1].node->value.intval;
-	Td = parsers[2].node->value.intval;
+	sample_intvl = timekeep_sec_to_tk(parsers[0].node->value.intval);
+	Tu = timekeep_sec_to_tk(parsers[1].node->value.intval);
+	Td = timekeep_sec_to_tk(parsers[2].node->value.intval);
 	tune_f = parsers[3].node->value.intval;
 	Ksmax = (NODEFLT == parsers[4].node->type) ? deltaK_to_temp(parsers[4].node->value.floatval) : deltaK_to_temp(parsers[4].node->value.intval);
 
@@ -685,7 +688,7 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 				if (0 == i)
 					valve->set.deadband = iv;
 				else	// i == 1
-					valve->set.ete_time = iv;
+					valve->set.ete_time = timekeep_sec_to_tk(iv);
 				break;
 			case 2:
 				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
@@ -1041,7 +1044,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				iv = currnode->value.intval;
 				if (iv < 0)
 					goto invaliddata;
-				hcircuit->set.am_tambient_tK = iv;
+				hcircuit->set.am_tambient_tK = timekeep_sec_to_tk(iv);
 				break;
 			case 6:
 				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
@@ -1051,7 +1054,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				iv = currnode->value.intval;
 				if (iv < 0)
 					goto invaliddata;
-				hcircuit->set.boost_maxtime = iv;
+				hcircuit->set.boost_maxtime = timekeep_sec_to_tk(iv);
 				break;
 			case 8:
 				if (ALL_OK != tid_parse(&hcircuit->set.tid_outgoing, currnode))
@@ -1226,7 +1229,7 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 				if (iv < 0)
 					goto invaliddata;
 				else
-					boiler->set.burner_min_time = iv;
+					boiler->set.burner_min_time = timekeep_sec_to_tk(iv);
 				break;
 			case 8:
 				if (ALL_OK != tid_parse(&boiler->set.tid_boiler, currnode))
@@ -1343,7 +1346,7 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 				iv = currnode->value.intval;
 				if (iv < 0)
 					goto invaliddata;
-				heatsource->set.consumer_sdelay = iv;
+				heatsource->set.consumer_sdelay = timekeep_sec_to_tk(iv);
 				break;
 			default:
 				break;	// should never happen

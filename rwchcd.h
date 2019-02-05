@@ -17,7 +17,7 @@
 #include <stddef.h>
 #include <stdint.h>	// uint_t
 #include <stdbool.h>	// bool
-#include <time.h>	// time_t
+#include <time.h>	// time()
 #include <stdio.h>	// (f)printf
 #include <pthread.h>	// rwlocks
 
@@ -159,9 +159,10 @@ struct s_hcircuit_params {
 	temp_t temp_inoffset;		///< offset temp for heat source request. @note beware of interaction with e.g. boiler hysteresis
 };
 
+#include "timekeep.h"
 /** DHWT common parameters */
 struct s_dhwt_params {
-	time_t limit_chargetime;	///< maximum duration of charge time
+	timekeep_t limit_chargetime;	///< maximum duration of charge time
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection). @warning MUST be locally or globally > 0C
 	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. @warning MUST be locally or globally > limit_tmin
@@ -178,7 +179,7 @@ struct s_pdata {
 	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
 	bool dhwc_absolute;		///< true if absolute DHWT charge in progress
 	bool dhwc_sliding;		///< true if sliding DHWT charge in progress
-	time_t consumer_sdelay;		///< minimum time consumers should keep their current consumption before turning off
+	timekeep_t consumer_sdelay;	///< minimum time consumers should keep their current consumption before turning off
 	int_fast16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 };
 
