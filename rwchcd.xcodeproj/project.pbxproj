@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0E1D72220A16FD00DB5ACA /* timekeep.c */; };
 		4F15A85E1EBF74880000507A /* alarms.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F15A85C1EBF74880000507A /* alarms.c */; };
 		4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8A218E1DBE009DCBC2 /* log_rrd.c */; };
 		4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8D218E4E2E009DCBC2 /* log_file.c */; };
@@ -53,6 +54,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4F0E1D72220A16FD00DB5ACA /* timekeep.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = timekeep.c; sourceTree = SOURCE_ROOT; };
+		4F0E1D73220A16FD00DB5ACA /* timekeep.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = timekeep.h; sourceTree = SOURCE_ROOT; };
 		4F15A85C1EBF74880000507A /* alarms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = alarms.c; sourceTree = SOURCE_ROOT; };
 		4F15A85D1EBF74880000507A /* alarms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alarms.h; sourceTree = SOURCE_ROOT; };
 		4F299C8A218E1DBE009DCBC2 /* log_rrd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_rrd.c; sourceTree = SOURCE_ROOT; };
@@ -231,6 +234,8 @@
 				4FA61C3D1E06F75100B4D862 /* timer.h */,
 				4FA61C3F1E0955AA00B4D862 /* scheduler.c */,
 				4FA61C401E0955AA00B4D862 /* scheduler.h */,
+				4F0E1D72220A16FD00DB5ACA /* timekeep.c */,
+				4F0E1D73220A16FD00DB5ACA /* timekeep.h */,
 				4FCD55141D835D04003BB848 /* rwchcd.c */,
 				4FCD55151D835D04003BB848 /* rwchcd.h */,
 				4F99FD202088D18500DDAB75 /* filecfg.c */,
@@ -327,6 +332,7 @@
 				4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */,
 				4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */,
 				4FC1847B1DA6809E000E514B /* storage.c in Sources */,
+				4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */,
 				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,
 				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,
