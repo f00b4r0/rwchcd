@@ -224,7 +224,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 
 	// if ror is requested and valve is not available report misconfiguration
 	if (circuit->set.wtemp_rorh && !circuit->valve_mix) {
-		dbgerr("\"%\": rate of rise control requested but no mixing valve is available", circuit->name);
+		dbgerr("\"%s\": rate of rise control requested but no mixing valve is available", circuit->name);
 		ret = -EMISCONFIGURED;
 	}
 
