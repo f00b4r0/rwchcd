@@ -241,7 +241,7 @@ static void hw_p1_parse_temps(void)
 	uint_fast8_t i;
 	temp_t previous, current;
 	
-	assert(Hardware.run.online);
+	assert(Hardware.run.initialized);
 
 	pthread_rwlock_wrlock(&Hardware.Sensors_rwlock);
 	for (i = 0; i < Hardware.settings.nsensors; i++) {
@@ -495,7 +495,7 @@ int hw_p1_sensors_read(void)
 	int_fast8_t sensor;
 	int ret = ALL_OK;
 	
-	assert(Hardware.run.online);
+	assert(Hardware.run.initialized);
 
 	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
 		ret = hw_p1_spi_sensor_r(Hardware.sensors, sensor);

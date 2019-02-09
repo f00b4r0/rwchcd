@@ -143,8 +143,17 @@ static int hw_p1_online(void * priv)
 
 	// calibrate
 	ret = hw_p1_calibrate();
-	if (ret)
+	if (ALL_OK != ret) {
+		dbgerr("hw_p1_calibrate failed (%d)", ret);
 		goto fail;
+	}
+
+	// read sensors once
+	ret = hw_p1_sensors_read();
+	if (ALL_OK != ret) {
+		dbgerr("hw_p1_sensors_read failed (%d)", ret);
+		goto fail;
+	}
 
 	// restore previous state - failure is ignored
 	ret = hw_p1_restore_relays();
