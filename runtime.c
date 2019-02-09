@@ -320,5 +320,7 @@ int runtime_offline(void)
  */
 void runtime_exit(void)
 {
+	plant_del(Runtime.plant);
+	config_del(Runtime.config);
 	runtime_init();		// clear runtime
 }

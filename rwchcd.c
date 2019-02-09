@@ -202,9 +202,7 @@ static void exit_process(void)
 	alarms_offline();
 	hardware_offline();
 	filecfg_dump();
-	plant_del(runtime->plant);
 	models_exit();
-	config_del(runtime->config);
 	runtime_exit();
 	hardware_exit();
 	hw_backends_exit();
