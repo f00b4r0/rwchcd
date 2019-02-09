@@ -236,7 +236,7 @@ static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_
 				dhwt_params->limit_wintmax = celsius;
 				break;
 			case 7:
-				if (fv < 0)
+				if (delta < 0)
 					goto invaliddata;
 				else
 					dhwt_params->hysteresis = delta;
@@ -325,7 +325,7 @@ static int hcircuit_params_parse(void * restrict const priv, const struct s_file
 				hcircuit_params->outhoff_frostfree = celsius;
 				break;
 			case 7:
-				if (fv < 0)
+				if (delta < 0)
 					goto invaliddata;
 				else
 					hcircuit_params->outhoff_hysteresis = delta;
@@ -394,10 +394,12 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 				celsius = (NODEFLT == currnode->type) ? celsius_to_temp(currnode->value.floatval) : celsius_to_temp(currnode->value.intval);
 				switch (i) {
 					case 2:
-						ret = config_set_tsummer(config, celsius);
+						if (ALL_OK != config_set_tsummer(config, celsius))
+							goto invaliddata;
 						break;
 					case 3:
-						ret = config_set_tfrost(config, celsius);
+						if (ALL_OK != config_set_tfrost(config, celsius))
+							goto invaliddata;
 						break;
 					default:
 						break;
@@ -1412,7 +1414,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODEBOL, "legionella", false, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
-	int wday, hour, min, ret;
+	int wday = -1, hour = -1, min = -1, ret;
 	enum e_runmode runmode = RM_UNKNOWN, dhwmode = RM_UNKNOWN;
 	bool legionella = false;
 	unsigned int i;
@@ -1571,7 +1573,7 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
 {
 	unsigned int i;
-	int ret;
+	int ret = -EEMPTY;
 
 	for (i = 0; i < nparsers; i++) {
 		if (parsers[i].node && parsers[i].parser) {
