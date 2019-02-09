@@ -23,7 +23,7 @@
 /** Temperature integral data */
 struct s_temp_intgrl {
 	bool inuse;			///< true if integral is in use
-	temp_t integral;		///< integral value in temp_t * timekeep_t
+	temp_t integral;		///< integral value in temp_t * seconds
 	temp_t last_thrsh;		///< temperature threshold for integral calculation
 	temp_t last_temp;		///< last recorded temperature value
 	timekeep_t last_time;		///< last recorded temperature time
