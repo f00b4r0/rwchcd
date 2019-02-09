@@ -195,7 +195,6 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 
 		bmodel->run.summer = temp_bmodel.run.summer;
 		bmodel->run.frost = temp_bmodel.run.frost;
-		bmodel->run.t_out_faltime = temp_bmodel.run.t_out_faltime;
 		bmodel->run.t_out_filt = temp_bmodel.run.t_out_filt;
 		bmodel->run.t_out_mix = temp_bmodel.run.t_out_mix;
 		bmodel->run.t_out_att = temp_bmodel.run.t_out_att;
@@ -236,6 +235,7 @@ static const struct s_bmodel * bmodels_fbn(const struct s_bmodel_l * const bmode
 static int bmodel_online(struct s_bmodel * restrict const bmodel)
 {
 	int ret;
+	temp_t tout;
 
 	assert(bmodel);
 
@@ -248,9 +248,21 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 	}
 
 	// make sure specified outdoor sensor is available
-	ret = hardware_sensor_clone_time(bmodel->set.tid_outdoor, NULL);
-	if (ALL_OK != ret)
+	ret = hardware_sensor_clone_temp(bmodel->set.tid_outdoor, &tout);
+	if (ALL_OK != ret) {
+		dbgerr("\"%s\": outdoor sensor error (%d)", bmodel->name, ret);
 		return (ret);
+	}
+
+	bmodel->run.t_out = tout;
+	hardware_sensor_clone_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
+
+	// set sane values if necessary
+	if (!bmodel->run.t_out_att || !bmodel->run.t_out_filt) {
+		bmodel->run.t_out_att = bmodel->run.t_out_filt = tout;
+	}
+	// force set t_out_faltime since we can't restore it
+	hardware_sensor_clone_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_faltime);
 
 	// log registration shouldn't cause online failure
 	if (bmodel_log_register(bmodel) != ALL_OK)
@@ -302,7 +314,7 @@ static void bmodel_del(struct s_bmodel * restrict bmodel)
  */
 static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 {
-	const timekeep_t last = bmodel->run.t_out_ltime;	// previous sensor time. At first run: 0 which makes mavg return new sample
+	const timekeep_t last = bmodel->run.t_out_ltime;	// previous sensor time
 	timekeep_t dt;
 	temp_t toutdoor;
 	int ret;
