@@ -36,6 +36,7 @@
 #include "models.h"	// s_bmodel for plant_summer_ok()
 #include "storage.h"
 
+#if 0
 static const storage_version_t Plant_sversion = 2;
 
 /**
@@ -77,6 +78,7 @@ static int plant_restore(struct s_plant * restrict const plant)
 
 	return (ALL_OK);
 }
+#endif
 
 /**
  * Find a pump by name in a plant.
@@ -587,7 +589,7 @@ int plant_online(struct s_plant * restrict const plant)
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);
 
-	plant_restore(plant);
+	//plant_restore(plant);
 
 	// online the actuators first
 	// pumps
@@ -679,7 +681,7 @@ int plant_offline(struct s_plant * restrict const plant)
 	if (!plant->configured)
 		return (-ENOTCONFIGURED);
 
-	plant_save(plant);
+	//plant_save(plant);
 	
 	// offline the consummers first
 	// circuits first
