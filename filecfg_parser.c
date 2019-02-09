@@ -14,6 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// forcefully undefine DEBUG to suppress (very verbose) dbgmsg output
+#undef DEBUG
+
 #include "hw_backends.h"
 #include "config.h"
 #include "lib.h"
@@ -1607,13 +1610,16 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodeli
 	struct s_runtime * const runtime = runtime_get();
 	int ret;
 
-	dbgmsg("Begin parsing config");
+	pr_log(_("Begin parsing config"));
 	ret = filecfg_parser_match_nodelist(nodelist, root_parsers, ARRAY_SIZE(root_parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
 	ret = filecfg_parser_run_parsers(runtime, root_parsers, ARRAY_SIZE(root_parsers));
-	dbgmsg("Done parsing config");
+	if (ALL_OK == ret)
+		pr_log(_("Config successfully parsed"));
+	else
+		pr_log(_("Error parsing config! (%d)"), ret);
 
 	return (ret);
 }
