@@ -42,14 +42,13 @@
 #include <sys/types.h>	// fifo
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef DEBUG
+ #include <time.h>
+#endif
 
 #include "rwchcd.h"
 #include "lib.h"
 #include "hw_backends.h"
-#ifdef HAS_HWP1
- #include "hw_backends/hw_p1/hw_p1_backend.h"
- #include "hw_backends/hw_p1/hw_p1_setup.h"
-#endif
 #include "hardware.h"
 #include "plant.h"
 #include "config.h"
@@ -83,6 +82,9 @@ extern FILE *filecfg_parser_in;
 #endif
 
 #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
+
+#define RWCHCD_FIFO	"/tmp/rwchcd.fifo"
+#define RWCHCD_CONFIG	"/etc/rwchcd.conf"
 
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
@@ -120,25 +122,25 @@ static void sig_handler(int signum)
  init() initialize blank data structures etc
  online() performs configuration checks and brings subsystem online
  */
-static int init_process()
+static int init_process(void)
 {
 	int ret;
 
-	/* init hardware backend subsystem */
+	/* init hardware backend subsystem - clears data used by config */
 	ret = hw_backends_init();
 	if (ret) {
 		dbgerr("hw_backends init error: %d", ret);
 		return (ret);
 	}
 
-	/* init runtime */
+	/* init runtime - clears data used by config */
 	ret = runtime_init();
 	if (ret) {
 		dbgerr("runtime init error: %d", ret);
 		return (ret);
 	}
 
-	/* init models */
+	/* init models - clears data used by config */
 	ret = models_init();
 	if (ret) {
 		dbgerr("models init failed");
@@ -146,13 +148,27 @@ static int init_process()
 	}
 
 	// this is where we should call the parser
-	if (!(filecfg_parser_in = fopen("/etc/rwchcd.conf", "r"))) {
-		perror("/etc/rwchcd.conf");
-		exit(-1);
+	if (!(filecfg_parser_in = fopen(RWCHCD_CONFIG, "r"))) {
+		perror(RWCHCD_CONFIG);
+		return (-EGENERIC);
 	}
 	ret = filecfg_parser_parse();	// XXX REVIEW happens as root
 	if (ret)
-		exit (ret);
+		return (ret);
+
+	/* init hardware */
+	
+	ret = hardware_init();		// must happen as root (for SPI access)
+	if (ret) {
+		dbgerr("hardware init error: %d", ret);
+		return (ret);
+	}
+
+	// signal hw has been inited
+	pthread_barrier_wait(&barr_main);
+
+	// wait for priviledges to be dropped
+	pthread_barrier_wait(&barr_main);
 
 	ret = storage_config();
 	if (ret) {
@@ -165,20 +181,6 @@ static int init_process()
 		dbgerr("log config error: %d", ret);
 		return (ret);
 	}
-
-	/* init hardware */
-	
-	ret = hardware_init();
-	if (ret) {
-		dbgerr("hardware init error: %d", ret);
-		return (ret);
-	}
-
-	// signal hw has been inited
-	pthread_barrier_wait(&barr_main);
-
-	// wait for priviledges to be dropped
-	pthread_barrier_wait(&barr_main);
 
 	/* test and launch */
 
@@ -196,17 +198,15 @@ static int init_process()
 
 static void exit_process(void)
 {
-	struct s_runtime * restrict const runtime = runtime_get();
-
 	runtime_offline();
 	alarms_offline();
 	hardware_offline();
+	log_exit();
 	filecfg_dump();
+	hardware_exit();
 	models_exit();
 	runtime_exit();
-	hardware_exit();
 	hw_backends_exit();
-	log_exit();
 }
 
 static void * thread_master(void *arg)
@@ -217,7 +217,7 @@ static void * thread_master(void *arg)
 	
 	ret = init_process();
 	if (ret != ALL_OK) {
-		dbgerr("init_proccess failed (%d)", ret);
+		pr_log(_("Process initialization failed (%d) - ABORTING!"), ret);
 		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
 	
@@ -226,6 +226,10 @@ static void * thread_master(void *arg)
 		runtime_set_systemmode(SYS_FROSTFREE);
 	
 	while (Sem_master_thread) {
+#ifdef DEBUG
+		printf("%ld\n", time(NULL));
+#endif
+
 		ret = hardware_input();
 		if (ret)
 			dbgerr("hardware_input returned: %d", ret);
@@ -304,8 +308,6 @@ static void * thread_watchdog(void * arg)
 	else	// ret < 0
 		err(ret, NULL);
 }
-
-#define RWCHCD_FIFO	"/tmp/rwchcd.fifo"
 
 int main(void)
 {
