@@ -319,6 +319,7 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  * @param circuit target circuit
  * @return exec status
  * @warning circuit->run.target_ambient must be properly set before this runs
+ * @bug in ror limiter target won't adjust to falling circuit temp (see code)
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
