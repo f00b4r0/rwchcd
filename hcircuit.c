@@ -353,7 +353,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			if (circuit->run.target_wtemp && (circuit->pdata->consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-				water_temp = circuit->run.target_wtemp;
+				water_temp = curr_temp;		// maintain current output
 				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->consumer_sdelay));
 				goto valve;	// stop processing
 			}
