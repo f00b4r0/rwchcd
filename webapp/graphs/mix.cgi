@@ -53,7 +53,7 @@
 	CDEF:twcel=twkelth,1000,/,273.15,-,0,100,LIMIT
 	CDEF:tout=tokelth,1000,/,273.15,-
 	CDEF:toutmix=tomkelth,1000,/,273.15,-
-	CDEF:thresh=tacel,18,GE,18.5,tacel,13,LE,7.5,16,IF,IF,1,-
+	CDEF:thresh=tacel,18,GE,18.5,tacel,14,LE,7.5,16,IF,IF,1,-
  	AREA:twcel#00a00011:skipscale
 	LINE1:tout#db8080:"T out"
 	LINE1:toutmix#db8000:"T out mix"
