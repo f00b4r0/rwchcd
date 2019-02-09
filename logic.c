@@ -220,7 +220,7 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 		dtmin = expw_mavg_dtmin(3*bmodel->set.tau);
 		
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
-		if (RM_OFF == circuit->run.runmode) {
+		if ((RM_OFF == circuit->run.runmode) && ambient_temp) {
 			if (elapsed_time > dtmin) {
 				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
