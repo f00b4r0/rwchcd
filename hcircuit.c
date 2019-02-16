@@ -353,9 +353,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			if (circuit->run.target_wtemp && (circuit->pdata->consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-				water_temp = curr_temp;		// maintain current output
 				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->consumer_sdelay));
-				goto valve;	// stop processing
+				return (ALL_OK);	// stop processing: maintain current output
 			}
 			else
 				return (hcircuit_shutdown(circuit));
@@ -412,6 +411,9 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// save "non-interfered" target water temp, i.e. the real target (within enforced limits)
 	circuit->run.target_wtemp = water_temp;
 
+	// heat request is always computed based on non-interfered water_temp value
+	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_hcircuit.temp_inoffset);
+
 	// alterations to the computed value only make sense if a mixing valve is available
 	if (circuit->valve_mix) {
 		// interference: apply rate of rise limitation if any: update temp every minute
@@ -460,6 +462,12 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		// but high limit can never be overriden: re-enact it
 		if (water_temp > lwtmax)
 			water_temp = lwtmax;
+
+		// adjust valve position if necessary
+		ret = valve_tcontrol(circuit->valve_mix, water_temp);
+		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
+			return (ret);
+		// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))
 	}
 
 #ifdef DEBUG
@@ -469,22 +477,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	       temp_to_celsius(circuit->run.target_wtemp), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));
 #endif
 
-	// heat request is always computed based on non-interfered water_temp value
-	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_hcircuit.temp_inoffset);
-
-valve:
-	// adjust valve position if necessary
-	if (circuit->valve_mix) {
-		ret = valve_tcontrol(circuit->valve_mix, water_temp);
-		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
-			goto out;
-	}
-
-	// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))
-
-	ret = ALL_OK;
-out:
-	return (ret);
+	return (ALL_OK);
 }
 
 /**
