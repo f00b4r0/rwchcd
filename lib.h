@@ -76,12 +76,13 @@ __attribute__((const, always_inline)) static inline float temp_to_deltaK(const t
 /**
  * Calculate the minimum time interval to use with temp_expw_mavg() for a given
  * tau.
+ * This function 'ceils' the return value.
  * @param tau target tau
  * @return minimum usable time interval
  */
 __attribute__((const, always_inline)) static inline timekeep_t expw_mavg_dtmin(const timekeep_t tau)
 {
-	return (/*ceilf*/(((1.0F/KPRECISIONF)*tau)/(1.0F-(1.0F/KPRECISIONF))) * 2);
+	return ((((KPRECISIONI*tau)/(KPRECISIONI-1)) * 2 / KPRECISIONI) + 1);
 }
 
 /**
