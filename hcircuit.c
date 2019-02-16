@@ -326,7 +326,6 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  * @param circuit target circuit
  * @return exec status
  * @warning circuit->run.target_ambient must be properly set before this runs
- * @bug in ror limiter target won't adjust to falling circuit temp (see code)
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
@@ -428,16 +427,20 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			// first sample: init target to current temp and set water_temp to current
 			if (!circuit->run.rorh_update_time) {
 				water_temp = curr_temp;
-				circuit->run.rorh_last_target = curr_temp;
+				circuit->run.rorh_last_target = circuit->run.rorh_temp_start = curr_temp;
 				circuit->run.rorh_update_time = now;
 			}
 			// request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
 			else if (water_temp <= curr_temp) {
-				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
+				circuit->run.rorh_last_target = circuit->run.rorh_temp_start = curr_temp;	// update last_target to current point
 				circuit->run.rorh_update_time = now;
 			}
-			// else: request for higher temp: apply rate limiter - XXX BUG: if current temp decreases (e.g. after pump turn on) the target won't be lowered.
+			// else: request for higher temp: apply rate limiter
 			else {
+				// during UP trans let the water settle to low point, which we'll use as reference once it's reached.
+				if ((TRANS_UP == circuit->run.transition) && (curr_temp < circuit->run.rorh_temp_start))
+					circuit->run.rorh_last_target = circuit->run.rorh_temp_start = curr_temp;
+
 				if ((now - circuit->run.rorh_update_time) >= HCIRCUIT_RORH_DT) {
 					// compute next target step
 					temp = circuit->run.rorh_last_target + circuit->run.rorh_temp_increment;
