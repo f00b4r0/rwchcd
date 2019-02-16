@@ -228,8 +228,8 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 		sch_before->next = sch;
 	/* End fence section */
 	
-	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d, legionella: %d",
-	       tm_wday, tm_hour, tm_min, runmode, dhwmode, legionella);
+//	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d, legionella: %d",
+//	       tm_wday, tm_hour, tm_min, runmode, dhwmode, legionella);
 	
 	return (ALL_OK);
 }
