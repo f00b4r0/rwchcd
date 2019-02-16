@@ -26,6 +26,8 @@
 #include "config.h"
 #include "log.h"
 
+#define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)
+#define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
 
 /**
  * Heating circuit data log callback.
@@ -222,10 +224,14 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		ret = -EMISCONFIGURED;
 	}
 
-	// if ror is requested and valve is not available report misconfiguration
-	if (circuit->set.wtemp_rorh && !circuit->valve_mix) {
-		dbgerr("\"%s\": rate of rise control requested but no mixing valve is available", circuit->name);
-		ret = -EMISCONFIGURED;
+	if (circuit->set.wtemp_rorh) {
+		// if ror is requested and valve is not available report misconfiguration
+		if (!circuit->valve_mix) {
+			dbgerr("\"%s\": rate of rise control requested but no mixing valve is available", circuit->name);
+			ret = -EMISCONFIGURED;
+		}
+		// setup rate limiter
+		circuit->run.rorh_temp_increment = temp_expw_mavg(0, circuit->set.wtemp_rorh, HCIRCUIT_RORH_1HTAU, HCIRCUIT_RORH_DT);
 	}
 
 	// log registration shouldn't cause online failure
@@ -432,9 +438,9 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			}
 			// else: request for higher temp: apply rate limiter - XXX BUG: if current temp decreases (e.g. after pump turn on) the target won't be lowered.
 			else {
-				if ((now - circuit->run.rorh_update_time) >= timekeep_sec_to_tk(60)) {	// 1mn has past, update target - XXX hardcoded 60s resolution
+				if ((now - circuit->run.rorh_update_time) >= HCIRCUIT_RORH_DT) {
 					// compute next target step
-					temp = temp_expw_mavg(circuit->run.rorh_last_target, circuit->run.rorh_last_target+circuit->set.wtemp_rorh, timekeep_sec_to_tk(3600), now - circuit->run.rorh_update_time);
+					temp = circuit->run.rorh_last_target + circuit->run.rorh_temp_increment;
 					// new request is min of next target step and actual request
 					circuit->run.rorh_last_target = (temp < water_temp) ? temp : water_temp;
 					circuit->run.rorh_update_time = now;
