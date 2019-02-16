@@ -178,8 +178,6 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	enum e_hw_p1_stype stype;
 	int ret;
 
-	dbgmsg("parsing sensor %d", node->lineno);
-
 	// match children
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
@@ -236,8 +234,6 @@ static int relay_parse(void * restrict const priv, const struct s_filecfg_parser
 	rid_t relay_id;
 	bool failstate;
 	int ret;
-
-	dbgmsg("parsing relay %d", node->lineno);
 
 	// match children
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
