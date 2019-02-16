@@ -278,8 +278,8 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 					break;
 			}
 			if (circuit->run.transition)	// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
-				dbgmsg("\"%s\": Trans: %d, st_amb: %d, cr_amb: %d, active_elapsed: %ld",
-				       circuit->name, circuit->run.transition, circuit->run.trans_start_temp, ambient_temp, timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
+				dbgmsg("\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %ld",
+				       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
 		}
 	}
 	
