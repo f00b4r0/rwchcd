@@ -2,7 +2,7 @@
 //  hcircuit.c
 //  rwchcd
 //
-//  (C) 2017-2018 Thibaut VARENE
+//  (C) 2017-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -146,25 +146,34 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
 static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const temp_t source_temp)
 {
 	const struct s_tlaw_bilin20C_priv * const tld = circuit->tlaw_priv;
-	float slope;
-	temp_t offset, t_output;
+	temp_t t_output;
+	temp_t diffnum, diffden;
+	temp_t slopenum, slopeden;
 
 	assert(tld);
 
+	slopenum = tld->twater2 - tld->twater1;
+	slopeden = tld->tout2 - tld->tout1;
+
 	// calculate new parameters based on current outdoor temperature (select adequate segment)
-	if (source_temp < tld->toutinfl)
-		slope = ((float)(tld->twaterinfl - tld->twater1)) / (tld->toutinfl - tld->tout1);
-	else
-		slope = ((float)(tld->twater2 - tld->twaterinfl)) / (tld->tout2 - tld->toutinfl);
-	offset = tld->twaterinfl - (tld->toutinfl * slope);
+	if (source_temp < tld->toutinfl) {
+		diffnum = tld->twaterinfl - tld->twater1;
+		diffden = tld->toutinfl - tld->tout1;
+	}
+	else {
+		diffnum = tld->twater2 - tld->twaterinfl;
+		diffden = tld->tout2 - tld->toutinfl;
+	}
 
 	// calculate output at nominal 20C: Y = input*slope + offset
-	t_output = roundf(source_temp * slope) + offset;
 
-	dbgmsg("\"%s\": lin: %.1f, comp: %.1f", circuit->name, temp_to_celsius(roundf(source_temp * tld->slope) + tld->offset), temp_to_celsius(t_output));
+	// XXX under "normal" conditions, the following operations should not overflow
+	t_output = (source_temp - tld->toutinfl) * diffnum;
+	t_output /= diffden;		// no rounding: will slightly over estimate output, which is desirable
+	t_output += tld->twaterinfl;
 
-	// shift output based on actual target temperature
-	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (1 - tld->slope);
+	// shift output based on actual target temperature: (tgt - 20C) * (1 - tld->slope)
+	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (slopeden - slopenum)/slopeden;;
 
 	return (t_output);
 }
@@ -511,7 +520,8 @@ int circuit_make_bilinear(struct s_hcircuit * const circuit,
 			  temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100)
 {
 	struct s_tlaw_bilin20C_priv * priv = NULL;
-	temp_t toutw20C, tlin;
+	temp_t toutw20C, offset, tlin;
+	float slope;
 
 	if (!circuit)
 		return (-EINVALID);
@@ -538,19 +548,19 @@ int circuit_make_bilinear(struct s_hcircuit * const circuit,
 	priv->nH100 = nH100;
 
 	// calculate the linear slope = (Y2 - Y1)/(X2 - X1)
-	priv->slope = ((float)(priv->twater2 - priv->twater1)) / (priv->tout2 - priv->tout1);
+	slope = ((float)(priv->twater2 - priv->twater1)) / (priv->tout2 - priv->tout1);
 	// offset: reduce through a known point
-	priv->offset = priv->twater2 - (priv->tout2 * priv->slope);
+	offset = priv->twater2 - (priv->tout2 * slope);
 
 	if (!priv->toutinfl) {
 		// calculate outdoor temp for 20C water temp
-		toutw20C = roundf(((float)(celsius_to_temp(20) - priv->offset)) / priv->slope);
+		toutw20C = roundf(((float)(celsius_to_temp(20) - offset)) / slope);
 
 		// calculate outdoor temp for inflexion point (toutw20C - (30% of toutw20C - tout1))
 		priv->toutinfl = toutw20C - ((toutw20C - priv->tout1) * 30 / 100);
 
 		// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
-		tlin = (roundf(priv->toutinfl * priv->slope) + priv->offset);
+		tlin = (roundf(priv->toutinfl * slope) + offset);
 		priv->twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (priv->nH100 - 100) / 100);
 	}
 
