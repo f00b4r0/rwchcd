@@ -4,6 +4,7 @@
  <RRD::SETVAR rrdbhw /var/lib/rwchcd/log_hw_p1_temps>
  <RRD::SETVAR width 1200>
  <RRD::SETVAR height 600>
+ <RRD::SETVAR cdeftconv TIME,1550342839,GT,1024,1000,IF,/,273,->
  <RRD::GOODFOR 300>
  <HTML>
  <HEAD>
@@ -22,12 +23,12 @@
  	DEF:twkelth=<RRD::GETVAR rrdbc>:target_wtemp:LAST
  	DEF:awkelth=<RRD::GETVAR rrdbc>:actual_wtemp:LAST
 	DEF:tomkelth=<RRD::GETVAR rrdbbm>:t_out_mix:LAST
-	CDEF:tbocel=tbokelth,1000,/,273.15,-
-	CDEF:tacel=takelth,1000,/,273.15,-
-	CDEF:aacel=aakelth,1000,/,273.15,-
-	CDEF:twcel=twkelth,1000,/,273.15,-,0,100,LIMIT
-	CDEF:awcel=awkelth,1000,/,273.15,-
-	CDEF:toutmix=tomkelth,1000,/,273.15,-
+	CDEF:tbocel=tbokelth,<RRD::GETVAR cdeftconv>
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
+	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
+	CDEF:toutmix=tomkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#00a00011:skipscale
  	LINE1:tbocel#c48880:"T chaud min"
  	LINE1:tacel#0000a0:"T cible ambiant"
@@ -49,10 +50,10 @@
 	DEF:tomkelth=<RRD::GETVAR rrdbbm>:t_out_mix:LAST
 	DEF:frost=<RRD::GETVAR rrdbbm>:frost:LAST
 	DEF:summer=<RRD::GETVAR rrdbbm>:summer:LAST
-	CDEF:tacel=takelth,1000,/,273.15,-
-	CDEF:twcel=twkelth,1000,/,273.15,-,0,100,LIMIT
-	CDEF:tout=tokelth,1000,/,273.15,-
-	CDEF:toutmix=tomkelth,1000,/,273.15,-
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
+	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
+	CDEF:tout=tokelth,<RRD::GETVAR cdeftconv>
+	CDEF:toutmix=tomkelth,<RRD::GETVAR cdeftconv>
 	CDEF:thresh=tacel,18,GE,18.5,tacel,14,LE,7.5,16,IF,IF,1,-
  	AREA:twcel#00a00011:skipscale
 	LINE1:tout#db8080:"T out"

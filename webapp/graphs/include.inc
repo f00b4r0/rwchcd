@@ -1,6 +1,7 @@
  <RRD::SETVAR rrdb /var/lib/rwchcd/log_hw_p1_temps>
  <RRD::SETVAR width 800>
  <RRD::SETVAR height 200>
+ <RRD::SETVAR cdeftconv TIME,1550342839,GT,1024,1000,IF,/,273,->
  <RRD::GOODFOR 60>
  <HTML>
  <HEAD>
@@ -15,7 +16,7 @@
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
 	HRULE:0#000000
  	DEF:celth=<RRD::GETVAR rrdb>:<RRD::GETVAR DS>:LAST
-	CDEF:cel=celth,1000,/,273.15,-
+	CDEF:cel=celth,<RRD::GETVAR cdeftconv>
  	LINE1:cel#00a000:"Last"
  >
  </P>
@@ -25,7 +26,7 @@
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
 	HRULE:0#000000
  	DEF:celth=<RRD::GETVAR rrdb>:<RRD::GETVAR DS>:AVERAGE
-	CDEF:cel=celth,1000,/,273.15,-
+	CDEF:cel=celth,<RRD::GETVAR cdeftconv>
  	LINE1:cel#00a000:"Moy"
  >
  </P>
@@ -35,7 +36,7 @@
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
 	HRULE:0#000000
  	DEF:celth=<RRD::GETVAR rrdb>:<RRD::GETVAR DS>:AVERAGE
-	CDEF:cel=celth,1000,/,273.15,-
+	CDEF:cel=celth,<RRD::GETVAR cdeftconv>
  	LINE1:cel#00a000:"Moy"
  >
  </P>
@@ -45,7 +46,7 @@
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
 	HRULE:0#000000
  	DEF:celth=<RRD::GETVAR rrdb>:<RRD::GETVAR DS>:AVERAGE
-	CDEF:cel=celth,1000,/,273.15,-
+	CDEF:cel=celth,<RRD::GETVAR cdeftconv>
  	LINE1:cel#00a000:"Moy"
  >
  </P>
@@ -55,12 +56,12 @@
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
 	HRULE:0#000000
  	DEF:celth=<RRD::GETVAR rrdb>:<RRD::GETVAR DS>:AVERAGE
-	CDEF:cel=celth,1000,/,273.15,-
+	CDEF:cel=celth,<RRD::GETVAR cdeftconv>
  	LINE1:cel#00a000:"Moy"
  	DEF:celthM=<RRD::GETVAR rrdb>:<RRD::GETVAR DS>:MAX
  	DEF:celthm=<RRD::GETVAR rrdb>:<RRD::GETVAR DS>:MIN
-	CDEF:celM=celthM,1000,/,273.15,-
-	CDEF:celm=celthm,1000,/,273.15,-
+	CDEF:celM=celthM,<RRD::GETVAR cdeftconv>
+	CDEF:celm=celthm,<RRD::GETVAR cdeftconv>
  	LINE1:celM#a00000:"Max"
  	LINE1:celm#0000a0:"Min"
  >

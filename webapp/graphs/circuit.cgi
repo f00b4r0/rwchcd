@@ -2,6 +2,7 @@
  <RRD::SETVAR rrdb /var/lib/rwchcd/log_hcircuit_circuit>
  <RRD::SETVAR width 1000>
  <RRD::SETVAR height 400>
+ <RRD::SETVAR cdeftconv TIME,1550342839,GT,1024,1000,IF,/,273,->
  <RRD::GOODFOR 300>
  <HTML>
  <HEAD>
@@ -18,10 +19,10 @@
  	DEF:aakelth=<RRD::GETVAR rrdb>:actual_ambient:LAST
  	DEF:twkelth=<RRD::GETVAR rrdb>:target_wtemp:LAST
  	DEF:awkelth=<RRD::GETVAR rrdb>:actual_wtemp:LAST
-	CDEF:tacel=takelth,1000,/,273.15,-
-	CDEF:aacel=aakelth,1000,/,273.15,-
-	CDEF:twcel=twkelth,1000,/,273.15,-,0,100,LIMIT
-	CDEF:awcel=awkelth,1000,/,273.15,-
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
+	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#00a00011:skipscale
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
@@ -37,10 +38,10 @@
  	DEF:aakelth=<RRD::GETVAR rrdb>:actual_ambient:LAST
  	DEF:twkelth=<RRD::GETVAR rrdb>:target_wtemp:LAST
  	DEF:awkelth=<RRD::GETVAR rrdb>:actual_wtemp:LAST
-	CDEF:tacel=takelth,1000,/,273.15,-
-	CDEF:aacel=aakelth,1000,/,273.15,-
-	CDEF:twcel=twkelth,1000,/,273.15,-,0,100,LIMIT
-	CDEF:awcel=awkelth,1000,/,273.15,-
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
+	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#00a00011:skipscale
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
@@ -56,10 +57,10 @@
  	DEF:aakelth=<RRD::GETVAR rrdb>:actual_ambient:AVERAGE
  	DEF:twkelth=<RRD::GETVAR rrdb>:target_wtemp:AVERAGE
  	DEF:awkelth=<RRD::GETVAR rrdb>:actual_wtemp:AVERAGE
-	CDEF:tacel=takelth,1000,/,273.15,-
-	CDEF:aacel=aakelth,1000,/,273.15,-
-	CDEF:twcel=twkelth,1000,/,273.15,-,0,100,LIMIT
-	CDEF:awcel=awkelth,1000,/,273.15,-
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
+	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#00a00011:skipscale
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
