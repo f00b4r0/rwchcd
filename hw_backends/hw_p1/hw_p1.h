@@ -72,8 +72,8 @@ struct s_hw_p1_pdata {
 		bool online;			///< hardware is online (online() succeeded)
 		timekeep_t sensors_ftime;	///< sensors fetch time
 		timekeep_t last_calib;		///< time of last calibration
-		float calib_nodac;		///< sensor calibration value without dac offset
-		float calib_dac;		///< sensor calibration value with dac offset
+		uint_fast16_t calib_nodac;	///< sensor calibration value without dac offset (as an ohm value read)
+		uint_fast16_t calib_dac;	///< sensor calibration value with dac offset (as on ohm value read)
 		int fwversion;			///< firmware version
 	} run;		///< private runtime (internally handled)
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data

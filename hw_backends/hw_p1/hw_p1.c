@@ -2,7 +2,7 @@
 //  hw_p1.c
 //  rwchcd
 //
-//  (C) 2016-2018 Thibaut VARENE
+//  (C) 2016-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -10,6 +10,7 @@
  * @file
  * Hardware Prototype 1 driver implementation.
  * @note This driver can only accomodate a @b SINGLE instance of the hardware.
+ * @todo convert to fixed-point arithmetic
  */
 
 #include <time.h>	// time
@@ -26,8 +27,8 @@
 #include "hw_p1_lcd.h"
 #include "hw_p1.h"
 
-#define VALID_CALIB_MIN		0.9F	///< minimum valid calibration value (-10%)
-#define VALID_CALIB_MAX		1.1F	///< maximum valid calibration value (+10%)
+#define VALID_CALIB_MIN		(uint_fast16_t)(RWCHC_CALIB_OHM*0.9)	///< minimum valid calibration value (-10%)
+#define VALID_CALIB_MAX		(uint_fast16_t)(RWCHC_CALIB_OHM*1.1)	///< maximum valid calibration value (+10%)
 
 #define CALIBRATION_PERIOD	(600 * TIMEKEEP_SMULT)	///< calibration period in seconds: every 10mn
 
@@ -83,8 +84,8 @@ static void hw_p1_relays_log(void)
 __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
 {
 	static const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
-	uint_fast16_t value, dacoffset;
-	float calibmult;
+	uint_fast16_t calibmult, dacoffset;
+	uint_fast32_t value;
 
 	dacoffset = (raw >> RWCHC_DAC_OFFBIT) & RWCHC_DAC_OFFMASK;
 
@@ -98,13 +99,13 @@ __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw
 	value *= RWCHC_ADC_RMULT;
 	value /= (1+RWCHC_ADC_OPGAIN);
 
-	// finally, apply calibration factor
-	if (calib)
+	// finally, apply calibration factor if any
+	if (calib) {
 		calibmult = dacoffset ? Hardware.run.calib_dac : Hardware.run.calib_nodac;
-	else
-		calibmult = 1.0;
-
-	value = ((float)value * calibmult);	// calibrate
+		value *= RWCHC_CALIB_OHM;
+		value += calibmult/2;	// round
+		value /= calibmult;
+	}
 
 	return (value);
 }
@@ -426,8 +427,7 @@ out:
  */
 int hw_p1_calibrate(void)
 {
-	float newcalib_nodac, newcalib_dac;
-	uint_fast16_t refcalib;
+	uint_fast16_t newcalib_nodac, newcalib_dac;
 	int ret;
 	rwchc_sensor_t ref;
 	const timekeep_t now = timekeep_now();
@@ -437,16 +437,13 @@ int hw_p1_calibrate(void)
 	if (Hardware.run.last_calib && (now - Hardware.run.last_calib) < CALIBRATION_PERIOD)
 		return (ALL_OK);
 
-	dbgmsg("OLD: calib_nodac: %f, calib_dac: %f", Hardware.run.calib_nodac, Hardware.run.calib_dac);
-
 	ref = 0;
 	ret = hw_p1_spi_ref_r(&ref, 0);
 	if (ret)
 		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, false);	// force uncalibrated read
-		newcalib_nodac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
+		newcalib_nodac = sensor_to_ohm(ref, false);	// force uncalibrated read
 		if ((newcalib_nodac < VALID_CALIB_MIN) || (newcalib_nodac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
 	}
@@ -459,8 +456,7 @@ int hw_p1_calibrate(void)
 		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		refcalib = sensor_to_ohm(ref, false);	// force uncalibrated read
-		newcalib_dac = ((float)RWCHC_CALIB_OHM / (float)refcalib);
+		newcalib_dac = sensor_to_ohm(ref, false);	// force uncalibrated read
 		if ((newcalib_dac < VALID_CALIB_MIN) || (newcalib_dac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
 	}
@@ -468,11 +464,11 @@ int hw_p1_calibrate(void)
 		return (-EINVALID);
 
 	// everything went fine, we can update both calibration values and time
-	Hardware.run.calib_nodac = Hardware.run.calib_nodac ? (Hardware.run.calib_nodac - (0.20F * (Hardware.run.calib_nodac - newcalib_nodac))) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
-	Hardware.run.calib_dac = Hardware.run.calib_dac ? (Hardware.run.calib_dac - (0.20F * (Hardware.run.calib_dac - newcalib_dac))) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	Hardware.run.calib_nodac = Hardware.run.calib_nodac ? temp_expw_mavg(Hardware.run.calib_nodac, newcalib_nodac, 1, 5) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	Hardware.run.calib_dac = Hardware.run.calib_dac ? temp_expw_mavg(Hardware.run.calib_dac, newcalib_dac, 1, 5) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
 	Hardware.run.last_calib = now;
 
-	dbgmsg("NEW: calib_nodac: %f, calib_dac: %f", Hardware.run.calib_nodac, Hardware.run.calib_dac);
+	dbgmsg("NEW: calib_nodac: %d, calib_dac: %d", Hardware.run.calib_nodac, Hardware.run.calib_dac);
 	
 	return (ALL_OK);
 }
