@@ -47,7 +47,7 @@ class rwchcd:
 		else:
 			mode = int(form.sysmode.value)
 			rwchcd_Control.SysmodeSet(mode)
-			system("/sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
+			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
 			raise web.found('')
 
 class temps:
