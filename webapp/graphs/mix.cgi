@@ -29,14 +29,14 @@
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
 	CDEF:toutmix=tomkelth,<RRD::GETVAR cdeftconv>
- 	AREA:twcel#00a00011:skipscale
+ 	AREA:twcel#f7ad0011:skipscale
  	LINE1:tbocel#c48880:"T chaud min"
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
- 	LINE1:twcel#00a000:"T cible circuit"
+ 	LINE1:twcel#f7ad00:"T cible circuit"
  	LINE1:awcel#a00000:"T actuel circuit"
-	LINE1:toutmix#db8000:"T out mix"
+	LINE1:toutmix#00a000:"T out mix"
 	HRULE:0#000000
  >
  </P>
@@ -55,9 +55,9 @@
 	CDEF:tout=tokelth,<RRD::GETVAR cdeftconv>
 	CDEF:toutmix=tomkelth,<RRD::GETVAR cdeftconv>
 	CDEF:thresh=tacel,18,GE,18.5,tacel,14,LE,7.5,16,IF,IF,1,-
- 	AREA:twcel#00a00011:skipscale
-	LINE1:tout#db8080:"T out"
-	LINE1:toutmix#db8000:"T out mix"
+ 	AREA:twcel#f7ad0011:skipscale
+	LINE1:tout#00a080:"T out"
+	LINE1:toutmix#00a000:"T out mix"
 	LINE1:thresh::skipscale
 	AREA:1#88888888:"coupure":STACK:skipscale
 	TICK:frost#88a8a888:0.1:"frost"

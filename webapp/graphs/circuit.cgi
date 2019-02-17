@@ -23,10 +23,10 @@
 	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
- 	AREA:twcel#00a00011:skipscale
+ 	AREA:twcel#f7ad0011:skipscale
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
- 	LINE1:twcel#00a000:"T cible circuit"
+ 	LINE1:twcel#f7ad00:"T cible circuit"
  	LINE1:awcel#a00000:"T actuel circuit"
  >
  </P>
@@ -42,10 +42,10 @@
 	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
- 	AREA:twcel#00a00011:skipscale
+ 	AREA:twcel#f7ad0011:skipscale
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
- 	LINE1:twcel#00a000:"T cible circuit"
+ 	LINE1:twcel#f7ad00:"T cible circuit"
  	LINE1:awcel#a00000:"T actuel circuit"
  >
  </P>
@@ -61,10 +61,10 @@
 	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
- 	AREA:twcel#00a00011:skipscale
+ 	AREA:twcel#f7ad0011:skipscale
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
- 	LINE1:twcel#00a000:"T cible circuit"
+ 	LINE1:twcel#f7ad00:"T cible circuit"
  	LINE1:awcel#a00000:"T actuel circuit"
  >
  </P>
