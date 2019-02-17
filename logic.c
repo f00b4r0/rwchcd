@@ -450,7 +450,7 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 		// jacket integral between -100Ks and 0
 		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), deltaK_to_temp(-100), 0);
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
-		heat->run.cshift_noncrit = temp_to_deltaK(temp);
+		heat->run.cshift_noncrit = temp/KPRECISIONI;
 	}
 	else
 		reset_intg(&heat->run.sld_itg);

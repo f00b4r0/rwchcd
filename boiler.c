@@ -399,7 +399,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			// jacket integral between 0 and -100Ks - XXX hardcoded
 			temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime, deltaK_to_temp(-100), 0);
 			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
-			cshift_boil = temp_to_deltaK(2 * temp_intgrl);
+			cshift_boil = (2 * temp_intgrl)/KPRECISIONI;
 
 			if (temp_intgrl < 0)
 				dbgmsg("\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
@@ -425,7 +425,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				// jacket integral between 0 and -1000Ks - XXX hardcoded
 				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, deltaK_to_temp(-1000), 0);
 				// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - XXX hardcoded
-				cshift_ret = temp_to_deltaK(temp_intgrl / 10);
+				cshift_ret = (temp_intgrl / 10)/KPRECISIONI;
 
 				if (temp_intgrl < 0)
 					dbgmsg("\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
