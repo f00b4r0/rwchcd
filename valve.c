@@ -2,7 +2,7 @@
 //  valve.c
 //  rwchcd
 //
-//  (C) 2017-2018 Thibaut VARENE
+//  (C) 2017-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -152,11 +152,12 @@ static int v_pi_online(struct s_valve * const valve)
  */
 static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 {
+#define VPI_FPDEC	0x200000	// 10-bit significand, which should never be > 1000pth: good
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const timekeep_t now = timekeep_now();
 	int_fast16_t perth;
 	temp_t tempin_h, tempin_l, tempout, error, K;
-	float iterm, pterm, output, pthfl;
+	int_fast32_t iterm, pterm, output, pthfl;
 	float Kp, Ki;
 	const timekeep_t dt = now - vpriv->run.last_time;
 	int ret;
@@ -252,10 +253,10 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	error = target_tout - tempout;
 
 	// Integral term I: (Ki * error) * sample interval
-	iterm = Ki * error * dt;
+	iterm = Ki * error * dt * VPI_FPDEC;
 
 	// Proportional term P applied to output: Kp * (previous - actual)
-	pterm = Kp * (vpriv->run.prev_out - tempout);
+	pterm = Kp * (vpriv->run.prev_out - tempout) * VPI_FPDEC;
 
 	/*
 	 Applying the proportional term to the output O avoids kicks when
@@ -274,9 +275,9 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	 No need to keep track of the residual since the requested value is
 	 an instantaneous calculation at the time of the algorithm run.
 	 */
-	perth = truncf(pthfl);
+	perth = pthfl / VPI_FPDEC;
 
-	dbgmsg("\"%s\": E: %d, I: %f, P: %f, O: %f, acc: %f, pthfl: %f, perth: %d",
+	dbgmsg("\"%s\": E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
 	       valve->name, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
 
 	/*

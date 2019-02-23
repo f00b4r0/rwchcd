@@ -43,7 +43,7 @@ struct s_valve_pi_priv {
 		timekeep_t Tc;		///< closed loop time constant
 		temp_t prev_out;	///< previous run output temperature
 		float Kp_t;		///< Kp time factor: Kp = Kp_t / K, K process gain, Kp proportional coefficient
-		float db_acc;		///< deadband accumulator. Needed to integrate when valve is not actuated despite request.
+		int_fast32_t db_acc;	///< deadband accumulator. Needed to integrate when valve is not actuated despite request.
 	} run;		///< private runtime (internally handled)
 };
 
