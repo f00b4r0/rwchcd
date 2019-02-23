@@ -156,9 +156,8 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const timekeep_t now = timekeep_now();
 	int_fast16_t perth;
-	temp_t tempin_h, tempin_l, tempout, error, K;
-	int_fast32_t iterm, pterm, output, pthfl;
-	float Kp, Ki;
+	temp_t tempin_h, tempin_l, tempout, error;
+	int_fast32_t iterm, pterm, output, pthfl, Kp;
 	const timekeep_t dt = now - vpriv->run.last_time;
 	int ret;
 	timekeep_t Ti;
@@ -242,21 +241,17 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
-	K = (tempin_h - tempin_l)/1000;	// imprecision: floors. Make sure K cannot be 0 here.
-	Kp = vpriv->run.Kp_t/K;
+	Kp = vpriv->run.Kp_t * 1000 / (tempin_h - tempin_l);	// Make sure K cannot be 0 here. Kp is already * VPI_FDEC
 	Ti = vpriv->set.Tu;
-	Ki = Kp/Ti;
-
-	//dbgmsg("\"%s\": K: %d, Tc: %ld, Kp: %e, Ki: %e", valve->name, K, vpriv->run.Tc, Kp, Ki);
 
 	// calculate error E: (target - actual)
 	error = target_tout - tempout;
 
 	// Integral term I: (Ki * error) * sample interval
-	iterm = Ki * error * dt * VPI_FPDEC;
+	iterm = (Kp * error / Ti) * dt;
 
 	// Proportional term P applied to output: Kp * (previous - actual)
-	pterm = Kp * (vpriv->run.prev_out - tempout) * VPI_FPDEC;
+	pterm = Kp * (vpriv->run.prev_out - tempout);
 
 	/*
 	 Applying the proportional term to the output O avoids kicks when
@@ -277,8 +272,8 @@ static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 	 */
 	perth = pthfl / VPI_FPDEC;
 
-	dbgmsg("\"%s\": E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
-	       valve->name, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
+	dbgmsg("\"%s\": Kp: %x, E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
+	       valve->name, Kp, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
 
 	/*
 	 if we are below valve deadband, everything behaves as if the sample rate
@@ -772,8 +767,8 @@ int valve_make_pi(struct s_valve * const valve,
 	priv->run.Tc /= 10;
 	assert(priv->run.Tc);
 
-	priv->run.Kp_t = (float)priv->set.Tu/(priv->set.Td+priv->run.Tc);
-
+	priv->run.Kp_t = ((priv->set.Tu * VPI_FPDEC) + ((priv->set.Td + priv->run.Tc)/2)) / (priv->set.Td + priv->run.Tc);
+							// ^--- manual rounding, Td/Tc always >=0
 	// attach created priv to valve
 	valve->priv = priv;
 
