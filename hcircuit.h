@@ -59,7 +59,6 @@ struct s_hcircuit {
 		bool floor_output;		///< true if the current output should not be reduced
 		enum e_runmode runmode;		///< circuit actual (computed) runmode
 		temp_t rorh_temp_increment;	///< temperature increment for the rorh limiter. Computed once in hcircuit_online()
-		temp_t rorh_temp_start;		///< lowest temperature point reached by the rorh limiter when limiting temp rise
 		temp_t rorh_last_target;	///< previous set point target for rorh control
 		timekeep_t rorh_update_time;	///< last time output was updated with respect to rorh
 		temp_t request_ambient;		///< current requested ambient target temp

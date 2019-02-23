@@ -435,20 +435,19 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			// first sample: init target to current temp and set water_temp to current
 			if (!circuit->run.rorh_update_time) {
 				water_temp = curr_temp;
-				circuit->run.rorh_last_target = circuit->run.rorh_temp_start = curr_temp;
-				circuit->run.rorh_update_time = now;
+				// at circuit startup let the water settle to low point, which we'll use as reference once it's reached.
+				if (!circuit->run.rorh_last_target || (curr_temp < circuit->run.rorh_last_target))
+					circuit->run.rorh_last_target = curr_temp;
+				else	// don't start the algo until we've reached minimum
+					circuit->run.rorh_update_time = now;
 			}
 			// request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
 			else if (water_temp <= curr_temp) {
-				circuit->run.rorh_last_target = circuit->run.rorh_temp_start = curr_temp;	// update last_target to current point
+				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
 				circuit->run.rorh_update_time = now;
 			}
 			// else: request for higher temp: apply rate limiter
 			else {
-				// during UP trans let the water settle to low point, which we'll use as reference once it's reached.
-				if ((TRANS_UP == circuit->run.transition) && (curr_temp < circuit->run.rorh_temp_start))
-					circuit->run.rorh_last_target = circuit->run.rorh_temp_start = curr_temp;
-
 				if ((now - circuit->run.rorh_update_time) >= HCIRCUIT_RORH_DT) {
 					// compute next target step
 					temp = circuit->run.rorh_last_target + circuit->run.rorh_temp_increment;
