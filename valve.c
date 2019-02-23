@@ -561,9 +561,10 @@ int valve_logic(struct s_valve * const valve)
  */
 int valve_run(struct s_valve * const valve)
 {
+	const uint_fast32_t perthmult = 0x200000;	// fixed point multiplier
 	const timekeep_t now = timekeep_now();
 	timekeep_t dt;
-	float perth_ptk;	// ‰ position change per tick
+	uint_fast32_t perth_ptk;	// ‰ position change per tick
 	int_fast16_t course;
 	int ret = ALL_OK;
 
@@ -574,12 +575,12 @@ int valve_run(struct s_valve * const valve)
 		return (-EOFFLINE);
 
 	dt = now - valve->run.last_run_time;
-	perth_ptk = 1000.0F/valve->set.ete_time;
+	perth_ptk = 1000 * perthmult / valve->set.ete_time;
 
 	valve->run.last_run_time = now;
 	valve->run.active = true;		// XXX never set false because we don't really need to for now
 
-	course = roundf(dt * perth_ptk);		// we don't keep track of residual because we're already in ‰.
+	course = (dt * perth_ptk + perthmult/2) / perthmult;	// we don't keep track of residual because we're already in ‰.
 
 	// update counters
 	switch (valve->run.actual_action) {
