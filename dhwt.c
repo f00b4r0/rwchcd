@@ -164,7 +164,7 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 	if (dhwt->pump_recycle)
 		pump_shutdown(dhwt->pump_recycle);
 
-	hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+	(void)hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 	dhwt->run.active = false;
 
@@ -213,9 +213,9 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 	dbgerr("\"%s\": failsafe mode!", dhwt->name);
 
 	if (dhwt->pump_feed)
-		pump_set_state(dhwt->pump_feed, OFF, FORCE);
+		(void)pump_set_state(dhwt->pump_feed, OFF, FORCE);
 	if (dhwt->pump_recycle)
-		pump_set_state(dhwt->pump_recycle, OFF, FORCE);
+		(void)pump_set_state(dhwt->pump_recycle, OFF, FORCE);
 	ret = hardware_relay_set_state(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF, 0);
 	if (ALL_OK == ret)
 		dhwt->run.electric_mode = dhwt->set.electric_failover;
@@ -265,10 +265,10 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		case RM_TEST:
 			dhwt->run.active = true;
 			if (dhwt->pump_feed)
-				pump_set_state(dhwt->pump_feed, ON, FORCE);
+				(void)pump_set_state(dhwt->pump_feed, ON, FORCE);
 			if (dhwt->pump_recycle)
-				pump_set_state(dhwt->pump_recycle, ON, FORCE);
-			hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
+				(void)pump_set_state(dhwt->pump_recycle, ON, FORCE);
+			(void)hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
 			return (ALL_OK);
 		case RM_AUTO:
 		case RM_DHWONLY:
@@ -388,7 +388,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		// stop all heat input (ensures they're all off at switchover)
 		if (test) {
 			// stop self-heater (if any)
-			hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+			(void)hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 			// clear heat request
 			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;

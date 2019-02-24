@@ -501,8 +501,8 @@ int valve_offline(struct s_valve * const valve)
 		return (-ENOTCONFIGURED);
 
 	// stop the valve uncondiditonally
-	hardware_relay_set_state(valve->set.rid_hot, OFF, 0);
-	hardware_relay_set_state(valve->set.rid_cold, OFF, 0);
+	(void)hardware_relay_set_state(valve->set.rid_hot, OFF, 0);
+	(void)hardware_relay_set_state(valve->set.rid_cold, OFF, 0);
 
 	memset(&valve->run, 0x00, sizeof(valve->run));
 	//valve->run.ctrl_ready = false;	// handled by memset

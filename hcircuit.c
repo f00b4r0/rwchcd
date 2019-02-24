@@ -326,7 +326,7 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	valve_reqclose_full(circuit->valve_mix);
 	if (circuit->pump_feed)
-		pump_set_state(circuit->pump_feed, ON, FORCE);
+		(void)pump_set_state(circuit->pump_feed, ON, FORCE);
 }
 
 /**
@@ -376,7 +376,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			circuit->run.active = true;
 			valve_reqstop(circuit->valve_mix);
 			if (circuit->pump_feed)
-				pump_set_state(circuit->pump_feed, ON, FORCE);
+				(void)pump_set_state(circuit->pump_feed, ON, FORCE);
 			return (ALL_OK);
 		case RM_COMFORT:
 		case RM_ECO:
@@ -489,7 +489,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 #ifdef DEBUG
-	hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
+	(void)hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
 	dbgmsg("\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(circuit->run.target_wtemp), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));
