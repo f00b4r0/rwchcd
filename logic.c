@@ -14,7 +14,6 @@
  */
 
 #include <time.h>
-#include <math.h>
 #include <assert.h>
 
 #include "config.h"

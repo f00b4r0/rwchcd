@@ -89,7 +89,7 @@ enum e_execs {
 	EGENERIC,
 };
 
-// fixed-point precision: we use a 1/1000th of a degree (millikelvin) to reduce rounding imprecision in calculations
+// fixed-point precision: we use a 1/1024th of a degree (~millikelvin) to reduce rounding imprecision in calculations. Power of 2 for speed
 #define KPRECISIONI	1024
 #define KPRECISIONF	1024.0F
 

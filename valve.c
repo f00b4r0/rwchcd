@@ -13,7 +13,6 @@
 
 #include <stdlib.h>	// calloc/free
 #include <assert.h>
-#include <math.h>	// truncf
 #include <string.h>	// memset
 
 #include "valve.h"

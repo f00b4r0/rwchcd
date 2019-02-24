@@ -19,7 +19,6 @@
 
 #include <stdlib.h>	// calloc/free
 #include <unistd.h>	// sleep
-#include <math.h>	// roundf
 #include <assert.h>
 #include <string.h>
 

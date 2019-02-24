@@ -11,7 +11,6 @@
  * Basic functions used throughout the program.
  */
 
-#include <math.h>	// roundf
 #include <assert.h>
 #include <limits.h>	// CHAR_BIT
 
