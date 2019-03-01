@@ -435,13 +435,20 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			// first sample: init target to current temp and set water_temp to current
 			if (!circuit->run.rorh_update_time) {
 				water_temp = curr_temp;
-				// at circuit startup let the water settle to low point, which we'll use as reference once it's reached.
-				if (!circuit->run.rorh_last_target || (curr_temp < circuit->run.rorh_last_target))
-					circuit->run.rorh_last_target = curr_temp;
-				else	// don't start the algo until we've reached minimum
-					circuit->run.rorh_update_time = now;
+				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
+				circuit->run.rorh_update_time = now + timekeep_sec_to_tk(60);	// send update_time 60s ahead for low point settling (see below). XXX hardcoded
 			}
-			// request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
+			// at circuit startup (pump was previously off) let the water settle to lowest point, which we'll use as reference once it's reached.
+			else if ((now - circuit->run.rorh_update_time) < 0) {
+				water_temp = curr_temp;
+				if (curr_temp < circuit->run.rorh_last_target)
+					circuit->run.rorh_last_target = curr_temp;
+				// if the heat source has not yet reached optimal output, wait before resuming normal algorithm operation
+				if (circuit->pdata->consumer_shift < 0)
+					circuit->run.rorh_update_time = now + timekeep_sec_to_tk(30);
+			}
+			// startup is done.
+			// Request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
 			else if (water_temp <= curr_temp) {
 				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
 				circuit->run.rorh_update_time = now;
