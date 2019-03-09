@@ -13,7 +13,6 @@
 
 #include <stdlib.h>	// calloc/free
 #include <assert.h>
-#include <math.h>	// roundf
 #include <string.h>	// memset
 
 #include "hcircuit.h"
@@ -554,13 +553,13 @@ int circuit_make_bilinear(struct s_hcircuit * const circuit,
 
 	if (!priv->toutinfl) {
 		// calculate outdoor temp for 20C water temp
-		toutw20C = roundf(((float)(celsius_to_temp(20) - offset)) / slope);
+		toutw20C = ((float)(celsius_to_temp(20) - offset)) / slope;
 
 		// calculate outdoor temp for inflexion point (toutw20C - (30% of toutw20C - tout1))
 		priv->toutinfl = toutw20C - ((toutw20C - priv->tout1) * 30 / 100);
 
 		// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
-		tlin = (roundf(priv->toutinfl * slope) + offset);
+		tlin = (priv->toutinfl * slope) + offset;
 		priv->twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (priv->nH100 - 100) / 100);
 	}
 
