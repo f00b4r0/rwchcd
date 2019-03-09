@@ -188,7 +188,6 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
 	if ((prev_runmode != circuit->run.runmode) && circuit->run.actual_ambient) {
 		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
-		circuit->run.trans_since = now;
 		circuit->run.trans_start_temp = circuit->run.actual_ambient;
 		circuit->run.trans_active_elapsed = 0;
 		circuit->run.ambient_update_time = now;	// reset timer
@@ -292,21 +291,17 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					circuit->run.runmode = RM_OFF;
 			}
-			else {
+			else
 				circuit->run.transition = TRANS_NONE;	// transition completed
-				circuit->run.trans_since = 0;
-			}
 			break;
 		case TRANS_UP:
 			if (ambient_temp < (circuit->run.request_ambient - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
 				// boost is max of set boost (if any) and measured delta (if any)
-				if ((now - circuit->run.trans_since) < circuit->set.boost_maxtime)
+				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
 					ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;
 			}
-			else {
+			else
 				circuit->run.transition = TRANS_NONE;	// transition completed
-				circuit->run.trans_since = 0;
-			}
 			break;
 		case TRANS_NONE:
 		default:
