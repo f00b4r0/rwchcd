@@ -1,5 +1,5 @@
 //
-//  hw_p1.h
+//  hw_backends/hw_p1/hw_p1.h
 //  rwchcd
 //
 //  (C) 2016 Thibaut VARENE

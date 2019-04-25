@@ -1,5 +1,5 @@
 //
-//  hw_p1_lcd.c
+//  hw_backends/hw_p1/hw_p1_lcd.c
 //  rwchcd
 //
 //  (C) 2016-2018 Thibaut VARENE

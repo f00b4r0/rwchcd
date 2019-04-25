@@ -1,9 +1,19 @@
-Licence: GPLv2
-Copyright: (C) 2016-2017 Thibaut VARENE
+Licence: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
+Copyright: (C) 2016-2019 Thibaut VARENE
 
-rwchcd: a central heating controller daemon for rWCHC
+rwchcd: a weather compensated central heating controller daemon
 
-Dependencies: libglib2.0-dev wiringpi pkg-config
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ version 2, as published by the Free Software Foundation.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+Dependencies: gcc flex bison
+Optional dependencies: libglib2.0-dev wiringpi pkg-config librrd-dev
 Documentation deps: doxygen graphviz
 
 To build, run 'make'

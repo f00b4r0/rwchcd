@@ -1,5 +1,5 @@
 //
-//  hw_p1_filecfg.h
+//  hw_backends/hw_p1/hw_p1_filecfg.h
 //  rwchcd
 //
 //  (C) 2018 Thibaut VARENE
