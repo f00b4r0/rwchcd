@@ -610,18 +610,21 @@ __attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs
 
 /**
  * Find sensor id by name.
+ * @param hw private hw_p1 hardware data
  * @param name name to look for
  * @return -ENOTFOUND if not found, sensor id if found
  */
-int hw_p1_sid_by_name(const char * const name)
+int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name)
 {
 	unsigned int id;
 	int ret = -ENOTFOUND;
 
-	for (id = 0; (id < ARRAY_SIZE(Hardware.Sensors)); id++) {
-		if (!Hardware.Sensors[id].set.configured)
+	assert(hw && name);
+
+	for (id = 0; (id < ARRAY_SIZE(hw->Sensors)); id++) {
+		if (!hw->Sensors[id].set.configured)
 			continue;
-		if (!strcmp(Hardware.Sensors[id].name, name)) {
+		if (!strcmp(hw->Sensors[id].name, name)) {
 			ret = id+1;
 			break;
 		}
@@ -632,18 +635,21 @@ int hw_p1_sid_by_name(const char * const name)
 
 /**
  * Find relay id by name.
+ * @param hw private hw_p1 hardware data
  * @param name name to look for
  * @return -ENOTFOUND if not found, relay id if found
  */
-int hw_p1_rid_by_name(const char * const name)
+int hw_p1_rid_by_name(const struct s_hw_p1_pdata * const restrict hw, const char * restrict const name)
 {
 	unsigned int id;
 	int ret = -ENOTFOUND;
 
-	for (id = 0; (id < ARRAY_SIZE(Hardware.Relays)); id++) {
-		if (!Hardware.Relays[id].set.configured)
+	assert(hw && name);
+
+	for (id = 0; (id < ARRAY_SIZE(hw->Relays)); id++) {
+		if (!hw->Relays[id].set.configured)
 			continue;
-		if (!strcmp(Hardware.Relays[id].name, name)) {
+		if (!strcmp(hw->Relays[id].name, name)) {
 			ret = id+1;
 			break;
 		}

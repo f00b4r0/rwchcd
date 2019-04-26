@@ -106,7 +106,7 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_sid_by_name(name) > 0)
+	if (hw_p1_sid_by_name(hw, name) > 0)
 		return (-EEXISTS);
 
 	str = strdup(name);
@@ -174,7 +174,7 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const ri
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_rid_by_name(name) > 0)
+	if (hw_p1_rid_by_name(hw, name) > 0)
 		return (-EEXISTS);
 
 	str = strdup(name);

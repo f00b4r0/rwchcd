@@ -96,8 +96,8 @@ int hw_p1_rwchcrelays_write(void);
 int hw_p1_rwchcperiphs_write(void);
 int hw_p1_rwchcperiphs_read(void);
 
-int hw_p1_sid_by_name(const char * const name);
-int hw_p1_rid_by_name(const char * const name);
+int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name);
+int hw_p1_rid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name);
 
 ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const enum e_hw_p1_stype type);
 

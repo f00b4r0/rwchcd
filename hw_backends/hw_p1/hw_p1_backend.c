@@ -637,10 +637,14 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, timekeep_t * con
  */
 static int hw_p1_sensor_ibn(void * priv, const char * const name)
 {
+	const struct s_hw_p1_pdata * restrict const hw = priv;
+
+	assert(hw);
+
 	if (!name)
 		return (-EINVALID);
 
-	return (hw_p1_sid_by_name(name));
+	return (hw_p1_sid_by_name(hw, name));
 }
 
 /**
@@ -651,10 +655,14 @@ static int hw_p1_sensor_ibn(void * priv, const char * const name)
  */
 static int hw_p1_relay_ibn(void * priv, const char * const name)
 {
+	const struct s_hw_p1_pdata * restrict const hw = priv;
+
+	assert(hw);
+
 	if (!name)
 		return (-EINVALID);
 
-	return (hw_p1_rid_by_name(name));
+	return (hw_p1_rid_by_name(hw, name));
 }
 
 /** Hardware callbacks for Prototype 1 hardware */
