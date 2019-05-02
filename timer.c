@@ -24,8 +24,8 @@ struct s_timer_cb {
 	timekeep_t last_call;	///< last time the callback was called
 	unsigned int period;	///< requested timer period
 	int (*cb)(void);	///< timed callback, must lock where necessary
-	char * name;
-	struct s_timer_cb * next;
+	char * name;		///< callback name
+	struct s_timer_cb * next;	///< pointer to next callback
 };
 
 static struct s_timer_cb * Timer_cb_head = NULL;	///< list of timer callbacks

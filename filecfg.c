@@ -38,13 +38,13 @@
 
 bool FCD_Exhaustive = false;
 
-static FILE * FCD_File = NULL;
-static unsigned int FCD_ilevel;
+static FILE * FCD_File = NULL;		///< pointer to target configuration file (for dump).
+static unsigned int FCD_ilevel;		///< current indentation level
 
 /**
  * Programmatically indent with tabs.
  * @param level desired indentation level
- * @return a string containing the required number of '\t'
+ * @return a string containing the required number of '\\t'
  */
 static const char * filecfg_tabs(const unsigned int level)
 {
@@ -67,8 +67,8 @@ static const char * filecfg_tabs(const unsigned int level)
 
 /**
  * fprintf() wrapper to config file output.
- * This function will write to the set FCD_File and handle
- * indentation level based on the value of FCD_ilevel.
+ * This function will write to the set #FCD_File and handle
+ * indentation level based on the value of #FCD_ilevel.
  * @param indent true if the output should be indented
  * @param format the printf-style format style
  * @return exec status

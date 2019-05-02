@@ -24,7 +24,7 @@ struct s_hw_backend {
 	struct {
 		bool initialized;	///< true if backend is initialized
 		bool online;		///< true if backend is online
-	} run;
+	} run;			///< runtime data
 	const struct s_hw_callbacks * cb;	///< hardware backend callbacks
 	void * restrict priv;		///< backend-specific private data
 	char * restrict name;	///< backend name

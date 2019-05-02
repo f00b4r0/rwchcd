@@ -22,9 +22,9 @@
 struct s_boiler_priv {
 	struct {
 		enum {
-			IDLE_NEVER = 0,		///< boiler runs always at least at limit_tmin
-			IDLE_FROSTONLY,		///< boiler turns off only in frost free
-			IDLE_ALWAYS,		///< boiler turns off any time there's no heat request
+			IDLE_NEVER = 0,		///< boiler runs always at least at limit_tmin. Config "never"
+			IDLE_FROSTONLY,		///< boiler turns off only in frost free. Config "frostonly"
+			IDLE_ALWAYS,		///< boiler turns off any time there's no heat request. Config "always"
 		} idle_mode;		///< boiler off regime
 		temp_t hysteresis;		///< boiler temp hysteresis
 		temp_t limit_thardmax;		///< "safety" trip temperature. Past this temperature the boiler will (be stopped and) require consumers to maximize their usage to dissipate heat faster. @warning required

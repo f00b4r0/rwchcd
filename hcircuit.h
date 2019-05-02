@@ -31,7 +31,7 @@ struct s_tlaw_bilin20C_priv {
 /** Heating circuit temperature law identifiers */
 enum e_hcircuit_laws {
 	HCL_NONE = 0,	///< none, misconfiguration
-	HCL_BILINEAR,	///< bilinear temperature law
+	HCL_BILINEAR,	///< bilinear temperature law. Config "bilinear"
 };
 
 /** Heating circuit element structure */
@@ -87,6 +87,6 @@ int hcircuit_offline(struct s_hcircuit * const circuit);
 int hcircuit_run(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
 void hcircuit_del(struct s_hcircuit * circuit);
 
-int circuit_make_bilinear(struct s_hcircuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
+int hcircuit_make_bilinear(struct s_hcircuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
 
 #endif /* circuit_h */

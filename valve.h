@@ -50,9 +50,9 @@ struct s_valve_pi_priv {
 /** valve control algorithm identifiers */
 enum e_valve_algos {
 	VA_NONE = 0,	///< no algorithm, misconfiguration
-	VA_BANGBANG,	///< bangbang controller
-	VA_SAPPROX,	///< sapprox controller
-	VA_PI,		///< PI controller
+	VA_BANGBANG,	///< bangbang controller. Config "bangbang"
+	VA_SAPPROX,	///< sapprox controller. Config "sapprox"
+	VA_PI,		///< PI controller. Config "PI"
 };
 
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
@@ -74,9 +74,9 @@ struct s_valve {
 		bool online;		///< true if valve is operational (under software management)
 		bool active;		///< true if valve is in active (in use by the system)
 		bool dwht_use;		///< true if valve is currently used by active DHWT
-		bool true_pos;		///< true if estimated position is "true": position measured from a full close/open start
+		bool true_pos;		///< true if current position is "true": position measured from a full close/open start, or provided by a sensor
 		bool ctrl_ready;	///< false if controller algorithm must be reset
-		int_fast16_t actual_position;	///< estimated current position in ‰
+		int_fast16_t actual_position;	///< current position in ‰
 		int_fast16_t target_course;	///< current target course in ‰ of set.ete_time
 		timekeep_t acc_open_time;	///< accumulated open time since last close
 		timekeep_t acc_close_time;	///< accumulated close time since last open
@@ -84,12 +84,12 @@ struct s_valve {
 		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 		request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
-	char * restrict name;
-	void * restrict priv;	///< private data structure for valvectrl
+	char * restrict name;	///< valve name
+	void * restrict priv;	///< private data structure for cb.control()
 	struct {
 		int (*control)(struct s_valve * restrict const, const temp_t);	///< pointer to valve controller algorithm
 		int (*online)(struct s_valve * restrict const);	///< pointer to valve private online routine (for preflight checks)
-	} cb;
+	} cb;	///< valve callbacks
 };
 
 struct s_valve * valve_new(void) __attribute__((warn_unused_result));

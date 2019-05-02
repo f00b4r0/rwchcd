@@ -31,8 +31,8 @@
 struct s_schedule {
 	int tm_hour;		///< hour of the day for this schedule (0 - 23)
 	int tm_min;		///< minute for this schedule	(0 - 59)
-	enum e_runmode runmode;	///< target runmode. @note Invalid runmode could be used to leave the current mode unchanged
-	enum e_runmode dhwmode;	///< target dhwmode. @note Invalid dhwmode could be used to leave the current mode unchanged
+	enum e_runmode runmode;	///< target runmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
+	enum e_runmode dhwmode;	///< target dhwmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
 	bool legionella;	///< true if legionella heat charge is requested
 	struct s_schedule * next;
 };
@@ -46,7 +46,7 @@ static struct s_schedule * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NU
  * as we pass through past schedules. We stop when the next schedule is in the
  * future, which leaves us with the last valid run/dhw modes in the variables.
  * @bug if the first schedule of the day has either runmode OR dhwmode set to
- * RM_UNKNOWN, the function will not look back to find the correct mode.
+ * #RM_UNKNOWN, the function will not look back to find the correct mode.
  * @warning legionella trigger is run lockless
  * @return exec status
  */

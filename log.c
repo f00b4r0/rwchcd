@@ -9,6 +9,7 @@
 /**
  * @file
  * Log system implementation.
+ * @todo REVIEW
  */
 
 #include <stdlib.h>	// malloc
@@ -23,10 +24,11 @@
 #include "config.h"	// config->logging
 #include "timer.h"
 
-#define LOG_PREFIX	"log_"
-#define LOG_FMT_SUFFIX	".fmt"
-#define LOG_ASYNC_DUMP_BASENAME	"async_"
+#define LOG_PREFIX	"log_"			///< prefix for log names
+#define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names
+#define LOG_ASYNC_DUMP_BASENAME	"async_"	///< basename for asynchronous logging (see _log_dump())
 
+/** Log sources linked list */
 struct s_log_list {
 	const struct s_log_source * lsource;
 	struct s_log_list * next;
@@ -34,6 +36,7 @@ struct s_log_list {
 
 static int log_crawl(const int log_sched_id);
 
+/* wrapper callbacks for interfacing with scheduler_now() */
 static int log_crawl_1mn(void)	{ return (log_crawl(LOG_SCHED_1mn)); }
 static int log_crawl_5mn(void)	{ return (log_crawl(LOG_SCHED_5mn)); }
 static int log_crawl_15mn(void)	{ return (log_crawl(LOG_SCHED_15mn)); }
@@ -73,7 +76,7 @@ static bool Log_configured = false;
 static struct s_log_bendcbs Log_timed_cb, Log_untimed_cb;
 
 /**
- * Generic log backend keys/values log call.
+ * Generic log_data log routine.
  * @param basename a namespace under which the unique identifier will be registered
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
@@ -166,7 +169,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 }
 
 /**
- * Generic log backend keys/values asynchronous log call.
+ * Asynchronously log data.
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
  * @param log_data the data to log
@@ -311,7 +314,7 @@ int log_deregister(const struct s_log_source * restrict const lsource)
 
 /**
  * Crawl and process a log source list.
- * @param list the list of log sources to crawl
+ * @param log_sched_id id for the log schedule to crawl (see #e_log_sched)
  * @return exec status
  */
 static int log_crawl(const int log_sched_id)

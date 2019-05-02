@@ -151,7 +151,7 @@ static int v_pi_online(struct s_valve * const valve)
  */
 static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
 {
-#define VPI_FPDEC	0x200000	// 10-bit significand, which should never be > 1000pth: good
+#define VPI_FPDEC	0x200000	///< v_pi precision multiplier. 10-bit significand, which should never be > 1000pth: good
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const timekeep_t now = timekeep_now();
 	int_fast16_t perth;
@@ -731,7 +731,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
  * @param Ksmax 100% step response output difference. Used if it cannot be measured.
  * @param t_factor tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
  * @return exec status
- * @note refer to valvectrl_pi() for calculation details
+ * @note refer to v_pi_control() for calculation details
  */
 int valve_make_pi(struct s_valve * const valve,
 		  timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor)

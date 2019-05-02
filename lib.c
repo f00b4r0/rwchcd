@@ -18,17 +18,19 @@
 #include "lib.h"
 
 // NB: we rely on the fact that gcc sign-extends
-#define sign(x)		((x>>(sizeof(x)*CHAR_BIT-1))|1)
-#define zerosign(x)	((x>>(sizeof(x)*CHAR_BIT-1))|(!!x))
+#define sign(x)		((x>>(sizeof(x)*CHAR_BIT-1))|1)		///< -1 if x<0, 1 if x>=0
+#define zerosign(x)	((x>>(sizeof(x)*CHAR_BIT-1))|(!!x))	///< -1 if x<0, 1 if x>0, 0 if x==0
 
 /**
  * Exponentially weighted moving average implementing a trivial LP filter.
  * - http://www.rowetel.com/?p=1245
  * - https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
  * - http://www.edn.com/design/systems-design/4320010/A-simple-software-lowpass-filter-suits-embedded-system-applications
- * formula:
+ *
+ * Formula:
  * - alpha = dt/(tau+dt)
  * - return value = (filtered - roundf(alpha * (filtered - new_sample)))
+ *
  * @warning if dt is 0 then the value will never be updated (dt has a 1s resolution)
  * @warning if dt and (filtered - new_sample) are both large the computation may overflow
  * @param filtered accumulated average

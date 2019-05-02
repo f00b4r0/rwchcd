@@ -113,6 +113,7 @@ out:
  * - When the DHWT is offline or in FROSTFREE then the related actuators are
  *   unflagged. This works because the summer maintenance can only run when
  *   frost condition is @b GUARANTEED not to happen.
+ *
  * @note the pump_feed is @b NOT unflagged when running electric to avoid sending
  * cold water into the feed circuit. Thus the pump_feed cannot be "summer maintained"
  * when the DHWT is running electric.
@@ -249,7 +250,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!dhwt)
 		return (-EINVALID);
 
-	if (!dhwt->run.online)	/// implies set.configured == true
+	if (!dhwt->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
 
 	switch (dhwt->run.runmode) {

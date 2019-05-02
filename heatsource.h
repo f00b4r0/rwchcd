@@ -20,7 +20,7 @@
 /** heatsource type identifiers */
 enum e_heatsource_type {
 	HS_NONE = 0,		///< No heat source: that's a misconfiguration
-	HS_BOILER,		///< boiler type heatsource
+	HS_BOILER,		///< boiler type heatsource. Config "boiler"
 };
 
 // XXX cascade

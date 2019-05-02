@@ -112,8 +112,6 @@ static void relays_dump(const struct s_hw_p1_pdata * restrict const hw)
 /**
  * Dump backend configuration to file.
  * @param priv private hardware data
- * @param file target file to dump configuration to
- * @param il indentation level
  * @return exec status
  */
 int hw_p1_filecfg_dump(void * priv)

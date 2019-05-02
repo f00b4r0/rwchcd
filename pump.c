@@ -18,7 +18,7 @@
 #include "hardware.h"
 
 /**
- * Create a pump
+ * Create a pump.
  * @return the newly created pump or NULL
  */
 struct s_pump * pump_new(void)
@@ -28,7 +28,7 @@ struct s_pump * pump_new(void)
 }
 
 /**
- * Delete a pump
+ * Delete a pump.
  * Frees all pump-local resources
  * @param pump the pump to delete
  */

@@ -33,7 +33,7 @@ enum e_log_sched {
 	LOG_SCHED_15mn,
 };
 
-/** discrete logging intervals (seconds). Must match e_log_sched */
+/** discrete logging intervals (seconds). Must match #e_log_sched */
 enum e_log_intvl {
 	LOG_INTVL_1mn = 60,
 	LOG_INTVL_5mn = 300,

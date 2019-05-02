@@ -14,12 +14,12 @@
 #ifndef filecfg_h
 #define filecfg_h
 
-extern bool FCD_Exhaustive;
+extern bool FCD_Exhaustive;	///< If true, the exhaustive configuration will be printed (includes unconfigured fields).
 
 int filecfg_printf_wrapper(const bool indent, const char * restrict format, ...);
 
-#define filecfg_printf(format, ...)	filecfg_printf_wrapper(false, format, ## __VA_ARGS__)
-#define filecfg_iprintf(format, ...)	filecfg_printf_wrapper(true, format, ## __VA_ARGS__)
+#define filecfg_printf(format, ...)	filecfg_printf_wrapper(false, format, ## __VA_ARGS__)	///< non-indented fprintf
+#define filecfg_iprintf(format, ...)	filecfg_printf_wrapper(true, format, ## __VA_ARGS__)	///< auto-indented fprintf
 
 int filecfg_ilevel_inc(void);
 int filecfg_ilevel_dec(void);

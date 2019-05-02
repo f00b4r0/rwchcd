@@ -27,16 +27,16 @@ struct s_dhw_tank {
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading - XXX NOT IMPLEMENTED
 		enum e_runmode runmode;		///< dhwt set_runmode
 		enum {
-			DHWTP_PARALMAX = 0,	///< no priority: parallel run with maximum selection
-			DHWTP_PARALDHW,		///< no priority: parallel run with DHW temp request override
-			DHWTP_SLIDMAX,		///< sliding priority with maximum selection: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature
-			DHWTP_SLIDDHW,		///< sliding priority with DHW temp request override: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature
-			DHWTP_ABSOLUTE,		///< absolute priority: heating circuits will not receive heat during DHW charge
+			DHWTP_PARALMAX = 0,	///< no priority: parallel run with maximum selection. Config "paralmax"
+			DHWTP_PARALDHW,		///< no priority: parallel run with DHW temp request override. Config "paraldhw"
+			DHWTP_SLIDMAX,		///< sliding priority with maximum selection: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config "slidmax"
+			DHWTP_SLIDDHW,		///< sliding priority with DHW temp request override: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config "sliddhw"
+			DHWTP_ABSOLUTE,		///< absolute priority: heating circuits will not receive heat during DHW charge. Config "absolute"
 		} dhwt_cprio;	///< DHW charge priority
 		enum {
-			DHWTF_NEVER = 0,	///< never force
-			DHWTF_FIRST,		///< force first comfort charge of the day
-			DHWTF_ALWAYS		///< force all comfort charges
+			DHWTF_NEVER = 0,	///< never force. Config "never"
+			DHWTF_FIRST,		///< force first comfort charge of the day. Config "first"
+			DHWTF_ALWAYS		///< force all comfort charges. Config "always"
 		} force_mode;			///< Programmed force charge when switching to COMFORT
 		tempid_t tid_bottom;		///< temp sensor id at bottom of dhw tank
 		tempid_t tid_top;		///< temp sensor id at top of dhw tank

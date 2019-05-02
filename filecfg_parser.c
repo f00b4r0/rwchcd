@@ -970,7 +970,7 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	twater2 = (NODEFLT == parsers[3].node->type) ? celsius_to_temp(parsers[3].node->value.floatval) : celsius_to_temp(parsers[3].node->value.intval);
 	nH100 = parsers[4].node->value.intval;
 
-	return (circuit_make_bilinear(hcircuit, tout1, twater1, tout2, twater2, nH100));
+	return (hcircuit_make_bilinear(hcircuit, tout1, twater1, tout2, twater2, nH100));
 }
 
 static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1595,6 +1595,7 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 
 /**
  * Process the root list of config nodes.
+ * This routine is used by the Bison parser.
  * @param nodelist the root nodelist for all the configuration nodes
  * @return exec status
  */
@@ -1626,6 +1627,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodeli
 
 /**
  * Free all elements of a nodelist.
+ * This routine is used by the Bison parser.
  * @param nodelist the target nodelist to purge
  */
 void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist)

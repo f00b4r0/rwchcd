@@ -44,16 +44,16 @@ struct s_alarm {
 	struct s_alarm * next;	///< pointer to next entry
 };
 
-/** List of all existing alarms in the system */
+/** Alarms subsystem private data structure */
 static struct s_alarms {
 	bool online;		///< true if alarm system is online
 	int count;		///< active alarms in the system
-	struct s_alarm * alarm_head;
+	struct s_alarm * alarm_head;	///< head pointer to the current list of alarms
 } Alarms = {
 	.online = false,
 	.count = 0,
 	.alarm_head = NULL,
-};
+}; ///< Alarms subsystem private data
 
 #if 0
 /**

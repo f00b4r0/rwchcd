@@ -30,7 +30,7 @@
 #define MODELS_STORAGE_NAME_LEN		64
 #define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel_"
 
-static struct s_models Models;
+static struct s_models Models;	///< Known models
 
 static const storage_version_t Models_sversion = 4;
 
@@ -338,11 +338,12 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
  * weighted moving average and the building time constant.
  * This function is designed so that at init time, when the variables are all 0,
  * the averages will take the value of the current outdoor temperature.
- * http://liu.diva-portal.org/smash/get/diva2:893577/FULLTEXT01.pdf
- * http://www.ibpsa.org/proceedings/BS2013/p_2030.pdf
- * http://www.wseas.us/e-library/conferences/2013/Brasov/ACMOS/ACMOS-32.pdf
- * http://www.emu.systems/en/blog/2015/10/19/whats-the-time-constant-of-a-building
- * https://books.google.fr/books?id=dIYxQkS_SWMC&pg=PA63&lpg=PA63
+ * - http://liu.diva-portal.org/smash/get/diva2:893577/FULLTEXT01.pdf
+ * - http://www.ibpsa.org/proceedings/BS2013/p_2030.pdf
+ * - http://www.wseas.us/e-library/conferences/2013/Brasov/ACMOS/ACMOS-32.pdf
+ * - http://www.emu.systems/en/blog/2015/10/19/whats-the-time-constant-of-a-building
+ * - https://books.google.fr/books?id=dIYxQkS_SWMC&pg=PA63&lpg=PA63
+ *
  * @note must run at (ideally) fixed intervals
  * @todo implement variable building tau based on e.g. occupancy/time of day: lower when window/doors can be opened
  * @param bmodel target building model
@@ -384,14 +385,16 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
 
 /**
  * Conditions for building summer switch.
- * summer mode is set on in ALL of the following conditions are met:
+ * summer mode is set on in @b ALL of the following conditions are met:
  * - t_outdoor_60 > limit_tsummer
  * - t_out_mix > limit_tsummer
  * - t_out_att > limit_tsummer
- * summer mode is back off if ALL of the following conditions are met:
+ *
+ * summer mode is back off if @b ALL of the following conditions are met:
  * - t_outdoor_60 < limit_tsummer
  * - t_out_mix < limit_tsummer
  * - t_out_att < limit_tsummer
+ *
  * State is preserved in all other cases
  * @note because we use AND, there's no need for hysteresis
  * @param bmodel target building model
@@ -430,7 +433,7 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
  * Conditions for frost switch.
  * Trigger frost protection flag when t_outdoor_60 < limit_tfrost.
  * @note there is a fixed 1K positive hysteresis (on untrip)
- * @warning if limit_tfrost isn't available, frost is @b disabled.
+ * @warning if limit_tfrost isn't available, frost protection is @b disabled.
  * @param bmodel target building model
  * @return exec status
  */
@@ -486,7 +489,6 @@ static void models_save(const struct s_models * restrict const models)
 
 /**
  * Create a new building model and attach it to the list of models.
- * @param models the list of models
  * @param name the model name, @b MUST be unique. A local copy is created
  * @return an allocated building model structure or NULL if failed.
  */
@@ -644,7 +646,7 @@ int models_run(void)
 	return (ALL_OK);
 }
 
-/** quick temporary hack for backward compatibility */
+/** @deprecated quick temporary hack for backward compatibility */
 temp_t models_outtemp(void)
 {
 	struct s_bmodel_l * bmodelelmt;

@@ -25,7 +25,7 @@
 #include "config.h"
 #include "log.h"
 
-#define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)
+#define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)	///< 1h tau expressed in internal time representation
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
 
 /**
@@ -129,18 +129,18 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
  * Bilinear water temperature law.
  * This law approximates the curvature resulting from limited transmission non-linearities in heating elements
  * by splitting the curve in two linear segments around an inflexion point. It works well for 1 < nH < 1.5.
- * The target output water temperature is computed for a 20C target ambient. It is then shifted accordingly to
+ * The target output water temperature is computed for a 20°C target ambient. It is then shifted accordingly to
  * the actual target ambient temp, based on the original (linear) curve slope.
  * Most of these calculations are empirical "industry proven practices".
  *
- * https://pompe-a-chaleur.ooreka.fr/astuce/voir/111578/le-regulateur-loi-d-eau-pour-pompe-a-chaleur
- * http://www.energieplus-lesite.be/index.php?id=10959
- * http://herve.silve.pagesperso-orange.fr/regul.htm
+ * - https://pompe-a-chaleur.ooreka.fr/astuce/voir/111578/le-regulateur-loi-d-eau-pour-pompe-a-chaleur
+ * - http://www.energieplus-lesite.be/index.php?id=10959
+ * - http://herve.silve.pagesperso-orange.fr/regul.htm
  *
  * @param circuit self
  * @param source_temp outdoor temperature to consider
  * @return a target water temperature for this circuit
- * @warning no parameter check
+ * @warning may overflow under adverse conditions
  */
 static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const temp_t source_temp)
 {
@@ -314,6 +314,7 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
  * - remove heat request
  * - close the valve (if any)
  * - start the pump (if any)
+ *
  * The logic being that we cannot make any assumption as to whether or not it is
  * safe to open the valve, whereas closing it will always be safe.
  * Turning on the pump mitigates frost risks.
@@ -508,9 +509,9 @@ int hcircuit_run(struct s_hcircuit * const circuit)
  * This function is used to assign or update a bilinear temperature law (and its
  * associated parameters) to a target circuit.
  * To determine the position of the inflexion point, the calculation starts from the linear curve as determined
- * by the two set points. It then computes the outdoor temperature corresponding to a 20C water output temp.
+ * by the two set points. It then computes the outdoor temperature corresponding to a 20°C water output temp.
  * Then, it computes the temperature differential between the lowest outdoor temp set point and that calculated value.
- * The inflexion point is located on that differential, 30% down from the 20C output water temp point.
+ * The inflexion point is located on that differential, 30% down from the 20°C output water temp point.
  * Thus, the high outdoor temp set point does NOT directly determines the position of the inflexion point.
  *
  * @param circuit target circuit
@@ -521,7 +522,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
  * @param nH100 thermal non-linearity coef *100
  * @return error status
  */
-int circuit_make_bilinear(struct s_hcircuit * const circuit,
+int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 			  temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100)
 {
 	struct s_tlaw_bilin20C_priv * priv = NULL;

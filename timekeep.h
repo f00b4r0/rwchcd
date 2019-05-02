@@ -18,7 +18,7 @@
 
 #define TIMEKEEP_SMULT	10L				///< second multiplier: 10 -> 0.1s precision
 
-/** Timestamp 'tick' type. Timestamp precision is 0.1s (see TIMEKEEP_SMULT) */
+/** Timestamp 'tick' type. Timestamp precision is 0.1s (see #TIMEKEEP_SMULT) */
 typedef int64_t	timekeep_t;
 
 int timekeep_init(void);

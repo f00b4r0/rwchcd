@@ -17,8 +17,8 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
-#define FORCE	true
-#define NOFORCE	false
+#define FORCE	true	///< to force pump state (bypass cooldown), see pump_set_state()
+#define NOFORCE	false	///< to not force pump state (let cooldown operate), see pump_set_state()
 
 /** Pump element structure */
 struct s_pump {

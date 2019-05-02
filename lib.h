@@ -8,7 +8,7 @@
 
 /**
  * @file
- * Basic API.
+ * Basic functions used throughout the program, API.
  */
 
 #ifndef rwchcd_lib_h
@@ -35,7 +35,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 
 /**
  * Convert celsius value to internal temp_t format (Kelvin * KPRECISIONI).
- * The preprocessor will do the right thing whether celsius is a float or a native integer type.
+ * @note The preprocessor will do the right thing whether celsius is a float or a native integer type.
  * @param celsius temp value in Celsius
  */
 #define celsius_to_temp(celsius)	(temp_t)((celsius + 273)*KPRECISIONI)
@@ -53,7 +53,7 @@ __attribute__((const, always_inline)) static inline float temp_to_celsius(const 
 
 /**
  * Convert a temperature delta (in Kelvin) to internal type.
- * The preprocessor will do the right thing whether delta is a float or a native integer type.
+ * @note The preprocessor will do the right thing whether delta is a float or a native integer type.
  * @param delta the delta value to be converted
  */
 #define deltaK_to_temp(delta)		(temp_t)(delta * KPRECISIONI)

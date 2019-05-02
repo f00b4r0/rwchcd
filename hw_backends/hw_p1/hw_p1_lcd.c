@@ -10,7 +10,7 @@
  * @file
  * Hardware Prototype 1 LCD driver.
  *
- * @todo most of this is a gross hack, XXX REVIEW.
+ * @warning most of this is a gross hack, XXX REVIEW.
  */
 
 #include <string.h>
@@ -26,6 +26,7 @@
 
 #define LCD_LINELEN	16	///< width of LCD display line
 
+/** HW P1 LCD internal data structure */
 static struct {
 	bool online;
 	bool reset;	///< true if full refresh of the display is necessary
@@ -43,7 +44,7 @@ static struct {
 	.L2mngd_prev = false,
 	.sysmchg = false,
 	.sensor = 1,
-};
+}; ///< HW P1 LCD subsystem private data
 
 /**
  * Grab LCD control from the device firmware.

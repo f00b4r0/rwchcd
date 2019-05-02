@@ -14,6 +14,7 @@
 #ifndef rwchcd_timer_h
 #define rwchcd_timer_h
 
+/** Timer function callback typedef */
 typedef int (*timer_cb_t)(void);
 
 void * timer_thread(void * arg);

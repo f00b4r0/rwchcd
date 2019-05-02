@@ -20,13 +20,13 @@
 
 /** valid types of temperature sensors */
 enum e_hw_p1_stype {
-	ST_PT1000,
-	ST_NI1000,
+	ST_PT1000,	///< PT1000 sensor. Config "PT1000"
+	ST_NI1000,	///< NI1000 sensor. Config "NI1000"
 	/*	ST_PT100,
 	 ST_LGNI1000, */
 };
 
-/** software representation of a hardware relay */
+/** software representation of a hw_p1 hardware relay */
 struct s_hw_p1_relay {
 	struct {
 		bool configured;	///< true if properly configured
@@ -47,6 +47,7 @@ struct s_hw_p1_relay {
 
 typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
 
+/** software representation of a hw_p1 hardware sensor */
 struct s_hw_p1_sensor {
 	struct {
 		bool configured;	///< sensor is configured

@@ -45,6 +45,7 @@ struct s_filecfg_parser_node {
 	struct s_filecfg_parser_nodelist *children;	///< Children of this node (if any)
 };
 
+/** Parser function type */
 typedef int (* const parser_t)(void * restrict const priv, const struct s_filecfg_parser_node * const);
 
 /** Structure for linked list of nodes */
@@ -71,11 +72,33 @@ void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist);
 int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
-int filecfg_parser_run_parsers(void * const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
+int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser);
 
+/**
+ * Report (generic) invalid data for node.
+ * @param NODE the faulty node
+ */
 #define filecfg_parser_report_invaliddata(NODE)		dbgerr("Invalid data for node \"%s\" closing at line %d", NODE->name, NODE->lineno)
+
+/**
+ * Parse a list of "named" sibling nodes (String nodes).
+ * @param priv optional private data
+ * @param nodelist the list of sibling nodes
+ * @param nname the expected name for sibling nodes
+ * @param parser the parser to apply to each sibling node
+ * @return exec status
+ */
 #define filecfg_parser_parse_namedsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODESTR, parser)
+
+/**
+ * Parse a list of "anonymous" sibling nodes (List nodes).
+ * @param priv optional private data
+ * @param nodelist the list of sibling nodes
+ * @param nname the expected name for sibling nodes
+ * @param parser the parser to apply to each sibling node
+ * @return exec status
+ */
 #define filecfg_parser_parse_listsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODELST, parser)
 
 #endif /* filecfg_parser_h */

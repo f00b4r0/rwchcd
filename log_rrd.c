@@ -22,7 +22,8 @@
 
 #include "log_rrd.h"
 
-/** Hardcoded RRAs */
+/* Hardcoded RRAs */
+/** 1mn hardcoded RRAs */
 const char *RRAs_1mn[] = {
 	"RRA:LAST:0.5:1:2d",		// record 1-step samples for 2d
 	"RRA:AVERAGE:0.5:15m:2M",
@@ -36,6 +37,7 @@ const char *RRAs_1mn[] = {
 	"RRA:MAX:0.5:1d:10y",*/
 };
 
+/** 5mn hardcoded RRAs */
 const char *RRAs_5mn[] = {
 	"RRA:LAST:0.5:1:1w",		// record 1-step samples for 1w
 	"RRA:AVERAGE:0.5:15m:1M",	// record 15mn samples for 1M
@@ -46,6 +48,7 @@ const char *RRAs_5mn[] = {
 	"RRA:MAX:0.5:1h:1y",
 };
 
+/** 15mn hardcoded RRAs */
 const char *RRAs_15mn[] = {
 	"RRA:LAST:0.5:1:1M",		// record 1-step samples for 1M
 	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y

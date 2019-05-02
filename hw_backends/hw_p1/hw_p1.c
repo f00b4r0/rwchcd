@@ -9,8 +9,16 @@
 /**
  * @file
  * Hardware Prototype 1 driver implementation.
- * @note This driver can only accomodate a @b SINGLE instance of the hardware.
+ * @warning This driver can only accomodate a @b SINGLE instance of the hardware.
  * @todo convert to fixed-point arithmetic
+ * @note This driver should NOT be considered a good coding example, it is
+ * heavily tailored to the context of a single prototype hardware controller
+ * connected to a RaspberryPi GPIO header, and as such contains hardcoded values
+ * and uses statically allocated data structures, which is deemed acceptable in
+ * this particular context but should otherwise be frowned upon. The API in the
+ * files hw_p1_backend.c, hw_p1_setup.c and hw_p1_filecfg.c is considered cleaner.
+ * @note to build this driver, the `rwchc_export.h` header from the hardware's
+ * firmware code is necessary.
  */
 
 #include <time.h>	// time
@@ -115,14 +123,14 @@ __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw
 /**
  * Convert resistance value to actual temperature based on Callendar - Van Dusen.
  * Use a quadratic fit for simplicity.
- * http://aviatechno.net/thermo/rtd03.php
- * https://www.newport.com/medias/sys_master/images/images/h4b/h16/8797291446302/TN-RTD-1-Callendar-Van-Dusen-Equation-and-RTD-Temperature-Sensors.pdf
- * Rt = R0 + R0*alpha*[t - delta*(t/100 - 1)*(t/100) - beta*(t/100 - 1)*(t/100)^3]
- * alpha is the mean R change referred to 0C
- * Rt = R0 * [1 + A*t + B*t^2 - C*(t-100)*t^3]
- * A = alpha + (alpha*delta)/100
- * B = - (alpha * delta)/(100^2)
- * C = - (alpha * beta)/(100^4)
+ * - http://aviatechno.net/thermo/rtd03.php
+ * - https://www.newport.com/medias/sys_master/images/images/h4b/h16/8797291446302/TN-RTD-1-Callendar-Van-Dusen-Equation-and-RTD-Temperature-Sensors.pdf
+ * - Rt = R0 + R0*alpha*[t - delta*(t/100 - 1)*(t/100) - beta*(t/100 - 1)*(t/100)^3]
+ * - alpha is the mean R change referred to 0C
+ * - Rt = R0 * [1 + A*t + B*t^2 - C*(t-100)*t^3]
+ * - A = alpha + (alpha*delta)/100
+ * - B = - (alpha * delta)/(100^2)
+ * - C = - (alpha * beta)/(100^4)
  * @param R0 nominal resistance at 0C
  * @param A precomputed A parameter
  * @param B precomputed B parameter
@@ -233,7 +241,7 @@ static int sensor_alarm(const sid_t id, const int error)
 /**
  * Process raw sensor data.
  * Applies a short-window LP filter on raw data to smooth out noise.
- * Flag and raise alarm if value is out of #RWCHCD_TEMPMIN and #RWCHCD_TEMPAX bounds.
+ * Flag and raise alarm if value is out of #RWCHCD_TEMPMIN and #RWCHCD_TEMPMAX bounds.
  */
 static void hw_p1_parse_temps(void)
 {
@@ -480,6 +488,7 @@ int hw_p1_calibrate(void)
  * - Hardware.run.sensors_ftime will be updated
  * - Raw values from Hardware.sensors are processed to atomically update #Hardware.Sensors
  * otherwise these fields remain unchanged.
+ *
  * @return exec status
  * @warning #Hardware.settings.nsensors must be set prior to calling this function.
  * @note calling hw_p1_parse_temps() in the success code path is a design choice that
@@ -516,9 +525,9 @@ out:
  */
 __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 {
-#define CHNONE		0x00
-#define CHTURNON	0x01
-#define CHTURNOFF	0x02
+#define CHNONE		0x00	///< no change
+#define CHTURNON	0x01	///< turn on
+#define CHTURNOFF	0x02	///< turn off
 	struct s_hw_p1_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const timekeep_t now = timekeep_now();	// we assume the whole thing will take much less than a second

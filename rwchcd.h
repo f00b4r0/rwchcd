@@ -32,7 +32,7 @@
 #define OFF	false
 
 #ifndef RWCHCD_STORAGE_PATH
- #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"	///< filesystem path to permanent storage area
+ #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"	///< filesystem path to permanent storage area. Can be overriden in Makefile
 #endif
 
 /* i18n stuff */
@@ -43,17 +43,26 @@
  #define _(String)      String
 #endif  /* HAVE_GETTEXT */
 
-#ifdef DEBUG
+#ifdef DEBUG	// debug output will be sent via stdout to nonblocking FIFO, normal logging information will go to stderr
  #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
  #define pr_log(format, ...)	fprintf(stderr, format "\n", ## __VA_ARGS__)
-#else
+#else		// debug output is disabled, normal logging goes to stdout
  #define dbgmsg(format, ...)	/* nothing */
  #define pr_log(format, ...)	printf(format "\n", ## __VA_ARGS__)
 #endif
 
 #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 
+/** computes the required malloc size for the formatted string */
 #define snprintf_needed(format, ...)	(1+snprintf(NULL, 0, format, __VA_ARGS__))
+/**
+ * Auto-malloc snprintf() wrapper.
+ * Automatically malloc() the exact required size for the formatted string and apply snprintf() to it.
+ * @param target a non-allocated pointer to malloc() memory to
+ * @param size a ssize_t temporary variable used for internal computations
+ * @param format the format string (and its associated varargs)
+ * @return NULL if malloc() failed or a properly allocated, formatted string
+ */
 #define snprintf_automalloc(target, size, format, ...)			({\
 		size = snprintf_needed(format, __VA_ARGS__);		\
 		target = malloc(size);					\
@@ -111,28 +120,30 @@ typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * K
 typedef uint_fast8_t	bid_t;		///< backend id type
 typedef uint_fast8_t	rid_t;		///< relay id type
 typedef uint_fast8_t	sid_t;		///< sensor id type
+/** temperature sensor id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
 	sid_t sid;	///< sensor id - @warning MUST START FROM 1
-} tempid_t;	///< temperature sensor id. @note struct assignment is used in the code: must not embed pointers
+} tempid_t;
+/** relay identifier. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
 	rid_t rid;	///< relay id - @warning MUST START FROM 1
-} relid_t;	///< relay identifier. @note struct assignment is used in the code: must not embed pointers
+} relid_t;
 
 /** Valid run modes */
 enum e_runmode {
-	RM_OFF = 0,	///< device is fully off, no operation performed (not even frost protection)
-	RM_AUTO,	///< device is running based on global plant set_runmode
-	RM_COMFORT,	///< device is in comfort mode
-	RM_ECO,		///< device is in eco mode
-	RM_FROSTFREE,	///< device is in frostfree mode
-	RM_DHWONLY,	///< device is in DHW only mode
-	RM_TEST,	///< device is in test mode (typically all actuators are on)
+	RM_OFF = 0,	///< device is fully off, no operation performed (not even frost protection). Config "off"
+	RM_AUTO,	///< device is running based on global plant set_runmode. Config "auto"
+	RM_COMFORT,	///< device is in comfort mode. Config "comfort"
+	RM_ECO,		///< device is in eco mode. Config "eco"
+	RM_FROSTFREE,	///< device is in frostfree mode. Config "frostfree"
+	RM_DHWONLY,	///< device is in DHW only mode. Config "dhwonly"
+	RM_TEST,	///< device is in test mode (typically all actuators are on). Config "test" (should not be used in permanent config)
 	RM_UNKNOWN,	///< invalid past this value
 };
 
-/** Valid system modes */
+/** Valid system modes. @todo make configurable in config file? */
 enum e_systemmode {
 	SYS_OFF = 0,	///< system is fully off
 	SYS_AUTO,	///< system is running in automatic mode
@@ -174,9 +185,9 @@ struct s_dhwt_params {
 	temp_t temp_inoffset;		///< offset temp for heat source request. This value will be added to the computed target temperature to form the heat request.
 };
 
-/* Plant-wide data */
+/** Plant-wide data */
 struct s_pdata {
-	bool plant_could_sleep;		///< true if all heat sources could sleep (plant could sleep)
+	bool plant_could_sleep;		///< true if all consumers without electric failover haven't requested heat since config->sleeping_delay
 	bool dhwc_absolute;		///< true if absolute DHWT charge in progress
 	bool dhwc_sliding;		///< true if sliding DHWT charge in progress
 	timekeep_t consumer_sdelay;	///< minimum time consumers should keep their current consumption before turning off

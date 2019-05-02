@@ -19,7 +19,7 @@
 
 /**
  * Init all registered backends.
- * For all registered backends, this function execute the init() backend callback
+ * For all registered backends, this function execute the .init() backend callback
  * after sanity checks. If the call is successful, the backend is marked as init'd.
  * If the backend has already been init'd, this function does nothing.
  * @return exec status
@@ -58,10 +58,10 @@ int hardware_init(void)
 
 /**
  * Bring all registered backends online.
- * For all registered backends, this function execute the online() backend callback
+ * For all registered backends, this function execute the .online() backend callback
  * after sanity checks. If the call is successful, the backend is marked as online.
  * If the backend has already been online'd, this function does nothing.
- * @note if the backend provides sensors, after online() is executed subsequent
+ * @note if the backend provides sensors, after .online() is executed subsequent
  * calls to hardware_sensor_clone_time() must succeed (sensor is configured) @b EVEN if
  * hardware_input() hasn't yet been called. This is necessary for other subsystems
  * online() checks.
@@ -101,7 +101,7 @@ int hardware_online(void)
 
 /**
  * Collect inputs from hardware.
- * For all registered backends, this function execute the input() backend callback
+ * For all registered backends, this function execute the .input() backend callback
  * after sanity checks.
  * If the backend isn't online, this function does nothing.
  * @return exec status
@@ -138,7 +138,7 @@ int hardware_input(void)
 
 /**
  * Output data to hardware.
- * For all registered backends, this function execute the output() backend callback
+ * For all registered backends, this function execute the .output() backend callback
  * after sanity checks.
  * If the backend isn't online, this function does nothing.
  * @return exec status
@@ -175,7 +175,7 @@ int hardware_output(void)
 
 /**
  * Take all registered backends offline.
- * For all registered backends, this function execute the offline() backend callback
+ * For all registered backends, this function execute the .offline() backend callback
  * after sanity checks.
  * If the backend isn't online, this function does nothing.
  * @return exec status
@@ -214,7 +214,7 @@ int hardware_offline(void)
 
 /**
  * Exit hardware subsystem.
- * For all registered backends, this function execute the exit() backend callback
+ * For all registered backends, this function execute the .exit() backend callback
  * after sanity checks, and frees resources.
  * @note Backend's exit() routine MUST release memory in @b priv if necessary.
  */

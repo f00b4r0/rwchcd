@@ -31,17 +31,20 @@
 /**
  * Conditions for running heating circuit.
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
- * Circuit is off in ANY of the following conditions are met:
+ *
+ * Circuit is off in @b ANY of the following conditions are met:
  * - building model summer is true
  * - t_out > current temp_trigger
  * - t_out_mix > current temp_trigger
- * Circuit is back on if ALL of the following conditions are met:
+ *
+ * Circuit is back on if @b ALL of the following conditions are met:
  * - building model summer is false
  * - t_out < current temp_trigger - outhoff_hysteresis
  * - t_out_mix < current temp_trigger - outhoff_hysteresis
+ *
+ * State is preserved in all other cases.
  * Using t_out_mix instead of raw t_out_filt will make it possible to "weigh" the
  * influence of the building time constant per circuit (assuming a different t_out_mix ratio).
- * State is preserved in all other cases
  * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
 static void hcircuit_outhoff(struct s_hcircuit * const circuit)

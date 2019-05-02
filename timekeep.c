@@ -59,6 +59,10 @@ int timekeep_init(void)
 	return (-EINIT);
 }
 
+/**
+ * Exit timekeeping subsystem.
+ * (currently this function is a NOOP)
+ */
 void timekeep_exit()
 {
 }

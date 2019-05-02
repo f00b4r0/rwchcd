@@ -67,6 +67,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	return (ALL_OK);
 }
 
+/** HW P1 log source */
 static const struct s_log_source HW_P1_temps_lsrc = {
 	.log_sched = LOG_SCHED_1mn,
 	.basename = "hw_p1_",

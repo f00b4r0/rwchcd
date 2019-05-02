@@ -8,26 +8,34 @@
 
 /**
  @mainpage
- rwchcd: a central heating controller daemon for rWCHC.
+ rwchcd: a weather compensated central heating controller daemon.
  
  @author Thibaut VARENE
  @date 2016-2019
- 
- Copyright: (C) 2016-2019 Thibaut VARENE
- 
- Home page: http://hacks.slashdirt.org/hw/rwchc/
+ @copyright Copyright (C) 2016-2019 Thibaut VARENE.
+ License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
+
+ Home page: http://hacks.slashdirt.org/sw/rwchcd/
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ version 2, as published by the Free Software Foundation.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
  */
 
 /**
  * @file
  * Main program.
- * @todo:
+ * @todo
  * - Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
  * @todo config reload
- * @todo ^2 fixed-point arithmetic
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
@@ -67,18 +75,18 @@
 #include "filecfg.h"
 
 #include "filecfg_parser.tab.h"
-extern FILE *filecfg_parser_in;
+extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser
 
 #ifndef RWCHCD_PRIO
- #define RWCHCD_PRIO	20	///< Desired run priority
+ #define RWCHCD_PRIO	20	///< Desired run priority.
 #endif
 
 #ifndef RWCHCD_UID
- #define RWCHCD_UID	65534	///< Desired run uid
+ #define RWCHCD_UID	65534	///< Desired run uid (nobody). Can be overriden via CFLAGS
 #endif
 
 #ifndef RWCHCD_GID
- #define RWCHCD_GID	65534	///< Desired run gid
+ #define RWCHCD_GID	65534	///< Desired run gid (nogroup). Can be overriden via CFLAGS
 #endif
 
 #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
@@ -89,9 +97,9 @@ extern FILE *filecfg_parser_in;
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
 
-static const char Version[] = RWCHCD_REV;	///< RWCHCD_REV is defined in Makefile
+static const char Version[] = RWCHCD_REV;	///< Build version string
 
-static pthread_barrier_t barr_main;
+static pthread_barrier_t barr_main;	///< barrier to synchronise main() with the master thread
 
 /**
  * Daemon signal handler.

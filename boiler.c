@@ -74,7 +74,7 @@ static struct s_boiler_priv * boiler_new(void)
 /**
  * Delete a boiler.
  * Frees all boiler-local resources
- * @param boiler the boiler to delete
+ * @param priv the boiler to delete
  */
 static void boiler_hscb_del_priv(void * priv)
 {
@@ -105,6 +105,12 @@ static temp_t boiler_hscb_temp(struct s_heatsource * const heat)
 	return (temp);
 }
 
+/**
+ * Return last time boiler temperature was updated.
+ * @param heat heatsource parent structure
+ * @return last update time
+ * @warning no parameter check
+ */
 static timekeep_t boiler_hscb_time(struct s_heatsource * const heat)
 {
 	const struct s_boiler_priv * const boiler = heat->priv;
@@ -329,13 +335,14 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  *     hysteresis will be reduced to 6C swinging above trip temp).
  * - On the high end of the curve (high temperatures):
  *   - untrip temp cannot be higher than limit_tmax.
+ *
  * @note As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
  * @note cold startup protection has a hardcoded 2% per 1Ks ratio
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
- * @todo XXX TODO: implement 2nd stage (p.51)
- * @todo XXX TODO: implement limit on return temp (p.55/56 / p87-760), (consummer shift / return valve / bypass pump)
+ * @todo XXX TODO: implement 2nd stage
+ * @todo XXX TODO: implement limit on return temp, (consummer shift / return valve / bypass pump)
  * @todo review integral jacketing - maybe use a PI(D) instead?
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)

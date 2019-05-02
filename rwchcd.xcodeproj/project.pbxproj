@@ -144,18 +144,18 @@
 			isa = PBXGroup;
 			children = (
 				4FCD550D1D835D04003BB848 /* rwchc_export.h */,
-				4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */,
-				4F99FD26208B7F0F00DDAB75 /* hw_p1_backend.h */,
-				4F99FD28208BBE0000DDAB75 /* hw_p1_setup.c */,
-				4F99FD29208BBE0000DDAB75 /* hw_p1_setup.h */,
-				4F99FD2B208BCF3200DDAB75 /* hw_p1_filecfg.c */,
-				4F99FD2C208BCF3200DDAB75 /* hw_p1_filecfg.h */,
 				4FC6895D207176F800A3A065 /* hw_p1.c */,
 				4FC6895E207176F800A3A065 /* hw_p1.h */,
 				4FC6895F207176F800A3A065 /* hw_p1_lcd.c */,
 				4FC68960207176F800A3A065 /* hw_p1_lcd.h */,
 				4FC68961207176F800A3A065 /* hw_p1_spi.c */,
 				4FC68962207176F800A3A065 /* hw_p1_spi.h */,
+				4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */,
+				4F99FD26208B7F0F00DDAB75 /* hw_p1_backend.h */,
+				4F99FD28208BBE0000DDAB75 /* hw_p1_setup.c */,
+				4F99FD29208BBE0000DDAB75 /* hw_p1_setup.h */,
+				4F99FD2B208BCF3200DDAB75 /* hw_p1_filecfg.c */,
+				4F99FD2C208BCF3200DDAB75 /* hw_p1_filecfg.h */,
 			);
 			path = hw_p1;
 			sourceTree = "<group>";
