@@ -92,7 +92,14 @@ extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser
 #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
 
 #define RWCHCD_FIFO	"/tmp/rwchcd.fifo"
-#define RWCHCD_CONFIG	"/etc/rwchcd.conf"
+
+#ifndef RWCHCD_CONFIG
+ #define RWCHCD_CONFIG	"/etc/rwchcd.conf"	///< Config file location. Can be overriden via CFLAGS
+#endif
+
+#ifndef RWCHCD_REV
+ #define RWCHCD_REV	"UNDEFINED"		///< Normally defined in Makefile
+#endif
 
 static volatile bool Sem_master_thread = false;
 static volatile bool Sem_master_hwinit_done = false;
