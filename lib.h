@@ -48,7 +48,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
  */
 __attribute__((const, always_inline)) static inline float temp_to_celsius(const temp_t temp)
 {
-	return ((float)((float)temp/KPRECISIONF - 273));
+	return ((float)((float)temp/KPRECISIONI - 273));
 }
 
 /**
@@ -66,7 +66,7 @@ __attribute__((const, always_inline)) static inline float temp_to_celsius(const 
  */
 __attribute__((const, always_inline)) static inline float temp_to_deltaK(const temp_t temp)
 {
-	return ((float)((float)temp/KPRECISIONF));
+	return ((float)((float)temp/KPRECISIONI));
 }
 
 /**
