@@ -34,11 +34,11 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 		      const temp_t tlow_jacket, const temp_t thigh_jacket);
 
 /**
- * Convert celsius value to internal temp_t format (Kelvin * KPRECISIONI).
+ * Convert celsius value to internal temp_t format (Kelvin * KPRECISION).
  * @note The preprocessor will do the right thing whether celsius is a float or a native integer type.
  * @param celsius temp value in Celsius
  */
-#define celsius_to_temp(celsius)	(temp_t)((celsius + 273)*KPRECISIONI)
+#define celsius_to_temp(celsius)	(temp_t)((celsius + 273)*KPRECISION)
 
 /**
  * Convert temperature from internal format to Celsius value.
@@ -48,7 +48,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
  */
 __attribute__((const, always_inline)) static inline float temp_to_celsius(const temp_t temp)
 {
-	return ((float)((float)temp/KPRECISIONI - 273));
+	return ((float)((float)temp/KPRECISION - 273));
 }
 
 /**
@@ -56,7 +56,7 @@ __attribute__((const, always_inline)) static inline float temp_to_celsius(const 
  * @note The preprocessor will do the right thing whether delta is a float or a native integer type.
  * @param delta the delta value to be converted
  */
-#define deltaK_to_temp(delta)		(temp_t)(delta * KPRECISIONI)
+#define deltaK_to_temp(delta)		(temp_t)(delta * KPRECISION)
 
 /** 
  * Convert delta from internal to Kelvin value.
@@ -66,7 +66,7 @@ __attribute__((const, always_inline)) static inline float temp_to_celsius(const 
  */
 __attribute__((const, always_inline)) static inline float temp_to_deltaK(const temp_t temp)
 {
-	return ((float)((float)temp/KPRECISIONI));
+	return ((float)((float)temp/KPRECISION));
 }
 
 /**
@@ -78,7 +78,7 @@ __attribute__((const, always_inline)) static inline float temp_to_deltaK(const t
  */
 __attribute__((const, always_inline)) static inline timekeep_t expw_mavg_dtmin(const timekeep_t tau)
 {
-	return ((((KPRECISIONI*tau)/(KPRECISIONI-1)) * 2 / KPRECISIONI) + 1);
+	return ((((KPRECISION*tau)/(KPRECISION-1)) * 2 / KPRECISION) + 1);
 }
 
 /**

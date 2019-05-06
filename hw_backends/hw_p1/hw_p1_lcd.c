@@ -351,7 +351,7 @@ static const char * hw_p1_temp_to_str(const sid_t tempid)
 
 	ret = hw_p1_sensor_clone_temp(&Hardware, tempid, &temp);
 
-#if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISIONI))
+#if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISION))
  #error Non representable minimum temperature
 #endif
 

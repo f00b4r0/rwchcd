@@ -248,21 +248,21 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 						if ((100 * (circuit->run.actual_wtemp - circuit->run.actual_ambient) / (circuit->run.target_wtemp - circuit->run.actual_ambient)) > LOGIC_MIN_POWER_TRANS_UP)
 							circuit->run.trans_active_elapsed += elapsed_time;
 
-						// tstart + elevation over time: tstart + ((elapsed_time * KPRECISIONI/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
+						// tstart + elevation over time: tstart + ((elapsed_time * KPRECISION/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
 						/* note: the impact of the boost should be considered as a percentage of the total
 						 requested temperature increase over _current_ temp, hence (treq - tcurrent).
-						 Furthermore, by simply adjusting a few factors in equal proportion (KPRECISIONI),
+						 Furthermore, by simply adjusting a few factors in equal proportion (KPRECISION),
 						 we don't need to deal with floats and we can keep a good precision.
-						 Also note that am_tambient_tK must be considered /KPRECISIONI to match the internal
-						 temp type which is K*KPRECISIONI.
+						 Also note that am_tambient_tK must be considered /KPRECISION to match the internal
+						 temp type which is K*KPRECISION.
 						 IMPORTANT: it is essential that this computation be stopped when the
-						 temperature differential (request - actual) is < KPRECISIONI (1K) otherwise the
+						 temperature differential (request - actual) is < KPRECISION (1K) otherwise the
 						 term that tends toward 0 introduces a huge residual error when boost is enabled.
 						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
 						diff_temp = request_temp - circuit->run.actual_ambient;
-						if (diff_temp >= KPRECISIONI) {
-							ambient_temp = circuit->run.trans_start_temp + (((KPRECISIONI*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
-									(KPRECISIONI + (KPRECISIONI*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISIONI);	// works even if boostdelta is not set
+						if (diff_temp >= KPRECISION) {
+							ambient_temp = circuit->run.trans_start_temp + (((KPRECISION*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
+									(KPRECISION + (KPRECISION*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISION);	// works even if boostdelta is not set
 						}
 						else
 							ambient_temp = request_temp;
@@ -447,7 +447,7 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 		// jacket integral between -100Ks and 0
 		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), deltaK_to_temp(-100), 0);
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
-		heat->run.cshift_noncrit = temp/KPRECISIONI;
+		heat->run.cshift_noncrit = temp/KPRECISION;
 	}
 	else
 		reset_intg(&heat->run.sld_itg);

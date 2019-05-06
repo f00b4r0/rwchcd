@@ -99,10 +99,10 @@ enum e_execs {
 };
 
 /// fixed-point precision: we use a 1/1024th of a degree (~millikelvin) to reduce rounding imprecision in calculations. Power of 2 for speed
-#define KPRECISIONI	1024
+#define KPRECISION	1024
 
-#define RWCHCD_TEMPMIN	((-50 + 273) * KPRECISIONI)	///< -50C is the lowest temperature we expect to deal with
-#define RWCHCD_TEMPMAX	((150 + 273) * KPRECISIONI)	///< +150C is the highest temperature we expect to deal with
+#define RWCHCD_TEMPMIN	((-50 + 273) * KPRECISION)	///< -50C is the lowest temperature we expect to deal with
+#define RWCHCD_TEMPMAX	((150 + 273) * KPRECISION)	///< +150C is the highest temperature we expect to deal with
 
 #define RWCHCD_TEMP_NOREQUEST	0		///< value for no heat request
 #define RWCHCD_CSHIFT_MAX	200		///< Maximum value for consumer shift
