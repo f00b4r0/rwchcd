@@ -149,7 +149,7 @@ static int v_pi_online(struct s_valve * const valve)
  * Therefore, the PI controller will spend a good deal of
  * time reacting to an observed response that doesn't match its required action.
  */
-static int v_pi_control(struct s_valve * const valve, const temp_t target_tout)
+static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 {
 #define VPI_FPDEC	0x200000	///< v_pi precision multiplier. 10-bit significand, which should never be > 1000pth: good
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
@@ -313,14 +313,14 @@ static int v_bangbang_online(struct s_valve * const valve)
 }
 
 /**
- * Implement a bang-bang controller for valve position.
+ * Implement a bang-bang controller for valve output temperature.
  * If target_tout > current tempout, open the valve, otherwise close it
  * @warning in case of sensor failure, NO ACTION is performed
  * @param valve self
  * @param target_tout target valve output temperature
  * @return exec status
  */
-static int v_bangbang_control(struct s_valve * const valve, const temp_t target_tout)
+static int v_bangbang_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 {
 	int ret;
 	temp_t tempout;
@@ -362,7 +362,7 @@ static int v_sapprox_online(struct s_valve * const valve)
 }
 
 /**
- * Successive approximations controller.
+ * Successive approximations temperature controller.
  * Approximate the target temperature by repeatedly trying to converge toward
  * the set point. Priv structure contains sample interval, last sample time and
  * fixed amount of valve course to apply.
@@ -373,7 +373,7 @@ static int v_sapprox_online(struct s_valve * const valve)
  * @param target_tout the target output temperature
  * @return exec status
  */
-static int v_sapprox_control(struct s_valve * const valve, const temp_t target_tout)
+static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 {
 	struct s_valve_sapprox_priv * restrict const vpriv = valve->priv;
 	const timekeep_t now = timekeep_now();
@@ -442,7 +442,7 @@ int valve_online(struct s_valve * const valve)
 	if (!valve->set.ete_time)
 		return (-EMISCONFIGURED);
 
-	if (!valve->cb.control)
+	if (!valve->cb.tcontrol)
 		return (-EMISCONFIGURED);
 
 	if (valve->cb.online)
@@ -671,7 +671,7 @@ int valve_make_bangbang(struct s_valve * const valve)
 		return (-EEXISTS);
 
 	valve->cb.online = v_bangbang_online;
-	valve->cb.control = v_bangbang_control;
+	valve->cb.tcontrol = v_bangbang_tcontrol;
 	valve->set.algo = VA_BANGBANG;
 
 	return (ALL_OK);
@@ -713,7 +713,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 
 	// assign callbacks
 	valve->cb.online = v_sapprox_online;
-	valve->cb.control = v_sapprox_control;
+	valve->cb.tcontrol = v_sapprox_tcontrol;
 
 	valve->set.algo = VA_SAPPROX;
 
@@ -731,7 +731,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
  * @param Ksmax 100% step response output difference. Used if it cannot be measured.
  * @param t_factor tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
  * @return exec status
- * @note refer to v_pi_control() for calculation details
+ * @note refer to v_pi_tcontrol() for calculation details
  */
 int valve_make_pi(struct s_valve * const valve,
 		  timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
@@ -774,7 +774,7 @@ int valve_make_pi(struct s_valve * const valve,
 
 	// assign callbacks
 	valve->cb.online = v_pi_online;
-	valve->cb.control = v_pi_control;
+	valve->cb.tcontrol = v_pi_tcontrol;
 
 	valve->set.algo = VA_PI;
 

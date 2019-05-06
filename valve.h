@@ -18,7 +18,7 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
-/** private structure for sapprox valve control */
+/** private structure for sapprox valve tcontrol */
 struct s_valve_sapprox_priv {
 	struct {
 		uint_fast16_t amount;		///< amount to move in ‰
@@ -29,7 +29,7 @@ struct s_valve_sapprox_priv {
 	} run;		///< private runtime (internally handled)
 };
 
-/** Private structure for PI valve control */
+/** Private structure for PI valve tcontrol */
 struct s_valve_pi_priv {
 	struct {
 		timekeep_t sample_intvl;///< sample interval
@@ -47,7 +47,7 @@ struct s_valve_pi_priv {
 	} run;		///< private runtime (internally handled)
 };
 
-/** valve control algorithm identifiers */
+/** valve tcontrol algorithm identifiers */
 enum e_valve_algos {
 	VA_NONE = 0,	///< no algorithm, misconfiguration
 	VA_BANGBANG,	///< bangbang controller. Config "bangbang"
@@ -68,7 +68,7 @@ struct s_valve {
 		tempid_t tid_out;	///< temp at the output
 		relid_t rid_hot;	///< relay for opening the valve (increase hot input)
 		relid_t rid_cold;	///< relay for closing the valve (increase cold input)
-		enum e_valve_algos algo;///< valve control algorithm identifier
+		enum e_valve_algos algo;///< valve tcontrol algorithm identifier
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
@@ -85,9 +85,9 @@ struct s_valve {
 		request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
 	char * restrict name;	///< valve name
-	void * restrict priv;	///< private data structure for cb.control()
+	void * restrict priv;	///< private data structure for cb.tcontrol()
 	struct {
-		int (*control)(struct s_valve * restrict const, const temp_t);	///< pointer to valve controller algorithm
+		int (*tcontrol)(struct s_valve * restrict const, const temp_t);	///< pointer to valve output temperature controller algorithm
 		int (*online)(struct s_valve * restrict const);	///< pointer to valve private online routine (for preflight checks)
 	} cb;	///< valve callbacks
 };
@@ -106,7 +106,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
 
 /**
- * Call valve control algorithm based on target temperature.
+ * Call valve tcontrol algorithm based on target temperature.
  * @param valve target valve
  * @param target_tout target temperature at output of valve
  * @return exec status
@@ -119,9 +119,9 @@ int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td,
 	if (!valve->run.online)
 		return (-EOFFLINE);
 
-	assert(valve->cb.control);
+	assert(valve->cb.tcontrol);
 	// apply valve law to determine target position
-	return (valve->cb.control(valve, target_tout));
+	return (valve->cb.tcontrol(valve, target_tout));
 }
 
 #define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open
