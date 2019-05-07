@@ -361,6 +361,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// we're good to go - keep updating actual_wtemp when circuit is off
 	circuit->run.actual_wtemp = curr_temp;
 
+	// force circuit ON during hs_overtemp condition
+	if (circuit->pdata->hs_overtemp)
+		circuit->run.runmode = RM_COMFORT;
+
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
@@ -481,6 +485,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			// X% shift is (current + X*(current - ref)/100). ref is return temp
 			water_temp += circuit->pdata->consumer_shift * (water_temp - ret_temp) / 100;
 		}
+
+		// enforce maximum temp during overtemp condition
+		if (circuit->pdata->hs_overtemp)
+			water_temp = lwtmax;
 
 		// low limit can be overriden by external interferences
 		// but high limit can never be overriden: re-enact it

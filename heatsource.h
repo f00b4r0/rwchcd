@@ -36,6 +36,7 @@ struct s_heatsource {
 	struct {
 		bool online;			///< true if source is available for use (under software management)
 		bool could_sleep;		///< true if source is could be sleeping (no recent heat request from circuits)
+		bool overtemp;			///< true if heatsource is overtemp
 		enum e_runmode runmode;		///< heatsource actual (computed) runmode
 		temp_t temp_request;		///< current temperature request for heat source
 		timekeep_t last_run_time;	///< last time heatsource was run

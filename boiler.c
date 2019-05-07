@@ -389,10 +389,15 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if ((ALL_OK != ret) || (boiler_temp > boiler->set.limit_thardmax)) {
 		boiler_failsafe(boiler);
 		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
+		heat->run.overtemp = true;
 		return (-ESAFETY);
 	}
 
 	// we're good to go
+
+	// overtemp turn off at 2K hardcoded histeresis
+	if (heat->run.overtemp && (boiler_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
+		heat->run.overtemp = false;
 
 	/* todo handle return temp limit (limit low only for boiler):
 	 * if a return mixing valve is available, use it, else form a critical

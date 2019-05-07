@@ -349,7 +349,11 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 		dhwt->run.runmode = runtime->dhwmode;
 	else
 		dhwt->run.runmode = dhwt->set.runmode;
-	
+
+	// force DHWT ON during hs_overtemp condition
+	if (dhwt->pdata->hs_overtemp)
+		dhwt->run.runmode = RM_COMFORT;
+
 	// depending on dhwt run mode, assess dhwt target temp
 	switch (dhwt->run.runmode) {
 		case RM_OFF:
@@ -403,6 +407,12 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 		target_temp = ltmin;
 	else if (target_temp > ltmax)
 		target_temp = ltmax;
+
+	// force maximum temp during hs_overtemp condition
+	if (dhwt->pdata->hs_overtemp) {
+		target_temp = ltmax;
+		dhwt->run.force_on = true;
+	}
 
 settarget:
 	// save current target dhw temp

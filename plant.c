@@ -964,7 +964,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_valve_l * valvel;
 	struct s_pump_l * pumpl;
 	int ret;
-	bool suberror = false;
+	bool overtemp = false, suberror = false;
 	timekeep_t stop_delay = 0;
 
 	assert(runtime);
@@ -1042,8 +1042,11 @@ int plant_run(struct s_plant * restrict const plant)
 			stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
 
 			// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
+			assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment for consummer_shift
 			plant->pdata.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
 		}
+		// always update overtemp (which can be triggered with -ESAFETY)
+		overtemp = heatsourcel->heats->run.overtemp ? heatsourcel->heats->run.overtemp : overtemp;
 
 		heatsourcel->status = ret;
 		
@@ -1064,8 +1067,11 @@ int plant_run(struct s_plant * restrict const plant)
 		}
 	}
 
-	// reflect global stop delay
+	// reflect global stop delay and overtemp
 	plant->pdata.consumer_sdelay = stop_delay;
+	plant->pdata.hs_overtemp = overtemp;
+	if (overtemp)
+		plant->pdata.plant_could_sleep = false;	// disable during overtemp
 
 	if (runtime->config->summer_maintenance)
 		plant_summer_maintenance(plant);
