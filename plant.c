@@ -922,6 +922,9 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 		if (!valvel->valve->run.online)
 			continue;
 
+		if (VA_TYPE_ISOL == valvel->valve->set.type)
+			continue;	// don't touch isolation valves
+
 		if (valvel->valve->run.dwht_use)
 			continue;	// don't touch DHWT valves when in use
 
