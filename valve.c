@@ -825,7 +825,7 @@ int valve_make_pi(struct s_valve * const valve,
  * @param target_tout target temperature at output of valve
  * @return exec status
  */
-int valve_tcontrol(struct s_valve * const valve, const temp_t target_tout)
+int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 {
 	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);

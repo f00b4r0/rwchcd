@@ -420,7 +420,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		// if we have a configured valve, use it
 		if (boiler->valve_ret) {
 			// set valve for target limit. If return is higher valve will be full closed.
-			ret = valve_tcontrol(boiler->valve_ret, boiler->set.limit_treturnmin);
+			ret = valve_mix_tcontrol(boiler->valve_ret, boiler->set.limit_treturnmin);
 			if ((ALL_OK != ret) && (-EDEADZONE != ret))	// something bad happened. XXX further action?
 				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->valve_ret->name, ret);
 		}

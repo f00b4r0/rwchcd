@@ -488,7 +488,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			water_temp = lwtmax;
 
 		// adjust valve position if necessary
-		ret = valve_tcontrol(circuit->valve_mix, water_temp);
+		ret = valve_mix_tcontrol(circuit->valve_mix, water_temp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
 			return (ret);
 		// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))

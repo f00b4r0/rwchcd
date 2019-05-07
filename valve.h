@@ -137,7 +137,7 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth);
 int valve_make_bangbang(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timekeep_t intvl) __attribute__((warn_unused_result));
 int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
-int valve_tcontrol(struct s_valve * const valve, const temp_t target_tout) __attribute__((warn_unused_result));
+int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout) __attribute__((warn_unused_result));
 
 #define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open
 #define valve_reqclose_full(valve)	valve_request_pth(valve, -1200)	///< request valve full close
