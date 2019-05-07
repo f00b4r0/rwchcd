@@ -123,9 +123,6 @@ struct s_valve {
 	} run;		///< private runtime (internally handled)
 	char * restrict name;		///< valve name
 	void * restrict priv;		///< private data
-	struct {
-		int (*online)(struct s_valve * restrict const);	///< pointer to valve private online routine (for preflight checks)
-	} cb;	///< valve callbacks
 };
 
 struct s_valve * valve_new(void) __attribute__((warn_unused_result));

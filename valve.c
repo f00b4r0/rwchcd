@@ -460,8 +460,22 @@ int valve_online(struct s_valve * const valve)
 	if (!valve->set.ete_time)
 		return (-EMISCONFIGURED);
 
-	if (valve->cb.online)
-		ret = valve->cb.online(valve);
+	if (VA_TYPE_MIX == valve->set.type) {
+		switch (valve->set.tset.tmix.algo) {
+			case VA_BANGBANG:
+				ret = v_bangbang_online(valve);
+				break;
+			case VA_SAPPROX:
+				ret = v_sapprox_online(valve);
+				break;
+			case VA_PI:
+				ret = v_pi_online(valve);
+				break;
+			case VA_NONE:
+			default:
+				ret = -ENOTIMPLEMENTED;
+		}
+	}
 
 	if (ALL_OK != ret)
 		return (ret);
@@ -704,7 +718,6 @@ int valve_make_bangbang(struct s_valve * const valve)
 	if (VA_NONE != valve->set.tset.tmix.algo || valve->priv)
 		return (-EEXISTS);
 
-	valve->cb.online = v_bangbang_online;
 	valve->set.tset.tmix.algo = VA_BANGBANG;
 
 	return (ALL_OK);
@@ -743,9 +756,6 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 
 	// attach created priv to valve
 	valve->priv = priv;
-
-	// assign callbacks
-	valve->cb.online = v_sapprox_online;
 
 	valve->set.tset.tmix.algo = VA_SAPPROX;
 
@@ -803,9 +813,6 @@ int valve_make_pi(struct s_valve * const valve,
 							// ^--- manual rounding, Td/Tc always >=0
 	// attach created priv to valve
 	valve->priv = priv;
-
-	// assign callbacks
-	valve->cb.online = v_pi_online;
 
 	valve->set.tset.tmix.algo = VA_PI;
 
