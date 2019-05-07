@@ -236,7 +236,7 @@ static int filecfg_v_sapprox_dump(const struct s_valve * restrict const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (VA_SAPPROX != valve->set.algo)
+	if (VA_SAPPROX != valve->set.tset.tmix.algo)
 		return (-EINVALID);
 
 	priv = valve->priv;
@@ -254,7 +254,7 @@ static int filecfg_v_pi_dump(const struct s_valve * restrict const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (VA_PI != valve->set.algo)
+	if (VA_PI != valve->set.tset.tmix.algo)
 		return (-EINVALID);
 
 	priv = valve->priv;
@@ -274,7 +274,7 @@ static int filecfg_valve_algo_dump(const struct s_valve * restrict const valve)
 	int (* privdump)(const struct s_valve * restrict const);
 	int ret = ALL_OK;
 
-	switch (valve->set.algo) {
+	switch (valve->set.tset.tmix.algo) {
 		case VA_BANGBANG:
 			algoname = "bangbang";
 			privdump = filecfg_v_bangbang_dump;
@@ -298,7 +298,87 @@ static int filecfg_valve_algo_dump(const struct s_valve * restrict const valve)
 	filecfg_printf(" \"%s\" {\n", algoname);
 	filecfg_ilevel_inc();
 	if (privdump)
-		privdump(valve);
+		ret = privdump(valve);
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ret);
+}
+
+static int filecfg_valve_tmix_dump(const struct s_valve * restrict const valve)
+{
+	if (FCD_Exhaustive || valve->set.tset.tmix.tdeadzone)
+		filecfg_iprintf("tdeadzone %.1f;\n", temp_to_deltaK(valve->set.tset.tmix.tdeadzone));
+	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tset.tmix.tid_hot))
+		filecfg_iprintf("tid_hot"), filecfg_tempid_dump(valve->set.tset.tmix.tid_hot);
+	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tset.tmix.tid_cold))
+		filecfg_iprintf("tid_cold"), filecfg_tempid_dump(valve->set.tset.tmix.tid_cold);
+	filecfg_iprintf("tid_out"); filecfg_tempid_dump(valve->set.tset.tmix.tid_out);		// mandatory
+
+	filecfg_iprintf("algo");
+	return (filecfg_valve_algo_dump(valve));			// mandatory
+}
+
+static int filecfg_valve_type_dump(const struct s_valve * restrict const valve)
+{
+	const char * tname;
+	int (* vtypedump)(const struct s_valve * restrict const);
+	int ret = ALL_OK;
+
+	switch (valve->set.type) {
+		case VA_TYPE_MIX:
+			tname = "mix";
+			vtypedump = filecfg_valve_tmix_dump;
+			break;
+		case VA_TYPE_NONE:
+		default:
+			tname = "";
+			vtypedump = NULL;
+			ret = -EMISCONFIGURED;
+			break;
+	}
+
+	filecfg_printf(" \"%s\" {\n", tname);
+	filecfg_ilevel_inc();
+	if (vtypedump)
+		ret = vtypedump(valve);
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ret);
+}
+
+static int filecfg_valve_m3way_dump(const struct s_valve * restrict const valve)
+{
+	filecfg_iprintf("rid_open"); filecfg_relid_dump(valve->set.mset.m3way.rid_open);	// mandatory
+	filecfg_iprintf("rid_close"); filecfg_relid_dump(valve->set.mset.m3way.rid_close);	// mandatory
+
+	return (ALL_OK);
+}
+
+static int filecfg_valve_motor_dump(const struct s_valve * restrict const valve)
+{
+	const char * mname;
+	int (* vmotordump)(const struct s_valve * restrict const);
+	int ret = ALL_OK;
+
+	switch (valve->set.motor) {
+		case VA_M_3WAY:
+			mname = "3way";
+			vmotordump = filecfg_valve_m3way_dump;
+			break;
+		case VA_M_NONE:
+		default:
+			mname = "";
+			vmotordump = NULL;
+			ret = -EMISCONFIGURED;
+			break;
+	}
+
+	filecfg_printf(" \"%s\" {\n", mname);
+	filecfg_ilevel_inc();
+	if (vmotordump)
+		ret = vmotordump(valve);
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 
@@ -316,21 +396,12 @@ static int filecfg_valve_dump(const struct s_valve * restrict const valve)
 	filecfg_iprintf("valve \"%s\" {\n", valve->name);
 	filecfg_ilevel_inc();
 
-	if (FCD_Exhaustive || valve->set.tdeadzone)
-		filecfg_iprintf("tdeadzone %.1f;\n", temp_to_deltaK(valve->set.tdeadzone));
 	if (FCD_Exhaustive || valve->set.deadband)
 		filecfg_iprintf("deadband %" PRIdFAST16 ";\n", valve->set.deadband);
-	filecfg_iprintf("ete_time %ld;\n", timekeep_tk_to_sec(valve->set.ete_time));			// mandatory
-	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_hot))
-		filecfg_iprintf("tid_hot"), filecfg_tempid_dump(valve->set.tid_hot);
-	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tid_cold))
-		filecfg_iprintf("tid_cold"), filecfg_tempid_dump(valve->set.tid_cold);
-	filecfg_iprintf("tid_out"); filecfg_tempid_dump(valve->set.tid_out);		// mandatory
+	filecfg_iprintf("ete_time %ld;\n", timekeep_tk_to_sec(valve->set.ete_time));	// mandatory
 
-	filecfg_iprintf("rid_hot"); filecfg_relid_dump(valve->set.rid_hot);		// mandatory
-	filecfg_iprintf("rid_cold"); filecfg_relid_dump(valve->set.rid_cold);		// mandatory
-
-	filecfg_iprintf("algo"); filecfg_valve_algo_dump(valve);			// mandatory
+	filecfg_iprintf("type"); filecfg_valve_type_dump(valve);			// mandatory
+	filecfg_iprintf("motor"); filecfg_valve_motor_dump(valve);			// mandatory
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

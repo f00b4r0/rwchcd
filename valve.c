@@ -103,18 +103,18 @@ static int v_pi_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (!valve->priv)
+	if ((VA_TYPE_MIX != valve->set.type) || !valve->priv)
 		return (-EMISCONFIGURED);
 
-	if (VA_PI != valve->set.algo)
+	if (VA_PI != valve->set.tset.tmix.algo)
 		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.tid_out, NULL);
+	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL);
 	if (ALL_OK != ret)
 		return (ret);
 
-	return (hardware_sensor_clone_time(valve->set.tid_hot, NULL));
+	return (hardware_sensor_clone_time(valve->set.tset.tmix.tid_hot, NULL));
 }
 
 /**
@@ -170,23 +170,23 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	vpriv->run.last_time = now;
 
 	// get current outpout
-	ret = hardware_sensor_clone_temp(valve->set.tid_out, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2))) {
+	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2))) {
 		valve->run.ctrl_ready = false;
 		return (-EDEADZONE);
 	}
 
 	// get current high input
-	ret = hardware_sensor_clone_temp(valve->set.tid_hot, &tempin_h);
+	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_hot, &tempin_h);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// if we don't have a sensor for low input, guesstimate it
-	ret = hardware_sensor_clone_temp(valve->set.tid_cold, &tempin_l);
+	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_cold, &tempin_l);
 	if (ALL_OK != ret)
 		tempin_l = tempin_h - vpriv->set.Ksmax;
 
@@ -305,11 +305,14 @@ static int v_bangbang_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (VA_BANGBANG != valve->set.algo)
+	if (VA_TYPE_MIX != valve->set.type)
+		return (-EMISCONFIGURED);
+
+	if (VA_BANGBANG != valve->set.tset.tmix.algo)
 		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
-	return (hardware_sensor_clone_time(valve->set.tid_out, NULL));
+	return (hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL));
 }
 
 /**
@@ -325,12 +328,12 @@ static int v_bangbang_tcontrol(struct s_valve * const valve, const temp_t target
 	int ret;
 	temp_t tempout;
 
-	ret = hardware_sensor_clone_temp(valve->set.tid_out, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2)))
+	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2)))
 		return (-EDEADZONE);	// do nothing
 
 	if (target_tout > tempout)
@@ -351,14 +354,14 @@ static int v_sapprox_online(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (!valve->priv)
+	if ((VA_TYPE_MIX != valve->set.type) || !valve->priv)
 		return (-EMISCONFIGURED);
 
-	if (VA_SAPPROX != valve->set.algo)
+	if (VA_SAPPROX != valve->set.tset.tmix.algo)
 		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
-	return (hardware_sensor_clone_time(valve->set.tid_out, NULL));
+	return (hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL));
 }
 
 /**
@@ -394,27 +397,42 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 
 	vpriv->run.last_time = now;
 
-	ret = hardware_sensor_clone_temp(valve->set.tid_out, &tempout);
+	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tdeadzone/2)))
+	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2)))
 		return (-EDEADZONE);
 
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
-	if (tempout < target_tout - valve->set.tdeadzone/2) {
+	if (tempout < target_tout - valve->set.tset.tmix.tdeadzone/2) {
 		valve_request_pth(valve, vpriv->set.amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
-	else if (tempout > target_tout + valve->set.tdeadzone/2) {
+	else if (tempout > target_tout + valve->set.tset.tmix.tdeadzone/2) {
 		valve_request_pth(valve, -vpriv->set.amount);
 	}
 	// else stop valve
 	else {
 		valve_reqstop(valve);
 	}
+
+	return (ALL_OK);
+}
+
+/**
+ * Valve online routine for 3way motorisation
+ * @param valve target valve
+ * @return exec status
+ */
+static int valve_m3way_online(struct s_valve * const valve)
+{
+	if (!hardware_relay_name(valve->set.mset.m3way.rid_open))
+		return (-EMISCONFIGURED);
+	if (!hardware_relay_name(valve->set.mset.m3way.rid_close))
+		return (-EMISCONFIGURED);
 
 	return (ALL_OK);
 }
@@ -436,7 +454,7 @@ int valve_online(struct s_valve * const valve)
 	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (VA_NONE == valve->set.algo)
+	if (VA_TYPE_NONE == valve->set.type || VA_M_NONE == valve->set.motor)
 		return (-EMISCONFIGURED);
 
 	if (!valve->set.ete_time)
@@ -444,6 +462,19 @@ int valve_online(struct s_valve * const valve)
 
 	if (valve->cb.online)
 		ret = valve->cb.online(valve);
+
+	if (ALL_OK != ret)
+		return (ret);
+
+	switch (valve->set.motor) {
+		case VA_M_3WAY:
+			ret = valve_m3way_online(valve);
+			break;
+		case VA_M_NONE:
+		default:
+			ret = -ENOTIMPLEMENTED;
+			break;
+	}
 
 	// return to idle
 	valve_reqstop(valve);
@@ -498,8 +529,10 @@ int valve_offline(struct s_valve * const valve)
 		return (-ENOTCONFIGURED);
 
 	// stop the valve uncondiditonally
-	(void)hardware_relay_set_state(valve->set.rid_hot, OFF, 0);
-	(void)hardware_relay_set_state(valve->set.rid_cold, OFF, 0);
+	if (VA_M_3WAY == valve->set.motor) {
+		(void)hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
+		(void)hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+	}
 
 	memset(&valve->run, 0x00, sizeof(valve->run));
 	//valve->run.ctrl_ready = false;	// handled by memset
@@ -611,37 +644,41 @@ int valve_run(struct s_valve * const valve)
 
 	// perform requested action
 	if (valve->run.request_action != valve->run.actual_action) {
-		switch (valve->run.request_action) {
-			case OPEN:
-				ret = hardware_relay_set_state(valve->set.rid_cold, OFF, 0);	// break before make
-				if (ALL_OK != ret)
-					goto fail;
-				ret = hardware_relay_set_state(valve->set.rid_hot, ON, 0);
-				if (ALL_OK != ret)
-					goto fail;
-				valve->run.actual_action = OPEN;
-				break;
-			case CLOSE:
-				ret = hardware_relay_set_state(valve->set.rid_hot, OFF, 0);	// break before make
-				if (ALL_OK != ret)
-					goto fail;
-				ret = hardware_relay_set_state(valve->set.rid_cold, ON, 0);
-				if (ALL_OK != ret)
-					goto fail;
-				valve->run.actual_action = CLOSE;
-				break;
-			default:
-				ret = -EINVALID;
-			case STOP:
-				ret = hardware_relay_set_state(valve->set.rid_hot, OFF, 0);
-				if (ALL_OK != ret)
-					goto fail;
-				ret = hardware_relay_set_state(valve->set.rid_cold, OFF, 0);
-				if (ALL_OK != ret)
-					goto fail;
-				valve->run.actual_action = STOP;
-				break;
+		if (VA_M_3WAY == valve->set.motor) {
+			switch (valve->run.request_action) {
+				case OPEN:
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);	// break before make
+					if (ALL_OK != ret)
+						goto fail;
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, ON, 0);
+					if (ALL_OK != ret)
+						goto fail;
+					valve->run.actual_action = OPEN;
+					break;
+				case CLOSE:
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);	// break before make
+					if (ALL_OK != ret)
+						goto fail;
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, ON, 0);
+					if (ALL_OK != ret)
+						goto fail;
+					valve->run.actual_action = CLOSE;
+					break;
+				default:
+					ret = -EINVALID;
+				case STOP:
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
+					if (ALL_OK != ret)
+						goto fail;
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+					if (ALL_OK != ret)
+						goto fail;
+					valve->run.actual_action = STOP;
+					break;
+			}
 		}
+		else
+			return (-ENOTIMPLEMENTED);
 	}
 
 	dbgmsg("\"%s\": rq_act: %d, act: %d, pos: %.1f%%, rq_crs: %.1f%%",
@@ -661,14 +698,14 @@ fail:
  */
 int valve_make_bangbang(struct s_valve * const valve)
 {
-	if (!valve)
+	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);
 
-	if (VA_NONE != valve->set.algo)
+	if (VA_NONE != valve->set.tset.tmix.algo || valve->priv)
 		return (-EEXISTS);
 
 	valve->cb.online = v_bangbang_online;
-	valve->set.algo = VA_BANGBANG;
+	valve->set.tset.tmix.algo = VA_BANGBANG;
 
 	return (ALL_OK);
 }
@@ -687,10 +724,10 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 {
 	struct s_valve_sapprox_priv * priv = NULL;
 
-	if (!valve)
+	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);
 
-	if ((VA_NONE != valve->set.algo) || (valve->priv))
+	if ((VA_NONE != valve->set.tset.tmix.algo) || valve->priv)
 		return (-EEXISTS);
 
 	if ((amount > 100) || (intvl < 1))
@@ -710,7 +747,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 	// assign callbacks
 	valve->cb.online = v_sapprox_online;
 
-	valve->set.algo = VA_SAPPROX;
+	valve->set.tset.tmix.algo = VA_SAPPROX;
 
 	return (ALL_OK);
 }
@@ -733,10 +770,10 @@ int valve_make_pi(struct s_valve * const valve,
 {
 	struct s_valve_pi_priv * priv = NULL;
 
-	if (!valve)
+	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);
 
-	if ((VA_NONE != valve->set.algo) || (valve->priv))
+	if ((VA_NONE != valve->set.tset.tmix.algo) || valve->priv)
 		return (-EEXISTS);
 
 	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0) || (t_factor <= 0))
@@ -770,7 +807,7 @@ int valve_make_pi(struct s_valve * const valve,
 	// assign callbacks
 	valve->cb.online = v_pi_online;
 
-	valve->set.algo = VA_PI;
+	valve->set.tset.tmix.algo = VA_PI;
 
 	return (ALL_OK);
 }
@@ -783,13 +820,13 @@ int valve_make_pi(struct s_valve * const valve,
  */
 int valve_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 {
-	if (!valve)
+	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);
 
 	if (!valve->run.online)
 		return (-EOFFLINE);
 
-	switch (valve->set.algo) {
+	switch (valve->set.tset.tmix.algo) {
 		case VA_BANGBANG:
 			return (v_bangbang_tcontrol(valve, target_tout));
 		case VA_SAPPROX:

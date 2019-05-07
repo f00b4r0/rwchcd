@@ -643,24 +643,129 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	return (valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, tune_f));
 }
 
+static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEFLT|NODEINT, "tdeadzone", false, NULL, NULL, },	// 0
+		{ NODELST, "tid_hot", false, NULL, NULL, },
+		{ NODELST, "tid_cold", false, NULL, NULL, },	// 2
+		{ NODELST, "tid_out", true, NULL, NULL, },
+		{ NODESTR, "algo", true, NULL, NULL, },		// 4
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_valve * restrict const valve = priv;
+	const char * n;
+	float fv;
+	int ret;
+	unsigned int i;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	valve->set.type = VA_TYPE_MIX;	// needed by valve_make_* algos
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
+				if (fv < 0)
+					goto invaliddata;
+				else
+					valve->set.tset.tmix.tdeadzone = deltaK_to_temp(fv);
+				break;
+			case 1:
+				if (ALL_OK != tid_parse(&valve->set.tset.tmix.tid_hot, currnode))
+					goto invaliddata;
+				break;
+			case 2:
+				if (ALL_OK != tid_parse(&valve->set.tset.tmix.tid_cold, currnode))
+					goto invaliddata;
+				break;
+			case 3:
+				if (ALL_OK != tid_parse(&valve->set.tset.tmix.tid_out, currnode))
+					goto invaliddata;
+				break;
+			case 4:
+				n = currnode->value.stringval;
+				if (!strcmp("PI", n))
+					ret = valve_algo_PI_parser(valve, currnode);
+				else if (!strcmp("sapprox", n))
+					ret = valve_algo_sapprox_parser(valve, currnode);
+				else if (!strcmp("bangbang", n))
+					ret = valve_make_bangbang(valve);
+				else {
+					dbgerr("Unknown algo \"%s\" closing at line %d", n, currnode->lineno);
+					ret = -EUNKNOWN;
+				}
+				if (ALL_OK == ret)
+					dbgmsg("parsed algo \"%s\"", n);
+				else
+					valve->set.type = VA_TYPE_NONE;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	return (ret);
+
+invaliddata:
+	valve->set.type = VA_TYPE_NONE;
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
+static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODELST, "rid_open", true, NULL, NULL, },	// 0
+		{ NODELST, "rid_close", true, NULL, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_valve * restrict const valve = priv;
+	int ret;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	currnode = parsers[0].node;
+	ret = rid_parse(&valve->set.mset.m3way.rid_open, currnode);
+	if (ALL_OK != ret)
+		goto invaliddata;
+
+	currnode = parsers[1].node;
+	ret = rid_parse(&valve->set.mset.m3way.rid_close, currnode);
+	if (ALL_OK != ret)
+		goto invaliddata;
+
+	if (ALL_OK == ret)
+		valve->set.motor = VA_M_3WAY;
+
+	return (ret);
+
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
 static int valve_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "deadband", false, NULL, NULL, },	// 0
 		{ NODEINT, "ete_time", true, NULL, NULL, },
-		{ NODEFLT|NODEINT, "tdeadzone", false, NULL, NULL, },	// 2
-		{ NODELST, "tid_hot", false, NULL, NULL, },
-		{ NODELST, "tid_cold", false, NULL, NULL, },	// 4
-		{ NODELST, "tid_out", true, NULL, NULL, },
-		{ NODELST, "rid_hot", true, NULL, NULL, },	// 6
-		{ NODELST, "rid_cold", true, NULL, NULL, },
-		{ NODESTR, "algo", true, NULL, NULL, },		// 8
+		{ NODESTR, "type", true, NULL, NULL, },		// 2
+		{ NODESTR, "motor", true, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
 	struct s_valve * valve;
 	const char * n;
-	float fv;
 	int iv, ret;
 	unsigned int i;
 
@@ -694,46 +799,26 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 					valve->set.ete_time = timekeep_sec_to_tk(iv);
 				break;
 			case 2:
-				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
-				if (fv < 0)
-					goto invaliddata;
-				else
-					valve->set.tdeadzone = deltaK_to_temp(fv);
-				break;
-			case 3:
-				if (ALL_OK != tid_parse(&valve->set.tid_hot, currnode))
-					goto invaliddata;
-				break;
-			case 4:
-				if (ALL_OK != tid_parse(&valve->set.tid_cold, currnode))
-					goto invaliddata;
-				break;
-			case 5:
-				if (ALL_OK != tid_parse(&valve->set.tid_out, currnode))
-					goto invaliddata;
-				break;
-			case 6:
-				if (ALL_OK != rid_parse(&valve->set.rid_hot, currnode))
-					goto invaliddata;
-				break;
-			case 7:
-				if (ALL_OK != rid_parse(&valve->set.rid_cold, currnode))
-					goto invaliddata;
-				break;
-			case 8:
 				n = currnode->value.stringval;
-				if (!strcmp("PI", n))
-					ret = valve_algo_PI_parser(valve, currnode);
-				else if (!strcmp("sapprox", n))
-					ret = valve_algo_sapprox_parser(valve, currnode);
-				else if (!strcmp("bangbang", n))
-					ret = valve_make_bangbang(valve);
+				if (!strcmp("mix", n))
+					ret = valve_tmix_parser(valve, currnode);
 				else {
-					dbgerr("Unknown algo \"%s\" closing at line %d", n, currnode->lineno);
+					dbgerr("Unknown type \"%s\" closing at line %d", n, currnode->lineno);
 					return (-EUNKNOWN);
 				}
 				if (ALL_OK == ret)
-					dbgmsg("parsed algo \"%s\"", n);
+					dbgmsg("parsed type \"%s\"", n);
+				break;
+			case 3:
+				n = currnode->value.stringval;
+				if (!strcmp("3way", n))
+					ret = valve_m3way_parser(valve, currnode);
+				else {
+					dbgerr("Unknown motor \"%s\" closing at line %d", n, currnode->lineno);
+					return (-EUNKNOWN);
+				}
+				if (ALL_OK == ret)
+					dbgmsg("parsed motor \"%s\"", n);
 				break;
 			default:
 				break;	// should never happen

@@ -55,20 +55,57 @@ enum e_valve_algos {
 	VA_PI,		///< PI controller. Config "PI"
 };
 
+/** valve motorisation identifiers */
+enum e_valve_motor {
+	VA_M_NONE = 0,	///< no motor, misconfiguration
+	VA_M_3WAY,	///< 3way motor control. Config "3way"
+	//VA_M_2WAY,
+	//VA_M_10V,
+	//VA_M_20MA,
+};
+
+/** valve type identifiers */
+enum e_valve_type {
+	VA_TYPE_NONE = 0,	///< no type, misconfiguration
+	VA_TYPE_MIX,		///< mixing type. Config "mix"
+};
+
+/** Private structure for 3way motorisation settings */
+struct s_valve_motor_3way_set {
+	relid_t rid_open;	///< relay for opening the valve
+	relid_t rid_close;	///< relay for closing the valve
+};
+
+/** Union for valve motorisation settings */
+union u_valve_motor_set {
+	struct s_valve_motor_3way_set m3way;	///< 3way motorisation settings
+};
+
+/** Private structure for mixing type valve */
+struct s_valve_type_mix_set {
+	temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
+	tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
+	tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
+	tempid_t tid_out;	///< temp at the output
+	enum e_valve_algos algo;///< valve tcontrol algorithm identifier
+};
+
+/** Union for valve type settings */
+union u_valve_type_set {
+	struct s_valve_type_mix_set tmix;	///< mixing valve settings
+};
+
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
 /** Valve element structure */
 struct s_valve {
 	struct {
 		bool configured;	///< true if properly configured
-		temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
 		uint_fast16_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
 		timekeep_t ete_time;	///< end-to-end run time
-		tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
-		tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
-		tempid_t tid_out;	///< temp at the output
-		relid_t rid_hot;	///< relay for opening the valve (increase hot input)
-		relid_t rid_cold;	///< relay for closing the valve (increase cold input)
-		enum e_valve_algos algo;///< valve tcontrol algorithm identifier
+		enum e_valve_type type;	///< type of valve
+		enum e_valve_motor motor;	///< type of motor
+		union u_valve_type_set tset;	///< type configuration data
+		union u_valve_motor_set mset;	///< motor configuration data
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
@@ -84,8 +121,8 @@ struct s_valve {
 		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
 		request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
-	char * restrict name;	///< valve name
-	void * restrict priv;	///< private data structure for tcontrol()
+	char * restrict name;		///< valve name
+	void * restrict priv;		///< private data
 	struct {
 		int (*online)(struct s_valve * restrict const);	///< pointer to valve private online routine (for preflight checks)
 	} cb;	///< valve callbacks
