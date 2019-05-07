@@ -754,6 +754,38 @@ invaliddata:
 	return (-EINVALID);
 }
 
+static int valve_m2way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODELST, "rid_trigger", true, NULL, NULL, },	// 0
+		{ NODEBOL, "trigger_opens", true, NULL, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_valve * restrict const valve = priv;
+	int ret;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	currnode = parsers[0].node;
+	ret = rid_parse(&valve->set.mset.m2way.rid_trigger, currnode);
+	if (ALL_OK != ret)
+		goto invaliddata;
+
+	currnode = parsers[1].node;
+	valve->set.mset.m2way.trigger_opens = currnode->value.boolval;
+
+	if (ALL_OK == ret)
+		valve->set.motor = VA_M_2WAY;
+
+	return (ret);
+
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
 static int valve_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
@@ -813,6 +845,8 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 				n = currnode->value.stringval;
 				if (!strcmp("3way", n))
 					ret = valve_m3way_parser(valve, currnode);
+				else if (!strcmp("2way", n))
+					ret = valve_m2way_parser(valve, currnode);
 				else {
 					dbgerr("Unknown motor \"%s\" closing at line %d", n, currnode->lineno);
 					return (-EUNKNOWN);

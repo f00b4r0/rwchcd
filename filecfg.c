@@ -356,6 +356,14 @@ static int filecfg_valve_m3way_dump(const struct s_valve * restrict const valve)
 	return (ALL_OK);
 }
 
+static int filecfg_valve_m2way_dump(const struct s_valve * restrict const valve)
+{
+	filecfg_iprintf("rid_trigger"); filecfg_relid_dump(valve->set.mset.m2way.rid_trigger);	// mandatory
+	filecfg_iprintf("trigger_opens %s;\n", filecfg_bool_str(valve->set.mset.m2way.trigger_opens));// mandatory
+
+	return (ALL_OK);
+}
+
 static int filecfg_valve_motor_dump(const struct s_valve * restrict const valve)
 {
 	const char * mname;
@@ -366,6 +374,10 @@ static int filecfg_valve_motor_dump(const struct s_valve * restrict const valve)
 		case VA_M_3WAY:
 			mname = "3way";
 			vmotordump = filecfg_valve_m3way_dump;
+			break;
+		case VA_M_2WAY:
+			mname = "2way";
+			vmotordump = filecfg_valve_m2way_dump;
 			break;
 		case VA_M_NONE:
 		default:

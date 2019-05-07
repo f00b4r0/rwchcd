@@ -78,7 +78,12 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 		return (-EINVALID);
 
 	tcourse = abs(perth);
-	// jacket to 100%
+
+	// 2way motor only allows for full swing
+	if ((VA_M_2WAY == valve->set.motor) && (VALVE_REQMAXPTH != tcourse))
+		return (-ENOTIMPLEMENTED);
+
+	// jacket course to 100%
 	if (tcourse >= 1000)
 		tcourse = 1000;
 
@@ -438,6 +443,19 @@ static int valve_m3way_online(struct s_valve * const valve)
 }
 
 /**
+ * Valve online routine for 2way motorisation
+ * @param valve target valve
+ * @return exec status
+ */
+static int valve_m2way_online(struct s_valve * const valve)
+{
+	if (!hardware_relay_name(valve->set.mset.m2way.rid_trigger))
+		return (-EMISCONFIGURED);
+
+	return (ALL_OK);
+}
+
+/**
  * Put valve online.
  * Perform all necessary actions to prepare the valve for service
  * and mark it online.
@@ -483,6 +501,9 @@ int valve_online(struct s_valve * const valve)
 	switch (valve->set.motor) {
 		case VA_M_3WAY:
 			ret = valve_m3way_online(valve);
+			break;
+		case VA_M_2WAY:
+			ret = valve_m2way_online(valve);
 			break;
 		case VA_M_NONE:
 		default:
@@ -571,17 +592,26 @@ int valve_logic(struct s_valve * const valve)
 	if (!valve->run.online)
 		return (-EOFFLINE);
 
-	if (OPEN == valve->run.request_action) {
-		if (valve->run.acc_open_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
-			valve->run.true_pos = true;
-			valve_reqstop(valve);	// don't run if we're already maxed out
-		}
-	}
-	else if (CLOSE == valve->run.request_action) {
-		if (valve->run.acc_close_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
-			valve->run.true_pos = true;
-			valve_reqstop(valve);	// don't run if we're already maxed out
-		}
+	switch (valve->set.motor) {
+		case VA_M_3WAY:
+		case VA_M_2WAY:
+			if (OPEN == valve->run.request_action) {
+				if (valve->run.acc_open_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
+					valve->run.true_pos = true;
+					if (VA_M_2WAY != valve->set.motor)
+						valve_reqstop(valve);	// don't run if we're already maxed out (doesn't apply to 2way motorisation)
+				}
+			}
+			else if (CLOSE == valve->run.request_action) {
+				if (valve->run.acc_close_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
+					valve->run.true_pos = true;
+					if (VA_M_2WAY != valve->set.motor)
+						valve_reqstop(valve);	// don't run if we're already maxed out (doesn't apply to 2way motorisation)
+				}
+			}
+			break;
+		case VA_M_NONE:
+			return (-EMISCONFIGURED);	// cannot happen
 	}
 
 	return (ALL_OK);
@@ -595,7 +625,6 @@ int valve_logic(struct s_valve * const valve)
  * be reached due to time resolution.
  * @param valve target valve
  * @return error status
- * @todo XXX REVIEW only handles 3-way valve for now
  * @warning first invocation must be with valve stopped (run.actual_action == STOP),
  * otherwise dt will be out of whack (this is normally ensured by valve_online()).
  * @note the function assumes that the sanity of the valve argument will be checked before invocation.
@@ -610,6 +639,7 @@ int valve_run(struct s_valve * const valve)
 	uint_fast32_t perth_ptk;	// ‰ position change per tick
 	int_fast16_t course;
 	int ret = ALL_OK;
+	bool m2wtopens;
 
 	if (!valve)
 		return (-EINVALID);
@@ -656,7 +686,7 @@ int valve_run(struct s_valve * const valve)
 	if (valve->run.target_course < (course/2))	// residual value is under/overshoot amount
 		valve_reqstop(valve);
 
-	// perform requested action
+	// perform requested action - XXX currently not split into subroutines as we might be able to use context for proportional servos (10V/20mA signals)
 	if (valve->run.request_action != valve->run.actual_action) {
 		if (VA_M_3WAY == valve->set.motor) {
 			switch (valve->run.request_action) {
@@ -685,6 +715,30 @@ int valve_run(struct s_valve * const valve)
 					if (ALL_OK != ret)
 						goto fail;
 					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+					if (ALL_OK != ret)
+						goto fail;
+					valve->run.actual_action = STOP;
+					break;
+			}
+		}
+		else if (VA_M_2WAY == valve->set.motor) {
+			m2wtopens = valve->set.mset.m2way.trigger_opens;
+			switch (valve->run.request_action) {
+				case OPEN:
+					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, m2wtopens, 0);
+					if (ALL_OK != ret)
+						goto fail;
+					valve->run.actual_action = OPEN;
+					break;
+				case CLOSE:
+					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, !m2wtopens, 0);
+					if (ALL_OK != ret)
+						goto fail;
+					valve->run.actual_action = CLOSE;
+					break;
+				default:
+				case STOP:	// there's no way to "stop" a 2way motor, but for compatibility with the rest of the API we unconditionally turn off the relay
+					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, OFF, 0);
 					if (ALL_OK != ret)
 						goto fail;
 					valve->run.actual_action = STOP;

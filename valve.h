@@ -59,7 +59,7 @@ enum e_valve_algos {
 enum e_valve_motor {
 	VA_M_NONE = 0,	///< no motor, misconfiguration
 	VA_M_3WAY,	///< 3way motor control. Config "3way"
-	//VA_M_2WAY,
+	VA_M_2WAY,	///< 2way motor control. Config "2way"
 	//VA_M_10V,
 	//VA_M_20MA,
 };
@@ -76,9 +76,16 @@ struct s_valve_motor_3way_set {
 	relid_t rid_close;	///< relay for closing the valve
 };
 
+/** Private structure for 2way motorisation settings */
+struct s_valve_motor_2way_set {
+	relid_t rid_trigger;	///< relay for triggering the motor
+	bool trigger_opens;	///< true if the trigger opens the valve (false if the trigger closes the valve)
+};
+
 /** Union for valve motorisation settings */
 union u_valve_motor_set {
 	struct s_valve_motor_3way_set m3way;	///< 3way motorisation settings
+	struct s_valve_motor_2way_set m2way;	///< 2way motorisation settings
 };
 
 /** Private structure for mixing type valve */
@@ -139,7 +146,8 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
 int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout) __attribute__((warn_unused_result));
 
-#define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open
-#define valve_reqclose_full(valve)	valve_request_pth(valve, -1200)	///< request valve full close
+#define VALVE_REQMAXPTH			1200	///< request value for full open/close state
+#define valve_reqopen_full(valve)	valve_request_pth(valve, VALVE_REQMAXPTH)	///< request valve full open
+#define valve_reqclose_full(valve)	valve_request_pth(valve, -VALVE_REQMAXPTH)	///< request valve full close
 
 #endif /* valve_h */
