@@ -85,9 +85,8 @@ struct s_valve {
 		request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
 	char * restrict name;	///< valve name
-	void * restrict priv;	///< private data structure for cb.tcontrol()
+	void * restrict priv;	///< private data structure for tcontrol()
 	struct {
-		int (*tcontrol)(struct s_valve * restrict const, const temp_t);	///< pointer to valve output temperature controller algorithm
 		int (*online)(struct s_valve * restrict const);	///< pointer to valve private online routine (for preflight checks)
 	} cb;	///< valve callbacks
 };
@@ -104,25 +103,7 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth);
 int valve_make_bangbang(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timekeep_t intvl) __attribute__((warn_unused_result));
 int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
-
-/**
- * Call valve tcontrol algorithm based on target temperature.
- * @param valve target valve
- * @param target_tout target temperature at output of valve
- * @return exec status
- */
- __attribute__((warn_unused_result)) static inline int valve_tcontrol(struct s_valve * const valve, const temp_t target_tout)
-{
-	if (!valve)
-		return (-EINVALID);
-
-	if (!valve->run.online)
-		return (-EOFFLINE);
-
-	assert(valve->cb.tcontrol);
-	// apply valve law to determine target position
-	return (valve->cb.tcontrol(valve, target_tout));
-}
+int valve_tcontrol(struct s_valve * const valve, const temp_t target_tout) __attribute__((warn_unused_result));
 
 #define valve_reqopen_full(valve)	valve_request_pth(valve, 1200)	///< request valve full open
 #define valve_reqclose_full(valve)	valve_request_pth(valve, -1200)	///< request valve full close

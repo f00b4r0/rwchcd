@@ -442,9 +442,6 @@ int valve_online(struct s_valve * const valve)
 	if (!valve->set.ete_time)
 		return (-EMISCONFIGURED);
 
-	if (!valve->cb.tcontrol)
-		return (-EMISCONFIGURED);
-
 	if (valve->cb.online)
 		ret = valve->cb.online(valve);
 
@@ -671,7 +668,6 @@ int valve_make_bangbang(struct s_valve * const valve)
 		return (-EEXISTS);
 
 	valve->cb.online = v_bangbang_online;
-	valve->cb.tcontrol = v_bangbang_tcontrol;
 	valve->set.algo = VA_BANGBANG;
 
 	return (ALL_OK);
@@ -713,7 +709,6 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 
 	// assign callbacks
 	valve->cb.online = v_sapprox_online;
-	valve->cb.tcontrol = v_sapprox_tcontrol;
 
 	valve->set.algo = VA_SAPPROX;
 
@@ -774,9 +769,35 @@ int valve_make_pi(struct s_valve * const valve,
 
 	// assign callbacks
 	valve->cb.online = v_pi_online;
-	valve->cb.tcontrol = v_pi_tcontrol;
 
 	valve->set.algo = VA_PI;
 
 	return (ALL_OK);
+}
+
+/**
+ * Call mixing valve tcontrol algorithm based on target temperature.
+ * @param valve target valve
+ * @param target_tout target temperature at output of valve
+ * @return exec status
+ */
+int valve_tcontrol(struct s_valve * const valve, const temp_t target_tout)
+{
+	if (!valve)
+		return (-EINVALID);
+
+	if (!valve->run.online)
+		return (-EOFFLINE);
+
+	switch (valve->set.algo) {
+		case VA_BANGBANG:
+			return (v_bangbang_tcontrol(valve, target_tout));
+		case VA_SAPPROX:
+			return (v_sapprox_tcontrol(valve, target_tout));
+		case VA_PI:
+			return (v_pi_tcontrol(valve, target_tout));
+		case VA_NONE:
+		default:
+			return (-ENOTIMPLEMENTED);
+	}
 }
