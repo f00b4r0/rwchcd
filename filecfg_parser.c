@@ -720,6 +720,28 @@ invaliddata:
 	return (-EINVALID);
 }
 
+static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL, "reverse", true, NULL, NULL, },	// 0
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_valve * restrict const valve = priv;
+	int ret;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	currnode = parsers[0].node;
+	valve->set.tset.tisol.reverse = currnode->value.boolval;
+
+	if (ALL_OK == ret)
+		valve->set.type = VA_TYPE_ISOL;
+
+	return (ret);
+}
+
 static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
@@ -834,6 +856,8 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 				n = currnode->value.stringval;
 				if (!strcmp("mix", n))
 					ret = valve_tmix_parser(valve, currnode);
+				else if (!strcmp("isol", n))
+					ret = valve_tisol_parser(valve, currnode);
 				else {
 					dbgerr("Unknown type \"%s\" closing at line %d", n, currnode->lineno);
 					return (-EUNKNOWN);

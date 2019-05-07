@@ -319,6 +319,13 @@ static int filecfg_valve_tmix_dump(const struct s_valve * restrict const valve)
 	return (filecfg_valve_algo_dump(valve));			// mandatory
 }
 
+static int filecfg_valve_tisol_dump(const struct s_valve * restrict const valve)
+{
+	filecfg_iprintf("reverse %s;\n", filecfg_bool_str(valve->set.tset.tisol.reverse));	// mandatory
+
+	return (ALL_OK);
+}
+
 static int filecfg_valve_type_dump(const struct s_valve * restrict const valve)
 {
 	const char * tname;
@@ -329,6 +336,10 @@ static int filecfg_valve_type_dump(const struct s_valve * restrict const valve)
 		case VA_TYPE_MIX:
 			tname = "mix";
 			vtypedump = filecfg_valve_tmix_dump;
+			break;
+		case VA_TYPE_ISOL:
+			tname = "isol";
+			vtypedump = filecfg_valve_tisol_dump;
 			break;
 		case VA_TYPE_NONE:
 		default:

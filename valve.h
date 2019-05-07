@@ -68,6 +68,7 @@ enum e_valve_motor {
 enum e_valve_type {
 	VA_TYPE_NONE = 0,	///< no type, misconfiguration
 	VA_TYPE_MIX,		///< mixing type. Config "mix"
+	VA_TYPE_ISOL,		///< isolation type. Config "isol"
 };
 
 /** Private structure for 3way motorisation settings */
@@ -97,9 +98,15 @@ struct s_valve_type_mix_set {
 	enum e_valve_algos algo;///< valve tcontrol algorithm identifier
 };
 
+/** Private structure for isolation type valve */
+struct s_valve_type_isol_set {
+	bool reverse;		///< true if opening the valve isolates the target
+};
+
 /** Union for valve type settings */
 union u_valve_type_set {
 	struct s_valve_type_mix_set tmix;	///< mixing valve settings
+	struct s_valve_type_isol_set tisol;	///< isolation valve settings
 };
 
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves
@@ -145,6 +152,7 @@ int valve_make_bangbang(struct s_valve * const valve) __attribute__((warn_unused
 int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timekeep_t intvl) __attribute__((warn_unused_result));
 int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
 int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout) __attribute__((warn_unused_result));
+int valve_isol_trigger(struct s_valve * const valve, bool isolate) __attribute__((warn_unused_result));
 
 #define VALVE_REQMAXPTH			1200	///< request value for full open/close state
 #define valve_reqopen_full(valve)	valve_request_pth(valve, VALVE_REQMAXPTH)	///< request valve full open
