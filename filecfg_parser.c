@@ -945,7 +945,8 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 		{ NODELST, "rid_selfheater", false, NULL, NULL, },
 		{ NODELST, "params", false, NULL, NULL, },		// 12
 		{ NODESTR, "pump_feed", false, NULL, NULL, },
-		{ NODESTR, "pump_recycle", false, NULL, NULL, },		// 14
+		{ NODESTR, "pump_recycle", false, NULL, NULL, },	// 14
+		{ NODESTR, "valve_hwisol", false, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_pump * pump;
@@ -1051,19 +1052,33 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 				break;
 			case 13:
 			case 14:
+			case 15:
 				n = currnode->value.stringval;
 				if (strlen(n) < 1)
 					break;	// nothing to do
 
-				pump = plant_fbn_pump(plant, n);
-				if (!pump)
-					goto invaliddata;	// pump not found
+				switch (i) {
+					case 13:
+					case 14:
+						pump = plant_fbn_pump(plant, n);
+						if (!pump)
+							goto invaliddata;	// pump not found
+						if (13 == i)
+							dhwt->pump_feed = pump;
+						else	// i == 14
+							dhwt->pump_recycle = pump;
+						break;
+
+					case 15:
+						dhwt->valve_hwisol = plant_fbn_valve(plant, n);
+						if (!dhwt->valve_hwisol)
+							goto invaliddata;
+						break;
+					default:
+						break;	// should never happen
+				}
 
 				dbgmsg("%s: \"%s\" found", currnode->name, n);
-				if (13 == i)
-					dhwt->pump_feed = pump;
-				else	// i == 14
-					dhwt->pump_recycle = pump;
 				break;
 			default:
 				break;	// should never happen

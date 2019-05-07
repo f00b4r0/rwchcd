@@ -2,7 +2,7 @@
 //  dhwt.c
 //  rwchcd
 //
-//  (C) 2017-2018 Thibaut VARENE
+//  (C) 2017-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -16,6 +16,7 @@
 #include <assert.h>
 
 #include "pump.h"
+#include "valve.h"
 #include "dhwt.h"
 #include "hardware.h"
 #include "lib.h"
@@ -167,6 +168,10 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 
 	(void)hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
+	// isolate DHWT if possible
+	if (dhwt->valve_hwisol)
+		(void)valve_isol_trigger(dhwt->valve_hwisol, true);
+
 	dhwt->run.active = false;
 
 	return (ALL_OK);
@@ -235,6 +240,8 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  * @bug discharge protection might fail if the input sensor needs water flow
  * in the pump_feed. The solution to this is to implement a fallback to an upstream
  * temperature (e.g. the heatsource's).
+ * @note there is a short window during which the feed pump could be operating while
+ * the isolation valve is still partially closed (if a charge begins immediately at first turn-on).
  */
 int dhwt_run(struct s_dhw_tank * const dhwt)
 {
@@ -265,6 +272,8 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			break;
 		case RM_TEST:
 			dhwt->run.active = true;
+			if (dhwt->valve_hwisol)
+				(void)valve_isol_trigger(dhwt->valve_hwisol, false);
 			if (dhwt->pump_feed)
 				(void)pump_set_state(dhwt->pump_feed, ON, FORCE);
 			if (dhwt->pump_recycle)
@@ -280,6 +289,13 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	// if we reached this point then the dhwt is active
 	dhwt->run.active = true;
+
+	// de-isolate the DHWT if necessary (when not on electric)
+	if (dhwt->valve_hwisol && !dhwt->run.electric_mode) {
+		ret = valve_isol_trigger(dhwt->valve_hwisol, false);
+		if (ALL_OK != ret)
+			dbgerr("\%s\": cannot operate isolation valve!", dhwt->name);
+	}
 
 	// check which sensors are available
 	ret = hardware_sensor_clone_temp(dhwt->set.tid_bottom, &bottom_temp);
@@ -342,8 +358,13 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			if (dhwt->pdata->plant_could_sleep) {
 				// the plant is sleeping and we have a configured self heater: use it
 				ret = hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
-				if (ALL_OK == ret)
+				if (ALL_OK == ret) {
 					dhwt->run.electric_mode = true;
+					// isolate the DHWT if possible when operating from electric
+					if (dhwt->valve_hwisol)
+						(void)valve_isol_trigger(dhwt->valve_hwisol, true);
+				}
+
 			}
 			else {	// run from plant heat source
 				dhwt->run.electric_mode = false;

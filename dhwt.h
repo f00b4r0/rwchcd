@@ -62,6 +62,7 @@ struct s_dhw_tank {
 	} run;		///< private runtime (internally handled)
 	struct s_pump * restrict pump_feed;	///< feed pump for this tank
 	struct s_pump * restrict pump_recycle;	///< dhw recycle pump for this tank
+	struct s_valve * restrict valve_hwisol;	///< valve used to disconnect the DHWT from the heatwater flow. This valve will be open when the DHWT is in use (non-electric mode) and closed otherwise
 	const struct s_pdata * restrict pdata;	///< read-only plant data for this tank
 	char * restrict name;			///< name for this tank
 };
