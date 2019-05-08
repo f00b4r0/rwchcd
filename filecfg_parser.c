@@ -115,9 +115,11 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 
 static int hardware_backend_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	int ret;
+	int ret = ALL_OK;
 
+#ifdef HAS_HWP1		// XXX
 	ret = hw_p1_filecfg_parse(node);
+#endif
 
 	return (ret);
 }
