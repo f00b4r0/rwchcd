@@ -111,7 +111,7 @@ static int v_pi_online(struct s_valve * const valve)
 	if ((VA_TYPE_MIX != valve->set.type) || !valve->priv)
 		return (-EMISCONFIGURED);
 
-	if (VA_PI != valve->set.tset.tmix.algo)
+	if (VA_TALG_PI != valve->set.tset.tmix.algo)
 		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
@@ -313,7 +313,7 @@ static int v_bangbang_online(struct s_valve * const valve)
 	if (VA_TYPE_MIX != valve->set.type)
 		return (-EMISCONFIGURED);
 
-	if (VA_BANGBANG != valve->set.tset.tmix.algo)
+	if (VA_TALG_BANGBANG != valve->set.tset.tmix.algo)
 		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
@@ -362,7 +362,7 @@ static int v_sapprox_online(struct s_valve * const valve)
 	if ((VA_TYPE_MIX != valve->set.type) || !valve->priv)
 		return (-EMISCONFIGURED);
 
-	if (VA_SAPPROX != valve->set.tset.tmix.algo)
+	if (VA_TALG_SAPPROX != valve->set.tset.tmix.algo)
 		return (-EMISCONFIGURED);
 
 	// ensure required sensors are configured
@@ -480,16 +480,16 @@ int valve_online(struct s_valve * const valve)
 
 	if (VA_TYPE_MIX == valve->set.type) {
 		switch (valve->set.tset.tmix.algo) {
-			case VA_BANGBANG:
+			case VA_TALG_BANGBANG:
 				ret = v_bangbang_online(valve);
 				break;
-			case VA_SAPPROX:
+			case VA_TALG_SAPPROX:
 				ret = v_sapprox_online(valve);
 				break;
-			case VA_PI:
+			case VA_TALG_PI:
 				ret = v_pi_online(valve);
 				break;
-			case VA_NONE:
+			case VA_TALG_NONE:
 			default:
 				ret = -ENOTIMPLEMENTED;
 		}
@@ -769,10 +769,10 @@ int valve_make_bangbang(struct s_valve * const valve)
 	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);
 
-	if (VA_NONE != valve->set.tset.tmix.algo || valve->priv)
+	if (VA_TALG_NONE != valve->set.tset.tmix.algo || valve->priv)
 		return (-EEXISTS);
 
-	valve->set.tset.tmix.algo = VA_BANGBANG;
+	valve->set.tset.tmix.algo = VA_TALG_BANGBANG;
 
 	return (ALL_OK);
 }
@@ -794,7 +794,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);
 
-	if ((VA_NONE != valve->set.tset.tmix.algo) || valve->priv)
+	if ((VA_TALG_NONE != valve->set.tset.tmix.algo) || valve->priv)
 		return (-EEXISTS);
 
 	if ((amount > 100) || (intvl < 1))
@@ -811,7 +811,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 	// attach created priv to valve
 	valve->priv = priv;
 
-	valve->set.tset.tmix.algo = VA_SAPPROX;
+	valve->set.tset.tmix.algo = VA_TALG_SAPPROX;
 
 	return (ALL_OK);
 }
@@ -837,7 +837,7 @@ int valve_make_pi(struct s_valve * const valve,
 	if (!valve || (VA_TYPE_MIX != valve->set.type))
 		return (-EINVALID);
 
-	if ((VA_NONE != valve->set.tset.tmix.algo) || valve->priv)
+	if ((VA_TALG_NONE != valve->set.tset.tmix.algo) || valve->priv)
 		return (-EEXISTS);
 
 	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0) || (t_factor <= 0))
@@ -868,7 +868,7 @@ int valve_make_pi(struct s_valve * const valve,
 	// attach created priv to valve
 	valve->priv = priv;
 
-	valve->set.tset.tmix.algo = VA_PI;
+	valve->set.tset.tmix.algo = VA_TALG_PI;
 
 	return (ALL_OK);
 }
@@ -888,13 +888,13 @@ int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 		return (-EOFFLINE);
 
 	switch (valve->set.tset.tmix.algo) {
-		case VA_BANGBANG:
+		case VA_TALG_BANGBANG:
 			return (v_bangbang_tcontrol(valve, target_tout));
-		case VA_SAPPROX:
+		case VA_TALG_SAPPROX:
 			return (v_sapprox_tcontrol(valve, target_tout));
-		case VA_PI:
+		case VA_TALG_PI:
 			return (v_pi_tcontrol(valve, target_tout));
-		case VA_NONE:
+		case VA_TALG_NONE:
 		default:
 			return (-ENOTIMPLEMENTED);
 	}

@@ -236,7 +236,7 @@ static int filecfg_v_sapprox_dump(const struct s_valve * restrict const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (VA_SAPPROX != valve->set.tset.tmix.algo)
+	if (VA_TALG_SAPPROX != valve->set.tset.tmix.algo)
 		return (-EINVALID);
 
 	priv = valve->priv;
@@ -254,7 +254,7 @@ static int filecfg_v_pi_dump(const struct s_valve * restrict const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (VA_PI != valve->set.tset.tmix.algo)
+	if (VA_TALG_PI != valve->set.tset.tmix.algo)
 		return (-EINVALID);
 
 	priv = valve->priv;
@@ -275,19 +275,19 @@ static int filecfg_valve_algo_dump(const struct s_valve * restrict const valve)
 	int ret = ALL_OK;
 
 	switch (valve->set.tset.tmix.algo) {
-		case VA_BANGBANG:
+		case VA_TALG_BANGBANG:
 			algoname = "bangbang";
 			privdump = filecfg_v_bangbang_dump;
 			break;
-		case VA_SAPPROX:
+		case VA_TALG_SAPPROX:
 			algoname = "sapprox";
 			privdump = filecfg_v_sapprox_dump;
 			break;
-		case VA_PI:
+		case VA_TALG_PI:
 			algoname = "PI";
 			privdump = filecfg_v_pi_dump;
 			break;
-		case VA_NONE:
+		case VA_TALG_NONE:
 		default:
 			algoname = "";
 			privdump = NULL;
@@ -713,7 +713,7 @@ static int filecfg_hcircuit_tlaw_dump(const struct s_hcircuit * restrict const c
 			tlawname = "bilinear";
 			privdump = filecfg_hc_tlbilin_dump;
 			break;
-		case VA_NONE:
+		case HCL_NONE:
 		default:
 			tlawname = "";
 			privdump = NULL;

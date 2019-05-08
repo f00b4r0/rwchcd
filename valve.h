@@ -48,11 +48,11 @@ struct s_valve_pi_priv {
 };
 
 /** valve tcontrol algorithm identifiers */
-enum e_valve_algos {
-	VA_NONE = 0,	///< no algorithm, misconfiguration
-	VA_BANGBANG,	///< bangbang controller. Config "bangbang"
-	VA_SAPPROX,	///< sapprox controller. Config "sapprox"
-	VA_PI,		///< PI controller. Config "PI"
+enum e_valve_talgos {
+	VA_TALG_NONE = 0,	///< no algorithm, misconfiguration
+	VA_TALG_BANGBANG,	///< bangbang controller. Config "bangbang"
+	VA_TALG_SAPPROX,	///< sapprox controller. Config "sapprox"
+	VA_TALG_PI,		///< PI controller. Config "PI"
 };
 
 /** valve motorisation identifiers */
@@ -95,7 +95,7 @@ struct s_valve_type_mix_set {
 	tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
 	tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
 	tempid_t tid_out;	///< temp at the output
-	enum e_valve_algos algo;///< valve tcontrol algorithm identifier
+	enum e_valve_talgos algo;///< valve tcontrol algorithm identifier
 };
 
 /** Private structure for isolation type valve */
