@@ -323,7 +323,6 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
  * Enforces programmatic use of force charge when necessary.
  * @param dhwt target dhwt
  * @return exec status
- * @todo handle legionella correctly
  */
 int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 {
