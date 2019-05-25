@@ -415,6 +415,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 					goto invaliddata;
 				else
 					config->sleeping_delay = timekeep_sec_to_tk(currnode->value.intval);
+				break;
 			case 5:
 				if (ALL_OK != hcircuit_params_parse(&config->def_hcircuit, currnode))
 					goto invaliddata;
