@@ -151,6 +151,7 @@ enum e_systemmode {
 	SYS_FROSTFREE,	///< system is running in frostfree mode
 	SYS_DHWONLY,	///< system is running in DHW only mode
 	SYS_TEST,	///< system is running in test mode
+	SYS_MANUAL,	///< system is running in manual mode: runtime runmode and dhwmode must be set manually.
 	SYS_UNKNOWN,	///< invalid past this value
 };
 

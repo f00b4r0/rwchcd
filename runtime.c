@@ -149,6 +149,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			Runtime.dhwmode = RM_ECO;
 			break;
 		case SYS_AUTO:		// NOTE by default AUTO does not change the current run/dhwmodes
+		case SYS_MANUAL:
 			break;
 		case SYS_FROSTFREE:
 			Runtime.runmode = RM_FROSTFREE;
