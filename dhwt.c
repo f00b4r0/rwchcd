@@ -237,9 +237,9 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  * considered a degraded operation mode and it will be reported as an error.
  * @param dhwt target dhwt
  * @return error status
- * @bug discharge protection might fail if the input sensor needs water flow
- * in the pump_feed. The solution to this is to implement a fallback to an upstream
- * temperature (e.g. the heatsource's).
+ * @note discharge protection will fail if the input sensor needs water flow
+ * in the pump_feed. It is thus important to ensure that the water input temperature sensor
+ * can provide a reliable reading even when the feedpump is off.
  * @note there is a short window during which the feed pump could be operating while
  * the isolation valve is still partially closed (if a charge begins immediately at first turn-on).
  */
@@ -431,7 +431,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (dhwt->pump_feed) {
 		if (dhwt->run.charge_on && !dhwt->run.electric_mode) {	// on heatsource charge
 									// if available, test for inlet water temp
-			ret = hardware_sensor_clone_temp(dhwt->set.tid_win, &water_temp);	// XXX REVIEW: if this sensor relies on pump running for accurate read, then this can be a problem
+			ret = hardware_sensor_clone_temp(dhwt->set.tid_win, &water_temp);	// Note: this sensor must not rely on pump running for accurate read, otherwise this can be a problem
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
