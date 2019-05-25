@@ -34,7 +34,6 @@
  * - Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
- * @todo cleanup/rationalize _init()/_exit()/_online()/_offline()
  * @todo config reload
  */
 
@@ -89,9 +88,13 @@ extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser
  #define RWCHCD_GID	65534	///< Desired run gid (nogroup). Can be overriden via CFLAGS
 #endif
 
-#define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
+#ifndef RWCHCD_WDOGTM
+ #define RWCHCD_WDOGTM	60	///< Watchdog timeout (seconds)
+#endif
 
-#define RWCHCD_FIFO	"/tmp/rwchcd.fifo"
+#ifndef RWCHCD_FIFO
+ #define RWCHCD_FIFO	"/tmp/rwchcd.fifo"
+#endif
 
 #ifndef RWCHCD_CONFIG
  #define RWCHCD_CONFIG	"/etc/rwchcd.conf"	///< Config file location. Can be overriden via CFLAGS
@@ -211,6 +214,7 @@ static int init_process(void)
 	return (runtime_online());
 }
 
+// reverse operations from init_process()
 static void exit_process(void)
 {
 	runtime_offline();
