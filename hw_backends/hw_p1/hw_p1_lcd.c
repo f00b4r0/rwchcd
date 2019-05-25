@@ -332,6 +332,10 @@ static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 		case SYS_TEST:
 			msg = _("Test");
 			break;
+		case SYS_MANUAL:
+			msg = _("Man ");
+			break;
+		case SYS_NONE:
 		case SYS_UNKNOWN:
 		default:
 			dbgerr("Unhandled systemmode");

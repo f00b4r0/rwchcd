@@ -22,7 +22,7 @@ urls = (
 )
 
 formMode = form.Form(
-	form.Dropdown('sysmode', [(0, 'Off'), (1, 'Auto'), (2, 'Confort'), (3, 'Eco'), (4, 'Hors-Gel'), (5, 'ECS')], description='Mode'),
+	form.Dropdown('sysmode', [(1, 'Off'), (2, 'Auto'), (3, 'Confort'), (4, 'Eco'), (5, 'Hors-Gel'), (6, 'ECS')], description='Mode'),
 	)
 
 formTemps = form.Form(

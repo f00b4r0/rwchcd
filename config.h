@@ -24,6 +24,9 @@ struct s_config {
 	temp_t limit_tsummer;		///< outdoor temp for summer switch over
 	temp_t limit_tfrost;		///< outdoor temp for plant frost protection
 	timekeep_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep (will trigger electric switchover when available)
+	enum e_systemmode startup_sysmode;	///< sysmode applied at startup
+	enum e_runmode startup_runmode;		///< if sysmode is SYS_MANUAL, this runtime runmode will be applied
+	enum e_runmode startup_dhwmode;		///< if sysmode is SYS_MANUAL, this runtime dhwmode will be applied
 	struct s_hcircuit_params def_hcircuit;	///< heating circuit defaults: if individual hcircuits don't set these values, these defaults will be used
 	struct s_dhwt_params def_dhwt;		///< DHWT defaults: if individual dhwts don't set these values, these defaults will be used
 };

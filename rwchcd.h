@@ -142,9 +142,10 @@ enum e_runmode {
 	RM_UNKNOWN,	///< invalid past this value
 };
 
-/** Valid system modes. @todo make configurable in config file? */
+/** Valid system modes. */
 enum e_systemmode {
-	SYS_OFF = 0,	///< system is fully off
+	SYS_NONE = 0,	///< system is unconfigured
+	SYS_OFF,	///< system is fully off
 	SYS_AUTO,	///< system is running in automatic mode
 	SYS_COMFORT,	///< system is running in comfort mode
 	SYS_ECO,	///< system is running in eco mode

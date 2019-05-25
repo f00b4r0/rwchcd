@@ -79,7 +79,7 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_systemmode newsysmode;
 	
-	if (Sysmode < SYS_UNKNOWN)
+	if ((Sysmode > SYS_NONE) && (Sysmode < SYS_UNKNOWN))
 		newsysmode = Sysmode;
 	else
 		return FALSE;

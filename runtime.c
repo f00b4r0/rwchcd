@@ -129,7 +129,7 @@ int runtime_init(void)
 
 /**
  * Set the global system operation mode.
- * @note SYS_AUTO does not change the current runmode and dhwmode.
+ * @note SYS_AUTO and SYS_MANUAL do not change the current runmode and dhwmode.
  * @param sysmode desired operation mode.
  * @return error status
  */
@@ -163,6 +163,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			Runtime.runmode = RM_DHWONLY;
 			Runtime.dhwmode = RM_COMFORT;	// NOTE by default in comfort mode until further settings
 			break;
+		case SYS_NONE:
 		case SYS_UNKNOWN:
 		default:
 			return (-EINVALID);
@@ -186,8 +187,8 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
  */
 int runtime_set_runmode(const enum e_runmode runmode)
 {
-	// runmode can only be directly modified in SYS_AUTO
-	if (SYS_AUTO != Runtime.systemmode)
+	// runmode can only be directly modified in SYS_AUTO or SYS_MANUAL
+	if (!((SYS_MANUAL == Runtime.systemmode) || (SYS_AUTO == Runtime.systemmode)))
 		return (-EINVALID);
 
 	// if set, runmode cannot be RM_AUTO
@@ -222,8 +223,8 @@ int runtime_set_runmode(const enum e_runmode runmode)
  */
 int runtime_set_dhwmode(const enum e_runmode dhwmode)
 {
-	// dhwmode can only be directly modified in SYS_AUTO or SYS_DHWONLY
-	if (!((SYS_AUTO == Runtime.systemmode) || (SYS_DHWONLY == Runtime.systemmode)))
+	// dhwmode can only be directly modified in SYS_AUTO, SYS_MANUAL or SYS_DHWONLY
+	if (!((SYS_MANUAL == Runtime.systemmode) || (SYS_AUTO == Runtime.systemmode) || (SYS_DHWONLY == Runtime.systemmode)))
 		return (-EINVALID);
 
 	// if set, dhwmode cannot be RM_AUTO or RM_DHWONLY

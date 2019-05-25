@@ -203,6 +203,37 @@ const char * filecfg_runmode_str(const enum e_runmode runmode)
 	}
 }
 
+/**
+ * Print filecfg representation of a given runmode.
+ * @param runmode the value to represent
+ * @return a statically allocated string
+ */
+const char * filecfg_sysmode_str(const enum e_systemmode sysmode)
+{
+	switch (sysmode) {
+		case SYS_OFF:
+			return ("off");
+		case SYS_AUTO:
+			return ("auto");
+		case SYS_COMFORT:
+			return ("comfort");
+		case SYS_ECO:
+			return ("eco");
+		case SYS_FROSTFREE:
+			return ("frostfree");
+		case SYS_TEST:
+			return ("test");
+		case SYS_DHWONLY:
+			return ("dhwonly");
+		case SYS_MANUAL:
+			return ("manual");
+		case SYS_NONE:
+		case SYS_UNKNOWN:
+		default:
+			return ("");
+	}
+}
+
 
 static int filecfg_pump_dump(const struct s_pump * restrict const pump)
 {
@@ -878,6 +909,9 @@ static int filecfg_config_dump(const struct s_config * restrict const config)
 		filecfg_iprintf("limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
 	if (FCD_Exhaustive || config->sleeping_delay)
 		filecfg_iprintf("sleeping_delay %ld;\n", timekeep_tk_to_sec(config->sleeping_delay));
+	filecfg_iprintf("startup_sysmode \"%s\";\n", filecfg_sysmode_str(config->startup_sysmode));	// mandatory
+	filecfg_iprintf("startup_runmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
+	filecfg_iprintf("startup_dhwmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
 
 	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&config->def_hcircuit);
 	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&config->def_dhwt);

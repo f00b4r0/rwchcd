@@ -180,6 +180,39 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	return (hw_backends_relay_fbn(relid, backend, name));
 }
 
+static int runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
+static int sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	enum e_systemmode * restrict const sysmode = priv;
+	const char * n;
+
+	n = node->value.stringval;
+
+	if (!strcmp("off", n))
+		*sysmode = SYS_OFF;
+	else if (!strcmp("auto", n))
+		*sysmode = SYS_AUTO;
+	else if (!strcmp("comfort", n))
+		*sysmode = SYS_COMFORT;
+	else if (!strcmp("eco", n))
+		*sysmode = SYS_ECO;
+	else if (!strcmp("frostfree", n))
+		*sysmode = SYS_FROSTFREE;
+	else if (!strcmp("test", n))
+		*sysmode = SYS_TEST;
+	else if (!strcmp("dhwonly", n))
+		*sysmode = SYS_DHWONLY;
+	else if (!strcmp("manual", n))
+		*sysmode = SYS_MANUAL;
+	else {
+		*sysmode = SYS_UNKNOWN;
+		dbgerr("Unknown systemmode \"%s\" at line %d", n, node->lineno);
+		return (-EINVALID);
+	}
+
+	return (ALL_OK);
+}
+
 static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
@@ -365,8 +398,11 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODEFLT|NODEINT, "limit_tsummer", false, NULL, NULL, },	// 2
 		{ NODEFLT|NODEINT, "limit_tfrost", false, NULL, NULL, },
 		{ NODEINT, "sleeping_delay", false, NULL, NULL, },	// 4
-		{ NODELST, "def_hcircuit", false, NULL, NULL, },
-		{ NODELST, "def_dhwt", false, NULL, NULL, },		// 6
+		{ NODESTR, "startup_sysmode", true, NULL, NULL, },
+		{ NODESTR, "startup_runmode", false, NULL, NULL, },	// 6
+		{ NODESTR, "startup_dhwmode", false, NULL, NULL, },
+		{ NODELST, "def_hcircuit", false, NULL, NULL, },	// 8
+		{ NODELST, "def_dhwt", false, NULL, NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_config * restrict config;
@@ -417,15 +453,37 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 					config->sleeping_delay = timekeep_sec_to_tk(currnode->value.intval);
 				break;
 			case 5:
+				ret = sysmode_parse(&config->startup_sysmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 6:
+				ret = runmode_parse(&config->startup_runmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 7:
+				ret = runmode_parse(&config->startup_dhwmode, currnode);
+				if (ALL_OK != ret)
+					return (ret);
+				break;
+			case 8:
 				if (ALL_OK != hcircuit_params_parse(&config->def_hcircuit, currnode))
 					goto invaliddata;
 				break;
-			case 6:
+			case 9:
 				if (ALL_OK != dhwt_params_parse(&config->def_dhwt, currnode))
 					goto invaliddata;
 				break;
 			default:
 				break;
+		}
+	}
+
+	if (SYS_MANUAL == config->startup_sysmode) {
+		if (!parsers[6].node || !parsers[7].node) {
+			dbgerr("startup_sysmode set to \"manual\" but startup_runmode and/or startup_dhwmode are not set");
+			return (-EINVALID);
 		}
 	}
 

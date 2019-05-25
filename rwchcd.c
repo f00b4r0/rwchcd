@@ -233,17 +233,24 @@ static void * thread_master(void *arg)
 	int pipewfd = *((int *)arg);
 	struct s_runtime * restrict const runtime = runtime_get();
 	int ret;
-	
+
 	ret = init_process();
 	if (ret != ALL_OK) {
 		pr_log(_("Process initialization failed (%d) - ABORTING!"), ret);
 		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
-	
-	// XXX force start in frostfree if OFF by default
-	if (SYS_OFF == runtime->systemmode)
-		runtime_set_systemmode(SYS_FROSTFREE);
-	
+
+	if (SYS_NONE == runtime->systemmode) {	// runtime was not restored
+						// set sysmode/runmode from startup config
+		ret = runtime_set_systemmode(runtime->config->startup_sysmode);
+		if (ALL_OK != ret)
+			runtime_set_systemmode(SYS_FROSTFREE);	// fallback to frostfree
+		else if (SYS_MANUAL == runtime->config->startup_sysmode) {
+			runtime_set_runmode(runtime->config->startup_runmode);
+			runtime_set_dhwmode(runtime->config->startup_dhwmode);
+		}
+	}
+
 	while (Sem_master_thread) {
 #ifdef DEBUG
 		printf("%ld\n", time(NULL));

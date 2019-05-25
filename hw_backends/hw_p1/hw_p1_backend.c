@@ -232,7 +232,7 @@ static int hw_p1_input(void * priv)
 		cursysmode++;
 
 		if (cursysmode >= SYS_UNKNOWN)	// last valid mode
-			cursysmode = 0;		// first valid mode
+			cursysmode = SYS_NONE + 1;	// first valid mode
 
 		hw_p1_lcd_sysmode_change(cursysmode);	// update LCD
 	}
