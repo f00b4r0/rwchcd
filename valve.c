@@ -611,6 +611,7 @@ int valve_logic(struct s_valve * const valve)
 			}
 			break;
 		case VA_M_NONE:
+		default:
 			return (-EMISCONFIGURED);	// cannot happen
 	}
 
