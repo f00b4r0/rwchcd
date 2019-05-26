@@ -355,16 +355,12 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 		// trip condition
 		if (curr_temp < trip_temp) {
-			if (dhwt->pdata->plant_could_sleep) {
+			if (dhwt->pdata->plant_could_sleep && (ALL_OK == hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0))) {
 				// the plant is sleeping and we have a configured self heater: use it
-				ret = hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
-				if (ALL_OK == ret) {
-					dhwt->run.electric_mode = true;
-					// isolate the DHWT if possible when operating from electric
-					if (dhwt->valve_hwisol)
-						(void)valve_isol_trigger(dhwt->valve_hwisol, true);
-				}
-
+				dhwt->run.electric_mode = true;
+				// isolate the DHWT if possible when operating from electric
+				if (dhwt->valve_hwisol)
+					(void)valve_isol_trigger(dhwt->valve_hwisol, true);
 			}
 			else {	// run from plant heat source
 				dhwt->run.electric_mode = false;
