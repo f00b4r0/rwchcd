@@ -782,6 +782,8 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	else
 		plant->pdata.plant_could_sleep = false;
 
+	/// XXX @todo should update PCS if any DHWT is active and cannot do electric?
+
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		if (!dhwtl->dhwt->run.online)
