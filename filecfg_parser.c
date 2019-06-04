@@ -403,6 +403,8 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODESTR, "startup_dhwmode", false, NULL, NULL, },
 		{ NODELST, "def_hcircuit", false, NULL, NULL, },	// 8
 		{ NODELST, "def_dhwt", false, NULL, NULL, },
+		{ NODEINT, "summer_run_interval", false, NULL, NULL, },	// 10
+		{ NODEINT, "summer_run_duration", false, NULL, NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_config * restrict config;
@@ -447,10 +449,25 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 						break;
 				}
 			case 4:
+			case 10:
+			case 11:
+				// positive time values
 				if (currnode->value.intval < 0)
 					goto invaliddata;
 				else
-					config->sleeping_delay = timekeep_sec_to_tk(currnode->value.intval);
+					switch (i) {
+						case 4:
+							config->sleeping_delay = timekeep_sec_to_tk(currnode->value.intval);
+							break;
+						case 10:
+							config->summer_run_interval = timekeep_sec_to_tk(currnode->value.intval);
+							break;
+						case 11:
+							config->summer_run_duration = timekeep_sec_to_tk(currnode->value.intval);
+							break;
+						default:
+							break;
+					}
 				break;
 			case 5:
 				ret = sysmode_parse(&config->startup_sysmode, currnode);
@@ -480,6 +497,8 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 		}
 	}
 
+	// consistency checks post matching
+
 	if (SYS_MANUAL == config->startup_sysmode) {
 		if (!parsers[6].node || !parsers[7].node) {
 			dbgerr("startup_sysmode set to \"manual\" but startup_runmode and/or startup_dhwmode are not set");
@@ -487,6 +506,13 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 		}
 	}
 
+	if (config->summer_maintenance) {
+		if (!parsers[10].node || !parsers[11].node) {
+			dbgerr(_("summer_maintenance is set but summer_run_interval and/or summer_run_duration are not set"));
+			return (-EINVALID);
+
+		}
+	}
 	config->configured = true;
 	runtime->config = config;
 
