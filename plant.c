@@ -940,7 +940,7 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 	}
 
 	if (!serviced)
-		dbgerr("No heatsource available!");
+		alarms_raise(-EEMPTY, _("No heatsource available!"), _("NO HEATSRC AVAIL"));
 }
 
 /**
