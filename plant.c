@@ -1047,7 +1047,6 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
  * This function operates all plant elements in turn by enumerating through each list.
  * @param plant the target plant to run
  * @return exec status (-EGENERIC if any sub call returned an error)
- * @todo separate error handler
  */
 int plant_run(struct s_plant * restrict const plant)
 {
@@ -1091,7 +1090,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				dbgerr("logic_dhwt/run failed on %d (%d)", dhwtl->id, ret);
+				plant_alarm(ret, dhwtl->id, dhwtl->dhwt->name, _("DHWT"));
 				continue;
 		}
 	}
@@ -1117,7 +1116,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				dbgerr("logic_hcircuit/run failed on %d (%d)", circuitl->id, ret);
+				plant_alarm(ret, circuitl->id, circuitl->circuit->name, _("hcircuit"));
 				continue;
 		}
 	}
@@ -1156,7 +1155,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ESENSORDISCON:
 			case -ESAFETY:	// don't do anything, SAFETY procedure handled by logic()/run()
 				suberror = true;
-				dbgerr("logic_heatsource/run failed on %d (%d)", heatsourcel->id, ret);
+				plant_alarm(ret, heatsourcel->id, heatsourcel->heats->name, _("heatsource"));
 				continue;	// no further processing for this source
 		}
 	}
@@ -1187,7 +1186,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				dbgerr("valve_run failed on %d (%d)", valvel->id, ret);
+				plant_alarm(ret, valvel->id, valvel->valve->name, _("valve"));
 				continue;	// no further processing for this valve
 		}
 	}
@@ -1206,8 +1205,8 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				dbgerr("pump_run failed on %d (%d)", pumpl->id, ret);
-				continue;	// no further processing for this valve
+				plant_alarm(ret, pumpl->id, pumpl->pump->name, _("pump"));
+				continue;	// no further processing for this pump
 		}
 	}
 
