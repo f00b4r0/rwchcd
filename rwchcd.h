@@ -52,6 +52,7 @@
 #endif
 
 #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+#define pr_err(format, ...)	fprintf(stderr, "ERROR! " format "\n", ## __VA_ARGS__)
 
 /** computes the required malloc size for the formatted string */
 #define snprintf_needed(format, ...)	(1+snprintf(NULL, 0, format, __VA_ARGS__))
