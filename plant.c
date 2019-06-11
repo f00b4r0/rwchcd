@@ -634,9 +634,25 @@ int plant_online(struct s_plant * restrict const plant)
 		dhwtl->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("dhwt_online failed, id: %d (%d)", dhwtl->id, ret);
+			pr_err(_("Failure to bring DHWT %d (\"%s\") online:"), dhwtl->id, dhwtl->dhwt->name);
 			dhwt_offline(dhwtl->dhwt);
 			suberror = true;
+			switch (ret) {
+				case -ESENSORINVAL:
+				case -ESENSORSHORT:
+				case -ESENSORDISCON:	// sensor issues
+					pr_err(_("Mandatory sensor failure (%d)."), ret);
+					break;
+				case -ENOTCONFIGURED:
+					pr_err(_("Unconfigured DHWT."));
+					break;
+				case -EMISCONFIGURED:
+					pr_err(_("Misconfigured DHWT."));
+					break;
+				default:
+					pr_err(_("Unknown error (%d)"), ret);
+					break;
+			}
 		}
 	}
 
@@ -700,8 +716,16 @@ int plant_offline(struct s_plant * restrict const plant)
 		dhwtl->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("dhwt_offline failed, id: %d (%d)", dhwtl->id, ret);
+			pr_err(_("Failure to bring DHWT %d (\"%s\") offline:"), dhwtl->id, dhwtl->dhwt->name);
 			suberror = true;
+			switch (ret) {
+				case -ENOTCONFIGURED:
+					pr_err(_("Unconfigured DHWT."));
+					break;
+				default:
+					pr_err(_("Unknown error (%d)"), ret);
+					break;
+			}
 		}
 	}
 	
