@@ -36,7 +36,7 @@ struct s_dhw_tank * dhwt_new(void)
 /**
  * Put dhwt online.
  * Perform all necessary actions to prepare the dhwt for service and
- * mark it as online.
+ * mark it as online if all checks pass.
  * @param dhwt target dhwt
  * @return exec status
  */
@@ -63,38 +63,55 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 
 	// limit_tmin must be > 0C
 	temp = SETorDEF(dhwt->set.params.limit_tmin, runtime->config->def_dhwt.limit_tmin);
-	if (temp <= celsius_to_temp(0))
+	if (temp <= celsius_to_temp(0)) {
+		pr_err(_("\"%s\": limit_tmin must be locally or globally > 0°C"), dhwt->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// limit_tmax must be > limit_tmin
-	if (SETorDEF(dhwt->set.params.limit_tmax, runtime->config->def_dhwt.limit_tmax) <= temp)
+	if (SETorDEF(dhwt->set.params.limit_tmax, runtime->config->def_dhwt.limit_tmax) <= temp) {
+		pr_err(_("\"%s\": limit_tmax must be locally or globally > limit_tmin"), dhwt->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// hysteresis must be > 0K
-	if (SETorDEF(dhwt->set.params.hysteresis, runtime->config->def_dhwt.hysteresis) <= 0)
+	if (SETorDEF(dhwt->set.params.hysteresis, runtime->config->def_dhwt.hysteresis) <= 0) {
+		pr_err(_("\"%s\": hysteresis must be locally or globally > 0°K!"), dhwt->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// t_frostfree must be > 0C
 	temp = SETorDEF(dhwt->set.params.t_frostfree, runtime->config->def_dhwt.t_frostfree);
-	if (temp <= celsius_to_temp(0))
+	if (temp <= celsius_to_temp(0)) {
+		pr_err(_("\"%s\": t_frostfree must be locally or globally > 0°C!"), dhwt->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// t_comfort must be > t_frostfree
-	if (SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort) < temp)
+	if (SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort) < temp) {
+		pr_err(_("\"%s\": t_comfort must be locally or globally > t_frostfree"), dhwt->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// t_eco must be > t_frostfree
-	if (SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco) < temp)
+	if (SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco) < temp) {
+		pr_err(_("\"%s\": t_eco must be locally or globally > t_frostfree"), dhwt->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// if pumps exist check they're correctly configured
 	if (dhwt->pump_feed && !dhwt->pump_feed->set.configured) {
-		dbgerr("\"%s\": pump_feed \"%s\" not configured", dhwt->name, dhwt->pump_feed->name);
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), dhwt->name, dhwt->pump_feed->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	if (dhwt->pump_recycle && !dhwt->pump_recycle->set.configured) {
-		dbgerr("\"%s\": pump_recycle \"%s\" not configured", dhwt->name, dhwt->pump_recycle->name);
+		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not configured"), dhwt->name, dhwt->pump_recycle->name);
+		ret = -EMISCONFIGURED;
+	}
+
+	if (dhwt->valve_hwisol && !dhwt->valve_hwisol->set.configured) {
+		pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, dhwt->valve_hwisol->name);
 		ret = -EMISCONFIGURED;
 	}
 
