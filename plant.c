@@ -34,6 +34,7 @@
 #include "heatsource.h"
 #include "models.h"	// s_bmodel for plant_summer_ok()
 #include "storage.h"
+#include "alarms.h"
 
 #if 0
 static const storage_version_t Plant_sversion = 2;
@@ -770,6 +771,69 @@ int plant_offline(struct s_plant * restrict const plant)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
 	else
 		return (ALL_OK);
+}
+
+/**
+ * Raise an alarm for a plant device.
+ * Generic implementation of a plant-wide error message handler using the alarms subsystem.
+ * @param errorn the error value
+ * @param devid the plant device id
+ * @param devname the plant device name
+ * @param devtype the plant device type (e.g. "DHWT", or "Pump", etc)
+ * @return exec status
+ */
+static int plant_alarm(const enum e_execs errorn, const int devid, const char * restrict devname, const char * restrict devtype)
+{
+	const char * restrict const devdesigf = "%s #%d (\"%s\")";
+	const char * restrict const msglcd = _("Plant alarm!");
+	const char * restrict msgf = NULL;
+	char * restrict devdesig = NULL, * restrict msg = NULL;
+	size_t size;
+	int ret;
+
+	snprintf_automalloc(devdesig, size, devdesigf, devtype, devid, devname);
+	if (!devdesig)
+		return (-EOOM);
+
+	switch (-errorn) {
+		case ALL_OK:
+			break;
+		default:
+			msgf = _("Unknown error (%d) on %s");
+			snprintf_automalloc(msg, size, msgf, errorn, devdesig);
+			goto msgset;
+		case ESAFETY:
+			msgf = _("SAFETY CRITICAL ERROR ON %s!");
+			break;
+		case EINVALIDMODE:
+			msgf = _("Invalid mode set on %s");
+			break;
+		case ESENSORINVAL:
+		case ESENSORSHORT:
+		case ESENSORDISCON:	// XXX review, sensor alarms currently detailed in backend
+			msgf = _("Sensor problem on %s");
+			break;
+		case ENOTCONFIGURED:	// this really should not happen
+			msgf = _("%s is not configured!");
+			break;
+		case EMISCONFIGURED:	// this really should not happen
+			msgf = _("%s is misconfigured!");
+			break;
+		case EOFFLINE:		// this really should not happen
+			msgf = _("%s is offline!");
+			break;
+	}
+
+	if (!msg)	// handle common switch cases once
+		snprintf_automalloc(msg, size, msgf, devdesig);
+
+msgset:
+	ret = alarms_raise(errorn, msg, msglcd);
+
+	free(msg);
+	free(devdesig);
+
+	return (ret);
 }
 
 /**
