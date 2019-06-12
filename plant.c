@@ -623,9 +623,25 @@ int plant_online(struct s_plant * restrict const plant)
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("circuit_online failed, id: %d (%d)", circuitl->id, ret);
+			pr_err(_("Failure to bring hcircuit %d (\"%s\") online:"), circuitl->id, circuitl->circuit->name);
 			hcircuit_offline(circuitl->circuit);
 			suberror = true;
+			switch (ret) {
+				case -ESENSORINVAL:
+				case -ESENSORSHORT:
+				case -ESENSORDISCON:	// sensor issues
+					pr_err(_("Mandatory sensor failure (%d)."), ret);
+					break;
+				case -ENOTCONFIGURED:
+					pr_err(_("Unconfigured hcircuit."));
+					break;
+				case -EMISCONFIGURED:
+					pr_err(_("Misconfigured hcircuit."));
+					break;
+				default:
+					pr_err(_("Unknown error (%d)"), ret);
+					break;
+			}
 		}
 	}
 
@@ -711,8 +727,16 @@ int plant_offline(struct s_plant * restrict const plant)
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("circuit_offline failed, id: %d (%d)", circuitl->id, ret);
+			pr_err(_("Failure to bring hcircuit %d (\"%s\") offline:"), circuitl->id, circuitl->circuit->name);
 			suberror = true;
+			switch (ret) {
+				case -ENOTCONFIGURED:
+					pr_err(_("Unconfigured hcircuit."));
+					break;
+				default:
+					pr_err(_("Unknown error (%d)"), ret);
+					break;
+			}
 		}
 	}
 	
