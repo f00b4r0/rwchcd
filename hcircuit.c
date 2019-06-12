@@ -218,33 +218,35 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 
 	// limit_wtmax must be > 0C
 	temp = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_hcircuit.limit_wtmax);
-	if (temp <= celsius_to_temp(0))
+	if (temp <= celsius_to_temp(0)) {
+		pr_err(_("\"%s\": limit_wtmax must be locally or globally > 0°C"), circuit->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// make sure associated building model is configured
 	if (!circuit->bmodel || !circuit->bmodel->set.configured) {
-		dbgerr("\"%s\": building model not configured", circuit->name);
+		pr_err(_("\"%s\": building model \"%s\" is set but not configured"), circuit->name, circuit->bmodel->name);
 		ret = -EMISCONFIGURED;
 	}
 	// if pump exists check it's correctly configured
 	if (circuit->pump_feed && !circuit->pump_feed->set.configured) {
-		dbgerr("\"%s\": pump_feed \"%s\" not configured", circuit->name, circuit->pump_feed->name);
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), circuit->name, circuit->pump_feed->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	if (circuit->set.wtemp_rorh) {
 		// if ror is requested and valve is not available report misconfiguration
 		if (!circuit->valve_mix) {
-			dbgerr("\"%s\": rate of rise control requested but no mixing valve is available", circuit->name);
+			pr_err(_("\"%s\": rate of rise control requested but no mixing valve is available"), circuit->name);
 			ret = -EMISCONFIGURED;
 		}
 		// setup rate limiter
 		circuit->run.rorh_temp_increment = temp_expw_mavg(0, circuit->set.wtemp_rorh, HCIRCUIT_RORH_1HTAU, HCIRCUIT_RORH_DT);
 	}
 
-	// log registration shouldn't cause online failure
+	// log registration shouldn't cause onlining to fail
 	if (hcircuit_log_register(circuit) != ALL_OK)
-		dbgerr("\"%s\": couldn't register for logging", circuit->name);
+		pr_err(_("\"%s\": couldn't register for logging"), circuit->name);
 
 	if (ALL_OK == ret)
 		circuit->run.online = true;
