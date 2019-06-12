@@ -655,6 +655,11 @@ int plant_online(struct s_plant * restrict const plant)
 					break;
 			}
 		}
+		else {
+			// find largest DHWT prio value
+			if (dhwtl->dhwt->set.prio > plant->run.dhwt_maxprio)
+				plant->run.dhwt_maxprio = dhwtl->dhwt->set.prio;
+		}
 	}
 
 	// finally online the heat sources
@@ -838,6 +843,10 @@ msgset:
 
 /**
  * Collect heat requests from a plant.
+ * This function collects heat requests from consummers (hcircuits and dhwts),
+ * updates the plant_could_sleep flag and current plant-wide DHWT priority,
+ * and collects active DHWT charge priority strategies.
+ * @note Because we OR the charge priorities from all active DHWTs, care must be taken handling these signals.
  * @param plant target plant
  */
 static void plant_collect_hrequests(struct s_plant * restrict const plant)
@@ -847,7 +856,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
-	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false;
+	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false, dhwt_charge = false;
 
 	assert(plant);
 	assert(runtime);
@@ -882,6 +891,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 
 		// handle DHW charge priority (only in non-electric mode)
 		if (dhwtl->dhwt->run.charge_on && !dhwtl->dhwt->run.electric_mode) {
+			dhwt_charge = true;
 			switch (dhwtl->dhwt->set.dhwt_cprio) {
 				case DHWTP_SLIDDHW:
 					dhwt_reqdhw = true;
@@ -897,8 +907,16 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 					/* nothing */
 					break;
 			}
+
+			// make sure that plant-wide DHWT priority is always set to the current highest bidder
+			if (dhwtl->dhwt->set.prio < plant->pdata.dhwt_currprio)
+				plant->pdata.dhwt_currprio = dhwtl->dhwt->set.prio;
 		}
 	}
+
+	// if no heatsource-based DHWT charge is in progress, increase prio threshold (up to max)
+	if (!dhwt_charge && (plant->pdata.dhwt_currprio < plant->run.dhwt_maxprio))
+		plant->pdata.dhwt_currprio++;
 
 	/*
 	 if dhwt_absolute => circuits don't receive heat

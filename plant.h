@@ -70,6 +70,7 @@ struct s_plant {
 		timekeep_t summer_timer;	///< timer for summer maintenance
 		timekeep_t last_creqtime;	///< last recorded time for circuit heat request
 		temp_t plant_hrequest;	///< plant heat request
+		uint_fast8_t dhwt_maxprio;	///< largest online value for DHWT prio
 	} run;
 	struct s_pdata pdata;
 	uint_fast8_t pump_n;	///< number of pumps in the plant
