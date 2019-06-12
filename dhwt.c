@@ -259,6 +259,10 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  * can provide a reliable reading even when the feedpump is off.
  * @note there is a short window during which the feed pump could be operating while
  * the isolation valve is still partially closed (if a charge begins immediately at first turn-on).
+ * @note An ongoing anti-legionella charge will not be interrupted by a plant-wide change in priority.
+ * @note Since anti-legionella can only be unset _after_ a complete charge (or a DHWT shutdown),
+ * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
+ * although not necessarily at the planned time if there is delay in servicing the target DHWT priority.
  */
 int dhwt_run(struct s_dhw_tank * const dhwt)
 {
@@ -378,8 +382,12 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 				// isolate the DHWT if possible when operating from electric
 				if (dhwt->valve_hwisol)
 					(void)valve_isol_trigger(dhwt->valve_hwisol, true);
+
+				// mark heating in progress
+				dhwt->run.charge_on = true;
+				dhwt->run.mode_since = now;
 			}
-			else {	// run from plant heat source
+			else if (dhwt->pdata->dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
 				dhwt->run.electric_mode = false;
 				// calculate necessary water feed temp: target tank temp + offset
 				water_temp = dhwt->run.target_temp + SETorDEF(dhwt->set.params.temp_inoffset, runtime->config->def_dhwt.temp_inoffset);
@@ -391,11 +399,11 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 				// apply heat request
 				dhwt->run.heat_request = water_temp;
-			}
 
-			// mark heating in progress
-			dhwt->run.charge_on = true;
-			dhwt->run.mode_since = now;
+				// mark heating in progress
+				dhwt->run.charge_on = true;
+				dhwt->run.mode_since = now;
+			}
 		}
 	}
 	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
@@ -407,16 +415,20 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		// untrip conditions
 		test = false;
 
-		// in non-electric mode and no legionella charge: if heating gone overtime, untrip
+		// in non-electric mode and no anti-legionella charge (never interrupt an anti-legionella charge):
 		if (!dhwt->run.electric_mode && !dhwt->run.legionella_on) {
+			// if heating gone overtime, untrip
 			limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
 			if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
 				test = true;
 				dhwt->run.charge_overtime = true;
 			}
+			// if DHWT exceeds current allowed prio, untrip
+			if (dhwt->pdata->dhwt_currprio < dhwt->set.prio)
+				test = true;
 		}
 
-		// if heating in progress, untrip at target temp
+		// if heating in progress, untrip at target temp (if we're running electric this is the only untrip condition that applies)
 		if (curr_temp >= dhwt->run.target_temp)
 			test = true;
 

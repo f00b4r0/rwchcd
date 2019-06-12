@@ -175,7 +175,7 @@ struct s_hcircuit_params {
 #include "timekeep.h"
 /** DHWT common parameters */
 struct s_dhwt_params {
-	timekeep_t limit_chargetime;	///< maximum duration of charge time
+	timekeep_t limit_chargetime;	///< maximum duration of charge time. @note Ignored in electric mode and during anti-legionella charge
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection). @warning MUST be locally or globally > 0C
 	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. @warning MUST be locally or globally > limit_tmin
