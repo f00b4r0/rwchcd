@@ -29,7 +29,16 @@ struct s_temp_intgrl {
 	timekeep_t last_time;		///< last recorded temperature time
 };
 
+/** Temperature derivative data */
+struct s_temp_deriv {
+	bool inuse;			///< true if derivative is in use
+	temp_t derivative;		///< derivative value in temp_t / seconds
+	temp_t last_temp;		///< last recorded temperature value
+	timekeep_t last_time;		///< last recorded temperature time
+};
+
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt);
+temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const uint_fast16_t spread);
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
 		      const temp_t tlow_jacket, const temp_t thigh_jacket);
 

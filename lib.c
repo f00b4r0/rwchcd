@@ -52,6 +52,42 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 }
 
 /**
+ * Exponentially weighted derivative.
+ * Computes an exponentially weighted discrete derivative in the time domain.
+ * This function computes a discrete derivative by subtracting the new sample value with the last sample
+ * value over the total time elapsed between the two samples, and then averages this result over
+ * #spread samples by using temp_expw_mavg().
+ * Thus by design this function will lag the true derivative, especially for large #spread values.
+ * @param deriv derivative data
+ * @param new_temp new temperature point
+ * @param new_time new temperature time
+ * @param spread the number of temperature samples to average over
+ * @return the derivative value in temp_t units / seconds (millikelvins per second)
+ */
+__attribute__((const)) temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const uint_fast16_t spread)
+{
+	temp_t tempdiff;
+	timekeep_t timediff;
+
+	assert(deriv);
+
+	deriv->inuse = true;
+
+	if (!deriv->last_time || !new_time)	// only compute derivative over a finite domain
+		deriv->derivative = 0;
+	else {
+		tempdiff = new_temp - deriv->last_temp;
+		timediff = new_time - deriv->last_time;
+		deriv->derivative = temp_expw_mavg(deriv->derivative, tempdiff / timekeep_tk_to_sec(timediff), spread, 1);	// average derivative over spread samples
+	}
+
+	deriv->last_time = new_time;
+	deriv->last_temp = new_temp;
+
+	return (deriv->derivative);
+}
+
+/**
  * Jacketed threshold temperature integral, trapezoidal method.
  * This function calculates the integral over time of a temperature series after
  * subtracting a threshold value: the integral is positive if the values are above
