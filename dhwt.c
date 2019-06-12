@@ -167,8 +167,9 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 	dhwt->run.charge_on = false;
 	dhwt->run.recycle_on = false;
 	dhwt->run.force_on = false;
-	//dhwt->run.legionella_on = false;
+	dhwt->run.legionella_on = false;
 	dhwt->run.charge_overtime = false;
+	dhwt->run.electric_mode = false;
 	dhwt->run.mode_since = 0;	// XXX
 	dhwt->run.charge_yday = 0;	// XXX
 
@@ -220,8 +221,9 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
 
 /**
  * DHWT failsafe routine.
- * By default we stop all pumps and electric self heater. If configured for
- * electric failover the self-heater is turned on unconditionnally.
+ * By default we shutdown the tank. If configured for
+ * electric failover the self-heater is still turned on unconditionnally
+ * (this assumes that the self-heater has a local thermostat, which should always be the case).
  * The major inconvenient here is that this failsafe mode COULD provoke a DHWT
  * freeze in the most adverse conditions.
  * @warning DHWT could freeze - TODO: needs review
@@ -235,10 +237,8 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
 
 	dbgerr("\"%s\": failsafe mode!", dhwt->name);
 
-	if (dhwt->pump_feed)
-		(void)pump_set_state(dhwt->pump_feed, OFF, FORCE);
-	if (dhwt->pump_recycle)
-		(void)pump_set_state(dhwt->pump_recycle, OFF, FORCE);
+	dhwt_shutdown(dhwt);
+
 	ret = hardware_relay_set_state(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF, 0);
 	if (ALL_OK == ret)
 		dhwt->run.electric_mode = dhwt->set.electric_failover;
