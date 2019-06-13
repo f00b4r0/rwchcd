@@ -684,9 +684,25 @@ int plant_online(struct s_plant * restrict const plant)
 		heatsourcel->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("heatsource_online failed, id: %d (%d)", heatsourcel->id, ret);
+			pr_err(_("Failure to bring heatsource %d (\"%s\") online:"), heatsourcel->id, heatsourcel->heats->name);
 			heatsource_offline(heatsourcel->heats);
 			suberror = true;
+			switch (ret) {
+				case -ESENSORINVAL:
+				case -ESENSORSHORT:
+				case -ESENSORDISCON:	// sensor issues
+					pr_err(_("Mandatory sensor failure (%d)."), ret);
+					break;
+				case -ENOTCONFIGURED:
+					pr_err(_("Unconfigured heatsource."));
+					break;
+				case -EMISCONFIGURED:
+					pr_err(_("Misconfigured heatsource."));
+					break;
+				default:
+					pr_err(_("Unknown error (%d)"), ret);
+					break;
+			}
 		}
 	}
 
@@ -765,8 +781,16 @@ int plant_offline(struct s_plant * restrict const plant)
 		heatsourcel->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("heatsource_offline failed, id: %d (%d)", heatsourcel->id, ret);
+			pr_err(_("Failure to bring heatsource %d (\"%s\") offline:"), heatsourcel->id, heatsourcel->heats->name);
 			suberror = true;
+			switch (ret) {
+				case -ENOTCONFIGURED:
+					pr_err(_("Unconfigured heatsource."));
+					break;
+				default:
+					pr_err(_("Unknown error (%d)"), ret);
+					break;
+			}
 		}
 	}
 	
