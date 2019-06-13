@@ -539,6 +539,7 @@ static int filecfg_heatsource_type_dump(const struct s_heatsource * restrict con
 			privdump = filecfg_boiler_hs_dump;
 			break;
 		case HS_NONE:
+		case HS_UNKNOWN:
 		default:
 			ret = -EINVALID;
 			typename = "";

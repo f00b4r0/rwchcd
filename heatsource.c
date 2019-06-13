@@ -44,12 +44,16 @@ int heatsource_online(struct s_heatsource * const heat)
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (HS_NONE == heat->set.type)	// type HS_NONE, misconfiguration
+	if ((HS_NONE == heat->set.type) || (HS_UNKNOWN <= heat->set.type)) {	// type HS_NONE or unknown, misconfiguration
+		pr_err(_("\"%s\": invalid heatsource type (%d)"), heat->name, heat->set.type);
 		return (-EMISCONFIGURED);
+	}
 
 	// check we have a priv element
-	if (!heat->priv)
+	if (!heat->priv) {
+		pr_err(_("\"%s\": missing private data)"), heat->name);
 		return (-EMISCONFIGURED);
+	}
 
 	if (heat->cb.online)
 		ret = heat->cb.online(heat);

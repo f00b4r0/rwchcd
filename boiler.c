@@ -145,20 +145,26 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		goto out;
 
 	// check that mandatory settings are set
-	if (!boiler->set.limit_tmax)
+	if (!boiler->set.limit_tmax) {
+		pr_err(_("\"%s\": limit_tmax must be set"), heat->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// check that hardmax is > tmax (effectively checks that it's set too)
-	if (boiler->set.limit_thardmax < boiler->set.limit_tmax)
+	if (boiler->set.limit_thardmax < boiler->set.limit_tmax) {
+		pr_err(_("\"%s\": limit_thardmax must be set and > limit_tmax"), heat->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// check that tmax > tmin
-	if (boiler->set.limit_tmax < boiler->set.limit_tmin)
+	if (boiler->set.limit_tmax < boiler->set.limit_tmin) {
+		pr_err(_("\"%s\": limit_tmax must be > limit_tmin"), heat->name);
 		ret = -EMISCONFIGURED;
+	}
 
 	// if pump exists check it's correctly configured
 	if (boiler->pump_load && !boiler->pump_load->set.configured) {
-		dbgerr("\"%s\": pump_load \"%s\" not configured", heat->name, boiler->pump_load->name);
+		pr_err(_("\"%s\": pump_load \"%s\" is set but not configured"), heat->name, boiler->pump_load->name);
 		ret = -EMISCONFIGURED;
 	}
 
@@ -166,12 +172,14 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		// if return min is set make sure the associated sensor is configured.
 		ret = hardware_sensor_clone_time(boiler->set.tid_boiler_return, NULL);
 		if (ALL_OK != ret) {
-			dbgerr("\"%s\": limit_treturnmin is set but return sensor is unavaiable (%d)", heat->name, ret);
+			pr_err(_("\"%s\": limit_treturnmin is set but return sensor is unavaiable (%d)"), heat->name, ret);
 			ret = -EMISCONFIGURED;
 		}
 		// treturnmin should never be higher than tmax (and possibly not higher than tmin either)
-		if (boiler->set.limit_treturnmin > boiler->set.limit_tmax)
+		if (boiler->set.limit_treturnmin > boiler->set.limit_tmax) {
+			pr_err(_("\"%s\": limit_treturnmin must be < limit_tmax"), heat->name);
 			ret = -EMISCONFIGURED;
+		}
 	}
 
 out:
