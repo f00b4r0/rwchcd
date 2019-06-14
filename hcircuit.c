@@ -24,6 +24,7 @@
 #include "models.h"
 #include "config.h"
 #include "log.h"
+#include "logic.h"
 
 #define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)	///< 1h tau expressed in internal time representation
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
@@ -352,6 +353,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	if (!circuit->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
+
+	ret = logic_hcircuit(circuit);
+	if (ALL_OK != ret)
+		return (ret);
 
 	// safety checks
 	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);

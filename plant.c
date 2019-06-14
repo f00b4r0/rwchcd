@@ -1182,13 +1182,9 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// then circuits
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		ret = logic_hcircuit(circuitl->circuit);
-		if (ALL_OK == ret)	// run() only if logic() succeeds
-			ret = hcircuit_run(circuitl->circuit);
+		circuitl->status = hcircuit_run(circuitl->circuit);
 
-		circuitl->status = ret;
-
-		switch (ret) {
+		switch (circuitl->status) {
 			case ALL_OK:
 				break;
 			default:
@@ -1201,7 +1197,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, circuitl->id, circuitl->circuit->name, PDEV_HCIRC);
+				plant_alarm(circuitl->status, circuitl->id, circuitl->circuit->name, PDEV_HCIRC);
 				continue;
 		}
 	}

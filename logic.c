@@ -133,14 +133,10 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 
 	assert(runtime);
 
-	if (!circuit)
-		return (-EINVALID);
+	assert(circuit);
 
 	bmodel = circuit->bmodel;
 	assert(bmodel);
-	
-	if (!circuit->run.online)
-		return (-EOFFLINE);
 	
 	// fast cooldown can only be applied if set AND not in frost condition
 	can_fastcool = (circuit->set.fast_cooldown && !bmodel->run.frost);
