@@ -432,12 +432,6 @@ int logic_heatsource(struct s_heatsource * restrict const heat)
 	
 	assert(runtime);
 
-	if (!heat)
-		return (-EINVALID);
-
-	if (!heat->run.online)
-		return (-EOFFLINE);
-
 	// handle global/local runmodes
 	if (RM_AUTO == heat->set.runmode)
 		heat->run.runmode = runtime->runmode;

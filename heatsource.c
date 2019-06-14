@@ -16,6 +16,7 @@
 #include <assert.h>
 
 #include "heatsource.h"
+#include "logic.h"
 
 /**
  * Create a heatsource
@@ -98,11 +99,17 @@ int heatsource_offline(struct s_heatsource * const heat)
  */
 int heatsource_run(struct s_heatsource * const heat)
 {
+	int ret;
+
 	if (!heat)
 		return (-EINVALID);
 
 	if (!heat->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
+
+	ret = logic_heatsource(heat);
+	if (ALL_OK != ret)
+		return (ret);
 
 	if (heat->cb.run)
 		return (heat->cb.run(heat));

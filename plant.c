@@ -1212,10 +1212,8 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// now run the heat sources
 	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
-		ret = logic_heatsource(heatsourcel->heats);
-		if (ALL_OK == ret)	// run() only if logic() succeeds
-			ret = heatsource_run(heatsourcel->heats);
-		if (ALL_OK == ret) {
+		heatsourcel->status = heatsource_run(heatsourcel->heats);
+		if (ALL_OK == heatsourcel->status) {
 			// max stop delay
 			stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
 
@@ -1225,10 +1223,8 @@ int plant_run(struct s_plant * restrict const plant)
 		}
 		// always update overtemp (which can be triggered with -ESAFETY)
 		overtemp = heatsourcel->heats->run.overtemp ? heatsourcel->heats->run.overtemp : overtemp;
-
-		heatsourcel->status = ret;
 		
-		switch (ret) {
+		switch (heatsourcel->status) {
 			case ALL_OK:
 				break;
 			default:	// offline the source if anything happens
@@ -1240,7 +1236,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ESENSORDISCON:
 			case -ESAFETY:	// don't do anything, SAFETY procedure handled by logic()/run()
 				suberror = true;
-				plant_alarm(ret, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS);
+				plant_alarm(heatsourcel->status, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS);
 				continue;	// no further processing for this source
 		}
 	}
