@@ -25,7 +25,6 @@
 #include "config.h"
 #include "runtime.h"
 #include "lib.h"
-#include "logic.h"
 #include "plant.h"
 #include "pump.h"
 #include "valve.h"
@@ -1141,7 +1140,6 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_heatsource_l * heatsourcel;
 	struct s_valve_l * valvel;
 	struct s_pump_l * pumpl;
-	int ret;
 	bool overtemp = false, suberror = false;
 	timekeep_t stop_delay = 0;
 
@@ -1262,11 +1260,9 @@ int plant_run(struct s_plant * restrict const plant)
 	
 	// run the pumps
 	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
-		ret = pump_run(pumpl->pump);
-		
-		pumpl->status = ret;
-		
-		switch (ret) {
+		pumpl->status = pump_run(pumpl->pump);
+
+		switch (pumpl->status) {
 			case ALL_OK:
 				break;
 			default:	// offline the pump if anything happens
@@ -1274,7 +1270,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, pumpl->id, pumpl->pump->name, PDEV_PUMP);
+				plant_alarm(pumpl->status, pumpl->id, pumpl->pump->name, PDEV_PUMP);
 				continue;	// no further processing for this pump
 		}
 	}
