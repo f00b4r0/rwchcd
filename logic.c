@@ -330,11 +330,7 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 
 	assert(runtime);
 
-	if (!dhwt)
-		return (-EINVALID);
-
-	if (!dhwt->run.online)
-		return (-EOFFLINE);
+	assert(dhwt);
 	
 	// store current status for transition detection
 	prev_runmode = dhwt->run.runmode;

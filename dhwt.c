@@ -22,6 +22,7 @@
 #include "lib.h"
 #include "runtime.h"
 #include "config.h"
+#include "logic.h"
 
 /**
  * Create a dhwt
@@ -287,6 +288,10 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	if (!dhwt->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
+
+	ret = logic_dhwt(dhwt);
+	if (ALL_OK != ret)
+		return (ret);
 
 	switch (dhwt->run.runmode) {
 		case RM_OFF:

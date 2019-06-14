@@ -1156,13 +1156,9 @@ int plant_run(struct s_plant * restrict const plant)
 	// run the consummers first so they can set their requested heat input
 	// dhwt first
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		ret = logic_dhwt(dhwtl->dhwt);
-		if (ALL_OK == ret)	// run() only if logic() succeeds
-			ret = dhwt_run(dhwtl->dhwt);
+		dhwtl->status = dhwt_run(dhwtl->dhwt);
 
-		dhwtl->status = ret;
-		
-		switch (ret) {
+		switch (dhwtl->status) {
 			case ALL_OK:
 				break;
 			default:
@@ -1175,7 +1171,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT);
+				plant_alarm(dhwtl->status, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT);
 				continue;
 		}
 	}
