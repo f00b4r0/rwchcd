@@ -74,6 +74,13 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 		ret = -EMISCONFIGURED;
 	}
 
+	if (dhwt->set.anti_legionella) {
+		if (SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella) <= 0) {
+			pr_err(_("\"%s\": anti_legionella is set: t_legionella must be locally or globally > 0°K!"), dhwt->name);
+			ret = -EMISCONFIGURED;
+		}
+	}
+
 	// hysteresis must be > 0K
 	if (SETorDEF(dhwt->set.params.hysteresis, runtime->config->def_dhwt.hysteresis) <= 0) {
 		pr_err(_("\"%s\": hysteresis must be locally or globally > 0°K!"), dhwt->name);

@@ -377,13 +377,9 @@ int logic_dhwt(struct s_dhw_tank * restrict const dhwt)
 	// if anti-legionella charge is requested, enforce temp and bypass logic
 	if (dhwt->run.legionella_on) {
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella);
-		if (target_temp) {
-			dhwt->run.force_on = true;
-			dhwt->run.recycle_on = dhwt->set.legionella_recycle;
-			goto settarget;
-		}
-		else
-			dhwt->run.legionella_on = false;	// invalid settings
+		dhwt->run.force_on = true;
+		dhwt->run.recycle_on = dhwt->set.legionella_recycle;
+		goto settarget;
 	}
 
 	// transition detection
