@@ -566,6 +566,76 @@ void plant_del(struct s_plant * plant)
 	free(plant);
 }
 
+/** Plant devices identifiers */
+enum e_plant_devtype {
+	PDEV_PUMP,	///< pump
+	PDEV_VALVE,	///< valve
+	PDEV_HEATS,	///< heatsource
+	PDEV_HCIRC,	///< heating circuit
+	PDEV_DHWT,	///< dhwt
+};
+
+/**
+ * Generic error logger for online/offline operations.
+ * @param errorn the error value
+ * @param devid the plant device id
+ * @param devname the plant device name
+ * @param pdev the plant device type identifier
+ */
+static void plant_onfline_printerr(const enum e_execs errorn, const int devid, const char * restrict devname, const enum e_plant_devtype pdev, bool on)
+{
+	const char * restrict devtype;
+
+	if (ALL_OK == errorn)
+		return;
+
+	switch (pdev) {
+		case PDEV_PUMP:
+			devtype = _("pump");
+			break;
+		case PDEV_VALVE:
+			devtype = _("valve");
+			break;
+		case PDEV_HEATS:
+			devtype = _("heatsource");
+			break;
+		case PDEV_HCIRC:
+			devtype = _("heating circuit");
+			break;
+		case PDEV_DHWT:
+			devtype = _("DHWT");
+			break;
+		default:
+			devtype = "";
+			break;
+	}
+
+	pr_err(_("Failure to bring %s %d (\"%s\") %sline:"), devtype, devid, devname, on ? "on" : "off");
+	switch (-errorn) {
+		case -ESENSORINVAL:
+		case -ESENSORSHORT:
+		case -ESENSORDISCON:	// sensor issues
+			pr_err(_("Mandatory sensor failure (%d)."), errorn);
+			break;
+		case -ENOTCONFIGURED:
+			pr_err(_("Unconfigured %s."), devtype);
+			break;
+		case -EMISCONFIGURED:
+			pr_err(_("Misconfigured %s."), devtype);
+			break;
+		case -ENOTIMPLEMENTED:
+			pr_err(_("Setting not implemented."));
+			break;
+		case ENOTCONFIGURED:
+			pr_err(_("Unconfigured %s."), devtype);
+			break;
+		default:
+			pr_err(_("Unknown error (%d)"), errorn);
+			break;
+	}
+
+}
+
 /**
  * Bring plant online.
  * @param plant target plant
@@ -598,7 +668,7 @@ int plant_online(struct s_plant * restrict const plant)
 		pumpl->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("pump_online failed, id: %d (%d)", pumpl->id, ret);
+			plant_onfline_printerr(ret, pumpl->id, pumpl->pump->name, PDEV_PUMP, true);
 			pump_offline(pumpl->pump);
 			suberror = true;
 		}
@@ -610,7 +680,7 @@ int plant_online(struct s_plant * restrict const plant)
 		valvel->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("valve_online failed, id: %d (%d)", valvel->id, ret);
+			plant_onfline_printerr(ret, valvel->id, valvel->valve->name, PDEV_VALVE, true);
 			valve_offline(valvel->valve);
 			suberror = true;
 		}
@@ -623,25 +693,9 @@ int plant_online(struct s_plant * restrict const plant)
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
-			pr_err(_("Failure to bring hcircuit %d (\"%s\") online:"), circuitl->id, circuitl->circuit->name);
+			plant_onfline_printerr(ret, circuitl->id, circuitl->circuit->name, PDEV_HCIRC, true);
 			hcircuit_offline(circuitl->circuit);
 			suberror = true;
-			switch (ret) {
-				case -ESENSORINVAL:
-				case -ESENSORSHORT:
-				case -ESENSORDISCON:	// sensor issues
-					pr_err(_("Mandatory sensor failure (%d)."), ret);
-					break;
-				case -ENOTCONFIGURED:
-					pr_err(_("Unconfigured hcircuit."));
-					break;
-				case -EMISCONFIGURED:
-					pr_err(_("Misconfigured hcircuit."));
-					break;
-				default:
-					pr_err(_("Unknown error (%d)"), ret);
-					break;
-			}
 		}
 	}
 
@@ -651,25 +705,9 @@ int plant_online(struct s_plant * restrict const plant)
 		dhwtl->status = ret;
 		
 		if (ALL_OK != ret) {
-			pr_err(_("Failure to bring DHWT %d (\"%s\") online:"), dhwtl->id, dhwtl->dhwt->name);
+			plant_onfline_printerr(ret, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT, true);
 			dhwt_offline(dhwtl->dhwt);
 			suberror = true;
-			switch (ret) {
-				case -ESENSORINVAL:
-				case -ESENSORSHORT:
-				case -ESENSORDISCON:	// sensor issues
-					pr_err(_("Mandatory sensor failure (%d)."), ret);
-					break;
-				case -ENOTCONFIGURED:
-					pr_err(_("Unconfigured DHWT."));
-					break;
-				case -EMISCONFIGURED:
-					pr_err(_("Misconfigured DHWT."));
-					break;
-				default:
-					pr_err(_("Unknown error (%d)"), ret);
-					break;
-			}
 		}
 		else {
 			// find largest DHWT prio value
@@ -684,25 +722,9 @@ int plant_online(struct s_plant * restrict const plant)
 		heatsourcel->status = ret;
 		
 		if (ALL_OK != ret) {
-			pr_err(_("Failure to bring heatsource %d (\"%s\") online:"), heatsourcel->id, heatsourcel->heats->name);
+			plant_onfline_printerr(ret, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS, true);
 			heatsource_offline(heatsourcel->heats);
 			suberror = true;
-			switch (ret) {
-				case -ESENSORINVAL:
-				case -ESENSORSHORT:
-				case -ESENSORDISCON:	// sensor issues
-					pr_err(_("Mandatory sensor failure (%d)."), ret);
-					break;
-				case -ENOTCONFIGURED:
-					pr_err(_("Unconfigured heatsource."));
-					break;
-				case -EMISCONFIGURED:
-					pr_err(_("Misconfigured heatsource."));
-					break;
-				default:
-					pr_err(_("Unknown error (%d)"), ret);
-					break;
-			}
 		}
 	}
 
@@ -743,16 +765,8 @@ int plant_offline(struct s_plant * restrict const plant)
 		circuitl->status = ret;
 		
 		if (ALL_OK != ret) {
-			pr_err(_("Failure to bring hcircuit %d (\"%s\") offline:"), circuitl->id, circuitl->circuit->name);
+			plant_onfline_printerr(ret, circuitl->id, circuitl->circuit->name, PDEV_HCIRC, false);
 			suberror = true;
-			switch (ret) {
-				case -ENOTCONFIGURED:
-					pr_err(_("Unconfigured hcircuit."));
-					break;
-				default:
-					pr_err(_("Unknown error (%d)"), ret);
-					break;
-			}
 		}
 	}
 	
@@ -762,16 +776,8 @@ int plant_offline(struct s_plant * restrict const plant)
 		dhwtl->status = ret;
 		
 		if (ALL_OK != ret) {
-			pr_err(_("Failure to bring DHWT %d (\"%s\") offline:"), dhwtl->id, dhwtl->dhwt->name);
+			plant_onfline_printerr(ret, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT, false);
 			suberror = true;
-			switch (ret) {
-				case -ENOTCONFIGURED:
-					pr_err(_("Unconfigured DHWT."));
-					break;
-				default:
-					pr_err(_("Unknown error (%d)"), ret);
-					break;
-			}
 		}
 	}
 	
@@ -781,16 +787,8 @@ int plant_offline(struct s_plant * restrict const plant)
 		heatsourcel->status = ret;
 		
 		if (ALL_OK != ret) {
-			pr_err(_("Failure to bring heatsource %d (\"%s\") offline:"), heatsourcel->id, heatsourcel->heats->name);
+			plant_onfline_printerr(ret, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS, false);
 			suberror = true;
-			switch (ret) {
-				case -ENOTCONFIGURED:
-					pr_err(_("Unconfigured heatsource."));
-					break;
-				default:
-					pr_err(_("Unknown error (%d)"), ret);
-					break;
-			}
 		}
 	}
 	
@@ -801,7 +799,7 @@ int plant_offline(struct s_plant * restrict const plant)
 		valvel->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("valve_offline failed, id: %d (%d)", valvel->id, ret);
+			plant_onfline_printerr(ret, valvel->id, valvel->valve->name, PDEV_VALVE, false);
 			suberror = true;
 		}
 	}
@@ -812,7 +810,7 @@ int plant_offline(struct s_plant * restrict const plant)
 		pumpl->status = ret;
 		
 		if (ALL_OK != ret) {
-			dbgerr("pump_offline failed, id: %d (%d)", pumpl->id, ret);
+			plant_onfline_printerr(ret, pumpl->id, pumpl->pump->name, PDEV_PUMP, false);
 			suberror = true;
 		}
 	}
