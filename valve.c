@@ -608,13 +608,10 @@ int valve_offline(struct s_valve * const valve)
  * @param valve the target valve
  * @return exec status
  */
-int valve_logic(struct s_valve * const valve)
+__attribute__((warn_unused_result))
+static int valve_logic(struct s_valve * const valve)
 {
-	if (!valve)
-		return (-EINVALID);
-
-	if (!valve->run.online)
-		return (-EOFFLINE);
+	assert(valve);
 
 	switch (valve->set.motor) {
 		case VA_M_3WAY:
@@ -671,6 +668,10 @@ int valve_run(struct s_valve * const valve)
 
 	if (!valve->run.online)
 		return (-EOFFLINE);
+
+	ret = valve_logic(valve);
+	if (ALL_OK != ret)
+		return (ret);
 
 	dt = now - valve->run.last_run_time;
 	perth_ptk = 1000 * perthmult / valve->set.ete_time;

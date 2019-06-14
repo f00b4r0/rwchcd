@@ -1256,13 +1256,9 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// run the valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
-		ret = valve_logic(valvel->valve);
-		if (ALL_OK == ret)
-			ret = valve_run(valvel->valve);
+		valvel->status = valve_run(valvel->valve);
 
-		valvel->status = ret;
-		
-		switch (ret) {
+		switch (valvel->status) {
 			case ALL_OK:
 			case -EDEADBAND:	// not an error
 				break;
@@ -1271,7 +1267,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, valvel->id, valvel->valve->name, PDEV_VALVE);
+				plant_alarm(valvel->status, valvel->id, valvel->valve->name, PDEV_VALVE);
 				continue;	// no further processing for this valve
 		}
 	}
