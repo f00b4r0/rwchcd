@@ -105,21 +105,25 @@ static int v_pi_online(struct s_valve * const valve)
 {
 	int ret;
 
-	if (!valve)
-		return (-EINVALID);
+	assert (valve);
 
-	if ((VA_TYPE_MIX != valve->set.type) || !valve->priv)
+	if (!valve->priv) {
+		pr_err(_("\"%s\": Missing private data!"), valve->name);
 		return (-EMISCONFIGURED);
-
-	if (VA_TALG_PI != valve->set.tset.tmix.algo)
-		return (-EMISCONFIGURED);
+	}
 
 	// ensure required sensors are configured
 	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL);
-	if (ALL_OK != ret)
+	if (ALL_OK != ret) {
+		pr_err(_("\"%s\": Problem with output temperature sensor"), valve->name);
 		return (ret);
+	}
 
-	return (hardware_sensor_clone_time(valve->set.tset.tmix.tid_hot, NULL));
+	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_hot, NULL);
+	if (ALL_OK != ret)
+		pr_err(_("\"%s\": Problem with hot input temperature sensor"), valve->name);
+
+	return (ret);
 }
 
 /**
@@ -307,17 +311,16 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
  */
 static int v_bangbang_online(struct s_valve * const valve)
 {
-	if (!valve)
-		return (-EINVALID);
-
-	if (VA_TYPE_MIX != valve->set.type)
-		return (-EMISCONFIGURED);
-
-	if (VA_TALG_BANGBANG != valve->set.tset.tmix.algo)
-		return (-EMISCONFIGURED);
+	int ret;
+	
+	assert(valve);
 
 	// ensure required sensors are configured
-	return (hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL));
+	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL);
+	if (ALL_OK != ret)
+		pr_err(_("\"%s\": Problem with output temperature sensor"), valve->name);
+
+	return (ret);
 }
 
 /**
@@ -356,17 +359,21 @@ static int v_bangbang_tcontrol(struct s_valve * const valve, const temp_t target
  */
 static int v_sapprox_online(struct s_valve * const valve)
 {
-	if (!valve)
-		return (-EINVALID);
+	int ret;
 
-	if ((VA_TYPE_MIX != valve->set.type) || !valve->priv)
-		return (-EMISCONFIGURED);
+	assert(valve);
 
-	if (VA_TALG_SAPPROX != valve->set.tset.tmix.algo)
+	if (!valve->priv) {
+		pr_err(_("\"%s\": Missing private data!"), valve->name);
 		return (-EMISCONFIGURED);
+	}
 
 	// ensure required sensors are configured
-	return (hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL));
+	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL);
+	if (ALL_OK != ret)
+		pr_err(_("\"%s\": Problem with output temperature sensor"), valve->name);
+
+	return (ret);
 }
 
 /**
@@ -434,10 +441,15 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
  */
 static int valve_m3way_online(struct s_valve * const valve)
 {
-	if (!hardware_relay_name(valve->set.mset.m3way.rid_open))
+	if (!hardware_relay_name(valve->set.mset.m3way.rid_open)) {
+		pr_err(_("\"%s\": Invalid relay ID for motor open"), valve->name);
 		return (-EMISCONFIGURED);
-	if (!hardware_relay_name(valve->set.mset.m3way.rid_close))
+	}
+
+	if (!hardware_relay_name(valve->set.mset.m3way.rid_close)) {
+		pr_err(_("\"%s\": Invalid relay ID for motor close"), valve->name);
 		return (-EMISCONFIGURED);
+	}
 
 	return (ALL_OK);
 }
@@ -449,8 +461,10 @@ static int valve_m3way_online(struct s_valve * const valve)
  */
 static int valve_m2way_online(struct s_valve * const valve)
 {
-	if (!hardware_relay_name(valve->set.mset.m2way.rid_trigger))
+	if (!hardware_relay_name(valve->set.mset.m2way.rid_trigger)) {
+		pr_err(_("\"%s\": Invalid relay ID for motor trigger"), valve->name);
 		return (-EMISCONFIGURED);
+	}
 
 	return (ALL_OK);
 }
@@ -472,11 +486,32 @@ int valve_online(struct s_valve * const valve)
 	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (VA_TYPE_NONE == valve->set.type || VA_M_NONE == valve->set.motor)
+	if ((VA_TYPE_NONE == valve->set.type) || (VA_TYPE_UNKNOWN <= valve->set.type)) {
+		pr_err(_("\%s\": Invalid valve type"), valve->name);
 		return (-EMISCONFIGURED);
+	}
 
-	if (!valve->set.ete_time)
+	if (!valve->set.ete_time) {
+		pr_err(_("\%s\": End-to-end time not set"), valve->name);
 		return (-EMISCONFIGURED);
+	}
+
+	switch (valve->set.motor) {
+		case VA_M_3WAY:
+			ret = valve_m3way_online(valve);
+			break;
+		case VA_M_2WAY:
+			ret = valve_m2way_online(valve);
+			break;
+		case VA_M_NONE:
+		default:
+			pr_err(_("\"%s\": Unknown motor type (%d)"), valve->name, valve->set.motor);
+			ret = -ENOTIMPLEMENTED;
+			break;
+	}
+
+	if (ALL_OK != ret)
+		return (ret);
 
 	if (VA_TYPE_MIX == valve->set.type) {
 		switch (valve->set.tset.tmix.algo) {
@@ -491,28 +526,17 @@ int valve_online(struct s_valve * const valve)
 				break;
 			case VA_TALG_NONE:
 			default:
+				pr_err(_("\"%s\": Unknown temperature algorithm (%d)"), valve->name, valve->set.type);
 				ret = -ENOTIMPLEMENTED;
+				break;
 		}
 	}
 
 	if (ALL_OK != ret)
 		return (ret);
 
-	switch (valve->set.motor) {
-		case VA_M_3WAY:
-			ret = valve_m3way_online(valve);
-			break;
-		case VA_M_2WAY:
-			ret = valve_m2way_online(valve);
-			break;
-		case VA_M_NONE:
-		default:
-			ret = -ENOTIMPLEMENTED;
-			break;
-	}
-
 	// return to idle
-	valve_reqstop(valve);
+	ret = valve_reqstop(valve);
 
 	// reset the control algorithm
 	valve->run.ctrl_ready = false;

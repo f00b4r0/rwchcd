@@ -373,6 +373,7 @@ static int filecfg_valve_type_dump(const struct s_valve * restrict const valve)
 			vtypedump = filecfg_valve_tisol_dump;
 			break;
 		case VA_TYPE_NONE:
+		case VA_TYPE_UNKNOWN:
 		default:
 			tname = "";
 			vtypedump = NULL;

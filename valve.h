@@ -69,6 +69,7 @@ enum e_valve_type {
 	VA_TYPE_NONE = 0,	///< no type, misconfiguration
 	VA_TYPE_MIX,		///< mixing type. Config "mix"
 	VA_TYPE_ISOL,		///< isolation type. Config "isol"
+	VA_TYPE_UNKNOWN,	///< invalid past this value
 };
 
 /** Private structure for 3way motorisation settings */
