@@ -1156,18 +1156,18 @@ int plant_run(struct s_plant * restrict const plant)
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		dhwtl->status = dhwt_run(dhwtl->dhwt);
 
-		switch (dhwtl->status) {
+		switch (-dhwtl->status) {
 			case ALL_OK:
 				break;
 			default:
 				dhwt_offline(dhwtl->dhwt);			// something really bad happened
-			case -EINVALIDMODE:
+			case EINVALIDMODE:
 				dhwtl->dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
-			case -ESENSORINVAL:
-			case -ESENSORSHORT:
-			case -ESENSORDISCON:	// sensor issues are handled by dhwt_run()
-			case -ENOTCONFIGURED:
-			case -EOFFLINE:
+			case ESENSORINVAL:
+			case ESENSORSHORT:
+			case ESENSORDISCON:	// sensor issues are handled by dhwt_run()
+			case ENOTCONFIGURED:
+			case EOFFLINE:
 				suberror = true;
 				plant_alarm(dhwtl->status, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT);
 				continue;
@@ -1178,18 +1178,18 @@ int plant_run(struct s_plant * restrict const plant)
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		circuitl->status = hcircuit_run(circuitl->circuit);
 
-		switch (circuitl->status) {
+		switch (-circuitl->status) {
 			case ALL_OK:
 				break;
 			default:
 				hcircuit_offline(circuitl->circuit);		// something really bad happened
-			case -EINVALIDMODE:
+			case EINVALIDMODE:
 				circuitl->circuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
-			case -ESENSORINVAL:
-			case -ESENSORSHORT:
-			case -ESENSORDISCON:	// sensor issues are handled by hcircuit_run()
-			case -ENOTCONFIGURED:
-			case -EOFFLINE:
+			case ESENSORINVAL:
+			case ESENSORSHORT:
+			case ESENSORDISCON:	// sensor issues are handled by hcircuit_run()
+			case ENOTCONFIGURED:
+			case EOFFLINE:
 				suberror = true;
 				plant_alarm(circuitl->status, circuitl->id, circuitl->circuit->name, PDEV_HCIRC);
 				continue;
@@ -1214,17 +1214,17 @@ int plant_run(struct s_plant * restrict const plant)
 		// always update overtemp (which can be triggered with -ESAFETY)
 		overtemp = heatsourcel->heats->run.overtemp ? heatsourcel->heats->run.overtemp : overtemp;
 		
-		switch (heatsourcel->status) {
+		switch (-heatsourcel->status) {
 			case ALL_OK:
 				break;
 			default:	// offline the source if anything happens
 				heatsource_offline(heatsourcel->heats);	// something really bad happened
-			case -ENOTCONFIGURED:
-			case -EOFFLINE:
-			case -ESENSORINVAL:
-			case -ESENSORSHORT:
-			case -ESENSORDISCON:
-			case -ESAFETY:	// don't do anything, SAFETY procedure handled by logic()/run()
+			case ESENSORINVAL:
+			case ESENSORSHORT:
+			case ESENSORDISCON:
+			case ESAFETY:	// don't do anything, SAFETY procedure handled by logic()/run()
+			case ENOTCONFIGURED:
+			case EOFFLINE:
 				suberror = true;
 				plant_alarm(heatsourcel->status, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS);
 				continue;	// no further processing for this source
@@ -1244,14 +1244,14 @@ int plant_run(struct s_plant * restrict const plant)
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
 		valvel->status = valve_run(valvel->valve);
 
-		switch (valvel->status) {
+		switch (-valvel->status) {
 			case ALL_OK:
-			case -EDEADBAND:	// not an error
+			case EDEADBAND:	// not an error
 				break;
 			default:	// offline the valve if anything happens
 				valve_offline(valvel->valve);	// something really bad happened
-			case -ENOTCONFIGURED:
-			case -EOFFLINE:
+			case ENOTCONFIGURED:
+			case EOFFLINE:
 				suberror = true;
 				plant_alarm(valvel->status, valvel->id, valvel->valve->name, PDEV_VALVE);
 				continue;	// no further processing for this valve
@@ -1262,13 +1262,13 @@ int plant_run(struct s_plant * restrict const plant)
 	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
 		pumpl->status = pump_run(pumpl->pump);
 
-		switch (pumpl->status) {
+		switch (-pumpl->status) {
 			case ALL_OK:
 				break;
 			default:	// offline the pump if anything happens
 				pump_offline(pumpl->pump);	// something really bad happened
-			case -ENOTCONFIGURED:
-			case -EOFFLINE:
+			case ENOTCONFIGURED:
+			case EOFFLINE:
 				suberror = true;
 				plant_alarm(pumpl->status, pumpl->id, pumpl->pump->name, PDEV_PUMP);
 				continue;	// no further processing for this pump
