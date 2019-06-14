@@ -57,8 +57,10 @@ int pump_online(struct s_pump * restrict const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!pump->set.rid_pump.rid)
+	if (!pump->set.rid_pump.rid) {
+		pr_err(_("\"%s\": invalid relay id"), pump->name);
 		return (-EMISCONFIGURED);
+	}
 
 	pump->run.online = true;
 
