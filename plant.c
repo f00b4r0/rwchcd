@@ -830,17 +830,38 @@ int plant_offline(struct s_plant * restrict const plant)
  * @param errorn the error value
  * @param devid the plant device id
  * @param devname the plant device name
- * @param devtype the plant device type (e.g. "DHWT", or "Pump", etc)
+ * @param pdev the plant device type identifier
  * @return exec status
  */
-static int plant_alarm(const enum e_execs errorn, const int devid, const char * restrict devname, const char * restrict devtype)
+static int plant_alarm(const enum e_execs errorn, const int devid, const char * restrict devname, const enum e_plant_devtype pdev)
 {
 	const char * restrict const devdesigf = "%s #%d (\"%s\")";
 	const char * restrict const msglcd = _("Plant alarm!");
-	const char * restrict msgf = NULL;
+	const char * restrict msgf = NULL, * restrict devtype;
 	char * restrict devdesig = NULL, * restrict msg = NULL;
 	size_t size;
 	int ret;
+
+	switch (pdev) {
+		case PDEV_PUMP:
+			devtype = _("pump");
+			break;
+		case PDEV_VALVE:
+			devtype = _("valve");
+			break;
+		case PDEV_HEATS:
+			devtype = _("heatsource");
+			break;
+		case PDEV_HCIRC:
+			devtype = _("heating circuit");
+			break;
+		case PDEV_DHWT:
+			devtype = _("DHWT");
+			break;
+		default:
+			devtype = "";
+			break;
+	}
 
 	snprintf_automalloc(devdesig, size, devdesigf, devtype, devid, devname);
 	if (!devdesig)
@@ -1154,7 +1175,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, dhwtl->id, dhwtl->dhwt->name, _("DHWT"));
+				plant_alarm(ret, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT);
 				continue;
 		}
 	}
@@ -1180,7 +1201,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, circuitl->id, circuitl->circuit->name, _("hcircuit"));
+				plant_alarm(ret, circuitl->id, circuitl->circuit->name, PDEV_HCIRC);
 				continue;
 		}
 	}
@@ -1219,7 +1240,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ESENSORDISCON:
 			case -ESAFETY:	// don't do anything, SAFETY procedure handled by logic()/run()
 				suberror = true;
-				plant_alarm(ret, heatsourcel->id, heatsourcel->heats->name, _("heatsource"));
+				plant_alarm(ret, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS);
 				continue;	// no further processing for this source
 		}
 	}
@@ -1250,7 +1271,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, valvel->id, valvel->valve->name, _("valve"));
+				plant_alarm(ret, valvel->id, valvel->valve->name, PDEV_VALVE);
 				continue;	// no further processing for this valve
 		}
 	}
@@ -1269,7 +1290,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case -ENOTCONFIGURED:
 			case -EOFFLINE:
 				suberror = true;
-				plant_alarm(ret, pumpl->id, pumpl->pump->name, _("pump"));
+				plant_alarm(ret, pumpl->id, pumpl->pump->name, PDEV_PUMP);
 				continue;	// no further processing for this pump
 		}
 	}
