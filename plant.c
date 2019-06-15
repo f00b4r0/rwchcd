@@ -921,8 +921,8 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
 	struct s_runtime * restrict const runtime = runtime_get();
-	struct s_heating_circuit_l * circuitl;
-	struct s_dhw_tank_l * dhwtl;
+	const struct s_heating_circuit_l * restrict circuitl;
+	const struct s_dhw_tank_l * restrict dhwtl;
 	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
 	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false, dhwt_charge = false;
 
@@ -1041,7 +1041,7 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
  */
 static bool plant_summer_ok(const struct s_plant * restrict const plant)
 {
-	struct s_heating_circuit_l * circuitl;
+	const struct s_heating_circuit_l * restrict circuitl;
 	bool summer = true;
 
 	assert(plant);
