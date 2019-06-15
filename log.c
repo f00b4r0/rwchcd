@@ -84,7 +84,7 @@ static struct s_log_bendcbs Log_timed_cb, Log_untimed_cb;
  */
 static int _log_dump(const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
-	static char ident[256] = LOG_PREFIX;
+	static char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
 	const bool logging = runtime_get()->config->logging;
 	log_version_t lversion = 0;
 	bool fcreate = false, timedlog;
@@ -223,7 +223,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 	// object validity is handled by the parser cb
 
 	// check basename + identifier is short enough
-	if ((strlen(LOG_PREFIX) + strlen(lsource->basename) + strlen(lsource->identifier) + strlen(LOG_FMT_SUFFIX) + 1) >= 255) {
+	if ((strlen(LOG_PREFIX) + strlen(lsource->basename) + strlen(lsource->identifier) + strlen(LOG_FMT_SUFFIX) + 1) >= MAX_FILENAMELEN) {
 		dbgerr("Name too long: %s%s", lsource->basename, lsource->identifier);
 		return (-EINVALID);
 	}

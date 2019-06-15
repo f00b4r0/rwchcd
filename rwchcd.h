@@ -35,6 +35,8 @@
  #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"	///< filesystem path to permanent storage area. Can be overriden in Makefile
 #endif
 
+#define MAX_FILENAMELEN	255	///< maximum filename length
+
 /* i18n stuff */
 #ifdef HAVE_GETTEXT
  #include <libintl.h>

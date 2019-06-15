@@ -27,7 +27,6 @@
 
 #define OUTDOOR_SMOOTH_TIME		(60*TIMEKEEP_SMULT)	///< time in seconds over which outdoor temp is smoothed
 #define OUTDOOR_AVG_UPDATE_DT		(600*TIMEKEEP_SMULT)	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
-#define MODELS_STORAGE_NAME_LEN		64
 #define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel_"
 
 static struct s_models Models;	///< Known models
@@ -141,13 +140,12 @@ static int bmodel_log_deregister(const struct s_bmodel * const bmodel)
 
 /**
  * Save building model state to permanent storage.
- * @bug name length hack
  * @param bmodel the building model to save, @b MUST be named
  * @return exec status
  */
 static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 {
-	char buf[MODELS_STORAGE_NAME_LEN] = MODELS_STORAGE_BMODEL_PREFIX;
+	char buf[MAX_FILENAMELEN+1] = MODELS_STORAGE_BMODEL_PREFIX;
 
 	assert(bmodel);
 
@@ -158,20 +156,19 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	strncat(buf, bmodel->name, MODELS_STORAGE_NAME_LEN-strlen(buf)-1);
+	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	return (storage_dump(buf, &Models_sversion, &bmodel->run, sizeof(bmodel->run)));
 }
 
 /**
  * Restore building model state from permanent storage.
- * @bug name length hack
  * @param bmodel the building model to restore, @b MUST be named
  * @return exec status
  */
 static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 {
-	char buf[MODELS_STORAGE_NAME_LEN] = MODELS_STORAGE_BMODEL_PREFIX;
+	char buf[MAX_FILENAMELEN+1] = MODELS_STORAGE_BMODEL_PREFIX;
 	struct s_bmodel temp_bmodel;
 	storage_version_t sversion;
 	int ret;
@@ -185,7 +182,7 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	strncat(buf, bmodel->name, MODELS_STORAGE_NAME_LEN-strlen(buf)-1);
+	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	// try to restore key elements
 	ret = storage_fetch(buf, &sversion, &temp_bmodel.run, sizeof(temp_bmodel.run));
@@ -489,6 +486,7 @@ static void models_save(const struct s_models * restrict const models)
 
 /**
  * Create a new building model and attach it to the list of models.
+ * @note a name length can work in this function but be too long for logging due to prefix/suffix.
  * @param name the model name, @b MUST be unique. A local copy is created
  * @return an allocated building model structure or NULL if failed.
  */
@@ -500,6 +498,12 @@ struct s_bmodel * models_new_bmodel(const char * restrict const name)
 
 	if (!name)
 		goto fail;
+
+	// ensure name is short enough
+	if ((strlen(MODELS_STORAGE_BMODEL_PREFIX) + strlen(name) + 1) >= MAX_FILENAMELEN) {
+		pr_err(_("Name too long: \"%s\" (max: %d chars)"), name, (MAX_FILENAMELEN - 1 - strlen(MODELS_STORAGE_BMODEL_PREFIX)));
+		goto fail;
+	}
 
 	// ensure unique name
 	if (bmodels_fbn(Models.bmodels, name))
