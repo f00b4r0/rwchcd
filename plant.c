@@ -729,8 +729,10 @@ int plant_online(struct s_plant * restrict const plant)
 
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
-	else
+	else {
+		plant->run.online = true;
 		return (ALL_OK);
+	}
 }
 
 /**
@@ -925,6 +927,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false, dhwt_charge = false;
 
 	assert(plant);
+	assert(plant->run.online);
 	assert(runtime);
 
 	// for consummers in runtime scheme, collect heat requests and max them
@@ -1012,6 +1015,7 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 	bool serviced = false;
 
 	assert(plant);
+	assert(plant->run.online);
 
 	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
 	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
@@ -1041,6 +1045,7 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 	bool summer = true;
 
 	assert(plant);
+	assert(plant->run.online);
 
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		if (!circuitl->circuit->run.online)
@@ -1070,6 +1075,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	int ret;
 
 	assert(plant);
+	assert(plant->run.online);
 	assert(runtime);
 
 	// coherent config is ensured during config parsing
@@ -1148,8 +1154,8 @@ int plant_run(struct s_plant * restrict const plant)
 	if (!plant)
 		return (-EINVALID);
 	
-	if (!plant->configured)
-		return (-ENOTCONFIGURED);
+	if (!plant->run.online)
+		return (-EOFFLINE);
 
 	// run the consummers first so they can set their requested heat input
 	// dhwt first
@@ -1290,6 +1296,9 @@ int plant_run(struct s_plant * restrict const plant)
 void plant_dhwt_legionella_trigger(struct s_plant * restrict const plant)
 {
 	struct s_dhw_tank_l * dhwtl;
+
+	assert(plant);
+	assert(plant->run.online);
 
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
 		if (!dhwtl->dhwt->run.online)
