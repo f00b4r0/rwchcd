@@ -99,11 +99,11 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
 
 	if (ret <= 0) {
-		dbgerr("hw_p1_init failed");
+		pr_err(_("HWP1: could not connect"));
 		return (-ESPI);
 	}
 
-	pr_log(_("Firmware version %d detected"), ret);
+	pr_log(_("HWP1: Firmware version %d detected"), ret);
 	hw->run.fwversion = ret;
 	hw->run.initialized = true;
 	hw_p1_lcd_init();
@@ -145,21 +145,21 @@ static int hw_p1_online(void * priv)
 	// calibrate
 	ret = hw_p1_calibrate();
 	if (ALL_OK != ret) {
-		dbgerr("hw_p1_calibrate failed (%d)", ret);
+		pr_err(_("HWP1: could not calibrate (%d)"), ret);
 		goto fail;
 	}
 
 	// read sensors once
 	ret = hw_p1_sensors_read();
 	if (ALL_OK != ret) {
-		dbgerr("hw_p1_sensors_read failed (%d)", ret);
+		pr_err(_("HWP1: could not read sensors (%d)"), ret);
 		goto fail;
 	}
 
 	// restore previous state - failure is ignored
 	ret = hw_p1_restore_relays();
 	if (ALL_OK == ret)
-		pr_log(_("Hardware state restored"));
+		pr_log(_("HWP1: Hardware state restored"));
 
 	hw_p1_lcd_online();
 
