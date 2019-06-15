@@ -39,7 +39,7 @@ int hardware_init(void)
 			ret = HW_backends[id]->cb->init(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("init() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
+				pr_err(_("Failed to initialize backend \"%s\" (%d)"), HW_backends[id]->name, ret);
 			}
 			else
 				HW_backends[id]->run.initialized = true;
@@ -82,7 +82,7 @@ int hardware_online(void)
 			ret = HW_backends[id]->cb->online(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("online() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
+				pr_err(_("Failed to bring backend \"%s\" online (%d)"), HW_backends[id]->name, ret);
 			}
 			else
 				HW_backends[id]->run.online = true;
@@ -195,7 +195,7 @@ int hardware_offline(void)
 			ret = HW_backends[id]->cb->offline(HW_backends[id]->priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				dbgerr("offline() failed for \"%s\" (%d)", HW_backends[id]->name, ret);
+				pr_err(_("Failed to bring backend \"%s\" offline (%d)"), HW_backends[id]->name, ret);
 			}
 			else
 				HW_backends[id]->run.online = false;
