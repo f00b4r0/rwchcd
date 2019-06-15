@@ -270,8 +270,10 @@ int runtime_online(void)
 	log_register(&Runtime_lsrc);
 
 	ret = models_online();
-	if (ALL_OK != ret)
+	if (ALL_OK != ret) {
+		pr_err(_("Failed to bring models online"));
 		return (ret);
+	}
 
 	return (plant_online(Runtime.plant));
 }
@@ -307,15 +309,15 @@ int runtime_offline(void)
 		return (-ENOTCONFIGURED);
 
 	if (runtime_save() != ALL_OK)
-		dbgerr("runtime save failed");
+		pr_err(_("Failed to save runtime"));
 
 	log_deregister(&Runtime_lsrc);
 
 	if (plant_offline(Runtime.plant) != ALL_OK)
-		dbgerr("plant offline failed");
+		pr_err(_("Failed to offline plant"));
 
 	if (models_offline() != ALL_OK)
-		dbgerr("models offline failed");
+		pr_err(_("Failed to offline models"));
 
 	return (ALL_OK);
 }
