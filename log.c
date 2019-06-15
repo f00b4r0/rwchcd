@@ -198,25 +198,25 @@ int log_register(const struct s_log_source * restrict const lsource)
 	assert(lsource);
 
 	if (lsource->log_sched >= ARRAY_SIZE(Log_sched)) {
-		dbgerr("Invalid log schedule for %s%s: %d", lsource->basename, lsource->identifier, lsource->log_sched);
+		pr_err(_("Log registration failed: invalid log schedule for %s%s: %d"), lsource->basename, lsource->identifier, lsource->log_sched);
 		return (-EINVALID);
 	}
 
 	currlistp = &Log_sched[lsource->log_sched].loglist;
 
 	if (!lsource->basename || !lsource->identifier) {
-		dbgerr("Missing basename / identifier");
+		pr_err(_("Log registration failed: missing basename / identifier"));
 		return (-EINVALID);
 	}
 
 	// forbid specific namespace
 	if (!strcmp(LOG_ASYNC_DUMP_BASENAME, lsource->basename)) {
-		dbgerr("Invalid basename for %s%s: %s", lsource->basename, lsource->identifier, lsource->basename);
+		pr_err(_("Log registration failed: invalid basename for %s%s: %s"), lsource->basename, lsource->identifier, lsource->basename);
 		return (-EINVALID);
 	}
 
 	if (!lsource->logdata_cb) {
-		dbgerr("Missing parser cb: %s%s", lsource->basename, lsource->identifier);
+		pr_err(_("Log registration failed: Missing parser cb: %s%s"), lsource->basename, lsource->identifier);
 		return (-EINVALID);
 	}
 
@@ -224,7 +224,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	// check basename + identifier is short enough
 	if ((strlen(LOG_PREFIX) + strlen(lsource->basename) + strlen(lsource->identifier) + strlen(LOG_FMT_SUFFIX) + 1) >= MAX_FILENAMELEN) {
-		dbgerr("Name too long: %s%s", lsource->basename, lsource->identifier);
+		pr_err(_("Log registration failed: Name too long: %s%s"), lsource->basename, lsource->identifier);
 		return (-EINVALID);
 	}
 
@@ -363,7 +363,7 @@ int log_init(void)
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		ret = timer_add_cb(Log_sched[i].interval, Log_sched[i].cb, Log_sched[i].name);
 		if (ALL_OK != ret)
-			dbgerr("failed to add %s log crawler timer", Log_sched[i].name);
+			dbgerr("failed to add %s log crawler timer", Log_sched[i].name);	// pr_warn()
 	}
 
 	return (ALL_OK);
