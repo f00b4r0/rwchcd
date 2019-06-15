@@ -240,14 +240,14 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 		return (-ENOTCONFIGURED);
 
 	if (bmodel->set.tau <= 0) {
-		dbgerr("\"%s\": invalid value for tau", bmodel->name);
+		pr_err(_("Building model \"%s\": invalid value for tau: '%ld'"), bmodel->name, timekeep_tk_to_sec(bmodel->set.tau));
 		return (-EMISCONFIGURED);
 	}
 
 	// make sure specified outdoor sensor is available
 	ret = hardware_sensor_clone_temp(bmodel->set.tid_outdoor, &tout);
 	if (ALL_OK != ret) {
-		dbgerr("\"%s\": outdoor sensor error (%d)", bmodel->name, ret);
+		pr_err(_("Building model \"%s\": outdoor sensor error (%d)"), bmodel->name, ret);
 		return (ret);
 	}
 
@@ -263,7 +263,7 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 
 	// log registration shouldn't cause online failure
 	if (bmodel_log_register(bmodel) != ALL_OK)
-		dbgerr("\"%s\": couldn't register for logging", bmodel->name);
+		pr_err(_("Building model \"%s\": couldn't register for logging"), bmodel->name);
 
 	bmodel->run.online = true;
 
