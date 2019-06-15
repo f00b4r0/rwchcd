@@ -147,21 +147,21 @@ static int init_process(void)
 	/* init hardware backend subsystem - clears data used by config */
 	ret = hw_backends_init();
 	if (ret) {
-		dbgerr("hw_backends init error: %d", ret);
+		pr_err(_("Failed to initialize hardware backends (%d)"), ret);
 		return (ret);
 	}
 
 	/* init runtime - clears data used by config */
 	ret = runtime_init();
 	if (ret) {
-		dbgerr("runtime init error: %d", ret);
+		pr_err(_("Failed to initialize runtime (%d)"), ret);
 		return (ret);
 	}
 
 	/* init models - clears data used by config */
 	ret = models_init();
 	if (ret) {
-		dbgerr("models init failed");
+		pr_err(_("Failed to initialize models (%d)"), ret);
 		return (ret);
 	}
 
@@ -178,7 +178,7 @@ static int init_process(void)
 	
 	ret = hardware_init();		// must happen as root (for SPI access)
 	if (ret) {
-		dbgerr("hardware init error: %d", ret);
+		pr_err(_("Failed to initialize hardware (%d)"), ret);
 		return (ret);
 	}
 
@@ -190,21 +190,21 @@ static int init_process(void)
 
 	ret = storage_config();
 	if (ret) {
-		dbgerr("storage config error: %d", ret);
+		pr_err(_("Failed to configure storage (%d)"), ret);
 		return (ret);
 	}
 
 	ret = log_init();
 	if (ret) {
-		dbgerr("log config error: %d", ret);
+		pr_err(_("Failed to initialize log subsystem (%d)"), ret);
 		return (ret);
 	}
 
 	/* test and launch */
 
-	// bring the hardware online
+	/// bring the hardware online - @todo max retries?
 	while ((ret = hardware_online()) != ALL_OK) {
-		dbgerr("hardware_online() failed: %d", ret);
+		pr_err(_("Failed to bring hardware online (%d)"), ret);
 		timekeep_sleep(1);	// don't pound on the hardware if it's not coming up: calibration data may not be immediately available
 	}
 
@@ -236,7 +236,7 @@ static void * thread_master(void *arg)
 
 	ret = init_process();
 	if (ret != ALL_OK) {
-		pr_log(_("Process initialization failed (%d) - ABORTING!"), ret);
+		pr_err(_("Process initialization failed (%d) - ABORTING!"), ret);
 		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
 
