@@ -75,11 +75,14 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser);
 
+/// Custom pr_err for configuration problems.
+#define filecfg_parser_pr_err(format, ...)		fprintf(stderr, "CONFIG ERROR! " format "\n", ## __VA_ARGS__)
+
 /**
  * Report (generic) invalid data for node.
  * @param NODE the faulty node
  */
-#define filecfg_parser_report_invaliddata(NODE)		dbgerr("Invalid data for node \"%s\" closing at line %d", NODE->name, NODE->lineno)
+#define filecfg_parser_report_invaliddata(NODE)		filecfg_parser_pr_err("Invalid data for node \"%s\" closing at line %d", NODE->name, NODE->lineno)
 
 /**
  * Parse a list of "named" sibling nodes (String nodes).

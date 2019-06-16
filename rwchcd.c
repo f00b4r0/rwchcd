@@ -171,8 +171,17 @@ static int init_process(void)
 		return (-EGENERIC);
 	}
 	ret = filecfg_parser_parse();	// XXX REVIEW happens as root
-	if (ret)
+	if (ret) {
+		switch (ret) {
+			case -EOOM:
+				pr_err(_("Out of memory while parsing configuration!"));
+				break;
+			default:
+				pr_err(_("Configuration parsing failed"));
+				break;
+		}
 		return (ret);
+	}
 
 	/* init hardware */
 	

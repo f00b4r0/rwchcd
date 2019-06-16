@@ -195,21 +195,16 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	else if (!strcmp("NI1000", sensor_model))
 		stype = ST_NI1000;
 	else {
-		dbgerr("Unknown sensor model \"%s\" at line %d", sensor_model, parsers[1].node->lineno);
+		filecfg_parser_pr_err(_("Line %d: unknown sensor type \"%s\""), parsers[1].node->lineno, sensor_model);
 		return (-EUNKNOWN);
 	}
 
 	ret = hw_p1_setup_sensor_configure(priv, sensor_id, stype, deltaK_to_temp(sensor_offset), sensor_name);
 	switch (ret) {
 		case -EINVALID:
-			dbgerr("Line %d: invalid sensor id '%d'", node->lineno, sensor_id);
-			return (ret);
+			filecfg_parser_pr_err(_("Line %d: invalid sensor id '%d'"), node->lineno, sensor_id);
 		case -EEXISTS:
-			dbgerr("Line %d: a sensor with the same name or id is already configured", node->lineno);
-			return (ret);
-		case -EOOM:
-			dbgerr("Out of memory!");
-			return (ret);
+			filecfg_parser_pr_err(_("Line %d: a sensor with the same name or id is already configured"), node->lineno);
 		default:
 			break;
 	}
@@ -245,14 +240,9 @@ static int relay_parse(void * restrict const priv, const struct s_filecfg_parser
 	ret = hw_p1_setup_relay_request(priv, relay_id, failstate, relay_name);
 	switch (ret) {
 		case -EINVALID:
-			dbgerr("Line %d: invalid relay id '%d'", node->lineno, relay_id);
-			return (ret);
+			filecfg_parser_pr_err(_("Line %d: invalid relay id '%d'"), node->lineno, relay_id);
 		case -EEXISTS:
-			dbgerr("Line %d: a relay with the same name or id is already configured", node->lineno);
-			return (ret);
-		case -EOOM:
-			dbgerr("Out of memory!");
-			return (ret);
+			filecfg_parser_pr_err(_("Line %d: a relay with the same name or id is already configured"), node->lineno);
 		default:
 			break;
 	}
@@ -303,7 +293,7 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 	// parse node list in specified order
 	ret = filecfg_parser_run_parsers(hw, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
 	if (ALL_OK != ret) {
-		dbgerr("Config parse error");
+		filecfg_parser_pr_err(_("HWP1 config parse error"));
 		return (ret);
 	}
 
@@ -311,7 +301,7 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 	ret = hw_p1_backend_register(hw, node->value.stringval);
 	if (ret < 0) {
 		hw_p1_setup_del(hw);
-		dbgerr("Backend registration failed for %s (%d)", node->value.stringval, ret);
+		filecfg_parser_pr_err(_("HWP1: backend registration failed for %s (%d)"), node->value.stringval, ret);
 	}
 
 	return (ret);

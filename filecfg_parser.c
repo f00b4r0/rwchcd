@@ -149,7 +149,19 @@ static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	backend = parsers[0].node->value.stringval;
 	name = parsers[1].node->value.stringval;
 
-	return (hw_backends_sensor_fbn(tempid, backend, name));
+	ret = hw_backends_sensor_fbn(tempid, backend, name);
+	switch (ret) {
+		case ALL_OK:
+			break;
+		case -ENOTFOUND:
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or sensor \"%s\" not found"), node->name, node->lineno, backend, name);
+			break;
+		default:	// should never happen
+			dbgerr("hw_backends_sensor_fbn() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
+			break;
+	}
+
+	return (ret);
 }
 
 static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -177,7 +189,19 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	backend = parsers[0].node->value.stringval;
 	name = parsers[1].node->value.stringval;
 
-	return (hw_backends_relay_fbn(relid, backend, name));
+	ret = hw_backends_relay_fbn(relid, backend, name);
+	switch (ret) {
+		case ALL_OK:
+			break;
+		case -ENOTFOUND:
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or relay \"%s\" not found"), node->name, node->lineno, backend, name);
+			break;
+		default:	// should never happen
+			dbgerr("hw_backends_relay_fbn() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
+			break;
+	}
+
+	return (ret);
 }
 
 static int runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
@@ -206,7 +230,7 @@ static int sysmode_parse(void * restrict const priv, const struct s_filecfg_pars
 		*sysmode = SYS_MANUAL;
 	else {
 		*sysmode = SYS_UNKNOWN;
-		dbgerr("Unknown systemmode \"%s\" at line %d", n, node->lineno);
+		filecfg_parser_pr_err(_("Unknown systemmode \"%s\" at line %d"), n, node->lineno);
 		return (-EINVALID);
 	}
 
@@ -501,14 +525,14 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 
 	if (SYS_MANUAL == config->startup_sysmode) {
 		if (!parsers[6].node || !parsers[7].node) {
-			dbgerr("startup_sysmode set to \"manual\" but startup_runmode and/or startup_dhwmode are not set");
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: startup_sysmode set to \"manual\" but startup_runmode and/or startup_dhwmode are not set"), node->name, node->lineno);
 			return (-EINVALID);
 		}
 	}
 
 	if (config->summer_maintenance) {
 		if (!parsers[10].node || !parsers[11].node) {
-			dbgerr(_("summer_maintenance is set but summer_run_interval and/or summer_run_duration are not set"));
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: summer_maintenance is set but summer_run_interval and/or summer_run_duration are not set"), node->name, node->lineno);
 			return (-EINVALID);
 
 		}
@@ -554,16 +578,15 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 	currnode = parsers[1].node;
 	iv = currnode->value.intval;
 	if (iv < 0) {
-		dbgerr("Invalid negative value for \"%s\" closing at line %d", currnode->name, currnode->lineno);
+		filecfg_parser_report_invaliddata(currnode);
 		return (-EINVALID);
 	}
 	bmodel->set.tau = timekeep_sec_to_tk(iv);
 
 	currnode = parsers[2].node;
-	ret = tid_parse(&bmodel->set.tid_outdoor, currnode);
-	if (ALL_OK != ret) {
-		dbgerr("tid_parse failed");
-		return (ret);
+	if (ALL_OK != tid_parse(&bmodel->set.tid_outdoor, currnode)) {
+		filecfg_parser_report_invaliddata(currnode);
+		return (-EINVALID);
 	}
 
 	bmodel->set.configured = true;
@@ -593,11 +616,11 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	for (nlist = nodelist; nlist; nlist = nlist->next) {
 		node = nlist->node;
 		if (ntype != node->type) {
-			dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", node->name, node->lineno);
+			fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d"), node->name, node->lineno);
 			continue;
 		}
 		if (strcmp(nname, node->name)) {
-			dbgerr("Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
+			fprintf(stderr, _("CONFIG WARNING! Ignoring unknown node \"%s\" closing at line %d"), node->name, node->lineno);
 			continue;
 		}
 
@@ -605,7 +628,7 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 			sname = node->value.stringval;
 
 			if (strlen(sname) < 1) {
-				dbgerr("Ignoring \"%s\" with empty name closing at line %d", node->name, node->lineno);
+				fprintf(stderr, _("CONFIG WARNING! Ignoring \"%s\" with empty name closing at line %d"), node->name, node->lineno);
 				continue;
 			}
 
@@ -649,10 +672,8 @@ static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 	// create the pump
 	pump = plant_new_pump(plant, node->value.stringval);
-	if (!pump) {
-		dbgerr("pump creation failed");
+	if (!pump)
 		return (-EOOM);
-	}
 
 	currnode = parsers[0].node;
 	if (currnode) {
@@ -700,7 +721,19 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 	sample_intvl = timekeep_sec_to_tk(parsers[0].node->value.intval);
 	amount = parsers[1].node->value.intval;
 
-	return (valve_make_sapprox(valve, amount, sample_intvl));
+	ret = valve_make_sapprox(valve, amount, sample_intvl);
+	switch (ret) {
+		case ALL_OK:
+			break;
+		case -EINVALID:	// we're guaranteed that 'valid' arguments are passed: this error means the configuration is invalid
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: invalid configuration settings"), node->name, node->lineno);
+			break;
+		default:	// should never happen
+			dbgerr("valve_make_sapprox() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
+			break;
+	}
+
+	return (ret);
 }
 
 static int valve_algo_PI_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -727,7 +760,22 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	tune_f = parsers[3].node->value.intval;
 	Ksmax = (NODEFLT == parsers[4].node->type) ? deltaK_to_temp(parsers[4].node->value.floatval) : deltaK_to_temp(parsers[4].node->value.intval);
 
-	return (valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, tune_f));
+	ret = valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, tune_f);
+	switch (ret) {
+		case ALL_OK:
+			break;
+		case -EINVALID:	// we're guaranteed that 'valid' arguments are passed: this error means the configuration is invalid
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: invalid configuration settings"), node->name, node->lineno);
+			break;
+		case -EMISCONFIGURED:
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: incorrect values for sample_intvl '%d' vs Tu '%d'"), node->name, node->lineno, parsers[0].node->value.intval, parsers[1].node->value.intval);
+			break;
+		default:	// should never happen
+			dbgerr("valve_make_sapprox() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
+			break;
+	}
+
+	return (ret);
 }
 
 static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -785,14 +833,13 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 					ret = valve_algo_sapprox_parser(valve, currnode);
 				else if (!strcmp("bangbang", n))
 					ret = valve_make_bangbang(valve);
-				else {
-					dbgerr("Unknown algo \"%s\" closing at line %d", n, currnode->lineno);
-					ret = -EUNKNOWN;
-				}
-				if (ALL_OK == ret)
-					dbgmsg("parsed algo \"%s\"", n);
 				else
+					goto invaliddata;
+
+				if (ALL_OK != ret) {
 					valve->set.type = VA_TYPE_NONE;
+					return (ret);
+				}
 				break;
 			default:
 				break;	// should never happen
@@ -823,8 +870,7 @@ static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg
 	currnode = parsers[0].node;
 	valve->set.tset.tisol.reverse = currnode->value.boolval;
 
-	if (ALL_OK == ret)
-		valve->set.type = VA_TYPE_ISOL;
+	valve->set.type = VA_TYPE_ISOL;
 
 	return (ret);
 }
@@ -918,10 +964,8 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 
 	// create the valve
 	valve = plant_new_valve(plant, node->value.stringval);
-	if (!valve) {
-		dbgerr("valve creation failed");
+	if (!valve)
 		return (-EOOM);
-	}
 
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
 		currnode = parsers[i].node;
@@ -945,12 +989,11 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 					ret = valve_tmix_parser(valve, currnode);
 				else if (!strcmp("isol", n))
 					ret = valve_tisol_parser(valve, currnode);
-				else {
-					dbgerr("Unknown type \"%s\" closing at line %d", n, currnode->lineno);
-					return (-EUNKNOWN);
-				}
-				if (ALL_OK == ret)
-					dbgmsg("parsed type \"%s\"", n);
+				else
+					goto invaliddata;
+
+				if (ALL_OK != ret)
+					return (ret);
 				break;
 			case 3:
 				n = currnode->value.stringval;
@@ -958,12 +1001,11 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 					ret = valve_m3way_parser(valve, currnode);
 				else if (!strcmp("2way", n))
 					ret = valve_m2way_parser(valve, currnode);
-				else {
-					dbgerr("Unknown motor \"%s\" closing at line %d", n, currnode->lineno);
-					return (-EUNKNOWN);
-				}
-				if (ALL_OK == ret)
-					dbgmsg("parsed motor \"%s\"", n);
+				else
+					goto invaliddata;
+
+				if (ALL_OK != ret)
+					return (ret);
 				break;
 			default:
 				break;	// should never happen
@@ -1008,7 +1050,7 @@ static int runmode_parse(void * restrict const priv, const struct s_filecfg_pars
 		*runmode = RM_DHWONLY;
 	else {
 		*runmode = RM_UNKNOWN;
-		dbgerr("Unknown runmode \"%s\" at line %d", n, node->lineno);
+		filecfg_parser_pr_err(_("Unknown runmode \"%s\" at line %d"), n, node->lineno);
 		return (-EINVALID);
 	}
 
@@ -1051,10 +1093,8 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 	// create the dhwt
 	dhwt = plant_new_dhwt(plant, node->value.stringval);
-	if (!dhwt) {
-		dbgerr("dhwt creation failed");
+	if (!dhwt)
 		return (-EOOM);
-	}
 
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
 		currnode = parsers[i].node;
@@ -1079,9 +1119,8 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 				dhwt->set.prio = currnode->value.intval;
 				break;
 			case 4:
-				ret = runmode_parse(&dhwt->set.runmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
+				if (ALL_OK != runmode_parse(&dhwt->set.runmode, currnode))
+					goto invaliddata;
 				break;
 			case 5:
 				n = currnode->value.stringval;
@@ -1095,10 +1134,8 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 					dhwt->set.dhwt_cprio = DHWTP_SLIDDHW;
 				else if (!strcmp("absolute", n))
 					dhwt->set.dhwt_cprio = DHWTP_ABSOLUTE;
-				else {
-					dbgerr("Unknown DHW priority \"%s\" at line %d", n, currnode->lineno);
-					return (-EINVALID);
-				}
+				else
+					goto invaliddata;
 				break;
 			case 6:
 				n = currnode->value.stringval;
@@ -1108,10 +1145,8 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 					dhwt->set.force_mode = DHWTF_FIRST;
 				else if (!strcmp("always", n))
 					dhwt->set.force_mode = DHWTF_ALWAYS;
-				else {
-					dbgerr("Unknown DHW force mode \"%s\" at line %d", n, currnode->lineno);
-					return (-EINVALID);
-				}
+				else
+					goto invaliddata;
 				break;
 			case 7:
 				if (ALL_OK != tid_parse(&dhwt->set.tid_bottom, currnode))
@@ -1215,7 +1250,19 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	twater2 = (NODEFLT == parsers[3].node->type) ? celsius_to_temp(parsers[3].node->value.floatval) : celsius_to_temp(parsers[3].node->value.intval);
 	nH100 = parsers[4].node->value.intval;
 
-	return (hcircuit_make_bilinear(hcircuit, tout1, twater1, tout2, twater2, nH100));
+	ret = hcircuit_make_bilinear(hcircuit, tout1, twater1, tout2, twater2, nH100);
+	switch (ret) {
+		case ALL_OK:
+			break;
+		case -EINVALID:	// we're guaranteed that 'valid' arguments are passed: this error means the configuration is invalid
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: invalid configuration settings"), node->name, node->lineno);
+			break;
+		default:	// should never happen
+			dbgerr("hcircuit_make_bilinear() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
+			break;
+	}
+
+	return (ret);
 }
 
 static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1254,10 +1301,8 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 
 	// create the hcircuit
 	hcircuit = plant_new_circuit(plant, node->value.stringval);
-	if (!hcircuit) {
-		dbgerr("hcircuit creation failed");
+	if (!hcircuit)
 		return (-EOOM);
-	}
 
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
 		currnode = parsers[i].node;
@@ -1272,9 +1317,8 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				hcircuit->set.logging = currnode->value.boolval;
 				break;
 			case 2:
-				ret = runmode_parse(&hcircuit->set.runmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
+				if (ALL_OK != runmode_parse(&hcircuit->set.runmode, currnode))
+					goto invaliddata;
 				break;
 			case 3:
 				iv = currnode->value.intval;
@@ -1324,14 +1368,11 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				n = currnode->value.stringval;
 				if (!strcmp("bilinear", n))
 					ret = hcircuit_tlaw_bilinear_parser(hcircuit, currnode);
-				else {
-					dbgerr("Unknown %s \"%s\" closing at line %d", currnode->name, n, currnode->lineno);
-					return (-EUNKNOWN);
-				}
-				if (ALL_OK == ret)
-					dbgmsg("parsed tlaw \"%s\"", n);
 				else
-					dbgerr("failed to parse tlaw: %d", ret);
+					goto invaliddata;
+
+				if (ALL_OK != ret)
+					return (ret);
 				break;
 			case 13:
 			case 14:
@@ -1434,10 +1475,8 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 					boiler->set.idle_mode = IDLE_FROSTONLY;
 				else if (!strcmp("always", n))
 					boiler->set.idle_mode = IDLE_ALWAYS;
-				else {
-					dbgerr("Unknown boiler idle mode \"%s\" at line %d", n, currnode->lineno);
-					return (-EINVALID);
-				}
+				else
+					goto invaliddata;
 				break;
 			case 1:
 			case 2:
@@ -1564,10 +1603,8 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 
 	// create the heatsource
 	heatsource = plant_new_heatsource(plant, node->value.stringval);
-	if (!heatsource) {
-		dbgerr("heatsource creation failed");
+	if (!heatsource)
 		return (-EOOM);
-	}
 
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
 		currnode = parsers[i].node;
@@ -1576,9 +1613,8 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 
 		switch (i) {
 			case 0:
-				ret = runmode_parse(&heatsource->set.runmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
+				if (ALL_OK != runmode_parse(&heatsource->set.runmode, currnode))
+					goto invaliddata;
 				break;
 			case 1:
 				if (ALL_OK != heatsource_type_parse(plant, heatsource, currnode))
@@ -1635,10 +1671,8 @@ static int plant_parse(void * restrict const priv, const struct s_filecfg_parser
 
 	// create a new plant
 	plant = plant_new();
-	if (!plant) {
-		dbgerr("plant creation failed");
+	if (!plant)
 		return (-EOOM);
-	}
 
 	ret = filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK == ret)
@@ -1683,23 +1717,27 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 
 		switch (i) {
 			case 0:
+				if ((currnode->value.intval < 0) || (currnode->value.intval > 7))
+					goto invaliddata;
 				wday = currnode->value.intval;
 				break;
 			case 1:
+				if ((currnode->value.intval < 0) || (currnode->value.intval > 23))
+					goto invaliddata;
 				hour = currnode->value.intval;
 				break;
 			case 2:
+				if ((currnode->value.intval < 0) || (currnode->value.intval > 59))
+					goto invaliddata;
 				min = currnode->value.intval;
 				break;
 			case 3:
-				ret = runmode_parse(&runmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
+				if (ALL_OK != runmode_parse(&runmode, currnode))
+					goto invaliddata;
 				break;
 			case 4:
-				ret = runmode_parse(&dhwmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
+				if (ALL_OK != runmode_parse(&dhwmode, currnode))
+					goto invaliddata;
 				break;
 			case 5:
 				legionella = currnode->value.boolval;
@@ -1713,6 +1751,10 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		ret = scheduler_add(wday, hour, min, runmode, dhwmode, legionella);
 
 	return (ret);
+
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
 }
 
 static int scheduler_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1738,14 +1780,14 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 	for (i = 0; i < nparsers; i++) {
 		if (!strcmp(parsers[i].identifier, node->name)) {
 			if (!(parsers[i].type & node->type)) {
-				dbgerr("Ignoring node \"%s\" with invalid type closing at line %d", node->name, node->lineno);
+				fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d"), node->name, node->lineno);
 				return (-EINVALID);
 			}
 
 			dbgmsg("matched %s, %d", node->name, node->lineno);
 			matched = true;
 			if (parsers[i].node) {
-				dbgerr("Ignoring duplicate node \"%s\" closing at line %d", node->name, node->lineno);
+				fprintf(stderr, _("CONFIG WARNING! Ignoring duplicate node \"%s\" closing at line %d"), node->name, node->lineno);
 				continue;
 			}
 			parsers[i].node = node;
@@ -1779,12 +1821,12 @@ int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const
 
 	// attempt matching
 	for (list = nodelist; list; list = list->next)
-		filecfg_parser_match_node(list->node, parsers, nparsers);
+		filecfg_parser_match_node(list->node, parsers, nparsers);	// ignore return value to report as many errors as possible at once
 
 	// report missing required nodes
 	for (i = 0; i < nparsers; i++) {
 		if (parsers[i].required && !parsers[i].node) {
-			dbgerr("Missing required configuration node \"%s\"", parsers[i].identifier);
+			filecfg_parser_pr_err(_("Missing required configuration node \"%s\""), parsers[i].identifier);
 			ret = -ENOTFOUND;
 		}
 	}
@@ -1809,7 +1851,7 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 
 	ret = filecfg_parser_match_nodelist(node->children, parsers, nparsers);
 	if (ALL_OK != ret)
-		dbgerr("Incomplete \"%s\" node configuration closing at line %d", node->name, node->lineno);
+		filecfg_parser_pr_err(_("Incomplete \"%s\" node configuration closing at line %d"), node->name, node->lineno);
 
 	return (ret);
 }
