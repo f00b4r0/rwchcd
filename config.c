@@ -12,11 +12,8 @@
  */
 
 #include <stdlib.h>	// alloc/free
-#include <string.h>	// memcpy
-#include <assert.h>
 
 #include "lib.h"
-#include "storage.h"
 #include "config.h"
 
 /**

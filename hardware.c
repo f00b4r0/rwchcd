@@ -12,8 +12,6 @@
  * @todo implement exclusive relay use (should be a good idea esp for config validation).
  */
 
-#include <string.h>	// memset/strdup
-
 #include "hw_backends.h"
 #include "hardware.h"
 

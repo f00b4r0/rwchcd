@@ -15,15 +15,12 @@
 #include <string.h>	// memset/memcpy
 #include <assert.h>
 
-#include "lib.h"
 #include "plant.h"
 #include "config.h"
 #include "runtime.h"
 #include "storage.h"
 #include "log.h"
-#include "timer.h"
 #include "alarms.h"	// alarms_raise()
-#include "hardware.h"	// for hardware_sensor_clone_temp()
 
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);
 

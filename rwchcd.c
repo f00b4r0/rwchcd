@@ -54,10 +54,8 @@
 #endif
 
 #include "rwchcd.h"
-#include "lib.h"
 #include "hw_backends.h"
 #include "hardware.h"
-#include "plant.h"
 #include "config.h"
 #include "runtime.h"
 #include "timer.h"
