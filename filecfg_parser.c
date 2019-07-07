@@ -472,6 +472,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 					default:
 						break;
 				}
+				break;
 			case 4:
 			case 10:
 			case 11:

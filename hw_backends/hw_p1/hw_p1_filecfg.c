@@ -203,8 +203,10 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	switch (ret) {
 		case -EINVALID:
 			filecfg_parser_pr_err(_("Line %d: invalid sensor id '%d'"), node->lineno, sensor_id);
+			break;
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a sensor with the same name or id is already configured"), node->lineno);
+			break;
 		default:
 			break;
 	}
@@ -241,8 +243,10 @@ static int relay_parse(void * restrict const priv, const struct s_filecfg_parser
 	switch (ret) {
 		case -EINVALID:
 			filecfg_parser_pr_err(_("Line %d: invalid relay id '%d'"), node->lineno, relay_id);
+			break;
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a relay with the same name or id is already configured"), node->lineno);
+			break;
 		default:
 			break;
 	}
