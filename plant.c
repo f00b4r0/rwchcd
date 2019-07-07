@@ -964,11 +964,13 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 			switch (dhwtl->dhwt->set.dhwt_cprio) {
 				case DHWTP_SLIDDHW:
 					dhwt_reqdhw = true;
+					// fallthrough
 				case DHWTP_SLIDMAX:
 					dhwt_sliding = true;
 					break;
 				case DHWTP_ABSOLUTE:
 					dhwt_absolute = true;
+					// fallthrough
 				case DHWTP_PARALDHW:
 					dhwt_reqdhw = true;
 				case DHWTP_PARALMAX:
@@ -1167,8 +1169,10 @@ int plant_run(struct s_plant * restrict const plant)
 				break;
 			default:
 				dhwt_offline(dhwtl->dhwt);			// something really bad happened
+				// fallthrough
 			case EINVALIDMODE:
 				dhwtl->dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+				// fallthrough
 			case ESENSORINVAL:
 			case ESENSORSHORT:
 			case ESENSORDISCON:	// sensor issues are handled by dhwt_run()
@@ -1189,8 +1193,10 @@ int plant_run(struct s_plant * restrict const plant)
 				break;
 			default:
 				hcircuit_offline(circuitl->circuit);		// something really bad happened
+				// fallthrough
 			case EINVALIDMODE:
 				circuitl->circuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+				// fallthrough
 			case ESENSORINVAL:
 			case ESENSORSHORT:
 			case ESENSORDISCON:	// sensor issues are handled by hcircuit_run()
@@ -1225,6 +1231,7 @@ int plant_run(struct s_plant * restrict const plant)
 				break;
 			default:	// offline the source if anything happens
 				heatsource_offline(heatsourcel->heats);	// something really bad happened
+				// fallthrough
 			case ESENSORINVAL:
 			case ESENSORSHORT:
 			case ESENSORDISCON:
@@ -1256,6 +1263,7 @@ int plant_run(struct s_plant * restrict const plant)
 				break;
 			default:	// offline the valve if anything happens
 				valve_offline(valvel->valve);	// something really bad happened
+				// fallthrough
 			case ENOTCONFIGURED:
 			case EOFFLINE:
 				suberror = true;
@@ -1273,6 +1281,7 @@ int plant_run(struct s_plant * restrict const plant)
 				break;
 			default:	// offline the pump if anything happens
 				pump_offline(pumpl->pump);	// something really bad happened
+				// fallthrough
 			case ENOTCONFIGURED:
 			case EOFFLINE:
 				suberror = true;

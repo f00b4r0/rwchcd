@@ -265,7 +265,7 @@ int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 						circuit->run.ambient_update_time = now;
 						break;
 					}
-					// if settings are insufficient, model can't run, fallback to no transition
+					// if settings are insufficient, model can't run, fallthrough to no transition
 				case TRANS_NONE:
 					// no transition, ambient temp assumed to be request temp
 					ambient_temp = circuit->run.request_ambient;

@@ -736,6 +736,7 @@ int valve_run(struct s_valve * const valve)
 					break;
 				default:
 					ret = -EINVALID;
+					// fallthrough
 				case STOP:
 					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
 					if (ALL_OK != ret)

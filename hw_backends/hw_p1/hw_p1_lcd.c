@@ -153,6 +153,7 @@ static int hw_p1_lcd_wline(const uint8_t * restrict const data, const uint_fast8
 				line = LCD.Line2Buf;
 				break;
 			}
+			// fallthrough
 		default:
 			return (-EINVALID);
 	}
@@ -202,6 +203,7 @@ static int hw_p1_lcd_uline(const uint_fast8_t linenb, const bool force)
 				addr = 0x40;
 				break;
 			}
+			// fallthrough
 		default:
 			return (-EINVALID);
 	}
