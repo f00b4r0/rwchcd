@@ -237,8 +237,10 @@ static void exit_process(void)
 	models_offline();
 	alarms_offline();
 	hardware_offline();
-	log_exit();
+
 	filecfg_dump();
+
+	log_exit();
 	hardware_exit();
 	models_exit();
 	runtime_exit();
