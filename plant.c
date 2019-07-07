@@ -933,7 +933,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	// for consummers in runtime scheme, collect heat requests and max them
 	// circuits first
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		if (!circuitl->circuit->run.online)
+		if (!circuitl->circuit->run.online || (ALL_OK != circuitl->status))
 			continue;
 
 		temp = circuitl->circuit->run.heat_request;
@@ -952,7 +952,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 
 	// then dhwt
 	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		if (!dhwtl->dhwt->run.online)
+		if (!dhwtl->dhwt->run.online || (ALL_OK != dhwtl->status))
 			continue;
 
 		temp = dhwtl->dhwt->run.heat_request;
