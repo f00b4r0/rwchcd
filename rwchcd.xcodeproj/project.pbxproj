@@ -22,7 +22,6 @@
 		4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DA1F968AE8001B0A1F /* dhwt.c */; };
 		4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DD1F96AD0A001B0A1F /* boiler.c */; };
 		4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */; };
-		4F961FA21D8D66BF00E2A8AF /* logic.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F961FA01D8D66BF00E2A8AF /* logic.c */; };
 		4F99FD222088D18500DDAB75 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg.c */; };
 		4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */; };
 		4F99FD2A208BBE0000DDAB75 /* hw_p1_setup.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD28208BBE0000DDAB75 /* hw_p1_setup.c */; };
@@ -88,8 +87,6 @@
 		4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_parser.c; sourceTree = SOURCE_ROOT; };
 		4F94475F21EA7BBE00FCF120 /* filecfg_parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg_parser.h; sourceTree = SOURCE_ROOT; };
 		4F961F9F1D899D5100E2A8AF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
-		4F961FA01D8D66BF00E2A8AF /* logic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = logic.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		4F961FA11D8D66BF00E2A8AF /* logic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = logic.h; sourceTree = SOURCE_ROOT; };
 		4F99FD202088D18500DDAB75 /* filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg.c; sourceTree = SOURCE_ROOT; };
 		4F99FD212088D18500DDAB75 /* filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg.h; sourceTree = SOURCE_ROOT; };
 		4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_p1_backend.c; sourceTree = "<group>"; };
@@ -218,8 +215,6 @@
 				4F15A85D1EBF74880000507A /* alarms.h */,
 				4F3AFBAD1D8884ED00D86EE7 /* runtime.c */,
 				4F3AFBAE1D8884ED00D86EE7 /* runtime.h */,
-				4F961FA01D8D66BF00E2A8AF /* logic.c */,
-				4F961FA11D8D66BF00E2A8AF /* logic.h */,
 				4FC184791DA6809E000E514B /* storage.c */,
 				4FC1847A1DA6809E000E514B /* storage.h */,
 				4F299C9021AABD2C009DCBC2 /* log.c */,
@@ -359,7 +354,6 @@
 				4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */,
 				4F99FD2A208BBE0000DDAB75 /* hw_p1_setup.c in Sources */,
 				4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */,
-				4F961FA21D8D66BF00E2A8AF /* logic.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
