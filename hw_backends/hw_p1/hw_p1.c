@@ -472,8 +472,8 @@ int hw_p1_calibrate(void)
 		return (-EINVALID);
 
 	// everything went fine, we can update both calibration values and time
-	Hardware.run.calib_nodac = Hardware.run.calib_nodac ? temp_expw_mavg(Hardware.run.calib_nodac, newcalib_nodac, 1, 5) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
-	Hardware.run.calib_dac = Hardware.run.calib_dac ? temp_expw_mavg(Hardware.run.calib_dac, newcalib_dac, 1, 5) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	Hardware.run.calib_nodac = Hardware.run.calib_nodac ? (uint_fast16_t)temp_expw_mavg(Hardware.run.calib_nodac, newcalib_nodac, 1, 5) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	Hardware.run.calib_dac = Hardware.run.calib_dac ? (uint_fast16_t)temp_expw_mavg(Hardware.run.calib_dac, newcalib_dac, 1, 5) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
 	Hardware.run.last_calib = now;
 
 	dbgmsg("NEW: calib_nodac: %d, calib_dac: %d", Hardware.run.calib_nodac, Hardware.run.calib_dac);
