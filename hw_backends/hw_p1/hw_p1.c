@@ -10,15 +10,15 @@
  * @file
  * Hardware Prototype 1 driver implementation.
  * @warning This driver can only accomodate a @b SINGLE instance of the hardware.
- * @todo convert to fixed-point arithmetic
  * @note This driver should NOT be considered a good coding example, it is
  * heavily tailored to the context of a single prototype hardware controller
  * connected to a RaspberryPi GPIO header, and as such contains hardcoded values
  * and uses statically allocated data structures, which is deemed acceptable in
  * this particular context but should otherwise be frowned upon. The API in the
  * files hw_p1_backend.c, hw_p1_setup.c and hw_p1_filecfg.c is considered cleaner.
- * @note to build this driver, the `rwchc_export.h` header from the hardware's
+ * @note To build this driver, the `rwchc_export.h` header from the hardware's
  * firmware code is necessary.
+ * @todo convert to fixed-point arithmetic.
  */
 
 #include <time.h>	// time

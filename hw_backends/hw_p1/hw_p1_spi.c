@@ -49,7 +49,7 @@
       0,1 (1)      |    0   0
       1,0 (2)      |    1   1
       1,1 (3)      |    1   0
- * @endverbatim
+ @endverbatim
  */
 #define SPIMODE		3		///< https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
 

@@ -8,7 +8,7 @@
 
 /**
  * @file
- * Configuration functions API.
+ * System-wide configuration API.
  */
 
 #ifndef rwchcd_config_h

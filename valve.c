@@ -9,6 +9,13 @@
 /**
  * @file
  * Valve operation implementation.
+ *
+ * The valve implementation supports:
+ * - Multiple types of valves (currently mixing and isolation valves)
+ * - Multiple types of valve motorisation (currently 3-way and 2-way wiring)
+ * - Multiple types of mixing valve control algorithms: bang-bang, successive approximations, PI controller
+ * - Temperature deadzone in all algorithms
+ * - Actuator deadband in all algorithms
  */
 
 #include <stdlib.h>	// calloc/free

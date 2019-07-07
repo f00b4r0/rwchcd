@@ -9,12 +9,18 @@
 /**
  * @file
  * Plant basic operation implementation.
- * @todo plant_save()/plant_restore() (for e.g. dynamically created plants)
+ *
+ * A "plant" is a collection of consummers, actuators and heatsources all related/connected to each other:
+ * in a given plant, all the heatsources can provide heat to all of the plant's consummers.
+ *
+ * The plant implementation supports:
+ * - Virtually unlimited number of heating circuits, DHWTs and actuators
+ * - A single heatsource (but provision has been made in the code to support multiple heatsources)
+ * - DHWT priority management
+ * - Summer switchover for DHWT equipped with electric heating
+ *
  * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
  * switch to fuel when wood dies out) and cascade mode (for large systems).
- * In this context, a "plant" should logically be a collection of consummers
- * and heatsources all connected to each other: in a plant, all the heatsources
- * are providing heat to all of the plant's consummers.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -637,6 +643,8 @@ static void plant_onfline_printerr(const enum e_execs errorn, const int devid, c
 
 /**
  * Bring plant online.
+ * BY design this function will try to bring online as many plant devices
+ * as possible (errors are reported but will not stop the process).
  * @param plant target plant
  * @return exec status (-EGENERIC if any sub call returned an error)
  * @note REQUIRES valid sensor values before being called
@@ -1008,8 +1016,8 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 /**
  * Dispatch heat requests from a plant.
  * @warning currently supports single heat source, all consummers connected to it
- * @todo XXX logic for multiple heatsources (cascade and/or failover)
  * @param plant target plant
+ * @todo XXX logic for multiple heatsources (cascade and/or failover)
  */
 static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 {
@@ -1060,13 +1068,13 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 
 /**
  * Plant summer maintenance operations.
- * When summer conditions are met, the pumps and valves are periodically actuated.
+ * When summer conditions are met, the pumps and mixing valves are periodically actuated.
  * The idea of this function is to run as an override filter in the plant_run()
  * loop so that during summer maintenance, the state of these actuators is
  * overriden.
  * @param plant target plant
  * @return exec status
- * @todo sequential run (instead of parallel)
+ * @todo sequential run (instead of parallel), then we can handle isolation valves
  */
 static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {

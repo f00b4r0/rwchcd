@@ -49,7 +49,7 @@ struct s_dhw_tank {
 		bool online;			///< true if tank is available for use (under software management)
 		bool active;			///< true if tank is active
 		bool charge_on;			///< true if charge ongoing
-		bool recycle_on;		///< true if recycle pump should be running
+		bool recycle_on;		///< true if recycle pump should be running. @todo currently only used by anti-legionella charge
 		bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
 		bool legionella_on;		///< true if anti-legionella charge is required
 		bool charge_overtime;		///< true if charge went overtime

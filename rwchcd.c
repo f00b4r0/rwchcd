@@ -35,6 +35,7 @@
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo config reload
+ * @todo implement a flexible logic system that would take user-definable conditions and user-selectable actions to trigger custom actions (for more flexible plants)
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963

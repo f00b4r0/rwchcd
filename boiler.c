@@ -9,6 +9,16 @@
 /**
  * @file
  * Boiler operation implementation.
+ *
+ * The boiler implementation supports:
+ * - Automatic frost protection in all operation modes
+ * - Burner minimum continuous on/off time to reduce wear
+ * - Adaptative trip/untrip hysteresis with low and high temperature limits
+ * - Automatic boiler "sleeping" turn-off based on last heat request time
+ * - Several automatic turn-off strategies
+ * - Boiler minimum and maximum temperature (with signalling to consumers)
+ * - Return water minimum temperature (with or without return mixing valve)
+ * - Consummer delay after burner run (to prevent overheating)
  */
 
 #include <stdlib.h>	// calloc/free
@@ -214,6 +224,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 
 /**
  * Safety routine to apply to boiler in case of emergency.
+ * - The burner is disabled
+ * - The load pump is forced on
  * @param boiler target boiler
  */
 static void boiler_failsafe(struct s_boiler_priv * const boiler)

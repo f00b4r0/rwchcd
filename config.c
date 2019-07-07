@@ -8,7 +8,7 @@
 
 /**
  * @file
- * Configuration functions implementation.
+ * System-wide configuration implementation.
  */
 
 #include <stdlib.h>	// alloc/free

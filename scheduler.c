@@ -11,7 +11,7 @@
  * A very simple scheduler.
  * This scheduler is based on a weekly model. It currently only operates on
  * runtime-global runmode and dhwmode.
- * @todo adapt to be able to act on individual plant entities
+ * @todo adapt to be able to act on individual plant entities (and then handle e.g. DHWT's recycle pump)
  * @todo adapt to add "intelligence" and anticipation from e.g. circuit transitions
  * @bug subpar locking
  */
@@ -22,7 +22,7 @@
 #include <pthread.h>
 
 #include "runtime.h"
-#include "plant.h"
+#include "plant.h"	// for plant_dhwt_legionella_trigger()
 #include "scheduler.h"
 #include "filecfg.h"
 #include "timekeep.h"
@@ -45,10 +45,11 @@ static struct s_schedule * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NU
  * We parse today's schedule list, updating the runmode and dhwmode variables
  * as we pass through past schedules. We stop when the next schedule is in the
  * future, which leaves us with the last valid run/dhw modes in the variables.
- * @bug if the first schedule of the day has either runmode OR dhwmode set to
- * #RM_UNKNOWN, the function will not look back to find the correct mode.
  * @warning legionella trigger is run lockless
  * @return exec status
+ * @bug if the first schedule of the day has either runmode OR dhwmode set to
+ * #RM_UNKNOWN, the function will not look back to find the correct mode
+ * (i.e. the current active mode will be unchanged).
  */
 static int scheduler_now(void)
 {
@@ -145,7 +146,7 @@ restart:
 /**
  * Simple scheduler thread.
  * runs a delay loop through the callbacks.
- * @bug buggy time handling.
+ * @todo improve inefficient time handling.
  */
 void * scheduler_thread(void * arg)
 {
@@ -153,7 +154,7 @@ void * scheduler_thread(void * arg)
 	while (1) {
 		scheduler_now();
 		
-		/* we poll every minute, this is very inefficient. Ideally we'd
+		/* we poll every minute, this is not very efficient. Ideally we'd
 		 * set a timer until the next schedule change, timer which could be
 		 * updated by scheduler_add() if the added schedule comes before
 		 * the currently scheduled wake. */

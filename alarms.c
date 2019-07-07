@@ -9,7 +9,7 @@
 /**
  * @file
  * Alarms implementation.
- * This file implements basic alarms subsystem.
+ * This file implements a basic alarms subsystem.
  *
  * Considering we're running a loop, we can implement a stateless alarm system:
  * at every iteration of the loop, each section of the code that needs to raise

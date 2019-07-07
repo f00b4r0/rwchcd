@@ -9,7 +9,7 @@
 /**
  * @file
  * Log system implementation.
- * @todo REVIEW
+ * @todo REVIEW/CLEANUP
  */
 
 #include <stdlib.h>	// malloc

@@ -9,6 +9,11 @@
 /**
  * @file
  * Heatsource operation implementation.
+ *
+ * The heatsource implementation supports:
+ * - Overtemp signaling (to trigger maximum dissipation via connected consumers)
+ * - Consumer shift (e.g. to accelerate warmup after a cold start or to evacuate excess heat)
+ * - Consumer reduction delay signal (signal consumers to delay heat request reduction)
  */
 
 #include <stdlib.h>	// calloc/free

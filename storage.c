@@ -15,7 +15,7 @@
  * and close at program end would be better, but the fact is that this subsystem
  * probably shouldn't use flat files at all, hence the lack of effort to improve this.
  * Generally speaking a database with several tables makes more sense.
- * @bug no check is performed for @b identifier collisions in any of the output functions.
+ * @warning no check is performed for @b identifier collisions in any of the output functions.
  */
 
 #include <unistd.h>	// chdir/write/close/unlink

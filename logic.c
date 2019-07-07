@@ -111,14 +111,14 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
  * modelled ambient temperature. Handles runmode transitions.
  * @param circuit target circuit
  * @return exec status
- * @todo cleanup
- * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient...)
- * @todo XXX TODO: ambient max delta shutdown; optim based on return temp
- * @todo XXX TODO: optimization with return temperature
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
  * (including rate of rise limitation). REVIEW
  * @note during TRANS_UP the boost transition timer will be reset when a runmode change results in
  * TRANS_UP remaining active, i.e. the boost can be applied for a total time longer than the set time.
+ * @todo cleanup
+ * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient...)
+ * @todo XXX TODO: ambient max delta shutdown; optim based on return temp
+ * @todo XXX TODO: optimization with return temperature
  */
 int logic_hcircuit(struct s_hcircuit * restrict const circuit)
 {

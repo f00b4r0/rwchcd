@@ -9,6 +9,7 @@
 /**
  * @file
  * Global hardware interface implementation.
+ * This implementation provides a unified API to operate hardware backends.
  * @todo implement exclusive relay use (should be a good idea esp for config validation).
  */
 

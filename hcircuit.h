@@ -76,7 +76,7 @@ struct s_hcircuit {
 	void * restrict tlaw_priv;		///< Reference data for templaw
 	struct s_valve * restrict valve_mix;	///< optional valve for circuit (if unavailable -> direct heating)
 	struct s_pump * restrict pump_feed;	///< optional pump for this circuit
-	const struct s_bmodel * restrict bmodel;///< bmodel corresponding to this circuit
+	const struct s_bmodel * restrict bmodel;///< read-only bmodel corresponding to this circuit
 	const struct s_pdata * restrict pdata;	///< read-only plant data for this circuit
 	char * restrict name;			///< name for this circuit
 };

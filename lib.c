@@ -33,10 +33,12 @@
  *
  * @warning if dt is 0 then the value will never be updated (dt has a 1s resolution)
  * @warning if dt and (filtered - new_sample) are both large the computation may overflow
+ * @note this LP filter could be implemented more efficiently if the assumption of a fixed sampling interval is made. See provided URLs.
  * @param filtered accumulated average
  * @param new_sample new sample to average
  * @param tau time constant over which to average
  * @param dt time elapsed since last average
+ * @return the computed average
  */
 __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt)
 {

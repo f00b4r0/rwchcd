@@ -9,6 +9,22 @@
 /**
  * @file
  * Heating circuit operation implementation.
+ *
+ * The heating circuit operation implementation supports:
+ * - Water-based circuits with radiators
+ * - Per-circuit, independent target ambient temperature
+ * - Per-circuit building model assignment
+ * - Direct heating circuits
+ * - Mixed heating circuits, with mixing valve:
+ *     - Support for water temperature rate of rise control
+ * - Multiple types of heating curves (linear and bilinear approximations are implemented)
+ * - Ambient temperature modelisation in the absence of an ambient sensor
+ * - Accelerated cooldown and boost warmup transitions
+ * - Optional circuit ambient temperature sensor
+ * - Optional circuit water return temperature sensor
+ * - Automatic circuit turn-off based on outdoor temperature evolution
+ * - Timed cooldown at turn-off
+ * - Min/max limits on circuit water temperature
  */
 
 #include <stdlib.h>	// calloc/free

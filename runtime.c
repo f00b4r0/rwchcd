@@ -9,6 +9,7 @@
 /**
  * @file
  * Runtime implementation.
+ * Controls system-wide plant operation.
  */
 
 #include <time.h>	// timekeep_t

@@ -9,6 +9,21 @@
 /**
  * @file
  * DHWT operation implementation.
+ *
+ * The DHWT implementation supports:
+ * - boiler-integrated tanks (by setting temp_inoffset to a near-zero value, assuming the boiler temp equals the DHWT temp; and making sure the chosen target temp and hysteresis align with the settings of the heatsource).
+ * - automatic switch-over to (optional) integrated electric-heating.
+ * - single and dual sensor operation (top/bottom) with adaptive hysteresis strategies.
+ * - timed feedpump cooldown at untrip with temperature discharge protection.
+ * - 5 charge priority models (no priority, parallel or absolute; with heat request selection).
+ * - forced manual charge.
+ * - 3 RM_COMFORT mode charge forcing models (never force charge, force first charge of the day, force all comfort charges).
+ * - charge duration cap.
+ * - DHW circulator pump.
+ * - min/max limits on DHW temperature.
+ * - maximum intake temperature limit.
+ * - periodic anti-legionella high heat charge.
+ * - isolation valve.
  */
 
 #include <stdlib.h>	// calloc/free

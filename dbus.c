@@ -144,9 +144,9 @@ static gboolean on_handle_config_temp_mode_get(dbusRwchcdControl *object,
  * @param Runmode target runmode for the new temp
  * @param NewTemp new temperature value
  * @note only handles default circuit temp for now.
+ * @warning doesn't save runtime after set
  * @todo make it generic to set any config temp
  * @todo save config: cannot do for now because config_save() calls hardware
- * @warning doesn't save runtime after set
  */
 static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
@@ -238,9 +238,9 @@ static gboolean on_handle_config_outhoff_mode_get(dbusRwchcdControl *object,
  * @param Runmode target runmode for the new temp
  * @param NewTemp new temperature value
  * @note only handles default circuit outhoff temp for now.
+ * @warning doesn't save runtime after set
  * @todo make it generic to set any config temp
  * @todo save config: cannot do for now because config_save() calls hardware
- * @warning doesn't save runtime after set
  */
 static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
@@ -311,7 +311,7 @@ static void on_name_lost(GDBusConnection *connection,
 			 const gchar *name,
 			 gpointer user_data)
 {
-	dbgerr("Could not acquire name \"%s\", connection is %p", name, connection);
+	dbgerr("Could not acquire name \"%s\", connection is %p", name, connection);	// pr_warn()
 }
 
 /**

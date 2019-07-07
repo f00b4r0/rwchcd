@@ -9,6 +9,9 @@
 /**
  * @file
  * Pump operation implementation.
+ *
+ * The pump implementation supports:
+ * - Cooldown timeout (to prevent short runs)
  */
 
 #include <stdlib.h>	// calloc/free

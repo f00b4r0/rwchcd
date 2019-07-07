@@ -9,7 +9,7 @@
 /**
  * @file
  * Models implementation.
- * This file implements basic building models based on time constant.
+ * This file currently implements basic building models based on time constant.
  */
 
 #include <stdlib.h>
@@ -341,9 +341,10 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
  * - http://www.emu.systems/en/blog/2015/10/19/whats-the-time-constant-of-a-building
  * - https://books.google.fr/books?id=dIYxQkS_SWMC&pg=PA63&lpg=PA63
  *
+ * @param bmodel target building model
+ * @return exec status
  * @note must run at (ideally) fixed intervals
  * @todo implement variable building tau based on e.g. occupancy/time of day: lower when window/doors can be opened
- * @param bmodel target building model
  */
 static int bmodel_outdoor(struct s_bmodel * const bmodel)
 {

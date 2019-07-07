@@ -32,7 +32,9 @@ struct s_hw_backend {
 
 /**
  * Backend hardware callbacks.
- * init()/exit()/online()/offline() calls are mandatory.
+ * These callbacks provide an implementation-agnostic way to access and operate
+ * the hardware backends (initialize, access sensors and toggle relays).
+ * @note init()/exit()/online()/offline() calls are mandatory.
  * Other calls optional depending on underlying hardware capabilities.
  * All calls take an opaque pointer to implementation-dependent data.
  */

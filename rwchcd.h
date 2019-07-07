@@ -180,10 +180,10 @@ struct s_dhwt_params {
 	timekeep_t limit_chargetime;	///< maximum duration of charge time. @note Ignored in electric mode and during anti-legionella charge
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection). @warning MUST be locally or globally > 0C
-	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. @warning MUST be locally or globally > limit_tmin
-	temp_t t_legionella;		///< target temp for legionella prevention. @note If set, will override limit_tmin and limit_tmax during anti-legionella operation
-	temp_t t_comfort;		///< target temp in comfort mode. @warning MUST be locally or globally > t_frostfree
-	temp_t t_eco;			///< target temp in eco mode. @warning MUST be locally or globally > tfrostfree
+	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. @warning MUST be locally or globally > #limit_tmin
+	temp_t t_legionella;		///< target temp for legionella prevention. @note If set, will override #limit_tmin and #limit_tmax during anti-legionella operation
+	temp_t t_comfort;		///< target temp in comfort mode. @warning MUST be locally or globally > #t_frostfree
+	temp_t t_eco;			///< target temp in eco mode. @warning MUST be locally or globally > #tfrostfree
 	temp_t t_frostfree;		///< target temp in frost-free mode. @warning MUST be locally or globally > 0C
 	temp_t hysteresis;		///< hysteresis for target temp. @warning MUST be locally or globally positive
 	temp_t temp_inoffset;		///< offset temp for heat source request. This value will be added to the computed target temperature to form the heat request.

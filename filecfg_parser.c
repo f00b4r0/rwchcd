@@ -9,6 +9,37 @@
 /**
  * @file
  * File config parser implementation.
+ *
+ * The configuration format follows an ISC inspired syntax, with ending semicolons
+ * after each declaration; and brackets to nest elements in blocks, also terminated with semicolons.
+ *
+ * The following rules apply:
+ * - All options identifiers match the related C-struct field name and are unquoted.
+ * - All integer and decimal values must be specified without quotes.
+ * - bool options accept one of the following values (lowercase, without quotes):
+ * 	- `true`
+ * 	- `on`
+ * 	- `yes`
+ *	- `false`
+ * 	- `off`
+ *	- `no`
+ * - All user strings @b MUST be quoted (single and double quotes accepted).
+ * - Comments: to comment the configuration, one can use:
+ *	- C++-style "//" single-line comment (all text following will be treated as comment until next line).
+ * 	- Perl-style "#" single-line comment (all text following will be treated as comment until next line).
+ *	- C-style "/ * ... * /" multi-line comments (all text enclosed between opening '/ *' and closing '* /' will be ignored, even if it spans multiple lines).
+ *
+ * Type specific rules:
+ * - All `timekeep_t` values must be expressed in integer seconds.
+ * - All `temp_t` values must be expressed in Celsius degrees (integer or decimal accepted).
+ * - All `valves_`, `pump_` and `bmodel` settings expect quoted strings referencing the name of the related item.
+ * - All `rid_` and `tid_` are specified as a block specifying the backend name and the name of the relay or sensor within that backend. For instance:
+\verbatim
+ rid_open {
+ 	backend "prototype";
+ 	name "v_open";
+ };
+\endverbatim
  */
 
 #include <stdlib.h>
