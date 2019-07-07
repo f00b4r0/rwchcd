@@ -29,6 +29,7 @@
 #include <stdlib.h>	// calloc/free
 #include <string.h>	// memset
 #include <assert.h>
+#include <time.h>	// localtime() used by dhwt_logic()
 
 #include "pump.h"
 #include "valve.h"
@@ -37,7 +38,7 @@
 #include "lib.h"
 #include "runtime.h"
 #include "config.h"
-#include "logic.h"
+#include "timekeep.h"
 
 /**
  * Create a dhwt
@@ -241,6 +242,101 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
 
 	return (ALL_OK);
 }
+/**
+ * DHWT logic.
+ * Sets DHWT target temperature based on selected run mode.
+ * Enforces programmatic use of force charge when necessary.
+ * @param dhwt target dhwt
+ * @return exec status
+ */
+__attribute__((warn_unused_result))
+static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
+{
+	const struct s_runtime * restrict const runtime = runtime_get();
+	const time_t tnow = time(NULL);
+	const struct tm * const ltime = localtime(&tnow);	// localtime handles DST and TZ for us
+	enum e_runmode prev_runmode;
+	temp_t target_temp, ltmin, ltmax;
+
+	assert(runtime);
+
+	assert(dhwt);
+
+	// store current status for transition detection
+	prev_runmode = dhwt->run.runmode;
+
+	// handle global/local runmodes
+	if (RM_AUTO == dhwt->set.runmode)
+		dhwt->run.runmode = runtime->dhwmode;
+	else
+		dhwt->run.runmode = dhwt->set.runmode;
+
+	// force DHWT ON during hs_overtemp condition
+	if (dhwt->pdata->hs_overtemp)
+		dhwt->run.runmode = RM_COMFORT;
+
+	// depending on dhwt run mode, assess dhwt target temp
+	switch (dhwt->run.runmode) {
+		case RM_OFF:
+		case RM_TEST:
+			return (ALL_OK);	// No further processing
+		case RM_COMFORT:
+			target_temp = SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort);
+			break;
+		case RM_ECO:
+			target_temp = SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco);
+			break;
+		case RM_FROSTFREE:
+			target_temp = SETorDEF(dhwt->set.params.t_frostfree, runtime->config->def_dhwt.t_frostfree);
+			break;
+		case RM_AUTO:
+		case RM_DHWONLY:
+		case RM_UNKNOWN:
+		default:
+			return (-EINVALIDMODE);
+	}
+
+	// if anti-legionella charge is requested, enforce temp and bypass logic
+	if (dhwt->run.legionella_on) {
+		target_temp = SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella);
+		dhwt->run.force_on = true;
+		dhwt->run.recycle_on = dhwt->set.legionella_recycle;
+		goto settarget;
+	}
+
+	// transition detection
+	if (prev_runmode != dhwt->run.runmode) {
+		// handle programmed forced charges at COMFORT switch on
+		if (RM_COMFORT == dhwt->run.runmode) {
+			if (DHWTF_ALWAYS == dhwt->set.force_mode)
+				dhwt->run.force_on = true;
+			else if ((DHWTF_FIRST == dhwt->set.force_mode) && (ltime->tm_yday != dhwt->run.charge_yday)) {
+				dhwt->run.force_on = true;
+				dhwt->run.charge_yday = ltime->tm_yday;
+			}
+		}
+	}
+
+	// enforce limits on dhw temp
+	ltmin = SETorDEF(dhwt->set.params.limit_tmin, runtime->config->def_dhwt.limit_tmin);
+	ltmax = SETorDEF(dhwt->set.params.limit_tmax, runtime->config->def_dhwt.limit_tmax);
+	if (target_temp < ltmin)
+		target_temp = ltmin;
+	else if (target_temp > ltmax)
+		target_temp = ltmax;
+
+	// force maximum temp during hs_overtemp condition
+	if (dhwt->pdata->hs_overtemp) {
+		target_temp = ltmax;
+		dhwt->run.force_on = true;
+	}
+
+settarget:
+	// save current target dhw temp
+	dhwt->run.target_temp = target_temp;
+
+	return (ALL_OK);
+}
 
 /**
  * DHWT failsafe routine.
@@ -304,7 +400,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!dhwt->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
 
-	ret = logic_dhwt(dhwt);
+	ret = dhwt_logic(dhwt);
 	if (ALL_OK != ret)
 		return (ret);
 

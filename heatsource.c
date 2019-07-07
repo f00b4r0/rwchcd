@@ -21,7 +21,8 @@
 #include <assert.h>
 
 #include "heatsource.h"
-#include "logic.h"
+#include "runtime.h"
+#include "timekeep.h"
 
 /**
  * Create a heatsource
@@ -97,6 +98,56 @@ int heatsource_offline(struct s_heatsource * const heat)
 }
 
 /**
+ * Heat source logic.
+ * @param heat target heat source
+ * @return exec status
+ * @todo rework DHWT prio when n_heatsources > 1
+ */
+__attribute__((warn_unused_result))
+static int heatsource_logic(struct s_heatsource * restrict const heat)
+{
+	const struct s_runtime * restrict const runtime = runtime_get();
+	const timekeep_t now = timekeep_now();
+	const timekeep_t dt = now - heat->run.last_run_time;
+	temp_t temp;
+	int ret = -ENOTIMPLEMENTED;
+
+	assert(runtime);
+
+	// handle global/local runmodes
+	if (RM_AUTO == heat->set.runmode)
+		heat->run.runmode = runtime->runmode;
+	else
+		heat->run.runmode = heat->set.runmode;
+
+	heat->run.could_sleep = heat->pdata->plant_could_sleep;	// XXX
+
+	// compute sliding integral in DHW sliding prio
+	// XXX TODO: this logic should move at a higher level in the context of a pool of heatsources (some of which may or may not be connected to the DHWTs)
+	if (heat->pdata->dhwc_sliding) {
+		// jacket integral between -100Ks and 0
+		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), deltaK_to_temp(-100), 0);
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
+		heat->run.cshift_noncrit = temp/KPRECISION;
+	}
+	else
+		reset_intg(&heat->run.sld_itg);
+
+	// decrement consummer stop delay if any
+	if (dt < heat->run.target_consumer_sdelay)
+		heat->run.target_consumer_sdelay -= dt;
+	else
+		heat->run.target_consumer_sdelay = 0;
+
+	if (heat->cb.logic)
+		ret = heat->cb.logic(heat);
+
+	heat->run.last_run_time = now;
+
+	return (ret);
+}
+
+/**
  * Run heatsource.
  * @note Honoring runmode is left to private routines
  * @param heat target heatsource
@@ -112,7 +163,7 @@ int heatsource_run(struct s_heatsource * const heat)
 	if (!heat->run.online)	// implies set.configured == true
 		return (-EOFFLINE);
 
-	ret = logic_heatsource(heat);
+	ret = heatsource_logic(heat);
 	if (ALL_OK != ret)
 		return (ret);
 

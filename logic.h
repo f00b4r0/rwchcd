@@ -19,8 +19,4 @@
 #include "dhwt.h"
 #include "heatsource.h"
 
-int logic_hcircuit(struct s_hcircuit * restrict const circuit);
-int logic_dhwt(struct s_dhw_tank * restrict const dhwt);
-int logic_heatsource(struct s_heatsource * restrict const heat);
-
 #endif /* rwchcd_logic_h */
