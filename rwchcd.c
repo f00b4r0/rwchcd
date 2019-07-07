@@ -219,6 +219,13 @@ static int init_process(void)
 
 	alarms_online();
 
+	// bring the models online
+	ret = models_online();
+	if (ALL_OK != ret) {
+		pr_err(_("Failed to bring models online"));
+		return (ret);
+	}
+
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
 }
@@ -227,6 +234,7 @@ static int init_process(void)
 static void exit_process(void)
 {
 	runtime_offline();
+	models_offline();
 	alarms_offline();
 	hardware_offline();
 	log_exit();
@@ -268,12 +276,16 @@ static void * thread_master(void *arg)
 		ret = hardware_input();
 		if (ret)
 			dbgerr("hardware_input returned: %d", ret);
-		
+
+		ret = models_run();
+		if (ALL_OK != ret)
+			dbgerr("models_run returned: %d", ret);
+
 		// we lock globally here in this thread. Saves headaches and reduces heavy pressure on the lock
 		ret = pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 		if (ret)
 			dbgerr("wrlock failed: %d", ret);
-		
+
 		ret = runtime_run();
 		if (ret)
 			dbgerr("runtime_run returned: %d", ret);

@@ -17,7 +17,7 @@
 #include <assert.h>
 
 #include "config.h"
-#include "runtime.h"
+#include "runtime.h"	// for config (read-only)
 #include "lib.h"
 #include "storage.h"
 #include "hardware.h"

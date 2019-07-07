@@ -22,7 +22,6 @@
 #include "storage.h"
 #include "log.h"
 #include "timer.h"
-#include "models.h"
 #include "alarms.h"	// alarms_raise()
 #include "hardware.h"	// for hardware_sensor_clone_temp()
 
@@ -253,13 +252,11 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 
 /**
  * Prepare runtime for run loop.
- * Bring models and plant online
+ * Bring plant online
  * @return exec status
  */
 int runtime_online(void)
 {
-	int ret;
-
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 	
@@ -269,32 +266,17 @@ int runtime_online(void)
 
 	log_register(&Runtime_lsrc);
 
-	ret = models_online();
-	if (ALL_OK != ret) {
-		pr_err(_("Failed to bring models online"));
-		return (ret);
-	}
-
 	return (plant_online(Runtime.plant));
 }
 
 /**
  * Runtime run loop
- * @note runs models
  * @return exec status
  */
 int runtime_run(void)
 {
-	int ret;
-
 	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
-
-	// process data
-
-	ret = models_run();
-	if (ALL_OK != ret)
-		return (ret);
 
 	return (plant_run(Runtime.plant));
 }
@@ -315,9 +297,6 @@ int runtime_offline(void)
 
 	if (plant_offline(Runtime.plant) != ALL_OK)
 		pr_err(_("Failed to offline plant"));
-
-	if (models_offline() != ALL_OK)
-		pr_err(_("Failed to offline models"));
 
 	return (ALL_OK);
 }
