@@ -38,52 +38,7 @@
 #include "dhwt.h"
 #include "heatsource.h"
 #include "models.h"	// s_bmodel for plant_summer_ok()
-#include "storage.h"
 #include "alarms.h"
-
-#if 0
-static const storage_version_t Plant_sversion = 2;
-
-/**
- * Save plant.
- * @param plant target plant
- * @return exec status
- */
-static int plant_save(const struct s_plant * restrict const plant)
-{
-	assert(plant);
-
-	if (!plant->configured)
-		return (-ENOTCONFIGURED);
-
-	return (storage_dump("plant", &Plant_sversion, &plant->run, sizeof(plant->run)));
-}
-
-/**
- * Restore plant from permanent storage.
- * @param plant plant whose run structure will be restored if possible,
- * left untouched otherwise
- * @return exec status
- */
-static int plant_restore(struct s_plant * restrict const plant)
-{
-	struct s_plant temp_plant;
-	storage_version_t sversion;
-	int ret;
-
-	// try to restore key elements of last runtime
-	ret = storage_fetch("plant", &sversion, &temp_plant.run, sizeof(temp_plant.run));
-	if (ALL_OK == ret) {
-		if (Plant_sversion != sversion)
-			return (-EMISMATCH);
-
-		memcpy(&plant->run, &temp_plant.run, sizeof(plant->run));
-		pr_log(_("Plant state restored"));
-	}
-
-	return (ALL_OK);
-}
-#endif
 
 /**
  * Find a pump by name in a plant.
