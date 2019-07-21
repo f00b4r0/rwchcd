@@ -213,11 +213,11 @@ struct s_hcircuit * hcircuit_new(void)
  */
 int hcircuit_online(struct s_hcircuit * const circuit)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_config * restrict const config = runtime_get()->config;
 	temp_t temp;
 	int ret;
 
-	assert(runtime);
+	assert(config);
 
 	if (!circuit)
 		return (-EINVALID);
@@ -234,7 +234,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		goto out;
 
 	// limit_wtmax must be > 0C
-	temp = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_hcircuit.limit_wtmax);
+	temp = SETorDEF(circuit->set.params.limit_wtmax, config->def_hcircuit.limit_wtmax);
 	if (temp <= celsius_to_temp(0)) {
 		pr_err(_("\"%s\": limit_wtmax must be locally or globally > 0°C"), circuit->name);
 		ret = -EMISCONFIGURED;
@@ -348,12 +348,12 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
  */
 static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_config * restrict const config = runtime_get()->config;
 	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
 	temp_t temp_trigger;
 
 	// input sanitization performed in logic_hcircuit()
-	assert(runtime);
+	assert(config);
 	assert(bmodel);
 
 	// check for summer switch off first
@@ -364,14 +364,14 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 
 	switch (circuit->run.runmode) {
 		case RM_COMFORT:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, runtime->config->def_hcircuit.outhoff_comfort);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, config->def_hcircuit.outhoff_comfort);
 			break;
 		case RM_ECO:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_eco, runtime->config->def_hcircuit.outhoff_eco);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_eco, config->def_hcircuit.outhoff_eco);
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_frostfree, runtime->config->def_hcircuit.outhoff_frostfree);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_frostfree, config->def_hcircuit.outhoff_frostfree);
 			break;
 		case RM_OFF:
 		case RM_AUTO:
@@ -394,7 +394,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 		circuit->run.outhoff = true;
 	}
 	else {
-		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, runtime->config->def_hcircuit.outhoff_hysteresis);
+		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, config->def_hcircuit.outhoff_hysteresis);
 		if ((bmodel->run.t_out < temp_trigger) &&
 		    (bmodel->run.t_out_mix < temp_trigger))
 			circuit->run.outhoff = false;
@@ -642,12 +642,12 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_config * restrict const config = runtime_get()->config;
 	const timekeep_t now = timekeep_now();
 	temp_t water_temp, curr_temp, ret_temp, lwtmin, lwtmax, temp;
 	int ret;
 
-	assert(runtime);
+	assert(config);
 
 	if (!circuit)
 		return (-EINVALID);
@@ -721,8 +721,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 	// fetch limits
-	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, runtime->config->def_hcircuit.limit_wtmin);
-	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, runtime->config->def_hcircuit.limit_wtmax);
+	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, config->def_hcircuit.limit_wtmin);
+	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, config->def_hcircuit.limit_wtmax);
 
 	// calculate water pipe temp
 	water_temp = circuit->templaw(circuit, circuit->bmodel->run.t_out_mix);
@@ -738,7 +738,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	circuit->run.target_wtemp = water_temp;
 
 	// heat request is always computed based on non-interfered water_temp value
-	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, runtime->config->def_hcircuit.temp_inoffset);
+	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, config->def_hcircuit.temp_inoffset);
 
 	// alterations to the computed value only make sense if a mixing valve is available
 	if (circuit->valve_mix) {

@@ -59,11 +59,11 @@ struct s_dhw_tank * dhwt_new(void)
  */
 int dhwt_online(struct s_dhw_tank * const dhwt)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_config * restrict const config = runtime_get()->config;
 	temp_t temp;
 	int ret = -EGENERIC;
 
-	assert(runtime);
+	assert(config);
 
 	if (!dhwt)
 		return (-EINVALID);
@@ -79,46 +79,46 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 		goto out;
 
 	// limit_tmin must be > 0C
-	temp = SETorDEF(dhwt->set.params.limit_tmin, runtime->config->def_dhwt.limit_tmin);
+	temp = SETorDEF(dhwt->set.params.limit_tmin, config->def_dhwt.limit_tmin);
 	if (temp <= celsius_to_temp(0)) {
 		pr_err(_("\"%s\": limit_tmin must be locally or globally > 0°C"), dhwt->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	// limit_tmax must be > limit_tmin
-	if (SETorDEF(dhwt->set.params.limit_tmax, runtime->config->def_dhwt.limit_tmax) <= temp) {
+	if (SETorDEF(dhwt->set.params.limit_tmax, config->def_dhwt.limit_tmax) <= temp) {
 		pr_err(_("\"%s\": limit_tmax must be locally or globally > limit_tmin"), dhwt->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	if (dhwt->set.anti_legionella) {
-		if (SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella) <= 0) {
+		if (SETorDEF(dhwt->set.params.t_legionella, config->def_dhwt.t_legionella) <= 0) {
 			pr_err(_("\"%s\": anti_legionella is set: t_legionella must be locally or globally > 0°K!"), dhwt->name);
 			ret = -EMISCONFIGURED;
 		}
 	}
 
 	// hysteresis must be > 0K
-	if (SETorDEF(dhwt->set.params.hysteresis, runtime->config->def_dhwt.hysteresis) <= 0) {
+	if (SETorDEF(dhwt->set.params.hysteresis, config->def_dhwt.hysteresis) <= 0) {
 		pr_err(_("\"%s\": hysteresis must be locally or globally > 0°K!"), dhwt->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	// t_frostfree must be > 0C
-	temp = SETorDEF(dhwt->set.params.t_frostfree, runtime->config->def_dhwt.t_frostfree);
+	temp = SETorDEF(dhwt->set.params.t_frostfree, config->def_dhwt.t_frostfree);
 	if (temp <= celsius_to_temp(0)) {
 		pr_err(_("\"%s\": t_frostfree must be locally or globally > 0°C!"), dhwt->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	// t_comfort must be > t_frostfree
-	if (SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort) < temp) {
+	if (SETorDEF(dhwt->set.params.t_comfort, config->def_dhwt.t_comfort) < temp) {
 		pr_err(_("\"%s\": t_comfort must be locally or globally > t_frostfree"), dhwt->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	// t_eco must be > t_frostfree
-	if (SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco) < temp) {
+	if (SETorDEF(dhwt->set.params.t_eco, config->def_dhwt.t_eco) < temp) {
 		pr_err(_("\"%s\": t_eco must be locally or globally > t_frostfree"), dhwt->name);
 		ret = -EMISCONFIGURED;
 	}
@@ -385,14 +385,14 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  */
 int dhwt_run(struct s_dhw_tank * const dhwt)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_config * restrict const config = runtime_get()->config;
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp;
 	bool valid_ttop = false, valid_tbottom = false, test;
 	const timekeep_t now = timekeep_now();
 	timekeep_t limit;
 	int ret;
 
-	assert(runtime);
+	assert(config);
 
 	if (!dhwt)
 		return (-EINVALID);
@@ -477,7 +477,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	if (!dhwt->run.charge_on) {	// no charge in progress
 					// in non-electric mode: prevent charge "pumping", enforce delay between charges
 		if (!dhwt->run.electric_mode) {
-			limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
+			limit = SETorDEF(dhwt->set.params.limit_chargetime, config->def_dhwt.limit_chargetime);
 			if (dhwt->run.charge_overtime) {
 				if (limit && ((now - dhwt->run.mode_since) <= limit))
 					return (ALL_OK); // no further processing, must wait
@@ -495,7 +495,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		if (dhwt->run.force_on)
 			trip_temp = dhwt->run.target_temp - deltaK_to_temp(1);	// if forced charge, force hysteresis at 1K
 		else
-			trip_temp = dhwt->run.target_temp - SETorDEF(dhwt->set.params.hysteresis, runtime->config->def_dhwt.hysteresis);
+			trip_temp = dhwt->run.target_temp - SETorDEF(dhwt->set.params.hysteresis, config->def_dhwt.hysteresis);
 
 		// trip condition
 		if (curr_temp < trip_temp) {
@@ -513,10 +513,10 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			else if (dhwt->pdata->dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
 				dhwt->run.electric_mode = false;
 				// calculate necessary water feed temp: target tank temp + offset
-				water_temp = dhwt->run.target_temp + SETorDEF(dhwt->set.params.temp_inoffset, runtime->config->def_dhwt.temp_inoffset);
+				water_temp = dhwt->run.target_temp + SETorDEF(dhwt->set.params.temp_inoffset, config->def_dhwt.temp_inoffset);
 
 				// enforce limits
-				wintmax = SETorDEF(dhwt->set.params.limit_wintmax, runtime->config->def_dhwt.limit_wintmax);
+				wintmax = SETorDEF(dhwt->set.params.limit_wintmax, config->def_dhwt.limit_wintmax);
 				if (water_temp > wintmax)
 					water_temp = wintmax;
 
@@ -541,7 +541,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		// in non-electric mode and no anti-legionella charge (never interrupt an anti-legionella charge):
 		if (!dhwt->run.electric_mode && !dhwt->run.legionella_on) {
 			// if heating gone overtime, untrip
-			limit = SETorDEF(dhwt->set.params.limit_chargetime, runtime->config->def_dhwt.limit_chargetime);
+			limit = SETorDEF(dhwt->set.params.limit_chargetime, config->def_dhwt.limit_chargetime);
 			if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
 				test = true;
 				dhwt->run.charge_overtime = true;

@@ -17,7 +17,7 @@
 #include <assert.h>
 
 #include "config.h"
-#include "runtime.h"	// for config (read-only)
+#include "runtime.h"	// for runtime_get()->config (read-only)
 #include "lib.h"
 #include "storage.h"
 #include "hardware.h"
@@ -400,27 +400,28 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
  */
 static int bmodel_summer(struct s_bmodel * const bmodel)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_config * restrict const config = runtime_get()->config;
 
+	assert(config);
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
 	if (!bmodel->run.online)	// but not necessarily online
 		return (-EOFFLINE);
 
-	if (!runtime->config->limit_tsummer) {
+	if (!config->limit_tsummer) {
 		bmodel->run.summer = false;
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((bmodel->run.t_out > runtime->config->limit_tsummer)	&&
-	    (bmodel->run.t_out_mix > runtime->config->limit_tsummer)	&&
-	    (bmodel->run.t_out_att > runtime->config->limit_tsummer)) {
+	if ((bmodel->run.t_out > config->limit_tsummer)	&&
+	    (bmodel->run.t_out_mix > config->limit_tsummer)	&&
+	    (bmodel->run.t_out_att > config->limit_tsummer)) {
 		bmodel->run.summer = true;
 	}
 	else {
-		if ((bmodel->run.t_out < runtime->config->limit_tsummer)	&&
-		    (bmodel->run.t_out_mix < runtime->config->limit_tsummer)	&&
-		    (bmodel->run.t_out_att < runtime->config->limit_tsummer))
+		if ((bmodel->run.t_out < config->limit_tsummer)	&&
+		    (bmodel->run.t_out_mix < config->limit_tsummer)	&&
+		    (bmodel->run.t_out_att < config->limit_tsummer))
 			bmodel->run.summer = false;
 	}
 
@@ -437,21 +438,21 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
  */
 static int bmodel_frost(struct s_bmodel * restrict const bmodel)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_config * restrict const config = runtime_get()->config;
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
 	if (!bmodel->run.online)	// but not necessarily online
 		return (-EOFFLINE);
 
-	if (!runtime->config->limit_tfrost) {
+	if (!config->limit_tfrost) {
 		bmodel->run.frost = false;
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((bmodel->run.t_out < runtime->config->limit_tfrost))
+	if ((bmodel->run.t_out < config->limit_tfrost))
 		bmodel->run.frost = true;
-	else if ((bmodel->run.t_out > (runtime->config->limit_tfrost + deltaK_to_temp(1))))
+	else if ((bmodel->run.t_out > (config->limit_tfrost + deltaK_to_temp(1))))
 		bmodel->run.frost = false;
 
 	return (ALL_OK);
