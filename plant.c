@@ -572,22 +572,19 @@ static void plant_onfline_printerr(const enum e_execs errorn, const int devid, c
 
 	pr_err(_("Failure to bring %s %d (\"%s\") %sline:"), devtype, devid, devname, on ? "on" : "off");
 	switch (-errorn) {
-		case -ESENSORINVAL:
-		case -ESENSORSHORT:
-		case -ESENSORDISCON:	// sensor issues
+		case ESENSORINVAL:
+		case ESENSORSHORT:
+		case ESENSORDISCON:	// sensor issues
 			pr_err(_("Mandatory sensor failure (%d)."), errorn);
-			break;
-		case -ENOTCONFIGURED:
-			pr_err(_("Unconfigured %s."), devtype);
-			break;
-		case -EMISCONFIGURED:
-			pr_err(_("Misconfigured %s."), devtype);
-			break;
-		case -ENOTIMPLEMENTED:
-			pr_err(_("Setting not implemented."));
 			break;
 		case ENOTCONFIGURED:
 			pr_err(_("Unconfigured %s."), devtype);
+			break;
+		case EMISCONFIGURED:
+			pr_err(_("Misconfigured %s."), devtype);
+			break;
+		case ENOTIMPLEMENTED:
+			pr_err(_("Setting not implemented."));
 			break;
 		default:
 			pr_err(_("Unknown error (%d)"), errorn);
