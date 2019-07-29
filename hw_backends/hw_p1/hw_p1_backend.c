@@ -29,6 +29,7 @@
 #include "log.h"
 
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
+#define HW_P1_TIMEOUT_TK	(30 * TIMEKEEP_SMULT)	///< hardcoded hardware timeout delay: 30s
 
 /**
  * HW P1 temperatures log callback.
@@ -175,7 +176,7 @@ fail:
 /**
  * Collect inputs from hardware.
  * @note Will process switch inputs.
- * @note Will panic if sensors cannot be read for more than 30s (hardcoded).
+ * @note Will panic if sensors cannot be read for more than HW_P1_TIMEOUT_TK (hardcoded).
  * @param priv private hardware data
  * @return exec status
  * @todo review logic
@@ -296,9 +297,9 @@ skip_periphs:
 	return (ret);
 
 fail:
-	if ((timekeep_now() - hw->run.sensors_ftime) > 30) {
+	if ((timekeep_now() - hw->run.sensors_ftime) >= HW_P1_TIMEOUT_TK) {
 		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
-		alarms_raise(ret, _("Couldn't read sensors for more than 30s"), _("Sensor rd fail!"));
+		alarms_raise(ret, _("Couldn't read sensors: timeout exceeded!"), _("Sensor rd fail!"));
 	}
 
 	return (ret);
@@ -544,7 +545,7 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
  * is within boundaries of the hardware limits and the configured number of sensors.
  * It also checks that the designated sensor is properly configured in software.
  * Finally, if parameter @b tclone is non-null, the temperature of the sensor
- * is copied if it isn't stale (i.e. less than 30s old).
+ * is copied if it isn't stale (i.e. less than HW_P1_TIMEOUT_TK old).
  * @param priv private hardware data
  * @param id target sensor id
  * @param tclone optional location to copy the sensor temperature.
@@ -565,8 +566,8 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 	if (!hw->Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	// make sure available data is valid - XXX 30s timeout hardcoded
-	if ((timekeep_now() - hw->run.sensors_ftime) > 30) {
+	// make sure available data is valid - XXX HW_P1_TIMEOUT_TK timeout hardcoded
+	if ((timekeep_now() - hw->run.sensors_ftime) > HW_P1_TIMEOUT_TK) {
 		if (tclone)
 			*tclone = 0;
 		return (-EHARDWARE);
