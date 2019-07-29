@@ -183,6 +183,7 @@ int alarms_run(void)
 	const timekeep_t dt = now - last;
 	const struct s_alarm * alarm;
 	const char * msg;
+	int count;
 
 	if (!Alarms.online)
 		return (-EOFFLINE);
@@ -192,10 +193,13 @@ int alarms_run(void)
 
 	if (dt >= timekeep_sec_to_tk(60)) {
 		alarm = Alarms.alarm_head;
+		count = Alarms.count;
+
+		pr_log(_("Alarms active in the system (%d), most recent first:"), count);
 
 		while (alarm) {
 			msg = alarm->msg;
-			pr_log(_("ALARM: %s"), msg);
+			pr_log(_("\tALARM #%d: %s"), count--, msg);
 			alarm = alarm->next;
 			last = now;
 		}
