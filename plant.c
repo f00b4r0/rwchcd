@@ -1049,8 +1049,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 
 	// stop running when duration is exceeded (this also prevents running when summer is first triggered)
 	if ((now - plant->run.summer_timer) >= (config->summer_run_interval + config->summer_run_duration)) {
-		if (plant->run.summer_timer)	// avoid displaying message at startup
-			pr_log(_("Summer maintenance completed"));
+		pr_log(_("Summer maintenance completed"));
 		plant->run.summer_timer = now;
 	}
 
