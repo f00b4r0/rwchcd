@@ -155,36 +155,40 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
  * Request a hardware relay.
  * Ensures that the desired hardware relay is available and grabs it.
  * @param hw private hw_p1 hardware data
- * @param id target relay id (starting from 1)
- * @param failstate the state assumed by the hardware relay in standalone failover (controlling software failure)
- * @param name @b unique user-defined name for this relay (string will be copied locally)
+ * @param relay an allocated relay structure which will be used as the configuration source for the new relay
  * @return exec status
  * @note sets relay's run.off_since
  */
-int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const rid_t id, const bool failstate, const char * const name)
+int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_relay * restrict const relay)
 {
 	char * str = NULL;
+	rid_t id;
 
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Relays)) || !name)
+	if (!relay || !relay->name)
+		return (-EUNKNOWN);
+
+	id = relay->set.rid;
+	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
 	if (hw->Relays[id-1].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_rid_by_name(hw, name) > 0)
+	if (hw_p1_rid_by_name(hw, relay->name) > 0)
 		return (-EEXISTS);
 
-	str = strdup(name);
+	str = strdup(relay->name);
 	if (!str)
 		return(-EOOM);
 
 	hw->Relays[id-1].name = str;
 
 	// register failover state
-	hw->Relays[id-1].set.failstate = failstate;
+	hw->Relays[id-1].set.failstate = relay->set.failstate;
+	hw->Relays[id-1].set.rid = id;
 
 	hw->Relays[id-1].run.off_since = timekeep_now();	// relay is by definition OFF since "now"
 

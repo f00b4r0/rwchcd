@@ -19,25 +19,6 @@
 #include "hw_lib.h"
 #include "timekeep.h"
 
-/** software representation of a hw_p1 hardware relay */
-struct s_hw_p1_relay {
-	struct {
-		bool configured;	///< true if properly configured
-		bool failstate;		///< default state assumed by hardware in failsafe mode
-	} set;		///< settings (externally set)
-	struct {
-		bool turn_on;		///< state requested by software
-		bool is_on;		///< current hardware active state
-		timekeep_t on_since;	///< last time on state was triggered, 0 if off
-		timekeep_t off_since;	///< last time off state was triggered, 0 if on
-		timekeep_t state_time;	///< time spent in current state
-		timekeep_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
-		timekeep_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
-		uint_fast32_t cycles;	///< number of power cycles
-	} run;		///< private runtime (internally handled)
-	char * restrict name;		///< @b unique user-defined name for the relay
-};
-
 #define RELAY_MAX_ID		14	///< maximum valid relay id
 
 /** driver runtime data */
@@ -60,7 +41,7 @@ struct s_hw_p1_pdata {
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
 	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to ::Sensors.value
 	struct s_hw_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
-	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
+	struct s_hw_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
 
 extern struct s_hw_p1_pdata Hardware;

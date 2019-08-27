@@ -19,6 +19,7 @@
 #include "filecfg.h"
 #include "filecfg_parser.h"
 #include "lib.h"
+#include "timekeep.h"
 #include "hw_lib.h"
 
 
@@ -182,6 +183,157 @@ int hw_lib_filecfg_sensor_parse(const void * restrict const priv, const struct s
 		filecfg_parser_pr_err(_("Line %d: unknown sensor type \"%s\""), parsers[1].node->lineno, sensor_stype);
 		return (-EUNKNOWN);
 	}
+
+	return (ret);
+}
+
+/**
+ * Dump a hardware relay to config.
+ * @param relay the relay to dump
+ */
+void hw_lib_filecfg_relay_dump(const struct s_hw_relay * const relay)
+{
+	if (!relay->set.configured)
+		return;
+
+	filecfg_iprintf("relay \"%s\" {\n", relay->name);
+	filecfg_ilevel_inc();
+	filecfg_iprintf("rid %d;\n", relay->set.rid);
+	filecfg_iprintf("failstate %s;\n", relay->set.failstate ? "on" : "off");
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+}
+
+/**
+ * Parse a hardware relay from config.
+ * @param priv unused
+ * @param node the configuration node
+ * @param relay an allocated relay structure which will be populated according to parsed configuration
+ * @return exec status
+ */
+int hw_lib_filecfg_relay_parse(const void * restrict const priv, const struct s_filecfg_parser_node * const node, struct s_hw_relay * const relay)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT, "rid", true, NULL, NULL, },
+		{ NODEBOL, "failstate", true, NULL, NULL, },
+	};
+	int ret;
+
+	assert(node);
+	assert(node->value.stringval);
+
+	if (!relay)
+		return (-EINVALID);
+
+	// match children
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// return if invalid config
+
+	relay->name = node->value.stringval;
+	relay->set.rid = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
+	relay->set.failstate = parsers[1].node->value.boolval;
+
+	return (ret);
+}
+
+/**
+ * Set (request) hardware relay state.
+ * @param relay the hardware relay to modify
+ * @param turn_on true if relay is meant to be turned on
+ * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
+ * @return 0 on success, positive number for cooldown wait remaining, negative for error
+ * @note actual (hardware) relay state will only be updated when the hardware is instructed to do so.
+ */
+int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, const timekeep_t change_delay)
+{
+	const timekeep_t now = timekeep_now();
+
+	if (!relay->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// update state state request if delay permits
+	if (turn_on) {
+		if (!relay->run.is_on) {
+			if ((now - relay->run.off_since) < change_delay)
+				return (change_delay - (now - relay->run.off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+
+			relay->run.turn_on = true;
+		}
+	}
+	else {	// turn off
+		if (relay->run.is_on) {
+			if ((now - relay->run.on_since) < change_delay)
+				return (change_delay - (now - relay->run.on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+
+			relay->run.turn_on = false;
+		}
+	}
+
+	return (ALL_OK);
+}
+
+/**
+ * Get (request) hardware relay state.
+ * Updates run.state_time and returns current state
+ * @param relay the hardware relay to read
+ * @return run.is_on
+ */
+int hw_lib_relay_get_state(struct s_hw_relay * const relay)
+{
+	const timekeep_t now = timekeep_now();
+
+	if (!relay->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// update state time counter
+	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
+
+	return (relay->run.is_on);
+}
+
+/**
+ * Update hardware relay state and accounting.
+ * This function is meant to be called immediately before the hardware is updated.
+ * It will update the is_on state of the relay as well as the accounting fields,
+ * assuming the time of the call reflects the time the actual hardware is updated.
+ * @param relay the target relay
+ * @param now the current timestamp
+ * @return #HW_LIB_RCHTURNON if the relay was previously off and turned on, #HW_LIB_RCHTURNOFF if the relay was previously on and turned off,
+ * #HW_LIB_RCHNONE if no state change happened, or negative value for error.
+ */
+int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
+{
+	int ret = HW_LIB_RCHNONE;
+
+	if (!relay->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// update state counters at state change
+	if (relay->run.turn_on) {	// turn on
+		if (!relay->run.is_on) {	// relay is currently off
+			relay->run.cycles++;	// increment cycle count
+			relay->run.is_on = true;
+			relay->run.on_since = now;
+			if (relay->run.off_since)
+				relay->run.off_tottime += now - relay->run.off_since;
+			relay->run.off_since = 0;
+			ret = HW_LIB_RCHTURNON;
+		}
+	}
+	else {	// turn off
+		if (relay->run.is_on) {	// relay is currently on
+			relay->run.is_on = false;
+			relay->run.off_since = now;
+			if (relay->run.on_since)
+				relay->run.on_tottime += now - relay->run.on_since;
+			relay->run.on_since = 0;
+			ret = HW_LIB_RCHTURNOFF;
+		}
+	}
+
+	// update state time counter
+	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 	return (ret);
 }

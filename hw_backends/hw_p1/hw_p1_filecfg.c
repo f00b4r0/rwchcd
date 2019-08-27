@@ -59,7 +59,6 @@ static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw)
 
 static void relays_dump(const struct s_hw_p1_pdata * restrict const hw)
 {
-	const struct s_hw_p1_relay * relay;
 	uint_fast8_t id;
 
 	assert(hw);
@@ -67,18 +66,8 @@ static void relays_dump(const struct s_hw_p1_pdata * restrict const hw)
 	filecfg_iprintf("relays {\n");
 	filecfg_ilevel_inc();
 
-	for (id = 0; id < ARRAY_SIZE(hw->Relays); id++) {
-		relay = &hw->Relays[id];
-		if (!relay->set.configured)
-			continue;
-
-		filecfg_iprintf("relay \"%s\" {\n", relay->name);
-		filecfg_ilevel_inc();
-		filecfg_iprintf("id %d;\n", id+1);
-		filecfg_iprintf("failstate %s;\n", relay->set.failstate ? "on" : "off");
-		filecfg_ilevel_dec();
-		filecfg_iprintf("};\n");
-	}
+	for (id = 0; id < ARRAY_SIZE(hw->Relays); id++)
+		hw_lib_filecfg_relay_dump(&hw->Relays[id]);
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -169,28 +158,18 @@ static int sensors_parse(void * restrict const priv, const struct s_filecfg_pars
 
 static int relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "id", true, NULL, NULL, },
-		{ NODEBOL, "failstate", true, NULL, NULL, },
-	};
-	const char * relay_name;
-	rid_t relay_id;
-	bool failstate;
+	struct s_hw_relay relay;
 	int ret;
 
 	// match children
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	ret = hw_lib_filecfg_relay_parse(priv, node, &relay);
 	if (ALL_OK != ret)
 		return (ret);	// return if invalid config
 
-	relay_name = node->value.stringval;
-	relay_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
-	failstate = parsers[1].node->value.boolval;
-
-	ret = hw_p1_setup_relay_request(priv, relay_id, failstate, relay_name);
+	ret = hw_p1_setup_relay_request(priv, &relay);
 	switch (ret) {
 		case -EINVALID:
-			filecfg_parser_pr_err(_("Line %d: invalid relay id '%d'"), node->lineno, relay_id);
+			filecfg_parser_pr_err(_("Line %d: invalid relay id"), node->lineno);
 			break;
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a relay with the same name or id is already configured"), node->lineno);

@@ -448,13 +448,10 @@ out:
  */
 __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 {
-#define CHNONE		0x00	///< no change
-#define CHTURNON	0x01	///< turn on
-#define CHTURNOFF	0x02	///< turn off
-	struct s_hw_p1_relay * restrict relay;
+	struct s_hw_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const timekeep_t now = timekeep_now();	// we assume the whole thing will take much less than a second
-	uint_fast8_t i, chflags = CHNONE;
+	uint_fast8_t i, chflags = HW_LIB_RCHNONE;
 	int ret = -EGENERIC;
 
 	assert(Hardware.run.online);
@@ -466,34 +463,12 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
 		relay = &Hardware.Relays[i];
 
-		if (!relay->set.configured)
+		// perform relay accounting
+		ret = hw_lib_relay_update(relay, now);
+		if (ret < 0)
 			continue;
-
-		// update state counters at state change
-		if (relay->run.turn_on) {	// turn on
-			if (!relay->run.is_on) {	// relay is currently off
-				relay->run.cycles++;	// increment cycle count
-				relay->run.is_on = true;
-				relay->run.on_since = now;
-				if (relay->run.off_since)
-					relay->run.off_tottime += now - relay->run.off_since;
-				relay->run.off_since = 0;
-				chflags |= CHTURNON;
-			}
-		}
-		else {	// turn off
-			if (relay->run.is_on) {	// relay is currently on
-				relay->run.is_on = false;
-				relay->run.off_since = now;
-				if (relay->run.on_since)
-					relay->run.on_tottime += now - relay->run.on_since;
-				relay->run.on_since = 0;
-				chflags |= CHTURNOFF;
-			}
-		}
-
-		// update state time counter
-		relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
+		else
+			chflags |= ret;
 
 		// update internal structure
 		rwchc_relay_set(&rWCHC_relays, i, relay->run.turn_on);
@@ -502,7 +477,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 	// save/log relays state if there was a change
 	if (chflags) {
 		hw_p1_relays_log();
-		if (chflags & CHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
+		if (chflags & HW_LIB_RCHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
 			// XXX there's no real motive to do this besides lowering storage pressure
 			ret = hw_p1_save_relays();
 			if (ret)

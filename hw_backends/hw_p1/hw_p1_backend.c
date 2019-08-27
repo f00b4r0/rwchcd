@@ -458,8 +458,7 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
 static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const timekeep_t change_delay)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	const timekeep_t now = timekeep_now();
-	struct s_hw_p1_relay * relay = NULL;
+	struct s_hw_relay * relay = NULL;
 
 	assert(hw);
 
@@ -468,42 +467,19 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 
 	relay = &hw->Relays[id-1];
 
-	if (!relay->set.configured)
-		return (-ENOTCONFIGURED);
-
-	// update state state request if delay permits
-	if (turn_on) {
-		if (!relay->run.is_on) {
-			if ((now - relay->run.off_since) < change_delay)
-				return (change_delay - (now - relay->run.off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
-
-			relay->run.turn_on = true;
-		}
-	}
-	else {	// turn off
-		if (relay->run.is_on) {
-			if ((now - relay->run.on_since) < change_delay)
-				return (change_delay - (now - relay->run.on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
-
-			relay->run.turn_on = false;
-		}
-	}
-
-	return (ALL_OK);
+	return (hw_lib_relay_set_state(relay, turn_on, change_delay));
 }
 
 /**
  * Get internal relay state (request).
- * Updates run.state_time and returns current state
  * @param priv private hardware data
  * @param id id of the internal relay to modify
- * @return run.is_on
+ * @return relay state
  */
 static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	const timekeep_t now = timekeep_now();
-	struct s_hw_p1_relay * relay = NULL;
+	struct s_hw_relay * relay = NULL;
 
 	assert(hw);
 
@@ -512,13 +488,7 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
 
 	relay = &hw->Relays[id-1];
 
-	if (!relay->set.configured)
-		return (-ENOTCONFIGURED);
-
-	// update state time counter
-	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
-
-	return (relay->run.is_on);
+	return (hw_lib_relay_get_state(relay));
 }
 
 /**
