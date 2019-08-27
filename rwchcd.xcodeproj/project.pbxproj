@@ -21,6 +21,7 @@
 		4F42A5D91F9687F3001B0A1F /* hcircuit.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5D71F9687F3001B0A1F /* hcircuit.c */; };
 		4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DA1F968AE8001B0A1F /* dhwt.c */; };
 		4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DD1F96AD0A001B0A1F /* boiler.c */; };
+		4F43569C23157AE60030EB89 /* hw_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F43569B23157AE60030EB89 /* hw_lib.c */; };
 		4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */; };
 		4F99FD222088D18500DDAB75 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg.c */; };
 		4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */; };
@@ -82,6 +83,8 @@
 		4F42A5DB1F968AE8001B0A1F /* dhwt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt.h; sourceTree = SOURCE_ROOT; };
 		4F42A5DD1F96AD0A001B0A1F /* boiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = boiler.c; sourceTree = SOURCE_ROOT; };
 		4F42A5DE1F96AD0A001B0A1F /* boiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = boiler.h; sourceTree = SOURCE_ROOT; };
+		4F43569A23157AE60030EB89 /* hw_lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_lib.h; sourceTree = SOURCE_ROOT; };
+		4F43569B23157AE60030EB89 /* hw_lib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_lib.c; sourceTree = SOURCE_ROOT; };
 		4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.lex; path = filecfg_parser.l; sourceTree = SOURCE_ROOT; };
 		4F94475D21DAA14200FCF120 /* filecfg_parser.y */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.yacc; path = filecfg_parser.y; sourceTree = SOURCE_ROOT; };
 		4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_parser.c; sourceTree = SOURCE_ROOT; };
@@ -189,6 +192,8 @@
 				4FC6895C207176F800A3A065 /* hw_backends */,
 				4FC689522071304900A3A065 /* hw_backends.c */,
 				4FC689532071304900A3A065 /* hw_backends.h */,
+				4F43569B23157AE60030EB89 /* hw_lib.c */,
+				4F43569A23157AE60030EB89 /* hw_lib.h */,
 				4FC6894F206FAB4D00A3A065 /* hardware.c */,
 				4FC68950206FAB4D00A3A065 /* hardware.h */,
 				4F42A5CE1F967BC3001B0A1F /* pump.c */,
@@ -337,6 +342,7 @@
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,
+				4F43569C23157AE60030EB89 /* hw_lib.c in Sources */,
 				4F299C9221AABD2C009DCBC2 /* log.c in Sources */,
 				4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */,
 				4FC68951206FAB4D00A3A065 /* hardware.c in Sources */,

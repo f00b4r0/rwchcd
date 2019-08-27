@@ -17,6 +17,7 @@
 #include "lib.h"
 #include "filecfg.h"
 #include "filecfg_parser.h"
+#include "hw_lib.h"
 #include "hw_p1.h"
 #include "hw_p1_setup.h"
 #include "hw_p1_backend.h"
@@ -39,8 +40,6 @@ static void config_dump(const struct s_hw_p1_pdata * restrict const hw)
 
 static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw)
 {
-	const struct s_hw_p1_sensor * sensor;
-	const char * type;
 	int_fast8_t id;
 
 	assert(hw);
@@ -51,32 +50,8 @@ static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw)
 	filecfg_iprintf("sensors {\n");
 	filecfg_ilevel_inc();
 
-	for (id = 0; id < hw->settings.nsensors; id++) {
-		sensor = &hw->Sensors[id];
-		if (!sensor->set.configured)
-			continue;
-
-		switch (sensor->set.type) {
-			case ST_PT1000:
-				type = "PT1000";
-				break;
-			case ST_NI1000:
-				type = "NI1000";
-				break;
-			default:
-				type = "";
-				break;
-		}
-
-		filecfg_iprintf("sensor \"%s\" {\n", sensor->name);
-		filecfg_ilevel_inc();
-		filecfg_iprintf("id %d;\n", id+1);
-		filecfg_iprintf("type \"%s\";\n", type);
-		if (FCD_Exhaustive || sensor->set.offset)
-			filecfg_iprintf("offset %.1f;\n", temp_to_deltaK(sensor->set.offset));
-		filecfg_ilevel_dec();
-		filecfg_iprintf("};\n");
-	}
+	for (id = 0; id < hw->settings.nsensors; id++)
+		hw_lib_filecfg_sensor_dump(&hw->Sensors[id]);
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -165,44 +140,17 @@ static int parse_type(void * restrict const priv, const struct s_filecfg_parser_
 
 static int sensor_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "id", true, NULL, NULL, },
-		{ NODESTR, "type", true, NULL, NULL, },
-		{ NODEFLT|NODEINT, "offset", false, NULL, NULL, },
-	};
-	const char * sensor_name, *sensor_model;
-	float sensor_offset;
-	sid_t sensor_id;
-	enum e_hw_p1_stype stype;
+	struct s_hw_sensor sensor;
 	int ret;
 
-	// match children
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	ret = hw_lib_filecfg_sensor_parse(priv, node, &sensor);
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	sensor_name = node->value.stringval;
-	sensor_id = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
-	sensor_model = parsers[1].node->value.stringval;
-	if (parsers[2].node)
-		sensor_offset = (NODEFLT == parsers[2].node->type) ? parsers[2].node->value.floatval : parsers[2].node->value.intval;
-	else
-		sensor_offset = 0;
-
-	// match stype - XXX TODO REWORK
-	if (!strcmp("PT1000", sensor_model))
-		stype = ST_PT1000;
-	else if (!strcmp("NI1000", sensor_model))
-		stype = ST_NI1000;
-	else {
-		filecfg_parser_pr_err(_("Line %d: unknown sensor type \"%s\""), parsers[1].node->lineno, sensor_model);
-		return (-EUNKNOWN);
-	}
-
-	ret = hw_p1_setup_sensor_configure(priv, sensor_id, stype, deltaK_to_temp(sensor_offset), sensor_name);
+	ret = hw_p1_setup_sensor_configure(priv, &sensor);
 	switch (ret) {
 		case -EINVALID:
-			filecfg_parser_pr_err(_("Line %d: invalid sensor id '%d'"), node->lineno, sensor_id);
+			filecfg_parser_pr_err(_("Line %d: invalid sensor type or id"), node->lineno);
 			break;
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a sensor with the same name or id is already configured"), node->lineno);

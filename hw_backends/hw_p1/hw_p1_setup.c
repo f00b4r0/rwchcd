@@ -87,42 +87,42 @@ int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint
 /**
  * Configure a temperature sensor.
  * @param hw private hw_p1 hardware data
- * @param id the physical id of the sensor to configure (starting from 1)
- * @param type the sensor type (PT1000...)
- * @param offset a temperature offset to apply to this particular sensor value
- * @param name @b unique user-defined name describing the sensor
+ * @param sensor an allocated sensor structure which will be used as the configuration source for the new sensor
  * @return exec status
  */
-int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const sid_t id, const enum e_hw_p1_stype type, const temp_t offset, const char * const name)
+int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_sensor * restrict const sensor)
 {
 	char * str = NULL;
+	sid_t id;
 
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Sensors)) || !name)
+	if (!sensor || !sensor->name)
+		return (-EUNKNOWN);
+
+	id = sensor->set.sid;
+	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
 	if (hw->Sensors[id-1].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_sid_by_name(hw, name) > 0)
+	if (hw_p1_sid_by_name(hw, sensor->name) > 0)
 		return (-EEXISTS);
 
-	str = strdup(name);
+	// ensure valid type
+	if (!hw_lib_sensor_o_to_c(sensor->set.type))
+		return (-EINVALID);
+
+	str = strdup(sensor->name);
 	if (!str)
 		return(-EOOM);
 
-	hw->Sensors[id-1].ohm_to_celsius = hw_p1_sensor_o_to_c(type);
-
-	if (!hw->Sensors[id-1].ohm_to_celsius) {
-		free(str);
-		return (-EINVALID);
-	}
-
 	hw->Sensors[id-1].name = str;
-	hw->Sensors[id-1].set.type = type;
-	hw->Sensors[id-1].set.offset = offset;
+	hw->Sensors[id-1].set.sid = id;
+	hw->Sensors[id-1].set.type = sensor->set.type;
+	hw->Sensors[id-1].set.offset = sensor->set.offset;
 	hw->Sensors[id-1].set.configured = true;
 
 	return (ALL_OK);

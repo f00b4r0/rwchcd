@@ -14,6 +14,8 @@
 #ifndef filecfg_h
 #define filecfg_h
 
+#include <stdbool.h>
+
 extern bool FCD_Exhaustive;	///< If true, the exhaustive configuration will be printed (includes unconfigured fields).
 
 int filecfg_printf_wrapper(const bool indent, const char * restrict format, ...);

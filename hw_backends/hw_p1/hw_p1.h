@@ -16,15 +16,8 @@
 
 #include "rwchcd.h"
 #include "rwchc_export.h"
+#include "hw_lib.h"
 #include "timekeep.h"
-
-/** valid types of temperature sensors */
-enum e_hw_p1_stype {
-	ST_PT1000,	///< PT1000 sensor. Config "PT1000"
-	ST_NI1000,	///< NI1000 sensor. Config "NI1000"
-	/*	ST_PT100,
-	 ST_LGNI1000, */
-};
 
 /** software representation of a hw_p1 hardware relay */
 struct s_hw_p1_relay {
@@ -43,22 +36,6 @@ struct s_hw_p1_relay {
 		uint_fast32_t cycles;	///< number of power cycles
 	} run;		///< private runtime (internally handled)
 	char * restrict name;		///< @b unique user-defined name for the relay
-};
-
-typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
-
-/** software representation of a hw_p1 hardware sensor */
-struct s_hw_p1_sensor {
-	struct {
-		bool configured;	///< sensor is configured
-		enum e_hw_p1_stype type;///< sensor type
-		temp_t offset;		///< sensor value offset
-	} set;		///< settings (externally set)
-	struct {
-		temp_t value;		///< sensor current temperature value (offset applied)
-	} run;		///< private runtime (internally handled)
-	ohm_to_celsius_ft * ohm_to_celsius;
-	char * restrict name;		///< @b unique user-defined name for the sensor
 };
 
 #define RELAY_MAX_ID		14	///< maximum valid relay id
@@ -82,7 +59,7 @@ struct s_hw_p1_pdata {
 	union rwchc_u_periphs peripherals;	///< local copy of hardware peripheral data
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
 	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to ::Sensors.value
-	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
+	struct s_hw_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
 
@@ -99,7 +76,5 @@ int hw_p1_rwchcperiphs_read(void);
 
 int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name);
 int hw_p1_rid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name);
-
-ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const enum e_hw_p1_stype type);
 
 #endif /* rwchcd_hw_p1_h */
