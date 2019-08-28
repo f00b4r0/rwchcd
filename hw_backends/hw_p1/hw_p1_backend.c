@@ -107,7 +107,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	pr_log(_("HWP1: Firmware version %d detected"), ret);
 	hw->run.fwversion = ret;
 	hw->run.initialized = true;
-	hw_p1_lcd_init();
+	hw_p1_lcd_init(&hw->lcd);
 
 	return (ALL_OK);
 }
@@ -162,7 +162,7 @@ static int hw_p1_online(void * priv)
 	if (ALL_OK == ret)
 		pr_log(_("HWP1: Hardware state restored"));
 
-	hw_p1_lcd_online();
+	hw_p1_lcd_online(&hw->lcd);
 
 	log_register(&HW_P1_temps_lsrc);
 
@@ -208,7 +208,7 @@ static int hw_p1_input(void * priv)
 		pr_log(_("Hardware in alarm"));
 		// clear alarm
 		hw->peripherals.i_alarm = 0;
-		hw_p1_lcd_reset();
+		hw_p1_lcd_reset(&hw->lcd);
 		// XXX reset runtime?
 	}
 
@@ -235,7 +235,7 @@ static int hw_p1_input(void * priv)
 		if (cursysmode >= SYS_UNKNOWN)	// last valid mode
 			cursysmode = SYS_NONE + 1;	// first valid mode
 
-		hw_p1_lcd_sysmode_change(cursysmode);	// update LCD
+		hw_p1_lcd_sysmode_change(&hw->lcd, cursysmode);	// update LCD
 	}
 
 	if (!systout) {
@@ -263,7 +263,7 @@ static int hw_p1_input(void * priv)
 		if (tempid > hw->settings.nsensors)
 			tempid = 1;
 
-		hw_p1_lcd_set_tempid(tempid);	// update sensor
+		hw_p1_lcd_set_tempid(&hw->lcd, tempid);	// update sensor
 	}
 
 	// trigger timed backlight
@@ -321,7 +321,7 @@ static int hw_p1_output(void * priv)
 		return (-EOFFLINE);
 
 	// update LCD
-	ret = hw_p1_lcd_run(&hw->spi);
+	ret = hw_p1_lcd_run(&hw->lcd, &hw->spi);
 	if (ALL_OK != ret)
 		dbgerr("hw_p1_lcd_run failed (%d)", ret);
 
@@ -361,7 +361,7 @@ static int hw_p1_offline(void * priv)
 
 	log_deregister(&HW_P1_temps_lsrc);
 
-	hw_p1_lcd_offline();
+	hw_p1_lcd_offline(&hw->lcd);
 
 	// turn off each known hardware relay
 	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
@@ -407,7 +407,7 @@ static void hw_p1_exit(void * priv)
 	if (!hw->run.initialized)
 		return;
 
-	hw_p1_lcd_exit();
+	hw_p1_lcd_exit(&hw->lcd);
 
 	// cleanup all resources
 	for (i = 1; i <= ARRAY_SIZE(hw->Relays); i++)
