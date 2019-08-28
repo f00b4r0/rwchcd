@@ -41,8 +41,6 @@
 
 static const storage_version_t Hardware_sversion = 2;
 
-struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
-
 /**
  * Log relays change.
  * @param hw HW P1 private data

@@ -68,15 +68,26 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	return (ALL_OK);
 }
 
-/** HW P1 log source. @bug uses #Hardware */
-static const struct s_log_source HW_P1_temps_lsrc = {
-	.log_sched = LOG_SCHED_1mn,
-	.basename = "hw_p1_",
-	.identifier = "temps",
-	.version = 2,
-	.logdata_cb = hw_p1_temps_logdata_cb,
-	.object = &Hardware,
-};
+/**
+ * Provide a well formatted log source for HW P1 temps.
+ * @param hw HW P1 private data
+ * @return (statically allocated) s_log_source pointer
+ * @bug hardcoded basename/identifier will collide if multiple instances.
+ */
+static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const hw)
+{
+	static struct s_log_source HW_P1_temps_lsrc;
+
+	HW_P1_temps_lsrc = (struct s_log_source){
+		.log_sched = LOG_SCHED_1mn,
+		.basename = "hw_p1_",
+		.identifier = "temps",
+		.version = 2,
+		.logdata_cb = hw_p1_temps_logdata_cb,
+		.object = hw,
+	};
+	return (&HW_P1_temps_lsrc);
+}
 
 /**
  * Initialize hardware and ensure connection is set
@@ -164,7 +175,7 @@ static int hw_p1_online(void * priv)
 
 	hw_p1_lcd_online(&hw->lcd);
 
-	log_register(&HW_P1_temps_lsrc);
+	log_register(hw_p1_lreg(hw));
 
 	hw->run.online = true;
 	ret = ALL_OK;
@@ -359,7 +370,7 @@ static int hw_p1_offline(void * priv)
 	if (!hw->run.online)
 		return (-EOFFLINE);
 
-	log_deregister(&HW_P1_temps_lsrc);
+	log_deregister(hw_p1_lreg(hw));
 
 	hw_p1_lcd_offline(&hw->lcd);
 

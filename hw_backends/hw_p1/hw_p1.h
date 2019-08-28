@@ -48,8 +48,6 @@ struct s_hw_p1_pdata {
 	struct s_hw_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
 
-extern struct s_hw_p1_pdata Hardware;
-
 int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw);

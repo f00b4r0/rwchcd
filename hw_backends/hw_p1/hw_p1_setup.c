@@ -20,6 +20,8 @@
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0		///< RaspberryPi SPI channel 0
 
+static struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
+
 /**
  * Initialize local data.
  * Cannot fail.
