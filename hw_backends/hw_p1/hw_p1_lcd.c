@@ -348,14 +348,14 @@ static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 
 int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
 //* XXX quick hack for LCD
-static const char * hw_p1_temp_to_str(const sid_t tempid)
+static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, const sid_t tempid)
 {
 	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
 	temp_t temp;
 	float celsius;
 	int ret;
 
-	ret = hw_p1_sensor_clone_temp(&Hardware, tempid, &temp);
+	ret = hw_p1_sensor_clone_temp(hw, tempid, &temp);
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISION))
  #error Non representable minimum temperature
@@ -376,7 +376,7 @@ static const char * hw_p1_temp_to_str(const sid_t tempid)
 }
 
 // XXX quick hack
-static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd)
+static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata * restrict const hw)
 {
 	const enum e_systemmode systemmode = runtime_get()->systemmode;
 	static uint8_t buf[LCD_LINELEN];
@@ -395,7 +395,7 @@ static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd)
 			lcd->sysmchg = false;
 	}
 	else
-		memcpy(buf+6, hw_p1_temp_to_str(lcd->sensor), 9);
+		memcpy(buf+6, hw_p1_temp_to_str(hw, lcd->sensor), 9);
 
 	return (hw_p1_lcd_wline(lcd, buf, LCD_LINELEN, 0, 0));
 }
@@ -452,9 +452,10 @@ int hw_p1_lcd_sysmode_change(struct s_hw_p1_lcd * const lcd, enum e_systemmode n
  * @param spi HW P1 spi private data
  * @return exec status
  */
-int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi)
+int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi, void * restrict const hwpriv)
 {
 	static char alarml1[LCD_LINELEN];
+	struct s_hw_p1_pdata * restrict const hw = hwpriv;
 	const char * alarm_msg16;
 	int alcnt;
 	size_t len;
@@ -475,7 +476,7 @@ int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi
 	}
 	else {
 		hw_p1_lcd_handle2ndline(lcd, false);
-		hw_p1_lcd_line1(lcd);
+		hw_p1_lcd_line1(lcd, hw);
 	}
 
 	hw_p1_lcd_update(lcd, spi, lcd->reset);

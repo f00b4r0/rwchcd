@@ -37,7 +37,7 @@ int hw_p1_lcd_reset(struct s_hw_p1_lcd * const lcd);
 int hw_p1_lcd_set_tempid(struct s_hw_p1_lcd * const lcd, const sid_t tempid);
 int hw_p1_lcd_sysmode_change(struct s_hw_p1_lcd * const lcd, enum e_systemmode newsysmode);
 int hw_p1_lcd_fade(struct s_hw_p1_spi * const spi);
-int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi);
+int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi, void * restrict const hwpriv);
 int hw_p1_lcd_offline(struct s_hw_p1_lcd * const lcd);
 void hw_p1_lcd_exit(struct s_hw_p1_lcd * const lcd);
 

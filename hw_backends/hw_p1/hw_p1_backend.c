@@ -321,7 +321,7 @@ static int hw_p1_output(void * priv)
 		return (-EOFFLINE);
 
 	// update LCD
-	ret = hw_p1_lcd_run(&hw->lcd, &hw->spi);
+	ret = hw_p1_lcd_run(&hw->lcd, &hw->spi, hw);
 	if (ALL_OK != ret)
 		dbgerr("hw_p1_lcd_run failed (%d)", ret);
 
