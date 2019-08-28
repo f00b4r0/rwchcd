@@ -21,8 +21,8 @@ int hw_p1_lcd_online(void);
 int hw_p1_lcd_reset(void);
 int hw_p1_lcd_set_tempid(const sid_t tempid);
 int hw_p1_lcd_sysmode_change(enum e_systemmode newsysmode);
-int hw_p1_lcd_fade(void);
-int hw_p1_lcd_run(void);
+int hw_p1_lcd_fade(struct s_hw_p1_spi * const spi);
+int hw_p1_lcd_run(struct s_hw_p1_spi * const spi);
 int hw_p1_lcd_offline(void);
 void hw_p1_lcd_exit(void);
 

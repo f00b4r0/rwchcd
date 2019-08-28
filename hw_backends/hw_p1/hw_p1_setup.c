@@ -17,6 +17,9 @@
 
 #include "hw_p1_setup.h"
 
+#define SPICLOCK	1000000		///< SPI clock 1MHz
+#define SPICHAN		0		///< RaspberryPi SPI channel 0
+
 /**
  * Initialize local data.
  * Cannot fail.
@@ -26,6 +29,9 @@ void * hw_p1_setup_new(void)
 {
 	memset(&Hardware, 0x0, sizeof(Hardware));
 	pthread_rwlock_init(&Hardware.Sensors_rwlock, NULL);
+
+	Hardware.spi.set.chan = SPICHAN;
+	Hardware.spi.set.clock = SPICLOCK;
 
 	return (&Hardware);
 }

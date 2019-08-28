@@ -48,44 +48,48 @@ static struct {
 
 /**
  * Grab LCD control from the device firmware.
+ * @param spi HW P1 spi private data
  * @return exec status
  */
-static int hw_p1_lcd_grab(void)
+static int hw_p1_lcd_grab(struct s_hw_p1_spi * const spi)
 {
-	return (hw_p1_spi_lcd_acquire());
+	return (hw_p1_spi_lcd_acquire(spi));
 }
 
 /**
  * Release LCD control from the device firmware.
+ * @param spi HW P1 spi private data
  * @return exec status
  */
-static int hw_p1_lcd_release(void)
+static int hw_p1_lcd_release(struct s_hw_p1_spi * const spi)
 {
 	if (LCD.L2mngd)
 		return (ALL_OK);	// never relinquish if L2 is managed
 
-	return (hw_p1_spi_lcd_relinquish());
+	return (hw_p1_spi_lcd_relinquish(spi));
 }
 
 /**
  * Request LCD fadeout from firmware.
+ * @param spi HW P1 spi private data
  * @return exec status
  */
-int hw_p1_lcd_fade(void)
+int hw_p1_lcd_fade(struct s_hw_p1_spi * const spi)
 {
-	return (hw_p1_spi_lcd_fade());
+	return (hw_p1_spi_lcd_fade(spi));
 }
 
 /**
  * Clear LCD display
+ * @param spi HW P1 spi private data
  * @return exec status
  */
-static int hw_p1_lcd_dispclear(void)
+static int hw_p1_lcd_dispclear(struct s_hw_p1_spi * const spi)
 {
 	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
 	memset(LCD.Line1Cur, ' ', LCD_LINELEN);
 
-	return (hw_p1_spi_lcd_cmd_w(0x01));
+	return (hw_p1_spi_lcd_cmd_w(spi, 0x01));
 }
 
 /**
@@ -179,11 +183,12 @@ static int hw_p1_lcd_wline(const uint8_t * restrict const data, const uint_fast8
 
 /**
  * Update an LCD line
+ * @param spi HW P1 spi private data
  * @param linenb the target line to update (from 0)
  * @param force force refresh of entire line
  * @return exec status
  */
-static int hw_p1_lcd_uline(const uint_fast8_t linenb, const bool force)
+static int hw_p1_lcd_uline(struct s_hw_p1_spi * const spi, const uint_fast8_t linenb, const bool force)
 {
 	int ret = ALL_OK;
 	uint_fast8_t id;
@@ -224,7 +229,7 @@ static int hw_p1_lcd_uline(const uint_fast8_t linenb, const bool force)
 	//dbgmsg("update line %d from pos %d", linenb+1, id+1);
 	
 	// grab LCD
-	ret = hw_p1_lcd_grab();
+	ret = hw_p1_lcd_grab(spi);
 	if (ret)
 		return (ret);
 	
@@ -232,13 +237,13 @@ static int hw_p1_lcd_uline(const uint_fast8_t linenb, const bool force)
 	addr += id;
 	addr |= 0b10000000;	// DDRAM op
 	
-	ret = hw_p1_spi_lcd_cmd_w(addr);
+	ret = hw_p1_spi_lcd_cmd_w(spi, addr);
 	if (ret)
 		return (ret);
 	
 	// write data from Buf and update Cur - id already set
 	for (; id < LCD_LINELEN; id++) {
-		ret = hw_p1_spi_lcd_data_w(buf[id]);
+		ret = hw_p1_spi_lcd_data_w(spi, buf[id]);
 		if (ret)
 			return (ret);
 		//dbgmsg("sending: %c", buf[id]);
@@ -247,7 +252,7 @@ static int hw_p1_lcd_uline(const uint_fast8_t linenb, const bool force)
 	}
 	
 	// release LCD
-	ret = hw_p1_lcd_release();
+	ret = hw_p1_lcd_release(spi);
 	
 	return (ret);
 }
@@ -280,10 +285,11 @@ int hw_p1_lcd_online(void)
 
 /**
  * Update LCD display
+ * @param spi HW P1 spi private data
  * @param force force refresh of entire display
  * @return exec status
  */
-int hw_p1_lcd_update(const bool force)
+int hw_p1_lcd_update(struct s_hw_p1_spi * const spi, const bool force)
 {
 	bool l2force = force;
 	int ret;
@@ -291,7 +297,7 @@ int hw_p1_lcd_update(const bool force)
 	if (!LCD.online)
 		return (-EOFFLINE);
 	
-	ret = hw_p1_lcd_uline(0, force);
+	ret = hw_p1_lcd_uline(spi, 0, force);
 	if (ret)
 		goto out;
 	
@@ -300,7 +306,7 @@ int hw_p1_lcd_update(const bool force)
 			l2force = true;
 			LCD.L2mngd_prev = true;
 		}
-		ret = hw_p1_lcd_uline(1, l2force);
+		ret = hw_p1_lcd_uline(spi, 1, l2force);
 	}
 
 out:
@@ -444,9 +450,10 @@ int hw_p1_lcd_sysmode_change(enum e_systemmode newsysmode)
 
 /**
  * Run the LCD subsystem.
+ * @param spi HW P1 spi private data
  * @return exec status
  */
-int hw_p1_lcd_run(void)
+int hw_p1_lcd_run(struct s_hw_p1_spi * const spi)
 {
 	static char alarml1[LCD_LINELEN];
 	const char * alarm_msg16;
@@ -472,7 +479,7 @@ int hw_p1_lcd_run(void)
 		hw_p1_lcd_line1();
 	}
 
-	hw_p1_lcd_update(LCD.reset);
+	hw_p1_lcd_update(spi, LCD.reset);
 
 	LCD.reset = false;
 
@@ -481,6 +488,7 @@ int hw_p1_lcd_run(void)
 
 /**
  * Take LCD subsystem offline.
+ * @param spi HW P1 spi private data
  * @return exec status
  */
 int hw_p1_lcd_offline(void)
@@ -491,6 +499,7 @@ int hw_p1_lcd_offline(void)
 
 /**
  * LCD exit routine
+ * @param spi HW P1 spi private data
  */
 void hw_p1_lcd_exit(void)
 {

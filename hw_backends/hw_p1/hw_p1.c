@@ -326,7 +326,7 @@ int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw)
 	hw_p1_rwchcsettings_deffail(hw);
 	
 	// grab current config from the hardware
-	ret = hw_p1_spi_settings_r(&hw_set);
+	ret = hw_p1_spi_settings_r(&hw->spi, &hw_set);
 	if (ret)
 		goto out;
 	
@@ -334,12 +334,12 @@ int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw)
 		return (ALL_OK); // don't wear flash down if unnecessary
 	
 	// commit hardware config
-	ret = hw_p1_spi_settings_w(&(hw->settings));
+	ret = hw_p1_spi_settings_w(&hw->spi, &(hw->settings));
 	if (ret)
 		goto out;
 
 	// check that the data is correct on target
-	ret = hw_p1_spi_settings_r(&hw_set);
+	ret = hw_p1_spi_settings_r(&hw->spi, &hw_set);
 	if (ret)
 		goto out;
 
@@ -349,7 +349,7 @@ int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw)
 	}
 	
 	// save hardware config
-	ret = hw_p1_spi_settings_s();
+	ret = hw_p1_spi_settings_s(&hw->spi);
 
 	dbgmsg("HW Config saved.");
 	
@@ -378,7 +378,7 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 		return (ALL_OK);
 
 	ref = 0;
-	ret = hw_p1_spi_ref_r(&ref, 0);
+	ret = hw_p1_spi_ref_r(&hw->spi, &ref, 0);
 	if (ret)
 		return (ret);
 
@@ -391,7 +391,7 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 		return (-EINVALID);
 
 	ref = 0;
-	ret = hw_p1_spi_ref_r(&ref, 1);
+	ret = hw_p1_spi_ref_r(&hw->spi, &ref, 1);
 	if (ret)
 		return (ret);
 
@@ -436,7 +436,7 @@ int hw_p1_sensors_read(struct s_hw_p1_pdata * restrict const hw)
 	assert(hw->run.initialized);
 
 	for (sensor = 0; sensor < hw->settings.nsensors; sensor++) {
-		ret = hw_p1_spi_sensor_r(hw->sensors, sensor);
+		ret = hw_p1_spi_sensor_r(&hw->spi, hw->sensors, sensor);
 		if (ret)
 			goto out;
 	}
@@ -497,7 +497,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 	}
 	
 	// send new state to hardware
-	ret = hw_p1_spi_relays_w(&rWCHC_relays);
+	ret = hw_p1_spi_relays_w(&hw->spi, &rWCHC_relays);
 
 	// update internal runtime state on success
 	if (ALL_OK == ret)
@@ -514,7 +514,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 __attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_write(struct s_hw_p1_pdata * restrict const hw)
 {
 	assert(hw->run.online);
-	return (hw_p1_spi_peripherals_w(&(hw->peripherals)));
+	return (hw_p1_spi_peripherals_w(&hw->spi, &(hw->peripherals)));
 }
 
 /**
@@ -525,7 +525,7 @@ __attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs
 __attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_read(struct s_hw_p1_pdata * restrict const hw)
 {
 	assert(hw->run.online);
-	return (hw_p1_spi_peripherals_r(&(hw->peripherals)));
+	return (hw_p1_spi_peripherals_r(&hw->spi, &(hw->peripherals)));
 }
 
 /**

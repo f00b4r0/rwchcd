@@ -91,12 +91,12 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	if (!hw)
 		return (-EINVALID);
 
-	if (hw_p1_spi_init() < 0)
+	if (hw_p1_spi_init(&hw->spi) < 0)
 		return (-EINIT);
 
 	// fetch firmware version
 	do {
-		ret = hw_p1_spi_fwversion();
+		ret = hw_p1_spi_fwversion(&hw->spi);
 	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
 
 	if (ret <= 0) {
@@ -270,7 +270,7 @@ static int hw_p1_input(void * priv)
 	if (count) {
 		hw->peripherals.o_LCDbl = 1;
 		if (!--count)
-			hw_p1_lcd_fade();	// apply fadeout
+			hw_p1_lcd_fade(&hw->spi);	// apply fadeout
 	}
 	else
 		hw->peripherals.o_LCDbl = 0;
@@ -321,7 +321,7 @@ static int hw_p1_output(void * priv)
 		return (-EOFFLINE);
 
 	// update LCD
-	ret = hw_p1_lcd_run();
+	ret = hw_p1_lcd_run(&hw->spi);
 	if (ALL_OK != ret)
 		dbgerr("hw_p1_lcd_run failed (%d)", ret);
 
@@ -418,7 +418,7 @@ static void hw_p1_exit(void * priv)
 		hw_p1_setup_sensor_deconfigure(hw, i);
 
 	// reset the hardware
-	ret = hw_p1_spi_reset();
+	ret = hw_p1_spi_reset(&hw->spi);
 	if (ret)
 		dbgerr("reset failed (%d)", ret);
 

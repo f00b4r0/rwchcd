@@ -16,6 +16,7 @@
 
 #include "rwchcd.h"
 #include "rwchc_export.h"
+#include "hw_p1_spi.h"
 #include "hw_lib.h"
 #include "timekeep.h"
 
@@ -35,6 +36,7 @@ struct s_hw_p1_pdata {
 		uint_fast16_t calib_dac;	///< sensor calibration value with dac offset (as on ohm value read)
 		int fwversion;			///< firmware version
 	} run;		///< private runtime (internally handled)
+	struct s_hw_p1_spi spi;			///< spi runtime
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data
 	union rwchc_u_relays relays;		///< local copy of hardware relays data
 	union rwchc_u_periphs peripherals;	///< local copy of hardware peripheral data

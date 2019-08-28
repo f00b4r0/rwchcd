@@ -35,8 +35,6 @@
 
 #define SPIDELAYUS	100		///< time (us) between 2 consecutive SPI exchanges: 100us -> 10kchar/s SPI rate, allows 800 ISNS on the PIC
 #define SPIRESYNCMAX	250		///< max resync tries -> terminal delay ~125ms including 100us SPIDELAYUS for each exchange
-#define SPICLOCK	1000000		///< SPI clock 1MHz
-#define SPICHAN		0		///< RaspberryPi SPI channel 0
 /**
  * SPI Mode.
  * See https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus#Clock_polarity_and_phase
@@ -56,7 +54,7 @@
 #define USLEEPLCDFAST	50		///< expected completion time (us) for most LCD ops
 #define USLEEPLCDSLOW	2000		///< expected completion time (us) for clear/home cmds
 
-#define SPI_ASSERT(emit, expect)	(SPI_rw8bit(emit) == (uint8_t)expect)	///< send emit and ensure we received expect
+#define SPI_ASSERT(spi, emit, expect)	(SPI_rw8bit(spi, emit) == (uint8_t)expect)	///< send emit and ensure we received expect
 
 /**
  * SPI resync routine.
@@ -68,26 +66,24 @@
  * approximately 100ms. Adding the embedded delay of SPI_rw8bit() (100us), this adds
  * 25ms to this number.
  */
-#define SPI_RESYNC(cmd)								\
+#define SPI_RESYNC(spi, cmd)								\
 		({								\
-		spitout = SPIRESYNCMAX;						\
-		while ((SPI_rw8bit(RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && spitout) usleep((SPIRESYNCMAX - spitout--)*4);	\
-		if (spitout) SPI_rw8bit(cmd);	/* consumes the last SYNCACK */	\
+		spi->run.spitout = SPIRESYNCMAX;						\
+		while ((SPI_rw8bit(spi, RWCHC_SPIC_SYNCREQ) != RWCHC_SPIC_SYNCACK) && spi->run.spitout) usleep((SPIRESYNCMAX - spi->run.spitout--)*4);	\
+		if (spi->run.spitout) SPI_rw8bit(spi, cmd);	/* consumes the last SYNCACK */	\
 		})
-
-static int_fast16_t spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
-static int FWversion = 0;	///< detected firmware version
 
 /**
  * Exchange 8bit data over SPI.
+ * @param spi HW P1 spi private data
  * @param data data to send
  * @return data received
  */
-static uint8_t SPI_rw8bit(const uint8_t data)
+static uint8_t SPI_rw8bit(const struct s_hw_p1_spi * const spi, const uint8_t data)
 {
 	static uint8_t exch;
 	exch = data;
-	wiringPiSPIDataRW(SPICHAN, &exch, 1);
+	wiringPiSPIDataRW(spi->set.chan, &exch, 1);
 	usleep(SPIDELAYUS);
 	return exch;
 }
@@ -98,30 +94,31 @@ static uint8_t SPI_rw8bit(const uint8_t data)
  * if this function fails more than a reasonnable number of tries then there's a good
  * chance the device is not connected.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @return error status
  */
-int hw_p1_spi_keepalive(void)
+int hw_p1_spi_keepalive(struct s_hw_p1_spi * const spi)
 {
-	SPI_RESYNC(RWCHC_SPIC_KEEPALIVE);
+	SPI_RESYNC(spi, RWCHC_SPIC_KEEPALIVE);
 
-	if (SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_ALIVE))
+	if (SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_ALIVE))
 		return (ALL_OK);
 	else
 		return (-ESPI);
 }
 
-static int _spi_fwversion(void)
+static int _spi_fwversion(struct s_hw_p1_spi * const spi)
 {
 	int ret;
 
-	SPI_RESYNC(RWCHC_SPIC_VERSION);
+	SPI_RESYNC(spi, RWCHC_SPIC_VERSION);
 
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 
-	ret = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	ret = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);
 
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_VERSION))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_VERSION))
 		ret = -ESPI;
 
 	return ret;
@@ -130,31 +127,33 @@ static int _spi_fwversion(void)
 /**
  * Retrieve firmware version number.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @return negative error code or positive version number
  */
-int hw_p1_spi_fwversion(void)
+int hw_p1_spi_fwversion(struct s_hw_p1_spi * const spi)
 {
-	if (FWversion <= 0)
-		FWversion = _spi_fwversion();
+	if (spi->run.FWversion <= 0)
+		spi->run.FWversion = _spi_fwversion(spi);
 
-	return (FWversion);
+	return (spi->run.FWversion);
 }
 
 /**
  * Acquire control over LCD display.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @return error code
  */
-int hw_p1_spi_lcd_acquire(void)
+int hw_p1_spi_lcd_acquire(struct s_hw_p1_spi * const spi)
 {
 	int ret = ALL_OK;
 	
-	SPI_RESYNC(RWCHC_SPIC_LCDACQR);
+	SPI_RESYNC(spi, RWCHC_SPIC_LCDACQR);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDACQR))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDACQR))
 		ret = -ESPI;
 
 	return ret;
@@ -163,18 +162,19 @@ int hw_p1_spi_lcd_acquire(void)
 /**
  * Relinquish control over LCD display (to embedded firmware).
  * Delay: none
+ * @param spi HW P1 spi private data
  * @return error code
  */
-int hw_p1_spi_lcd_relinquish(void)
+int hw_p1_spi_lcd_relinquish(struct s_hw_p1_spi * const spi)
 {
 	int ret = ALL_OK;
 	
-	SPI_RESYNC(RWCHC_SPIC_LCDRLQSH);
+	SPI_RESYNC(spi, RWCHC_SPIC_LCDRLQSH);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDRLQSH))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDRLQSH))
 		ret = -ESPI;
 
 	return ret;
@@ -183,18 +183,19 @@ int hw_p1_spi_lcd_relinquish(void)
 /**
  * Request LCD backlight fadeout.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @return error code
  */
-int hw_p1_spi_lcd_fade(void)
+int hw_p1_spi_lcd_fade(struct s_hw_p1_spi * const spi)
 {
 	int ret = ALL_OK;
 
-	SPI_RESYNC(RWCHC_SPIC_LCDFADE);
+	SPI_RESYNC(spi, RWCHC_SPIC_LCDFADE);
 
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDFADE))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_LCDFADE))
 		ret = -ESPI;
 
 	return ret;
@@ -203,19 +204,20 @@ int hw_p1_spi_lcd_fade(void)
 /**
  * Write LCD command byte.
  * Delay: LCD op execution time after command is sent
+ * @param spi HW P1 spi private data
  * @param cmd command byte to send
  * @return error code
  */
-int hw_p1_spi_lcd_cmd_w(const uint8_t cmd)
+int hw_p1_spi_lcd_cmd_w(struct s_hw_p1_spi * const spi, const uint8_t cmd)
 {
 	int ret = ALL_OK;
 	
-	SPI_RESYNC(RWCHC_SPIC_LCDCMDW);
+	SPI_RESYNC(spi, RWCHC_SPIC_LCDCMDW);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(cmd, ~RWCHC_SPIC_LCDCMDW))
+	if (!SPI_ASSERT(spi, cmd, ~RWCHC_SPIC_LCDCMDW))
 		ret = -ESPI;
 
 	if (cmd & 0xFC)	// quick commands
@@ -223,7 +225,7 @@ int hw_p1_spi_lcd_cmd_w(const uint8_t cmd)
 	else	// clear/home
 		usleep(USLEEPLCDSLOW);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, cmd))
 		ret = -ESPI;
 
 	return ret;
@@ -232,24 +234,25 @@ int hw_p1_spi_lcd_cmd_w(const uint8_t cmd)
 /**
  * Write LCD data byte.
  * Delay: LCD op execution time after data is sent
+ * @param spi HW P1 spi private data
  * @param data data byte to send
  * @return error code
  */
-int hw_p1_spi_lcd_data_w(const uint8_t data)
+int hw_p1_spi_lcd_data_w(struct s_hw_p1_spi * const spi, const uint8_t data)
 {
 	int ret = ALL_OK;
 	
-	SPI_RESYNC(RWCHC_SPIC_LCDDATW);
+	SPI_RESYNC(spi, RWCHC_SPIC_LCDDATW);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(data, ~RWCHC_SPIC_LCDDATW))
+	if (!SPI_ASSERT(spi, data, ~RWCHC_SPIC_LCDDATW))
 		ret = -ESPI;
 
 	usleep(USLEEPLCDFAST);	// wait for completion
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, data))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, data))
 		ret = -ESPI;
 
 	return ret;
@@ -259,25 +262,26 @@ int hw_p1_spi_lcd_data_w(const uint8_t data)
  * Write LCD backlight duty cycle. Will not be committed
  * to eeprom.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param percent backlight duty cycle in percent
  * @return error code
  */
-int hw_p1_spi_lcd_bl_w(const uint8_t percent)
+int hw_p1_spi_lcd_bl_w(struct s_hw_p1_spi * const spi, const uint8_t percent)
 {
 	int ret = ALL_OK;
 	
 	if (percent > 100)
 		return (-EINVALID);
 	
-	SPI_RESYNC(RWCHC_SPIC_LCDBKLW);
+	SPI_RESYNC(spi, RWCHC_SPIC_LCDBKLW);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(percent, ~RWCHC_SPIC_LCDBKLW))
+	if (!SPI_ASSERT(spi, percent, ~RWCHC_SPIC_LCDBKLW))
 		ret = -ESPI;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, percent))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, percent))
 		ret = -ESPI;
 
 	return ret;
@@ -286,27 +290,28 @@ int hw_p1_spi_lcd_bl_w(const uint8_t percent)
 /**
  * Read peripheral states.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param periphs pointer to struct whose values will be populated to match current states if no error occurs
  * @return error code
  */
-int hw_p1_spi_peripherals_r(union rwchc_u_periphs * const periphs)
+int hw_p1_spi_peripherals_r(struct s_hw_p1_spi * const spi, union rwchc_u_periphs * const periphs)
 {
 	int ret = ALL_OK;
 	uint8_t byte;
 	
 	assert(periphs);
 	
-	SPI_RESYNC(RWCHC_SPIC_PERIPHSR);
+	SPI_RESYNC(spi, RWCHC_SPIC_PERIPHSR);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 
-	byte = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	byte = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);
 
-	if (!SPI_ASSERT(~byte, ~RWCHC_SPIC_PERIPHSR))
+	if (!SPI_ASSERT(spi, ~byte, ~RWCHC_SPIC_PERIPHSR))
 		ret = -ESPI;
 
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
 		ret = -ESPI;
 
 	if (ALL_OK == ret)
@@ -318,27 +323,28 @@ int hw_p1_spi_peripherals_r(union rwchc_u_periphs * const periphs)
 /**
  * Write peripheral states.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param periphs pointer to struct whose values are populated with desired states
  * @return error code
  */
-int hw_p1_spi_peripherals_w(const union rwchc_u_periphs * const periphs)
+int hw_p1_spi_peripherals_w(struct s_hw_p1_spi * const spi, const union rwchc_u_periphs * const periphs)
 {
 	int ret = ALL_OK;
 	
 	assert(periphs);
 	
-	SPI_RESYNC(RWCHC_SPIC_PERIPHSW);
+	SPI_RESYNC(spi, RWCHC_SPIC_PERIPHSW);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(periphs->BYTE, ~RWCHC_SPIC_PERIPHSW))
+	if (!SPI_ASSERT(spi, periphs->BYTE, ~RWCHC_SPIC_PERIPHSW))
 		ret = -ESPI;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, periphs->BYTE))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, periphs->BYTE))
 		ret = -ESPI;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSW))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSW))
 		ret = -ESPI;
 	
 	return ret;
@@ -347,28 +353,29 @@ int hw_p1_spi_peripherals_w(const union rwchc_u_periphs * const periphs)
 /**
  * Read relay states.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param relays pointer to struct whose values will be populated to match current states if no error occurs
  * @return error code
  */
-int hw_p1_spi_relays_r(union rwchc_u_relays * const relays)
+int hw_p1_spi_relays_r(struct s_hw_p1_spi * const spi, union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
 	uint8_t lowb, highb;
 
 	assert(relays);
 
-	SPI_RESYNC(RWCHC_SPIC_RELAYRL);
+	SPI_RESYNC(spi, RWCHC_SPIC_RELAYRL);
 
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 
-	lowb = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
-	highb = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);
+	lowb = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);
+	highb = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);
 
-	if (!SPI_ASSERT((lowb^highb), ~RWCHC_SPIC_RELAYRL))
+	if (!SPI_ASSERT(spi, (lowb^highb), ~RWCHC_SPIC_RELAYRL))
 		ret = -ESPI;
 
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRL))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYRL))
 		ret = -ESPI;
 
 	if (ALL_OK == ret) {
@@ -382,40 +389,41 @@ int hw_p1_spi_relays_r(union rwchc_u_relays * const relays)
 /**
  * Write relay states.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param relays pointer to struct whose values are populated with desired states
  * @return error code
  */
-int hw_p1_spi_relays_w(const union rwchc_u_relays * const relays)
+int hw_p1_spi_relays_w(struct s_hw_p1_spi * const spi, const union rwchc_u_relays * const relays)
 {
 	int ret = ALL_OK;
 	uint8_t temp;	// work around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=38341
 
 	assert(relays);
 
-	SPI_RESYNC(RWCHC_SPIC_RELAYWL);
+	SPI_RESYNC(spi, RWCHC_SPIC_RELAYWL);
 
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 
-	if (!SPI_ASSERT(relays->LOWB, ~RWCHC_SPIC_RELAYWL))
+	if (!SPI_ASSERT(spi, relays->LOWB, ~RWCHC_SPIC_RELAYWL))
 		ret = -ESPI;
 
 	temp = ~relays->LOWB;
-	if (!SPI_ASSERT(relays->HIGHB, temp))
+	if (!SPI_ASSERT(spi, relays->HIGHB, temp))
 		ret = -ESPI;
 
 	temp = ~relays->HIGHB;
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, temp))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, temp))
 		ret = -ESPI;
 
 	if (ALL_OK == ret) {
-		if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_KEEPALIVE))
+		if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_KEEPALIVE))
 			ret = -ESPI;
 	}
 	else
-		SPI_rw8bit(RWCHC_SPIC_INVALID);
+		SPI_rw8bit(spi, RWCHC_SPIC_INVALID);
 
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWL))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_RELAYWL))
 		ret = -ESPI;
 
 	return (ret);
@@ -424,12 +432,13 @@ int hw_p1_spi_relays_w(const union rwchc_u_relays * const relays)
 /**
  * Read a single sensor value.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param tsensors pointer to target sensor array whose value will be updated if no error occurs
  * @param sensor target sensor number to be read
  * @return error code
  * @warning no check is performed on the size of the provided tsensors array
  */
-int hw_p1_spi_sensor_r(rwchc_sensor_t tsensors[], const uint8_t sensor)
+int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[], const uint8_t sensor)
 {
 	int ret;
 	uint16_t tsval;
@@ -440,9 +449,9 @@ int hw_p1_spi_sensor_r(rwchc_sensor_t tsensors[], const uint8_t sensor)
 	if (sensor >= RWCHC_NTSENSORS)
 		return (-EINVALID);
 	
-	SPI_RESYNC(sensor);
+	SPI_RESYNC(spi, sensor);
 
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
 	/* From here we invert the expectancy logic: we expect things to go well
@@ -451,16 +460,16 @@ int hw_p1_spi_sensor_r(rwchc_sensor_t tsensors[], const uint8_t sensor)
 	 * a full transfer regardless of errors. */
 	ret = ALL_OK;
 
-	low = SPI_rw8bit(~sensor);	// we get LSB first, sent byte must be ~sensor
-	if (FWversion <= 8)
-		high = SPI_rw8bit(RWCHC_SPIC_KEEPALIVE);	// then MSB, sent byte is next command
+	low = SPI_rw8bit(spi, ~sensor);	// we get LSB first, sent byte must be ~sensor
+	if (spi->run.FWversion <= 8)
+		high = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);	// then MSB, sent byte is next command
 	else	// v9
-		high = SPI_rw8bit(low);		// then MSB, sent byte is received LSB
+		high = SPI_rw8bit(spi, low);		// then MSB, sent byte is received LSB
 
 	if (RWCHC_SPIC_INVALID == high)		// MSB indicates an error
 		ret = -ESPI;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, sensor))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, sensor))
 		ret = -ESPI;
 
 	tsval = 0;
@@ -476,11 +485,12 @@ int hw_p1_spi_sensor_r(rwchc_sensor_t tsensors[], const uint8_t sensor)
 /**
  * Read a single reference value.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param refval pointer to target reference whose value will be updated if no error occurs
  * @param refn target reference number to be read (0 or 1)
  * @return error code
  */
-int hw_p1_spi_ref_r(rwchc_sensor_t * const refval, const uint8_t refn)
+int hw_p1_spi_ref_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refval, const uint8_t refn)
 {
 	int ret;
 	uint8_t cmd;
@@ -499,22 +509,22 @@ int hw_p1_spi_ref_r(rwchc_sensor_t * const refval, const uint8_t refn)
 			return (-EINVALID);
 	}
 
-	SPI_RESYNC(cmd);
+	SPI_RESYNC(spi, cmd);
 
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 
 	/* same logic as hw_p1_spi_sensor_r() */
 	ret = ALL_OK;
 
 	value = 0;
-	value |= SPI_rw8bit(~cmd);	// we get LSB first, sent byte is ~cmd
-	value |= (SPI_rw8bit(RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+	value |= SPI_rw8bit(spi, ~cmd);	// we get LSB first, sent byte is ~cmd
+	value |= (SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
 		ret = -ESPI;
 
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, cmd))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, cmd))
 		ret = -ESPI;
 
 	if (ALL_OK == ret)
@@ -526,25 +536,26 @@ int hw_p1_spi_ref_r(rwchc_sensor_t * const refval, const uint8_t refn)
 /**
  * Read current ram settings.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param settings pointer to struct whose values will be populated to match current settings
  * @return error code
  */
-int hw_p1_spi_settings_r(struct rwchc_s_settings * const settings)
+int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = ALL_OK;
 	
 	assert(settings);
 
-	SPI_RESYNC(RWCHC_SPIC_SETTINGSR);
+	SPI_RESYNC(spi, RWCHC_SPIC_SETTINGSR);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
 	for (i=0; i<sizeof(*settings); i++)
-		*((uint8_t *)settings+i) = SPI_rw8bit(i);
+		*((uint8_t *)settings+i) = SPI_rw8bit(spi, i);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSR))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSR))
 		ret = -ESPI;
 
 	return ret;
@@ -553,26 +564,27 @@ int hw_p1_spi_settings_r(struct rwchc_s_settings * const settings)
 /**
  * Write current ram settings.
  * Delay: none
+ * @param spi HW P1 spi private data
  * @param settings pointer to struct whose values are populated with desired settings
  * @return error code
  */
-int hw_p1_spi_settings_w(const struct rwchc_s_settings * const settings)
+int hw_p1_spi_settings_w(struct s_hw_p1_spi * const spi, const struct rwchc_s_settings * const settings)
 {
 	unsigned int i;
 	int ret = ALL_OK;
 	
 	assert(settings);
 	
-	SPI_RESYNC(RWCHC_SPIC_SETTINGSW);
+	SPI_RESYNC(spi, RWCHC_SPIC_SETTINGSW);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
 	for (i=0; i<sizeof(*settings); i++)
-		if (SPI_rw8bit(*((const uint8_t *)settings+i)) != i)
+		if (SPI_rw8bit(spi, *((const uint8_t *)settings+i)) != i)
 			ret = -ESPI;
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSW))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSW))
 		ret = -ESPI;
 
 	return ret;
@@ -581,18 +593,19 @@ int hw_p1_spi_settings_w(const struct rwchc_s_settings * const settings)
 /**
  * Save current ram settings to eeprom.
  * Delay: none (eeprom write is faster than a SPI cycle)
+ * @param spi HW P1 spi private data
  * @return error code
  */
-int hw_p1_spi_settings_s(void)
+int hw_p1_spi_settings_s(struct s_hw_p1_spi * const spi)
 {
 	int ret = ALL_OK;
 	
-	SPI_RESYNC(RWCHC_SPIC_SETTINGSS);
+	SPI_RESYNC(spi, RWCHC_SPIC_SETTINGSS);
 	
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	if (!SPI_ASSERT(RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
 		ret = -ESPI;
 	
 	return ret;
@@ -601,21 +614,22 @@ int hw_p1_spi_settings_s(void)
 /**
  * Reset the device.
  * Delay: none (device unavailable until fully restarted: 1-2s delay would be reasonable)
+ * @param spi HW P1 spi private data
  * @return exec status (ALL_OK if reset is presumably successful)
  */
-int hw_p1_spi_reset(void)
+int hw_p1_spi_reset(struct s_hw_p1_spi * const spi)
 {
 	static const uint8_t trig[] = RWCHC_RESET_TRIGGER;
 	unsigned int i;
 	int ret = ALL_OK;
 
-	SPI_RESYNC(RWCHC_SPIC_RESET);
+	SPI_RESYNC(spi, RWCHC_SPIC_RESET);
 
-	if (!spitout)
+	if (!spi->run.spitout)
 		return (-ESPI);
 	
 	for (i=0; i<ARRAY_SIZE(trig); i++)
-		if (SPI_rw8bit(trig[i]) != i)
+		if (SPI_rw8bit(spi, trig[i]) != i)
 			ret = -ESPI;
 
 	return ret;
@@ -623,19 +637,20 @@ int hw_p1_spi_reset(void)
 
 /**
  * Init spi subsystem
+ * @param spi HW P1 spi private data
  * @return exec status or error code
  */
-int hw_p1_spi_init(void)
+int hw_p1_spi_init(struct s_hw_p1_spi * const spi)
 {
 	int ret;
 
-	ret = wiringPiSPISetupMode(SPICHAN, SPICLOCK, SPIMODE);
+	ret = wiringPiSPISetupMode(spi->set.chan, spi->set.clock, SPIMODE);
 
 	if (ret >= 0)
-		ret = _spi_fwversion();
+		ret = _spi_fwversion(spi);
 
 	if (ret >= 0) {
-		FWversion = ret;
+		spi->run.FWversion = ret;
 		ret = ALL_OK;
 	}
 
