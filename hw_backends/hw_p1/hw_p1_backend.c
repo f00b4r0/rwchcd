@@ -68,7 +68,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	return (ALL_OK);
 }
 
-/** HW P1 log source */
+/** HW P1 log source. @bug uses #Hardware */
 static const struct s_log_source HW_P1_temps_lsrc = {
 	.log_sched = LOG_SCHED_1mn,
 	.basename = "hw_p1_",
@@ -139,26 +139,26 @@ static int hw_p1_online(void * priv)
 		return (-EMISCONFIGURED);
 
 	// save settings - for deffail
-	ret = hw_p1_hwconfig_commit();
+	ret = hw_p1_hwconfig_commit(hw);
 	if (ret)
 		goto fail;
 
 	// calibrate
-	ret = hw_p1_calibrate();
+	ret = hw_p1_calibrate(hw);
 	if (ALL_OK != ret) {
 		pr_err(_("HWP1: could not calibrate (%d)"), ret);
 		goto fail;
 	}
 
 	// read sensors once
-	ret = hw_p1_sensors_read();
+	ret = hw_p1_sensors_read(hw);
 	if (ALL_OK != ret) {
 		pr_err(_("HWP1: could not read sensors (%d)"), ret);
 		goto fail;
 	}
 
 	// restore previous state - failure is ignored
-	ret = hw_p1_restore_relays();
+	ret = hw_p1_restore_relays(hw);
 	if (ALL_OK == ret)
 		pr_log(_("HWP1: Hardware state restored"));
 
@@ -197,7 +197,7 @@ static int hw_p1_input(void * priv)
 		return (-EOFFLINE);
 
 	// read peripherals
-	ret = hw_p1_rwchcperiphs_read();
+	ret = hw_p1_rwchcperiphs_read(hw);
 	if (ALL_OK != ret) {
 		dbgerr("hw_p1_rwchcperiphs_read failed (%d)", ret);
 		goto skip_periphs;
@@ -277,7 +277,7 @@ static int hw_p1_input(void * priv)
 
 skip_periphs:
 	// calibrate
-	ret = hw_p1_calibrate();
+	ret = hw_p1_calibrate(hw);
 	if (ALL_OK != ret) {
 		dbgerr("hw_p1_calibrate failed (%d)", ret);
 		goto fail;
@@ -287,7 +287,7 @@ skip_periphs:
 	}
 
 	// read sensors
-	ret = hw_p1_sensors_read();
+	ret = hw_p1_sensors_read(hw);
 	if (ALL_OK != ret) {
 		// flag the error but do NOT stop processing here
 		dbgerr("hw_p1_sensors_read failed (%d)", ret);
@@ -326,14 +326,14 @@ static int hw_p1_output(void * priv)
 		dbgerr("hw_p1_lcd_run failed (%d)", ret);
 
 	// write relays
-	ret = hw_p1_rwchcrelays_write();
+	ret = hw_p1_rwchcrelays_write(hw);
 	if (ALL_OK != ret) {
 		dbgerr("hw_p1_rwchcrelays_write failed (%d)", ret);
 		goto out;
 	}
 
 	// write peripherals
-	ret = hw_p1_rwchcperiphs_write();
+	ret = hw_p1_rwchcperiphs_write(hw);
 	if (ALL_OK != ret)
 		dbgerr("hw_p1_rwchcperiphs_write failed (%d)", ret);
 
@@ -372,12 +372,12 @@ static int hw_p1_offline(void * priv)
 	}
 
 	// update the hardware
-	ret = hw_p1_rwchcrelays_write();
+	ret = hw_p1_rwchcrelays_write(hw);
 	if (ret)
 		dbgerr("hw_p1_rwchcrelays_write failed (%d)", ret);
 
 	// update permanent storage with final count
-	hw_p1_save_relays();
+	hw_p1_save_relays(hw);
 
 	hw->run.online = false;
 

@@ -46,14 +46,14 @@ struct s_hw_p1_pdata {
 
 extern struct s_hw_p1_pdata Hardware;
 
-int hw_p1_hwconfig_commit(void);
-int hw_p1_calibrate(void);
-int hw_p1_save_relays(void);
-int hw_p1_restore_relays(void);
-int hw_p1_sensors_read(void);
-int hw_p1_rwchcrelays_write(void);
-int hw_p1_rwchcperiphs_write(void);
-int hw_p1_rwchcperiphs_read(void);
+int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_sensors_read(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_rwchcrelays_write(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_rwchcperiphs_write(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_rwchcperiphs_read(struct s_hw_p1_pdata * restrict const hw);
 
 int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name);
 int hw_p1_rid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name);

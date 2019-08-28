@@ -45,10 +45,12 @@ struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
 
 /**
  * Log relays change.
+ * @param hw HW P1 private data
  * @note This function isn't part of the timer system since it's more efficient
  * and more accurate to run it aperiodically (on relay edge).
+ * @bug hardcoded identifier will collide if multiple instances.
  */
-static void hw_p1_relays_log(void)
+static void hw_p1_relays_log(const struct s_hw_p1_pdata * restrict const hw)
 {
 	const log_version_t version = 1;
 	static const log_key_t keys[] = {
@@ -57,11 +59,11 @@ static void hw_p1_relays_log(void)
 	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 	
-	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(Hardware.Relays));
+	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(hw->Relays));
 	
-	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
-		if (Hardware.Relays[i].set.configured) {
-			if (Hardware.Relays[i].run.is_on)
+	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
+		if (hw->Relays[i].set.configured) {
+			if (hw->Relays[i].run.is_on)
 				values[i] = 1;
 			else
 				values[i] = 0;
@@ -84,11 +86,12 @@ static void hw_p1_relays_log(void)
  * Convert sensor value to actual resistance.
  * voltage on ADC pin is Vsensor * (1+G) - Vdac * G where G is divider gain on AOP.
  * if value < ~10mv: short. If value = max: open.
+ * @param hw HW P1 private data
  * @param raw the raw sensor value
  * @param calib 1 if calibrated value is required, 0 otherwise
  * @return the resistance value
  */
-__attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw, const bool calib)
+__attribute__((pure)) static unsigned int sensor_to_ohm(const struct s_hw_p1_pdata * restrict const hw, const rwchc_sensor_t raw, const bool calib)
 {
 	static const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
 	uint_fast16_t calibmult, dacoffset;
@@ -108,7 +111,7 @@ __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw
 
 	// finally, apply calibration factor if any
 	if (calib) {
-		calibmult = dacoffset ? Hardware.run.calib_dac : Hardware.run.calib_nodac;
+		calibmult = dacoffset ? hw->run.calib_dac : hw->run.calib_nodac;
 		value *= RWCHC_CALIB_OHM;
 		value += calibmult/2;	// round
 		value /= calibmult;
@@ -120,11 +123,12 @@ __attribute__((pure)) static unsigned int sensor_to_ohm(const rwchc_sensor_t raw
 /**
  * Raise an alarm for a specific sensor.
  * This function raises an alarm if the sensor's temperature is invalid.
+ * @param hw HW P1 private data
  * @param id target sensor id
  * @param error sensor error
  * @return exec status
  */
-static int sensor_alarm(const sid_t id, const int error)
+static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const sid_t id, const int error)
 {
 	const char * restrict const msgf = _("sensor fail: \"%s\" (%d) %s");
 	const char * restrict const msglcdf = _("sensor fail: %d");
@@ -136,11 +140,11 @@ static int sensor_alarm(const sid_t id, const int error)
 	switch (error) {
 		case -ESENSORSHORT:
 			fail = _("shorted");
-			name = Hardware.Sensors[id-1].name;
+			name = hw->Sensors[id-1].name;
 			break;
 		case -ESENSORDISCON:
 			fail = _("disconnected");
-			name = Hardware.Sensors[id-1].name;
+			name = hw->Sensors[id-1].name;
 			break;
 		case -ESENSORINVAL:
 			fail = _("invalid");
@@ -165,70 +169,75 @@ static int sensor_alarm(const sid_t id, const int error)
  * Process raw sensor data.
  * Applies a short-window LP filter on raw data to smooth out noise.
  * Flag and raise alarm if value is out of #RWCHCD_TEMPMIN and #RWCHCD_TEMPMAX bounds.
+ * @param hw HW P1 private data
  */
-static void hw_p1_parse_temps(void)
+static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 {
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
 	temp_t previous, current;
 	
-	assert(Hardware.run.initialized);
+	assert(hw->run.initialized);
 
-	pthread_rwlock_wrlock(&Hardware.Sensors_rwlock);
-	for (i = 0; i < Hardware.settings.nsensors; i++) {
-		if (!Hardware.Sensors[i].set.configured) {
-			Hardware.Sensors[i].run.value = TEMPUNSET;
+	pthread_rwlock_wrlock(&hw->Sensors_rwlock);
+	for (i = 0; i < hw->settings.nsensors; i++) {
+		if (!hw->Sensors[i].set.configured) {
+			hw->Sensors[i].run.value = TEMPUNSET;
 			continue;
 		}
 
-		ohm = sensor_to_ohm(Hardware.sensors[i], true);
-		o_to_c = hw_lib_sensor_o_to_c(Hardware.Sensors[i].set.type);
+		ohm = sensor_to_ohm(hw, hw->sensors[i], true);
+		o_to_c = hw_lib_sensor_o_to_c(hw->Sensors[i].set.type);
 		assert(o_to_c);
 
-		current = celsius_to_temp(o_to_c(ohm)) + Hardware.Sensors[i].set.offset;
-		previous = Hardware.Sensors[i].run.value;
+		current = celsius_to_temp(o_to_c(ohm)) + hw->Sensors[i].set.offset;
+		previous = hw->Sensors[i].run.value;
 
 		if (current <= RWCHCD_TEMPMIN) {
-			Hardware.Sensors[i].run.value = TEMPSHORT;
-			sensor_alarm(i+1, -ESENSORSHORT);
+			hw->Sensors[i].run.value = TEMPSHORT;
+			sensor_alarm(hw, i+1, -ESENSORSHORT);
 		}
 		else if (current >= RWCHCD_TEMPMAX) {
-			Hardware.Sensors[i].run.value = TEMPDISCON;
-			sensor_alarm(i+1, -ESENSORDISCON);
+			hw->Sensors[i].run.value = TEMPDISCON;
+			sensor_alarm(hw, i+1, -ESENSORDISCON);
 		}
 		else
 			// apply LP filter - ensure we only apply filtering on valid temps
-			Hardware.Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, Hardware.set.nsamples, 1) : current;
+			hw->Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, hw->set.nsamples, 1) : current;
 	}
-	pthread_rwlock_unlock(&Hardware.Sensors_rwlock);
+	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 }
 
 /**
  * Save hardware relays state to permanent storage.
+ * @param hw HW P1 private data
  * @return exec status
+ * @bug hardcoded identifier will collide if multiple instances.
  * @todo online save/restore from .run
  */
-int hw_p1_save_relays(void)
+int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw)
 {
-	assert(Hardware.run.online);
-	return (storage_dump("hw_p1_relays", &Hardware_sversion, Hardware.Relays, sizeof(Hardware.Relays)));
+	assert(hw->run.online);
+	return (storage_dump("hw_p1_relays", &Hardware_sversion, hw->Relays, sizeof(hw->Relays)));
 }
 
 /**
  * Restore hardware relays state from permanent storage.
  * Restores cycles and on/off total time counts for all relays.
+ * @param hw HW P1 private data
  * @return exec status
+ * @bug hardcoded identifier will collide if multiple instances.
  * @note Each relay is "restored" in OFF state (due to initialization in
  * hw_p1_setup_new()). When restoring relays we must:
  * - account for elapsed time in last known state (at save time)
  * - restore off_since to either the saved value or to the current time (if relay was last ON)
  */
-int hw_p1_restore_relays(void)
+int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 {
-	static typeof (Hardware.Relays) blob;
+	static typeof (hw->Relays) blob;
 	storage_version_t sversion;
-	typeof(&Hardware.Relays[0]) relayptr = (typeof(relayptr))&blob;
+	typeof(&hw->Relays[0]) relayptr = (typeof(relayptr))&blob;
 	unsigned int i;
 	int ret;
 	
@@ -238,19 +247,16 @@ int hw_p1_restore_relays(void)
 		if (Hardware_sversion != sversion)
 			return (-EMISMATCH);
 
-		for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
+		for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
 			// handle saved state (see @note)
-			if (relayptr->run.is_on) {
-				Hardware.Relays[i].run.on_tottime += relayptr->run.state_time;
-				Hardware.Relays[i].run.off_since = timekeep_now();	// off since "now"
-			}
-			else {
-				Hardware.Relays[i].run.off_tottime += relayptr->run.state_time;
-				Hardware.Relays[i].run.off_since = timekeep_now();	// off since "now"
-			}
-			Hardware.Relays[i].run.on_tottime += relayptr->run.on_tottime;
-			Hardware.Relays[i].run.off_tottime += relayptr->run.off_tottime;
-			Hardware.Relays[i].run.cycles += relayptr->run.cycles;
+			if (relayptr->run.is_on)
+				hw->Relays[i].run.on_tottime += relayptr->run.state_time;
+			else
+				hw->Relays[i].run.off_tottime += relayptr->run.state_time;
+			hw->Relays[i].run.off_since = timekeep_now();	// off since "now"
+			hw->Relays[i].run.on_tottime += relayptr->run.on_tottime;
+			hw->Relays[i].run.off_tottime += relayptr->run.off_tottime;
+			hw->Relays[i].run.cycles += relayptr->run.cycles;
 			relayptr++;
 		}
 		dbgmsg("Hardware relay state restored");
@@ -285,48 +291,50 @@ __attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_
 
 /**
  * Prepare hardware settings 'deffail' data based on Relays configuration.
+ * @param hw HW P1 private data
  */
-static void hw_p1_rwchcsettings_deffail(void)
+static void hw_p1_rwchcsettings_deffail(struct s_hw_p1_pdata * restrict const hw)
 {
 	uint_fast8_t i;
 
 	// start clean
-	Hardware.settings.deffail.ALL = 0;
+	hw->settings.deffail.ALL = 0;
 
 	// update each known hardware relay
-	for (i = 0; i < ARRAY_SIZE(Hardware.Relays); i++) {
-		if (!Hardware.Relays[i].set.configured)
+	for (i = 0; i < ARRAY_SIZE(hw->Relays); i++) {
+		if (!hw->Relays[i].set.configured)
 			continue;
 
 		// update internal structure
-		rwchc_relay_set(&Hardware.settings.deffail, i, Hardware.Relays[i].set.failstate);
+		rwchc_relay_set(&hw->settings.deffail, i, hw->Relays[i].set.failstate);
 	}
 }
 /**
  * Commit hardware config to hardware.
  * @note overwrites all hardware settings.
+ * @param hw HW P1 private data
  * @return exec status
  */
-int hw_p1_hwconfig_commit(void)
+int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw)
 {
-	struct rwchc_s_settings hw_set;
+	typeof(hw->settings) hw_set;
 	int ret;
 	
-	assert(Hardware.run.initialized);
+	assert(hw->run.initialized);
 
 	// prepare hardware settings.deffail data
-	hw_p1_rwchcsettings_deffail();
+	hw_p1_rwchcsettings_deffail(hw);
 	
 	// grab current config from the hardware
 	ret = hw_p1_spi_settings_r(&hw_set);
 	if (ret)
 		goto out;
 	
-	if (!memcmp(&hw_set, &(Hardware.settings), sizeof(hw_set)))
+	if (!memcmp(&hw_set, &(hw->settings), sizeof(hw_set)))
 		return (ALL_OK); // don't wear flash down if unnecessary
 	
 	// commit hardware config
-	ret = hw_p1_spi_settings_w(&(Hardware.settings));
+	ret = hw_p1_spi_settings_w(&(hw->settings));
 	if (ret)
 		goto out;
 
@@ -335,7 +343,7 @@ int hw_p1_hwconfig_commit(void)
 	if (ret)
 		goto out;
 
-	if (memcmp(&hw_set, &(Hardware.settings), sizeof(hw_set))) {
+	if (memcmp(&hw_set, &(hw->settings), sizeof(hw->settings))) {
 		ret = -EHARDWARE;
 		goto out;
 	}
@@ -354,18 +362,19 @@ out:
  * Calibrate both with and without DAC offset. Must be called before any temperature is to be read.
  * This function uses a hardcoded moving average for all but the first calibration attempt,
  * to smooth out sudden bumps in calibration reads that could be due to noise.
+ * @param hw HW P1 private data
  * @return exec status
  */
-int hw_p1_calibrate(void)
+int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 {
 	uint_fast16_t newcalib_nodac, newcalib_dac;
 	int ret;
 	rwchc_sensor_t ref;
 	const timekeep_t now = timekeep_now();
 	
-	assert(Hardware.run.initialized);
+	assert(hw->run.initialized);
 	
-	if (Hardware.run.last_calib && (now - Hardware.run.last_calib) < CALIBRATION_PERIOD)
+	if (hw->run.last_calib && (now - hw->run.last_calib) < CALIBRATION_PERIOD)
 		return (ALL_OK);
 
 	ref = 0;
@@ -374,7 +383,7 @@ int hw_p1_calibrate(void)
 		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		newcalib_nodac = sensor_to_ohm(ref, false);	// force uncalibrated read
+		newcalib_nodac = sensor_to_ohm(hw, ref, false);	// force uncalibrated read
 		if ((newcalib_nodac < VALID_CALIB_MIN) || (newcalib_nodac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
 	}
@@ -387,7 +396,7 @@ int hw_p1_calibrate(void)
 		return (ret);
 
 	if (ref && ((ref & RWCHC_ADC_MAXV) < RWCHC_ADC_MAXV)) {
-		newcalib_dac = sensor_to_ohm(ref, false);	// force uncalibrated read
+		newcalib_dac = sensor_to_ohm(hw, ref, false);	// force uncalibrated read
 		if ((newcalib_dac < VALID_CALIB_MIN) || (newcalib_dac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
 	}
@@ -395,45 +404,46 @@ int hw_p1_calibrate(void)
 		return (-EINVALID);
 
 	// everything went fine, we can update both calibration values and time
-	Hardware.run.calib_nodac = Hardware.run.calib_nodac ? (uint_fast16_t)temp_expw_mavg(Hardware.run.calib_nodac, newcalib_nodac, 1, 5) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
-	Hardware.run.calib_dac = Hardware.run.calib_dac ? (uint_fast16_t)temp_expw_mavg(Hardware.run.calib_dac, newcalib_dac, 1, 5) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
-	Hardware.run.last_calib = now;
+	hw->run.calib_nodac = hw->run.calib_nodac ? (uint_fast16_t)temp_expw_mavg(hw->run.calib_nodac, newcalib_nodac, 1, 5) : newcalib_nodac;	// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	hw->run.calib_dac = hw->run.calib_dac ? (uint_fast16_t)temp_expw_mavg(hw->run.calib_dac, newcalib_dac, 1, 5) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
+	hw->run.last_calib = now;
 
-	dbgmsg("NEW: calib_nodac: %d, calib_dac: %d", Hardware.run.calib_nodac, Hardware.run.calib_dac);
+	dbgmsg("NEW: calib_nodac: %d, calib_dac: %d", hw->run.calib_nodac, hw->run.calib_dac);
 	
 	return (ALL_OK);
 }
 
 /**
  * Read all temperature sensors.
- * This function will read all sensors (up to Hardware.settings.nsensors) into
- * Hardware.sensors and if no error occurs:
- * - Hardware.run.sensors_ftime will be updated
- * - Raw values from Hardware.sensors are processed to atomically update #Hardware.Sensors
+ * This function will read all sensors (up to hw->settings.nsensors) into
+ * hw->sensors and if no error occurs:
+ * - hw->run.sensors_ftime will be updated
+ * - Raw values from hw->sensors are processed to atomically update #hw->Sensors
  * otherwise these fields remain unchanged.
  *
+ * @param hw HW P1 private data
  * @return exec status
- * @warning #Hardware.settings.nsensors must be set prior to calling this function.
+ * @warning #hw->settings.nsensors must be set prior to calling this function.
  * @note calling hw_p1_parse_temps() in the success code path is a design choice that
  * ensures a consistent view of system temperatures:
  * either all values are updated coherently or none are.
  */
-int hw_p1_sensors_read(void)
+int hw_p1_sensors_read(struct s_hw_p1_pdata * restrict const hw)
 {
 	int_fast8_t sensor;
 	int ret = ALL_OK;
 	
-	assert(Hardware.run.initialized);
+	assert(hw->run.initialized);
 
-	for (sensor = 0; sensor < Hardware.settings.nsensors; sensor++) {
-		ret = hw_p1_spi_sensor_r(Hardware.sensors, sensor);
+	for (sensor = 0; sensor < hw->settings.nsensors; sensor++) {
+		ret = hw_p1_spi_sensor_r(hw->sensors, sensor);
 		if (ret)
 			goto out;
 	}
 
-	hw_p1_parse_temps();
+	hw_p1_parse_temps(hw);
 
-	Hardware.run.sensors_ftime = timekeep_now();
+	hw->run.sensors_ftime = timekeep_now();
 
 out:
 	return (ret);
@@ -444,9 +454,10 @@ out:
  * This function updates all known hardware relays according to their desired turn_on
  * state. This function also does time and cycle accounting for the relays.
  * @note non-configured hardware relays are turned off.
+ * @param hw HW P1 private data
  * @return status
  */
-__attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
+__attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_pdata * restrict const hw)
 {
 	struct s_hw_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
@@ -454,14 +465,14 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 	uint_fast8_t i, chflags = HW_LIB_RCHNONE;
 	int ret = -EGENERIC;
 
-	assert(Hardware.run.online);
+	assert(hw->run.online);
 
 	// start clean
 	rWCHC_relays.ALL = 0;
 
 	// update each known hardware relay
-	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
-		relay = &Hardware.Relays[i];
+	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
+		relay = &hw->Relays[i];
 
 		// perform relay accounting
 		ret = hw_lib_relay_update(relay, now);
@@ -476,10 +487,10 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 
 	// save/log relays state if there was a change
 	if (chflags) {
-		hw_p1_relays_log();
+		hw_p1_relays_log(hw);
 		if (chflags & HW_LIB_RCHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
 			// XXX there's no real motive to do this besides lowering storage pressure
-			ret = hw_p1_save_relays();
+			ret = hw_p1_save_relays(hw);
 			if (ret)
 				dbgerr("hw_p1_save failed (%d)", ret);
 		}
@@ -490,29 +501,31 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(void)
 
 	// update internal runtime state on success
 	if (ALL_OK == ret)
-		Hardware.relays.ALL = rWCHC_relays.ALL;
+		hw->relays.ALL = rWCHC_relays.ALL;
 
 	return (ret);
 }
 
 /**
  * Write all peripherals from internal runtime to hardware
+ * @param hw HW P1 private data
  * @return status
  */
-__attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_write(void)
+__attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_write(struct s_hw_p1_pdata * restrict const hw)
 {
-	assert(Hardware.run.online);
-	return (hw_p1_spi_peripherals_w(&(Hardware.peripherals)));
+	assert(hw->run.online);
+	return (hw_p1_spi_peripherals_w(&(hw->peripherals)));
 }
 
 /**
  * Read all peripherals from hardware into internal runtime
+ * @param hw HW P1 private data
  * @return exec status
  */
-__attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_read(void)
+__attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs_read(struct s_hw_p1_pdata * restrict const hw)
 {
-	assert(Hardware.run.online);
-	return (hw_p1_spi_peripherals_r(&(Hardware.peripherals)));
+	assert(hw->run.online);
+	return (hw_p1_spi_peripherals_r(&(hw->peripherals)));
 }
 
 /**
