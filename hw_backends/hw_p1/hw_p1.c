@@ -532,7 +532,7 @@ int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char
 		if (!hw->Sensors[id].set.configured)
 			continue;
 		if (!strcmp(hw->Sensors[id].name, name)) {
-			ret = id+1;
+			ret = hw->Sensors[id].set.sid;
 			break;
 		}
 	}
@@ -557,7 +557,7 @@ int hw_p1_rid_by_name(const struct s_hw_p1_pdata * const restrict hw, const char
 		if (!hw->Relays[id].set.configured)
 			continue;
 		if (!strcmp(hw->Relays[id].name, name)) {
-			ret = id+1;
+			ret = hw->Relays[id].set.rid;
 			break;
 		}
 	}

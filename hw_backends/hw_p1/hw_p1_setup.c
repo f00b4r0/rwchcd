@@ -54,7 +54,7 @@ int hw_p1_setup_setbl(struct s_hw_p1_pdata * restrict const hw, const uint8_t pe
  * @param lastid last connected sensor id
  * @return exec status
  */
-int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const rid_t lastid)
+int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const sid_t lastid)
 {
 	assert(hw);
 
@@ -104,7 +104,8 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (hw->Sensors[id-1].set.configured)
+	id--;	// sensor array indexes from 0
+	if (hw->Sensors[id].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
@@ -119,11 +120,11 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 	if (!str)
 		return(-EOOM);
 
-	hw->Sensors[id-1].name = str;
-	hw->Sensors[id-1].set.sid = id;
-	hw->Sensors[id-1].set.type = sensor->set.type;
-	hw->Sensors[id-1].set.offset = sensor->set.offset;
-	hw->Sensors[id-1].set.configured = true;
+	hw->Sensors[id].name = str;
+	hw->Sensors[id].set.sid = sensor->set.sid;
+	hw->Sensors[id].set.type = sensor->set.type;
+	hw->Sensors[id].set.offset = sensor->set.offset;
+	hw->Sensors[id].set.configured = true;
 
 	return (ALL_OK);
 }
@@ -173,6 +174,7 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const st
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
+	id--;	// relay array indexes from 0
 	if (hw->Relays[id-1].set.configured)
 		return (-EEXISTS);
 
@@ -184,15 +186,15 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const st
 	if (!str)
 		return(-EOOM);
 
-	hw->Relays[id-1].name = str;
+	hw->Relays[id].name = str;
 
 	// register failover state
-	hw->Relays[id-1].set.failstate = relay->set.failstate;
-	hw->Relays[id-1].set.rid = id;
+	hw->Relays[id].set.failstate = relay->set.failstate;
+	hw->Relays[id].set.rid = relay->set.rid;
 
-	hw->Relays[id-1].run.off_since = timekeep_now();	// relay is by definition OFF since "now"
+	hw->Relays[id].run.off_since = timekeep_now();	// relay is by definition OFF since "now"
 
-	hw->Relays[id-1].set.configured = true;
+	hw->Relays[id].set.configured = true;
 
 	return (ALL_OK);
 }

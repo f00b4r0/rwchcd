@@ -22,7 +22,7 @@ void * hw_p1_setup_new(void);
 void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw);
 
 int hw_p1_setup_setbl(struct s_hw_p1_pdata * restrict const hw, const uint8_t percent);
-int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const rid_t lastid);
+int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const sid_t lastid);
 int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t nsamples);
 
 int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_relay * restrict const relay) __attribute__((warn_unused_result));
