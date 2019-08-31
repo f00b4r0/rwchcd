@@ -220,10 +220,13 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 
 	// instantiate hardware proto 1
 	hw = hw_p1_setup_new();
+	if (!hw)
+		return (-EOOM);
 
 	// parse node list in specified order
 	ret = filecfg_parser_run_parsers(hw, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));
 	if (ALL_OK != ret) {
+		hw_p1_setup_del(hw);
 		filecfg_parser_pr_err(_("HWP1 config parse error"));
 		return (ret);
 	}
