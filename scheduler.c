@@ -27,18 +27,18 @@
 #include "filecfg.h"
 #include "timekeep.h"
 
-/** A schedule item for a given day. */
-struct s_schedule {
+/** A schedule entry. */
+struct s_schedule_e {
 	int tm_hour;		///< hour of the day for this schedule (0 - 23)
 	int tm_min;		///< minute for this schedule	(0 - 59)
 	enum e_runmode runmode;	///< target runmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
 	enum e_runmode dhwmode;	///< target dhwmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
 	bool legionella;	///< true if legionella heat charge is requested
-	struct s_schedule * next;
+	struct s_schedule_e * next;
 };
 
 /** Array of daily schedules for the week */
-static struct s_schedule * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, };
+static struct s_schedule_e * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, };
 
 /**
  * Find the current schedule.
@@ -56,7 +56,7 @@ static int scheduler_now(void)
 	struct s_runtime * const runtime = runtime_get();
 	const time_t now = time(NULL);
 	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
-	const struct s_schedule * sch;
+	const struct s_schedule_e * sch;
 	int tm_wday = ltime->tm_wday;
 	int tm_hour = ltime->tm_hour;
 	int tm_min = ltime->tm_min;
@@ -165,6 +165,7 @@ void * scheduler_thread(void * arg)
 
 /**
  * Add a schedule entry.
+ * Add entries sorted.
  * @param tm_wday target day of the week (0 = Sunday = 7)
  * @param tm_hour target hour of the day (0 - 23)
  * @param tm_min target min of the hour (0 - 59)
@@ -175,7 +176,7 @@ void * scheduler_thread(void * arg)
  */
 int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella)
 {
-	struct s_schedule * sch = NULL, * sch_before, * sch_after;
+	struct s_schedule_e * sch = NULL, * sch_before, * sch_after;
 	
 	// sanity checks on params
 	if ((tm_wday < 0) || (tm_wday > 7))
@@ -242,7 +243,7 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
  */
 int scheduler_filecfg_dump(void)
 {
-	struct s_schedule * sch;
+	struct s_schedule_e * sch;
 	unsigned int i;
 
 	filecfg_iprintf("scheduler {\n");
