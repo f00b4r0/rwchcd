@@ -171,14 +171,7 @@ static int init_process(void)
 	}
 	ret = filecfg_parser_parse();	// XXX REVIEW happens as root
 	if (ret) {
-		switch (ret) {
-			case -EOOM:
-				pr_err(_("Out of memory while parsing configuration!"));
-				break;
-			default:
-				pr_err(_("Configuration parsing failed"));
-				break;
-		}
+		pr_err(_("Configuration parsing failed"));
 		return (ret);
 	}
 

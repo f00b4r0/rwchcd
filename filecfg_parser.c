@@ -1924,9 +1924,9 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
  * Process the root list of config nodes.
  * This routine is used by the Bison parser.
  * @param nodelist the root nodelist for all the configuration nodes
- * @return exec status
+ * @return 0 on success, 1 on failure
  */
-int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodelist)
+int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST, "backends", false, hardware_backends_parse, NULL, },
@@ -1939,17 +1939,34 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodeli
 	int ret;
 
 	pr_log(_("Begin parsing config"));
+
+	if (!nodelist) {
+		pr_err("Empty configuration file!");
+		return (1);
+	}
+
 	ret = filecfg_parser_match_nodelist(nodelist, root_parsers, ARRAY_SIZE(root_parsers));
 	if (ALL_OK != ret)
-		return (ret);
+		goto fail;
 
 	ret = filecfg_parser_run_parsers(runtime, root_parsers, ARRAY_SIZE(root_parsers));
-	if (ALL_OK == ret)
-		pr_log(_("Config successfully parsed"));
-	else
-		pr_log(_("Error parsing config! (%d)"), ret);
+	if (ALL_OK != ret)
+		goto fail;
 
-	return (ret);
+	pr_log(_("Config successfully parsed"));
+	return (0);
+
+fail:
+	switch (ret) {
+		case -EOOM:
+			pr_err(_("Out of memory while parsing configuration!"));
+			break;
+		default:
+			pr_err(_("Error parsing config! (%d)"), ret);
+			break;
+	}
+
+	return (1);
 }
 
 /**
