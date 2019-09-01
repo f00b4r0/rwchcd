@@ -27,24 +27,65 @@
 #include "filecfg.h"
 #include "timekeep.h"
 
-/** A schedule entry. */
+/** A schedule entry. Schedule entries are linked in a looped list. Config token 'entry' */
 struct s_schedule_e {
+	struct s_schedule_e * next;
+	int tm_wday;		///< day of the week for this schedule (0 - 6, Sunday = 0)
 	int tm_hour;		///< hour of the day for this schedule (0 - 23)
 	int tm_min;		///< minute for this schedule	(0 - 59)
 	enum e_runmode runmode;	///< target runmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
 	enum e_runmode dhwmode;	///< target dhwmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
 	bool legionella;	///< true if legionella heat charge is requested
-	struct s_schedule_e * next;
+	bool recycle;		///< true if DHW recycle pump should be turned on
 };
 
-/** Array of daily schedules for the week */
-static struct s_schedule_e * Schedule_week[7] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, };
+/** A schedule list. The list loops, with last element pointing back to first */
+static struct s_schedule {
+	const struct s_schedule_e * current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day)
+	const struct s_schedule_e * head;	///< 'head' of sorted schedule entries loop (i.e. earliest schedule entry)
+	const char * name;
+	int schedid;
+} Schedule;
+
+/**
+ * Find if the provided schedule entry is in a weekday's past time.
+ * @param schent the schedule entry to test for
+ * @param ltime a partially populated tm struct with valid weekday, hours and minutes.
+ * @return TRUE if the schedule entry is in the same weekday as the provided ltime,
+ * with hours and minutes before or exactly the same as that of the provided ltime,
+ * FALSE in all other cases.
+ */
+static bool scheduler_ent_past_today(const struct s_schedule_e * const schent, const struct tm * const ltime)
+{
+	const int tm_wday = ltime->tm_wday;
+	const int tm_hour = ltime->tm_hour;
+	const int tm_min = ltime->tm_min;
+	bool found = false;
+
+	if (schent->tm_wday != tm_wday)
+		goto end;
+
+	// schent->tm_wday == tm_wday
+	if (schent->tm_hour < tm_hour) {
+		found = true;
+		goto end;
+	}
+	else if (schent->tm_hour > tm_hour)
+		goto end;
+
+	// schent->tm_hour == tm_hour
+	if (schent->tm_min <= tm_min)
+		found = true;
+
+end:
+	return (found);
+}
 
 /**
  * Find the current schedule.
- * We parse today's schedule list, updating the runmode and dhwmode variables
- * as we pass through past schedules. We stop when the next schedule is in the
- * future, which leaves us with the last valid run/dhw modes in the variables.
+ * We parse the schedule list, updating the runmode and dhwmode variables
+ * as we pass through past schedule entries. We stop when the next schedule entry
+ * is in the future, which leaves us with the last valid schedule entry in sched->current.
  * @warning legionella trigger is run lockless
  * @return exec status
  * @bug if the first schedule of the day has either runmode OR dhwmode set to
@@ -55,16 +96,12 @@ static int scheduler_now(void)
 {
 	struct s_runtime * const runtime = runtime_get();
 	const time_t now = time(NULL);
-	const struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
-	const struct s_schedule_e * sch;
-	int tm_wday = ltime->tm_wday;
-	int tm_hour = ltime->tm_hour;
-	int tm_min = ltime->tm_min;
-	const int tm_wday_start = tm_wday;
+	struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
+	const struct s_schedule_e * schent, * schent_start;
+	struct s_schedule * sched;
 	enum e_runmode runmode, dhwmode, rt_runmode, rt_dhwmode;
 	enum e_systemmode rt_sysmode;
-	bool legionella;
-	bool found = false;
+	bool legionella, active;
 
 	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
 	rt_sysmode = runtime->systemmode;
@@ -72,61 +109,60 @@ static int scheduler_now(void)
 	rt_dhwmode = runtime->dhwmode;
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 
-	if (SYS_AUTO != rt_sysmode)
-		return (-EGENERIC);	// we can't update, no need to waste time
+	sched = &Schedule;
 
-	// start from invalid mode (prevents spurious change with runtime_set_*())
-	runmode = dhwmode = RM_UNKNOWN;
-	legionella = false;
-	
-restart:
-	sch = Schedule_week[tm_wday];
-	
-	// find the current running schedule
-	while (sch) {
-		if (sch->tm_hour < tm_hour) {
-			if (RM_UNKNOWN != sch->runmode)	// only update mode if valid
-				runmode = sch->runmode;
-			if (RM_UNKNOWN != sch->dhwmode)
-				dhwmode = sch->dhwmode;
-			legionella = sch->legionella;
-			sch = sch->next;
-			found = true;
-			continue;
-		}
-		else if (sch->tm_hour == tm_hour) {	// same hour, must check minutes
-			if (sch->tm_min <= tm_min) {
-				if (RM_UNKNOWN != sch->runmode)	// only update mode if valid
-					runmode = sch->runmode;
-				if (RM_UNKNOWN != sch->dhwmode)
-					dhwmode = sch->dhwmode;
-				legionella = sch->legionella;
-				sch = sch->next;
-				found = true;
-				continue;
-			}
-			else
-				break;
-		}
-		else // (sch->tm_hour > tm_hour): FUTURE
-			break;
+	if (SYS_AUTO != rt_sysmode) {
+		sched->current = NULL;
+		return (-EGENERIC);	// we can't update, no need to waste time
 	}
-	
-	if (!found) {
-		/* today's list didn't contain a single past schedule,
+
+	schent_start = sched->current ? sched->current : sched->head;
+	active = sched->current ? true : false;	// used to flag an already active schedule
+
+	if (!schent_start) {
+		dbgmsg("empty schedule");
+		return (-EGENERIC);	// empty schedule
+	}
+
+	// we have at least one schedule entry
+
+restart:
+	// find the current running schedule
+
+	// special case first entry which may be the only one
+	if (scheduler_ent_past_today(schent_start, ltime))
+		sched->current = schent_start;
+
+	// loop over other entries, stop if/when back at first entry
+	for (schent = schent_start->next; schent && (schent_start != schent); schent = schent->next) {
+		if (scheduler_ent_past_today(schent, ltime))
+			sched->current = schent;
+		else if (sched->current)
+			break;	// if we already have a valid schedule entry ('synced'), first future entry stops search
+	}
+
+	// if we are already synced, check if we need to do anything
+	if (sched->current) {
+		if (active && (schent_start == sched->current))	// current schedule entry unchanged
+			return (ALL_OK);	// nothing to update
+	}
+	else {
+		/* we never synced and today's list didn't contain a single past schedule,
 		 we must roll back through the week until we find one.
 		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
 		 to find the last known valid schedule */
-		tm_min = 59;
-		tm_hour = 23;
-		if (--tm_wday < 0)
-			tm_wday = 6;
-		if (tm_wday_start == tm_wday) {
-			dbgmsg("no schedule found");
-			return (-EGENERIC);	// empty schedule
-		}
+		ltime->tm_min = 59;
+		ltime->tm_hour = 23;
+		if (--ltime->tm_wday < 0)
+			ltime->tm_wday = 6;
 		goto restart;
 	}
+
+	// schedule entry was updated
+
+	runmode = sched->current->runmode;
+	dhwmode = sched->current->dhwmode;
+	legionella = sched->current->legionella;
 
 	// update only if necessary
 	if ((runmode != rt_runmode) || (dhwmode != rt_dhwmode)) {
@@ -165,18 +201,18 @@ void * scheduler_thread(void * arg)
 
 /**
  * Add a schedule entry.
- * Add entries sorted.
+ * Added entries are inserted at a sorted position.
  * @param tm_wday target day of the week (0 = Sunday = 7)
  * @param tm_hour target hour of the day (0 - 23)
  * @param tm_min target min of the hour (0 - 59)
  * @param runmode target runmode for this schedule entry
  * @param dhwmode target dhwmode for this schedule entry
  * @param legionella true if legionella charge should be triggered for this entry
- * @warning will not report duplicate entries
+ * @return exec status, -EEXISTS if entry is a time duplicate of another one
  */
 int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella)
 {
-	struct s_schedule_e * sch = NULL, * sch_before, * sch_after;
+	struct s_schedule_e * sch = NULL, * sch_before, * sch_after, *sch_last;
 	
 	// sanity checks on params
 	if ((tm_wday < 0) || (tm_wday > 7))
@@ -197,43 +233,80 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 		return (-EOOM);
 	
 	sch_before = NULL;
-	sch_after = Schedule_week[tm_wday];
+	sch_after = Schedule.head;
 	
 	// find insertion place
-	while (sch_after) {
-		if (sch_after->tm_hour == tm_hour) {
-			if (sch_after->tm_min > tm_min)
+	if (sch_after) {
+		do {
+			if (sch_after->tm_wday == tm_wday) {
+				if (sch_after->tm_hour == tm_hour) {
+					if (sch_after->tm_min > tm_min)
+						break;
+				}
+				else if (sch_after->tm_hour > tm_hour)
+					break;
+			}
+			else if (sch_after->tm_wday > tm_wday)
 				break;
-		}
-		else if (sch_after->tm_hour > tm_hour)
-			break;
-		
-		sch_before = sch_after;
-		sch_after = sch_before->next;
+
+			sch_before = sch_after;
+			sch_after = sch_before->next;
+		} while (Schedule.head != sch_after);
+
+		// if we're going to replace the head, we must find the last element
+		if (!sch_before && (Schedule.head == sch_after))
+			for (sch_last = sch_after; Schedule.head != sch_last->next; sch_last = sch_last->next);
 	}
-	
+	else
+		sch_last = sch;		// new entry is the only and last one
+
+	sch->tm_wday = tm_wday;
 	sch->tm_hour = tm_hour;
 	sch->tm_min = tm_min;
 	sch->runmode = runmode;
 	sch->dhwmode = dhwmode;
 	sch->legionella = legionella;
-	
+
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
 	 * lockless. We probably need a fence. This is not "mission critical" so
 	 * I'll leave it as is for now. */
-	sch->next = sch_after;
+	sch->next = sch_after;	// if sch_after == NULL (can only happen with sch_before NULL too), will be updated via sch_last
 	
 	if (!sch_before)
-		Schedule_week[tm_wday] = sch;
+		sch_last->next = Schedule.head = sch;
 	else
 		sch_before->next = sch;
+
+	Schedule.current = NULL;	// desync
 	/* End fence section */
 	
 //	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d, legionella: %d",
 //	       tm_wday, tm_hour, tm_min, runmode, dhwmode, legionella);
 	
 	return (ALL_OK);
+}
+
+static void scheduler_entry_dump(const struct s_schedule_e * const schent)
+{
+	if (!schent)
+		return;
+
+	filecfg_iprintf("entry {\n");
+	filecfg_ilevel_inc();
+
+	filecfg_iprintf("wday %d;\n", schent->tm_wday);		// mandatory
+	filecfg_iprintf("hour %d;\n", schent->tm_hour);		// mandatory
+	filecfg_iprintf("min %d;\n", schent->tm_min);		// mandatory
+	if (RM_UNKNOWN != schent->runmode)
+		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->runmode));
+	if (RM_UNKNOWN != schent->dhwmode)
+		filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(schent->runmode));
+	if (schent->legionella)
+		filecfg_iprintf("legionella %s;\n", filecfg_bool_str(schent->legionella));
+
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 }
 
 /**
@@ -243,32 +316,20 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
  */
 int scheduler_filecfg_dump(void)
 {
-	struct s_schedule_e * sch;
-	unsigned int i;
+	const struct s_schedule_e * schent, * schent_start;
 
 	filecfg_iprintf("scheduler {\n");
 	filecfg_ilevel_inc();
 
-	for (i = 0; i < ARRAY_SIZE(Schedule_week); i++) {
-		for (sch = Schedule_week[i]; sch; sch = sch->next) {
-			filecfg_iprintf("entry {\n");
-			filecfg_ilevel_inc();
+	if (!Schedule.head)
+		goto emptysched;
 
-			filecfg_iprintf("wday %d;\n", i);			// mandatory
-			filecfg_iprintf("hour %d;\n", sch->tm_hour);		// mandatory
-			filecfg_iprintf("min %d;\n", sch->tm_min);		// mandatory
-			if (RM_UNKNOWN != sch->runmode)
-				filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(sch->runmode));
-			if (RM_UNKNOWN != sch->dhwmode)
-				filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(sch->runmode));
-			if (sch->legionella)
-				filecfg_iprintf("legionella %s;\n", filecfg_bool_str(sch->legionella));
+	schent_start = Schedule.head;
+	scheduler_entry_dump(schent_start);
+	for (schent = schent_start->next; schent && (schent_start != schent); schent = schent->next)
+		scheduler_entry_dump(schent);
 
-			filecfg_ilevel_dec();
-			filecfg_iprintf("};\n");
-		}
-	}
-
+emptysched:
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 
