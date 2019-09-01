@@ -242,6 +242,8 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 				if (sch_after->tm_hour == tm_hour) {
 					if (sch_after->tm_min > tm_min)
 						break;
+					else if (sch_after->tm_min == tm_min)
+						goto duplicate;
 				}
 				else if (sch_after->tm_hour > tm_hour)
 					break;
@@ -285,6 +287,10 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 //	       tm_wday, tm_hour, tm_min, runmode, dhwmode, legionella);
 	
 	return (ALL_OK);
+
+duplicate:
+	free(sch);
+	return (-EEXISTS);
 }
 
 static void scheduler_entry_dump(const struct s_schedule_e * const schent)

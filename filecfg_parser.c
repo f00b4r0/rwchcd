@@ -1782,6 +1782,14 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	if (ALL_OK == ret)
 		ret = scheduler_add(wday, hour, min, runmode, dhwmode, legionella);
 
+	switch (ret) {
+		case -EEXISTS:
+			filecfg_parser_pr_err(_("Line %d: a schedule entry with the same time is already configured"), node->lineno);
+			break;
+		default:
+			break;
+	}
+
 	return (ret);
 
 invaliddata:
