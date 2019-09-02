@@ -45,7 +45,7 @@ struct s_schedule {
 	const struct s_schedule_e * current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day)
 	struct s_schedule_e * head;		///< 'head' of sorted schedule entries loop (i.e. earliest schedule entry)
 	const char * name;			///< schedule name (user-set unique identifier)
-	schedid_t schedid;			///< schedule id (internal unique identifier)
+	schedid_t schedid;			///< >0 schedule id (internal unique identifier)
 };
 
 static struct s_schedules {
@@ -166,7 +166,7 @@ static struct s_schedule * scheduler_schedule_fbi(const schedid_t schedule_id)
 {
 	struct s_schedule * sched;
 
-	if ((schedule_id < 0) || (schedule_id > Schedules.lastid))
+	if ((schedule_id <= 0) || (schedule_id > Schedules.lastid))
 		return (NULL);
 
 	// find correct schedule
@@ -253,7 +253,7 @@ int scheduler_add_schedule(const char * const restrict name)
 		return (-EINVALID);
 
 	// name must be unique
-	if (scheduler_schedid_by_name(name) >= 0)
+	if (scheduler_schedid_by_name(name) > 0)
 		return (-EEXISTS);
 
 	// clone name
@@ -270,7 +270,7 @@ int scheduler_add_schedule(const char * const restrict name)
 
 	// populate schedule
 	sched->name = str;
-	sched->schedid = Schedules.lastid++;
+	sched->schedid = ++Schedules.lastid;
 
 	// insert schedule into list - XXX MEMORY FENCE
 	sched->next = Schedules.schead;

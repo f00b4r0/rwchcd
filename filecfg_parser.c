@@ -1884,7 +1884,7 @@ static int scheduler_schedule_parse(void * restrict const priv, const struct s_f
 		return (-EINVALID);
 
 	schedid = scheduler_add_schedule(node->value.stringval);
-	if (schedid < 0) {
+	if (schedid <= 0) {
 		switch (schedid) {
 			case -EEXISTS:
 				filecfg_parser_pr_err(_("Line %d: a schedule with the same name (\'%s\') is already configured"), node->lineno, node->value.stringval);
