@@ -30,13 +30,10 @@
 /** A schedule entry. Schedule entries are linked in a looped list. Config token 'entry' */
 struct s_schedule_e {
 	struct s_schedule_e * next;
-	int tm_wday;		///< day of the week for this schedule (0 - 6, Sunday = 0)
-	int tm_hour;		///< hour of the day for this schedule (0 - 23)
-	int tm_min;		///< minute for this schedule	(0 - 59)
-	enum e_runmode runmode;	///< target runmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
-	enum e_runmode dhwmode;	///< target dhwmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
-	bool legionella;	///< true if legionella heat charge is requested
-	bool recycle;		///< true if DHW recycle pump should be turned on
+	int tm_wday;		///< day of the week for this schedule entry (0 - 6, Sunday = 0)
+	int tm_hour;		///< hour of the day for this schedule entry (0 - 23)
+	int tm_min;		///< minute for this schedule entry (0 - 59)
+	struct s_schedule_param p;	///< parameters for this schedule entry
 };
 
 /** A schedule list. The list loops, with last element pointing back to first */
@@ -160,9 +157,9 @@ restart:
 
 	// schedule entry was updated
 
-	runmode = sched->current->runmode;
-	dhwmode = sched->current->dhwmode;
-	legionella = sched->current->legionella;
+	runmode = sched->current->p.runmode;
+	dhwmode = sched->current->p.dhwmode;
+	legionella = sched->current->p.legionella;
 
 	// update only if necessary
 	if ((runmode != rt_runmode) || (dhwmode != rt_dhwmode)) {
@@ -265,9 +262,9 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	sch->tm_wday = tm_wday;
 	sch->tm_hour = tm_hour;
 	sch->tm_min = tm_min;
-	sch->runmode = runmode;
-	sch->dhwmode = dhwmode;
-	sch->legionella = legionella;
+	sch->p.runmode = runmode;
+	sch->p.dhwmode = dhwmode;
+	sch->p.legionella = legionella;
 
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
@@ -304,12 +301,14 @@ static void scheduler_entry_dump(const struct s_schedule_e * const schent)
 	filecfg_iprintf("wday %d;\n", schent->tm_wday);		// mandatory
 	filecfg_iprintf("hour %d;\n", schent->tm_hour);		// mandatory
 	filecfg_iprintf("min %d;\n", schent->tm_min);		// mandatory
-	if (RM_UNKNOWN != schent->runmode)
-		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->runmode));
-	if (RM_UNKNOWN != schent->dhwmode)
-		filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(schent->runmode));
-	if (schent->legionella)
-		filecfg_iprintf("legionella %s;\n", filecfg_bool_str(schent->legionella));
+	if (RM_UNKNOWN != schent->p.runmode)
+		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->p.runmode));
+	if (RM_UNKNOWN != schent->p.dhwmode)
+		filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(schent->p.runmode));
+	if (schent->p.legionella)
+		filecfg_iprintf("legionella %s;\n", filecfg_bool_str(schent->p.legionella));
+	if (schent->p.recycle)
+		filecfg_iprintf("recycle %s;\n", filecfg_bool_str(schent->p.recycle));
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
