@@ -31,9 +31,7 @@
 /** A schedule entry. Schedule entries are linked in a looped list. Config token 'entry' */
 struct s_schedule_e {
 	struct s_schedule_e * next;
-	int tm_wday;		///< day of the week for this schedule entry (0 - 6, Sunday = 0)
-	int tm_hour;		///< hour of the day for this schedule entry (0 - 23)
-	int tm_min;		///< minute for this schedule entry (0 - 59)
+	struct s_schedule_etime t;	///< time for this schedule entry
 	struct s_schedule_eparams p;	///< parameters for this schedule entry
 };
 
@@ -75,19 +73,19 @@ static bool scheduler_ent_past_today(const struct s_schedule_e * const schent, c
 	const int tm_min = ltime->tm_min;
 	bool found = false;
 
-	if (schent->tm_wday != tm_wday)
+	if (schent->t.tm_wday != tm_wday)
 		goto end;
 
-	// schent->tm_wday == tm_wday
-	if (schent->tm_hour < tm_hour) {
+	// schent->t.tm_wday == tm_wday
+	if (schent->t.tm_hour < tm_hour) {
 		found = true;
 		goto end;
 	}
-	else if (schent->tm_hour > tm_hour)
+	else if (schent->t.tm_hour > tm_hour)
 		goto end;
 
-	// schent->tm_hour == tm_hour
-	if (schent->tm_min <= tm_min)
+	// schent->t.tm_hour == tm_hour
+	if (schent->t.tm_min <= tm_min)
 		found = true;
 
 end:
@@ -362,17 +360,17 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const
 	// find insertion place
 	if (schent_after) {
 		do {
-			if (schent_after->tm_wday == tm_wday) {
-				if (schent_after->tm_hour == tm_hour) {
-					if (schent_after->tm_min > tm_min)
+			if (schent_after->t.tm_wday == tm_wday) {
+				if (schent_after->t.tm_hour == tm_hour) {
+					if (schent_after->t.tm_min > tm_min)
 						break;
-					else if (schent_after->tm_min == tm_min)
+					else if (schent_after->t.tm_min == tm_min)
 						goto duplicate;
 				}
-				else if (schent_after->tm_hour > tm_hour)
+				else if (schent_after->t.tm_hour > tm_hour)
 					break;
 			}
-			else if (schent_after->tm_wday > tm_wday)
+			else if (schent_after->t.tm_wday > tm_wday)
 				break;
 
 			schent_before = schent_after;
@@ -386,9 +384,9 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const
 	else
 		schent_last = schent;		// new entry is the only and last one
 
-	schent->tm_wday = tm_wday;
-	schent->tm_hour = tm_hour;
-	schent->tm_min = tm_min;
+	schent->t.tm_wday = tm_wday;
+	schent->t.tm_hour = tm_hour;
+	schent->t.tm_min = tm_min;
 	memcpy(schent->p, sparams, sizeof(schent->p));
 
 
@@ -424,9 +422,9 @@ static void scheduler_entry_dump(const struct s_schedule_e * const schent)
 	filecfg_iprintf("entry {\n");
 	filecfg_ilevel_inc();
 
-	filecfg_iprintf("wday %d;\n", schent->tm_wday);		// mandatory
-	filecfg_iprintf("hour %d;\n", schent->tm_hour);		// mandatory
-	filecfg_iprintf("min %d;\n", schent->tm_min);		// mandatory
+	filecfg_iprintf("wday %d;\n", schent->t.tm_wday);	// mandatory
+	filecfg_iprintf("hour %d;\n", schent->t.tm_hour);	// mandatory
+	filecfg_iprintf("min %d;\n", schent->t.tm_min);		// mandatory
 	if (RM_UNKNOWN != schent->p.runmode)
 		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->p.runmode));
 	if (RM_UNKNOWN != schent->p.dhwmode)
