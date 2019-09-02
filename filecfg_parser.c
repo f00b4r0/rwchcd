@@ -1720,33 +1720,22 @@ static int hardware_backends_parse(void * restrict const priv, const struct s_fi
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "backend", hardware_backend_parse));
 }
 
-static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+/* XXX TODO wishlist: parse a single entry spanning multiple weekdays */
+static int scheduler_entry_time_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "wday", true, NULL, NULL, },		// 0
 		{ NODEINT, "hour", true, NULL, NULL, },
 		{ NODEINT, "min", true, NULL, NULL, },		// 2
-		{ NODESTR, "runmode", false, NULL, NULL, },
-		{ NODESTR, "dhwmode", false, NULL, NULL, },	// 4
-		{ NODEBOL, "legionella", false, NULL, NULL, },
-		{ NODEBOL, "recycle", false, NULL, NULL, },	// 6
 	};
-	const int schedid = *(int *)priv;
-	struct s_schedule_eparams sparams;
+	struct s_schedule_etime * const etime = priv;
 	const struct s_filecfg_parser_node * currnode;
-	int wday = -1, hour = -1, min = -1, ret;
 	unsigned int i;
-
-	// we receive an 'entry' node
+	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
-
-	// reset buffer and set mode defaults
-	memset(&sparams, 0, sizeof(sparams));
-	sparams.runmode = RM_UNKNOWN;
-	sparams.dhwmode = RM_UNKNOWN;
 
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
 		currnode = parsers[i].node;
@@ -1757,40 +1746,115 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 			case 0:
 				if ((currnode->value.intval < 0) || (currnode->value.intval > 7))
 					goto invaliddata;
-				wday = currnode->value.intval;
+				etime->wday = currnode->value.intval;
+				// convert Sunday if necessary
+				if (7 == etime->wday)
+					etime->wday = 0;
 				break;
 			case 1:
 				if ((currnode->value.intval < 0) || (currnode->value.intval > 23))
 					goto invaliddata;
-				hour = currnode->value.intval;
+				etime->hour = currnode->value.intval;
 				break;
 			case 2:
 				if ((currnode->value.intval < 0) || (currnode->value.intval > 59))
 					goto invaliddata;
-				min = currnode->value.intval;
-				break;
-			case 3:
-				if (ALL_OK != runmode_parse(&sparams.runmode, currnode))
-					goto invaliddata;
-				break;
-			case 4:
-				if (ALL_OK != runmode_parse(&sparams.dhwmode, currnode))
-					goto invaliddata;
-				break;
-			case 5:
-				sparams.legionella = currnode->value.boolval;
-				break;
-			case 6:
-				sparams.recycle = currnode->value.boolval;
+				etime->min = currnode->value.intval;
 				break;
 			default:
 				break;	// should never happen
 		}
 	}
 
-	if (ALL_OK == ret)
-		ret = scheduler_add_entry(schedid, wday, hour, min, &sparams);
+	return (ret);
 
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
+static int scheduler_entry_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "runmode", false, NULL, NULL, },	// 0
+		{ NODESTR, "dhwmode", false, NULL, NULL, },
+		{ NODEBOL, "legionella", false, NULL, NULL, },	// 2
+		{ NODEBOL, "recycle", false, NULL, NULL, },
+	};
+	struct s_schedule_eparams * const eparams = priv;
+	const struct s_filecfg_parser_node * currnode;
+	unsigned int i;
+	int ret;
+
+	// we receive an 'entry' node
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	// reset buffer and set mode defaults
+	memset(eparams, 0, sizeof(*eparams));
+	eparams->runmode = RM_UNKNOWN;
+	eparams->dhwmode = RM_UNKNOWN;
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				if (ALL_OK != runmode_parse(&eparams->runmode, currnode))
+					goto invaliddata;
+				break;
+			case 1:
+				if (ALL_OK != runmode_parse(&eparams->dhwmode, currnode))
+					goto invaliddata;
+				break;
+			case 2:
+				eparams->legionella = currnode->value.boolval;
+				break;
+			case 3:
+				eparams->recycle = currnode->value.boolval;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	return (ret);
+
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
+static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODELST, "time", true, NULL, NULL, },		// 0
+		{ NODELST, "params", true, NULL, NULL, },
+	};
+	const int schedid = *(int *)priv;
+	struct s_schedule_etime etime;
+	struct s_schedule_eparams eparams;
+	int ret;
+
+	// we receive an 'entry' node
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	ret = scheduler_entry_time_parse(&etime, parsers[0].node);
+	if (ALL_OK != ret)
+		return (ret);
+
+	ret = scheduler_entry_params_parse(&eparams, parsers[1].node);
+	if (ALL_OK != ret)
+		return (ret);
+
+	ret = scheduler_add_entry(schedid, &etime, &eparams);
 	switch (ret) {
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a schedule entry with the same time is already configured"), node->lineno);
@@ -1800,10 +1864,6 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	}
 
 	return (ret);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
 }
 
 static int scheduler_schedule_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)

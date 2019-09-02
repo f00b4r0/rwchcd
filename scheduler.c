@@ -318,32 +318,29 @@ int scheduler_add_schedule(const char * const restrict name)
  * Add a schedule entry.
  * Added entries are inserted at a sorted position.
  * @param schedid id of the schedule to add entry to.
- * @param tm_wday target day of the week (0 = Sunday = 7)
- * @param tm_hour target hour of the day (0 - 23)
- * @param tm_min target min of the hour (0 - 59)
+ * @param etime target time for this entry
  * @param sparams target schedule parameters for this entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
  */
-int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const struct s_schedule_eparams * const sparams)
+int scheduler_add_entry(int schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams)
 {
 	struct s_schedule * sched;
 	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;
 	
 	// sanity checks on params
-	if ((tm_wday < 0) || (tm_wday > 7))
-		return (-EINVALID);
-	if (7 == tm_wday)		// convert sunday
-		tm_wday = 0;
-	if ((tm_hour < 0) || (tm_hour > 23))
-		return (-EINVALID);
-	if ((tm_min < 0) || (tm_min > 59))
-		return (-EINVALID);
-	if (!sparams)
+	if (!etime || !eparams)
 		return (-EINVALID);
 
-	if (sparams->runmode > RM_UNKNOWN)
+	if ((etime->wday < 0) || (etime->wday > 6))
 		return (-EINVALID);
-	if (sparams->dhwmode > RM_UNKNOWN)
+	if ((etime->hour < 0) || (etime->hour > 23))
+		return (-EINVALID);
+	if ((etime->min < 0) || (etime->min > 59))
+		return (-EINVALID);
+
+	if (eparams->runmode > RM_UNKNOWN)
+		return (-EINVALID);
+	if (eparams->dhwmode > RM_UNKNOWN)
 		return (-EINVALID);
 
 	sched = scheduler_schedule_fbi(schedid);
@@ -360,17 +357,17 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const
 	// find insertion place
 	if (schent_after) {
 		do {
-			if (schent_after->time.wday == tm_wday) {
-				if (schent_after->time.hour == tm_hour) {
-					if (schent_after->time.min > tm_min)
+			if (schent_after->time.wday == etime->wday) {
+				if (schent_after->time.hour == etime->hour) {
+					if (schent_after->time.min > etime->min)
 						break;
-					else if (schent_after->time.min == tm_min)
+					else if (schent_after->time.min == etime->min)
 						goto duplicate;
 				}
-				else if (schent_after->time.hour > tm_hour)
+				else if (schent_after->time.hour > etime->hour)
 					break;
 			}
-			else if (schent_after->time.wday > tm_wday)
+			else if (schent_after->time.wday > etime->wday)
 				break;
 
 			schent_before = schent_after;
@@ -384,11 +381,8 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const
 	else
 		schent_last = schent;		// new entry is the only and last one
 
-	schent->time.wday = tm_wday;
-	schent->time.hour = tm_hour;
-	schent->time.min = tm_min;
-	memcpy(schent->params, sparams, sizeof(schent->params));
-
+	memcpy(&schent->time, etime, sizeof(schent->time));
+	memcpy(&schent->params, eparams, sizeof(schent->params));
 
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
@@ -403,10 +397,7 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const
 
 	sched->current = NULL;	// desync
 	/* End fence section */
-	
-//	dbgmsg("add schedule. tm_wday: %d, tm_hour: %d, tm_min: %d, runmode: %d, dhwmode: %d, legionella: %d",
-//	       tm_wday, tm_hour, tm_min, runmode, dhwmode, legionella);
-	
+
 	return (ALL_OK);
 
 duplicate:
