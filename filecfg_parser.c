@@ -649,11 +649,11 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	for (nlist = nodelist; nlist; nlist = nlist->next) {
 		node = nlist->node;
 		if (ntype != node->type) {
-			fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d"), node->name, node->lineno);
+			fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d\n"), node->name, node->lineno);
 			continue;
 		}
 		if (strcmp(nname, node->name)) {
-			fprintf(stderr, _("CONFIG WARNING! Ignoring unknown node \"%s\" closing at line %d"), node->name, node->lineno);
+			fprintf(stderr, _("CONFIG WARNING! Ignoring unknown node \"%s\" closing at line %d\n"), node->name, node->lineno);
 			continue;
 		}
 
@@ -661,7 +661,7 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 			sname = node->value.stringval;
 
 			if (strlen(sname) < 1) {
-				fprintf(stderr, _("CONFIG WARNING! Ignoring \"%s\" with empty name closing at line %d"), node->name, node->lineno);
+				fprintf(stderr, _("CONFIG WARNING! Ignoring \"%s\" with empty name closing at line %d\n"), node->name, node->lineno);
 				continue;
 			}
 
@@ -1946,14 +1946,14 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 	for (i = 0; i < nparsers; i++) {
 		if (!strcmp(parsers[i].identifier, node->name)) {
 			if (!(parsers[i].type & node->type)) {
-				fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d"), node->name, node->lineno);
+				fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d\n"), node->name, node->lineno);
 				return (-EINVALID);
 			}
 
 			dbgmsg("matched %s, %d", node->name, node->lineno);
 			matched = true;
 			if (parsers[i].node) {
-				fprintf(stderr, _("CONFIG WARNING! Ignoring duplicate node \"%s\" closing at line %d"), node->name, node->lineno);
+				fprintf(stderr, _("CONFIG WARNING! Ignoring duplicate node \"%s\" closing at line %d\n"), node->name, node->lineno);
 				continue;
 			}
 			parsers[i].node = node;
