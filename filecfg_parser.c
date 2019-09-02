@@ -1729,12 +1729,12 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODESTR, "runmode", false, NULL, NULL, },
 		{ NODESTR, "dhwmode", false, NULL, NULL, },	// 4
 		{ NODEBOL, "legionella", false, NULL, NULL, },
+		{ NODEBOL, "recycle", false, NULL, NULL, },	// 6
 	};
 	const int schedid = *(int *)priv;
+	struct s_schedule_param sparams;
 	const struct s_filecfg_parser_node * currnode;
 	int wday = -1, hour = -1, min = -1, ret;
-	enum e_runmode runmode = RM_UNKNOWN, dhwmode = RM_UNKNOWN;
-	bool legionella = false;
 	unsigned int i;
 
 	// we receive an 'entry' node
@@ -1742,6 +1742,11 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
+
+	// reset buffer and set mode defaults
+	memset(&sparams, 0, sizeof(sparams));
+	sparams.runmode = RM_UNKNOWN;
+	sparams.dhwmode = RM_UNKNOWN;
 
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
 		currnode = parsers[i].node;
@@ -1765,15 +1770,18 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 				min = currnode->value.intval;
 				break;
 			case 3:
-				if (ALL_OK != runmode_parse(&runmode, currnode))
+				if (ALL_OK != runmode_parse(&sparams.runmode, currnode))
 					goto invaliddata;
 				break;
 			case 4:
-				if (ALL_OK != runmode_parse(&dhwmode, currnode))
+				if (ALL_OK != runmode_parse(&sparams.dhwmode, currnode))
 					goto invaliddata;
 				break;
 			case 5:
-				legionella = currnode->value.boolval;
+				sparams.legionella = currnode->value.boolval;
+				break;
+			case 6:
+				sparams.recycle = currnode->value.boolval;
 				break;
 			default:
 				break;	// should never happen
@@ -1781,7 +1789,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	}
 
 	if (ALL_OK == ret)
-		ret = scheduler_add_entry(schedid, wday, hour, min, runmode, dhwmode, legionella);
+		ret = scheduler_add_entry(schedid, wday, hour, min, &sparams);
 
 	switch (ret) {
 		case -EEXISTS:

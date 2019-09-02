@@ -20,7 +20,7 @@
 #include <unistd.h>	// sleep
 #include <time.h>
 #include <pthread.h>
-#include <string.h>	// strcmp
+#include <string.h>	// strcmp/memcpy
 
 #include "runtime.h"
 #include "plant.h"	// for plant_dhwt_legionella_trigger()
@@ -323,12 +323,10 @@ int scheduler_add_schedule(const char * const restrict name)
  * @param tm_wday target day of the week (0 = Sunday = 7)
  * @param tm_hour target hour of the day (0 - 23)
  * @param tm_min target min of the hour (0 - 59)
- * @param runmode target runmode for this schedule entry
- * @param dhwmode target dhwmode for this schedule entry
- * @param legionella true if legionella charge should be triggered for this entry
+ * @param sparams target schedule parameters for this entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
  */
-int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella)
+int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const struct s_schedule_param * const sparams)
 {
 	struct s_schedule * sched;
 	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;
@@ -342,9 +340,12 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, enum 
 		return (-EINVALID);
 	if ((tm_min < 0) || (tm_min > 59))
 		return (-EINVALID);
-	if (runmode > RM_UNKNOWN)
+	if (!sparams)
 		return (-EINVALID);
-	if (dhwmode > RM_UNKNOWN)
+
+	if (sparams->runmode > RM_UNKNOWN)
+		return (-EINVALID);
+	if (sparams->dhwmode > RM_UNKNOWN)
 		return (-EINVALID);
 
 	sched = scheduler_schedule_fbi(schedid);
@@ -388,9 +389,8 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, enum 
 	schent->tm_wday = tm_wday;
 	schent->tm_hour = tm_hour;
 	schent->tm_min = tm_min;
-	schent->p.runmode = runmode;
-	schent->p.dhwmode = dhwmode;
-	schent->p.legionella = legionella;
+	memcpy(schent->p, sparams, sizeof(schent->p));
+
 
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably

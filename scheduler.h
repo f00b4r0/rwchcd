@@ -26,7 +26,7 @@ struct s_schedule_param {
 void * scheduler_thread(void * arg);
 const struct s_schedule_param * scheduler_get_schedparams(const int schedule_id);
 int scheduler_schedid_by_name(const char * const restrict sched_name);
-int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella);
+int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const struct s_schedule_param * const sparams);
 int scheduler_add_schedule(const char * const restrict name);
 int scheduler_filecfg_dump(void);
 
