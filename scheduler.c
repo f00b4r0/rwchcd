@@ -31,8 +31,8 @@
 /** A schedule entry. Schedule entries are linked in a looped list. Config token 'entry' */
 struct s_schedule_e {
 	struct s_schedule_e * next;
-	struct s_schedule_etime t;	///< time for this schedule entry
-	struct s_schedule_eparams p;	///< parameters for this schedule entry
+	struct s_schedule_etime time;		///< time for this schedule entry
+	struct s_schedule_eparams params;	///< parameters for this schedule entry
 };
 
 /**
@@ -73,19 +73,19 @@ static bool scheduler_ent_past_today(const struct s_schedule_e * const schent, c
 	const int tm_min = ltime->tm_min;
 	bool found = false;
 
-	if (schent->t.tm_wday != tm_wday)
+	if (schent->time.wday != tm_wday)
 		goto end;
 
-	// schent->t.tm_wday == tm_wday
-	if (schent->t.tm_hour < tm_hour) {
+	// schent->time.wday == tm_wday
+	if (schent->time.hour < tm_hour) {
 		found = true;
 		goto end;
 	}
-	else if (schent->t.tm_hour > tm_hour)
+	else if (schent->time.hour > tm_hour)
 		goto end;
 
-	// schent->t.tm_hour == tm_hour
-	if (schent->t.tm_min <= tm_min)
+	// schent->time.hour == tm_hour
+	if (schent->time.min <= tm_min)
 		found = true;
 
 end:
@@ -171,9 +171,9 @@ restart:
 
 	// schedule entry was updated
 
-	runmode = sched->current->p.runmode;
-	dhwmode = sched->current->p.dhwmode;
-	legionella = sched->current->p.legionella;
+	runmode = sched->current->params.runmode;
+	dhwmode = sched->current->params.dhwmode;
+	legionella = sched->current->params.legionella;
 
 	// update only if necessary
 	if ((runmode != rt_runmode) || (dhwmode != rt_dhwmode)) {
@@ -224,7 +224,7 @@ const struct s_schedule_eparams * scheduler_get_schedparams(const int schedule_i
 
 	// return current schedule entry for schedule, if available
 	if (sched && sched->current)
-		return (&sched->current->p);
+		return (&sched->current->params);
 	else
 		return (NULL);
 }
@@ -360,17 +360,17 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const
 	// find insertion place
 	if (schent_after) {
 		do {
-			if (schent_after->t.tm_wday == tm_wday) {
-				if (schent_after->t.tm_hour == tm_hour) {
-					if (schent_after->t.tm_min > tm_min)
+			if (schent_after->time.wday == tm_wday) {
+				if (schent_after->time.hour == tm_hour) {
+					if (schent_after->time.min > tm_min)
 						break;
-					else if (schent_after->t.tm_min == tm_min)
+					else if (schent_after->time.min == tm_min)
 						goto duplicate;
 				}
-				else if (schent_after->t.tm_hour > tm_hour)
+				else if (schent_after->time.hour > tm_hour)
 					break;
 			}
-			else if (schent_after->t.tm_wday > tm_wday)
+			else if (schent_after->time.wday > tm_wday)
 				break;
 
 			schent_before = schent_after;
@@ -384,10 +384,10 @@ int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const
 	else
 		schent_last = schent;		// new entry is the only and last one
 
-	schent->t.tm_wday = tm_wday;
-	schent->t.tm_hour = tm_hour;
-	schent->t.tm_min = tm_min;
-	memcpy(schent->p, sparams, sizeof(schent->p));
+	schent->time.wday = tm_wday;
+	schent->time.hour = tm_hour;
+	schent->time.min = tm_min;
+	memcpy(schent->params, sparams, sizeof(schent->params));
 
 
 	/* Begin fence section.
@@ -424,22 +424,22 @@ static void scheduler_entry_dump(const struct s_schedule_e * const schent)
 
 	filecfg_iprintf("time {\n");
 	filecfg_ilevel_inc();
-	filecfg_iprintf("wday %d;\n", schent->t.tm_wday);	// mandatory
-	filecfg_iprintf("hour %d;\n", schent->t.tm_hour);	// mandatory
-	filecfg_iprintf("min %d;\n", schent->t.tm_min);		// mandatory
+	filecfg_iprintf("wday %d;\n", schent->time.wday);	// mandatory
+	filecfg_iprintf("hour %d;\n", schent->time.hour);	// mandatory
+	filecfg_iprintf("min %d;\n", schent->time.min);		// mandatory
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 
 	filecfg_iprintf("params {\n");
 	filecfg_ilevel_inc();
-	if (RM_UNKNOWN != schent->p.runmode)
-		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->p.runmode));
-	if (RM_UNKNOWN != schent->p.dhwmode)
-		filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(schent->p.runmode));
-	if (schent->p.legionella)
-		filecfg_iprintf("legionella %s;\n", filecfg_bool_str(schent->p.legionella));
-	if (schent->p.recycle)
-		filecfg_iprintf("recycle %s;\n", filecfg_bool_str(schent->p.recycle));
+	if (RM_UNKNOWN != schent->params.runmode)
+		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->params.runmode));
+	if (RM_UNKNOWN != schent->params.dhwmode)
+		filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(schent->params.runmode));
+	if (schent->params.legionella)
+		filecfg_iprintf("legionella %s;\n", filecfg_bool_str(schent->params.legionella));
+	if (schent->params.recycle)
+		filecfg_iprintf("recycle %s;\n", filecfg_bool_str(schent->params.recycle));
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 
