@@ -209,7 +209,7 @@ void * scheduler_thread(void * arg)
  */
 int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, enum e_runmode dhwmode, bool legionella)
 {
-	struct s_schedule_e * sch = NULL, * sch_before, * sch_after, *sch_last;
+	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;
 	
 	// sanity checks on params
 	if ((tm_wday < 0) || (tm_wday > 7))
@@ -225,57 +225,57 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	if (dhwmode > RM_UNKNOWN)
 		return (-EINVALID);
 	
-	sch = calloc(1, sizeof(*sch));
-	if (!sch)
+	schent = calloc(1, sizeof(*schent));
+	if (!schent)
 		return (-EOOM);
 	
-	sch_before = NULL;
-	sch_after = Schedule.head;
+	schent_after = Schedule.head;
+	schent_before = NULL;
 	
 	// find insertion place
-	if (sch_after) {
+	if (schent_after) {
 		do {
-			if (sch_after->tm_wday == tm_wday) {
-				if (sch_after->tm_hour == tm_hour) {
-					if (sch_after->tm_min > tm_min)
+			if (schent_after->tm_wday == tm_wday) {
+				if (schent_after->tm_hour == tm_hour) {
+					if (schent_after->tm_min > tm_min)
 						break;
-					else if (sch_after->tm_min == tm_min)
+					else if (schent_after->tm_min == tm_min)
 						goto duplicate;
 				}
-				else if (sch_after->tm_hour > tm_hour)
+				else if (schent_after->tm_hour > tm_hour)
 					break;
 			}
-			else if (sch_after->tm_wday > tm_wday)
+			else if (schent_after->tm_wday > tm_wday)
 				break;
 
-			sch_before = sch_after;
-			sch_after = sch_before->next;
-		} while (Schedule.head != sch_after);
+		} while (Schedule.head != schent_after);
+			schent_before = schent_after;
+			schent_after = schent_before->next;
 
 		// if we're going to replace the head, we must find the last element
-		if (!sch_before && (Schedule.head == sch_after))
-			for (sch_last = sch_after; Schedule.head != sch_last->next; sch_last = sch_last->next);
+		if (!schent_before && (Schedule.head == schent_after))
+			for (schent_last = schent_after; Schedule.head != schent_last->next; schent_last = schent_last->next);
 	}
 	else
-		sch_last = sch;		// new entry is the only and last one
+		schent_last = schent;		// new entry is the only and last one
 
-	sch->tm_wday = tm_wday;
-	sch->tm_hour = tm_hour;
-	sch->tm_min = tm_min;
-	sch->p.runmode = runmode;
-	sch->p.dhwmode = dhwmode;
-	sch->p.legionella = legionella;
+	schent->tm_wday = tm_wday;
+	schent->tm_hour = tm_hour;
+	schent->tm_min = tm_min;
+	schent->p.runmode = runmode;
+	schent->p.dhwmode = dhwmode;
+	schent->p.legionella = legionella;
 
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
 	 * lockless. We probably need a fence. This is not "mission critical" so
 	 * I'll leave it as is for now. */
-	sch->next = sch_after;	// if sch_after == NULL (can only happen with sch_before NULL too), will be updated via sch_last
+	schent->next = schent_after;	// if sch_after == NULL (can only happen with sch_before NULL too), will be updated via sch_last
 	
 	if (!sch_before)
-		sch_last->next = Schedule.head = sch;
+		schent_last->next = Schedule.head = schent;
 	else
-		sch_before->next = sch;
+		schent_before->next = schent;
 
 	Schedule.current = NULL;	// desync
 	/* End fence section */
@@ -286,7 +286,7 @@ int scheduler_add(int tm_wday, int tm_hour, int tm_min, enum e_runmode runmode, 
 	return (ALL_OK);
 
 duplicate:
-	free(sch);
+	free(schent);
 	return (-EEXISTS);
 }
 
