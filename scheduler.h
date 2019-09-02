@@ -32,9 +32,9 @@ struct s_schedule_eparams {
 };
 
 void * scheduler_thread(void * arg);
-const struct s_schedule_eparams * scheduler_get_schedparams(const int schedule_id);
+const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t schedule_id);
 int scheduler_schedid_by_name(const char * const restrict sched_name);
-int scheduler_add_entry(int schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams);
+int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams);
 int scheduler_add_schedule(const char * const restrict name);
 int scheduler_filecfg_dump(void);
 

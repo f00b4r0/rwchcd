@@ -45,12 +45,12 @@ struct s_schedule {
 	const struct s_schedule_e * current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day)
 	struct s_schedule_e * head;		///< 'head' of sorted schedule entries loop (i.e. earliest schedule entry)
 	const char * name;			///< schedule name (user-set unique identifier)
-	unsigned int schedid;			///< schedule id (internal unique identifier)
+	schedid_t schedid;			///< schedule id (internal unique identifier)
 };
 
 static struct s_schedules {
 	struct s_schedule * schead;
-	int lastid;
+	schedid_t lastid;
 } Schedules = {
 	NULL,
 	0,
@@ -162,7 +162,7 @@ static int scheduler_now(void)
  * @param schedule_id the target id
  * @return schedule id if found, error otherwise.
  */
-static struct s_schedule * scheduler_schedule_fbi(const int schedule_id)
+static struct s_schedule * scheduler_schedule_fbi(const schedid_t schedule_id)
 {
 	struct s_schedule * sched;
 
@@ -183,7 +183,7 @@ static struct s_schedule * scheduler_schedule_fbi(const int schedule_id)
  * @param schedid the target schedule id
  * @return pointer to params if found, NULL otherwise.
  */
-const struct s_schedule_eparams * scheduler_get_schedparams(const int schedule_id)
+const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t schedule_id)
 {
 	const struct s_schedule * sched;
 
@@ -246,7 +246,6 @@ void * scheduler_thread(void * arg)
 int scheduler_add_schedule(const char * const restrict name)
 {
 	struct s_schedule * sched;
-	unsigned int id;
 	char * str = NULL;
 
 	// sanitize input: check that mandatory callbacks are provided
@@ -289,7 +288,7 @@ int scheduler_add_schedule(const char * const restrict name)
  * @param sparams target schedule parameters for this entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
  */
-int scheduler_add_entry(int schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams)
+int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams)
 {
 	struct s_schedule * sched;
 	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;

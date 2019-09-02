@@ -132,6 +132,7 @@ typedef struct {
 	bid_t bid;	///< backend id
 	rid_t rid;	///< relay id - @warning MUST START FROM 1
 } relid_t;
+typedef uint_fast16_t	schedid_t;	///< schedule id type
 
 /** Valid run modes */
 enum e_runmode {

@@ -32,7 +32,8 @@
  * Type specific rules:
  * - All `timekeep_t` values must be expressed in integer seconds.
  * - All `temp_t` values must be expressed in Celsius degrees (integer or decimal accepted).
- * - All `valves_`, `pump_` and `bmodel` settings expect quoted strings referencing the name of the related item.
+ * - All `valves_`, `pump_` and `bmodel` settings expect a quoted string referencing the name of the related item.
+ * - All `schedid_t` settings expect a quoted string referencing the name of the target schedule.
  * - All `rid_` and `tid_` are specified as a block specifying the backend name and the name of the relay or sensor within that backend. For instance:
 \verbatim
  rid_open {
@@ -1835,7 +1836,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODELST, "time", true, NULL, NULL, },		// 0
 		{ NODELST, "params", true, NULL, NULL, },
 	};
-	const int schedid = *(int *)priv;
+	const schedid_t schedid = *(int *)priv;
 	struct s_schedule_etime etime;
 	struct s_schedule_eparams eparams;
 	int ret;
