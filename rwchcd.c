@@ -276,7 +276,7 @@ static void * thread_master(void *arg)
 			dbgerr("models_run returned: %d", ret);
 
 		// we lock globally here in this thread. Saves headaches and reduces heavy pressure on the lock
-		ret = pthread_rwlock_wrlock(&runtime->runtime_rwlock);
+		ret = pthread_rwlock_rdlock(&runtime->runtime_rwlock);
 		if (ret)
 			dbgerr("wrlock failed: %d", ret);
 
