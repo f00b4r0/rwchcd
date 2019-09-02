@@ -1254,25 +1254,3 @@ int plant_run(struct s_plant * restrict const plant)
 	else
 		return (ALL_OK);
 }
-
-/**
- * Trigger anti-legionella charge on all plant DHWTs.
- * For all plant's DHWTs: if the DHWT is online and anti-legionella charge is
- * configured, trigger anti-legionella charge.
- * @param plant the target plant
- */
-void plant_dhwt_legionella_trigger(struct s_plant * restrict const plant)
-{
-	struct s_dhw_tank_l * dhwtl;
-
-	assert(plant);
-	assert(plant->run.online);
-
-	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		if (!dhwtl->dhwt->run.online)
-			continue;
-
-		if (dhwtl->dhwt->set.anti_legionella)
-			dhwtl->dhwt->run.legionella_on = true;
-	}
-}

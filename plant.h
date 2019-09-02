@@ -101,6 +101,5 @@ struct s_heatsource * plant_fbn_heatsource(const struct s_plant * restrict const
 struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
-void plant_dhwt_legionella_trigger(struct s_plant * restrict const plant);
 
 #endif /* rwchcd_plant_h */

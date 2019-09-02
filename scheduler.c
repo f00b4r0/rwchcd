@@ -22,8 +22,6 @@
 #include <pthread.h>
 #include <string.h>	// strcmp/memcpy
 
-#include "runtime.h"
-#include "plant.h"	// for plant_dhwt_legionella_trigger()
 #include "scheduler.h"
 #include "filecfg.h"
 #include "timekeep.h"
@@ -93,46 +91,26 @@ end:
 }
 
 /**
- * Find the current schedule.
- * We parse the schedule list, updating the runmode and dhwmode variables
- * as we pass through past schedule entries. We stop when the next schedule entry
+ * Update a schedule to its most current entry.
+ * This function updates the @b current pointer to the passed schedule to
+ * its most current entry, if any. We stop when the next schedule entry
  * is in the future, which leaves us with the last valid schedule entry in sched->current.
- * @warning legionella trigger is run lockless
- * @return exec status
- * @bug if the first schedule of the day has either runmode OR dhwmode set to
+ * @param sched the schedule to update.
+ * @warning if the first schedule of the day has either runmode OR dhwmode set to
  * #RM_UNKNOWN, the function will not look back to find the correct mode
  * (i.e. the current active mode will be unchanged).
  */
-static int scheduler_now(void)
+static void scheduler_update_schedule(struct s_schedule * const sched)
 {
-	struct s_runtime * const runtime = runtime_get();
 	const time_t now = time(NULL);
 	struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	const struct s_schedule_e * schent, * schent_start;
-	struct s_schedule * sched;
-	enum e_runmode runmode, dhwmode, rt_runmode, rt_dhwmode;
-	enum e_systemmode rt_sysmode;
-	bool legionella, active;
-
-	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
-	rt_sysmode = runtime->systemmode;
-	rt_runmode = runtime->runmode;
-	rt_dhwmode = runtime->dhwmode;
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
-
-	sched = Schedules.schead;
-
-	if (SYS_AUTO != rt_sysmode) {
-		sched->current = NULL;
-		return (-EGENERIC);	// we can't update, no need to waste time
-	}
 
 	schent_start = sched->current ? sched->current : sched->head;
-	active = sched->current ? true : false;	// used to flag an already active schedule
 
 	if (!schent_start) {
 		dbgmsg("empty schedule");
-		return (-EGENERIC);	// empty schedule
+		return;
 	}
 
 	// we have at least one schedule entry
@@ -152,12 +130,8 @@ restart:
 			break;	// if we already have a valid schedule entry ('synced'), first future entry stops search
 	}
 
-	// if we are already synced, check if we need to do anything
-	if (sched->current) {
-		if (active && (schent_start == sched->current))	// current schedule entry unchanged
-			return (ALL_OK);	// nothing to update
-	}
-	else {
+	// if we aren't already synced, try harder
+	if (!sched->current) {
 		/* we never synced and today's list didn't contain a single past schedule,
 		 we must roll back through the week until we find one.
 		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
@@ -168,24 +142,17 @@ restart:
 			ltime->tm_wday = 6;
 		goto restart;
 	}
+}
 
-	// schedule entry was updated
+/**
+ * Update all schedules.
+ */
+static int scheduler_now(void)
+{
+	struct s_schedule * sched;
 
-	runmode = sched->current->params.runmode;
-	dhwmode = sched->current->params.dhwmode;
-	legionella = sched->current->params.legionella;
-
-	// update only if necessary
-	if ((runmode != rt_runmode) || (dhwmode != rt_dhwmode)) {
-		dbgmsg("schedule update at %ld. Runmode old: %d, new: %d; dhwmode old: %d, new: %d",
-		       now, rt_runmode, runmode, rt_dhwmode, dhwmode);
-		pthread_rwlock_wrlock(&runtime->runtime_rwlock);
-		runtime_set_dhwmode(dhwmode);	// errors ignored (if invalid mode or if sysmode != AUTO)
-		runtime_set_runmode(runmode);
-		pthread_rwlock_unlock(&runtime->runtime_rwlock);
-	}
-	if (legionella)
-		plant_dhwt_legionella_trigger(runtime->plant);	// XXX lockless should work
+	for (sched = Schedules.schead; sched; sched = sched->next)
+		scheduler_update_schedule(sched);
 
 	return (ALL_OK);
 }
