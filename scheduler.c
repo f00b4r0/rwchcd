@@ -422,9 +422,16 @@ static void scheduler_entry_dump(const struct s_schedule_e * const schent)
 	filecfg_iprintf("entry {\n");
 	filecfg_ilevel_inc();
 
+	filecfg_iprintf("time {\n");
+	filecfg_ilevel_inc();
 	filecfg_iprintf("wday %d;\n", schent->t.tm_wday);	// mandatory
 	filecfg_iprintf("hour %d;\n", schent->t.tm_hour);	// mandatory
 	filecfg_iprintf("min %d;\n", schent->t.tm_min);		// mandatory
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	filecfg_iprintf("params {\n");
+	filecfg_ilevel_inc();
 	if (RM_UNKNOWN != schent->p.runmode)
 		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->p.runmode));
 	if (RM_UNKNOWN != schent->p.dhwmode)
@@ -433,6 +440,8 @@ static void scheduler_entry_dump(const struct s_schedule_e * const schent)
 		filecfg_iprintf("legionella %s;\n", filecfg_bool_str(schent->p.legionella));
 	if (schent->p.recycle)
 		filecfg_iprintf("recycle %s;\n", filecfg_bool_str(schent->p.recycle));
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
