@@ -1730,6 +1730,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODESTR, "dhwmode", false, NULL, NULL, },	// 4
 		{ NODEBOL, "legionella", false, NULL, NULL, },
 	};
+	const int schedid = *(int *)priv;
 	const struct s_filecfg_parser_node * currnode;
 	int wday = -1, hour = -1, min = -1, ret;
 	enum e_runmode runmode = RM_UNKNOWN, dhwmode = RM_UNKNOWN;
@@ -1780,7 +1781,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	}
 
 	if (ALL_OK == ret)
-		ret = scheduler_add(wday, hour, min, runmode, dhwmode, legionella);
+		ret = scheduler_add_entry(schedid, wday, hour, min, runmode, dhwmode, legionella);
 
 	switch (ret) {
 		case -EEXISTS:
@@ -1797,9 +1798,40 @@ invaliddata:
 	return (-EINVALID);
 }
 
+static int scheduler_schedule_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	int schedid;
+
+	if (!node)
+		return (-EINVALID);
+
+	if (NODESTR != node->type)
+		return (-EINVALID);	// we only accept NODESTR backend node with children
+
+	if (!node->children)
+		return (-EEMPTY);
+	
+	if (strlen(node->value.stringval) <= 0)
+		return (-EINVALID);
+
+	schedid = scheduler_add_schedule(node->value.stringval);
+	if (schedid < 0) {
+		switch (schedid) {
+			case -EEXISTS:
+				filecfg_parser_pr_err(_("Line %d: a schedule with the same name (\'%s\') is already configured"), node->lineno, node->value.stringval);
+				break;
+			default:
+				break;
+		}
+		return (schedid);
+	}
+
+	return (filecfg_parser_parse_listsiblings(&schedid, node->children, "entry", scheduler_entry_parse));
+}
+
 static int scheduler_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	return (filecfg_parser_parse_listsiblings(priv, node->children, "entry", scheduler_entry_parse));
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "schedule", scheduler_schedule_parse));
 }
 
 /**
