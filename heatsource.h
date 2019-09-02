@@ -29,6 +29,7 @@ enum e_heatsource_type {
 struct s_heatsource {
 	struct {
 		bool configured;		///< true if properly configured
+		schedid_t schedid;		///< schedule id for this heatsource. Use the schedule name in config.
 		enum e_runmode runmode;		///< current heatsource set_runmode
 		enum e_heatsource_type type;	///< type of heatsource
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED

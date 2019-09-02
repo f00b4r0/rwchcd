@@ -150,7 +150,7 @@ enum e_runmode {
 enum e_systemmode {
 	SYS_NONE = 0,	///< system is unconfigured
 	SYS_OFF,	///< system is fully off
-	SYS_AUTO,	///< system is running in automatic mode
+	SYS_AUTO,	///< system is running in automatic mode. Only in this mode will the system allow scheduled states.
 	SYS_COMFORT,	///< system is running in comfort mode
 	SYS_ECO,	///< system is running in eco mode
 	SYS_FROSTFREE,	///< system is running in frostfree mode

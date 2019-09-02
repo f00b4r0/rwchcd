@@ -8,12 +8,13 @@
 
 /**
  * @file
- * A very simple scheduler.
- * This scheduler is based on a weekly model. It currently only operates on
- * runtime-global runmode and dhwmode.
- * @todo adapt to be able to act on individual plant entities (and then handle e.g. DHWT's recycle pump)
+ * Scheduler subsystem.
+ * This scheduler is based on a weekly model. It updates a pool of weekly schedules to keep them
+ * up to the current date. Interfaces are provided to give (read) access to the schedule's current setup,
+ * enabling individual plant entities to follow a custom schedule.
  * @todo adapt to add "intelligence" and anticipation from e.g. circuit transitions
- * @bug subpar locking
+ * @note Operation is lockless as it is assumed that the schedules will only be updated at config time
+ * (during startup) and that from that point on only read operations will be performed.
  */
 
 #include <stdlib.h>	// calloc
@@ -38,7 +39,7 @@ struct s_schedule_e {
  * Schedules are organized in linked list, NULL terminated.
  * Each schedule contains a looped list of schedule entries which are chronologically sorted.
  * The chronologically first entry is always available from the #head pointer.
- * The current pointer, when set, points to the last valid schedule entry for the day.
+ * The #current pointer, when set, points to the last valid schedule entry for the day.
  */
 struct s_schedule {
 	struct s_schedule * next;
@@ -92,9 +93,9 @@ end:
 
 /**
  * Update a schedule to its most current entry.
- * This function updates the @b current pointer to the passed schedule to
+ * This function updates the #sched->current pointer to the passed schedule to
  * its most current entry, if any. We stop when the next schedule entry
- * is in the future, which leaves us with the last valid schedule entry in sched->current.
+ * is in the future, which leaves us with the last valid schedule entry in #sched->current.
  * @param sched the schedule to update.
  * @warning if the first schedule of the day has either runmode OR dhwmode set to
  * #RM_UNKNOWN, the function will not look back to find the correct mode

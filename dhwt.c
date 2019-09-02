@@ -39,6 +39,7 @@
 #include "runtime.h"
 #include "config.h"
 #include "timekeep.h"
+#include "scheduler.h"
 
 /**
  * Create a dhwt
@@ -254,6 +255,7 @@ __attribute__((warn_unused_result))
 static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_schedule_eparams * eparams;
 	const time_t tnow = time(NULL);
 	const struct tm * const ltime = localtime(&tnow);	// localtime handles DST and TZ for us
 	enum e_runmode prev_runmode;
@@ -267,8 +269,17 @@ static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 	prev_runmode = dhwt->run.runmode;
 
 	// handle global/local runmodes
-	if (RM_AUTO == dhwt->set.runmode)
-		dhwt->run.runmode = runtime->dhwmode;
+	if (RM_AUTO == dhwt->set.runmode) {
+		// if we have a schedule, use it, or global settings if unavailable
+		eparams = scheduler_get_schedparams(dhwt->set.schedid);
+		if ((SYS_AUTO == runtime->systemmode) && eparams) {
+			dhwt->run.runmode = eparams->dhwmode;
+			dhwt->run.legionella_on = eparams->legionella;
+			dhwt->run.recycle_on = eparams->recycle;
+		}
+		else	// don't touch legionella/recycle
+			dhwt->run.runmode = runtime->dhwmode;
+	}
 	else
 		dhwt->run.runmode = dhwt->set.runmode;
 

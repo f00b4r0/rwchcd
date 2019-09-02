@@ -41,6 +41,7 @@
 #include "config.h"
 #include "log.h"
 #include "timekeep.h"
+#include "scheduler.h"
 
 #define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)	///< 1h tau expressed in internal time representation
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
@@ -423,6 +424,7 @@ __attribute__((warn_unused_result))
 int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_schedule_eparams * eparams;
 	const struct s_bmodel * restrict bmodel;
 	enum e_runmode prev_runmode;
 	temp_t request_temp, diff_temp;
@@ -445,8 +447,11 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	prev_runmode = circuit->run.runmode;
 
 	// handle global/local runmodes
-	if (RM_AUTO == circuit->set.runmode)
-		circuit->run.runmode = runtime->runmode;
+	if (RM_AUTO == circuit->set.runmode) {
+		// if we have a schedule, use it, or global settings if unavailable
+		eparams = scheduler_get_schedparams(circuit->set.schedid);
+		circuit->run.runmode = ((SYS_AUTO == runtime->systemmode) && eparams) ? eparams->runmode : runtime->runmode;
+	}
 	else
 		circuit->run.runmode = circuit->set.runmode;
 

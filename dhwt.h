@@ -25,6 +25,7 @@ struct s_dhw_tank {
 		bool anti_legionella;		///< if true, anti-legionella heat charge is allowed for this DHWT
 		bool legionella_recycle;	///< if true, recycle pump will be turned on during anti-legionella heat charge
 		uint_fast8_t prio;		///< priority: 0 is highest prio, next positive. For cascading: DHWT with lower prio (higher value) will only be charged if @b none of the DHWTs with higer prio (lower value) are charging
+		schedid_t schedid;		///< schedule id for this DHWT. Use the schedule name in config.
 		enum e_runmode runmode;		///< dhwt set_runmode
 		enum {
 			DHWTP_PARALMAX = 0,	///< no priority: parallel run with maximum selection. Config "paralmax"

@@ -23,6 +23,7 @@
 #include "heatsource.h"
 #include "runtime.h"
 #include "timekeep.h"
+#include "scheduler.h"
 
 /**
  * Create a heatsource
@@ -107,6 +108,7 @@ __attribute__((warn_unused_result))
 static int heatsource_logic(struct s_heatsource * restrict const heat)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
+	const struct s_schedule_eparams * eparams;
 	const timekeep_t now = timekeep_now();
 	const timekeep_t dt = now - heat->run.last_run_time;
 	temp_t temp;
@@ -115,8 +117,11 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	assert(runtime);
 
 	// handle global/local runmodes
-	if (RM_AUTO == heat->set.runmode)
-		heat->run.runmode = runtime->runmode;
+	if (RM_AUTO == heat->set.runmode) {
+		// if we have a schedule, use it, or global settings if unavailable
+		eparams = scheduler_get_schedparams(heat->set.schedid);
+		heat->run.runmode = ((SYS_AUTO == runtime->systemmode) && eparams) ? eparams->runmode : runtime->runmode;
+	}
 	else
 		heat->run.runmode = heat->set.runmode;
 

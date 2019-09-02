@@ -1109,6 +1109,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 		{ NODESTR, "pump_feed", false, NULL, NULL, },
 		{ NODESTR, "pump_recycle", false, NULL, NULL, },	// 14
 		{ NODESTR, "valve_hwisol", false, NULL, NULL, },
+		{ NODESTR, "schedid", false, NULL, NULL, },		// 16
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_pump * pump;
@@ -1208,6 +1209,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 			case 13:
 			case 14:
 			case 15:
+			case 16:
 				n = currnode->value.stringval;
 				if (strlen(n) < 1)
 					break;	// nothing to do
@@ -1228,6 +1230,12 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 						dhwt->valve_hwisol = plant_fbn_valve(plant, n);
 						if (!dhwt->valve_hwisol)
 							goto invaliddata;
+						break;
+					case 16:
+						iv = scheduler_schedid_by_name(n);
+						if (iv <= 0)
+							goto invaliddata;
+						dhwt->set.schedid = iv;
 						break;
 					default:
 						break;	// should never happen
@@ -1317,6 +1325,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 		{ NODESTR, "valve_mix", false, NULL, NULL, },
 		{ NODESTR, "pump_feed", false, NULL, NULL, },		// 14
 		{ NODESTR, "bmodel", false, NULL, NULL, },
+		{ NODESTR, "schedid", false, NULL, NULL },		// 16
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
@@ -1410,6 +1419,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 			case 13:
 			case 14:
 			case 15:
+			case 16:
 				n = currnode->value.stringval;
 				if (strlen(n) < 1)
 					break;	// nothing to do
@@ -1429,6 +1439,12 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 						hcircuit->bmodel = models_fbn_bmodel(n);
 						if (!hcircuit->bmodel)
 							goto invaliddata;
+						break;
+					case 16:
+						iv = scheduler_schedid_by_name(n);
+						if (iv <= 0)
+							goto invaliddata;
+						hcircuit->set.schedid = iv;
 						break;
 					default:
 						break;	// should never happen
@@ -1621,6 +1637,7 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 		{ NODESTR, "type", true, NULL, NULL, },
 		{ NODEINT, "prio", false, NULL, NULL, },			// 2
 		{ NODEINT, "consumer_sdelay", false, NULL, NULL, },
+		{ NODESTR, "schedid", false, NULL, NULL, },			// 4
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
@@ -1664,6 +1681,14 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 				if (iv < 0)
 					goto invaliddata;
 				heatsource->set.consumer_sdelay = timekeep_sec_to_tk(iv);
+				break;
+			case 4:
+				if (strlen(currnode->value.stringval) < 1)
+					break;	// nothing to do
+				iv = scheduler_schedid_by_name(currnode->value.stringval);
+				if (iv <= 0)
+					goto invaliddata;
+				heatsource->set.schedid = iv;
 				break;
 			default:
 				break;	// should never happen
@@ -2031,10 +2056,10 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST, "backends", false, hardware_backends_parse, NULL, },
+		{ NODELST, "scheduler", false, scheduler_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST, "defconfig", false, defconfig_parse, NULL, },
 		{ NODELST, "models", false, models_parse, NULL, },
 		{ NODELST, "plant", true, plant_parse, NULL, },
-		{ NODELST, "scheduler", false, scheduler_parse, NULL, },
 	};
 	struct s_runtime * const runtime = runtime_get();
 	int ret;
