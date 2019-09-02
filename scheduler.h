@@ -2,7 +2,7 @@
 //  scheduler.h
 //  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016,2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -16,7 +16,8 @@
 
 #include "rwchcd.h"
 
-struct s_schedule_param {
+/** Schedule entry parameters. */
+struct s_schedule_eparams {
 	enum e_runmode runmode;	///< target runmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
 	enum e_runmode dhwmode;	///< target dhwmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
 	bool legionella;	///< true if legionella heat charge is requested
@@ -24,9 +25,9 @@ struct s_schedule_param {
 };
 
 void * scheduler_thread(void * arg);
-const struct s_schedule_param * scheduler_get_schedparams(const int schedule_id);
+const struct s_schedule_eparams * scheduler_get_schedparams(const int schedule_id);
 int scheduler_schedid_by_name(const char * const restrict sched_name);
-int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const struct s_schedule_param * const sparams);
+int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const struct s_schedule_eparams * const sparams);
 int scheduler_add_schedule(const char * const restrict name);
 int scheduler_filecfg_dump(void);
 

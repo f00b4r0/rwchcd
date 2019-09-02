@@ -34,7 +34,7 @@ struct s_schedule_e {
 	int tm_wday;		///< day of the week for this schedule entry (0 - 6, Sunday = 0)
 	int tm_hour;		///< hour of the day for this schedule entry (0 - 23)
 	int tm_min;		///< minute for this schedule entry (0 - 59)
-	struct s_schedule_param p;	///< parameters for this schedule entry
+	struct s_schedule_eparams p;	///< parameters for this schedule entry
 };
 
 /**
@@ -218,7 +218,7 @@ static struct s_schedule * scheduler_schedule_fbi(const int schedule_id)
  * @param schedid the target schedule id
  * @return pointer to params if found, NULL otherwise.
  */
-const struct s_schedule_param * scheduler_get_schedparams(const int schedule_id)
+const struct s_schedule_eparams * scheduler_get_schedparams(const int schedule_id)
 {
 	const struct s_schedule * sched;
 
@@ -326,7 +326,7 @@ int scheduler_add_schedule(const char * const restrict name)
  * @param sparams target schedule parameters for this entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
  */
-int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const struct s_schedule_param * const sparams)
+int scheduler_add_entry(int schedid, int tm_wday, int tm_hour, int tm_min, const struct s_schedule_eparams * const sparams)
 {
 	struct s_schedule * sched;
 	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;

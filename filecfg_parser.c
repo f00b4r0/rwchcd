@@ -1732,7 +1732,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODEBOL, "recycle", false, NULL, NULL, },	// 6
 	};
 	const int schedid = *(int *)priv;
-	struct s_schedule_param sparams;
+	struct s_schedule_eparams sparams;
 	const struct s_filecfg_parser_node * currnode;
 	int wday = -1, hour = -1, min = -1, ret;
 	unsigned int i;
