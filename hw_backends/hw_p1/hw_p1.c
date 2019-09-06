@@ -168,6 +168,9 @@ static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const si
  * Applies a short-window LP filter on raw data to smooth out noise.
  * Flag and raise alarm if value is out of #RWCHCD_TEMPMIN and #RWCHCD_TEMPMAX bounds.
  * @param hw HW P1 private data
+ * @note the function implements a 5-sample delay on short/discon as well as a
+ * 5-sample decimator on sudden changes of +/- 4C to work around a recent abnormal
+ * behaviour on the revision 1.1 prototype hardware.
  */
 static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 {
@@ -193,16 +196,43 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 		previous = hw->Sensors[i].run.value;
 
 		if (current <= RWCHCD_TEMPMIN) {
-			hw->Sensors[i].run.value = TEMPSHORT;
-			sensor_alarm(hw, i+1, -ESENSORSHORT);
+			// delay by hardcoded 5 samples
+			if (hw->scount[i] < 5) {
+				hw->scount[i]++;
+				dbgmsg("delaying sensor %d short, samples ignored: %d", i+1, hw->scount[i]);
+			}
+			else {
+				hw->Sensors[i].run.value = TEMPSHORT;
+				sensor_alarm(hw, i+1, -ESENSORSHORT);
+			}
 		}
 		else if (current >= RWCHCD_TEMPMAX) {
-			hw->Sensors[i].run.value = TEMPDISCON;
-			sensor_alarm(hw, i+1, -ESENSORDISCON);
+			// delay by hardcoded 5 samples
+			if (hw->scount[i] < 5) {
+				hw->scount[i]++;
+				dbgmsg("delaying sensor %d disconnect, samples ignored: %d", i+1, hw->scount[i]);
+			}
+			else {
+				hw->Sensors[i].run.value = TEMPDISCON;
+				sensor_alarm(hw, i+1, -ESENSORDISCON);
+			}
 		}
-		else
-			// apply LP filter - ensure we only apply filtering on valid temps
-			hw->Sensors[i].run.value = (previous > TEMPINVALID) ? temp_expw_mavg(previous, current, hw->set.nsamples, 1) : current;
+		// init or recovery
+		else if (previous <= TEMPINVALID) {
+			hw->scount[i] = 0;
+			hw->Sensors[i].run.value = current;
+		}
+		// normal operation
+		else {
+			// decimate large changes to work around measurement instability. Hardcoded 4C / 5 samples (i.e. ~5 seconds) max
+			if (((current < (previous - deltaK_to_temp(4))) || (current > (previous + deltaK_to_temp(4)))) && hw->scount[i]++ < 5)
+				dbgmsg("decimating sensor %d value, samples ignored: %d", i+1, hw->scount[i]);
+			else {
+				// apply LP filter - ensure we only apply filtering on valid temps
+				hw->scount[i] = 0;
+				hw->Sensors[i].run.value = temp_expw_mavg(previous, current, hw->set.nsamples, 1);
+			}
+		}
 	}
 	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 }

@@ -46,6 +46,7 @@ struct s_hw_p1_pdata {
 	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to ::Sensors.value
 	struct s_hw_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
 	struct s_hw_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
+	uint_fast8_t scount[RWCHC_NTSENSORS];	///< counter for decimation
 };
 
 int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
