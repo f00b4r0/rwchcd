@@ -42,9 +42,13 @@
 #include "log.h"
 #include "timekeep.h"
 #include "scheduler.h"
+#include "storage.h"
 
 #define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)	///< 1h tau expressed in internal time representation
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
+#define HCIRCUIT_STORAGE_BMODEL_PREFIX	"hcircuit_"
+
+static const storage_version_t Hcircuit_sversion = 1;
 
 /**
  * Heating circuit data log callback.
@@ -141,6 +145,65 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
 		return (ALL_OK);
 
 	return (log_deregister(hcircuit_lreg(circuit)));
+}
+
+/**
+ * Save hcircuit state to permanent storage.
+ * @param circuit the circuit to save, @b MUST be named
+ * @return exec status
+ */
+static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
+{
+	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_BMODEL_PREFIX;
+
+	assert(circuit);
+
+	if (!circuit->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// can't store if no name
+	if (!circuit->name)
+		return (-EINVALID);
+
+	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
+
+	return (storage_dump(buf, &Hcircuit_sversion, &circuit->run, sizeof(circuit->run)));
+}
+
+/**
+ * Restore hcircuit state from permanent storage.
+ * @param circuit the circuit to restore, @b MUST be named
+ * @return exec status
+ */
+static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
+{
+	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_BMODEL_PREFIX;
+	struct s_hcircuit temp_hcircuit;
+	storage_version_t sversion;
+	int ret;
+
+	assert(circuit);
+
+	if (!circuit->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// can't restore if no name
+	if (!circuit->name)
+		return (-EINVALID);
+
+	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
+
+	// try to restore key elements
+	ret = storage_fetch(buf, &sversion, &temp_hcircuit.run, sizeof(temp_hcircuit.run));
+	if (ALL_OK == ret) {
+		if (Hcircuit_sversion != sversion)
+			return (-EMISMATCH);
+
+		// XXX try to restore last ambient temp (for modeling). Is this a good idea? Not sure.
+		circuit->run.actual_ambient = temp_hcircuit.run.actual_ambient;
+	}
+
+	return (ret);
 }
 
 /**
@@ -269,6 +332,9 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	if (ALL_OK == ret)
 		circuit->run.online = true;
 
+	// try to restore circuit
+	hcircuit_restore(circuit);
+
 out:
 	return (ret);
 }
@@ -319,6 +385,7 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
+	hcircuit_save(circuit);
 	hcircuit_shutdown(circuit);
 	hcircuit_log_deregister(circuit);
 
