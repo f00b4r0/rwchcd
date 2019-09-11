@@ -30,7 +30,7 @@
  *	- C-style "/ * ... * /" multi-line comments (all text enclosed between opening '/ *' and closing '* /' will be ignored, even if it spans multiple lines).
  *
  * Type specific rules:
- * - All `timekeep_t` values must be expressed in integer seconds.
+ * - All `timekeep_t` values must be expressed in integer seconds or unquoted compound expressions in the form `[0-9]+[dhms]` with or without whitespace between each time compound, e.g. `2h3m 5s`.
  * - All `temp_t` values must be expressed in Celsius degrees (integer or decimal accepted).
  * - All `valves_`, `pump_` and `bmodel` settings expect a quoted string referencing the name of the related item.
  * - All `schedid_t` settings expect a quoted string referencing the name of the target schedule.
@@ -281,7 +281,7 @@ static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_
 		{ NODEFLT|NODEINT, "limit_wintmax", false, NULL, NULL, },	// 6
 		{ NODEFLT|NODEINT, "hysteresis", false, NULL, NULL, },
 		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, NULL, },	// 8
-		{ NODEINT, "limit_chargetime", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "limit_chargetime", false, NULL, NULL, },
 	};
 	struct s_dhwt_params * restrict const dhwt_params = priv;
 	const struct s_filecfg_parser_node *currnode;
@@ -453,14 +453,14 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODEBOL, "logging", false, NULL, NULL, },
 		{ NODEFLT|NODEINT, "limit_tsummer", false, NULL, NULL, },	// 2
 		{ NODEFLT|NODEINT, "limit_tfrost", false, NULL, NULL, },
-		{ NODEINT, "sleeping_delay", false, NULL, NULL, },	// 4
+		{ NODEINT|NODEDUR, "sleeping_delay", false, NULL, NULL, },	// 4
 		{ NODESTR, "startup_sysmode", true, NULL, NULL, },
 		{ NODESTR, "startup_runmode", false, NULL, NULL, },	// 6
 		{ NODESTR, "startup_dhwmode", false, NULL, NULL, },
 		{ NODELST, "def_hcircuit", false, NULL, NULL, },	// 8
 		{ NODELST, "def_dhwt", false, NULL, NULL, },
-		{ NODEINT, "summer_run_interval", false, NULL, NULL, },	// 10
-		{ NODEINT, "summer_run_duration", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "summer_run_interval", false, NULL, NULL, },	// 10
+		{ NODEINT|NODEDUR, "summer_run_duration", false, NULL, NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_config * restrict config;
@@ -586,7 +586,7 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL, "logging", false, NULL, NULL, },
-		{ NODEINT, "tau", true, NULL, NULL, },
+		{ NODEINT|NODEDUR, "tau", true, NULL, NULL, },
 		{ NODELST, "tid_outdoor", true, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
@@ -689,7 +689,7 @@ static int models_parse(void * restrict const priv, const struct s_filecfg_parse
 static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "cooldown_time", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "cooldown_time", false, NULL, NULL, },
 		{ NODELST, "rid_pump", true, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
@@ -740,7 +740,7 @@ static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser
 static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "sample_intvl", true, NULL, NULL, },
+		{ NODEINT|NODEDUR, "sample_intvl", true, NULL, NULL, },
 		{ NODEINT, "amount", true, NULL, NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
@@ -772,9 +772,9 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 static int valve_algo_PI_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "sample_intvl", true, NULL, NULL, },
-		{ NODEINT, "Tu", true, NULL, NULL, },
-		{ NODEINT, "Td", true, NULL, NULL, },
+		{ NODEINT|NODEDUR, "sample_intvl", true, NULL, NULL, },
+		{ NODEINT|NODEDUR, "Tu", true, NULL, NULL, },
+		{ NODEINT|NODEDUR, "Td", true, NULL, NULL, },
 		{ NODEINT, "tune_f", true, NULL, NULL, },
 		{ NODEFLT|NODEINT, "Ksmax", true, NULL, NULL, },
 	};
@@ -978,7 +978,7 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "deadband", false, NULL, NULL, },	// 0
-		{ NODEINT, "ete_time", true, NULL, NULL, },
+		{ NODEINT|NODEDUR, "ete_time", true, NULL, NULL, },
 		{ NODESTR, "type", true, NULL, NULL, },		// 2
 		{ NODESTR, "motor", true, NULL, NULL, },
 	};
@@ -1314,9 +1314,9 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 		{ NODESTR, "runmode", true, NULL, NULL, },		// 2
 		{ NODEINT, "ambient_factor", false, NULL, NULL, },
 		{ NODEFLT|NODEINT, "wtemp_rorh", false, NULL, NULL, },		// 4
-		{ NODEINT, "am_tambient_tK", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "am_tambient_tK", false, NULL, NULL, },
 		{ NODEFLT|NODEINT, "tambient_boostdelta", false, NULL, NULL, },	// 6
-		{ NODEINT, "boost_maxtime", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "boost_maxtime", false, NULL, NULL, },
 		{ NODELST, "tid_outgoing", true, NULL, NULL, },		// 8
 		{ NODELST, "tid_return", false, NULL, NULL, },
 		{ NODELST, "tid_ambient", false, NULL, NULL, },		// 10
@@ -1482,7 +1482,7 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, NULL, },		// 4
 		{ NODEFLT|NODEINT, "limit_treturnmin", false, NULL, NULL, },
 		{ NODEFLT|NODEINT, "t_freeze", true, NULL, NULL, },		// 6
-		{ NODEINT, "burner_min_time", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "burner_min_time", false, NULL, NULL, },
 		{ NODELST, "tid_boiler", true, NULL, NULL, },		// 8
 		{ NODELST, "tid_boiler_return", false, NULL, NULL, },
 		{ NODELST, "rid_burner_1", true, NULL, NULL, },		// 10
@@ -1636,7 +1636,7 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 		{ NODESTR, "runmode", true, NULL, NULL, },		// 0
 		{ NODESTR, "type", true, NULL, NULL, },
 		{ NODEINT, "prio", false, NULL, NULL, },			// 2
-		{ NODEINT, "consumer_sdelay", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "consumer_sdelay", false, NULL, NULL, },
 		{ NODESTR, "schedid", false, NULL, NULL, },			// 4
 	};
 	const struct s_filecfg_parser_node * currnode;
