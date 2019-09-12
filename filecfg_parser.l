@@ -9,6 +9,7 @@
 /* https://fossies.org/dox/kea-1.5.0/parser.html
 https://gitlab.isc.org/isc-projects/kea/wikis/designs/simple-parser-design
  https://github.com/lijiansong/ConfigFileParser
+ @todo user-friendly error reporting
  */
 
 /* noyywrap disables automatic rewinding for the next file to parse. Since we
@@ -33,10 +34,53 @@ https://gitlab.isc.org/isc-projects/kea/wikis/designs/simple-parser-design
 %x COMMENT
 
 IDENTPART		[A-Za-z0-9_]
+TIMEMULT		[dhms]
 
 %{
 	#include <stdbool.h>
+	#include <assert.h>
 	#include "filecfg_parser.tab.h"
+
+	/**
+	 * Lexer processor for a duration symbol.
+	 * This routine converts a duration string (in the form '[0-9]+[dhms]',
+	 * note: no space between number and multiplier) to seconds (long type).
+	 * @param str the string to process
+	 * @return the converted value
+	 */
+	static long filecfg_parser_lex_duration(const char * const str)
+	{
+		unsigned int mult = 1;
+		long sdur;
+		char c;
+
+		assert(str);		// lexer rule-enforced assertion
+		assert(strlen(str)>0);	// lexer rule-enforced assertion
+
+		c = str[strlen(str)-1];
+
+		switch (c) {
+			case 'd':
+				mult *= 24;
+				// fallthrough
+			case 'h':
+				mult *= 60;
+				// fallthrough
+			case 'm':
+				mult *= 60;
+				// fallthrough
+			case 's':
+			default:	// lexer garantees this never happens
+				break;
+		}
+
+		sdur = strtol(str, NULL, 10);
+
+		sdur *= mult;
+
+		return (sdur);
+	}
+
 %}
 
 %%
@@ -65,6 +109,9 @@ no			{ filecfg_parser_lval.boolval=false; return BOOL; }
 
 	/* integers */
 [-+]?[0-9]+		{ filecfg_parser_lval.ival=(int)strtol(filecfg_parser_text, NULL, 10); return INT; }
+
+	/* durations */
+[0-9]+{TIMEMULT}	{ filecfg_parser_lval.ival=(int)filecfg_parser_lex_duration(filecfg_parser_text); return DURATION; }
 
 	/* decimals */
 [-+]?([0-9]*\.[0-9]+|[0-9]+\.)	{ filecfg_parser_lval.dval=strtof(filecfg_parser_text, NULL); return FLOAT; }

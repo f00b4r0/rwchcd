@@ -31,9 +31,11 @@
 %token <dval> FLOAT
 %token <strval> IDENTIFIER
 %token <strval> STRING
+%token <ival> DURATION
 
 %type <node> node
 %type <nodelist> node_list
+%type <ival> totduration
 
 %%
 
@@ -50,7 +52,11 @@ node:	IDENTIFIER ';'			{ filecfg_parser_error("missing argument"); YYABORT; }
 	| IDENTIFIER STRING ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODESTR, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 	| IDENTIFIER STRING '{' node_list '}' ';'	{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODESTR, $1, (u_filecfg_p_nodeval_t)$2, $4); }
 	| IDENTIFIER '{' node_list '}' ';'	{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODELST, $1, (u_filecfg_p_nodeval_t)0, $3); }
+	| IDENTIFIER totduration ';'	{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEDUR, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 ;
+
+totduration: DURATION			{ $$ = $1; }
+	| totduration DURATION		{ $$ = $1 + $2; }
 
 %%
 

@@ -34,6 +34,7 @@ enum e_filecfg_nodetype {
 	NODEFLT = 0x04,		///< Float node
 	NODESTR = 0x08,		///< String node
 	NODELST = 0x10,		///< List node
+	NODEDUR = 0x20,		///< Duration node
 };
 
 /** Config node structure */
