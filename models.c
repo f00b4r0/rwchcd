@@ -450,8 +450,10 @@ static int bmodel_frost(struct s_bmodel * restrict const bmodel)
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((bmodel->run.t_out < config->limit_tfrost))
+	if ((bmodel->run.t_out < config->limit_tfrost)) {
 		bmodel->run.frost = true;
+		bmodel->run.summer = false;	// override summer
+	}
 	else if ((bmodel->run.t_out > (config->limit_tfrost + deltaK_to_temp(1))))
 		bmodel->run.frost = false;
 
