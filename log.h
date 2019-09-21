@@ -14,7 +14,7 @@
 #ifndef log_h
 #define log_h
 
-#include "rwchcd.h"
+#include <stdint.h>
 
 typedef uint32_t	log_version_t;	///< storage version type
 typedef const char *	log_key_t;	///< storage keys type

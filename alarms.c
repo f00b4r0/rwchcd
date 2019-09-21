@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rwchcd.h"
 #include "alarms.h"
 #include "timekeep.h"
 

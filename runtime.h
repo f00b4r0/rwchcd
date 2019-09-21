@@ -15,6 +15,7 @@
 #define rwchcd_runtime_h
 
 #include "rwchcd.h"
+#include "timekeep.h"
 
 /** Runtime environment structure */
 struct s_runtime {

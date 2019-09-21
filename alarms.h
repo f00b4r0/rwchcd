@@ -14,6 +14,8 @@
 #ifndef rwchcd_alarms_h
 #define rwchcd_alarms_h
 
+#include "rwchcd.h"
+
 int alarms_online(void);
 int alarms_count(void);
 const char * alarms_last_msg(const bool msglcd);

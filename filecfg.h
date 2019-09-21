@@ -14,7 +14,7 @@
 #ifndef filecfg_h
 #define filecfg_h
 
-#include <stdbool.h>
+#include "rwchcd.h"
 
 extern bool FCD_Exhaustive;	///< If true, the exhaustive configuration will be printed (includes unconfigured fields).
 

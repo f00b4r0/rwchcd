@@ -17,6 +17,7 @@
 #include <stdlib.h>	// free
 #include <assert.h>
 
+#include "timekeep.h"
 #include "hw_backends.h"
 
 struct s_hw_backend * HW_backends[];	///< Array of available hardware backends

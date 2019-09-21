@@ -21,6 +21,7 @@
 #include <rrd.h>
 
 #include "log_rrd.h"
+#include "rwchcd.h"
 
 /* Hardcoded RRAs */
 /** 1mn hardcoded RRAs */

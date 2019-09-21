@@ -17,6 +17,7 @@
 #include <assert.h>
 
 #include "log_file.h"
+#include "rwchcd.h"
 
 /**
  * Create the log file (text file).

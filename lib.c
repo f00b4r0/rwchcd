@@ -14,7 +14,6 @@
 #include <assert.h>
 #include <limits.h>	// CHAR_BIT
 
-#include "rwchcd.h"
 #include "lib.h"
 
 // NB: we rely on the fact that gcc sign-extends

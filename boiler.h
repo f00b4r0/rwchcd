@@ -17,6 +17,7 @@
 #include "rwchcd.h"
 #include "lib.h"	// for s_temp_intgrl
 #include "heatsource.h"
+#include "timekeep.h"
 
 /** Boiler heatsource private structure. @todo XXX TODO: return mixing valve / isolation valve / modulating burner */
 struct s_boiler_priv {

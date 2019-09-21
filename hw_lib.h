@@ -15,6 +15,7 @@
 #define hw_lib_h
 
 #include "rwchcd.h"
+#include "timekeep.h"
 #include "filecfg_parser.h"
 
 #define HW_LIB_RCHNONE		0x00	///< no change

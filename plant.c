@@ -31,12 +31,12 @@
 #include "config.h"
 #include "runtime.h"	// for runtime_get()->config
 #include "lib.h"
-#include "plant.h"
 #include "pump.h"
 #include "valve.h"
 #include "hcircuit.h"
 #include "dhwt.h"
 #include "heatsource.h"
+#include "plant.h"
 #include "models.h"	// s_bmodel for plant_summer_ok()
 #include "alarms.h"
 

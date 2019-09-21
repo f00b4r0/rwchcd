@@ -28,6 +28,7 @@
 #include <stdlib.h>	// mkstemp/malloc
 
 #include "storage.h"
+#include "rwchcd.h"
 
 #define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL

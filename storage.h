@@ -14,7 +14,8 @@
 #ifndef rwchcd_storage_h
 #define rwchcd_storage_h
 
-#include "rwchcd.h"
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef uint32_t	storage_version_t;	///< storage version type
 

@@ -15,6 +15,7 @@
 #define rwchcd_config_h
 
 #include "rwchcd.h"
+#include "timekeep.h"
 
 /** Config structure */
 struct s_config {

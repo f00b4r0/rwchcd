@@ -14,7 +14,6 @@
 #ifndef valve_h
 #define valve_h
 
-#include <assert.h>
 #include "rwchcd.h"
 #include "timekeep.h"
 

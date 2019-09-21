@@ -25,10 +25,10 @@
 #include <string.h>	// memset
 #include <assert.h>
 
-#include "boiler.h"
 #include "pump.h"
 #include "valve.h"
 #include "lib.h"
+#include "boiler.h"
 #include "hardware.h"
 #include "alarms.h"
 

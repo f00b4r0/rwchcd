@@ -31,16 +31,15 @@
 #include <assert.h>
 #include <string.h>	// memset
 
+#include "pump.h"
+#include "valve.h"
+#include "models.h"
 #include "hcircuit.h"
 #include "hardware.h"
 #include "lib.h"
-#include "pump.h"
-#include "valve.h"
 #include "runtime.h"
-#include "models.h"
 #include "config.h"
 #include "log.h"
-#include "timekeep.h"
 #include "scheduler.h"
 #include "storage.h"
 

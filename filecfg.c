@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "rwchcd.h"
 #include "lib.h"
 #include "hw_backends.h"
 #include "hardware.h"
