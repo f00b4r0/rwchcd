@@ -19,17 +19,6 @@
 
 #define HW_MAX_BKENDS	8	///< Maximum number of hardware backends allowed
 
-/** Hardware backend */
-struct s_hw_backend {
-	struct {
-		bool initialized;	///< true if backend is initialized
-		bool online;		///< true if backend is online
-	} run;			///< runtime data
-	const struct s_hw_callbacks * cb;	///< hardware backend callbacks
-	void * restrict priv;		///< backend-specific private data
-	char * restrict name;	///< backend name
-};
-
 /**
  * Backend hardware callbacks.
  * These callbacks provide an implementation-agnostic way to access and operate
@@ -197,6 +186,17 @@ struct s_hw_callbacks {
 	int (*filecfg_dump)(void * priv);
 
 	/* TODO other ops (display/alarm?) */
+};
+
+/** Hardware backend */
+struct s_hw_backend {
+	struct {
+		bool initialized;	///< true if backend is initialized
+		bool online;		///< true if backend is online
+	} run;			///< runtime data
+	const struct s_hw_callbacks * cb;	///< hardware backend callbacks
+	void * restrict priv;		///< backend-specific private data
+	const char * restrict name;	///< unique backend name
 };
 
 // hardware.c needs access
