@@ -43,7 +43,7 @@ struct s_hw_sensor {
 	struct {
 		temp_t value;		///< sensor current temperature value (offset applied)
 	} run;		///< private runtime (internally handled)
-	char * restrict name;		///< @b unique (per backend) user-defined name for the sensor
+	const char * restrict name;	///< @b unique (per backend) user-defined name for the sensor
 };
 
 /** software representation of a hardware relay */
@@ -63,7 +63,7 @@ struct s_hw_relay {
 		timekeep_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
 		uint_fast32_t cycles;	///< number of power cycles
 	} run;		///< private runtime (internally handled)
-	char * restrict name;		///< @b unique (per backend) user-defined name for the relay
+	const char * restrict name;	///< @b unique (per backend) user-defined name for the relay
 };
 
 ohm_to_celsius_ft * hw_lib_sensor_o_to_c(const enum e_hw_stype stype);
