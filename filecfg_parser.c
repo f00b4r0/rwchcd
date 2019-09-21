@@ -1324,7 +1324,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 		{ NODESTR, "tlaw", true, NULL, NULL, },			// 12
 		{ NODESTR, "valve_mix", false, NULL, NULL, },
 		{ NODESTR, "pump_feed", false, NULL, NULL, },		// 14
-		{ NODESTR, "bmodel", false, NULL, NULL, },
+		{ NODESTR, "bmodel", true, NULL, NULL, },
 		{ NODESTR, "schedid", false, NULL, NULL },		// 16
 	};
 	const struct s_filecfg_parser_node * currnode;
