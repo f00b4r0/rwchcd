@@ -47,7 +47,7 @@ struct s_heatsource {
 		int_fast16_t cshift_noncrit;	///< non-critical factor to inhibit (negative) or increase (positive) consummers' heat requests. To be considered a percentage, positive for increased consumption, negative for reduced consumption.
 		struct s_temp_intgrl sld_itg;	///< sliding priority integral, used to compute consummer shift when in DHW sliding priority
 	} run;		///< private runtime (internally handled)
-	char * restrict name;
+	const char * restrict name;		///< unique name for this heatsource
 	const struct s_pdata * restrict pdata;	///< read-only plant data for this heatsource
 	void * restrict priv;			///< pointer to source private data structure
 	struct {

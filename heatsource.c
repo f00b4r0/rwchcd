@@ -191,7 +191,7 @@ void heatsource_del(struct s_heatsource * heat)
 		heat->cb.del_priv(heat->priv);
 	heat->priv = NULL;
 
-	free(heat->name);
+	free((void *)heat->name);
 	heat->name = NULL;
 
 	free(heat);
