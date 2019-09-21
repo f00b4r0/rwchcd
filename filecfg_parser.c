@@ -1426,18 +1426,18 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 
 				switch (i) {
 					case 13:
-						hcircuit->valve_mix = plant_fbn_valve(plant, n);
-						if (!hcircuit->valve_mix)
+						hcircuit->set.p.valve_mix = plant_fbn_valve(plant, n);
+						if (!hcircuit->set.p.valve_mix)
 							goto invaliddata;
 						break;
 					case 14:
-						hcircuit->pump_feed = plant_fbn_pump(plant, n);
-						if (!hcircuit->pump_feed)
+						hcircuit->set.p.pump_feed = plant_fbn_pump(plant, n);
+						if (!hcircuit->set.p.pump_feed)
 							goto invaliddata;
 						break;
 					case 15:
-						hcircuit->bmodel = models_fbn_bmodel(n);
-						if (!hcircuit->bmodel)
+						hcircuit->set.p.bmodel = models_fbn_bmodel(n);
+						if (!hcircuit->set.p.bmodel)
 							goto invaliddata;
 						break;
 					case 16:

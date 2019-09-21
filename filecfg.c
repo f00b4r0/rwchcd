@@ -841,12 +841,12 @@ static int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circui
 
 	filecfg_iprintf("tlaw"); filecfg_hcircuit_tlaw_dump(circuit);					// mandatory
 
-	if (FCD_Exhaustive || circuit->valve_mix)
-		filecfg_iprintf("valve_mix \"%s\";\n", circuit->valve_mix ? circuit->valve_mix->name : "");
-	if (FCD_Exhaustive || circuit->pump_feed)
-		filecfg_iprintf("pump_feed \"%s\";\n", circuit->pump_feed ? circuit->pump_feed->name : "");
-	if (FCD_Exhaustive || circuit->bmodel)
-		filecfg_iprintf("bmodel \"%s\";\n", circuit->bmodel ? circuit->bmodel->name : "");
+	if (FCD_Exhaustive || circuit->set.p.valve_mix)
+		filecfg_iprintf("valve_mix \"%s\";\n", circuit->set.p.valve_mix ? circuit->set.p.valve_mix->name : "");
+	if (FCD_Exhaustive || circuit->set.p.pump_feed)
+		filecfg_iprintf("pump_feed \"%s\";\n", circuit->set.p.pump_feed ? circuit->set.p.pump_feed->name : "");
+	if (FCD_Exhaustive || circuit->set.p.bmodel)
+		filecfg_iprintf("bmodel \"%s\";\n", circuit->set.p.bmodel ? circuit->set.p.bmodel->name : "");
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

@@ -2,7 +2,7 @@
 //  hcircuit.h
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017,2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -40,7 +40,7 @@ struct s_hcircuit {
 		bool configured;		///< true if circuit is configured
 		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target)
 		bool logging;			///< true if data logging should be enabled for this circuit
-		schedid_t schedid;		///< schedule id for this hcircuit. Use the schedule name in config.
+		schedid_t schedid;		///< schedule id for this hcircuit.
 		enum e_runmode runmode;		///< current circuit set_runmode
 		int_fast16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (0 to disable)
@@ -50,8 +50,13 @@ struct s_hcircuit {
 		tempid_t tid_outgoing;		///< outgoing temp sensor id for this circuit
 		tempid_t tid_return;		///< return temp sensor id for this circuit
 		tempid_t tid_ambient;		///< ambient temp sensor id related to this circuit
-		struct s_hcircuit_params params;	///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
+		struct s_hcircuit_params params;///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 		enum e_hcircuit_laws tlaw;	///< temperature law identifier
+		struct {
+			struct s_valve * restrict valve_mix;	///< optional valve for circuit (if unavailable -> direct heating)
+			struct s_pump * restrict pump_feed;	///< optional pump for this circuit
+			const struct s_bmodel * restrict bmodel;///< mandatory read-only bmodel corresponding to this circuit
+		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if circuit is operational (under software management)
@@ -74,11 +79,8 @@ struct s_hcircuit {
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 	} run;		///< private runtime (internally handled)
 	void * restrict tlaw_priv;		///< Reference data for templaw
-	struct s_valve * restrict valve_mix;	///< optional valve for circuit (if unavailable -> direct heating)
-	struct s_pump * restrict pump_feed;	///< optional pump for this circuit
-	const struct s_bmodel * restrict bmodel;///< read-only bmodel corresponding to this circuit
 	const struct s_pdata * restrict pdata;	///< read-only plant data for this circuit
-	char * restrict name;			///< name for this circuit
+	const char * restrict name;		///< unique name for this circuit
 };
 
 struct s_hcircuit * hcircuit_new(void) __attribute__((warn_unused_result));

@@ -289,7 +289,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!circuit->bmodel)
+	if (!circuit->set.p.bmodel)
 		return (-EMISCONFIGURED);
 
 	// check that mandatory sensors are set
@@ -305,19 +305,19 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	}
 
 	// make sure associated building model is configured
-	if (!circuit->bmodel || !circuit->bmodel->set.configured) {
-		pr_err(_("\"%s\": building model \"%s\" is set but not configured"), circuit->name, circuit->bmodel->name);
+	if (!circuit->set.p.bmodel || !circuit->set.p.bmodel->set.configured) {
+		pr_err(_("\"%s\": building model \"%s\" is set but not configured"), circuit->name, circuit->set.p.bmodel->name);
 		ret = -EMISCONFIGURED;
 	}
 	// if pump exists check it's correctly configured
-	if (circuit->pump_feed && !circuit->pump_feed->set.configured) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), circuit->name, circuit->pump_feed->name);
+	if (circuit->set.p.pump_feed && !circuit->set.p.pump_feed->set.configured) {
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), circuit->name, circuit->set.p.pump_feed->name);
 		ret = -EMISCONFIGURED;
 	}
 
 	if (circuit->set.wtemp_rorh) {
 		// if ror is requested and valve is not available report misconfiguration
-		if (!circuit->valve_mix) {
+		if (!circuit->set.p.valve_mix) {
 			pr_err(_("\"%s\": rate of rise control requested but no mixing valve is available"), circuit->name);
 			ret = -EMISCONFIGURED;
 		}
@@ -351,11 +351,11 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	assert(circuit->set.configured);
 
 	// XXX ensure actuators are reset after summer maintenance
-	if (circuit->pump_feed)
-		pump_shutdown(circuit->pump_feed);
+	if (circuit->set.p.pump_feed)
+		pump_shutdown(circuit->set.p.pump_feed);
 
-	if (circuit->valve_mix)
-		valve_shutdown(circuit->valve_mix);
+	if (circuit->set.p.valve_mix)
+		valve_shutdown(circuit->set.p.valve_mix);
 
 	if (!circuit->run.active)
 		return (ALL_OK);
@@ -418,7 +418,7 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 {
 	const struct s_config * restrict const config = runtime_get()->config;
-	const struct s_bmodel * restrict const bmodel = circuit->bmodel;
+	const struct s_bmodel * restrict const bmodel = circuit->set.p.bmodel;
 	temp_t temp_trigger;
 
 	// input sanitization performed in logic_hcircuit()
@@ -504,7 +504,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	assert(circuit);
 
-	bmodel = circuit->bmodel;
+	bmodel = circuit->set.p.bmodel;
 	assert(bmodel);
 
 	// fast cooldown can only be applied if set AND not in frost condition
@@ -701,9 +701,9 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
 {
 	assert(circuit);
 	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	valve_reqclose_full(circuit->valve_mix);
-	if (circuit->pump_feed)
-		(void)pump_set_state(circuit->pump_feed, ON, FORCE);
+	valve_reqclose_full(circuit->set.p.valve_mix);
+	if (circuit->set.p.pump_feed)
+		(void)pump_set_state(circuit->set.p.pump_feed, ON, FORCE);
 }
 
 /**
@@ -759,9 +759,9 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				return (hcircuit_shutdown(circuit));
 		case RM_TEST:
 			circuit->run.active = true;
-			valve_reqstop(circuit->valve_mix);
-			if (circuit->pump_feed)
-				(void)pump_set_state(circuit->pump_feed, ON, FORCE);
+			valve_reqstop(circuit->set.p.valve_mix);
+			if (circuit->set.p.pump_feed)
+				(void)pump_set_state(circuit->set.p.pump_feed, ON, FORCE);
 			return (ALL_OK);
 		case RM_COMFORT:
 		case RM_ECO:
@@ -778,16 +778,16 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	circuit->run.active = true;
 
 	// if building model isn't online, failsafe
-	if (!circuit->bmodel->run.online) {
+	if (!circuit->set.p.bmodel->run.online) {
 		hcircuit_failsafe(circuit);
 		return (-ESAFETY);
 	}
 
 	// circuit is active, ensure pump is running
-	if (circuit->pump_feed) {
-		ret = pump_set_state(circuit->pump_feed, ON, 0);
+	if (circuit->set.p.pump_feed) {
+		ret = pump_set_state(circuit->set.p.pump_feed, ON, 0);
 		if (ALL_OK != ret) {
-			dbgerr("\"%s\": failed to set pump_feed \"%s\" ON (%d)", circuit->name, circuit->pump_feed->name, ret);
+			dbgerr("\"%s\": failed to set pump_feed \"%s\" ON (%d)", circuit->name, circuit->set.p.pump_feed->name, ret);
 			hcircuit_failsafe(circuit);
 			return (ret);	// critical error: stop there
 		}
@@ -800,7 +800,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// calculate water pipe temp
 	switch (circuit->set.tlaw) {
 		case HCL_BILINEAR:
-			water_temp = templaw_bilinear(circuit, circuit->bmodel->run.t_out_mix);
+			water_temp = templaw_bilinear(circuit, circuit->set.p.bmodel->run.t_out_mix);
 			break;
 		case HCL_NONE:
 		default:
@@ -822,7 +822,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, config->def_hcircuit.temp_inoffset);
 
 	// alterations to the computed value only make sense if a mixing valve is available
-	if (circuit->valve_mix) {
+	if (circuit->set.p.valve_mix) {
 		// interference: apply rate of rise limitation if any: update temp every minute
 		// applied first so it's not impacted by the next interferences (in particular power shift). XXX REVIEW: might be needed to move after if ror control is desired on cshift rising edges
 		if (circuit->set.wtemp_rorh) {
@@ -885,7 +885,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			water_temp = lwtmax;
 
 		// adjust valve position if necessary
-		ret = valve_mix_tcontrol(circuit->valve_mix, water_temp);
+		ret = valve_mix_tcontrol(circuit->set.p.valve_mix, water_temp);
 		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
 			return (ret);
 		// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))
@@ -985,7 +985,7 @@ void hcircuit_del(struct s_hcircuit * circuit)
 	if (!circuit)
 		return;
 
-	free(circuit->name);
+	free((void *)circuit->name);
 	circuit->name = NULL;
 
 	free(circuit);
