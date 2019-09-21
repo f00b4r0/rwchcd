@@ -21,7 +21,7 @@
 /** heatsource type identifiers */
 enum e_heatsource_type {
 	HS_NONE = 0,		///< No heat source: that's a misconfiguration
-	HS_BOILER,		///< boiler type heatsource. Config "boiler"
+	HS_BOILER,		///< boiler type heatsource. Config `boiler`
 	HS_UNKNOWN,		///< invalid past this value
 };
 
@@ -30,7 +30,7 @@ enum e_heatsource_type {
 struct s_heatsource {
 	struct {
 		bool configured;		///< true if properly configured
-		schedid_t schedid;		///< schedule id for this heatsource. Use the schedule name in config.
+		schedid_t schedid;		///< schedule id for this heatsource.
 		enum e_runmode runmode;		///< current heatsource set_runmode
 		enum e_heatsource_type type;	///< type of heatsource
 		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED

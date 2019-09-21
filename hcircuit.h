@@ -31,7 +31,7 @@ struct s_tlaw_bilin20C_priv {
 /** Heating circuit temperature law identifiers */
 enum e_hcircuit_laws {
 	HCL_NONE = 0,	///< none, misconfiguration
-	HCL_BILINEAR,	///< bilinear temperature law. Config "bilinear"
+	HCL_BILINEAR,	///< bilinear temperature law. Config `bilinear`
 };
 
 /** Heating circuit element structure */

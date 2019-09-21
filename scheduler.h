@@ -18,9 +18,9 @@
 
 /** Schedule entry time. */
 struct s_schedule_etime {
-	int wday;		///< day of the week for this schedule entry (0 - 6, Sunday = 0)
-	int hour;		///< hour of the day for this schedule entry (0 - 23)
-	int min;		///< minute for this schedule entry (0 - 59)
+	int wday;		///< day of the week for this schedule entry (`0` - `6`, Sunday = `0`)
+	int hour;		///< hour of the day for this schedule entry (`0` - `23`)
+	int min;		///< minute for this schedule entry (`0` - `59`)
 };
 
 /** Schedule entry parameters. */

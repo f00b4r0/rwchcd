@@ -12,6 +12,10 @@
  * This scheduler is based on a weekly model. It updates a pool of weekly schedules to keep them
  * up to the current date. Interfaces are provided to give (read) access to the schedule's current setup,
  * enabling individual plant entities to follow a custom schedule.
+ * Configuration of the scheduler happens in a `scheduler` root node in the configuration file which contains
+ * one or more named `schedule` nodes, themselves containing one or more `entry` nodes composed of a
+ * `time` node (content from struct s_schedule_etime) and a `params` node (content from struct s_schedule_eparams).
+ * The name of the `schedule` node(s) can then be used to assign various plant entities to the given schedule.
  * @todo adapt to add "intelligence" and anticipation from e.g. circuit transitions
  * @note Operation is lockless as it is assumed that the schedules will only be updated at config time
  * (during startup) and that from that point on only read operations will be performed.

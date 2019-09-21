@@ -25,19 +25,19 @@ struct s_dhw_tank {
 		bool anti_legionella;		///< if true, anti-legionella heat charge is allowed for this DHWT
 		bool legionella_recycle;	///< if true, recycle pump will be turned on during anti-legionella heat charge
 		uint_fast8_t prio;		///< priority: 0 is highest prio, next positive. For cascading: DHWT with lower prio (higher value) will only be charged if @b none of the DHWTs with higer prio (lower value) are charging
-		schedid_t schedid;		///< schedule id for this DHWT. Use the schedule name in config.
+		schedid_t schedid;		///< schedule id for this DHWT.
 		enum e_runmode runmode;		///< dhwt set_runmode
 		enum {
-			DHWTP_PARALMAX = 0,	///< no priority: parallel run with maximum selection. Config "paralmax"
-			DHWTP_PARALDHW,		///< no priority: parallel run with DHW temp request override. Config "paraldhw"
-			DHWTP_SLIDMAX,		///< sliding priority with maximum selection: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config "slidmax"
-			DHWTP_SLIDDHW,		///< sliding priority with DHW temp request override: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config "sliddhw"
-			DHWTP_ABSOLUTE,		///< absolute priority: heating circuits will not receive heat during DHW charge. Config "absolute"
+			DHWTP_PARALMAX = 0,	///< no priority: parallel run with maximum selection. Config `paralmax`
+			DHWTP_PARALDHW,		///< no priority: parallel run with DHW temp request override. Config `paraldhw`
+			DHWTP_SLIDMAX,		///< sliding priority with maximum selection: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config `slidmax`
+			DHWTP_SLIDDHW,		///< sliding priority with DHW temp request override: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config `sliddhw`
+			DHWTP_ABSOLUTE,		///< absolute priority: heating circuits will not receive heat during DHW charge. Config `absolute`
 		} dhwt_cprio;	///< DHW charge priority
 		enum {
-			DHWTF_NEVER = 0,	///< never force. Config "never"
-			DHWTF_FIRST,		///< force first comfort charge of the day. Config "first"
-			DHWTF_ALWAYS		///< force all comfort charges. Config "always"
+			DHWTF_NEVER = 0,	///< never force. Config `never`
+			DHWTF_FIRST,		///< force first comfort charge of the day. Config `first`
+			DHWTF_ALWAYS		///< force all comfort charges. Config `always`
 		} force_mode;			///< Programmed force charge when switching to COMFORT
 		tempid_t tid_bottom;		///< temp sensor id at bottom of dhw tank
 		tempid_t tid_top;		///< temp sensor id at top of dhw tank

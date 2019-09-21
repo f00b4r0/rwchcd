@@ -10,6 +10,7 @@
  * @file
  * Log system implementation.
  * @todo REVIEW/CLEANUP
+ * @todo configuration support
  */
 
 #include <stdlib.h>	// malloc

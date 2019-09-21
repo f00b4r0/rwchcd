@@ -27,8 +27,8 @@ typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius functi
 /** valid types of temperature sensors */
 enum e_hw_stype {
 	HW_ST_NONE = 0,	///< No type, misconfiguration
-	HW_ST_PT1000,	///< PT1000 sensor. Config "PT1000"
-	HW_ST_NI1000,	///< NI1000 sensor. Config "NI1000"
+	HW_ST_PT1000,	///< PT1000 sensor. Config `PT1000`
+	HW_ST_NI1000,	///< NI1000 sensor. Config `NI1000`
 	/*	ST_PT100,
 	 ST_LGNI1000, */
 };

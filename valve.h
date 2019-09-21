@@ -49,16 +49,16 @@ struct s_valve_pi_priv {
 /** valve tcontrol algorithm identifiers */
 enum e_valve_talgos {
 	VA_TALG_NONE = 0,	///< no algorithm, misconfiguration
-	VA_TALG_BANGBANG,	///< bangbang controller. Config "bangbang"
-	VA_TALG_SAPPROX,	///< sapprox controller. Config "sapprox"
-	VA_TALG_PI,		///< PI controller. Config "PI"
+	VA_TALG_BANGBANG,	///< bangbang controller. Config `bangbang`
+	VA_TALG_SAPPROX,	///< sapprox controller. Config `sapprox`
+	VA_TALG_PI,		///< PI controller. Config `PI`
 };
 
 /** valve motorisation identifiers */
 enum e_valve_motor {
 	VA_M_NONE = 0,	///< no motor, misconfiguration
-	VA_M_3WAY,	///< 3way motor control. Config "3way"
-	VA_M_2WAY,	///< 2way motor control. Config "2way"
+	VA_M_3WAY,	///< 3way motor control. Config `3way`
+	VA_M_2WAY,	///< 2way motor control. Config `2way`
 	//VA_M_10V,
 	//VA_M_20MA,
 };
@@ -66,8 +66,8 @@ enum e_valve_motor {
 /** valve type identifiers */
 enum e_valve_type {
 	VA_TYPE_NONE = 0,	///< no type, misconfiguration
-	VA_TYPE_MIX,		///< mixing type. Config "mix"
-	VA_TYPE_ISOL,		///< isolation type. Config "isol"
+	VA_TYPE_MIX,		///< mixing type. Config `mix`
+	VA_TYPE_ISOL,		///< isolation type. Config `isol`
 	VA_TYPE_UNKNOWN,	///< invalid past this value
 };
 

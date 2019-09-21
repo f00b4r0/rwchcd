@@ -125,38 +125,38 @@ typedef uint_fast8_t	sid_t;		///< sensor id type
 /** temperature sensor id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
-	sid_t sid;	///< sensor id - @warning MUST START FROM 1
+	sid_t sid;	///< sensor id - @warning MUST START FROM `1`
 } tempid_t;
 /** relay identifier. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
-	rid_t rid;	///< relay id - @warning MUST START FROM 1
+	rid_t rid;	///< relay id - @warning MUST START FROM `1`
 } relid_t;
 typedef uint_fast16_t	schedid_t;	///< schedule id type
 
 /** Valid run modes */
 enum e_runmode {
-	RM_OFF = 0,	///< device is fully off, no operation performed (not even frost protection). Config "off"
-	RM_AUTO,	///< device is running based on global plant set_runmode. Config "auto"
-	RM_COMFORT,	///< device is in comfort mode. Config "comfort"
-	RM_ECO,		///< device is in eco mode. Config "eco"
-	RM_FROSTFREE,	///< device is in frostfree mode. Config "frostfree"
-	RM_DHWONLY,	///< device is in DHW only mode. Config "dhwonly"
-	RM_TEST,	///< device is in test mode (typically all actuators are on). Config "test" (should not be used in permanent config)
+	RM_OFF = 0,	///< device is fully off, no operation performed (not even frost protection). Config `off`
+	RM_AUTO,	///< device is running based on global plant set_runmode. Config `auto`
+	RM_COMFORT,	///< device is in comfort mode. Config `comfort`
+	RM_ECO,		///< device is in eco mode. Config `eco`
+	RM_FROSTFREE,	///< device is in frostfree mode. Config `frostfree`
+	RM_DHWONLY,	///< device is in DHW only mode. Config `dhwonly`
+	RM_TEST,	///< device is in test mode (typically all actuators are on). Config `test` (should not be used in permanent config)
 	RM_UNKNOWN,	///< invalid past this value
 };
 
 /** Valid system modes. */
 enum e_systemmode {
 	SYS_NONE = 0,	///< system is unconfigured
-	SYS_OFF,	///< system is fully off
-	SYS_AUTO,	///< system is running in automatic mode. Only in this mode will the system allow scheduled states.
-	SYS_COMFORT,	///< system is running in comfort mode
-	SYS_ECO,	///< system is running in eco mode
-	SYS_FROSTFREE,	///< system is running in frostfree mode
-	SYS_DHWONLY,	///< system is running in DHW only mode
-	SYS_TEST,	///< system is running in test mode
-	SYS_MANUAL,	///< system is running in manual mode: runtime runmode and dhwmode must be set manually.
+	SYS_OFF,	///< system is fully off. Config `off`
+	SYS_AUTO,	///< system is running in automatic mode. Only in this mode will the system allow scheduled states. Config `auto`
+	SYS_COMFORT,	///< system is running in comfort mode. Config `comfort`
+	SYS_ECO,	///< system is running in eco mode. Config `eco`
+	SYS_FROSTFREE,	///< system is running in frostfree mode. Config `frostfree`
+	SYS_DHWONLY,	///< system is running in DHW only mode. Config `dhwonly`
+	SYS_TEST,	///< system is running in test mode. Config `test` (should not be used in permament config)
+	SYS_MANUAL,	///< system is running in manual mode: runtime runmode and dhwmode must be set manually. Config `manual`
 	SYS_UNKNOWN,	///< invalid past this value
 };
 

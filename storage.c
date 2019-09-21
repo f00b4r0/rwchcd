@@ -16,6 +16,7 @@
  * probably shouldn't use flat files at all, hence the lack of effort to improve this.
  * Generally speaking a database with several tables makes more sense.
  * @warning no check is performed for @b identifier collisions in any of the output functions.
+ * @todo configuration support
  */
 
 #include <unistd.h>	// chdir/write/close/unlink

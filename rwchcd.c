@@ -35,7 +35,12 @@
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
  * @todo config reload
- * @todo implement a flexible logic system that would take user-definable conditions and user-selectable actions to trigger custom actions (for more flexible plants)
+ * @todo implement a flexible logic system that would take user-definable conditions
+ * and user-selectable actions to trigger custom actions (for more flexible plants),
+ * for instance the ability to switch from internal boiler DHWT to external electric DHWT
+ * (and vice-versa), via control of a zone valve and even optimisation to use all available
+ * hot water during switchover; or ability to switch from wood to fuel furnace, etc. Should
+ * be implementable via AST.
  */
 
 // http://www.energieplus-lesite.be/index.php?id=10963
