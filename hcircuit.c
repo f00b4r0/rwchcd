@@ -289,7 +289,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!circuit->bmodel || !circuit->templaw)
+	if (!circuit->bmodel)
 		return (-EMISCONFIGURED);
 
 	// check that mandatory sensors are set
@@ -798,7 +798,15 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, config->def_hcircuit.limit_wtmax);
 
 	// calculate water pipe temp
-	water_temp = circuit->templaw(circuit, circuit->bmodel->run.t_out_mix);
+	switch (circuit->set.tlaw) {
+		case HCL_BILINEAR:
+			water_temp = templaw_bilinear(circuit, circuit->bmodel->run.t_out_mix);
+			break;
+		case HCL_NONE:
+		default:
+			water_temp = RWCHCD_TEMP_NOREQUEST;	// can never happen, enforced by online()
+			break;
+	}
 
 	// enforce limits
 
@@ -961,8 +969,6 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 
 	// attach priv structure
 	circuit->tlaw_priv = priv;
-
-	circuit->templaw = templaw_bilinear;
 
 	circuit->set.tlaw = HCL_BILINEAR;
 
