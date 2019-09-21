@@ -40,7 +40,7 @@ void pump_del(struct s_pump * restrict pump)
 	if (!pump)
 		return;
 
-	free(pump->name);
+	free((void *)pump->name);
 	pump->name = NULL;
 	free(pump);
 }

@@ -35,7 +35,7 @@ struct s_pump {
 		bool dwht_use;			///< true if pump is currently used by active DHWT
 		timekeep_t actual_cooldown_time;///< actual cooldown time remaining
 	} run;		///< private runtime (internally handled)
-	char * restrict name;
+	const char * restrict name;	///< unique name for this pump
 };
 
 struct s_pump * pump_new(void) __attribute__((warn_unused_result));
