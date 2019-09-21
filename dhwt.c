@@ -125,18 +125,18 @@ int dhwt_online(struct s_dhw_tank * const dhwt)
 	}
 
 	// if pumps exist check they're correctly configured
-	if (dhwt->pump_feed && !dhwt->pump_feed->set.configured) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), dhwt->name, dhwt->pump_feed->name);
+	if (dhwt->set.p.pump_feed && !dhwt->set.p.pump_feed->set.configured) {
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.pump_feed->name);
 		ret = -EMISCONFIGURED;
 	}
 
-	if (dhwt->pump_recycle && !dhwt->pump_recycle->set.configured) {
-		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not configured"), dhwt->name, dhwt->pump_recycle->name);
+	if (dhwt->set.p.pump_recycle && !dhwt->set.p.pump_recycle->set.configured) {
+		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.pump_recycle->name);
 		ret = -EMISCONFIGURED;
 	}
 
-	if (dhwt->valve_hwisol && !dhwt->valve_hwisol->set.configured) {
-		pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, dhwt->valve_hwisol->name);
+	if (dhwt->set.p.valve_hwisol && !dhwt->set.p.valve_hwisol->set.configured) {
+		pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.valve_hwisol->name);
 		ret = -EMISCONFIGURED;
 	}
 
@@ -167,11 +167,11 @@ static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active
 {
 	assert(dhwt);
 
-	if (dhwt->pump_feed)
-		dhwt->pump_feed->run.dwht_use = active;
+	if (dhwt->set.p.pump_feed)
+		dhwt->set.p.pump_feed->run.dwht_use = active;
 
-	if (dhwt->pump_recycle)
-		dhwt->pump_recycle->run.dwht_use = active;
+	if (dhwt->set.p.pump_recycle)
+		dhwt->set.p.pump_recycle->run.dwht_use = active;
 }
 
 /**
@@ -186,11 +186,11 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 	assert(dhwt->set.configured);
 
 	// XXX ensure pumps are stopped after summer maintenance
-	if (dhwt->pump_feed)
-		pump_shutdown(dhwt->pump_feed);
+	if (dhwt->set.p.pump_feed)
+		pump_shutdown(dhwt->set.p.pump_feed);
 
-	if (dhwt->pump_recycle)
-		pump_shutdown(dhwt->pump_recycle);
+	if (dhwt->set.p.pump_recycle)
+		pump_shutdown(dhwt->set.p.pump_recycle);
 
 	if (!dhwt->run.active)
 		return (ALL_OK);
@@ -213,8 +213,8 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 	(void)hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 	// isolate DHWT if possible
-	if (dhwt->valve_hwisol)
-		(void)valve_isol_trigger(dhwt->valve_hwisol, true);
+	if (dhwt->set.p.valve_hwisol)
+		(void)valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
 
 	dhwt->run.active = false;
 
@@ -428,12 +428,12 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			break;
 		case RM_TEST:
 			dhwt->run.active = true;
-			if (dhwt->valve_hwisol)
-				(void)valve_isol_trigger(dhwt->valve_hwisol, false);
-			if (dhwt->pump_feed)
-				(void)pump_set_state(dhwt->pump_feed, ON, FORCE);
-			if (dhwt->pump_recycle)
-				(void)pump_set_state(dhwt->pump_recycle, ON, FORCE);
+			if (dhwt->set.p.valve_hwisol)
+				(void)valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
+			if (dhwt->set.p.pump_feed)
+				(void)pump_set_state(dhwt->set.p.pump_feed, ON, FORCE);
+			if (dhwt->set.p.pump_recycle)
+				(void)pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
 			(void)hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
 			return (ALL_OK);
 		case RM_AUTO:
@@ -447,8 +447,8 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	dhwt->run.active = true;
 
 	// de-isolate the DHWT if necessary (when not on electric)
-	if (dhwt->valve_hwisol && !dhwt->run.electric_mode) {
-		ret = valve_isol_trigger(dhwt->valve_hwisol, false);
+	if (dhwt->set.p.valve_hwisol && !dhwt->run.electric_mode) {
+		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
 		if (ALL_OK != ret)
 			dbgerr("\%s\": cannot operate isolation valve!", dhwt->name);
 	}
@@ -473,14 +473,14 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	       dhwt->name, dhwt->run.charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	// handle recycle loop
-	if (dhwt->pump_recycle) {
+	if (dhwt->set.p.pump_recycle) {
 		if (dhwt->run.recycle_on)
-			ret = pump_set_state(dhwt->pump_recycle, ON, NOFORCE);
+			ret = pump_set_state(dhwt->set.p.pump_recycle, ON, NOFORCE);
 		else
-			ret = pump_set_state(dhwt->pump_recycle, OFF, NOFORCE);
+			ret = pump_set_state(dhwt->set.p.pump_recycle, OFF, NOFORCE);
 
 		if (ALL_OK != ret)	// this is a non-critical error, keep going
-			dbgerr("\"%s\": failed to set pump_recycle \"%s\" state (%d)", dhwt->name, dhwt->pump_recycle->name, ret);
+			dbgerr("\"%s\": failed to set pump_recycle \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_recycle->name, ret);
 	}
 
 	/* handle heat charge - NOTE we enforce sensor position, it SEEMS desirable
@@ -515,8 +515,8 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 				// the plant is sleeping and we have a configured self heater: use it
 				dhwt->run.electric_mode = true;
 				// isolate the DHWT if possible when operating from electric
-				if (dhwt->valve_hwisol)
-					(void)valve_isol_trigger(dhwt->valve_hwisol, true);
+				if (dhwt->set.p.valve_hwisol)
+					(void)valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
 
 				// mark heating in progress
 				dhwt->run.charge_on = true;
@@ -588,19 +588,19 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 	ret = ALL_OK;
 
 	// handle pump_feed - outside of the trigger since we need to manage inlet temp
-	if (dhwt->pump_feed) {
+	if (dhwt->set.p.pump_feed) {
 		if (dhwt->run.charge_on && !dhwt->run.electric_mode) {	// on heatsource charge
 									// if available, test for inlet water temp
 			ret = hardware_sensor_clone_temp(dhwt->set.tid_win, &water_temp);	// Note: this sensor must not rely on pump running for accurate read, otherwise this can be a problem
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
-					ret = pump_set_state(dhwt->pump_feed, OFF, FORCE);
+					ret = pump_set_state(dhwt->set.p.pump_feed, OFF, FORCE);
 				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K hysteresis
-					ret = pump_set_state(dhwt->pump_feed, ON, NOFORCE);
+					ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);
 			}
 			else
-				ret = pump_set_state(dhwt->pump_feed, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
+				ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
 		}
 		else {				// no charge or electric charge
 			test = FORCE;	// by default, force pump_feed immediate turn off
@@ -614,11 +614,11 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			}
 
 			// turn off pump with conditional cooldown
-			ret = pump_set_state(dhwt->pump_feed, OFF, test);
+			ret = pump_set_state(dhwt->set.p.pump_feed, OFF, test);
 		}
 
 		if (ALL_OK != ret)
-			dbgerr("\"%s\": failed to set pump_feed \"%s\" state (%d)", dhwt->name, dhwt->pump_feed->name, ret);
+			dbgerr("\"%s\": failed to set pump_feed \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_feed->name, ret);
 	}
 
 	return (ret);
@@ -634,7 +634,7 @@ void dhwt_del(struct s_dhw_tank * restrict dhwt)
 	if (!dhwt)
 		return;
 
-	free(dhwt->name);
+	free((void *)dhwt->name);
 	dhwt->name = NULL;
 
 	free(dhwt);

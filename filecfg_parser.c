@@ -1221,14 +1221,14 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 						if (!pump)
 							goto invaliddata;	// pump not found
 						if (13 == i)
-							dhwt->pump_feed = pump;
+							dhwt->set.p.pump_feed = pump;
 						else	// i == 14
-							dhwt->pump_recycle = pump;
+							dhwt->set.p.pump_recycle = pump;
 						break;
 
 					case 15:
-						dhwt->valve_hwisol = plant_fbn_valve(plant, n);
-						if (!dhwt->valve_hwisol)
+						dhwt->set.p.valve_hwisol = plant_fbn_valve(plant, n);
+						if (!dhwt->set.p.valve_hwisol)
 							goto invaliddata;
 						break;
 					case 16:

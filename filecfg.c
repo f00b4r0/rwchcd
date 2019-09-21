@@ -693,12 +693,12 @@ static int filecfg_dhwt_dump(const struct s_dhw_tank * restrict const dhwt)
 
 	filecfg_iprintf("params"); filecfg_dhwt_params_dump(&dhwt->set.params);
 
-	if (FCD_Exhaustive || dhwt->pump_feed)
-		filecfg_iprintf("pump_feed \"%s\";\n", dhwt->pump_feed ? dhwt->pump_feed->name : "");
-	if (FCD_Exhaustive || dhwt->pump_recycle)
-		filecfg_iprintf("pump_recycle \"%s\";\n", dhwt->pump_recycle ? dhwt->pump_recycle->name : "");
-	if (FCD_Exhaustive || dhwt->valve_hwisol)
-		filecfg_iprintf("valve_hwisol \"%s\";\n", dhwt->valve_hwisol ? dhwt->valve_hwisol->name : "");
+	if (FCD_Exhaustive || dhwt->set.p.pump_feed)
+		filecfg_iprintf("pump_feed \"%s\";\n", dhwt->set.p.pump_feed ? dhwt->set.p.pump_feed->name : "");
+	if (FCD_Exhaustive || dhwt->set.p.pump_recycle)
+		filecfg_iprintf("pump_recycle \"%s\";\n", dhwt->set.p.pump_recycle ? dhwt->set.p.pump_recycle->name : "");
+	if (FCD_Exhaustive || dhwt->set.p.valve_hwisol)
+		filecfg_iprintf("valve_hwisol \"%s\";\n", dhwt->set.p.valve_hwisol ? dhwt->set.p.valve_hwisol->name : "");
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

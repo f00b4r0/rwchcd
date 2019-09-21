@@ -2,7 +2,7 @@
 //  dhwt.h
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017,2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -45,6 +45,11 @@ struct s_dhw_tank {
 		tempid_t tid_wout;		///< temp sensor id heatwater outlet - XXX UNUSED
 		relid_t rid_selfheater;		///< relay for internal electric heater (if available)
 		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
+		struct {
+			struct s_pump * restrict pump_feed;	///< optional feed pump for this tank
+			struct s_pump * restrict pump_recycle;	///< optional dhw recycle pump for this tank
+			struct s_valve * restrict valve_hwisol;	///< optional valve used to disconnect the DHWT from the heatwater flow. This valve will be open when the DHWT is in use (non-electric mode) and closed otherwise
+		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if tank is available for use (under software management)
@@ -61,11 +66,8 @@ struct s_dhw_tank {
 		timekeep_t mode_since;		///< starting time of current mode (if charge_on: charge start time, else charge end time)
 		int charge_yday;		///< last day forced charge was triggered in DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
-	struct s_pump * restrict pump_feed;	///< feed pump for this tank
-	struct s_pump * restrict pump_recycle;	///< dhw recycle pump for this tank
-	struct s_valve * restrict valve_hwisol;	///< valve used to disconnect the DHWT from the heatwater flow. This valve will be open when the DHWT is in use (non-electric mode) and closed otherwise
 	const struct s_pdata * restrict pdata;	///< read-only plant data for this tank
-	char * restrict name;			///< name for this tank
+	const char * restrict name;		///< unique name for this tank
 };
 
 struct s_dhw_tank * dhwt_new(void) __attribute__((warn_unused_result));
