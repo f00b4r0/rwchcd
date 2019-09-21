@@ -517,10 +517,10 @@ static int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const hea
 	if (FCD_Exhaustive || hardware_relay_name(priv->set.rid_burner_2))
 		filecfg_iprintf("rid_burner_2"), filecfg_relid_dump(priv->set.rid_burner_2);
 
-	if (FCD_Exhaustive || priv->pump_load)
-		filecfg_iprintf("pump_load \"%s\";\n", priv->pump_load ? priv->pump_load->name : "");
-	if (FCD_Exhaustive || priv->valve_ret)
-		filecfg_iprintf("valve_ret \"%s\";\n", priv->valve_ret ? priv->valve_ret->name : "");
+	if (FCD_Exhaustive || priv->set.p.pump_load)
+		filecfg_iprintf("pump_load \"%s\";\n", priv->set.p.pump_load ? priv->set.p.pump_load->name : "");
+	if (FCD_Exhaustive || priv->set.p.valve_ret)
+		filecfg_iprintf("valve_ret \"%s\";\n", priv->set.p.valve_ret ? priv->set.p.valve_ret->name : "");
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

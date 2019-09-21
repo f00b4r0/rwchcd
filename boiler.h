@@ -37,6 +37,10 @@ struct s_boiler_priv {
 		tempid_t tid_boiler_return;	///< boiler inflow temp id
 		relid_t rid_burner_1;		///< first stage of burner
 		relid_t rid_burner_2;		///< second stage of burner
+		struct {
+			struct s_pump * restrict pump_load;	///< optional load pump for the boiler, if present
+			struct s_valve * restrict valve_ret;	///< optional return valve for the boiler, if present
+		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {
 		bool antifreeze;		///< true if anti freeze tripped
@@ -44,8 +48,6 @@ struct s_boiler_priv {
 		struct s_temp_intgrl boil_itg;	///< boiler integral (for cold start protection)
 		struct s_temp_intgrl ret_itg;	///< return integral (for return temp management)
 	} run;		///< private runtime (internally handled)
-	struct s_pump * restrict pump_load;	///< load pump for the boiler, if present
-	struct s_valve * restrict valve_ret;	///< return valve for the boiler, if present -- XXX NOT IMPLEMENTED
 };
 
 int boiler_heatsource(struct s_heatsource * const heat) __attribute__((warn_unused_result));

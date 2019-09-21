@@ -1591,13 +1591,13 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 
 				switch (i) {
 					case 12:
-						boiler->pump_load = plant_fbn_pump(plant, n);
-						if (!boiler->pump_load)
+						boiler->set.p.pump_load = plant_fbn_pump(plant, n);
+						if (!boiler->set.p.pump_load)
 							goto invaliddata;
 						break;
 					case 13:
-						boiler->valve_ret = plant_fbn_valve(plant, n);
-						if (!boiler->valve_ret)
+						boiler->set.p.valve_ret = plant_fbn_valve(plant, n);
+						if (!boiler->set.p.valve_ret)
 							goto invaliddata;
 						break;
 					default:
