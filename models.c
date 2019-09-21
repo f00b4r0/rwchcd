@@ -298,7 +298,7 @@ static void bmodel_del(struct s_bmodel * restrict bmodel)
 	if (!bmodel)
 		return;
 
-	free(bmodel->name);
+	free((void *)bmodel->name);
 	bmodel->name = NULL;
 	free(bmodel);
 }

@@ -50,7 +50,7 @@ struct s_bmodel {
 		temp_t t_out_mix;	///< mixed outdoor temperature (average of t_outdoor and t_filtered)
 		temp_t t_out_att;	///< attenuated outdoor temperature (moving average of t_filtered with tau: double filter on t_outdoor)
 	} run;
-	char * restrict name;		///< name for this bmodel
+	const char * restrict name;	///< unique name for this bmodel
 };
 
 const struct s_models * models_get(void);
