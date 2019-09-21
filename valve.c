@@ -49,7 +49,7 @@ void valve_del(struct s_valve * valve)
 
 	free(valve->priv);
 	valve->priv = NULL;
-	free(valve->name);
+	free((void *)valve->name);
 	valve->name = NULL;
 
 	free(valve);

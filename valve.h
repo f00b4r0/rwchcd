@@ -134,9 +134,9 @@ struct s_valve {
 		timekeep_t acc_close_time;	///< accumulated close time since last open
 		timekeep_t last_run_time;	///< last time valve_run() was invoked
 		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
-		request_action;	///< requested action
+					       request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
-	char * restrict name;		///< valve name
+	const char * restrict name;	///< unique valve name
 	void * restrict priv;		///< private data
 };
 
