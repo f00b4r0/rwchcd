@@ -146,6 +146,7 @@ static int bmodel_log_deregister(const struct s_bmodel * const bmodel)
 static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 {
 	char buf[MAX_FILENAMELEN+1] = MODELS_STORAGE_BMODEL_PREFIX;
+	size_t stret;
 
 	assert(bmodel);
 
@@ -156,7 +157,9 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
+	stret = strlcat(buf, bmodel->name, sizeof(buf));
+	if (stret > sizeof(buf))
+		return (-ETRUNC);
 
 	return (storage_dump(buf, &Models_sversion, &bmodel->run, sizeof(bmodel->run)));
 }
@@ -171,6 +174,7 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	char buf[MAX_FILENAMELEN+1] = MODELS_STORAGE_BMODEL_PREFIX;
 	struct s_bmodel temp_bmodel;
 	storage_version_t sversion;
+	size_t stret;
 	int ret;
 
 	assert(bmodel);
@@ -182,7 +186,9 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
+	stret = strlcat(buf, bmodel->name, sizeof(buf));
+	if (stret > sizeof(buf))
+		return (-ETRUNC);
 
 	// try to restore key elements
 	ret = storage_fetch(buf, &sversion, &temp_bmodel.run, sizeof(temp_bmodel.run));
