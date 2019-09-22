@@ -242,29 +242,36 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 static int runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 static int sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
+	const struct {
+		const char * pstr;
+		const enum e_systemmode psm;
+	} params[] = {
+		{ "off",	SYS_OFF,	},
+		{ "auto",	SYS_AUTO,	},
+		{ "comfort", 	SYS_COMFORT,	},
+		{ "eco",	SYS_ECO,	},
+		{ "frostfree",	SYS_FROSTFREE,	},
+		{ "test",	SYS_TEST,	},
+		{ "dhwonly",	SYS_DHWONLY,	},
+		{ "manual",	SYS_MANUAL,	},
+	};
 	enum e_systemmode * restrict const sysmode = priv;
-	const char * n;
+	enum e_systemmode sm = SYS_UNKNOWN;
+	const char * restrict n;
+	unsigned int i;
 
 	n = node->value.stringval;
 
-	if (!strcmp("off", n))
-		*sysmode = SYS_OFF;
-	else if (!strcmp("auto", n))
-		*sysmode = SYS_AUTO;
-	else if (!strcmp("comfort", n))
-		*sysmode = SYS_COMFORT;
-	else if (!strcmp("eco", n))
-		*sysmode = SYS_ECO;
-	else if (!strcmp("frostfree", n))
-		*sysmode = SYS_FROSTFREE;
-	else if (!strcmp("test", n))
-		*sysmode = SYS_TEST;
-	else if (!strcmp("dhwonly", n))
-		*sysmode = SYS_DHWONLY;
-	else if (!strcmp("manual", n))
-		*sysmode = SYS_MANUAL;
-	else {
-		*sysmode = SYS_UNKNOWN;
+	for (i = 0; i < ARRAY_SIZE(params); i++) {
+		if (!strcmp(n, params[i].pstr)) {
+			sm = params[i].psm;
+			break;
+		}
+	}
+
+	*sysmode = sm;
+
+	if (SYS_UNKNOWN == sm) {
 		filecfg_parser_pr_err(_("Unknown systemmode \"%s\" at line %d"), n, node->lineno);
 		return (-EINVALID);
 	}
@@ -1065,27 +1072,35 @@ static int valves_parse(void * restrict const priv, const struct s_filecfg_parse
 
 static int runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
+	const struct {
+		const char * pstr;
+		const enum e_runmode prm;
+	} params[] = {
+		{ "off",	RM_OFF,		},
+		{ "auto",	RM_AUTO,	},
+		{ "comfort", 	RM_COMFORT,	},
+		{ "eco",	RM_ECO,		},
+		{ "frostfree",	RM_FROSTFREE,	},
+		{ "test",	RM_TEST,	},
+		{ "dhwonly",	RM_DHWONLY,	},
+	};
 	enum e_runmode * restrict const runmode = priv;
-	const char * n;
+	enum e_runmode rm = RM_UNKNOWN;
+	const char * restrict n;
+	unsigned int i;
 
 	n = node->value.stringval;
 
-	if (!strcmp("off", n))
-		*runmode = RM_OFF;
-	else if (!strcmp("auto", n))
-		*runmode = RM_AUTO;
-	else if (!strcmp("comfort", n))
-		*runmode = RM_COMFORT;
-	else if (!strcmp("eco", n))
-		*runmode = RM_ECO;
-	else if (!strcmp("frostfree", n))
-		*runmode = RM_FROSTFREE;
-	else if (!strcmp("test", n))
-		*runmode = RM_TEST;
-	else if (!strcmp("dhwonly", n))
-		*runmode = RM_DHWONLY;
-	else {
-		*runmode = RM_UNKNOWN;
+	for (i = 0; i < ARRAY_SIZE(params); i++) {
+		if (!strcmp(n, params[i].pstr)) {
+			rm = params[i].prm;
+			break;
+		}
+	}
+
+	*runmode = rm;
+
+	if (RM_UNKNOWN == rm) {
 		filecfg_parser_pr_err(_("Unknown runmode \"%s\" at line %d"), n, node->lineno);
 		return (-EINVALID);
 	}
