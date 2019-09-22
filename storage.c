@@ -70,12 +70,12 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	// create new tmp file
 	fd = mkstemp(tmpfile);
 	if (fd < 0) {
-		dbgmsg("failed to create \"%s\" (%s)", tmpfile, identifier);
+		dbgerr("failed to create \"%s\" (%s)", tmpfile, identifier);
 		return (-ESTORE);
 	}
 
 	if (posix_fallocate(fd, 0, count)) {
-		dbgmsg("couldn't fallocate \"%s\" (%s)", tmpfile, identifier);
+		dbgerr("couldn't fallocate \"%s\" (%s)", tmpfile, identifier);
 		unlink(tmpfile);
 		return (-ESTORE);
 	}
@@ -96,7 +96,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 
 	// check all writes were complete and sync data
 	if (count || fdatasync(fd)) {
-		dbgmsg("incomplete write or failed to sync: \"%s\" (%s)", tmpfile, identifier);
+		dbgerr("incomplete write or failed to sync: \"%s\" (%s)", tmpfile, identifier);
 		unlink(tmpfile);
 		goto out;
 	}
@@ -109,7 +109,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 
 	// atomically move the file in place
 	if (rename(tmpfile, identifier)) {
-		dbgmsg("failed to rename \"%s\" to \"%s\"", tmpfile, identifier);
+		dbgerr("failed to rename \"%s\" to \"%s\"", tmpfile, identifier);
 		goto out;
 	}
 
