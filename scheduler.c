@@ -29,6 +29,7 @@
 
 #include "scheduler.h"
 #include "filecfg.h"
+#include "filecfg_parser.h"
 #include "timekeep.h"
 
 /** A schedule entry. Schedule entries are linked in a looped list. Config token 'entry' */
@@ -248,7 +249,7 @@ void * scheduler_thread(void * arg)
  * @param name the new schedule name (must be unique).
  * @return new schedule id or negative error.
  */
-int scheduler_add_schedule(const char * const restrict name)
+static int scheduler_add_schedule(const char * const restrict name)
 {
 	struct s_schedule * sched;
 	char * str = NULL;
@@ -293,7 +294,7 @@ int scheduler_add_schedule(const char * const restrict name)
  * @param sparams target schedule parameters for this entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
  */
-int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams)
+static int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams)
 {
 	struct s_schedule * sched;
 	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;
@@ -445,3 +446,192 @@ emptysched:
 
 	return (ALL_OK);
 }
+
+/* XXX TODO wishlist: parse a single entry spanning multiple weekdays */
+static int scheduler_entry_time_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT, "wday", true, NULL, NULL, },		// 0
+		{ NODEINT, "hour", true, NULL, NULL, },
+		{ NODEINT, "min", true, NULL, NULL, },		// 2
+	};
+	struct s_schedule_etime * const etime = priv;
+	const struct s_filecfg_parser_node * currnode;
+	unsigned int i;
+	int ret;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				if ((currnode->value.intval < 0) || (currnode->value.intval > 7))
+					goto invaliddata;
+				etime->wday = currnode->value.intval;
+				// convert Sunday if necessary
+				if (7 == etime->wday)
+					etime->wday = 0;
+				break;
+			case 1:
+				if ((currnode->value.intval < 0) || (currnode->value.intval > 23))
+					goto invaliddata;
+				etime->hour = currnode->value.intval;
+				break;
+			case 2:
+				if ((currnode->value.intval < 0) || (currnode->value.intval > 59))
+					goto invaliddata;
+				etime->min = currnode->value.intval;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	return (ret);
+
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
+static int scheduler_entry_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "runmode", false, NULL, NULL, },	// 0
+		{ NODESTR, "dhwmode", false, NULL, NULL, },
+		{ NODEBOL, "legionella", false, NULL, NULL, },	// 2
+		{ NODEBOL, "recycle", false, NULL, NULL, },
+	};
+	struct s_schedule_eparams * const eparams = priv;
+	const struct s_filecfg_parser_node * currnode;
+	unsigned int i;
+	int ret;
+
+	// we receive an 'entry' node
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	// reset buffer and set mode defaults
+	memset(eparams, 0, sizeof(*eparams));
+	eparams->runmode = RM_UNKNOWN;
+	eparams->dhwmode = RM_UNKNOWN;
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				if (ALL_OK != filecfg_parser_runmode_parse(&eparams->runmode, currnode))
+					goto invaliddata;
+				break;
+			case 1:
+				if (ALL_OK != filecfg_parser_runmode_parse(&eparams->dhwmode, currnode))
+					goto invaliddata;
+				break;
+			case 2:
+				eparams->legionella = currnode->value.boolval;
+				break;
+			case 3:
+				eparams->recycle = currnode->value.boolval;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	return (ret);
+
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
+static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODELST, "time", true, NULL, NULL, },		// 0
+		{ NODELST, "params", true, NULL, NULL, },
+	};
+	const schedid_t schedid = *(int *)priv;
+	struct s_schedule_etime etime;
+	struct s_schedule_eparams eparams;
+	int ret;
+
+	// we receive an 'entry' node
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	ret = scheduler_entry_time_parse(&etime, parsers[0].node);
+	if (ALL_OK != ret)
+		return (ret);
+
+	ret = scheduler_entry_params_parse(&eparams, parsers[1].node);
+	if (ALL_OK != ret)
+		return (ret);
+
+	ret = scheduler_add_entry(schedid, &etime, &eparams);
+	switch (ret) {
+		case -EEXISTS:
+			filecfg_parser_pr_err(_("Line %d: a schedule entry with the same time is already configured"), node->lineno);
+			break;
+		default:
+			break;
+	}
+
+	return (ret);
+}
+
+static int scheduler_schedule_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	int schedid;
+
+	if (!node)
+		return (-EINVALID);
+
+	if (NODESTR != node->type)
+		return (-EINVALID);	// we only accept NODESTR backend node with children
+
+	if (!node->children)
+		return (-EEMPTY);
+
+	if (strlen(node->value.stringval) <= 0)
+		return (-EINVALID);
+
+	schedid = scheduler_add_schedule(node->value.stringval);
+	if (schedid <= 0) {
+		switch (schedid) {
+			case -EEXISTS:
+				filecfg_parser_pr_err(_("Line %d: a schedule with the same name (\'%s\') is already configured"), node->lineno, node->value.stringval);
+				break;
+			default:
+				break;
+		}
+		return (schedid);
+	}
+
+	return (filecfg_parser_parse_listsiblings(&schedid, node->children, "entry", scheduler_entry_parse));
+}
+
+/**
+ * Parse scheduler configuration.
+ * @param priv unused
+ * @param node a `scheduler` node
+ * @return exec status
+ */
+int scheduler_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "schedule", scheduler_schedule_parse));
+}
+

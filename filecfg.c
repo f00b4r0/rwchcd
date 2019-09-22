@@ -35,6 +35,7 @@
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
+int scheduler_filecfg_dump(void);
 int storage_filecfg_dump(void);
 
 bool FCD_Exhaustive = false;
