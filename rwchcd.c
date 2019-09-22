@@ -238,6 +238,7 @@ static void exit_process(void)
 	filecfg_dump();
 
 	log_exit();
+	storage_deconfig();
 	hardware_exit();
 	models_exit();
 	runtime_exit();

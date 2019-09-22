@@ -32,7 +32,7 @@
 #define OFF	false
 
 #ifndef RWCHCD_STORAGE_PATH
- #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"	///< filesystem path to permanent storage area. Can be overriden in Makefile
+ #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"	///< default filesystem path to permanent storage area. Can be overriden in Makefile or in configuration
 #endif
 
 #define MAX_FILENAMELEN	255	///< maximum filename length

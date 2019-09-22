@@ -2,7 +2,7 @@
 //  storage.c
 //  rwchcd
 //
-//  (C) 2016,2018 Thibaut VARENE
+//  (C) 2016,2018-2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -16,11 +16,10 @@
  * probably shouldn't use flat files at all, hence the lack of effort to improve this.
  * Generally speaking a database with several tables makes more sense.
  * @warning no check is performed for @b identifier collisions in any of the output functions.
- * @todo configuration support
  */
 
 #include <unistd.h>	// chdir/write/close/unlink
-#include <stdio.h>	// rename/fopen...
+#include <stdio.h>	// rename/fopen/perror...
 #include <string.h>	// memcmp
 #include <errno.h>	// errno
 #include <sys/types.h>
@@ -30,6 +29,8 @@
 
 #include "storage.h"
 #include "rwchcd.h"
+#include "filecfg_parser.h"
+#include "filecfg.h"
 
 #define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL
@@ -38,6 +39,7 @@
 static const char Storage_magic[] = STORAGE_MAGIC;
 static const storage_version_t Storage_version = STORAGE_VERSION;
 static bool Storage_configured = false;
+static const char * Storage_path = NULL;
 
 /**
  * Generic storage backend write call.
@@ -61,7 +63,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	if (!identifier || !version || !object)
 		return (-EINVALID);
 
-	dir_fd = open(RWCHCD_STORAGE_PATH, O_RDONLY);
+	dir_fd = open(Storage_path, O_RDONLY);
 	if (dir_fd < 0)
 		return (-ESTORE);
 
@@ -182,12 +184,18 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	return (ALL_OK);
 }
 
-/** Quick hack */
+/** Quick hack. @warning no other chdir should be performed */
 int storage_config(void)
 {
+	// if we don't have a configured path, fallback to default
+	if (!Storage_path)
+		Storage_path = strdup(RWCHCD_STORAGE_PATH);	// not the most efficient use of memory
+
 	// make sure we're in target wd. XXX This updates wd for all threads
-	if (chdir(RWCHCD_STORAGE_PATH))
+	if (chdir(Storage_path)) {
+		perror(Storage_path);
 		return (-ESTORE);
+	}
 
 	Storage_configured = true;
 
@@ -197,4 +205,75 @@ int storage_config(void)
 bool storage_isconfigured(void)
 {
 	return (Storage_configured);
+}
+
+void storage_deconfig(void)
+{
+	Storage_configured = false;
+	free((void *)Storage_path);
+	Storage_path = NULL;
+}
+
+/**
+ * Configure the storage subsystem.
+ * @param the `storage` node which contains a single `path` node, itself
+ * a string pointing to the @b absolute storage location.
+ * @return exec status.
+ */
+int storage_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "path", true, NULL, NULL, },		// 0
+	};
+	const struct s_filecfg_parser_node * currnode;
+	const char * path;
+	int ret;
+
+	// we receive a 'storage' node
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	currnode = parsers[0].node;
+	path = currnode->value.stringval;
+
+	if (strlen(path) < 1)
+		goto invaliddata;
+
+	if ('/' != *path) {
+		filecfg_parser_pr_err(_("Line %d: path \"%s\" is not absolute"), node->lineno, path);
+		goto invaliddata;
+	}
+
+	// all good
+	if (!Storage_path)
+		Storage_path = strdup(path);
+	else	// should never happen
+		return (-EEXISTS);
+
+	return (ret);
+
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (-EINVALID);
+}
+
+/**
+ * Dump the storage configuration to file.
+ * @return exec status
+ * @warning not thread safe
+ */
+int storage_filecfg_dump(void)
+{
+	if (!Storage_path || !Storage_configured)
+		return (-EINVALID);
+
+	filecfg_iprintf("storage {\n");
+	filecfg_ilevel_inc();
+	filecfg_iprintf("path \"%s\";\n", Storage_path);
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ALL_OK);
 }

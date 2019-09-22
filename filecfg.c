@@ -35,6 +35,8 @@
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
+int storage_filecfg_dump(void);
+
 bool FCD_Exhaustive = false;
 
 static FILE * FCD_File = NULL;		///< pointer to target configuration file (for dump).
@@ -998,16 +1000,14 @@ static int filecfg_plant_dump(const struct s_plant * restrict const plant)
 /**
  * Dump system configuration to file.
  * This function will dump the complete system configuration to the file
- * specified in #FILECONFIG_NAME under the path #RWCHCD_STORAGE_PATH.
+ * specified in #FILECONFIG_NAME under the storage path.
  * @return exec status
  */
 int filecfg_dump(void)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
 
-	// make sure we're in target wd
-	if (chdir(RWCHCD_STORAGE_PATH))
-		return (-ESTORE);
+	// XXX the storage subsystem ensures we're in target wd
 
 	// open stream
 	FCD_File = fopen(FILECONFIG_NAME, "w");
@@ -1027,6 +1027,9 @@ int filecfg_dump(void)
 
 	// dump plant
 	filecfg_plant_dump(runtime->plant);
+
+	// dump storage
+	storage_filecfg_dump();
 
 	// dump scheduler
 	scheduler_filecfg_dump();

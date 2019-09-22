@@ -77,6 +77,8 @@
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
 
+int storage_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
+
 /**
  * Create a new configuration node.
  * This routine is used by the Bison parser.
@@ -2061,6 +2063,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 		{ NODELST, "defconfig", false, defconfig_parse, NULL, },
 		{ NODELST, "models", false, models_parse, NULL, },
 		{ NODELST, "plant", true, plant_parse, NULL, },
+		{ NODELST, "storage", false, storage_filecfg_parse, NULL, },
 	};
 	struct s_runtime * const runtime = runtime_get();
 	int ret;
