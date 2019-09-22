@@ -29,6 +29,9 @@ int filecfg_ilevel_dec(void);
 const char * filecfg_bool_str(const bool test);
 const char * filecfg_runmode_str(const enum e_runmode runmode);
 
+int filecfg_tempid_dump(const tempid_t tempid);
+int filecfg_relid_dump(const relid_t relid);
+
 int filecfg_dump(void);
 
 #endif /* filecfg_h */

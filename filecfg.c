@@ -132,7 +132,7 @@ static void filecfg_backends_dump()
 	filecfg_iprintf("};\n");
 }
 
-static int filecfg_tempid_dump(const tempid_t tempid)
+int filecfg_tempid_dump(const tempid_t tempid)
 {
 	if (!hardware_sensor_name(tempid)) {
 		filecfg_printf(" {};\n");
@@ -149,7 +149,7 @@ static int filecfg_tempid_dump(const tempid_t tempid)
 	return (ALL_OK);
 }
 
-static int filecfg_relid_dump(const relid_t relid)
+int filecfg_relid_dump(const relid_t relid)
 {
 	if (!hardware_relay_name(relid)) {
 		filecfg_printf(" {};\n");
