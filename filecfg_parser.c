@@ -239,7 +239,6 @@ static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	return (ret);
 }
 
-static int runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 static int sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	const struct {
@@ -542,12 +541,12 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 					return (ret);
 				break;
 			case 6:
-				ret = runmode_parse(&config->startup_runmode, currnode);
+				ret = filecfg_parser_runmode_parse(&config->startup_runmode, currnode);
 				if (ALL_OK != ret)
 					return (ret);
 				break;
 			case 7:
-				ret = runmode_parse(&config->startup_dhwmode, currnode);
+				ret = filecfg_parser_runmode_parse(&config->startup_dhwmode, currnode);
 				if (ALL_OK != ret)
 					return (ret);
 				break;
@@ -1070,7 +1069,7 @@ static int valves_parse(void * restrict const priv, const struct s_filecfg_parse
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "valve", valve_parse));
 }
 
-static int runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	const struct {
 		const char * pstr;
@@ -1171,7 +1170,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 				dhwt->set.prio = currnode->value.intval;
 				break;
 			case 4:
-				if (ALL_OK != runmode_parse(&dhwt->set.runmode, currnode))
+				if (ALL_OK != filecfg_parser_runmode_parse(&dhwt->set.runmode, currnode))
 					goto invaliddata;
 				break;
 			case 5:
@@ -1377,7 +1376,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				hcircuit->set.logging = currnode->value.boolval;
 				break;
 			case 2:
-				if (ALL_OK != runmode_parse(&hcircuit->set.runmode, currnode))
+				if (ALL_OK != filecfg_parser_runmode_parse(&hcircuit->set.runmode, currnode))
 					goto invaliddata;
 				break;
 			case 3:
@@ -1681,7 +1680,7 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 
 		switch (i) {
 			case 0:
-				if (ALL_OK != runmode_parse(&heatsource->set.runmode, currnode))
+				if (ALL_OK != filecfg_parser_runmode_parse(&heatsource->set.runmode, currnode))
 					goto invaliddata;
 				break;
 			case 1:
@@ -1848,11 +1847,11 @@ static int scheduler_entry_params_parse(void * restrict const priv, const struct
 
 		switch (i) {
 			case 0:
-				if (ALL_OK != runmode_parse(&eparams->runmode, currnode))
+				if (ALL_OK != filecfg_parser_runmode_parse(&eparams->runmode, currnode))
 					goto invaliddata;
 				break;
 			case 1:
-				if (ALL_OK != runmode_parse(&eparams->dhwmode, currnode))
+				if (ALL_OK != filecfg_parser_runmode_parse(&eparams->dhwmode, currnode))
 					goto invaliddata;
 				break;
 			case 2:

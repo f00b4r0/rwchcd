@@ -76,6 +76,8 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser);
 
+int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
+
 /// Custom pr_err for configuration problems.
 #define filecfg_parser_pr_err(format, ...)		fprintf(stderr, "CONFIG ERROR! " format "\n", ## __VA_ARGS__)
 
