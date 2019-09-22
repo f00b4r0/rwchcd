@@ -159,7 +159,7 @@ static int hardware_backend_parse(void * restrict const priv, const struct s_fil
 	return (ret);
 }
 
-static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	tempid_t * restrict const tempid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
@@ -199,7 +199,7 @@ static int tid_parse(void * restrict const priv, const struct s_filecfg_parser_n
 	return (ret);
 }
 
-static int rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	relid_t * restrict const relid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
@@ -728,7 +728,7 @@ static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_
 	}
 
 	currnode = parsers[1].node;
-	ret = rid_parse(&pump->set.rid_pump, currnode);
+	ret = filecfg_parser_rid_parse(&pump->set.rid_pump, currnode);
 	if (ALL_OK != ret)
 		goto invaliddata;
 
@@ -856,15 +856,15 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 					valve->set.tset.tmix.tdeadzone = deltaK_to_temp(fv);
 				break;
 			case 1:
-				if (ALL_OK != tid_parse(&valve->set.tset.tmix.tid_hot, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_hot, currnode))
 					goto invaliddata;
 				break;
 			case 2:
-				if (ALL_OK != tid_parse(&valve->set.tset.tmix.tid_cold, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_cold, currnode))
 					goto invaliddata;
 				break;
 			case 3:
-				if (ALL_OK != tid_parse(&valve->set.tset.tmix.tid_out, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_out, currnode))
 					goto invaliddata;
 				break;
 			case 4:
@@ -932,12 +932,12 @@ static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg
 		return (ret);	// break if invalid config
 
 	currnode = parsers[0].node;
-	ret = rid_parse(&valve->set.mset.m3way.rid_open, currnode);
+	ret = filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_open, currnode);
 	if (ALL_OK != ret)
 		goto invaliddata;
 
 	currnode = parsers[1].node;
-	ret = rid_parse(&valve->set.mset.m3way.rid_close, currnode);
+	ret = filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_close, currnode);
 	if (ALL_OK != ret)
 		goto invaliddata;
 
@@ -966,7 +966,7 @@ static int valve_m2way_parser(void * restrict const priv, const struct s_filecfg
 		return (ret);	// break if invalid config
 
 	currnode = parsers[0].node;
-	ret = rid_parse(&valve->set.mset.m2way.rid_trigger, currnode);
+	ret = filecfg_parser_rid_parse(&valve->set.mset.m2way.rid_trigger, currnode);
 	if (ALL_OK != ret)
 		goto invaliddata;
 
@@ -1200,23 +1200,23 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 					goto invaliddata;
 				break;
 			case 7:
-				if (ALL_OK != tid_parse(&dhwt->set.tid_bottom, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_bottom, currnode))
 					goto invaliddata;
 				break;
 			case 8:
-				if (ALL_OK != tid_parse(&dhwt->set.tid_top, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_top, currnode))
 					goto invaliddata;
 				break;
 			case 9:
-				if (ALL_OK != tid_parse(&dhwt->set.tid_win, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_win, currnode))
 					goto invaliddata;
 				break;
 			case 10:
-				if (ALL_OK != tid_parse(&dhwt->set.tid_wout, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_wout, currnode))
 					goto invaliddata;
 				break;
 			case 11:
-				if (ALL_OK != rid_parse(&dhwt->set.rid_selfheater, currnode))
+				if (ALL_OK != filecfg_parser_rid_parse(&dhwt->set.rid_selfheater, currnode))
 					goto invaliddata;
 				break;
 			case 12:
@@ -1408,15 +1408,15 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				hcircuit->set.boost_maxtime = timekeep_sec_to_tk(iv);
 				break;
 			case 8:
-				if (ALL_OK != tid_parse(&hcircuit->set.tid_outgoing, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&hcircuit->set.tid_outgoing, currnode))
 					goto invaliddata;
 				break;
 			case 9:
-				if (ALL_OK != tid_parse(&hcircuit->set.tid_return, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&hcircuit->set.tid_return, currnode))
 					goto invaliddata;
 				break;
 			case 10:
-				if (ALL_OK != tid_parse(&hcircuit->set.tid_ambient, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&hcircuit->set.tid_ambient, currnode))
 					goto invaliddata;
 				break;
 			case 11:
@@ -1585,19 +1585,19 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 					boiler->set.burner_min_time = timekeep_sec_to_tk(iv);
 				break;
 			case 8:
-				if (ALL_OK != tid_parse(&boiler->set.tid_boiler, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&boiler->set.tid_boiler, currnode))
 					goto invaliddata;
 				break;
 			case 9:
-				if (ALL_OK != tid_parse(&boiler->set.tid_boiler_return, currnode))
+				if (ALL_OK != filecfg_parser_tid_parse(&boiler->set.tid_boiler_return, currnode))
 					goto invaliddata;
 				break;
 			case 10:
-				if (ALL_OK != rid_parse(&boiler->set.rid_burner_1, currnode))
+				if (ALL_OK != filecfg_parser_rid_parse(&boiler->set.rid_burner_1, currnode))
 					goto invaliddata;
 				break;
 			case 11:
-				if (ALL_OK != rid_parse(&boiler->set.rid_burner_2, currnode))
+				if (ALL_OK != filecfg_parser_rid_parse(&boiler->set.rid_burner_2, currnode))
 					goto invaliddata;
 				break;
 			case 12:
