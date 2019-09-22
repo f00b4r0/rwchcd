@@ -77,6 +77,7 @@
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
 
+int models_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int scheduler_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int storage_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
@@ -592,53 +593,6 @@ invaliddata:
 	return (-EINVALID);
 }
 
-static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "logging", false, NULL, NULL, },
-		{ NODEINT|NODEDUR, "tau", true, NULL, NULL, },
-		{ NODELST, "tid_outdoor", true, NULL, NULL, },
-	};
-	const struct s_filecfg_parser_node * currnode;
-	struct s_bmodel * bmodel;
-	const char * bmdlname = node->value.stringval;
-	int iv, ret;
-
-	// we receive a 'bmodel' node with a valid string attribute which is the bmodel name
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);	// break if invalid config
-
-	bmodel = models_new_bmodel(bmdlname);
-	if (!bmodel)
-		return (-EOOM);
-
-	currnode = parsers[0].node;
-	if (currnode)
-		bmodel->set.logging = currnode->value.boolval;
-
-	currnode = parsers[1].node;
-	iv = currnode->value.intval;
-	if (iv < 0) {
-		filecfg_parser_report_invaliddata(currnode);
-		return (-EINVALID);
-	}
-	bmodel->set.tau = timekeep_sec_to_tk(iv);
-
-	currnode = parsers[2].node;
-	if (ALL_OK != tid_parse(&bmodel->set.tid_outdoor, currnode)) {
-		filecfg_parser_report_invaliddata(currnode);
-		return (-EINVALID);
-	}
-
-	bmodel->set.configured = true;
-
-	dbgmsg("matched \"%s\"", bmdlname);
-
-	return (ret);
-}
-
 /**
  * Parse a list of sibling nodes.
  * @param priv opaque private data pointer
@@ -689,11 +643,6 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	}
 
 	return (ret);
-}
-
-static int models_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "bmodel", bmodel_parse));
 }
 
 static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1894,7 +1843,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 		{ NODELST, "backends", false, hardware_backends_parse, NULL, },
 		{ NODELST, "scheduler", false, scheduler_filecfg_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST, "defconfig", false, defconfig_parse, NULL, },
-		{ NODELST, "models", false, models_parse, NULL, },
+		{ NODELST, "models", false, models_filecfg_parse, NULL, },
 		{ NODELST, "plant", true, plant_parse, NULL, },
 		{ NODELST, "storage", false, storage_filecfg_parse, NULL, },
 	};

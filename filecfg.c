@@ -35,6 +35,7 @@
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
+int filecfg_models_dump(void);
 int scheduler_filecfg_dump(void);
 int storage_filecfg_dump(void);
 
@@ -856,45 +857,6 @@ static int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circui
 	return (ALL_OK);
 }
 
-static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
-{
-	if (!bmodel)
-		return (-EINVALID);
-
-	if (!bmodel->set.configured)
-		return (-ENOTCONFIGURED);
-
-	filecfg_iprintf("bmodel \"%s\" {\n", bmodel->name);
-	filecfg_ilevel_inc();
-
-	if (FCD_Exhaustive || bmodel->set.logging)
-		filecfg_iprintf("logging %s;\n", filecfg_bool_str(bmodel->set.logging));
-	filecfg_iprintf("tau %ld;\n", timekeep_tk_to_sec(bmodel->set.tau));						// mandatory
-	filecfg_iprintf("tid_outdoor"); filecfg_tempid_dump(bmodel->set.tid_outdoor);		// mandatory
-
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
-}
-
-static int filecfg_models_dump(const struct s_models * restrict const models)
-{
-	struct s_bmodel_l * restrict bmodelelmt;
-
-	filecfg_iprintf("models {\n");
-	filecfg_ilevel_inc();
-	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
-		if (!bmodelelmt->bmodel->set.configured)
-			continue;
-		filecfg_bmodel_dump(bmodelelmt->bmodel);
-	}
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
-}
-
 static int filecfg_config_dump(const struct s_config * restrict const config)
 {
 	if (!config)
@@ -1024,7 +986,7 @@ int filecfg_dump(void)
 	filecfg_config_dump(runtime->config);
 
 	// dump models
-	filecfg_models_dump(models_get());
+	filecfg_models_dump();
 
 	// dump plant
 	filecfg_plant_dump(runtime->plant);

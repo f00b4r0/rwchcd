@@ -24,6 +24,8 @@
 #include "alarms.h"
 #include "models.h"
 #include "log.h"
+#include "filecfg.h"
+#include "filecfg_parser.h"
 
 #define OUTDOOR_SMOOTH_TIME		(60*TIMEKEEP_SMULT)	///< time in seconds over which outdoor temp is smoothed
 #define OUTDOOR_AVG_UPDATE_DT		(600*TIMEKEEP_SMULT)	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
@@ -32,15 +34,6 @@
 static struct s_models Models;	///< Known models
 
 static const storage_version_t Models_sversion = 4;
-
-/**
- * Get current program models
- * @return pointer to current models.
- */
-const struct s_models * models_get(void)
-{
-	return (&Models);
-}
 
 /**
  * Building model data log callback.
@@ -676,4 +669,95 @@ temp_t models_outtemp(void)
 	temp /= Models.bmodels_n;	// average
 
 	return (temp);
+}
+
+static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
+{
+	if (!bmodel)
+		return (-EINVALID);
+
+	if (!bmodel->set.configured)
+		return (-ENOTCONFIGURED);
+
+	filecfg_iprintf("bmodel \"%s\" {\n", bmodel->name);
+	filecfg_ilevel_inc();
+
+	if (FCD_Exhaustive || bmodel->set.logging)
+		filecfg_iprintf("logging %s;\n", filecfg_bool_str(bmodel->set.logging));
+	filecfg_iprintf("tau %ld;\n", timekeep_tk_to_sec(bmodel->set.tau));						// mandatory
+	filecfg_iprintf("tid_outdoor"); filecfg_tempid_dump(bmodel->set.tid_outdoor);		// mandatory
+
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ALL_OK);
+}
+
+int filecfg_models_dump(void)
+{
+	struct s_bmodel_l * restrict bmodelelmt;
+
+	filecfg_iprintf("models {\n");
+	filecfg_ilevel_inc();
+	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
+		if (!bmodelelmt->bmodel->set.configured)
+			continue;
+		filecfg_bmodel_dump(bmodelelmt->bmodel);
+	}
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ALL_OK);
+}
+
+static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL, "logging", false, NULL, NULL, },
+		{ NODEINT|NODEDUR, "tau", true, NULL, NULL, },
+		{ NODELST, "tid_outdoor", true, NULL, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_bmodel * bmodel;
+	const char * bmdlname = node->value.stringval;
+	int iv, ret;
+
+	// we receive a 'bmodel' node with a valid string attribute which is the bmodel name
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	bmodel = models_new_bmodel(bmdlname);
+	if (!bmodel)
+		return (-EOOM);
+
+	currnode = parsers[0].node;
+	if (currnode)
+		bmodel->set.logging = currnode->value.boolval;
+
+	currnode = parsers[1].node;
+	iv = currnode->value.intval;
+	if (iv < 0) {
+		filecfg_parser_report_invaliddata(currnode);
+		return (-EINVALID);
+	}
+	bmodel->set.tau = timekeep_sec_to_tk(iv);
+
+	currnode = parsers[2].node;
+	if (ALL_OK != filecfg_parser_tid_parse(&bmodel->set.tid_outdoor, currnode)) {
+		filecfg_parser_report_invaliddata(currnode);
+		return (-EINVALID);
+	}
+
+	bmodel->set.configured = true;
+
+	dbgmsg("matched \"%s\"", bmdlname);
+
+	return (ret);
+}
+
+int models_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "bmodel", bmodel_parse));
 }
