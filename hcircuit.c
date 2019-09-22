@@ -154,7 +154,6 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
 static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
 {
 	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_BMODEL_PREFIX;
-	size_t stret;
 
 	assert(circuit);
 
@@ -165,9 +164,7 @@ static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
 	if (!circuit->name)
 		return (-EINVALID);
 
-	stret = strlcat(buf, circuit->name, sizeof(buf));
-	if (stret > sizeof(buf))
-		return (-ETRUNC);
+	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	return (storage_dump(buf, &Hcircuit_sversion, &circuit->run, sizeof(circuit->run)));
 }
@@ -182,7 +179,6 @@ static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
 	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_BMODEL_PREFIX;
 	struct s_hcircuit temp_hcircuit;
 	storage_version_t sversion;
-	size_t stret;
 	int ret;
 
 	assert(circuit);
@@ -194,9 +190,7 @@ static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
 	if (!circuit->name)
 		return (-EINVALID);
 
-	stret = strlcat(buf, circuit->name, sizeof(buf));
-	if (stret > sizeof(buf))
-		return (-ETRUNC);
+	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	// try to restore key elements
 	ret = storage_fetch(buf, &sversion, &temp_hcircuit.run, sizeof(temp_hcircuit.run));
