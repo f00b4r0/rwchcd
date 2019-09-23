@@ -67,10 +67,10 @@ int log_rrd_create(const char * restrict const identifier, const struct s_log_da
 {
 	int ret = -EGENERIC, argc = 0;
 	unsigned int i;
-	const char **argv, **rras;
-	char *temp = NULL;
+	const char **argv, **rras, * restrict mtype;
+	char * restrict temp = NULL;
 	size_t size, rrasize;
-	const char * restrict const DSfmt = "DS:%s:GAUGE:%d:U:U";
+	static const char * restrict const DSfmt = "DS:%s:%s:%d:U:U";
 
 	assert(identifier && log_data);
 
@@ -104,7 +104,18 @@ int log_rrd_create(const char * restrict const identifier, const struct s_log_da
 
 	// create the DSs
 	for (i = 0; i < log_data->nkeys; i++) {
-		snprintf_automalloc(temp, size, DSfmt, log_data->keys[i], log_data->interval * 4);	// hardcoded: heartbeat: max 4 missed inputs
+		switch (log_data->metrics[i]) {
+			case LOG_METRIC_GAUGE:
+				mtype = "GAUGE";
+				break;
+			case LOG_METRIC_COUNTER:
+				mtype = "COUNTER";
+				break;
+			default:
+				ret = -EINVALID;
+				goto cleanup;
+		}
+		snprintf_automalloc(temp, size, DSfmt, log_data->keys[i], mtype, log_data->interval * 4);	// hardcoded: heartbeat: max 4 missed inputs
 		if (!temp) {
 			ret = -EOOM;
 			goto cleanup;
