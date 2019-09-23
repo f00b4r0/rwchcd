@@ -83,10 +83,11 @@ static struct s_log_bendcbs Log_timed_cb, Log_untimed_cb;
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
  * @param log_data the data to log
+ * @note uses a #MAX_FILENAMELEN+1 auto heap buffer.
  */
 static int _log_dump(const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
-	static char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
+	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
 	const bool logging = runtime_get()->config->logging;
 	log_version_t lversion = 0;
 	bool fcreate = false, timedlog;
