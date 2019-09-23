@@ -162,7 +162,7 @@ int log_rrd_update(const char * restrict const identifier, const struct s_log_da
 	for (i = 0; i < log_data->nvalues; i++) {
 		ret = snprintf(buffer + offset, buffer_len - offset, ":%d", log_data->values[i]);
 		if ((ret < 0) || (ret >= (buffer_len - offset))) {
-			ret = -EIO;
+			ret = -ESTORE;
 			goto cleanup;
 		}
 		offset += ret;
@@ -170,7 +170,7 @@ int log_rrd_update(const char * restrict const identifier, const struct s_log_da
 
 	for (i = (log_data->nkeys - log_data->nvalues); i; i--) {
 		if ((buffer_len - offset) < 3) {
-			ret = -EIO;
+			ret = -ESTORE;
 			goto cleanup;
 		}
 		strncpy(buffer + offset, ":U", buffer_len - offset);
