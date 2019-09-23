@@ -22,6 +22,7 @@
 		4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DA1F968AE8001B0A1F /* dhwt.c */; };
 		4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DD1F96AD0A001B0A1F /* boiler.c */; };
 		4F43569C23157AE60030EB89 /* hw_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F43569B23157AE60030EB89 /* hw_lib.c */; };
+		4F869E99233A5EF300541A07 /* log_statsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42E98A23393156000A268A /* log_statsd.c */; };
 		4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */; };
 		4F99FD222088D18500DDAB75 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg.c */; };
 		4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */; };
@@ -83,6 +84,8 @@
 		4F42A5DB1F968AE8001B0A1F /* dhwt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt.h; sourceTree = SOURCE_ROOT; };
 		4F42A5DD1F96AD0A001B0A1F /* boiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = boiler.c; sourceTree = SOURCE_ROOT; };
 		4F42A5DE1F96AD0A001B0A1F /* boiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = boiler.h; sourceTree = SOURCE_ROOT; };
+		4F42E98A23393156000A268A /* log_statsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_statsd.c; sourceTree = SOURCE_ROOT; };
+		4F42E98B23393156000A268A /* log_statsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_statsd.h; sourceTree = SOURCE_ROOT; };
 		4F43569A23157AE60030EB89 /* hw_lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_lib.h; sourceTree = SOURCE_ROOT; };
 		4F43569B23157AE60030EB89 /* hw_lib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_lib.c; sourceTree = SOURCE_ROOT; };
 		4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.lex; path = filecfg_parser.l; sourceTree = SOURCE_ROOT; };
@@ -228,6 +231,8 @@
 				4F299C8E218E4E2E009DCBC2 /* log_file.h */,
 				4F299C8A218E1DBE009DCBC2 /* log_rrd.c */,
 				4F299C8B218E1DBE009DCBC2 /* log_rrd.h */,
+				4F42E98A23393156000A268A /* log_statsd.c */,
+				4F42E98B23393156000A268A /* log_statsd.h */,
 				4FC1847C1DA7B2F9000E514B /* dbus.c */,
 				4FC1847D1DA7B2F9000E514B /* dbus.h */,
 				4FA61C3C1E06F75100B4D862 /* timer.c */,
@@ -338,6 +343,7 @@
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,
 				4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */,
 				4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */,
+				4F869E99233A5EF300541A07 /* log_statsd.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,

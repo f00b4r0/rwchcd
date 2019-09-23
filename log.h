@@ -30,6 +30,7 @@ enum e_log_metric {
 enum e_log_bend {
 	LOG_BKEND_FILE,
 	LOG_BKEND_RRD,
+	LOG_BKEND_STATSD,	///< StatsD backend
 };
 
 /** discrete logging schedules */

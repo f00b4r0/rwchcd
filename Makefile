@@ -35,7 +35,7 @@ endif
 
 # filter out log subsystems, re-add log_file which is libc-only, then add based on config
 SRCS := $(filter-out $(wildcard log_*.c),$(SRCS))
-SRCS += log_file.c
+SRCS += log_file.c log_statsd.c
 ifneq (,$(findstring HAS_RRD,$(CONFIG)))
 SRCS += log_rrd.c
 LDLIBS += -lrrd
