@@ -25,7 +25,7 @@
 
 /* Hardcoded RRAs */
 /** 1mn hardcoded RRAs */
-const char *RRAs_1mn[] = {
+static const char *RRAs_1mn[] = {
 	"RRA:LAST:0.5:1:2d",		// record 1-step samples for 2d
 	"RRA:AVERAGE:0.5:15m:2M",
 	"RRA:MIN:0.5:15m:2M",
@@ -39,7 +39,7 @@ const char *RRAs_1mn[] = {
 };
 
 /** 5mn hardcoded RRAs */
-const char *RRAs_5mn[] = {
+static const char *RRAs_5mn[] = {
 	"RRA:LAST:0.5:1:1w",		// record 1-step samples for 1w
 	"RRA:AVERAGE:0.5:15m:1M",	// record 15mn samples for 1M
 	"RRA:MIN:0.5:15m:1M",
@@ -50,7 +50,7 @@ const char *RRAs_5mn[] = {
 };
 
 /** 15mn hardcoded RRAs */
-const char *RRAs_15mn[] = {
+static const char *RRAs_15mn[] = {
 	"RRA:LAST:0.5:1:1M",		// record 1-step samples for 1M
 	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y
 	"RRA:MIN:0.5:1h:1y",
@@ -63,7 +63,7 @@ const char *RRAs_15mn[] = {
  * @param log_data the data to be logged
  * @return exec status
  */
-int log_rrd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	int ret = -EGENERIC, argc = 0;
 	unsigned int i;
@@ -143,7 +143,7 @@ cleanup:
  * @param log_data the data to be logged
  * @return exec status
  */
-int log_rrd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	char * buffer;
 	int ret, buffer_len, offset = 0;

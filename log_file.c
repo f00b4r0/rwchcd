@@ -25,7 +25,7 @@
  * @param log_data the data to be logged
  * @return exec status
  */
-int log_file_create(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_file_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	FILE * restrict file = NULL;
 	unsigned int i;
@@ -53,7 +53,7 @@ int log_file_create(const char * restrict const identifier, const struct s_log_d
  * @param log_data the data to be logged
  * @return exec status
  */
-int log_file_update(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_file_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	FILE * restrict file = NULL;
 	unsigned int i;
