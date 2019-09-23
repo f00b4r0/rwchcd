@@ -54,6 +54,9 @@ static void hw_p1_relays_log(const struct s_hw_p1_pdata * restrict const hw)
 	static const log_key_t keys[] = {
 		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "R1", "R2",
 	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
 	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 	
@@ -72,6 +75,7 @@ static void hw_p1_relays_log(const struct s_hw_p1_pdata * restrict const hw)
 	
 	const struct s_log_data data = {
 		.keys = keys,
+		.metrics = metrics,
 		.values = values,
 		.nkeys = ARRAY_SIZE(keys),
 		.nvalues = i,

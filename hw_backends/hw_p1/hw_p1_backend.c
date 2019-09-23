@@ -43,6 +43,9 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	static const log_key_t keys[] = {
 		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
 	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
 	static log_value_t values[ARRAY_SIZE(keys)];
 	int i = 0;
 
@@ -61,6 +64,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 
 	ldata->keys = keys;
+	ldata->metrics = metrics;
 	ldata->values = values;
 	ldata->nkeys = ARRAY_SIZE(keys);
 	ldata->nvalues = i;

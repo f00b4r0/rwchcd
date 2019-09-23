@@ -48,6 +48,9 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 	static const log_key_t keys[] = {
 		"summer", "frost", "t_out", "t_out_filt", "t_out_mix", "t_out_att",
 	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
 	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 
@@ -67,6 +70,7 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 	values[i++] = bmodel->run.t_out_att;
 
 	ldata->keys = keys;
+	ldata->metrics = metrics;
 	ldata->values = values;
 	ldata->nkeys = ARRAY_SIZE(keys);
 	ldata->nvalues = i;

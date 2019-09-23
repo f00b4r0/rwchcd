@@ -94,6 +94,11 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 		"runmode",
 		"dhwmode",
 	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE,
+		LOG_METRIC_GAUGE,
+		LOG_METRIC_GAUGE,
+	};
 	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 	
@@ -106,6 +111,7 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 	assert(ARRAY_SIZE(keys) >= i);
 	
 	ldata->keys = keys;
+	ldata->metrics = metrics;
 	ldata->values = values;
 	ldata->nkeys = ARRAY_SIZE(keys);
 	ldata->nvalues = i;

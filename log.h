@@ -16,9 +16,15 @@
 
 #include <stdint.h>
 
-typedef uint32_t	log_version_t;	///< storage version type
-typedef const char *	log_key_t;	///< storage keys type
-typedef int32_t		log_value_t;	///< storage values type
+typedef uint32_t	log_version_t;	///< log version type
+typedef const char *	log_key_t;	///< log keys type
+typedef int32_t		log_value_t;	///< log values type
+
+/** log metrics types */
+enum e_log_metric {
+	LOG_METRIC_GAUGE,
+	LOG_METRIC_COUNTER,
+};
 
 /** backend unique identifiers */
 enum e_log_bend {
@@ -42,9 +48,10 @@ enum e_log_intvl {
 
 /** Log data structure */
 struct s_log_data {
-	const log_key_t * restrict keys;	///< the keys to log
-	const log_value_t * restrict values;	///< the values to log (1 per key)
-	unsigned int nkeys;			///< the number of keys
+	const log_key_t * restrict keys;	///< pointer to array of keys to log
+	const enum e_log_metric * restrict metrics;	///< pointer to array of metric types of each key (must have same number of elements as #keys)
+	const log_value_t * restrict values;	///< pointer to array of values to log (1 per key)
+	unsigned int nkeys;			///< the number of keys/metrics
 	unsigned int nvalues;			///< the number of values (must be <= nkeys)
 	int interval;				///< a positive fixed interval between log requests or negative for random log events
 };
