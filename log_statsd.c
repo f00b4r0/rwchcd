@@ -20,9 +20,12 @@
 #include <unistd.h>	// close()
 #include <string.h>	// memcpy/memset
 #include <assert.h>
+#include <stdlib.h>	// free()
 
 #include "log_statsd.h"
 #include "rwchcd.h"
+#include "filecfg.h"
+#include "filecfg_parser.h"
 
 #define LOG_STATSD_UDP_BUFSIZE	1432	///< udp buffer size. Untold rule seems to be that the datagram must not be fragmented.
 
@@ -190,3 +193,79 @@ void log_statsd_hook(struct s_log_bendcbs * restrict const callbacks)
 	callbacks->log_create = log_statsd_create;
 	callbacks->log_update = log_statsd_update;
 }
+
+void log_statsd_filecfg_dump(void)
+{
+	filecfg_iprintf("host \"%s\";\n", Log_statsd.set.host);	// mandatory
+	filecfg_iprintf("port \"%s\";\n", Log_statsd.set.port);	// mandatory
+	if (FCD_Exhaustive || Log_statsd.set.prefix)
+		filecfg_iprintf("prefix \"%s\";\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "");	// optional
+}
+
+/**
+ * Parse StatsD logging configuration.
+ * @param priv unused
+ * @param node a `backend "statsd"` node
+ * @return exec status
+ * @bug allocates memory that's never freed (needs init/exit callbacks for proper handling)
+ */
+int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "host", true, NULL, NULL, },		// 0
+		{ NODESTR, "port", true, NULL, NULL, },
+		{ NODESTR, "prefix", false, NULL, NULL, },	// 2
+	};
+	const struct s_filecfg_parser_node * currnode;
+	unsigned int i;
+	int ret;
+
+	if ((NODESTR != node->type) || strcmp("statsd", node->value.stringval) || (!node->children))
+		return (-EINVALID);	// we only accept NODESTR node with children
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	// reset config
+	memset(&Log_statsd, 0, sizeof(Log_statsd));
+
+	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		currnode = parsers[i].node;
+		if (!currnode)
+			continue;
+
+		switch (i) {
+			case 0:
+				Log_statsd.set.host = strdup(currnode->value.stringval);
+				if (!Log_statsd.set.host)
+					goto fail;
+				break;
+			case 1:
+				Log_statsd.set.port = strdup(currnode->value.stringval);
+				if (!Log_statsd.set.port)
+					goto fail;
+				break;
+			case 2:
+				Log_statsd.set.prefix = strdup(currnode->value.stringval);
+				if (!Log_statsd.set.prefix)
+					goto fail;
+				break;
+			default:
+				break;	// should never happen
+		}
+	}
+
+	return (ret);
+
+fail:
+	if (Log_statsd.set.host)
+		free((void *)Log_statsd.set.host);
+	if (Log_statsd.set.port)
+		free((void *)Log_statsd.set.port);
+	if (Log_statsd.set.prefix)
+		free((void *)Log_statsd.set.prefix);
+
+	return (-EOOM);
+}
+

@@ -17,5 +17,7 @@
 #include "log.h"
 
 void log_statsd_hook(struct s_log_bendcbs * restrict const callbacks);
+void log_statsd_filecfg_dump(void);
+int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
 #endif /* log_statsd_h */
