@@ -20,7 +20,10 @@
 #include "log.h"
 #include "storage.h"
 #include "log_file.h"
-#include "log_rrd.h"
+#ifdef HAS_RRD
+ #include "log_rrd.h"
+#endif
+
 #include "rwchcd.h"
 #include "runtime.h"	// to access config->logging
 #include "config.h"	// config->logging
