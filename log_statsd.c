@@ -36,8 +36,10 @@ static struct {
 		const char * restrict prefix;	///< statsd namespace prefix (dot-terminated)
 	} set;
 	struct {
+		bool online;			///< true if backend is online
 		struct sockaddr ai_addr;
 		socklen_t ai_addrlen;
+		int sockfd;
 	} run;
 } Log_statsd = {
 	.set.host = NULL,
@@ -111,6 +113,42 @@ static int statsd_validate(const char * stat)
 	return (ALL_OK);
 }
 
+/** Online the StatsD log backend. */
+static int log_statsd_online(void)
+{
+	int sockfd;
+
+	// check we're ready to fly
+	if (!Log_statsd.set.host || !Log_statsd.set.port) {
+		pr_err("Misconfigured StatsD backend");
+		return (-EMISCONFIGURED);
+	}
+
+	sockfd = log_statsd_udp_link();
+	if (sockfd < 0)
+		return (sockfd);
+
+	Log_statsd.run.sockfd = sockfd;
+	Log_statsd.run.online = true;
+
+	return (ALL_OK);
+}
+
+/** Offline the StatsD log backend. */
+static void log_statsd_offline(void)
+{
+	close (Log_statsd.run.sockfd);
+
+	if (Log_statsd.set.host)
+		free((void *)Log_statsd.set.host);
+	if (Log_statsd.set.port)
+		free((void *)Log_statsd.set.port);
+	if (Log_statsd.set.prefix)
+		free((void *)Log_statsd.set.prefix);
+
+	memset(&Log_statsd, 0, sizeof(Log_statsd));
+}
+
 /**
  * Create the StatsD log database. NOP.
  * @param identifier the database identifier
@@ -119,6 +157,9 @@ static int statsd_validate(const char * stat)
  */
 static int log_statsd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
+	if (!Log_statsd.run.online)
+		return (-EOFFLINE);
+
 	return (ALL_OK);
 }
 
@@ -133,15 +174,14 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 {
 	static char buffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
 	const char * restrict mtype;
-	int sockfd, ret;
+	int ret;
 	ssize_t sent;
 	unsigned int i;
 
 	assert(identifier && log_data);
 
-	sockfd = log_statsd_udp_link();
-	if (sockfd < 0)
-		return (sockfd);
+	if (!Log_statsd.run.online)
+		return (-EOFFLINE);
 
 	for (i = 0; i < log_data->nvalues; i++) {
 #ifdef DEBUG
@@ -168,7 +208,7 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 			goto cleanup;
 		}
 
-		sent = sendto(sockfd, buffer, ret, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+		sent = sendto(Log_statsd.run.sockfd, buffer, ret, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 		if (-1 == sent) {
 			dbgerr("could not send");
 			perror("log_statsd");
@@ -180,8 +220,6 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 	ret = ALL_OK;
 
 cleanup:
-	close(sockfd);
-
 	return (ret);
 }
 
@@ -190,12 +228,17 @@ void log_statsd_hook(struct s_log_bendcbs * restrict const callbacks)
 	assert(callbacks);
 
 	callbacks->backend = LOG_BKEND_STATSD;
+	callbacks->log_online = log_statsd_online;
+	callbacks->log_offline = log_statsd_offline;
 	callbacks->log_create = log_statsd_create;
 	callbacks->log_update = log_statsd_update;
 }
 
 void log_statsd_filecfg_dump(void)
 {
+	if (!Log_statsd.run.online)
+		return;
+
 	filecfg_iprintf("host \"%s\";\n", Log_statsd.set.host);	// mandatory
 	filecfg_iprintf("port \"%s\";\n", Log_statsd.set.port);	// mandatory
 	if (FCD_Exhaustive || Log_statsd.set.prefix)
@@ -207,7 +250,6 @@ void log_statsd_filecfg_dump(void)
  * @param priv unused
  * @param node a `backend "statsd"` node
  * @return exec status
- * @bug allocates memory that's never freed (needs init/exit callbacks for proper handling)
  */
 int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -235,6 +277,7 @@ int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_
 		if (!currnode)
 			continue;
 
+		ret = -EOOM;
 		switch (i) {
 			case 0:
 				Log_statsd.set.host = strdup(currnode->value.stringval);
@@ -256,6 +299,12 @@ int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_
 		}
 	}
 
+	if (!Log_statsd.set.host || !Log_statsd.set.port) {
+		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: missing host or port"), node->name, node->lineno);
+		ret = -EMISCONFIGURED;
+		goto fail;
+	}
+
 	return (ret);
 
 fail:
@@ -266,6 +315,6 @@ fail:
 	if (Log_statsd.set.prefix)
 		free((void *)Log_statsd.set.prefix);
 
-	return (-EOOM);
+	return (ret);
 }
 
