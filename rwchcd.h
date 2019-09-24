@@ -69,6 +69,7 @@
 /**
  * Auto-malloc snprintf() wrapper.
  * Automatically malloc() the exact required size for the formatted string and apply snprintf() to it.
+ * Essentially implements asprintf() without requiring _GNU_SOURCE
  * @param target a non-allocated pointer to malloc() memory to
  * @param size a ssize_t temporary variable used for internal computations
  * @param format the format string (and its associated varargs)

@@ -19,6 +19,7 @@
  * - DHWT priority management
  * - Summer switchover for DHWT equipped with electric heating
  *
+ * @bug no check on name lengths which can cause problems with storage/logging. See models for a fix.
  * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
  * switch to fuel when wood dies out) and cascade mode (for large systems).
  */

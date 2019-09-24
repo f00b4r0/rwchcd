@@ -18,7 +18,8 @@
  * The name of the `schedule` node(s) can then be used to assign various plant entities to the given schedule.
  * @todo adapt to add "intelligence" and anticipation from e.g. circuit transitions
  * @note Operation is lockless as it is assumed that the schedules will only be updated at config time
- * (during startup) and that from that point on only read operations will be performed.
+ * (during startup in single-thread context) and that from that point on only read operations will be performed,
+ * until shutdown (also in single-threaded context). Should that change, adequate atomic constructs must be used.
  */
 
 #include <stdlib.h>	// calloc
@@ -55,7 +56,7 @@ struct s_schedule_e {
  */
 struct s_schedule {
 	struct s_schedule * next;
-	const struct s_schedule_e * current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day)
+	const struct s_schedule_e * current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day). @warning pointer assignments are considered atomic on target platform
 	struct s_schedule_e * head;		///< 'head' of sorted schedule entries loop (i.e. earliest schedule entry)
 	const char * name;			///< schedule name (user-set unique identifier)
 	schedid_t schedid;			///< >0 schedule id (internal unique identifier)
@@ -255,6 +256,7 @@ void * scheduler_thread(void * arg)
  * Add a new schedule.
  * @param name the new schedule name (must be unique).
  * @return new schedule id or negative error.
+ * @warning not thread safe
  */
 static int scheduler_add_schedule(const char * const restrict name)
 {
@@ -299,6 +301,7 @@ static int scheduler_add_schedule(const char * const restrict name)
  * @param schedid id of the schedule to add entry to.
  * @param se template for the new schedule entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
+ * @warning not thread safe
  */
 static int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_e * const se)
 {
