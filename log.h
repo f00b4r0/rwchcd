@@ -74,6 +74,10 @@ struct s_log_source {
 struct s_log_bendcbs {
 	/** backend unique identifier */
 	enum e_log_bend backend;
+	/** backend log online callback */
+	int (*log_online)(void);
+	/** optional backend log offline callback */
+	void (*log_offline)(void);
 	/** backend log create callback */
 	int (*log_create)(const char * restrict const identifier, const struct s_log_data * const log_data);
 	/** backend log update callback */
