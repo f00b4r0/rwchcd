@@ -227,7 +227,7 @@ void log_statsd_hook(struct s_log_bendcbs * restrict const callbacks)
 {
 	assert(callbacks);
 
-	callbacks->backend = LOG_BKEND_STATSD;
+	callbacks->bkid = LOG_BKEND_STATSD;
 	callbacks->log_online = log_statsd_online;
 	callbacks->log_offline = log_statsd_offline;
 	callbacks->log_create = log_statsd_create;

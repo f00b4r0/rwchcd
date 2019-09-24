@@ -73,7 +73,7 @@ struct s_log_source {
 /** Logging backend callbacks */
 struct s_log_bendcbs {
 	/** backend unique identifier */
-	enum e_log_bend backend;
+	enum e_log_bend bkid;
 	/** backend log online callback */
 	int (*log_online)(void);
 	/** optional backend log offline callback */

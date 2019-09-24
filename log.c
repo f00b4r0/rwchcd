@@ -77,8 +77,13 @@ static struct {
 	},
 };
 
-static bool Log_configured = false;
-static struct s_log_bendcbs Log_timed_cb, Log_untimed_cb;
+static struct {
+	struct {
+		bool configured;
+		struct s_log_bendcbs sync_bkend;
+		struct s_log_bendcbs async_bkend;
+	} set;
+} Log;
 
 /**
  * Generic log_data log routine.
@@ -105,7 +110,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 	if (!logging)
 		return (ALL_OK);
 
-	if (!Log_configured)
+	if (!Log.set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (!basename || !identifier || !version || !log_data)
@@ -133,7 +138,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 			fcreate = true;
 
 		// compare with current backend - XXX HACK
-		if (logfmt.bend != timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend)
+		if (logfmt.bend != timedlog ? Log.set.sync_bkend.bkid : Log.set.async_bkend.bkid)
 			fcreate = true;
 	}
 
@@ -143,9 +148,9 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 	if (fcreate) {
 		// create backend store
 		if (timedlog)
-			ret = Log_timed_cb.log_create(ident, log_data);
+			ret = Log.set.sync_bkend.log_create(ident, log_data);
 		else
-			ret = Log_untimed_cb.log_create(ident, log_data);
+			ret = Log.set.async_bkend.log_create(ident, log_data);
 
 		if (ALL_OK != ret)
 			return (ret);
@@ -154,7 +159,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 		logfmt.nkeys = log_data->nkeys;
 		logfmt.nvalues = log_data->nvalues;
 		logfmt.interval = log_data->interval;	// XXX do we need this?
-		logfmt.bend = timedlog ? Log_timed_cb.backend : Log_untimed_cb.backend;	// XXX HACK
+		logfmt.bend = timedlog ? Log.set.sync_bkend.bkid : Log.set.async_bkend.bkid;	// XXX HACK
 
 		// XXX reappend LOG_FMT_SUFFIX
 		strcat(ident, LOG_FMT_SUFFIX);
@@ -167,9 +172,9 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 
 	// log data
 	if (timedlog)
-		ret = Log_timed_cb.log_update(ident, log_data);
+		ret = Log.set.sync_bkend.log_update(ident, log_data);
 	else
-		ret = Log_untimed_cb.log_update(ident, log_data);
+		ret = Log.set.async_bkend.log_update(ident, log_data);
 
 	return (ret);
 }
@@ -330,7 +335,7 @@ static int log_crawl(const int log_sched_id)
 	struct s_log_data ldata;
 	int ret = ALL_OK;
 
-	if (!Log_configured)	// stop crawling when deconfigured
+	if (!Log.set.configured)	// stop crawling when deconfigured
 		return (-ENOTCONFIGURED);
 
 	for (lelmt = Log_sched[log_sched_id].loglist; lelmt; lelmt = lelmt->next) {
@@ -356,15 +361,15 @@ int log_init(void)
 	if (!storage_isconfigured())
 		return (-ENOTCONFIGURED);
 
-	log_file_hook(&Log_untimed_cb);
+	log_file_hook(&Log.set.async_bkend);
 
 #ifdef HAS_RRD
-	log_rrd_hook(&Log_timed_cb);
+	log_rrd_hook(&Log.set.sync_cb);
 #else
-	log_file_hook(&Log_timed_cb);
+	log_file_hook(&Log.set.sync_bkend);
 #endif
 
-	Log_configured = true;
+	Log.set.configured = true;
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		ret = timer_add_cb(Log_sched[i].interval, Log_sched[i].cb, Log_sched[i].name);
@@ -381,7 +386,7 @@ void log_exit(void)
 	struct s_log_list * lelmt, * next;
 	unsigned int i;
 
-	Log_configured = false;
+	Log.set.configured = false;
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		for (lelmt = Log_sched[i].loglist; lelmt;) {
@@ -389,5 +394,6 @@ void log_exit(void)
 			log_clear_listelmt(lelmt);
 			lelmt = next;
 		}
+		Log_sched[i].loglist = NULL;
 	}
 }
