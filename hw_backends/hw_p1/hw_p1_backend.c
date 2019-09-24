@@ -76,6 +76,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
  * Provide a well formatted log source for HW P1 temps.
  * @param hw HW P1 private data
  * @return (statically allocated) s_log_source pointer
+ * @warning must not be called concurrently
  * @bug hardcoded basename/identifier will collide if multiple instances.
  */
 static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const hw)

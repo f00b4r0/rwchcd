@@ -82,6 +82,7 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
  * Provide a well formatted log source for a given building model.
  * @param bmodel the target bmodel
  * @return (statically allocated) s_log_source pointer
+ * @warning must not be called concurrently
  */
 static const struct s_log_source * bmodel_lreg(const struct s_bmodel * const bmodel)
 {

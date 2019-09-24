@@ -97,6 +97,7 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
  * Provide a well formatted log source for a given circuit.
  * @param circuit the target circuit
  * @return (statically allocated) s_log_source pointer
+ * @warning must not be called concurrently
  */
 static const struct s_log_source * hcircuit_lreg(const struct s_hcircuit * const circuit)
 {
