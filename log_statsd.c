@@ -20,7 +20,7 @@
 #include <unistd.h>	// close()
 #include <string.h>	// memcpy/memset
 #include <assert.h>
-#include <stdlib.h>	// free()
+#include <stdlib.h>	// malloc/free()
 
 #include "log_statsd.h"
 #include "rwchcd.h"
@@ -170,12 +170,13 @@ static int log_statsd_create(const bool async, const char * restrict const ident
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
- * @warning uses a static buffer: not thread safe
+ * @todo improve performance by grouping data (look into sendmsg()).
  */
 static int log_statsd_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
 {
-	static char buffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
+	static char sbuffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
 	const char * restrict mtype;
+	char * restrict buffer;
 	int ret;
 	ssize_t sent;
 	unsigned int i;
@@ -185,10 +186,19 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 	if (!Log_statsd.run.online)
 		return (-EOFFLINE);
 
+	// don't use the static buffer when called asynchronously
+	if (async) {
+		buffer = malloc(LOG_STATSD_UDP_BUFSIZE);
+		if (!buffer)
+			return (-EOOM);
+	}
+	else
+		buffer = sbuffer;
+
 	for (i = 0; i < log_data->nvalues; i++) {
 #ifdef DEBUG
 		if ((ALL_OK != statsd_validate(log_data->keys[i]))) {
-			dbgerr("invalid log key \"%s\"", log_data->keys[i]);
+			dbgerr("invalid \"%s\" log key \"%s\"", identifier, log_data->keys[i]);
 			continue;
 		}
 #endif
@@ -222,6 +232,9 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 	ret = ALL_OK;
 
 cleanup:
+	if (async)
+		free(buffer);
+
 	return (ret);
 }
 
