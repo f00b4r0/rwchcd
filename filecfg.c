@@ -38,6 +38,7 @@
 int filecfg_models_dump(void);
 int scheduler_filecfg_dump(void);
 int storage_filecfg_dump(void);
+int log_filecfg_dump(void);
 
 bool FCD_Exhaustive = false;
 
@@ -993,6 +994,9 @@ int filecfg_dump(void)
 
 	// dump storage
 	storage_filecfg_dump();
+
+	// dump logging
+	log_filecfg_dump();
 
 	// dump scheduler
 	scheduler_filecfg_dump();

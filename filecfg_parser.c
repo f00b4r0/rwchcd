@@ -80,6 +80,7 @@
 int models_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int scheduler_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int storage_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
+int log_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
 /**
  * Create a new configuration node.
@@ -1846,6 +1847,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 		{ NODELST, "models", false, models_filecfg_parse, NULL, },
 		{ NODELST, "plant", true, plant_parse, NULL, },
 		{ NODELST, "storage", false, storage_filecfg_parse, NULL, },
+		{ NODELST, "logging", false, log_filecfg_parse, NULL, },
 	};
 	struct s_runtime * const runtime = runtime_get();
 	int ret;
