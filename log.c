@@ -10,7 +10,6 @@
  * @file
  * Log system implementation.
  * @todo REVIEW/CLEANUP
- * @todo configuration support
  */
 
 #include <stdlib.h>	// malloc
@@ -23,11 +22,14 @@
 #ifdef HAS_RRD
  #include "log_rrd.h"
 #endif
+#include "log_statsd.h"
 
 #include "rwchcd.h"
 #include "runtime.h"	// to access config->logging
 #include "config.h"	// config->logging
 #include "timer.h"
+
+#include "filecfg_parser.h"
 
 #define LOG_PREFIX	"log_"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names
@@ -79,11 +81,25 @@ static struct {
 
 static struct {
 	struct {
-		bool configured;
-		struct s_log_bendcbs sync_bkend;
-		struct s_log_bendcbs async_bkend;
+		bool configured;			///< true if properly configured (backends are online)
+		struct s_log_bendcbs sync_bkend;	///< logging backend for synchronous (periodic) logs. Config expects a user string for backend name.
+		struct s_log_bendcbs async_bkend;	///< logging backend for asynchronous logs. Config expects a user string for backend name.
 	} set;
 } Log;
+
+static struct {
+	const char * bkname;		///< backend identifier string (must be unique in system)
+	log_bkend_hook_t hook;		///< backend hook routine
+	parser_t parse;			///< backend config parser
+	void (*dump)(void);		///< backend config dumper. @note if #parse is provided then #dump must be provided too.
+	bool configured;		///< true if backend has been configured
+} Log_known_bkends[] = {
+	{ LOG_BKEND_FILE_NAME,		log_file_hook,		NULL, 				NULL,				false,	},	// file has no configuration
+#ifdef HAS_RRD
+	{ LOG_BKEND_RRD_NAME,		log_rrd_hook,		NULL,				NULL,				false,	},	// rrd has no configuration
+#endif
+	{ LOG_BKEND_STATSD_NAME,	log_statsd_hook,	log_statsd_filecfg_parse,	log_statsd_filecfg_dump,	false,	},
+};
 
 /**
  * Generic log_data log routine.
@@ -269,7 +285,7 @@ fail:
 
 static void log_clear_listelmt(struct s_log_list * restrict lelmt)
 {
-	free(lelmt->lsource);
+	free((void *)lelmt->lsource);
 	free(lelmt);
 }
 
@@ -352,22 +368,33 @@ static int log_crawl(const int log_sched_id)
 	return (ret);	// XXX
 }
 
-/* Quick hack */
+/**
+ * Init logging subsystem.
+ * This function tries to bring the configured sync and async backends online and will fail on error.
+ * @return exec status
+ */
 int log_init(void)
 {
 	int ret;
 	unsigned int i;
 
-	if (!storage_isconfigured())
+	if (!storage_isconfigured()) {
+		pr_err("Logging needs a configured storage!");
 		return (-ENOTCONFIGURED);
+	}
 
-	log_file_hook(&Log.set.async_bkend);
+	// bring the backends online
+	if (Log.set.sync_bkend.log_online) {
+		ret = Log.set.sync_bkend.log_online();
+		if (ALL_OK != ret)
+			return (ret);
+	}
 
-#ifdef HAS_RRD
-	log_rrd_hook(&Log.set.sync_cb);
-#else
-	log_file_hook(&Log.set.sync_bkend);
-#endif
+	if (Log.set.async_bkend.log_online) {
+		ret = Log.set.async_bkend.log_online();
+		if (ALL_OK != ret)
+			return (ret);
+	}
 
 	Log.set.configured = true;
 
@@ -380,13 +407,20 @@ int log_init(void)
 	return (ALL_OK);
 }
 
-/* idem */
+/**
+ * Exit logging subsystem
+ */
 void log_exit(void)
 {
 	struct s_log_list * lelmt, * next;
 	unsigned int i;
 
 	Log.set.configured = false;
+
+	if (Log.set.sync_bkend.log_offline)
+		Log.set.sync_bkend.log_offline();
+	if (Log.set.async_bkend.log_offline)
+		Log.set.async_bkend.log_offline();
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		for (lelmt = Log_sched[i].loglist; lelmt;) {
@@ -396,4 +430,117 @@ void log_exit(void)
 		}
 		Log_sched[i].loglist = NULL;
 	}
+}
+
+/*
+ logging {
+	 config {
+		 sync_bkend "statsd";
+		 async_bkend "file";
+	 };
+	 backends_conf {
+		 backend "statsd" {
+			 port "8000";
+			 host "localhost";
+		 };
+	 };
+ };
+ */
+
+static int log_config_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODESTR, "sync_bkend", true, NULL, NULL, },		// 0
+		{ NODESTR, "async_bkend", true, NULL, NULL, },
+	};
+	const struct s_filecfg_parser_node * currnode;
+	struct s_log_bendcbs * restrict lbkend;
+	unsigned int i, j;
+	int ret;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	for (j = 0; j < ARRAY_SIZE(parsers); j++) {
+		currnode = parsers[j].node;
+		switch (j) {
+			case 0:
+				lbkend = &Log.set.sync_bkend;
+				break;
+			case 1:
+				lbkend = &Log.set.async_bkend;
+				break;
+			default:
+				break;	// can ever happen
+		}
+
+		for (i = 0; i < ARRAY_SIZE(Log_known_bkends); i++) {
+			if (!strcmp(Log_known_bkends[i].bkname, currnode->value.stringval)) {
+				Log_known_bkends[i].hook(lbkend);
+				break;
+			}
+		}
+
+		if (ARRAY_SIZE(Log_known_bkends) == i) {
+			ret = -EUNKNOWN;
+			goto invaliddata;
+		}
+	}
+
+	return (ALL_OK);
+	
+invaliddata:
+	filecfg_parser_report_invaliddata(currnode);
+	return (ret);
+}
+
+static int log_backend_conf_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	unsigned int i;
+	int ret;
+
+	for (i = 0; i < ARRAY_SIZE(Log_known_bkends); i++) {
+		if (!strcmp(Log_known_bkends[i].bkname, node->value.stringval)) {
+			ret = Log_known_bkends[i].parse(priv, node);
+			if (ALL_OK == ret)
+				Log_known_bkends[i].configured = true;
+			return (ret);
+		}
+	}
+
+	return (-EUNKNOWN);
+}
+
+static int log_backends_conf_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "backend", log_backend_conf_parse));
+}
+
+/**
+ * Parse logging subsystem configuration.
+ * The parser expects a mandatory "config" node defining (by name) the sync and async backends to use (see #Log.set).
+ * An optional "backends_conf" node can be provided, itself containing named "backend" subnodes detailing
+ * the configuration parameters of backends requiring extra configuration.
+ * @param priv unused
+ * @param node a `logging` node
+ * @return exec status
+ */
+int log_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODELST, "config", true, log_config_parse, NULL, },			// 0
+		{ NODELST, "backends_conf", false, log_backends_conf_parse, NULL, },
+	};
+	int ret;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	ret = filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	return (ret);
 }

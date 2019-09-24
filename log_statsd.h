@@ -15,6 +15,9 @@
 #define log_statsd_h
 
 #include "log.h"
+#include "filecfg_parser.h"
+
+#define LOG_BKEND_STATSD_NAME	"statsd"
 
 void log_statsd_hook(struct s_log_bendcbs * restrict const callbacks);
 void log_statsd_filecfg_dump(void);

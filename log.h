@@ -74,7 +74,7 @@ struct s_log_source {
 struct s_log_bendcbs {
 	/** backend unique identifier */
 	enum e_log_bend bkid;
-	/** backend log online callback */
+	/** optional backend log online callback */
 	int (*log_online)(void);
 	/** optional backend log offline callback */
 	void (*log_offline)(void);
@@ -83,6 +83,8 @@ struct s_log_bendcbs {
 	/** backend log update callback */
 	int (*log_update)(const char * restrict const identifier, const struct s_log_data * const log_data);
 };
+
+typedef void (*log_bkend_hook_t)(struct s_log_bendcbs * restrict const callbacks);
 
 int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data);
 int log_register(const struct s_log_source * restrict const lsource);

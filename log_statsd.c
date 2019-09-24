@@ -248,7 +248,7 @@ void log_statsd_filecfg_dump(void)
 /**
  * Parse StatsD logging configuration.
  * @param priv unused
- * @param node a `backend "statsd"` node
+ * @param node a `backend "#LOG_BKEND_STATSD_NAME"` node
  * @return exec status
  */
 int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -262,7 +262,7 @@ int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_
 	unsigned int i;
 	int ret;
 
-	if ((NODESTR != node->type) || strcmp("statsd", node->value.stringval) || (!node->children))
+	if ((NODESTR != node->type) || strcmp(LOG_BKEND_STATSD_NAME, node->value.stringval) || (!node->children))
 		return (-EINVALID);	// we only accept NODESTR node with children
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
