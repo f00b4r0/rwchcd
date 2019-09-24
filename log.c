@@ -30,6 +30,7 @@
 #include "timer.h"
 
 #include "filecfg_parser.h"
+#include "filecfg.h"
 
 #define LOG_PREFIX	"log_"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names
@@ -496,6 +497,28 @@ invaliddata:
 	return (ret);
 }
 
+static const char * log_config_dump_bkend_name(const struct s_log_bendcbs * restrict const lbkend)
+{
+	switch (lbkend->bkid) {
+		case LOG_BKEND_FILE:
+			return (LOG_BKEND_FILE_NAME);
+#ifdef HAS_RRD
+		case LOG_BKEND_RRD:
+			return (LOG_BKEND_RRD_NAME);
+#endif
+		case LOG_BKEND_STATSD:
+			return (LOG_BKEND_STATSD_NAME);
+		default:
+			return ("unknown");
+	}
+}
+
+static void log_config_dump(void)
+{
+	filecfg_iprintf("sync_bkend \"%s\";\n", log_config_dump_bkend_name(&Log.set.sync_bkend));
+	filecfg_iprintf("async_bkend \"%s\";\n", log_config_dump_bkend_name(&Log.set.async_bkend));
+}
+
 static int log_backend_conf_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	unsigned int i;
@@ -545,3 +568,56 @@ int log_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 	return (ret);
 }
+
+/**
+ * Dump the logging subsystem to config file.
+ * @return exec status
+ */
+int log_filecfg_dump(void)
+{
+	unsigned int i;
+
+	filecfg_iprintf("logging {\n");
+	filecfg_ilevel_inc();
+
+	if (!Log.set.configured)
+		goto empty;
+
+	filecfg_iprintf("config {\n");
+	filecfg_ilevel_inc();
+	log_config_dump();
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+
+	// check if we have a configured backend
+	for (i = 0; i < ARRAY_SIZE(Log_known_bkends); i++) {
+		if (Log_known_bkends[i].configured)
+			break;
+	}
+
+	if (i < ARRAY_SIZE(Log_known_bkends)) {
+		filecfg_iprintf("backends_conf {\n");
+		filecfg_ilevel_inc();
+
+		for (i = 0; i < ARRAY_SIZE(Log_known_bkends); i++) {
+			if (Log_known_bkends[i].configured) {
+				filecfg_ilevel_inc();
+				filecfg_iprintf("backend \"%s\" {\n", Log_known_bkends[i].bkname);
+				Log_known_bkends[i].dump();
+				filecfg_iprintf("};\n");
+				filecfg_ilevel_dec();
+			}
+		}
+
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");
+	}
+
+empty:
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ALL_OK);
+}
+
