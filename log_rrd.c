@@ -154,7 +154,7 @@ static int log_rrd_update(const bool async, const char * restrict const identifi
 	assert(identifier && log_data);
 
 	buffer_len = (10+1) * log_data->nkeys + 1;	// INT_MAX is 10 chars, so is time, plus ':' separator, plus '\0'
-	buffer = calloc(1, buffer_len);
+	buffer = malloc(buffer_len);
 	if (!buffer)
 		return (-EOOM);
 
