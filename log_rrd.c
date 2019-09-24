@@ -59,11 +59,12 @@ static const char *RRAs_15mn[] = {
 
 /**
  * Create the RRD log database.
+ * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_rrd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_create(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	int ret = -EGENERIC, argc = 0;
 	unsigned int i;
@@ -139,11 +140,12 @@ cleanup:
 
 /**
  * Update the RRD log database.
+ * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_rrd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	char * buffer;
 	int ret, buffer_len, offset = 0;

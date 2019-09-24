@@ -151,11 +151,12 @@ static void log_statsd_offline(void)
 
 /**
  * Create the StatsD log database. NOP.
+ * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_statsd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_statsd_create(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	if (!Log_statsd.run.online)
 		return (-EOFFLINE);
@@ -165,12 +166,13 @@ static int log_statsd_create(const char * restrict const identifier, const struc
 
 /**
  * Update the StatsD log database.
+ * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  * @warning uses a static buffer: not thread safe
  */
-static int log_statsd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_statsd_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	static char buffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
 	const char * restrict mtype;

@@ -34,6 +34,7 @@ static volatile unsigned int Timer_period_min = 0;	///< time between runs in sec
 /**
  * Simple timer thread.
  * runs a delay loop through the callbacks.
+ * Callbacks are called sequentially one after the other: there is no concurrency.
  * @todo improve imperfect time handling.
  */
 void * timer_thread(void * arg)

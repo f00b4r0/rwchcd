@@ -15,6 +15,7 @@
 #define log_h
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef uint32_t	log_version_t;	///< log version type
 typedef const char *	log_key_t;	///< log keys type
@@ -79,9 +80,9 @@ struct s_log_bendcbs {
 	/** optional backend log offline callback */
 	void (*log_offline)(void);
 	/** backend log create callback */
-	int (*log_create)(const char * restrict const identifier, const struct s_log_data * const log_data);
+	int (*log_create)(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data);
 	/** backend log update callback */
-	int (*log_update)(const char * restrict const identifier, const struct s_log_data * const log_data);
+	int (*log_update)(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data);
 };
 
 typedef void (*log_bkend_hook_t)(struct s_log_bendcbs * restrict const callbacks);

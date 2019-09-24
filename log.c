@@ -103,13 +103,14 @@ static struct {
 
 /**
  * Generic log_data log routine.
+ * @param async true if called asynchronously
  * @param basename a namespace under which the unique identifier will be registered
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
  * @param log_data the data to log
  * @note uses a #MAX_FILENAMELEN+1 auto heap buffer.
  */
-static int _log_dump(const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
+static int _log_dump(const bool async, const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
 	const bool logging = runtime_get()->config->logging;
@@ -164,9 +165,9 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 	if (fcreate) {
 		// create backend store
 		if (timedlog)
-			ret = Log.set.sync_bkend.log_create(ident, log_data);
+			ret = Log.set.sync_bkend.log_create(async, ident, log_data);
 		else
-			ret = Log.set.async_bkend.log_create(ident, log_data);
+			ret = Log.set.async_bkend.log_create(async, ident, log_data);
 
 		if (ALL_OK != ret)
 			return (ret);
@@ -188,9 +189,9 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 
 	// log data
 	if (timedlog)
-		ret = Log.set.sync_bkend.log_update(ident, log_data);
+		ret = Log.set.sync_bkend.log_update(async, ident, log_data);
 	else
-		ret = Log.set.async_bkend.log_update(ident, log_data);
+		ret = Log.set.async_bkend.log_update(async, ident, log_data);
 
 	return (ret);
 }
@@ -204,7 +205,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
  */
 int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
-	return (_log_dump(LOG_ASYNC_DUMP_BASENAME, identifier, version, log_data));
+	return (_log_dump(true, LOG_ASYNC_DUMP_BASENAME, identifier, version, log_data));
 }
 
 /**
@@ -360,7 +361,7 @@ static int log_crawl(const int log_sched_id)
 		lsource->logdata_cb(&ldata, lsource->object);
 		ldata.interval = Log_sched[log_sched_id].interval;		// XXX
 
-		ret = _log_dump(lsource->basename, lsource->identifier, &lsource->version, &ldata);
+		ret = _log_dump(false, lsource->basename, lsource->identifier, &lsource->version, &ldata);
 		if (ret)
 			dbgmsg("log_dump failed on %s%s: %d", lsource->basename, lsource->identifier, ret);
 	}
