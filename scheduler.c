@@ -32,6 +32,13 @@
 #include "filecfg_parser.h"
 #include "timekeep.h"
 
+/** Schedule entry time. */
+struct s_schedule_etime {
+	int wday;		///< day of the week for this schedule entry (`0` - `6`, Sunday = `0`)
+	int hour;		///< hour of the day for this schedule entry (`0` - `23`)
+	int min;		///< minute for this schedule entry (`0` - `59`)
+};
+
 /** A schedule entry. Schedule entries are linked in a looped list. Config token 'entry' */
 struct s_schedule_e {
 	struct s_schedule_e * next;
@@ -290,29 +297,28 @@ static int scheduler_add_schedule(const char * const restrict name)
  * Add a schedule entry.
  * Added entries are inserted at a sorted position.
  * @param schedid id of the schedule to add entry to.
- * @param etime target time for this entry
- * @param sparams target schedule parameters for this entry
+ * @param se template for the new schedule entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
  */
-static int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_etime * const etime, const struct s_schedule_eparams * const eparams)
+static int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_e * const se)
 {
 	struct s_schedule * sched;
 	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;
 	
 	// sanity checks on params
-	if (!etime || !eparams)
+	if (!se)
 		return (-EINVALID);
 
-	if ((etime->wday < 0) || (etime->wday > 6))
+	if ((se->time.wday < 0) || (se->time.wday > 6))
 		return (-EINVALID);
-	if ((etime->hour < 0) || (etime->hour > 23))
+	if ((se->time.hour < 0) || (se->time.hour > 23))
 		return (-EINVALID);
-	if ((etime->min < 0) || (etime->min > 59))
+	if ((se->time.min < 0) || (se->time.min > 59))
 		return (-EINVALID);
 
-	if (eparams->runmode > RM_UNKNOWN)
+	if (se->params.runmode > RM_UNKNOWN)
 		return (-EINVALID);
-	if (eparams->dhwmode > RM_UNKNOWN)
+	if (se->params.dhwmode > RM_UNKNOWN)
 		return (-EINVALID);
 
 	sched = scheduler_schedule_fbi(schedid);
@@ -329,17 +335,17 @@ static int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_
 	// find insertion place
 	if (schent_after) {
 		do {
-			if (schent_after->time.wday == etime->wday) {
-				if (schent_after->time.hour == etime->hour) {
-					if (schent_after->time.min > etime->min)
+			if (se->time.wday == schent_after->time.wday) {
+				if (se->time.hour == schent_after->time.hour) {
+					if (se->time.min < schent_after->time.min)
 						break;
-					else if (schent_after->time.min == etime->min)
+					else if (se->time.min == schent_after->time.min)
 						goto duplicate;
 				}
-				else if (schent_after->time.hour > etime->hour)
+				else if (se->time.hour < schent_after->time.hour)
 					break;
 			}
-			else if (schent_after->time.wday > etime->wday)
+			else if (se->time.wday < schent_after->time.wday)
 				break;
 
 			schent_before = schent_after;
@@ -353,8 +359,7 @@ static int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_
 	else
 		schent_last = schent;		// new entry is the only and last one
 
-	memcpy(&schent->time, etime, sizeof(schent->time));
-	memcpy(&schent->params, eparams, sizeof(schent->params));
+	memcpy(schent, se, sizeof(*schent));
 
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
@@ -455,7 +460,7 @@ static int scheduler_entry_time_parse(void * restrict const priv, const struct s
 		{ NODEINT, "hour", true, NULL, NULL, },
 		{ NODEINT, "min", true, NULL, NULL, },		// 2
 	};
-	struct s_schedule_etime * const etime = priv;
+	struct s_schedule_e * const schent = priv;
 	const struct s_filecfg_parser_node * currnode;
 	unsigned int i;
 	int ret;
@@ -473,20 +478,20 @@ static int scheduler_entry_time_parse(void * restrict const priv, const struct s
 			case 0:
 				if ((currnode->value.intval < 0) || (currnode->value.intval > 7))
 					goto invaliddata;
-				etime->wday = currnode->value.intval;
+				schent->time.wday = currnode->value.intval;
 				// convert Sunday if necessary
-				if (7 == etime->wday)
-					etime->wday = 0;
+				if (7 == schent->time.wday)
+					schent->time.wday = 0;
 				break;
 			case 1:
 				if ((currnode->value.intval < 0) || (currnode->value.intval > 23))
 					goto invaliddata;
-				etime->hour = currnode->value.intval;
+				schent->time.hour = currnode->value.intval;
 				break;
 			case 2:
 				if ((currnode->value.intval < 0) || (currnode->value.intval > 59))
 					goto invaliddata;
-				etime->min = currnode->value.intval;
+				schent->time.min = currnode->value.intval;
 				break;
 			default:
 				break;	// should never happen
@@ -508,7 +513,7 @@ static int scheduler_entry_params_parse(void * restrict const priv, const struct
 		{ NODEBOL, "legionella", false, NULL, NULL, },	// 2
 		{ NODEBOL, "recycle", false, NULL, NULL, },
 	};
-	struct s_schedule_eparams * const eparams = priv;
+	struct s_schedule_e * const schent = priv;
 	const struct s_filecfg_parser_node * currnode;
 	unsigned int i;
 	int ret;
@@ -520,9 +525,9 @@ static int scheduler_entry_params_parse(void * restrict const priv, const struct
 		return (ret);	// break if invalid config
 
 	// reset buffer and set mode defaults
-	memset(eparams, 0, sizeof(*eparams));
-	eparams->runmode = RM_UNKNOWN;
-	eparams->dhwmode = RM_UNKNOWN;
+	memset(&schent->params, 0, sizeof(schent->params));
+	schent->params.runmode = RM_UNKNOWN;
+	schent->params.dhwmode = RM_UNKNOWN;
 
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
 		currnode = parsers[i].node;
@@ -531,18 +536,18 @@ static int scheduler_entry_params_parse(void * restrict const priv, const struct
 
 		switch (i) {
 			case 0:
-				if (ALL_OK != filecfg_parser_runmode_parse(&eparams->runmode, currnode))
+				if (ALL_OK != filecfg_parser_runmode_parse(&schent->params.runmode, currnode))
 					goto invaliddata;
 				break;
 			case 1:
-				if (ALL_OK != filecfg_parser_runmode_parse(&eparams->dhwmode, currnode))
+				if (ALL_OK != filecfg_parser_runmode_parse(&schent->params.dhwmode, currnode))
 					goto invaliddata;
 				break;
 			case 2:
-				eparams->legionella = currnode->value.boolval;
+				schent->params.legionella = currnode->value.boolval;
 				break;
 			case 3:
-				eparams->recycle = currnode->value.boolval;
+				schent->params.recycle = currnode->value.boolval;
 				break;
 			default:
 				break;	// should never happen
@@ -559,12 +564,11 @@ invaliddata:
 static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST, "time", true, NULL, NULL, },		// 0
-		{ NODELST, "params", true, NULL, NULL, },
+		{ NODELST, "time", true, scheduler_entry_time_parse, NULL, },		// 0
+		{ NODELST, "params", true, scheduler_entry_params_parse, NULL, },
 	};
 	const schedid_t schedid = *(int *)priv;
-	struct s_schedule_etime etime;
-	struct s_schedule_eparams eparams;
+	struct s_schedule_e schent;
 	int ret;
 
 	// we receive an 'entry' node
@@ -573,15 +577,11 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	ret = scheduler_entry_time_parse(&etime, parsers[0].node);
+	ret = filecfg_parser_run_parsers(&schent, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = scheduler_entry_params_parse(&eparams, parsers[1].node);
-	if (ALL_OK != ret)
-		return (ret);
-
-	ret = scheduler_add_entry(schedid, &etime, &eparams);
+	ret = scheduler_add_entry(schedid, &schent);
 	switch (ret) {
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a schedule entry with the same time is already configured"), node->lineno);

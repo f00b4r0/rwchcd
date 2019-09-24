@@ -16,13 +16,6 @@
 
 #include "rwchcd.h"
 
-/** Schedule entry time. */
-struct s_schedule_etime {
-	int wday;		///< day of the week for this schedule entry (`0` - `6`, Sunday = `0`)
-	int hour;		///< hour of the day for this schedule entry (`0` - `23`)
-	int min;		///< minute for this schedule entry (`0` - `59`)
-};
-
 /** Schedule entry parameters. */
 struct s_schedule_eparams {
 	enum e_runmode runmode;	///< target runmode. @note #RM_UNKNOWN can be used to leave the current mode unchanged
