@@ -323,6 +323,11 @@ int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_
 				Log_statsd.set.prefix = strdup(currnode->value.stringval);
 				if (!Log_statsd.set.prefix)
 					goto fail;
+				else if ('.' != Log_statsd.set.prefix[strlen(Log_statsd.set.prefix)-1]) {
+					filecfg_parser_pr_err(_("Missing ending '.' in prefix \"%s\" closing at line %d"), currnode->value.stringval, currnode->lineno);
+					ret = -EMISCONFIGURED;
+					goto fail;
+				}
 				break;
 			default:
 				break;	// should never happen
