@@ -32,7 +32,7 @@ static struct s_runtime Runtime;	///< Runtime private data
 /** Runtime log source */
 static const struct s_log_source Runtime_lsrc = {
 	.log_sched = LOG_SCHED_15mn,
-	.basename = "runtime_",
+	.basename = "runtime",
 	.identifier = "master",
 	.version = 7,
 	.logdata_cb = runtime_logdata_cb,

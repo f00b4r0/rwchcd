@@ -29,7 +29,7 @@
 
 #define OUTDOOR_SMOOTH_TIME		(60*TIMEKEEP_SMULT)	///< time in seconds over which outdoor temp is smoothed
 #define OUTDOOR_AVG_UPDATE_DT		(600*TIMEKEEP_SMULT)	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
-#define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel_"
+#define MODELS_STORAGE_BMODEL_PREFIX	"models_bmodel"
 
 static struct s_models Models;	///< Known models
 
@@ -154,6 +154,7 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
+	strcat(buf, "_");
 	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	return (storage_dump(buf, &Models_sversion, &bmodel->run, sizeof(bmodel->run)));
@@ -180,6 +181,7 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
+	strcat(buf, "_");
 	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	// try to restore key elements
@@ -502,8 +504,8 @@ struct s_bmodel * models_new_bmodel(const char * restrict const name)
 		goto fail;
 
 	// ensure name is short enough
-	if ((strlen(MODELS_STORAGE_BMODEL_PREFIX) + strlen(name) + 1) >= MAX_FILENAMELEN) {
-		pr_err(_("Name too long: \"%s\" (max: %d chars)"), name, (MAX_FILENAMELEN - 1 - strlen(MODELS_STORAGE_BMODEL_PREFIX)));
+	if ((strlen(MODELS_STORAGE_BMODEL_PREFIX) + 1 + strlen(name) + 1) >= MAX_FILENAMELEN) {
+		pr_err(_("Name too long: \"%s\" (max: %d chars)"), name, (MAX_FILENAMELEN - 1 - 1 - strlen(MODELS_STORAGE_BMODEL_PREFIX)));
 		goto fail;
 	}
 

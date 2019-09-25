@@ -32,9 +32,10 @@
 #include "filecfg_parser.h"
 #include "filecfg.h"
 
-#define LOG_PREFIX	"log_"			///< prefix for log names
+#define LOG_PREFIX	"log"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names
-#define LOG_ASYNC_DUMP_BASENAME	"async_"	///< basename for asynchronous logging (see _log_dump())
+#define LOG_ASYNC_DUMP_BASENAME	"async"		///< basename for asynchronous logging (see _log_dump())
+#define LOG_SEPC	'_'			///< separator character used to concatenate prefix/basename/identifier
 
 /** Log sources linked list */
 struct s_log_list {
@@ -139,7 +140,10 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 		return (-EINVALID);
 
 	// log_register() ensures that we cannot overflow
-	p = stpcpy(ident + strlen(LOG_PREFIX), basename);
+	p = ident + strlen(LOG_PREFIX);
+	*p = LOG_SEPC; p++;
+	p = stpcpy(p, basename);
+	*p = LOG_SEPC; p++;
 	p = stpcpy(p, identifier);
 	p = strcpy(p, LOG_FMT_SUFFIX);
 
@@ -229,7 +233,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 	assert(lsource);
 
 	if (lsource->log_sched >= ARRAY_SIZE(Log_sched)) {
-		pr_err(_("Log registration failed: invalid log schedule for %s%s: %d"), lsource->basename, lsource->identifier, lsource->log_sched);
+		pr_err(_("Log registration failed: invalid log schedule for %s %s: %d"), lsource->basename, lsource->identifier, lsource->log_sched);
 		return (-EINVALID);
 	}
 
@@ -242,20 +246,20 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	// forbid specific namespace
 	if (!strcmp(LOG_ASYNC_DUMP_BASENAME, lsource->basename)) {
-		pr_err(_("Log registration failed: invalid basename for %s%s: %s"), lsource->basename, lsource->identifier, lsource->basename);
+		pr_err(_("Log registration failed: invalid basename for %s %s: %s"), lsource->basename, lsource->identifier, lsource->basename);
 		return (-EINVALID);
 	}
 
 	if (!lsource->logdata_cb) {
-		pr_err(_("Log registration failed: Missing parser cb: %s%s"), lsource->basename, lsource->identifier);
+		pr_err(_("Log registration failed: Missing parser cb: %s %s"), lsource->basename, lsource->identifier);
 		return (-EINVALID);
 	}
 
 	// object validity is handled by the parser cb
 
 	// check basename + identifier is short enough
-	if ((strlen(LOG_PREFIX) + strlen(lsource->basename) + strlen(lsource->identifier) + strlen(LOG_FMT_SUFFIX) + 1) >= MAX_FILENAMELEN) {
-		pr_err(_("Log registration failed: Name too long: %s%s"), lsource->basename, lsource->identifier);
+	if ((strlen(LOG_PREFIX) + strlen(lsource->basename) + 1 + strlen(lsource->identifier) + strlen(LOG_FMT_SUFFIX) + 1) >= MAX_FILENAMELEN) {
+		pr_err(_("Log registration failed: Name too long: \"%s %s\""), lsource->basename, lsource->identifier);
 		return (-EINVALID);
 	}
 
@@ -277,7 +281,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 	*currlistp = lelmt;
 	// end fence
 
-	dbgmsg("registered \"%s%s\", interval: %d", lsource->basename, lsource->identifier, Log_sched[lsource->log_sched].interval);
+	dbgmsg("registered \"%s %s\", interval: %d", lsource->basename, lsource->identifier, Log_sched[lsource->log_sched].interval);
 
 	return (ALL_OK);
 
@@ -338,7 +342,7 @@ int log_deregister(const struct s_log_source * restrict const lsource)
 		}
 	}
 
-	dbgmsg("deregistered \"%s%s\"", lsource->basename, lsource->identifier);
+	dbgmsg("deregistered \"%s %s\"", lsource->basename, lsource->identifier);
 
 	return (ALL_OK);	// failure to find is ignored
 }
@@ -366,7 +370,7 @@ static int log_crawl(const int log_sched_id)
 
 		ret = _log_dump(false, lsource->basename, lsource->identifier, &lsource->version, &ldata);
 		if (ret)
-			dbgmsg("log_dump failed on %s%s: %d", lsource->basename, lsource->identifier, ret);
+			dbgmsg("log_dump failed on %s %s: %d", lsource->basename, lsource->identifier, ret);
 	}
 
 	return (ret);	// XXX

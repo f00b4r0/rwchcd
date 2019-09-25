@@ -85,7 +85,7 @@ static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const
 
 	HW_P1_temps_lsrc = (struct s_log_source){
 		.log_sched = LOG_SCHED_1mn,
-		.basename = "hw_p1_",
+		.basename = "hw_p1",
 		.identifier = "temps",
 		.version = 2,
 		.logdata_cb = hw_p1_temps_logdata_cb,
