@@ -13,7 +13,7 @@
  */
 
 #include <stdlib.h>	// malloc
-#include <string.h>	// strcpy/strcat/strlen
+#include <string.h>	// strcpy/strlen
 #include <assert.h>
 
 #include "log.h"
@@ -117,6 +117,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	const bool logging = runtime_get()->config->logging;
 	log_version_t lversion = 0;
 	bool fcreate = false, timedlog;
+	char * p;
 	int ret;
 	struct {
 		unsigned int nkeys;
@@ -137,9 +138,10 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	if (log_data->nvalues > log_data->nkeys)
 		return (-EINVALID);
 
-	strcpy(ident + strlen(LOG_PREFIX), basename);
-	strcat(ident, identifier);
-	strcat(ident, LOG_FMT_SUFFIX);
+	// log_register() ensures that we cannot overflow
+	p = stpcpy(ident + strlen(LOG_PREFIX), basename);
+	p = stpcpy(p, identifier);
+	p = strcpy(p, LOG_FMT_SUFFIX);
 
 	timedlog = (log_data->interval > 0) ? true : false;
 
@@ -161,7 +163,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	}
 
 	// strip LOG_FMT_SUFFIX
-	ident[strlen(ident) - strlen(LOG_FMT_SUFFIX)] = '\0';
+	*p = '\0';
 
 	if (fcreate) {
 		// create backend store
@@ -180,12 +182,12 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 		logfmt.bend = timedlog ? Log.set.sync_bkend.bkid : Log.set.async_bkend.bkid;	// XXX HACK
 
 		// XXX reappend LOG_FMT_SUFFIX
-		strcat(ident, LOG_FMT_SUFFIX);
+		strcpy(p, LOG_FMT_SUFFIX);
 		ret = storage_dump(ident, version, &logfmt, sizeof(logfmt));
 		if (ALL_OK != ret)
 			return (ret);
 		// XXX restrip LOG_FMT_SUFFIX
-		ident[strlen(ident) - strlen(LOG_FMT_SUFFIX)] = '\0';
+		*p = '\0';
 	}
 
 	// log data
