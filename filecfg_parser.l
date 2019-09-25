@@ -34,7 +34,7 @@ https://gitlab.isc.org/isc-projects/kea/wikis/designs/simple-parser-design
 %x COMMENT
 
 IDENTPART		[A-Za-z0-9_]
-TIMEMULT		[dhms]
+TIMEMULT		[wdhms]
 
 %{
 	#include <stdbool.h>
@@ -43,7 +43,7 @@ TIMEMULT		[dhms]
 
 	/**
 	 * Lexer processor for a duration symbol.
-	 * This routine converts a duration string (in the form '[0-9]+[dhms]',
+	 * This routine converts a duration string (in the form '[0-9]+[wdhms]',
 	 * note: no space between number and multiplier) to seconds (long type).
 	 * @param str the string to process
 	 * @return the converted value
@@ -60,6 +60,9 @@ TIMEMULT		[dhms]
 		c = str[strlen(str)-1];
 
 		switch (c) {
+			case 'w':
+				mult *= 7;
+				// fallthrough
 			case 'd':
 				mult *= 24;
 				// fallthrough

@@ -31,7 +31,7 @@
  *
  * Type specific rules:
  * - All `enum` types expect user strings as specified in the corresponding `enum` definition.
- * - All `timekeep_t` values must be expressed in integer seconds or unquoted compound expressions in the form `[0-9]+[dhms]` with or without whitespace between each time compound, e.g. `2h3m 5s`.
+ * - All `timekeep_t` values must be expressed in integer seconds or unquoted compound expressions in the form `[0-9]+[wdhms]` with or without whitespace between each time compound, e.g. `2h3m 5s`.
  * - All `temp_t` values must be expressed in Celsius degrees (integer or decimal accepted).
  * - All `valves_`, `pump_` and `bmodel` settings expect a quoted string referencing the name of the related item.
  * - All `schedid_t` settings expect a quoted string referencing the name of the target schedule.
