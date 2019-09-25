@@ -175,8 +175,8 @@ static int log_statsd_create(const bool async, const char * restrict const ident
 static int log_statsd_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	static char sbuffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
-	const char * restrict mtype;
 	char * restrict buffer;
+	char mtype;
 	int ret;
 	ssize_t sent;
 	unsigned int i;
@@ -205,16 +205,16 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_GAUGE:
-				mtype = "g";
+				mtype = 'g';
 				break;
 			case LOG_METRIC_COUNTER:
-				mtype = "c";
+				mtype = 'c';
 				break;
 			default:
 				ret = -EINVALID;
 				goto cleanup;
 		}
-		ret = snprintf(buffer, LOG_STATSD_UDP_BUFSIZE, "%s%s.%s:%d|%s\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i], mtype);
+		ret = snprintf(buffer, LOG_STATSD_UDP_BUFSIZE, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i], mtype);
 		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
 			ret = -ESTORE;
 			goto cleanup;
