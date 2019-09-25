@@ -176,6 +176,7 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 {
 	static char sbuffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
 	char * restrict buffer;
+	bool zerofirst;
 	char mtype;
 	int ret;
 	ssize_t sent;
@@ -203,9 +204,14 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 		}
 #endif
 
+		ret = 0;
+		zerofirst = false;
+
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_GAUGE:
 				mtype = 'g';
+				if (log_data->values[i] < 0)
+					zerofirst = true;
 				break;
 			case LOG_METRIC_COUNTER:
 				mtype = 'c';
@@ -214,7 +220,16 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 				ret = -EINVALID;
 				goto cleanup;
 		}
-		ret = snprintf(buffer, LOG_STATSD_UDP_BUFSIZE, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i], mtype);
+
+		// StatsD has a schizophrenic idea of what a gauge is (negative values are subtracted from previous data and not registered as is): work around its dementia
+		if (zerofirst) {
+			ret = snprintf(buffer, LOG_STATSD_UDP_BUFSIZE, "%s%s.%s:0|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], mtype);
+			if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
+				ret = -ESTORE;
+				goto cleanup;
+			}
+		}
+		ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - ret, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i], mtype);
 		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
 			ret = -ESTORE;
 			goto cleanup;
