@@ -75,6 +75,7 @@ struct s_log_source {
 struct s_log_bendcbs {
 	/** backend unique identifier */
 	enum e_log_bend bkid;
+	char separator;				///< single character separator used in concatenation of basename, identifier, etc
 	/** optional backend log online callback */
 	int (*log_online)(void);
 	/** optional backend log offline callback */

@@ -89,6 +89,7 @@ void log_file_hook(struct s_log_bendcbs * restrict const callbacks)
 	assert(callbacks);
 
 	callbacks->bkid = LOG_BKEND_FILE;
+	callbacks->separator = '_';
 	// no online/offline callbacks
 	callbacks->log_create = log_file_create;
 	callbacks->log_update = log_file_update;

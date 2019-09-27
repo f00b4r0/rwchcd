@@ -35,7 +35,6 @@
 #define LOG_PREFIX	"log"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names
 #define LOG_ASYNC_DUMP_BASENAME	"async"		///< basename for asynchronous logging (see _log_dump())
-#define LOG_SEPC	'_'			///< separator character used to concatenate prefix/basename/identifier
 
 /** Log sources linked list */
 struct s_log_list {
@@ -116,6 +115,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 {
 	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
 	const bool logging = runtime_get()->config->logging;
+	const char sep = async ? Log.set.async_bkend.separator : Log.set.sync_bkend.separator;
 	log_version_t lversion = 0;
 	bool fcreate = false;
 	char * p;
@@ -141,9 +141,9 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 
 	// log_register() ensures that we cannot overflow
 	p = ident + strlen(LOG_PREFIX);
-	*p = LOG_SEPC; p++;
+	*p = sep; p++;
 	p = stpcpy(p, basename);
-	*p = LOG_SEPC; p++;
+	*p = sep; p++;
 	p = stpcpy(p, identifier);
 	p = strcpy(p, LOG_FMT_SUFFIX);
 
