@@ -117,7 +117,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
 	const bool logging = runtime_get()->config->logging;
 	log_version_t lversion = 0;
-	bool fcreate = false, timedlog;
+	bool fcreate = false;
 	char * p;
 	int ret;
 	struct {
@@ -147,8 +147,6 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	p = stpcpy(p, identifier);
 	p = strcpy(p, LOG_FMT_SUFFIX);
 
-	timedlog = (log_data->interval > 0) ? true : false;
-
 	ret = storage_fetch(ident, &lversion, &logfmt, sizeof(logfmt));
 	if (ALL_OK != ret)
 		fcreate = true;
@@ -161,8 +159,8 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 		if (logfmt.nkeys != log_data->nkeys)
 			fcreate = true;
 
-		// compare with current backend - XXX HACK
-		if (logfmt.bend != timedlog ? Log.set.sync_bkend.bkid : Log.set.async_bkend.bkid)
+		// compare with current backend
+		if (logfmt.bend != async ? Log.set.async_bkend.bkid : Log.set.sync_bkend.bkid)
 			fcreate = true;
 	}
 
@@ -171,10 +169,10 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 
 	if (fcreate) {
 		// create backend store
-		if (timedlog)
-			ret = Log.set.sync_bkend.log_create(async, ident, log_data);
-		else
+		if (async)
 			ret = Log.set.async_bkend.log_create(async, ident, log_data);
+		else
+			ret = Log.set.sync_bkend.log_create(async, ident, log_data);
 
 		if (ALL_OK != ret)
 			return (ret);
@@ -183,7 +181,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 		logfmt.nkeys = log_data->nkeys;
 		logfmt.nvalues = log_data->nvalues;
 		logfmt.interval = log_data->interval;	// XXX do we need this?
-		logfmt.bend = timedlog ? Log.set.sync_bkend.bkid : Log.set.async_bkend.bkid;	// XXX HACK
+		logfmt.bend = async ? Log.set.async_bkend.bkid : Log.set.sync_bkend.bkid;	// XXX HACK
 
 		// XXX reappend LOG_FMT_SUFFIX
 		strcpy(p, LOG_FMT_SUFFIX);
@@ -195,10 +193,10 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	}
 
 	// log data
-	if (timedlog)
-		ret = Log.set.sync_bkend.log_update(async, ident, log_data);
-	else
+	if (async)
 		ret = Log.set.async_bkend.log_update(async, ident, log_data);
+	else
+		ret = Log.set.sync_bkend.log_update(async, ident, log_data);
 
 	return (ret);
 }
