@@ -75,6 +75,7 @@ struct s_log_source {
 struct s_log_bendcbs {
 	/** backend unique identifier */
 	enum e_log_bend bkid;
+	bool unversioned;				///< if true, the code will not try to track changes in log format version (speed gain)
 	char separator;				///< single character separator used in concatenation of basename, identifier, etc
 	/** optional backend log online callback */
 	int (*log_online)(void);

@@ -116,6 +116,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
 	const bool logging = runtime_get()->config->logging;
 	const char sep = async ? Log.set.async_bkend.separator : Log.set.sync_bkend.separator;
+	const bool unversioned = async ? Log.set.async_bkend.unversioned : Log.set.sync_bkend.unversioned;
 	log_version_t lversion = 0;
 	bool fcreate = false;
 	char * p;
@@ -145,6 +146,12 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	p = stpcpy(p, basename);
 	*p = sep; p++;
 	p = stpcpy(p, identifier);
+
+	// skip version management for unversioned backends
+	if (unversioned)
+		goto skip;
+
+	// perform version management
 	p = strcpy(p, LOG_FMT_SUFFIX);
 
 	ret = storage_fetch(ident, &lversion, &logfmt, sizeof(logfmt));
@@ -192,6 +199,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 		*p = '\0';
 	}
 
+skip:
 	// log data
 	if (async)
 		ret = Log.set.async_bkend.log_update(async, ident, log_data);
