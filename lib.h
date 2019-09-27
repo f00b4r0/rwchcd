@@ -61,6 +61,12 @@ __attribute__((const, always_inline)) static inline float temp_to_celsius(const 
 }
 
 /**
+ * Convert temperature from internal format to integer Kelvin (rounded)
+ * @param temp temp value as temp_t
+ */
+#define temp_to_ikelvin(temp)		((temp + KPRECISION/2)/KPRECISION)
+
+/**
  * Convert a temperature delta (in Kelvin) to internal type.
  * @note The preprocessor will do the right thing whether delta is a float or a native integer type.
  * @param delta the delta value to be converted
