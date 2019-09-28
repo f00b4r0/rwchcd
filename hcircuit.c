@@ -45,7 +45,7 @@
 
 #define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)	///< 1h tau expressed in internal time representation
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
-#define HCIRCUIT_STORAGE_BMODEL_PREFIX	"hcircuit_"
+#define HCIRCUIT_STORAGE_PREFIX	"hcircuit"
 
 static const storage_version_t Hcircuit_sversion = 1;
 
@@ -106,7 +106,7 @@ static const struct s_log_source * hcircuit_lreg(const struct s_hcircuit * const
 
 	Hcircuit_lreg = (struct s_log_source){
 		.log_sched = LOG_SCHED_5mn,
-		.basename = "hcircuit",
+		.basename = HCIRCUIT_STORAGE_PREFIX,
 		.identifier = circuit->name,
 		.version = version,
 		.logdata_cb = hcircuit_logdata_cb,
@@ -158,7 +158,7 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
  */
 static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
 {
-	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_BMODEL_PREFIX;
+	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_PREFIX;
 
 	assert(circuit);
 
@@ -169,6 +169,7 @@ static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
 	if (!circuit->name)
 		return (-EINVALID);
 
+	strcat(buf, "_");
 	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	return (storage_dump(buf, &Hcircuit_sversion, &circuit->run, sizeof(circuit->run)));
@@ -181,7 +182,7 @@ static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
  */
 static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
 {
-	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_BMODEL_PREFIX;
+	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_PREFIX;
 	struct s_hcircuit temp_hcircuit;
 	storage_version_t sversion;
 	int ret;
@@ -195,6 +196,7 @@ static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
 	if (!circuit->name)
 		return (-EINVALID);
 
+	strcat(buf, "_");
 	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
 
 	// try to restore key elements
