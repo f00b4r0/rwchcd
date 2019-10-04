@@ -45,6 +45,14 @@
  #define _(String)      String
 #endif  /* HAVE_GETTEXT */
 
+#ifdef C_HAS_BUILTIN_EXPECT
+ #define likely(x)	__builtin_expect(!!(x), 1)
+ #define unlikely(x)	__builtin_expect(!!(x), 0)
+#else
+ #define likely(x)	(x)
+ #define unlikely(x)	(x)
+#endif
+
 #ifdef DEBUG	// debug output will be sent via stdout to nonblocking FIFO, normal logging information will go to stderr
  #define dbgmsg(format, ...)	printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
  #define pr_log(format, ...)	fprintf(stderr, format "\n", ## __VA_ARGS__)

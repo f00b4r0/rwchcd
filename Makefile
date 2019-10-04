@@ -13,7 +13,7 @@ LDLIBS := -lm
 
 ifeq ($(HOST_OS),Linux)
 CONFIG := -DHAS_DBUS -DHAS_HWP1 -DHAS_RRD -DDEBUG
-CFLAGS += -D_GNU_SOURCE -pthread
+CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d
 else
