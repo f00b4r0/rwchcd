@@ -113,8 +113,6 @@ static volatile bool Sem_master_hwinit_done = false;
 
 static const char Version[] = RWCHCD_REV;	///< Build version string
 
-static pthread_barrier_t barr_main;	///< barrier to synchronise main() with the master thread
-
 /**
  * Daemon signal handler.
  * - SIGINT, SIGTERM: graceful shutdown.
@@ -143,6 +141,7 @@ static void sig_handler(int signum)
 /*
  init() initialize blank data structures etc
  online() performs configuration checks and brings subsystem online
+ @note runs as root
  */
 static int init_process(void)
 {
@@ -188,11 +187,7 @@ static int init_process(void)
 		return (ret);
 	}
 
-	// signal hw has been inited
-	pthread_barrier_wait(&barr_main);
-
-	// wait for priviledges to be dropped
-	pthread_barrier_wait(&barr_main);
+	// priviledges could be dropped here
 
 	ret = storage_config();
 	if (ret) {
@@ -251,12 +246,6 @@ static void * thread_master(void *arg)
 	struct s_runtime * restrict const runtime = runtime_get();
 	int ret;
 
-	ret = init_process();
-	if (ret != ALL_OK) {
-		pr_err(_("Process initialization failed (%d) - ABORTING!"), ret);
-		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
-	}
-
 	if (SYS_NONE == runtime->systemmode) {	// runtime was not restored
 						// set sysmode/runmode from startup config
 		ret = runtime_set_systemmode(runtime->config->startup_sysmode);
@@ -314,10 +303,8 @@ static void * thread_master(void *arg)
 		 * with significant impact on temp_expw_mavg() and hardware routines. */
 		timekeep_sleep(1);
 	}
-	
-	// cleanup
+
 	dbgmsg("thread exiting!");
-	exit_process();
 	pthread_exit(NULL);		// exit
 }
 
@@ -378,18 +365,19 @@ int main(void)
 	ret = timekeep_init();
 	if (ret)
 		errx(ret, "failed to setup timekeeping!");
-	
+
+	ret = init_process();
+	if (ret != ALL_OK) {
+		pr_err(_("Process initialization failed (%d) - ABORTING!"), ret);
+		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
+	}
+
 	// setup threads
 	pthread_attr_init(&attr);
 	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
 	pthread_attr_setschedparam(&attr, &sparam);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-	// setup main thread barrier
-	ret = pthread_barrier_init(&barr_main, NULL, 2);	// 2 threads to sync: master and current
-	if (ret)
-		errx(ret, "failed to setup main barrier!");
 
 	Sem_master_thread = true;
 
@@ -415,9 +403,6 @@ int main(void)
 	pthread_setname_np(scheduler_thr, "scheduler");
 	pthread_setname_np(watchdog_thr, "watchdog");
 #endif
-
-	/* wait for hardware init to sync before dropping privilegdges */
-	pthread_barrier_wait(&barr_main);
 
 	// XXX Dropping priviledges here because we need root to set
 	// SCHED_FIFO during pthread_create(), and for setname().
@@ -450,9 +435,6 @@ int main(void)
 	}
 #endif
 
-	/* signal priviledges have been dropped and fifo is ready */
-	pthread_barrier_wait(&barr_main);
-
 	// signal handler for cleanup.
 	// No error checking because it's no big deal if it fails
 	saction.sa_handler = sig_handler;
@@ -469,7 +451,6 @@ int main(void)
 #endif
 
 	Sem_master_thread = false;	// signal end of work
-	pthread_barrier_destroy(&barr_main);
 	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
 	pthread_cancel(watchdog_thr);
@@ -480,6 +461,9 @@ int main(void)
 	timer_clean_callbacks();
 	close(pipefd[0]);
 	close(pipefd[1]);
+
+	// cleanup
+	exit_process();
 	timekeep_exit();
 
 #ifdef DEBUG
