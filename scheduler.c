@@ -356,7 +356,7 @@ static int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_
 		} while (sched->head != schent_after);
 
 		// if we're going to replace the head, we must find the last element
-		if (!schent_before && (sched->head == schent_after))
+		if (!schent_before)
 			for (schent_last = schent_after; sched->head != schent_last->next; schent_last = schent_last->next);
 	}
 	else
