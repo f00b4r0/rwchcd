@@ -570,6 +570,8 @@ static int filecfg_heatsource_dump(const struct s_heatsource * restrict const he
 	filecfg_iprintf("heatsource \"%s\" {\n", heat->name);
 	filecfg_ilevel_inc();
 
+	if (FCD_Exhaustive || heat->set.schedid)
+		filecfg_iprintf("schedid \"%s\";\n", scheduler_get_schedname(heat->set.schedid));
 	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(heat->set.runmode));	// mandatory
 	filecfg_iprintf("type"); filecfg_heatsource_type_dump(heat);			// mandatory
 	if (FCD_Exhaustive || heat->set.prio)
@@ -680,6 +682,8 @@ static int filecfg_dhwt_dump(const struct s_dhw_tank * restrict const dhwt)
 		filecfg_iprintf("legionella_recycle %s;\n", filecfg_bool_str(dhwt->set.legionella_recycle));
 	if (FCD_Exhaustive || dhwt->set.prio)
 		filecfg_iprintf("prio %hd;\n", dhwt->set.prio);
+	if (FCD_Exhaustive || dhwt->set.schedid)
+		filecfg_iprintf("schedid \"%s\";\n", scheduler_get_schedname(dhwt->set.schedid));
 	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(dhwt->set.runmode));		// mandatory
 	filecfg_iprintf("dhwt_cprio \"%s\";\n", cpriostr);
 	filecfg_iprintf("force_mode \"%s\";\n", fmode);
@@ -823,6 +827,8 @@ static int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circui
 		filecfg_iprintf("fast_cooldown %s;\n", filecfg_bool_str(circuit->set.fast_cooldown));
 	if (FCD_Exhaustive || circuit->set.logging)
 		filecfg_iprintf("logging %s;\n", filecfg_bool_str(circuit->set.logging));
+	if (FCD_Exhaustive || circuit->set.schedid)
+		filecfg_iprintf("schedid \"%s\";\n", scheduler_get_schedname(circuit->set.schedid));
 	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(circuit->set.runmode));		// mandatory
 	if (FCD_Exhaustive || circuit->set.ambient_factor)
 		filecfg_iprintf("ambient_factor %" PRIdFAST16 ";\n", circuit->set.ambient_factor);
