@@ -120,9 +120,9 @@ static void scheduler_update_schedule(struct s_schedule * const sched)
 	struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	const struct s_schedule_e * schent, * schent_start;
 
-	schent_start = sched->current ? sched->current : sched->head;
+	schent_start = likely(sched->current) ? sched->current : sched->head;
 
-	if (!schent_start) {
+	if (unlikely(!schent_start)) {
 		dbgmsg("empty schedule");
 		return;
 	}
@@ -137,15 +137,15 @@ restart:
 		sched->current = schent_start;
 
 	// loop over other entries, stop if/when back at first entry
-	for (schent = schent_start->next; schent && (schent_start != schent); schent = schent->next) {
-		if (scheduler_ent_past_today(schent, ltime))
+	for (schent = schent_start->next; schent_start != schent; schent = schent->next) {
+		if (unlikely(scheduler_ent_past_today(schent, ltime)))
 			sched->current = schent;
-		else if (sched->current)
+		else if (likely(sched->current))
 			break;	// if we already have a valid schedule entry ('synced'), first future entry stops search
 	}
 
 	// if we aren't already synced, try harder
-	if (!sched->current) {
+	if (unlikely(!sched->current)) {
 		/* we never synced and today's list didn't contain a single past schedule,
 		 we must roll back through the week until we find one.
 		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
@@ -180,7 +180,7 @@ static struct s_schedule * scheduler_schedule_fbi(const schedid_t schedule_id)
 {
 	struct s_schedule * sched;
 
-	if ((schedule_id <= 0) || (schedule_id > Schedules.lastid))
+	if (unlikely((schedule_id <= 0) || (schedule_id > Schedules.lastid)))
 		return (NULL);
 
 	// find correct schedule
@@ -204,7 +204,7 @@ const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t sche
 	sched = scheduler_schedule_fbi(schedule_id);
 
 	// return current schedule entry for schedule, if available
-	if (sched && sched->current)
+	if (likely(sched && sched->current))
 		return (&sched->current->params);
 	else
 		return (NULL);
