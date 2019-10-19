@@ -210,6 +210,24 @@ const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t sche
 		return (NULL);
 }
 
+
+/**
+ * Return the name of a given schedule id.
+ * @param schedid the target schedule id
+ * @return name if found, NULL otherwise.
+ */
+const char * scheduler_get_schedname(const schedid_t schedule_id)
+{
+	const struct s_schedule * sched;
+
+	sched = scheduler_schedule_fbi(schedule_id);
+
+	if (sched)
+		return (sched->name);
+	else
+		return (NULL);
+}
+
 /**
  * Find the schedid of a named schedule.
  * @param sched_name the schedule name to match

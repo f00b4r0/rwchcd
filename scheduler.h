@@ -26,6 +26,7 @@ struct s_schedule_eparams {
 
 void * scheduler_thread(void * arg);
 const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t schedule_id);
+const char * scheduler_get_schedname(const schedid_t schedule_id);
 int scheduler_schedid_by_name(const char * const restrict sched_name);
 
 #endif /* rwchcd_scheduler_h */
