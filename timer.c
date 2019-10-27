@@ -2,7 +2,7 @@
 //  timer.c
 //  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016,2019 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -14,6 +14,7 @@
 #include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// calloc
 #include <string.h>	// strdup
+#include <stdatomic.h>
 
 #include "rwchcd.h"
 #include "timer.h"
@@ -30,6 +31,7 @@ struct s_timer_cb {
 
 static struct s_timer_cb * Timer_cb_head = NULL;	///< list of timer callbacks
 static volatile unsigned int Timer_period_min = 0;	///< time between runs in seconds
+static atomic_flag Timer_cb_flag = ATOMIC_FLAG_INIT;	///< list modification protection flag
 
 /**
  * Simple timer thread.
@@ -50,20 +52,23 @@ void * timer_thread(void * arg)
 	// start logging
 	while (1) {
 		now = timekeep_now();
-		
+
+		while (unlikely(atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire)))
+			timekeep_sleep(1);	// yield
+
 		for (lcb = Timer_cb_head; lcb != NULL; lcb = lcb->next) {
 			if ((now - lcb->last_call) < timekeep_sec_to_tk(lcb->period))
 				break;	// ordered list, first mismatch means we don't need to check further
 			
-			if (lcb->cb) {	// avoid segfault in case for some reason the pointer isn't (yet) valid (due to e.g. memory reordering)
-				ret = lcb->cb();
-				if (ALL_OK != ret)
-					pr_log("Timer callback failed: \"%s\" (%d)", lcb->name, ret);
-	
-				lcb->last_call = now;	// only updated here
-			}
+			ret = lcb->cb();
+			if (unlikely(ALL_OK != ret))
+				pr_log("Timer callback failed: \"%s\" (%d)", lcb->name, ret);
+
+			lcb->last_call = now;	// only updated here
 		}
-		
+
+		atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
+
 		timekeep_sleep(Timer_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
 	}
 }
@@ -94,7 +99,7 @@ static inline unsigned int ugcd(unsigned int a, unsigned int b)
  * @param cb the callback function to call
  * @param name a user-defined name for the timer
  * @return exec status
- * @todo fence for lockless section
+ * @note implements spinlocks
  */
 int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 {
@@ -117,6 +122,10 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 	}
 
 	lcb_before = NULL;
+
+	// critical section begins - spin lock
+	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire));
+
 	lcb_after = Timer_cb_head;
 	
 	// find insertion place
@@ -143,6 +152,9 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 	else
 		lcb_before->next = lcb;
 	/* End fence section */
+
+	// critical section ends - unlock
+	atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
 	
 	if (!Timer_period_min)
 		Timer_period_min = period;
@@ -156,14 +168,19 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 
 /**
  * Cleanup callback list.
- * @warning @b LOCKLESS This function must only be called when neither timer_thread()
- * nor timer_add_cb() are running or can run.
+ * @note implements spinlocks
  */
 void timer_clean_callbacks(void)
 {
 	struct s_timer_cb * lcb, * lcbn;
 
+	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire));
+
 	lcb = Timer_cb_head;
+	Timer_cb_head = NULL;
+
+	atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
+
 	while (lcb) {
 		lcbn = lcb->next;
 		if (lcb->name)
