@@ -728,19 +728,19 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	assert(config);
 
-	if (!circuit)
+	if (unlikely(!circuit))
 		return (-EINVALID);
 
-	if (!circuit->run.online)	// implies set.configured == true
+	if (unlikely(!circuit->run.online))	// implies set.configured == true
 		return (-EOFFLINE);
 
 	ret = hcircuit_logic(circuit);
-	if (ALL_OK != ret)
+	if (unlikely(ALL_OK != ret))
 		return (ret);
 
 	// safety checks
 	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);
-	if (ALL_OK != ret) {
+	if (unlikely(ALL_OK != ret)) {
 		hcircuit_failsafe(circuit);
 		return (ret);
 	}
@@ -749,7 +749,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	circuit->run.actual_wtemp = curr_temp;
 
 	// force circuit ON during hs_overtemp condition
-	if (circuit->pdata->hs_overtemp)
+	if (unlikely(circuit->pdata->hs_overtemp))
 		circuit->run.runmode = RM_COMFORT;
 
 	// handle special runmode cases
@@ -784,7 +784,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	circuit->run.active = true;
 
 	// if building model isn't online, failsafe
-	if (!circuit->set.p.bmodel->run.online) {
+	if (unlikely(!circuit->set.p.bmodel->run.online)) {
 		hcircuit_failsafe(circuit);
 		return (-ESAFETY);
 	}
@@ -792,7 +792,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// circuit is active, ensure pump is running
 	if (circuit->set.p.pump_feed) {
 		ret = pump_set_state(circuit->set.p.pump_feed, ON, 0);
-		if (ALL_OK != ret) {
+		if (unlikely(ALL_OK != ret)) {
 			dbgerr("\"%s\": failed to set pump_feed \"%s\" ON (%d)", circuit->name, circuit->set.p.pump_feed->name, ret);
 			hcircuit_failsafe(circuit);
 			return (ret);	// critical error: stop there
@@ -892,7 +892,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 		// adjust valve position if necessary
 		ret = valve_mix_tcontrol(circuit->set.p.valve_mix, water_temp);
-		if (ret && (ret != -EDEADZONE))	// return error code if it's not EDEADZONE
+		if (unlikely(ret && (ret != -EDEADZONE)))	// return error code if it's not EDEADZONE
 			return (ret);
 		// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))
 	}

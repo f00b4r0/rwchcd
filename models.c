@@ -317,7 +317,7 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 	int ret;
 
 	ret = hardware_sensor_clone_temp(bmodel->set.tid_outdoor, &toutdoor);
-	if (ALL_OK == ret) {
+	if (likely(ALL_OK == ret)) {
 		hardware_sensor_clone_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
 		dt = bmodel->run.t_out_ltime - last;
 		bmodel->run.t_out = temp_expw_mavg(bmodel->run.t_out, toutdoor, OUTDOOR_SMOOTH_TIME, dt);
@@ -352,7 +352,7 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
-	if (!bmodel->run.online)	// but not necessarily online
+	if (unlikely(!bmodel->run.online))	// but not necessarily online
 		return (-EOFFLINE);
 
 	bmodel_outdoor_temp(bmodel);
@@ -405,10 +405,10 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
 	assert(config);
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
-	if (!bmodel->run.online)	// but not necessarily online
+	if (unlikely(!bmodel->run.online))	// but not necessarily online
 		return (-EOFFLINE);
 
-	if (!config->limit_tsummer) {
+	if (unlikely(!config->limit_tsummer)) {
 		bmodel->run.summer = false;
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
@@ -442,10 +442,10 @@ static int bmodel_frost(struct s_bmodel * restrict const bmodel)
 
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
-	if (!bmodel->run.online)	// but not necessarily online
+	if (unlikely(!bmodel->run.online))	// but not necessarily online
 		return (-EOFFLINE);
 
-	if (!config->limit_tfrost) {
+	if (unlikely(!config->limit_tfrost)) {
 		bmodel->run.frost = false;
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
@@ -640,11 +640,11 @@ int models_run(void)
 {
 	struct s_bmodel_l * restrict bmodelelmt;
 
-	if (!Models.online)
+	if (unlikely(!Models.online))
 		return (-EOFFLINE);
 
 	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
-		if (!bmodelelmt->bmodel->set.configured)
+		if (unlikely(!bmodelelmt->bmodel->set.configured))
 			continue;
 		bmodel_outdoor(bmodelelmt->bmodel);
 		bmodel_summer(bmodelelmt->bmodel);

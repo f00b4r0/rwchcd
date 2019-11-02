@@ -247,7 +247,7 @@ int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, 
 {
 	const timekeep_t now = timekeep_now();
 
-	if (!relay->set.configured)
+	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
 
 	// update state state request if delay permits
@@ -281,7 +281,7 @@ int hw_lib_relay_get_state(struct s_hw_relay * const relay)
 {
 	const timekeep_t now = timekeep_now();
 
-	if (!relay->set.configured)
+	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
 
 	// update state time counter
@@ -304,7 +304,7 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 {
 	int ret = HW_LIB_RCHNONE;
 
-	if (!relay->set.configured)
+	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
 
 	// update state counters at state change

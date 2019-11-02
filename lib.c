@@ -44,7 +44,7 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 	temp_t tdiff = (filtered - new_sample);
 
 #ifdef DEBUG
-	if (dt < 1)
+	if (unlikely(dt < 1))
 		dbgmsg("WARNING: rounding error. tau: %lld, dt: %lld", tau, dt);
 #endif
 
@@ -74,7 +74,7 @@ __attribute__((const)) temp_t temp_expw_deriv(struct s_temp_deriv * const deriv,
 
 	deriv->inuse = true;
 
-	if (!deriv->last_time || !new_time)	// only compute derivative over a finite domain
+	if (unlikely(!deriv->last_time || !new_time))	// only compute derivative over a finite domain
 		deriv->derivative = 0;
 	else {
 		tempdiff = new_temp - deriv->last_temp;
@@ -115,7 +115,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 
 	intgrl->inuse = true;
 
-	if (!intgrl->last_time || !new_time)	// only compute integral over a finite domain
+	if (unlikely(!intgrl->last_time || !new_time))	// only compute integral over a finite domain
 		intgrl->integral = 0;
 	else
 		intgrl->integral += (((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * timekeep_tk_to_sec(new_time - intgrl->last_time);

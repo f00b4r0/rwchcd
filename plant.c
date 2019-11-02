@@ -1113,10 +1113,10 @@ int plant_run(struct s_plant * restrict const plant)
 
 	assert(config);
 
-	if (!plant)
+	if (unlikely(!plant))
 		return (-EINVALID);
 	
-	if (!plant->run.online)
+	if (unlikely(!plant->run.online))
 		return (-EOFFLINE);
 
 	// run the consummers first so they can set their requested heat input

@@ -288,7 +288,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 	// safe operation check
 	ret = boiler_runchecklist(boiler);
-	if (ALL_OK != ret) {
+	if (unlikely(ALL_OK != ret)) {
 		boiler_failsafe(boiler);
 		return (ret);
 	}
@@ -315,7 +315,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	}
 
 	// bypass target_temp if antifreeze is active
-	if (boiler->run.antifreeze)
+	if (unlikely(boiler->run.antifreeze))
 		target_temp = (target_temp < boiler->set.limit_tmin) ? boiler->set.limit_tmin : target_temp;	// max of the two
 
 	// enforce limits
@@ -398,7 +398,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// check we can run
 	ret = boiler_runchecklist(boiler);
-	if (ALL_OK != ret) {
+	if (unlikely(ALL_OK != ret)) {
 		boiler_failsafe(boiler);
 		return (ret);
 	}
@@ -406,7 +406,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler_temp);
 
 	// ensure boiler is within safety limits
-	if ((ALL_OK != ret) || (boiler_temp > boiler->set.limit_thardmax)) {
+	if (unlikely((ALL_OK != ret) || (boiler_temp > boiler->set.limit_thardmax))) {
 		boiler_failsafe(boiler);
 		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
 		heat->run.overtemp = true;
@@ -416,7 +416,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// we're good to go
 
 	// overtemp turn off at 2K hardcoded histeresis
-	if (heat->run.overtemp && (boiler_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
+	if (unlikely(heat->run.overtemp) && (boiler_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
 		heat->run.overtemp = false;
 
 	/* todo handle return temp limit (limit low only for boiler):
@@ -427,7 +427,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (boiler->set.limit_tmin) {
 		// calculate boiler integral
 		ret = hardware_sensor_clone_time(boiler->set.tid_boiler, &ttime);
-		if (ALL_OK == ret) {
+		if (likely(ALL_OK == ret)) {
 			// jacket integral between 0 and -100Ks - XXX hardcoded
 			temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime, deltaK_to_temp(-100), 0);
 			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
@@ -446,14 +446,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		if (boiler->set.p.valve_ret) {
 			// set valve for target limit. If return is higher valve will be full closed.
 			ret = valve_mix_tcontrol(boiler->set.p.valve_ret, boiler->set.limit_treturnmin);
-			if ((ALL_OK != ret) && (-EDEADZONE != ret))	// something bad happened. XXX further action?
+			if (unlikely((ALL_OK != ret) && (-EDEADZONE != ret)))	// something bad happened. XXX further action?
 				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->set.p.valve_ret->name, ret);
 		}
 		else {
 			// calculate return integral
 			(void)hardware_sensor_clone_time(boiler->set.tid_boiler_return, &ttime);
 			ret = hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
-			if (ALL_OK == ret) {
+			if (likely(ALL_OK == ret)) {
 				// jacket integral between 0 and -1000Ks - XXX hardcoded
 				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, deltaK_to_temp(-1000), 0);
 				// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - XXX hardcoded
@@ -475,7 +475,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// turn pump on if any
 	if (boiler->set.p.pump_load) {
 		ret = pump_set_state(boiler->set.p.pump_load, ON, 0);
-		if (ALL_OK != ret) {
+		if (unlikely(ALL_OK != ret)) {
 			dbgerr("\"%s\": failed to set pump_load \"%s\" ON (%d)", heat->name, boiler->set.p.pump_load->name, ret);
 			boiler_failsafe(boiler);
 			return (ret);	// critical error: stop there

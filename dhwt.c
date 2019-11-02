@@ -283,7 +283,7 @@ static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 		dhwt->run.runmode = dhwt->set.runmode;
 
 	// force DHWT ON during hs_overtemp condition
-	if (dhwt->pdata->hs_overtemp)
+	if (unlikely(dhwt->pdata->hs_overtemp))
 		dhwt->run.runmode = RM_COMFORT;
 
 	// depending on dhwt run mode, assess dhwt target temp
@@ -308,7 +308,7 @@ static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 	}
 
 	// if anti-legionella charge is requested, enforce temp and bypass logic
-	if (dhwt->run.legionella_on) {
+	if (unlikely(dhwt->run.legionella_on)) {
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, runtime->config->def_dhwt.t_legionella);
 		dhwt->run.force_on = true;
 		dhwt->run.recycle_on = dhwt->set.legionella_recycle;
@@ -316,7 +316,7 @@ static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 	}
 
 	// transition detection
-	if (prev_runmode != dhwt->run.runmode) {
+	if (unlikely(prev_runmode != dhwt->run.runmode)) {
 		// handle programmed forced charges at COMFORT switch on
 		if (RM_COMFORT == dhwt->run.runmode) {
 			if (DHWTF_ALWAYS == dhwt->set.force_mode)
@@ -337,7 +337,7 @@ static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 		target_temp = ltmax;
 
 	// force maximum temp during hs_overtemp condition
-	if (dhwt->pdata->hs_overtemp) {
+	if (unlikely(dhwt->pdata->hs_overtemp)) {
 		target_temp = ltmax;
 		dhwt->run.force_on = true;
 	}
@@ -405,14 +405,14 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 
 	assert(config);
 
-	if (!dhwt)
+	if (unlikely(!dhwt))
 		return (-EINVALID);
 
-	if (!dhwt->run.online)	// implies set.configured == true
+	if (unlikely(!dhwt->run.online))	// implies set.configured == true
 		return (-EOFFLINE);
 
 	ret = dhwt_logic(dhwt);
-	if (ALL_OK != ret)
+	if (unlikely(ALL_OK != ret))
 		return (ret);
 
 	switch (dhwt->run.runmode) {
@@ -461,7 +461,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		valid_ttop = true;
 
 	// no sensor available, give up
-	if (!valid_tbottom && !valid_ttop) {
+	if (unlikely(!valid_tbottom && !valid_ttop)) {
 		dhwt_failsafe(dhwt);
 		return (ret);	// return last error
 	}
@@ -616,7 +616,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 			ret = pump_set_state(dhwt->set.p.pump_feed, OFF, test);
 		}
 
-		if (ALL_OK != ret)
+		if (unlikely(ALL_OK != ret))
 			dbgerr("\"%s\": failed to set pump_feed \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_feed->name, ret);
 	}
 

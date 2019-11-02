@@ -184,7 +184,7 @@ int alarms_run(void)
 	const char * msg;
 	int count;
 
-	if (!Alarms.online)
+	if (unlikely(!Alarms.online))
 		return (-EOFFLINE);
 
 	if (!Alarms.count)	// no active alarm, can stop here

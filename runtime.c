@@ -279,7 +279,7 @@ int runtime_online(void)
  */
 int runtime_run(void)
 {
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+	if (unlikely(!Runtime.config || !Runtime.config->configured || !Runtime.plant))
 		return (-ENOTCONFIGURED);
 
 	return (plant_run(Runtime.plant));

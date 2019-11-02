@@ -161,17 +161,17 @@ int heatsource_run(struct s_heatsource * const heat)
 {
 	int ret;
 
-	if (!heat)
+	if (unlikely(!heat))
 		return (-EINVALID);
 
-	if (!heat->run.online)	// implies set.configured == true
+	if (unlikely(!heat->run.online))	// implies set.configured == true
 		return (-EOFFLINE);
 
 	ret = heatsource_logic(heat);
-	if (ALL_OK != ret)
+	if (unlikely(ALL_OK != ret))
 		return (ret);
 
-	if (heat->cb.run)
+	if (likely(heat->cb.run))
 		return (heat->cb.run(heat));
 	else
 		return (-ENOTIMPLEMENTED);

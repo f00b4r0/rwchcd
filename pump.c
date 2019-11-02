@@ -79,10 +79,10 @@ int pump_online(struct s_pump * restrict const pump)
  */
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state)
 {
-	if (!pump)
+	if (unlikely(!pump))
 		return (-EINVALID);
 
-	if (!pump->run.online)
+	if (unlikely(!pump->run.online))
 		return (-EOFFLINE);
 
 	pump->run.req_on = req_on;
@@ -98,10 +98,10 @@ int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_
  */
 int pump_get_state(const struct s_pump * restrict const pump)
 {
-	if (!pump)
+	if (unlikely(!pump))
 		return (-EINVALID);
 
-	if (!pump->run.online)
+	if (unlikely(!pump->run.online))
 		return (-EOFFLINE);
 
 	// NOTE we could return remaining cooldown time if necessary
@@ -116,7 +116,7 @@ int pump_get_state(const struct s_pump * restrict const pump)
  */
 int pump_shutdown(struct s_pump * restrict const pump)
 {
-	if (!pump)
+	if (unlikely(!pump))
 		return (-EINVALID);
 
 	if (!pump->run.active)
@@ -159,10 +159,10 @@ int pump_run(struct s_pump * restrict const pump)
 	timekeep_t cooldown = 0;	// by default, no wait
 	int ret;
 
-	if (!pump)
+	if (unlikely(!pump))
 		return (-EINVALID);
 
-	if (!pump->run.online)	// implies set.configured == true
+	if (unlikely(!pump->run.online))	// implies set.configured == true
 		return (-EOFFLINE);
 
 	pump->run.active = true;	// XXX never set false because we don't really need to for now
@@ -174,7 +174,7 @@ int pump_run(struct s_pump * restrict const pump)
 
 	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
 	ret = hardware_relay_set_state(pump->set.rid_pump, pump->run.req_on, cooldown);
-	if (ret < 0)
+	if (unlikely(ret < 0))
 		return (ret);
 
 	pump->run.actual_cooldown_time = ret;
