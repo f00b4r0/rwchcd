@@ -65,7 +65,7 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * @param spread the number of temperature samples to average over
  * @return the derivative value in temp_t units / seconds (millikelvins per second)
  */
-__attribute__((const)) temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const uint_fast16_t spread)
+temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const uint_fast16_t spread)
 {
 	temp_t tempdiff;
 	timekeep_t timediff;
@@ -77,6 +77,9 @@ __attribute__((const)) temp_t temp_expw_deriv(struct s_temp_deriv * const deriv,
 	if (unlikely(!deriv->last_time || !new_time))	// only compute derivative over a finite domain
 		deriv->derivative = 0;
 	else {
+		if (new_time == deriv->last_time)
+			return (deriv->derivative);	// avoid divide by 0
+
 		tempdiff = new_temp - deriv->last_temp;
 		timediff = new_time - deriv->last_time;
 		deriv->derivative = temp_expw_mavg(deriv->derivative, tempdiff / timekeep_tk_to_sec(timediff), spread, 1);	// average derivative over spread samples
