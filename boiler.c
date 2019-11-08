@@ -11,6 +11,7 @@
  * Boiler operation implementation.
  *
  * The boiler implementation supports:
+ * - Single-stage constant output burner
  * - Automatic frost protection in all operation modes
  * - Burner minimum continuous on/off time to reduce wear
  * - Adaptative trip/untrip hysteresis with low and high temperature limits
@@ -19,6 +20,7 @@
  * - Boiler minimum and maximum temperature (with signalling to consumers)
  * - Return water minimum temperature (with or without return mixing valve)
  * - Consummer delay after burner run (to prevent overheating)
+ * - Burner turn-on anticipation
  */
 
 #include <stdlib.h>	// calloc/free
@@ -362,15 +364,15 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage
- * @todo XXX TODO: implement limit on return temp, (consummer shift / return valve / bypass pump)
  * @todo review integral jacketing - maybe use a PI(D) instead?
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
+#define BOILER_TDRV_SPREAD	64	///< number of samples for temperature derivative: this will make the derivative lag behind true value, but since we're only interested in the time difference between two arbitrary values computed with the same lag, it doesn't matter. Power of 2 for speed
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp, ret_temp = 0;
+	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp_deriv, temp, ret_temp = 0;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
-	timekeep_t ttime;
+	timekeep_t boiler_ttime, ttime;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
@@ -403,6 +405,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		return (ret);
 	}
 
+	hardware_sensor_clone_time(boiler->set.tid_boiler, &boiler_ttime);
 	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler_temp);
 
 	// ensure boiler is within safety limits
@@ -415,6 +418,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// we're good to go
 
+	// always compute boiler temp derivative over the past BOILER_TDRV_SPREAD samples
+	temp_deriv = temp_expw_deriv(&boiler->run.temp_drv, boiler_temp, boiler_ttime, BOILER_TDRV_SPREAD);
+
 	// overtemp turn off at 2K hardcoded histeresis
 	if (unlikely(heat->run.overtemp) && (boiler_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
 		heat->run.overtemp = false;
@@ -426,18 +432,13 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// handle boiler minimum temp if set
 	if (boiler->set.limit_tmin) {
 		// calculate boiler integral
-		ret = hardware_sensor_clone_time(boiler->set.tid_boiler, &ttime);
-		if (likely(ALL_OK == ret)) {
-			// jacket integral between 0 and -100Ks - XXX hardcoded
-			temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, ttime, deltaK_to_temp(-100), 0);
-			// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
-			cshift_boil = (2 * temp_intgrl)/KPRECISION;
+		// jacket integral between 0 and -100Ks - XXX hardcoded
+		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, boiler_ttime, deltaK_to_temp(-100), 0);
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
+		cshift_boil = (2 * temp_intgrl)/KPRECISION;
 
-			if (temp_intgrl < 0)
-				dbgmsg("\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
-		}
-		else
-			reset_intg(&boiler->run.boil_itg);
+		if (temp_intgrl < 0)
+			dbgmsg("\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
 	}
 
 	// handler boiler return temp if set
@@ -492,17 +493,17 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	else
 		trip_temp = 0;
 
-	// always apply untrip temp (stop condition must always exist)
+	// always apply untrip temp (stop condition must always exist): untrip = target + hyst/2
 	untrip_temp = (boiler->run.target_temp + boiler->set.hysteresis/2);
 
-	// operate at constant hysteresis on the low end
+	// operate at constant hysteresis on the low end: when trip_temp is flored, shift untrip; i.e. when limit_tmin < target < (limit_tmin + hyst/2), trip == tmin and untrip == tmin + hyst
 	untrip_temp += (boiler->set.hysteresis - (untrip_temp - trip_temp));
 
-	// allow shifting untrip temp if actual heat request goes below trip_temp (e.g. when trip_temp = limit_tmin)...
+	// allow shifting down untrip temp if actual heat request goes below trip_temp (e.g. when trip_temp = limit_tmin)...
 	temp = trip_temp - heat->run.temp_request;
 	untrip_temp -= (temp > 0) ? temp : 0;
 
-	// ... up to hysteresis/2 (if untrip < (trip + hyst/2) => untrip = trip + hyst/2)
+	// in any case untrip_temp should always be at least trip_temp + hysteresis/2. (if untrip < (trip + hyst/2) => untrip = trip + hyst/2)
 	temp = (boiler->set.hysteresis/2) - (untrip_temp - trip_temp);
 	untrip_temp += (temp > 0) ? temp : 0;
 
@@ -523,13 +524,42 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (ret > 0)	// cooldown isn't an error
 		ret = ALL_OK;
 
-	// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
-	if ((boiler->set.limit_tmin < boiler_temp) && (hardware_relay_get_state(boiler->set.rid_burner_1) > 0))
-		heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
+	// computations performed while burner is on
+	if (hardware_relay_get_state(boiler->set.rid_burner_1) > 0) {
+		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
+		if (boiler->set.limit_tmin < boiler_temp)
+			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
-	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f",
+		// compute the time the temperature derivative stayed negative while the burner is on, which will serve for turn-on anticipation on next run
+		/* NB: this time is physically linked to the value of the derivative itself (i.e. the stronger the power drain the longer the burner needs to
+		   fight it at a constant power output), however the recorded time bears no indication of the associated derivative value at the time.
+		   We can assume that the conditions between two consecutive runs should not be very different and thus in the context of a single-stage
+		   constant output burner the approximation works but if we wanted to be more refined we would have to factor that value and the burner output
+		   level (in case of multistage or variable output burners) in the stored data. XXX TODO */
+		if (temp_deriv < 0) {
+			if (!boiler->run.negderiv_starttime)
+				boiler->run.negderiv_starttime = timekeep_now();
+		}
+		else {
+			// once the derivative goes positive we now we can turn off the current offset (which will reset the untrip shift) and store the next value
+			if (!boiler->run.turnon_next_offsettime) {
+				boiler->run.turnon_next_offsettime = timekeep_now() - boiler->run.negderiv_starttime;	// compute next value
+				boiler->run.turnon_curr_offsettime = 0;		// reset current value
+			}
+		}
+	}
+	else {
+		// boiler has turned off, store next offset in current value and reset for next run
+		if (!boiler->run.turnon_curr_offsettime) {
+			boiler->run.turnon_curr_offsettime = boiler->run.turnon_next_offsettime;
+			boiler->run.turnon_next_offsettime = 0;		// reset next value
+			boiler->run.negderiv_starttime = 0;		// reset time start
+		}
+	}
+
+	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, mKS/s: %d, otime: %lld",
 	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
-	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp));
+	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), (temp_t)(temp_deriv/(KPRECISION/1000.0F)/TIMEKEEP_SMULT), boiler->run.turnon_curr_offsettime);
 
 	return (ret);
 }

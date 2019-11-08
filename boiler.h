@@ -46,8 +46,12 @@ struct s_boiler_priv {
 	struct {
 		bool antifreeze;		///< true if anti freeze tripped
 		temp_t target_temp;		///< current target temp
+		timekeep_t negderiv_starttime;	///< time at which a negative boiler temp derivative was first measured during burner on condition
+		timekeep_t turnon_curr_offsettime;	///< computed value for current turn-on anticipation offset time
+		timekeep_t turnon_next_offsettime;	///< computed value for next turn-on anticipation offset time
 		struct s_temp_intgrl boil_itg;	///< boiler integral (for cold start protection)
 		struct s_temp_intgrl ret_itg;	///< return integral (for return temp management)
+		struct s_temp_deriv temp_drv;	///< boiler temperature derivative
 	} run;		///< private runtime (internally handled)
 };
 
