@@ -19,7 +19,7 @@
  * @todo adapt to add "intelligence" and anticipation from e.g. circuit transitions
  * @note Operation is lockless as it is assumed that the schedules will only be updated at config time
  * (during startup in single-thread context) and that from that point on only read operations will be performed,
- * until shutdown (also in single-threaded context). Should that change, adequate atomic constructs must be used.
+ * until shutdown (also in single-threaded context). Should that change, adequate mutex constructs must be used.
  */
 
 #include <stdlib.h>	// calloc
@@ -27,6 +27,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <string.h>	// strcmp/memcpy
+#include <stdatomic.h>
 
 #include "scheduler.h"
 #include "filecfg.h"
@@ -56,7 +57,7 @@ struct s_schedule_e {
  */
 struct s_schedule {
 	struct s_schedule * next;
-	const struct s_schedule_e * current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day). @warning pointer assignments are considered atomic on target platform
+	const struct s_schedule_e * _Atomic current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day).
 	struct s_schedule_e * head;		///< 'head' of sorted schedule entries loop (i.e. earliest schedule entry)
 	const char * name;			///< schedule name (user-set unique identifier)
 	schedid_t schedid;			///< >0 schedule id (internal unique identifier)
@@ -118,9 +119,11 @@ static void scheduler_update_schedule(struct s_schedule * const sched)
 {
 	const time_t now = time(NULL);
 	struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
-	const struct s_schedule_e * schent, * schent_start;
+	const struct s_schedule_e * schent, * schent_start, * schent_curr;
 
-	schent_start = likely(sched->current) ? sched->current : sched->head;
+	schent_curr = atomic_load_explicit(&sched->current, memory_order_relaxed);
+
+	schent_start = likely(schent_curr) ? schent_curr : sched->head;
 
 	if (unlikely(!schent_start)) {
 		dbgmsg("empty schedule");
@@ -134,18 +137,18 @@ restart:
 
 	// special case first entry which may be the only one
 	if (scheduler_ent_past_today(schent_start, ltime))
-		sched->current = schent_start;
+		atomic_store_explicit(&sched->current, schent_start, memory_order_relaxed);
 
 	// loop over other entries, stop if/when back at first entry
 	for (schent = schent_start->next; schent_start != schent; schent = schent->next) {
 		if (unlikely(scheduler_ent_past_today(schent, ltime)))
-			sched->current = schent;
-		else if (likely(sched->current))
+			atomic_store_explicit(&sched->current, schent, memory_order_relaxed);
+		else if (likely(schent_curr))
 			break;	// if we already have a valid schedule entry ('synced'), first future entry stops search
 	}
 
 	// if we aren't already synced, try harder
-	if (unlikely(!sched->current)) {
+	if (unlikely(!atomic_load_explicit(&sched->current, memory_order_relaxed))) {
 		/* we never synced and today's list didn't contain a single past schedule,
 		 we must roll back through the week until we find one.
 		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
@@ -200,14 +203,18 @@ static struct s_schedule * scheduler_schedule_fbi(const schedid_t schedule_id)
 const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t schedule_id)
 {
 	const struct s_schedule * sched;
+	const struct s_schedule_e * schent_curr;
 
 	sched = scheduler_schedule_fbi(schedule_id);
 
 	// return current schedule entry for schedule, if available
-	if (likely(sched && sched->current))
-		return (&sched->current->params);
-	else
-		return (NULL);
+	if (likely(sched)) {
+		schent_curr = atomic_load_explicit(&sched->current, memory_order_relaxed);
+		if (likely(schent_curr))
+			return (&schent_curr->params);
+	}
+
+	return (NULL);
 }
 
 
