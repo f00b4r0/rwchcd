@@ -487,8 +487,16 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// apply trip_temp only if we have a heat request
 	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {
 		trip_temp = (boiler->run.target_temp - boiler->set.hysteresis/2);
+
 		if (trip_temp < boiler->set.limit_tmin)
 			trip_temp = boiler->set.limit_tmin;
+
+		// compute anticipation-corrected trip_temp - only on decreasing temperature
+		if (temp_deriv < 0) {
+			assert(boiler->run.turnon_curr_offsettime < INT32_MAX);	// make sure we can cast to temp_t aka int32_t, for speedier code
+			dbgmsg("orig trip_temp: %.1f", temp_to_celsius(trip_temp));
+			trip_temp -= ((temp_deriv * (temp_t)boiler->run.turnon_curr_offsettime) / BOILER_TDRV_SPREAD);
+		}
 	}
 	else
 		trip_temp = 0;
