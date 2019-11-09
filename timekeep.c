@@ -9,6 +9,7 @@
 /**
  * @file
  * Timekeeping implementation.
+ * @todo possibly switch to int32 instead of int64 and handle wraparound after ~6years (when using deciseconds as base unit)
  */
 
 #include <time.h>

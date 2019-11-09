@@ -42,7 +42,7 @@ __attribute__((const, always_inline)) static inline timekeep_t timekeep_sec_to_t
  * @param tk value to convert.
  * @return the value expressed in seconds.
  */
-__attribute__((const, always_inline)) static inline long timekeep_tk_to_sec(timekeep_t tk)
+__attribute__((const, always_inline)) static inline long long timekeep_tk_to_sec(timekeep_t tk)
 {
 	return (tk / TIMEKEEP_SMULT);
 }
