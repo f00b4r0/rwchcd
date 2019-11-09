@@ -552,6 +552,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			// once the derivative goes positive we now we can turn off the current offset (which will reset the untrip shift) and store the next value
 			if (!boiler->run.turnon_next_offsettime) {
 				boiler->run.turnon_next_offsettime = timekeep_now() - boiler->run.negderiv_starttime;	// compute next value
+				boiler->run.turnon_next_offsettime += boiler->run.turnon_curr_offsettime;		// average it with previous value fsvo smoothing
+				boiler->run.turnon_next_offsettime /= 2;
 				boiler->run.turnon_curr_offsettime = 0;		// reset current value
 			}
 		}
