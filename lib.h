@@ -32,6 +32,7 @@ struct s_temp_intgrl {
 /** Temperature derivative data */
 struct s_temp_deriv {
 	bool inuse;			///< true if derivative is in use
+	uint_fast16_t ns;		///< number of samples ignored (for subsampling)
 	temp_t derivative;		///< derivative value in temp_t / seconds
 	temp_t last_temp;		///< last recorded temperature value
 	timekeep_t last_time;		///< last recorded temperature time

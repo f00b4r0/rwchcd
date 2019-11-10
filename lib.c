@@ -63,12 +63,14 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * @param new_temp new temperature point
  * @param new_time new temperature time
  * @param spread the strictly positive number of temperature samples to average over
- * @return the derivative value in temp_t units / timekeep_t units * spread
+ * @return the derivative value in spread * temp_t units / timekeep_t units
+ * @note To reduce rounding errors, the function subsamples by an circa an order of magnitude when possible.
  */
 temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const uint_fast16_t spread)
 {
 	temp_t tempdiff, tspread = (temp_t)spread;	// avoid signed/unsigned conversion mess
 	timekeep_t timediff;
+	uint_fast16_t adjspread = (spread/8) ? spread/8 : spread;	// 8 is pow(2) approx of an order of magnitude
 
 	assert(deriv);
 	assert(spread > 0);
@@ -78,14 +80,18 @@ temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp,
 	if (unlikely(!deriv->last_time || !new_time))	// only compute derivative over a finite domain
 		deriv->derivative = 0;
 	else {
-		if (new_time == deriv->last_time)
-			return (deriv->derivative);	// avoid divide by 0
+		// subsample / avoid divide-by-zero
+		if ((++deriv->ns < adjspread) || unlikely(new_time == deriv->last_time))
+			return (deriv->derivative);
 
 		tempdiff = new_temp - deriv->last_temp;
 		timediff = new_time - deriv->last_time;
+
 		assert((tempdiff * tspread) < INT32_MAX);
+
 		// NB: using spread instead of tspread: '(tempdiff * spread)/timediff' triggers overflows due to unsigned integer promotion
-		deriv->derivative = temp_expw_mavg(deriv->derivative, (tempdiff * tspread) / timediff, spread, 1);	// average derivative over spread samples
+		deriv->derivative = temp_expw_mavg(deriv->derivative, (tspread * tempdiff) / timediff, adjspread, 1);	// average derivative over spread samples
+		deriv->ns = 0;
 	}
 
 	deriv->last_time = new_time;
