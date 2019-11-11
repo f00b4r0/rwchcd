@@ -193,6 +193,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	// apply deadzone
 	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2))) {
 		valve->run.ctrl_ready = false;
+		valve_reqstop(valve);
 		return (-EDEADZONE);
 	}
 
@@ -348,8 +349,10 @@ static int v_bangbang_tcontrol(struct s_valve * const valve, const temp_t target
 		return (ret);
 
 	// apply deadzone
-	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2)))
+	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2))) {
+		valve_reqstop(valve);
 		return (-EDEADZONE);	// do nothing
+	}
 
 	if (target_tout > tempout)
 		valve_reqopen_full(valve);
@@ -420,10 +423,6 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 	if (ALL_OK != ret)
 		return (ret);
 
-	// apply deadzone
-	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2)))
-		return (-EDEADZONE);
-
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set.tset.tmix.tdeadzone/2) {
@@ -433,9 +432,10 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 	else if (tempout > target_tout + valve->set.tset.tmix.tdeadzone/2) {
 		valve_request_pth(valve, -vpriv->set.amount);
 	}
-	// else stop valve
+	// else we're in deadzone: stop valve
 	else {
 		valve_reqstop(valve);
+		ret = -EDEADZONE;
 	}
 
 	return (ALL_OK);
