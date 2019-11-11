@@ -281,14 +281,7 @@ int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 
 		for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
 			// handle saved state (see @note)
-			if (relayptr->run.is_on)
-				hw->Relays[i].run.on_tottime += relayptr->run.state_time;
-			else
-				hw->Relays[i].run.off_tottime += relayptr->run.state_time;
-			hw->Relays[i].run.off_since = timekeep_now();	// off since "now"
-			hw->Relays[i].run.on_tottime += relayptr->run.on_tottime;
-			hw->Relays[i].run.off_tottime += relayptr->run.off_tottime;
-			hw->Relays[i].run.cycles += relayptr->run.cycles;
+			hw_lib_relay_restore(&hw->Relays[i], relayptr);
 			relayptr++;
 		}
 		dbgmsg("Hardware relay state restored");

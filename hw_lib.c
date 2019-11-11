@@ -314,7 +314,7 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 			relay->run.is_on = true;
 			relay->run.on_since = now;
 			if (relay->run.off_since)
-				relay->run.off_tottime += now - relay->run.off_since;
+				relay->run.off_totsecs += timekeep_tk_to_sec(now - relay->run.off_since);
 			relay->run.off_since = 0;
 			ret = HW_LIB_RCHTURNON;
 		}
@@ -324,7 +324,7 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 			relay->run.is_on = false;
 			relay->run.off_since = now;
 			if (relay->run.on_since)
-				relay->run.on_tottime += now - relay->run.on_since;
+				relay->run.on_totsecs += timekeep_tk_to_sec(now - relay->run.on_since);
 			relay->run.on_since = 0;
 			ret = HW_LIB_RCHTURNOFF;
 		}
@@ -334,4 +334,29 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
 
 	return (ret);
+}
+
+/**
+ * Routine to restore relevant data for hardware relays state from permanent storage.
+ * Restores cycles and on/off total time counts.
+ * @param rdest target data structure
+ * @param rsrc source data structure (e.g. from permanent storage)
+ * @note destination relay is assumed to be "restored" in OFF state. When restoring we must:
+ * - account for elapsed time in last known state (at save time)
+ * - restore off_since to either the saved value or to the current time (if relay was last ON)
+ */
+void hw_lib_relay_restore(struct s_hw_relay * restrict const rdest, const struct s_hw_relay * restrict const rsrc)
+{
+	assert(rdest && rsrc);
+	assert(!rdest->run.is_on);
+
+	// handle saved state (see @note)
+	if (rsrc->run.is_on)
+		rdest->run.on_totsecs += timekeep_tk_to_sec(rsrc->run.state_time);
+	else
+		rdest->run.off_totsecs += timekeep_tk_to_sec(rsrc->run.state_time);
+	rdest->run.off_since = timekeep_now();	// off since "now"
+	rdest->run.on_totsecs += rsrc->run.on_totsecs;
+	rdest->run.off_totsecs += rsrc->run.off_totsecs;
+	rdest->run.cycles += rsrc->run.cycles;
 }

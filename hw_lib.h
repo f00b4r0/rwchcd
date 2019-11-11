@@ -60,9 +60,9 @@ struct s_hw_relay {
 		timekeep_t on_since;	///< last time on state was triggered, 0 if off
 		timekeep_t off_since;	///< last time off state was triggered, 0 if on
 		timekeep_t state_time;	///< time spent in current state
-		timekeep_t on_tottime;	///< total time spent in on state since system start (updated at state change only)
-		timekeep_t off_tottime;	///< total time spent in off state since system start (updated at state change only)
-		uint_fast32_t cycles;	///< number of power cycles
+		uint_fast32_t on_totsecs;	///< total seconds spent in on state since epoch (updated at state change only)
+		uint_fast32_t off_totsecs;	///< total seconds spent in off state since epoch (updated at state change only)
+		uint_fast32_t cycles;	///< number of power cycles since epoch
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the relay
 };
@@ -77,5 +77,6 @@ int hw_lib_filecfg_relay_parse(const void * restrict const priv, const struct s_
 int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, const timekeep_t change_delay);
 int hw_lib_relay_get_state(struct s_hw_relay * const relay);
 int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now);
+void hw_lib_relay_restore(struct s_hw_relay * restrict const rdest, const struct s_hw_relay * restrict const rsrc);
 
 #endif /* hw_lib_h */
