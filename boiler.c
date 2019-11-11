@@ -487,7 +487,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	/* un/trip points */
 	// apply trip_temp only if we have a heat request
-	if (RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp) {
+	if (likely(RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp)) {
 		trip_temp = (boiler->run.target_temp - boiler->set.hysteresis/2);
 
 		if (trip_temp < boiler->set.limit_tmin)
