@@ -365,10 +365,12 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage
  * @todo review integral jacketing - maybe use a PI(D) instead?
+ * @todo adaptive derivative spread adjustment
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
-#define BOILER_TDRV_SPREAD	64	///< number of samples for temperature derivative: this will make the derivative lag behind true value, but since we're only interested in the time difference between two arbitrary values computed with the same lag, it doesn't matter. Power of 2 for speed
+#define BOILER_FPDEC		UINT32_C(1024)
+#define BOILER_TDRV_SPREAD	UINT16_C(128)	///< number of samples for temperature derivative: this will make the derivative lag behind true value, but since we're only interested in the time difference between two arbitrary values computed with the same lag, it doesn't matter. With 1s delay loop, ~2mn. Power of 2 for speed
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp_deriv, temp, ret_temp = 0;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
@@ -493,9 +495,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 		// compute anticipation-corrected trip_temp - only on decreasing temperature
 		if (temp_deriv < 0) {
-			assert(boiler->run.turnon_curr_offsettime < INT32_MAX);	// make sure we can cast to temp_t aka int32_t, for speedier code
 			dbgmsg("orig trip_temp: %.1f", temp_to_celsius(trip_temp));
-			trip_temp -= ((temp_deriv * (temp_t)boiler->run.turnon_curr_offsettime) / BOILER_TDRV_SPREAD);
+			trip_temp += ((unsigned)(temp_deriv * temp_deriv) * boiler->run.turnon_curr_adj) / BOILER_FPDEC / BOILER_TDRV_SPREAD;
 		}
 	}
 	else
@@ -538,38 +539,39 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		if (boiler->set.limit_tmin < boiler_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
-		// compute the time the temperature derivative stayed negative while the burner is on, which will serve for turn-on anticipation on next run
-		/* NB: this time is physically linked to the value of the derivative itself (i.e. the stronger the power drain the longer the burner needs to
-		   fight it at a constant power output), however the recorded time bears no indication of the associated derivative value at the time.
-		   We can assume that the conditions between two consecutive runs should not be very different and thus in the context of a single-stage
-		   constant output burner the approximation works but if we wanted to be more refined we would have to factor that value and the burner output
-		   level (in case of multistage or variable output burners) in the stored data. XXX TODO */
+		// compute turn-on anticipation for next run
 		if (temp_deriv < 0) {
-			if (!boiler->run.negderiv_starttime)
+			if (!boiler->run.negderiv_starttime) {
+				boiler->run.turnon_negderiv = temp_deriv;
 				boiler->run.negderiv_starttime = timekeep_now();
+			}
 		}
 		else {
 			// once the derivative goes positive we now we can turn off the current offset (which will reset the untrip shift) and store the next value
-			if (!boiler->run.turnon_next_offsettime) {
-				boiler->run.turnon_next_offsettime = timekeep_now() - boiler->run.negderiv_starttime;	// compute next value
-				boiler->run.turnon_next_offsettime += boiler->run.turnon_curr_offsettime;		// average it with previous value fsvo smoothing
-				boiler->run.turnon_next_offsettime /= 2;
-				boiler->run.turnon_curr_offsettime = 0;		// reset current value
+			if (!boiler->run.turnon_next_adj && boiler->run.negderiv_starttime) {
+				// compute an adjustement compound value that reflects the relative power drain at computation time (via turnon_negderiv)
+				// the resulting value is a positive number congruent to time / temp_deriv. This value should not be averaged as the denominator can change.
+				/* NB: in the case of a 2-stage or variable output burner, this computation result would be physically linked to the power output of the burner itself.
+				   in the context of a single-stage constant output burner the approximation works but if we wanted to be more refined we would have to factor that output
+				   level in the stored data. XXX TODO */
+				boiler->run.turnon_next_adj = (timekeep_now() - boiler->run.negderiv_starttime) * BOILER_FPDEC;
+				boiler->run.turnon_next_adj /= (unsigned)-boiler->run.turnon_negderiv;
+				boiler->run.turnon_curr_adj = 0;	// reset current value
 			}
 		}
 	}
 	else {
 		// boiler has turned off, store next offset in current value and reset for next run
-		if (!boiler->run.turnon_curr_offsettime) {
-			boiler->run.turnon_curr_offsettime = boiler->run.turnon_next_offsettime;
-			boiler->run.turnon_next_offsettime = 0;		// reset next value
+		if (!boiler->run.turnon_curr_adj) {
+			boiler->run.turnon_curr_adj = boiler->run.turnon_next_adj;
+			boiler->run.turnon_next_adj = 0;		// reset next value
 			boiler->run.negderiv_starttime = 0;		// reset time start
 		}
 	}
 
-	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, mKS/s: %d, otime: %lld",
+	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
 	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
-	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), (temp_t)(temp_deriv/(KPRECISION/1000.0F)/TIMEKEEP_SMULT), boiler->run.turnon_curr_offsettime);
+	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
 
 	return (ret);
 }
