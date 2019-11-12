@@ -62,42 +62,58 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * @param deriv derivative data
  * @param new_temp new temperature point
  * @param new_time new temperature time
- * @param spread the strictly positive number of temperature samples to average over
- * @return the derivative value in spread * temp_t units / timekeep_t units
+ * @param tau the strictly positive time to average over (averaging window)
+ * @return a derivative value congruent to temp_t units / seconds (millikelvins / seconds).
+ *
  * @note To reduce rounding errors, the function subsamples by an circa an order of magnitude when possible.
+ * Furthermore, with default timekeep_t in deciseconds and temp_t in ~ millikelvins, the maximum resolution is
+ * 0.001K/s (or 0.06K/mn, or 3.6K/h). The value of tau does not change the resolution.
+ * @todo variable resolution
  */
-temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const uint_fast16_t spread)
+temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau)
 {
-	temp_t tempdiff, tspread = (temp_t)spread;	// avoid signed/unsigned conversion mess
-	timekeep_t timediff;
-	uint_fast16_t adjspread = (spread/8) ? spread/8 : spread;	// 8 is pow(2) approx of an order of magnitude
+	/* Assume largest tempdiff between two subsamples will be < INT16_MAX, i.e. c.64K max
+	 * Use the extra 15bits as fixed point precision; store derivative internally with this format, which will
+	 * provide sufficient precision to avoid propagating averaging errors.
+	 * Final division (shift) will asymetrically truncate negative and positive numbers */
+	const typeof(deriv->derivative) fpdec = (1<<15);
+	temp_t tempdiff;
+	timekeep_t timediff, tsample = (tau/8) ? tau/8 : tau;	// 8 is pow(2) approx of an order of magnitude
 
 	assert(deriv);
-	assert(spread > 0);
+	assert(tau > 0);
 
 	deriv->inuse = true;
 
 	if (unlikely(!deriv->last_time || !new_time))	// only compute derivative over a finite domain
 		deriv->derivative = 0;
 	else {
-		// subsample / avoid divide-by-zero
-		if ((++deriv->ns < adjspread) || unlikely(new_time == deriv->last_time))
-			return (deriv->derivative);
-
 		tempdiff = new_temp - deriv->last_temp;
 		timediff = new_time - deriv->last_time;
 
-		assert((tempdiff * tspread) < INT32_MAX);
+		// avoid divide-by-zero
+		if (unlikely(!timediff))
+			goto out;
 
-		// NB: using spread instead of tspread: '(tempdiff * spread)/timediff' triggers overflows due to unsigned integer promotion
-		deriv->derivative = temp_expw_mavg(deriv->derivative, (tspread * tempdiff) / timediff, adjspread, 1);	// average derivative over spread samples
-		deriv->ns = 0;
+		// subsample
+		if (timediff < tsample)
+			goto out;
+
+		assert((tempdiff * fpdec) < INT32_MAX);
+		assert((tempdiff * fpdec) > INT32_MIN);
+
+		dbgmsg("tempdiff: %d, tempdiffmul: %d, timediff: %lld", tempdiff, tempdiff * fpdec, timediff);
+		tempdiff *= fpdec;
+
+		deriv->derivative = temp_expw_mavg(deriv->derivative, tempdiff / timekeep_tk_to_sec(timediff), tau, timediff);
 	}
 
 	deriv->last_time = new_time;
 	deriv->last_temp = new_temp;
 
-	return (deriv->derivative);
+	dbgmsg("raw deriv: %d, deriv: %d", deriv->derivative, deriv->derivative/fpdec);
+out:
+	return (deriv->derivative/fpdec);
 }
 
 /**

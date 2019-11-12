@@ -370,7 +370,6 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
 #define BOILER_FPDEC		UINT32_C(1024)
-#define BOILER_TDRV_SPREAD	UINT16_C(128)	///< number of samples for temperature derivative: this will make the derivative lag behind true value, but since we're only interested in the time difference between two arbitrary values computed with the same lag, it doesn't matter. With 1s delay loop, ~2mn. Power of 2 for speed
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp_deriv, temp, ret_temp = 0;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
@@ -420,8 +419,10 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// we're good to go
 
-	// always compute boiler temp derivative over the past BOILER_TDRV_SPREAD samples
-	temp_deriv = temp_expw_deriv(&boiler->run.temp_drv, boiler_temp, boiler_ttime, BOILER_TDRV_SPREAD);
+	// always compute boiler temp derivative over the past 2mn
+	// this will make the derivative lag behind true value, but since we're only interested in the time
+	// difference between two arbitrary values computed with the same lag, it doesn't matter.
+	temp_deriv = temp_expw_deriv(&boiler->run.temp_drv, boiler_temp, boiler_ttime, timekeep_sec_to_tk(120));
 
 	// overtemp turn off at 2K hardcoded histeresis
 	if (unlikely(heat->run.overtemp) && (boiler_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
@@ -496,7 +497,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		// compute anticipation-corrected trip_temp - only on decreasing temperature
 		if (temp_deriv < 0) {
 			dbgmsg("orig trip_temp: %.1f", temp_to_celsius(trip_temp));
-			trip_temp += ((unsigned)(temp_deriv * temp_deriv) * boiler->run.turnon_curr_adj) / BOILER_FPDEC / BOILER_TDRV_SPREAD;
+			trip_temp += ((unsigned)(temp_deriv * temp_deriv) * boiler->run.turnon_curr_adj) / BOILER_FPDEC;
 		}
 	}
 	else
@@ -554,7 +555,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				/* NB: in the case of a 2-stage or variable output burner, this computation result would be physically linked to the power output of the burner itself.
 				   in the context of a single-stage constant output burner the approximation works but if we wanted to be more refined we would have to factor that output
 				   level in the stored data. XXX TODO */
-				boiler->run.turnon_next_adj = (timekeep_now() - boiler->run.negderiv_starttime) * BOILER_FPDEC;
+				boiler->run.turnon_next_adj = timekeep_tk_to_sec(timekeep_now() - boiler->run.negderiv_starttime) * BOILER_FPDEC;
 				boiler->run.turnon_next_adj /= (unsigned)-boiler->run.turnon_negderiv;
 				boiler->run.turnon_curr_adj = 0;	// reset current value
 			}
