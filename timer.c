@@ -51,10 +51,10 @@ void * timer_thread(void * arg)
 	
 	// start logging
 	while (1) {
-		now = timekeep_now();
-
 		while (unlikely(atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire)))
 			timekeep_sleep(1);	// yield
+
+		now = timekeep_now();
 
 		for (lcb = Timer_cb_head; lcb != NULL; lcb = lcb->next) {
 			if ((now - lcb->last_call) < timekeep_sec_to_tk(lcb->period))
