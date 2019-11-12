@@ -346,7 +346,7 @@ static void * thread_watchdog(void * arg)
 int main(void)
 {
 	struct sigaction saction;
-	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr;
+	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr, timekeep_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	int pipefd[2];
@@ -381,6 +381,10 @@ int main(void)
 
 	Sem_master_thread = true;
 
+	ret = pthread_create(&timekeep_thr, NULL, timekeep_thread, NULL);
+	if (ret)
+		errx(ret, "failed to create timekeep thread!");
+
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
 		errx(ret, "failed to create master thread!");
@@ -402,6 +406,7 @@ int main(void)
 	pthread_setname_np(timer_thr, "timer");
 	pthread_setname_np(scheduler_thr, "scheduler");
 	pthread_setname_np(watchdog_thr, "watchdog");
+	pthread_setname_np(timekeep_thr, "timekeep");
 #endif
 
 	// XXX Dropping priviledges here because we need root to set
@@ -454,9 +459,11 @@ int main(void)
 	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
 	pthread_cancel(watchdog_thr);
+	pthread_cancel(timekeep_thr);
 	pthread_join(scheduler_thr, NULL);
 	pthread_join(timer_thr, NULL);
 	pthread_join(watchdog_thr, NULL);
+	pthread_join(timekeep_thr, NULL);
 	pthread_join(master_thr, NULL);	// wait for cleanup
 	timer_clean_callbacks();
 	close(pipefd[0]);

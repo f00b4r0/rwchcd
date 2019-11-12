@@ -13,7 +13,8 @@
  */
 
 #include <time.h>
-#include <unistd.h>	// sleep()
+#include <unistd.h>	// (u)sleep()
+#include <stdatomic.h>
 
 #include "rwchcd.h"
 #include "timekeep.h"
@@ -22,6 +23,7 @@
 
 static clockid_t TK_clockid;				///< after initialization, holds the correct clock id.
 static struct timespec TK_tstart;			///< initial timestamp (set during initialization)
+static _Atomic timekeep_t TK_wallclock;			///< internal wall clock updated once per loop. Assumes loop duration is dominated by delay and loop execution time is below wallclock resolution
 
 /**
  * Init timekeeping subsystem.
@@ -69,22 +71,24 @@ void timekeep_exit()
 }
 
 /**
- * Get the current timestamp.
- * @return a monotonically growing timestamp value, with 0 being init time.
- * @note wraparound is not handled (should happen after a few centuries uptime).
+ * Update the current timestamp.
+ * This function atomically updates the internal wall clock.
+ * @return exec status
  */
-timekeep_t timekeep_now(void)
+static int timekeep_clockupdate(void)
 {
 	struct timespec tsnow;
 	timekeep_t retval;
 
 	if (clock_gettime(TK_clockid, &tsnow))
-		return (-1);
+		return (-EGENERIC);
 
 	retval = (tsnow.tv_sec - TK_tstart.tv_sec) * TIMEKEEP_SMULT;
 	retval += (tsnow.tv_nsec - TK_tstart.tv_nsec) / TIMEKEEP_RESNS;
 
-	return (retval);
+	atomic_store_explicit(&TK_wallclock, retval, memory_order_relaxed);
+
+	return (ALL_OK);
 }
 
 /**
@@ -95,3 +99,29 @@ void timekeep_sleep(unsigned int seconds)
 {
 	while ((seconds = sleep(seconds)));
 }
+
+/**
+ * Get the current timestamp.
+ * This function atomically reads the internal wall clock.
+ * @return a monotonically growing timestamp value, with 0 being init time.
+ * @note wraparound is not handled (should happen after a few centuries uptime).
+ */
+timekeep_t timekeep_now(void)
+{
+	return (atomic_load_explicit(&TK_wallclock, memory_order_relaxed));
+}
+
+/**
+ * Simple timekeep thread.
+ * Update the wall clock at Nyquist frequency
+ * @todo hardcoded frequency, handle signals
+ */
+void * timekeep_thread(void * arg)
+{
+	// start logging
+	while (1) {
+		timekeep_clockupdate();
+		usleep(500*1000);	// XXX will not handle signals correctly
+	}
+}
+
