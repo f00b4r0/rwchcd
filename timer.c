@@ -30,7 +30,7 @@ struct s_timer_cb {
 };
 
 static struct s_timer_cb * Timer_cb_head = NULL;	///< list of timer callbacks
-static volatile unsigned int Timer_period_min = 0;	///< time between runs in seconds
+static unsigned int Timer_period_min = 0;	///< time between runs in seconds
 static atomic_flag Timer_cb_flag = ATOMIC_FLAG_INIT;	///< list modification protection flag
 
 /**
@@ -45,14 +45,16 @@ void * timer_thread(void * arg)
 	timekeep_t now;
 	int ret;
 	
-	// wait for first callback to be configured
-	while (!Timer_period_min)
-		timekeep_sleep(1);
-	
-	// start logging
 	while (1) {
 		while (unlikely(atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire)))
 			timekeep_sleep(1);	// yield
+
+		// wait for first callback to be configured
+		if (unlikely(!Timer_period_min)) {
+			atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
+			timekeep_sleep(10);
+			continue;
+		}
 
 		now = timekeep_now();
 
@@ -67,9 +69,9 @@ void * timer_thread(void * arg)
 			lcb->last_call = now;	// only updated here
 		}
 
-		atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
-
 		timekeep_sleep(Timer_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
+
+		atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
 	}
 }
 
@@ -152,14 +154,14 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 	else
 		lcb_before->next = lcb;
 	/* End fence section */
-
-	// critical section ends - unlock
-	atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
 	
 	if (!Timer_period_min)
 		Timer_period_min = period;
 	else
 		Timer_period_min = ugcd(period, Timer_period_min);	// find the GCD period
+
+	// critical section ends - unlock
+	atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
 	
 	dbgmsg("name: \"%s\", period: %u, new_min: %u", name, period, Timer_period_min);
 	
@@ -178,6 +180,7 @@ void timer_clean_callbacks(void)
 
 	lcb = Timer_cb_head;
 	Timer_cb_head = NULL;
+	Timer_period_min = 0;
 
 	atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
 
