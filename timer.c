@@ -23,7 +23,7 @@
 /** timer callbacks */
 struct s_timer_cb {
 	timekeep_t last_call;	///< last time the callback was called
-	unsigned int period;	///< requested timer period
+	timekeep_t tkperiod;	///< requested timer period
 	int (*cb)(void);	///< timed callback, must lock where necessary
 	char * name;		///< callback name
 	struct s_timer_cb * next;	///< pointer to next callback
@@ -59,7 +59,7 @@ void * timer_thread(void * arg)
 		now = timekeep_now();
 
 		for (lcb = Timer_cb_head; lcb != NULL; lcb = lcb->next) {
-			if ((now - lcb->last_call) < timekeep_sec_to_tk(lcb->period))
+			if ((now - lcb->last_call) < lcb->tkperiod)
 				break;	// ordered list, first mismatch means we don't need to check further
 			
 			ret = lcb->cb();
@@ -106,6 +106,7 @@ static inline unsigned int ugcd(unsigned int a, unsigned int b)
 int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 {
 	struct s_timer_cb * lcb = NULL, * lcb_before, * lcb_after;
+	timekeep_t tkperiod;
 	char * str = NULL;
 	
 	if ((period < 1) || (!cb))
@@ -123,6 +124,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 		}
 	}
 
+	tkperiod = timekeep_sec_to_tk(period);
 	lcb_before = NULL;
 
 	// critical section begins - spin lock
@@ -132,7 +134,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 	
 	// find insertion place
 	while (lcb_after) {
-		if (lcb_after->period > period)
+		if (lcb_after->tkperiod > tkperiod)
 			break;
 		
 		lcb_before = lcb_after;
@@ -141,7 +143,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 
 	lcb->name = str;
 	lcb->cb = cb;
-	lcb->period = period;
+	lcb->tkperiod = tkperiod;
 	
 	/* Begin fence section.
 	 * XXX REVISIT memory order is important here for this code to work reliably
