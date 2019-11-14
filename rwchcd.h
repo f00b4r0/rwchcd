@@ -21,9 +21,9 @@
 #include <stdio.h>	// (f)printf
 #include <pthread.h>	// rwlocks
 
-#define testbit(var, bit)	((var) & (1 << (bit)))
-#define setbit(var, bit)	((var) |= (1 << (bit)))
-#define clrbit(var, bit)	((var) &= ~(1 << (bit)))
+#define testbit(var, bit)	((var) & (1U << (bit)))
+#define setbit(var, bit)	((var) |= (typeof (var))(1U << (bit)))
+#define clrbit(var, bit)	((var) &= (typeof (var))~(1U << (bit)))
 #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 
 #define SETorDEF(set, def)	(set ? set : def)
