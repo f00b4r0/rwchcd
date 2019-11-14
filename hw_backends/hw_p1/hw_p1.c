@@ -93,7 +93,7 @@ static void hw_p1_relays_log(const struct s_hw_p1_pdata * restrict const hw)
  * @param calib 1 if calibrated value is required, 0 otherwise
  * @return the resistance value
  */
-__attribute__((pure)) static unsigned int sensor_to_ohm(const struct s_hw_p1_pdata * restrict const hw, const rwchc_sensor_t raw, const bool calib)
+__attribute__((pure)) static uint_fast16_t sensor_to_ohm(const struct s_hw_p1_pdata * restrict const hw, const rwchc_sensor_t raw, const bool calib)
 {
 	static const uint_fast16_t dacset[] = RWCHC_DAC_STEPS;
 	uint_fast16_t calibmult, dacoffset;
@@ -119,7 +119,7 @@ __attribute__((pure)) static unsigned int sensor_to_ohm(const struct s_hw_p1_pda
 		value /= calibmult;
 	}
 
-	return (value);
+	return ((uint_fast16_t)value);
 }
 
 /**
@@ -207,7 +207,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			}
 			else {
 				hw->Sensors[i].run.value = TEMPSHORT;
-				sensor_alarm(hw, i+1, -ESENSORSHORT);
+				sensor_alarm(hw, (sid_t)(i+1), -ESENSORSHORT);
 			}
 		}
 		else if (current >= RWCHCD_TEMPMAX) {
@@ -218,7 +218,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			}
 			else {
 				hw->Sensors[i].run.value = TEMPDISCON;
-				sensor_alarm(hw, i+1, -ESENSORDISCON);
+				sensor_alarm(hw, (sid_t)(i+1), -ESENSORDISCON);
 			}
 		}
 		// init or recovery
@@ -462,7 +462,7 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
  */
 int hw_p1_sensors_read(struct s_hw_p1_pdata * restrict const hw)
 {
-	int_fast8_t sensor;
+	uint_fast8_t sensor;
 	int ret = ALL_OK;
 	
 	assert(hw->run.initialized);

@@ -47,7 +47,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
 	};
 	static log_value_t values[ARRAY_SIZE(keys)];
-	int i = 0;
+	unsigned int i = 0;
 
 	assert(ldata);
 	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);

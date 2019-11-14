@@ -146,7 +146,7 @@ static int hw_p1_lcd_wline(struct s_hw_p1_lcd * const lcd, const uint8_t * restr
 	}
 	
 	// calculate maximum available length
-	maxlen = LCD_LINELEN - pos;
+	maxlen = (uint_fast8_t)(LCD_LINELEN - pos);
 	
 	// select applicable length
 	if (len > maxlen) {

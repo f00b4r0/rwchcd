@@ -308,7 +308,7 @@ int hw_p1_spi_peripherals_r(struct s_hw_p1_spi * const spi, union rwchc_u_periph
 
 	byte = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);
 
-	if (!SPI_ASSERT(spi, ~byte, ~RWCHC_SPIC_PERIPHSR))
+	if (!SPI_ASSERT(spi, (uint8_t)~byte, ~RWCHC_SPIC_PERIPHSR))
 		ret = -ESPI;
 
 	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, RWCHC_SPIC_PERIPHSR))
@@ -408,11 +408,11 @@ int hw_p1_spi_relays_w(struct s_hw_p1_spi * const spi, const union rwchc_u_relay
 	if (!SPI_ASSERT(spi, relays->LOWB, ~RWCHC_SPIC_RELAYWL))
 		ret = -ESPI;
 
-	temp = ~relays->LOWB;
+	temp = (uint8_t)~relays->LOWB;
 	if (!SPI_ASSERT(spi, relays->HIGHB, temp))
 		ret = -ESPI;
 
-	temp = ~relays->HIGHB;
+	temp = (uint8_t)~relays->HIGHB;
 	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, temp))
 		ret = -ESPI;
 
@@ -460,7 +460,7 @@ int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[]
 	 * a full transfer regardless of errors. */
 	ret = ALL_OK;
 
-	low = SPI_rw8bit(spi, ~sensor);	// we get LSB first, sent byte must be ~sensor
+	low = SPI_rw8bit(spi, (uint8_t)~sensor);	// we get LSB first, sent byte must be ~sensor
 	if (spi->run.FWversion <= 8)
 		high = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);	// then MSB, sent byte is next command
 	else	// v9
@@ -473,8 +473,8 @@ int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[]
 		ret = -ESPI;
 
 	tsval = 0;
-	tsval |= (high << 8);
-	tsval |= low;
+	tsval |= (uint16_t)(high << 8);
+	tsval |= (uint16_t)(low);
 
 	if (ALL_OK == ret)
 		tsensors[sensor] = tsval;
@@ -518,7 +518,7 @@ int hw_p1_spi_ref_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refva
 	ret = ALL_OK;
 
 	value = 0;
-	value |= SPI_rw8bit(spi, ~cmd);	// we get LSB first, sent byte is ~cmd
+	value |= (uint16_t)SPI_rw8bit(spi, (uint8_t)~cmd);	// we get LSB first, sent byte is ~cmd
 	value |= (SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error

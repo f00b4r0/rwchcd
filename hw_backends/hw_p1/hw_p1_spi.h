@@ -23,7 +23,7 @@ struct s_hw_p1_spi {
 		uint_least8_t chan;	///< rWCHC SPI channel (normally 0)
 	} set;
 	struct {
-		int_fast16_t spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
+		uint_fast16_t spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
 		int FWversion;		///< detected firmware version
 	} run;
 };
