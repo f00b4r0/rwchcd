@@ -291,11 +291,14 @@ static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 		case RM_OFF:
 		case RM_TEST:
 			return (ALL_OK);	// No further processing
+		case RM_ECO:
+			if (!dhwt->run.electric_mode) {
+				target_temp = SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco);
+				break;
+			}
+			// fallthrough - we don't support eco on electric due to expected inertia
 		case RM_COMFORT:
 			target_temp = SETorDEF(dhwt->set.params.t_comfort, runtime->config->def_dhwt.t_comfort);
-			break;
-		case RM_ECO:
-			target_temp = SETorDEF(dhwt->set.params.t_eco, runtime->config->def_dhwt.t_eco);
 			break;
 		case RM_FROSTFREE:
 			target_temp = SETorDEF(dhwt->set.params.t_frostfree, runtime->config->def_dhwt.t_frostfree);
