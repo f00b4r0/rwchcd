@@ -28,6 +28,8 @@
 #include <pthread.h>
 #include <string.h>	// strcmp/memcpy
 #include <stdatomic.h>
+#include <limits.h>
+#include <assert.h>
 
 #include "scheduler.h"
 #include "filecfg.h"
@@ -250,7 +252,8 @@ int scheduler_schedid_by_name(const char * const restrict sched_name)
 
 	for (sched = Schedules.schead; sched; sched = sched->next) {
 		if (!strcmp(sched_name, sched->name)) {
-			ret = sched->schedid;
+			assert(sched->schedid < INT_MAX);
+			ret = (int)sched->schedid;
 			break;
 		}
 	}
@@ -317,7 +320,8 @@ static int scheduler_add_schedule(const char * const restrict name)
 	Schedules.schead = sched;
 
 	// return schedule id
-	return (sched->schedid);
+	assert(sched->schedid < INT_MAX);
+	return ((int)sched->schedid);
 }
 
 /**
@@ -595,7 +599,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODELST, "time", true, scheduler_entry_time_parse, NULL, },		// 0
 		{ NODELST, "params", true, scheduler_entry_params_parse, NULL, },
 	};
-	const schedid_t schedid = *(int *)priv;
+	const schedid_t schedid = *(schedid_t *)priv;
 	struct s_schedule_e schent;
 	int ret;
 

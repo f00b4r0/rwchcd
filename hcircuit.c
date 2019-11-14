@@ -643,7 +643,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 						circuit->run.ambient_update_time = now;
 						break;
 					}
-					// if settings are insufficient, model can't run, fallthrough to no transition
+					// fallthrough - if settings are insufficient, model can't run, fallthrough to no transition
 				case TRANS_NONE:
 					// no transition, ambient temp assumed to be request temp
 					ambient_temp = circuit->run.request_ambient;
@@ -930,7 +930,7 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 {
 	struct s_tlaw_bilin20C_priv * priv = NULL;
 	temp_t toutw20C, offset, tlin;
-	float slope;
+	float slope, tfl;
 
 	if (!circuit)
 		return (-EINVALID);
@@ -957,19 +957,24 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 	priv->nH100 = nH100;
 
 	// calculate the linear slope = (Y2 - Y1)/(X2 - X1)
-	slope = ((float)(priv->twater2 - priv->twater1)) / (priv->tout2 - priv->tout1);
+	slope = (float)(priv->twater2 - priv->twater1) / (float)(priv->tout2 - priv->tout1);
 	// offset: reduce through a known point
-	offset = priv->twater2 - (priv->tout2 * slope);
+	tfl = (float)priv->tout2 * slope;
+	// XXX assert tfl can be represented as temp_t, which it should, by definition
+	offset = priv->twater2 - (temp_t)(tfl);
 
 	if (!priv->toutinfl) {
 		// calculate outdoor temp for 20C water temp
-		toutw20C = ((float)(celsius_to_temp(20) - offset)) / slope;
+		tfl = (float)(celsius_to_temp(20) - offset) / slope;
+		// XXX assert result can be represented as temp_t, which it should by definition
+		toutw20C = (temp_t)tfl;
 
 		// calculate outdoor temp for inflexion point (toutw20C - (30% of toutw20C - tout1))
 		priv->toutinfl = toutw20C - ((toutw20C - priv->tout1) * 30 / 100);
 
 		// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
-		tlin = (priv->toutinfl * slope) + offset;
+		tfl = (float)priv->toutinfl * slope;
+		tlin = (temp_t)tfl + offset;
 		priv->twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (priv->nH100 - 100) / 100);
 	}
 

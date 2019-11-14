@@ -126,7 +126,7 @@ static int log_rrd_create(const bool async, const char * restrict const identifi
 	}
 
 	rrd_clear_error();
-	ret = rrd_create_r(identifier, log_data->interval, time(NULL)-10, argc, argv);
+	ret = rrd_create_r(identifier, (unsigned)log_data->interval, time(NULL)-10, argc, argv);
 	if (ret)
 		dbgerr("%s", rrd_get_error());
 
@@ -148,8 +148,9 @@ cleanup:
 static int log_rrd_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	char * buffer;
-	int ret, buffer_len, offset = 0;
+	size_t buffer_len, offset = 0;
 	unsigned int i;
+	int ret;
 
 	assert(identifier && log_data);
 
@@ -159,15 +160,15 @@ static int log_rrd_update(const bool async, const char * restrict const identifi
 		return (-EOOM);
 
 	ret = snprintf(buffer, buffer_len, "%ld", time(NULL));
-	offset += ret;
+	offset += (size_t)ret;
 
 	for (i = 0; i < log_data->nvalues; i++) {
 		ret = snprintf(buffer + offset, buffer_len - offset, ":%d", log_data->values[i]);
-		if ((ret < 0) || (ret >= (buffer_len - offset))) {
+		if ((ret < 0) || ((size_t)ret >= (buffer_len - offset))) {
 			ret = -ESTORE;
 			goto cleanup;
 		}
-		offset += ret;
+		offset += (size_t)ret;
 	}
 
 	for (i = (log_data->nkeys - log_data->nvalues); i; i--) {

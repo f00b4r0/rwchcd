@@ -54,9 +54,11 @@ static const char * Storage_path = NULL;
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size)
 {
 	const size_t hdr_size = sizeof(Storage_magic) + sizeof(Storage_version) + sizeof(*version);
-	size_t count = size + hdr_size;
+	ssize_t count = (ssize_t)(size + hdr_size);
 	int fd, dir_fd, ret = -ESTORE;
 	char tmpfile[] = STORAGE_TMPLATE;
+
+	//assert((size + hdr_size) < SSIZE_MAX);
 
 	if (!Storage_configured)
 		return (-ENOTCONFIGURED);
@@ -136,11 +138,13 @@ out:
  */
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size)
 {
-	size_t count = size;
+	ssize_t count = (ssize_t)size;
 	int fd;
 	char magic[ARRAY_SIZE(Storage_magic)];
 	storage_version_t sversion = 0;
 
+	// assert(size < SSIZE_MAX);
+	
 	if (!Storage_configured)
 		return (-ENOTCONFIGURED);
 

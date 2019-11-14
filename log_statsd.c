@@ -229,13 +229,13 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 				goto cleanup;
 			}
 		}
-		ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - ret, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i], mtype);
+		ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - (size_t)ret, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i], mtype);
 		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
 			ret = -ESTORE;
 			goto cleanup;
 		}
 
-		sent = sendto(Log_statsd.run.sockfd, buffer, ret, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+		sent = sendto(Log_statsd.run.sockfd, buffer, (size_t)ret, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 		if (-1 == sent) {
 			dbgerr("could not send");
 			perror("log_statsd");

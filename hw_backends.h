@@ -104,7 +104,7 @@ struct s_hw_callbacks {
 	 * @warning for a given backend, relay names must be unique.
 	 * @param priv hardware backend private data
 	 * @param name target relay name to look for
-	 * @return error if not found or hardware relay id
+	 * @return error if not found or hardware relay id (must fit rid_t)
 	 */
 	int (*relay_ibn)(void * priv, const char * const name);
 
@@ -154,7 +154,7 @@ struct s_hw_callbacks {
 	 * @warning for a given backend, sensor names must be unique.
 	 * @param priv hardware backend private data
 	 * @param name target sensor name to look for
-	 * @return error if not found or hardware sensor id
+	 * @return error if not found or hardware sensor id (must fit sid_t)
 	 */
 	int (*sensor_ibn)(void * priv, const char * const name);
 

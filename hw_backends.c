@@ -36,7 +36,8 @@ static int hw_backends_bid_by_name(const char * const name)
 
 	for (id = 0; (id < ARRAY_SIZE(HW_backends) && HW_backends[id]); id++) {
 		if (!strcmp(HW_backends[id]->name, name)) {
-			ret = id;
+			// assert id < INT_MAX
+			ret = (int)id;
 			break;
 		}
 	}
@@ -107,7 +108,8 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
 	HW_backends[id] = bkend;
 
 	// return backend id
-	return (id);
+	// assert id < INT_MAX
+	return ((int)id);
 }
 
 /**
@@ -140,9 +142,11 @@ int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, con
 		return (-ENOTIMPLEMENTED);
 
 	// find sensor in that backend
-	sid = HW_backends[bid]->cb->sensor_ibn(HW_backends[bid]->priv, sensor_name);
-	if (sid <= 0)
+	ret = HW_backends[bid]->cb->sensor_ibn(HW_backends[bid]->priv, sensor_name);
+	if (ret < 0)
 		return (-ENOTFOUND);
+
+	sid = (sid_t)ret;
 
 	// populate target
 	tempid->bid = bid;
@@ -181,10 +185,12 @@ int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const 
 		return (-ENOTIMPLEMENTED);
 
 	// find relay in that backend
-	rid = HW_backends[bid]->cb->relay_ibn(HW_backends[bid]->priv, relay_name);
-	if (rid <= 0)
+	ret = HW_backends[bid]->cb->relay_ibn(HW_backends[bid]->priv, relay_name);
+	if (ret < 0)
 		return (-ENOTFOUND);
 
+	rid = (rid_t)ret;
+	
 	// populate target
 	relid->bid = bid;
 	relid->rid = rid;
@@ -202,7 +208,7 @@ void hw_backends_exit(void)
 	// exit all registered backends
 	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
 		if (HW_backends[id]->name) {
-			free(HW_backends[id]->name);
+			free((void *)HW_backends[id]->name);
 			HW_backends[id]->name = NULL;
 		}
 		free(HW_backends[id]);

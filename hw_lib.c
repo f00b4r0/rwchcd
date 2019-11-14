@@ -43,7 +43,7 @@
 __attribute__((const)) static float quadratic_cvd(const float R0, const float A, const float B, const uint_fast16_t ohm)
 {
 	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
-	return ((-R0*A + sqrtf(R0*R0*A*A - 4.0F*R0*B*(R0 - ohm))) / (2.0F*R0*B));
+	return ((-R0*A + sqrtf(R0*R0*A*A - 4.0F*R0*B*(R0 - (float)ohm))) / (2.0F*R0*B));
 }
 
 /**
@@ -75,8 +75,8 @@ __attribute__((const)) static float pt1000_ohm_to_celsius(const uint_fast16_t oh
 __attribute__((const)) static float ni1000_ohm_to_celsius(const uint_fast16_t ohm)
 {
 	const float R0 = 1000.0F;
-	const float A = 5.485e-3;
-	const float B = 6.650e-6;
+	const float A = 5.485e-3F;
+	const float B = 6.650e-6F;
 
 	return (quadratic_cvd(R0, A, B, ohm));
 }
@@ -166,7 +166,7 @@ int hw_lib_filecfg_sensor_parse(const void * restrict const priv, const struct s
 	sensor->set.sid = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
 	sensor_stype = parsers[1].node->value.stringval;
 	if (parsers[2].node)
-		sensor_offset = (NODEFLT == parsers[2].node->type) ? parsers[2].node->value.floatval : parsers[2].node->value.intval;
+		sensor_offset = (NODEFLT == parsers[2].node->type) ? parsers[2].node->value.floatval : (float)parsers[2].node->value.intval;
 	else
 		sensor_offset = 0;
 

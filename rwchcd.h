@@ -65,7 +65,7 @@
 #define pr_err(format, ...)	fprintf(stderr, "ERROR! " format "\n", ## __VA_ARGS__)
 
 /** computes the required malloc size for the formatted string */
-#define snprintf_needed(format, ...)	(1+snprintf(NULL, 0, format, __VA_ARGS__))
+#define snprintf_needed(format, ...)	((size_t)(1+snprintf(NULL, 0, format, __VA_ARGS__)))
 /**
  * Auto-malloc snprintf() wrapper.
  * Automatically malloc() the exact required size for the formatted string and apply snprintf() to it.
