@@ -84,7 +84,7 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 	if (!valve)
 		return (-EINVALID);
 
-	tcourse = abs(perth);
+	tcourse = (uint_fast16_t)abs(perth);
 
 	// 2way motor only allows for full swing
 	if ((VA_M_2WAY == valve->set.motor) && (VALVE_REQMAXPTH != tcourse))
@@ -247,6 +247,8 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 		return (ALL_OK);	// skip until next iteration
 	}
 
+	assert((tempin_h - tempin_l) > 0);
+
 	/*
 	 (tempin_h - tempin_l)/1000 is the process gain K:
 	 maximum output delta (Ksmax) / maximum control delta (1000‰).
@@ -257,16 +259,18 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
-	Kp = vpriv->run.Kp_t * 1000 / (tempin_h - tempin_l);	// Make sure K cannot be 0 here. Kp is already * VPI_FDEC
+	// Kp is UNSIGNED (positive) by construction, assert result is < INT32_MAX
+	Kp = (signed)(vpriv->run.Kp_t * 1000 / (unsigned)(tempin_h - tempin_l));	// Make sure K cannot be 0 here. Kp_t is already * VPI_FDEC
+	// Ti is UNSIGNED
 	Ti = vpriv->set.Tu;
 
-	// calculate error E: (target - actual)
+	// calculate error E: (target - actual) - SIGNED
 	error = target_tout - tempout;
 
-	// Integral term I: (Ki * error) * sample interval
-	iterm = (Kp * error / Ti) * dt;
+	// Integral term I: (Ki * error) * sample interval - SIGNED
+	iterm = (Kp * error / (signed)Ti) * (signed)dt;
 
-	// Proportional term P applied to output: Kp * (previous - actual)
+	// Proportional term P applied to output: Kp * (previous - actual) - SIGNED
 	pterm = Kp * (vpriv->run.prev_out - tempout);
 
 	/*
