@@ -83,8 +83,8 @@ static int timekeep_clockupdate(void)
 	if (clock_gettime(TK_clockid, &tsnow))
 		return (-EGENERIC);
 
-	retval = (tsnow.tv_sec - TK_tstart.tv_sec) * TIMEKEEP_SMULT;
-	retval += (tsnow.tv_nsec - TK_tstart.tv_nsec) / TIMEKEEP_RESNS;
+	retval = (unsigned)(tsnow.tv_sec - TK_tstart.tv_sec) * TIMEKEEP_SMULT;
+	retval += (unsigned)(tsnow.tv_nsec - TK_tstart.tv_nsec) / TIMEKEEP_RESNS;
 
 	atomic_store_explicit(&TK_wallclock, retval, memory_order_relaxed);
 

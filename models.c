@@ -33,7 +33,7 @@
 
 static struct s_models Models;	///< Known models
 
-static const storage_version_t Models_sversion = 4;
+static const storage_version_t Models_sversion = 5;
 
 /**
  * Building model data log callback.
