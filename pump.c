@@ -177,7 +177,7 @@ int pump_run(struct s_pump * restrict const pump)
 	if (unlikely(ret < 0))
 		return (ret);
 
-	pump->run.actual_cooldown_time = ret;
+	pump->run.actual_cooldown_time = (timekeep_t)ret;
 
 	return (ALL_OK);
 }
