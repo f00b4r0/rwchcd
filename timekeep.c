@@ -79,12 +79,16 @@ static int timekeep_clockupdate(void)
 {
 	struct timespec tsnow;
 	timekeep_t retval;
+	time_t secdiff;
+	long nsecdiff;
 
 	if (clock_gettime(TK_clockid, &tsnow))
 		return (-EGENERIC);
 
-	retval = (tsnow.tv_sec - TK_tstart.tv_sec) * TIMEKEEP_SMULT;
-	retval += (tsnow.tv_nsec - TK_tstart.tv_nsec) / TIMEKEEP_RESNS;
+	secdiff = (tsnow.tv_sec - TK_tstart.tv_sec) * TIMEKEEP_SMULT;
+	nsecdiff = (tsnow.tv_nsec - TK_tstart.tv_nsec) / TIMEKEEP_RESNS;
+
+	retval = (unsigned)(secdiff + nsecdiff);
 
 	atomic_store_explicit(&TK_wallclock, retval, memory_order_relaxed);
 
