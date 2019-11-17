@@ -39,6 +39,7 @@ TIMEMULT		[wdhms]
 %{
 	#include <stdbool.h>
 	#include <assert.h>
+	#include <limits.h>
 	#include "filecfg_parser.tab.h"
 
 	/**
@@ -79,7 +80,8 @@ TIMEMULT		[wdhms]
 
 		sdur = strtol(str, NULL, 10);
 
-		sdur *= mult;
+		assert(mult < INT_MAX);
+		sdur *= (signed)mult;
 
 		return (sdur);
 	}
