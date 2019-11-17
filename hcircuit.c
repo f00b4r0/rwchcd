@@ -635,8 +635,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
 						diff_temp = request_temp - circuit->run.actual_ambient;
 						if (diff_temp >= KPRECISION) {
-							ambient_temp = circuit->run.trans_start_temp + (((KPRECISION*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
-													 (KPRECISION + (KPRECISION*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISION);	// works even if boostdelta is not set
+							// assert casts operate on representable values
+							ambient_temp = circuit->run.trans_start_temp + (signed)(((KPRECISION*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
+													 (unsigned)(KPRECISION + (KPRECISION*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISION);	// works even if boostdelta is not set
 						}
 						else
 							ambient_temp = request_temp;
@@ -838,8 +839,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
 				circuit->run.rorh_update_time = now + timekeep_sec_to_tk(60);	// send update_time 60s ahead for low point settling (see below). XXX hardcoded
 			}
-			// at circuit startup (pump was previously off) let the water settle to lowest point, which we'll use as reference once it's reached.
-			else if ((now - circuit->run.rorh_update_time) < 0) {
+			// at circuit startup (pump was previously off) let the water settle to lowest point, which we'll use as reference once it's reached. Test checks for overflow which means now is before rorh_update_time
+			else if ((now - circuit->run.rorh_update_time) >= TIMEKEEP_MAX/2) {
 				water_temp = curr_temp;
 				if (curr_temp < circuit->run.rorh_last_target)
 					circuit->run.rorh_last_target = curr_temp;
