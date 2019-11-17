@@ -254,7 +254,7 @@ int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, 
 	if (turn_on) {
 		if (!relay->run.is_on) {
 			if ((now - relay->run.off_since) < change_delay)
-				return (change_delay - (now - relay->run.off_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+				return ((int)(change_delay - (now - relay->run.off_since)));	// < INT_MAX - don't do anything if previous state hasn't been held long enough - return remaining time
 
 			relay->run.turn_on = true;
 		}
@@ -262,7 +262,7 @@ int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, 
 	else {	// turn off
 		if (relay->run.is_on) {
 			if ((now - relay->run.on_since) < change_delay)
-				return (change_delay - (now - relay->run.on_since));	// don't do anything if previous state hasn't been held long enough - return remaining time
+				return ((int)(change_delay - (now - relay->run.on_since)));	// < INT_MAX - don't do anything if previous state hasn't been held long enough - return remaining time
 
 			relay->run.turn_on = false;
 		}
@@ -314,7 +314,7 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 			relay->run.is_on = true;
 			relay->run.on_since = now;
 			if (relay->run.off_since)
-				relay->run.off_totsecs += timekeep_tk_to_sec(now - relay->run.off_since);
+				relay->run.off_totsecs += (unsigned)timekeep_tk_to_sec(now - relay->run.off_since);
 			relay->run.off_since = 0;
 			ret = HW_LIB_RCHTURNON;
 		}
@@ -324,7 +324,7 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 			relay->run.is_on = false;
 			relay->run.off_since = now;
 			if (relay->run.on_since)
-				relay->run.on_totsecs += timekeep_tk_to_sec(now - relay->run.on_since);
+				relay->run.on_totsecs += (unsigned)timekeep_tk_to_sec(now - relay->run.on_since);
 			relay->run.on_since = 0;
 			ret = HW_LIB_RCHTURNOFF;
 		}
@@ -352,9 +352,9 @@ void hw_lib_relay_restore(struct s_hw_relay * restrict const rdest, const struct
 
 	// handle saved state (see @note)
 	if (rsrc->run.is_on)
-		rdest->run.on_totsecs += timekeep_tk_to_sec(rsrc->run.state_time);
+		rdest->run.on_totsecs += (unsigned)timekeep_tk_to_sec(rsrc->run.state_time);
 	else
-		rdest->run.off_totsecs += timekeep_tk_to_sec(rsrc->run.state_time);
+		rdest->run.off_totsecs += (unsigned)timekeep_tk_to_sec(rsrc->run.state_time);
 	rdest->run.off_since = timekeep_now();	// off since "now"
 	rdest->run.on_totsecs += rsrc->run.on_totsecs;
 	rdest->run.off_totsecs += rsrc->run.off_totsecs;
