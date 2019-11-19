@@ -209,11 +209,11 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
 
 	dhwt_actuator_use(dhwt, false);
 
-	(void)hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+	(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 	// isolate DHWT if possible
 	if (dhwt->set.p.valve_hwisol)
-		(void)valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
+		(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
 
 	dhwt->run.active = false;
 
@@ -431,12 +431,12 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		case RM_TEST:
 			dhwt->run.active = true;
 			if (dhwt->set.p.valve_hwisol)
-				(void)valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
+				(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
 			if (dhwt->set.p.pump_feed)
-				(void)pump_set_state(dhwt->set.p.pump_feed, ON, FORCE);
+				(void)!pump_set_state(dhwt->set.p.pump_feed, ON, FORCE);
 			if (dhwt->set.p.pump_recycle)
-				(void)pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
-			(void)hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
+				(void)!pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
+			(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
 			return (ALL_OK);
 		case RM_AUTO:
 		case RM_DHWONLY:
@@ -518,7 +518,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 				dhwt->run.electric_mode = true;
 				// isolate the DHWT if possible when operating from electric
 				if (dhwt->set.p.valve_hwisol)
-					(void)valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
+					(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
 
 				// mark heating in progress
 				dhwt->run.charge_on = true;
@@ -572,7 +572,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
 		// stop all heat input (ensures they're all off at switchover)
 		if (test) {
 			// stop self-heater (if any)
-			(void)hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+			(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
 
 			// clear heat request
 			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;

@@ -215,8 +215,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	// reset runtime
 	memset(&boiler->run, 0x0, sizeof(boiler->run));
 
-	(void)hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
-	(void)hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 
 	if (boiler->set.p.pump_load)
 		pump_shutdown(boiler->set.p.pump_load);
@@ -238,12 +238,12 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 	reset_intg(&boiler->run.boil_itg);
 	reset_intg(&boiler->run.ret_itg);
 
-	(void)hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
-	(void)hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
 	// failsafe() is called after runchecklist(), the above can't fail
 
 	if (boiler->set.p.pump_load)
-		(void)pump_set_state(boiler->set.p.pump_load, ON, FORCE);
+		(void)!pump_set_state(boiler->set.p.pump_load, ON, FORCE);
 }
 
 /**
@@ -258,7 +258,7 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 
 	assert(boiler);
 
-	(void)hardware_sensor_clone_temp(boiler->set.tid_boiler, &boilertemp);
+	(void)!hardware_sensor_clone_temp(boiler->set.tid_boiler, &boilertemp);
 	// antifreeze() is called after runchecklist(), the above can't fail
 
 	// trip at set.t_freeze point
@@ -455,7 +455,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		}
 		else {
 			// calculate return integral
-			(void)hardware_sensor_clone_time(boiler->set.tid_boiler_return, &ttime);
+			(void)!hardware_sensor_clone_time(boiler->set.tid_boiler_return, &ttime);
 			ret = hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
 			if (likely(ALL_OK == ret)) {
 				// jacket integral between 0 and -1000Ks - XXX hardcoded

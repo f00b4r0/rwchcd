@@ -596,8 +596,8 @@ int valve_offline(struct s_valve * const valve)
 
 	// stop the valve uncondiditonally
 	if (VA_M_3WAY == valve->set.motor) {
-		(void)hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
-		(void)hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
+		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
 	}
 
 	memset(&valve->run, 0x00, sizeof(valve->run));

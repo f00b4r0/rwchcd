@@ -141,7 +141,7 @@ int pump_offline(struct s_pump * restrict const pump)
 		return (-ENOTCONFIGURED);
 
 	// unconditionally turn pump off
-	(void)hardware_relay_set_state(pump->set.rid_pump, false, 0);
+	(void)!hardware_relay_set_state(pump->set.rid_pump, false, 0);
 
 	memset(&pump->run, 0x00, sizeof(pump->run));
 	//pump->run.online = false;	// handled by memset
