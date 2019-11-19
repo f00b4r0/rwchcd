@@ -741,7 +741,7 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	struct s_valve * restrict const valve = priv;
 	timekeep_t sample_intvl, Tu, Td;
 	int ret, tune_f;
-	float Ksmax;
+	temp_t Ksmax;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
@@ -800,7 +800,7 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 
 		switch (i) {
 			case 0:
-				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
+				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : (float)currnode->value.intval;
 				if (fv < 0)
 					goto invaliddata;
 				else
@@ -972,7 +972,7 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 				if (iv < 0)
 					goto invaliddata;
 				if (0 == i)
-					valve->set.deadband = iv;
+					valve->set.deadband = (unsigned)iv;
 				else	// i == 1
 					valve->set.ete_time = timekeep_sec_to_tk(iv);
 				break;
@@ -1203,7 +1203,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 						iv = scheduler_schedid_by_name(n);
 						if (iv <= 0)
 							goto invaliddata;
-						dhwt->set.schedid = iv;
+						dhwt->set.schedid = (unsigned)iv;
 						break;
 					default:
 						break;	// should never happen
@@ -1337,7 +1337,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				hcircuit->set.ambient_factor = iv;
 				break;
 			case 4:
-				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
+				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : (float)currnode->value.intval;
 				if (fv < 0)
 					goto invaliddata;
 				hcircuit->set.wtemp_rorh = deltaK_to_temp(fv);
@@ -1349,7 +1349,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 				hcircuit->set.am_tambient_tK = timekeep_sec_to_tk(iv);
 				break;
 			case 6:
-				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : currnode->value.intval;
+				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : (float)currnode->value.intval;
 				hcircuit->set.tambient_boostdelta = deltaK_to_temp(fv);	// allow negative values because why not
 				break;
 			case 7:
@@ -1412,7 +1412,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 						iv = scheduler_schedid_by_name(n);
 						if (iv <= 0)
 							goto invaliddata;
-						hcircuit->set.schedid = iv;
+						hcircuit->set.schedid = (unsigned)iv;
 						break;
 					default:
 						break;	// should never happen
@@ -1501,7 +1501,7 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 			case 4:
 			case 5:
 			case 6:
-				fv = (NODEFLT == currnode->type) ?  currnode->value.floatval : currnode->value.intval;
+				fv = (NODEFLT == currnode->type) ?  currnode->value.floatval : (float)currnode->value.intval;
 				if (fv < 0)
 					goto invaliddata;
 				temp = celsius_to_temp(fv);
@@ -1656,7 +1656,7 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 				iv = scheduler_schedid_by_name(currnode->value.stringval);
 				if (iv <= 0)
 					goto invaliddata;
-				heatsource->set.schedid = iv;
+				heatsource->set.schedid = (unsigned)iv;
 				break;
 			default:
 				break;	// should never happen
