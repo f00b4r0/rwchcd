@@ -41,14 +41,16 @@
  */
 __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt)
 {
-	temp_t tdiff = (filtered - new_sample);
+	const temp_t tdiff = (filtered - new_sample);
+	const timekeep_t tdt = (tau + dt);
 
 #ifdef DEBUG
 	if (unlikely(dt < 1))
-		dbgmsg("WARNING: rounding error. tau: %lld, dt: %lld", tau, dt);
+		dbgmsg("WARNING: rounding error. tau: %d, dt: %d", tau, dt);
 #endif
 
-	return (filtered - ((dt * tdiff + sign(tdiff)*(tau+dt)/2) / (tau + dt)));
+	// assert (dt << TEMPT_MAX), assert (tdt << TEMPT_MAX)
+	return (filtered - (((signed)dt * tdiff + sign(tdiff)*(signed)(tdt)/2) / (signed)(tdt)));
 	//                                 ^-- this rounds
 }
 
