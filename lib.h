@@ -31,10 +31,12 @@ struct s_temp_intgrl {
 
 /** Temperature derivative data */
 struct s_temp_deriv {
-	bool inuse;			///< true if derivative is in use
 	temp_t derivative;		///< derivative value in temp_t / timekeep_t * internal precision
+	temp_t curr_temp;		///< derivative view of current temp
+	timekeep_t curr_time;		///< last update of current temp
 	temp_t last_temp;		///< last recorded temperature value
 	timekeep_t last_time;		///< last recorded temperature time
+	timekeep_t tau;			///< tau currently in use
 };
 
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt);
