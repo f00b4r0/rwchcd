@@ -266,7 +266,7 @@ int scheduler_schedid_by_name(const char * const restrict sched_name)
  * runs a delay loop through the callbacks.
  * @todo improve inefficient time handling.
  */
-void * scheduler_thread(void * arg)
+void * scheduler_thread(void * arg __attribute__((unused)))
 {
 	// start logging
 	while (1) {
@@ -625,7 +625,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	return (ret);
 }
 
-static int scheduler_schedule_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int scheduler_schedule_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	int schedid;
 

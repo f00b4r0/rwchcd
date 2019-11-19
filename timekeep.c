@@ -116,7 +116,7 @@ timekeep_t timekeep_now(void)
  * Update the wall clock at Nyquist frequency
  * @todo hardcoded frequency, handle signals
  */
-void * timekeep_thread(void * arg)
+void * timekeep_thread(void * arg __attribute__((unused)))
 {
 	// start logging
 	while (1) {

@@ -461,7 +461,7 @@ void log_exit(void)
  };
  */
 
-static int log_config_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int log_config_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR, "sync_bkend", true, NULL, NULL, },		// 0

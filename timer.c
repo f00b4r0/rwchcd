@@ -39,7 +39,7 @@ static atomic_flag Timer_cb_flag = ATOMIC_FLAG_INIT;	///< list modification prot
  * Callbacks are called sequentially one after the other: there is no concurrency.
  * @todo improve imperfect time handling.
  */
-void * timer_thread(void * arg)
+void * timer_thread(void * arg __attribute__((unused)))
 {
 	struct s_timer_cb * lcb;
 	timekeep_t now;
