@@ -499,6 +499,11 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			dbgmsg("orig trip_temp: %.1f", temp_to_celsius(trip_temp));
 			trip_temp += ((unsigned)(temp_deriv * temp_deriv) * boiler->run.turnon_curr_adj) / BOILER_FPDEC;
 		}
+
+		// cap trip_temp at limit_tmax - hysteresis/2
+		temp = (boiler->set.limit_tmax - boiler->set.hysteresis/2);
+		if (trip_temp > temp)
+			trip_temp = temp;
 	}
 	else
 		trip_temp = 0;
