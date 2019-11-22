@@ -26,6 +26,7 @@
  * Under these assumptions, unsigned integer arithmetics will work very nicely and will be fast on all platforms
  */
 typedef uint32_t	timekeep_t;
+#define TIMEKEEP_MAX	UINT32_MAX
 
 int timekeep_init(void);
 void timekeep_exit(void);
@@ -39,10 +40,7 @@ void * timekeep_thread(void * arg);
  * @return the value correctly formatted.
  * @warning seconds must be < UINT32_MAX
  */
-__attribute__((const, always_inline)) static inline timekeep_t timekeep_sec_to_tk(long seconds)
-{
-	return (timekeep_t)(seconds * TIMEKEEP_SMULT);
-}
+#define timekeep_sec_to_tk(seconds)	(timekeep_t)(seconds * TIMEKEEP_SMULT)
 
 
 /**
