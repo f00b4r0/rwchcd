@@ -64,7 +64,7 @@ static const char *RRAs_15mn[] = {
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_rrd_create(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_create(const bool async __attribute__((unused)), const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	int ret = -EGENERIC, argc = 0;
 	unsigned int i;
@@ -145,7 +145,7 @@ cleanup:
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_rrd_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_update(const bool async __attribute__((unused)), const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	char * buffer;
 	size_t buffer_len, offset = 0;
