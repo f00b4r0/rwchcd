@@ -42,15 +42,18 @@ static atomic_flag Timer_cb_flag = ATOMIC_FLAG_INIT;	///< list modification prot
 void * timer_thread(void * arg __attribute__((unused)))
 {
 	struct s_timer_cb * lcb;
+	unsigned int tperiod;
 	timekeep_t now;
 	int ret;
-	
+
+	// note: must NOT sleep while holding the flag
 	while (1) {
-		while (unlikely(atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire)))
-			timekeep_sleep(1);	// yield
+		while (unlikely(atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire)));	// cannot yield here
+
+		tperiod = Timer_period_min;
 
 		// wait for first callback to be configured
-		if (unlikely(!Timer_period_min)) {
+		if (unlikely(!tperiod)) {
 			atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
 			timekeep_sleep(10);
 			continue;
@@ -69,9 +72,9 @@ void * timer_thread(void * arg __attribute__((unused)))
 			lcb->last_call = now;	// only updated here
 		}
 
-		timekeep_sleep(Timer_period_min);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
-
 		atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
+
+		timekeep_sleep(tperiod);	// sleep for the shortest required log period - XXX TODO: pb if later added cbs have shorter period that the one currently sleeping on. Use select() and a pipe?
 	}
 }
 
@@ -128,7 +131,8 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 	lcb_before = NULL;
 
 	// critical section begins - spin lock
-	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire));
+	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire))
+		usleep(500);	// yield
 
 	lcb_after = Timer_cb_head;
 	
@@ -178,7 +182,8 @@ void timer_clean_callbacks(void)
 {
 	struct s_timer_cb * lcb, * lcbn;
 
-	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire));
+	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire))
+		usleep(500);	// yield
 
 	lcb = Timer_cb_head;
 	Timer_cb_head = NULL;
