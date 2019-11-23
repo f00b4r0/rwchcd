@@ -1045,8 +1045,10 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	assert(config->summer_run_interval && config->summer_run_duration);
 
 	// don't do anything if summer AND plant asleep aren't in effect
-	if (!(plant_summer_ok(plant) && plant->pdata.plant_could_sleep))
+	if (!(plant_summer_ok(plant) && plant->pdata.plant_could_sleep)) {
 		plant->run.summer_timer = now;
+		return (ALL_OK);
+	}
 
 	// stop running when duration is exceeded (this also prevents running when summer is first triggered)
 	if ((now - plant->run.summer_timer) >= (config->summer_run_interval + config->summer_run_duration)) {
