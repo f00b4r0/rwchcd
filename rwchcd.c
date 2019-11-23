@@ -109,7 +109,6 @@ extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser
 #endif
 
 static volatile bool Sem_master_thread = false;
-static volatile bool Sem_master_hwinit_done = false;
 
 static const char Version[] = RWCHCD_REV;	///< Build version string
 
