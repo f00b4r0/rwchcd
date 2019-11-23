@@ -835,7 +835,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 	if ((VA_TALG_NONE != valve->set.tset.tmix.algo) || valve->priv)
 		return (-EEXISTS);
 
-	if ((amount > 100) || (intvl < 1))
+	if ((amount > 100) || (!intvl))
 		return (-EINVALID);
 
 	// create priv element
@@ -878,7 +878,7 @@ int valve_make_pi(struct s_valve * const valve,
 	if ((VA_TALG_NONE != valve->set.tset.tmix.algo) || valve->priv)
 		return (-EEXISTS);
 
-	if ((intvl <= 0) || (Td <= 0) || (Ksmax <= 0) || (t_factor <= 0))
+	if ((!intvl) || (!Td) || (Ksmax <= 0) || (t_factor <= 0))
 		return (-EINVALID);
 
 	// ensure sample interval <= (Tu/4) [Nyquist]
