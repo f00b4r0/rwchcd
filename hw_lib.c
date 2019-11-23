@@ -135,18 +135,18 @@ void hw_lib_filecfg_sensor_dump(const struct s_hw_sensor * const sensor)
 
 /**
  * Parse a hardware sensor from config.
- * @param priv unused
+ * @param priv an allocated sensor structure which will be populated according to parsed configuration
  * @param node the configuration node
- * @param sensor an allocated sensor structure which will be populated according to parsed configuration
  * @return exec status
  */
-int hw_lib_filecfg_sensor_parse(const void * restrict const priv, const struct s_filecfg_parser_node * const node, struct s_hw_sensor * const sensor)
+int hw_lib_filecfg_sensor_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "sid", true, NULL, NULL, },
 		{ NODESTR, "type", true, NULL, NULL, },
 		{ NODEFLT|NODEINT, "offset", false, NULL, NULL, },
 	};
+	struct s_hw_sensor * const sensor = priv;
 	const char * sensor_stype;
 	float sensor_offset;
 	int ret;
@@ -204,17 +204,17 @@ void hw_lib_filecfg_relay_dump(const struct s_hw_relay * const relay)
 
 /**
  * Parse a hardware relay from config.
- * @param priv unused
+ * @param priv an allocated relay structure which will be populated according to parsed configuration
  * @param node the configuration node
- * @param relay an allocated relay structure which will be populated according to parsed configuration
  * @return exec status
  */
-int hw_lib_filecfg_relay_parse(const void * restrict const priv, const struct s_filecfg_parser_node * const node, struct s_hw_relay * const relay)
+int hw_lib_filecfg_relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "rid", true, NULL, NULL, },
 		{ NODEBOL, "failstate", true, NULL, NULL, },
 	};
+	struct s_hw_relay * const relay = priv;
 	int ret;
 
 	assert(node);

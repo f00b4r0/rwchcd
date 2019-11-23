@@ -132,7 +132,7 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	struct s_hw_sensor sensor;
 	int ret;
 
-	ret = hw_lib_filecfg_sensor_parse(priv, node, &sensor);
+	ret = hw_lib_filecfg_sensor_parse(&sensor, node);
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
@@ -162,7 +162,7 @@ static int relay_parse(void * restrict const priv, const struct s_filecfg_parser
 	int ret;
 
 	// match children
-	ret = hw_lib_filecfg_relay_parse(priv, node, &relay);
+	ret = hw_lib_filecfg_relay_parse(&relay, node);
 	if (ALL_OK != ret)
 		return (ret);	// return if invalid config
 

@@ -70,9 +70,9 @@ struct s_hw_relay {
 ohm_to_celsius_ft * hw_lib_sensor_o_to_c(const enum e_hw_stype stype);
 
 void hw_lib_filecfg_sensor_dump(const struct s_hw_sensor * const sensor);
-int hw_lib_filecfg_sensor_parse(const void * restrict const priv, const struct s_filecfg_parser_node * const node, struct s_hw_sensor * const sensor);
+int hw_lib_filecfg_sensor_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 void hw_lib_filecfg_relay_dump(const struct s_hw_relay * const relay);
-int hw_lib_filecfg_relay_parse(const void * restrict const priv, const struct s_filecfg_parser_node * const node, struct s_hw_relay * const relay);
+int hw_lib_filecfg_relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
 int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, const timekeep_t change_delay);
 int hw_lib_relay_get_state(struct s_hw_relay * const relay);
