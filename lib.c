@@ -90,6 +90,8 @@ temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp,
 		deriv->curr_temp = temp_expw_mavg(deriv->curr_temp, new_temp, tsample, new_time - deriv->curr_time);
 		deriv->curr_time = new_time;
 
+		assert(timekeep_a_ge_b(new_time, deriv->last_time));
+
 		timediff = new_time - deriv->last_time;
 
 		// avoid divide-by-zero
@@ -148,6 +150,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 	temp_t intg;
 
 	assert(intgrl);
+	assert(timekeep_a_ge_b(new_time, intgrl->last_time));
 
 	intgrl->inuse = true;
 

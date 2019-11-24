@@ -15,6 +15,7 @@
 #include <time.h>
 #include <unistd.h>	// (u)sleep()
 #include <stdatomic.h>
+#include <assert.h>
 
 #include "rwchcd.h"
 #include "timekeep.h"
@@ -89,6 +90,9 @@ static int timekeep_clockupdate(void)
 	nsecdiff = (tsnow.tv_nsec - TK_tstart.tv_nsec) / TIMEKEEP_RESNS;
 
 	retval = (unsigned)(secdiff + nsecdiff);
+
+	// assert clock only goes forward
+	assert(timekeep_a_ge_b(retval, atomic_load_explicit(&TK_wallclock, memory_order_relaxed)));
 
 	atomic_store_explicit(&TK_wallclock, retval, memory_order_relaxed);
 
