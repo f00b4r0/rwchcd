@@ -203,7 +203,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			// delay by hardcoded 5 samples
 			if (hw->scount[i] < 5) {
 				hw->scount[i]++;
-				dbgmsg("delaying sensor %d short, samples ignored: %d", i+1, hw->scount[i]);
+				dbgmsg(1, 1, "delaying sensor %d short, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
 				hw->Sensors[i].run.value = TEMPSHORT;
@@ -214,7 +214,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			// delay by hardcoded 5 samples
 			if (hw->scount[i] < 5) {
 				hw->scount[i]++;
-				dbgmsg("delaying sensor %d disconnect, samples ignored: %d", i+1, hw->scount[i]);
+				dbgmsg(1, 1, "delaying sensor %d disconnect, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
 				hw->Sensors[i].run.value = TEMPDISCON;
@@ -230,7 +230,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 		else {
 			// decimate large changes to work around measurement instability. Hardcoded 4C / 5 samples (i.e. ~5 seconds) max
 			if (((current < (previous - deltaK_to_temp(4))) || (current > (previous + deltaK_to_temp(4)))) && hw->scount[i]++ < 5)
-				dbgmsg("decimating sensor %d value, samples ignored: %d", i+1, hw->scount[i]);
+				dbgmsg(1, 1, "decimating sensor %d value, samples ignored: %d", i+1, hw->scount[i]);
 			else {
 				// apply LP filter - ensure we only apply filtering on valid temps
 				hw->scount[i] = 0;
@@ -284,7 +284,7 @@ int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 			hw_lib_relay_restore(&hw->Relays[i], relayptr);
 			relayptr++;
 		}
-		dbgmsg("Hardware relay state restored");
+		dbgmsg(1, 1, "Hardware relay state restored");
 	}
 
 	return (ret);
@@ -376,7 +376,7 @@ int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw)
 	// save hardware config
 	ret = hw_p1_spi_settings_s(&hw->spi);
 
-	dbgmsg("HW Config saved.");
+	dbgmsg(1, 1, "HW Config saved.");
 	
 out:
 	return (ret);
@@ -433,7 +433,7 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 	hw->run.calib_dac = hw->run.calib_dac ? (uint_fast16_t)temp_expw_mavg(hw->run.calib_dac, newcalib_dac, 1, 5) : newcalib_dac;		// hardcoded moving average (20% ponderation to new sample) to smooth out sudden bumps
 	hw->run.last_calib = now;
 
-	dbgmsg("NEW: calib_nodac: %d, calib_dac: %d", hw->run.calib_nodac, hw->run.calib_dac);
+	dbgmsg(1, 1, "NEW: calib_nodac: %d, calib_dac: %d", hw->run.calib_nodac, hw->run.calib_dac);
 	
 	return (ALL_OK);
 }

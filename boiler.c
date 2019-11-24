@@ -442,8 +442,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
 		cshift_boil = (2 * temp_intgrl)/KPRECISION;
 
-		if (temp_intgrl < 0)
-			dbgmsg("\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
+		dbgmsg(2, (temp_intgrl < 0), "\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
 	}
 
 	// handler boiler return temp if set
@@ -465,8 +464,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - XXX hardcoded
 				cshift_ret = (temp_intgrl / 10)/KPRECISION;
 
-				if (temp_intgrl < 0)
-					dbgmsg("\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
+				dbgmsg(2, (temp_intgrl < 0), "\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
 			}
 			else
 				reset_intg(&boiler->run.ret_itg);
@@ -475,8 +473,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// min each cshift (they're negative) to form the heatsource critical shift
 	heat->run.cshift_crit = (cshift_boil < cshift_ret) ? cshift_boil : cshift_ret;
-	if (heat->run.cshift_crit)
-		dbgmsg("\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
+	dbgmsg(1, (heat->run.cshift_crit), "\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
 
 	// turn pump on if any
 	if (boiler->set.p.pump_load) {
@@ -499,7 +496,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		// compute anticipation-corrected trip_temp - only on decreasing temperature
 		if (temp_deriv < 0) {
 			temp = ((unsigned)(temp_deriv * temp_deriv) / timekeep_sec_to_tk(BOILER_DERIV_TAU_S) * boiler->run.turnon_curr_adj) / BOILER_FPDEC;
-			dbgmsg("orig trip_temp: %.1f, adj: %.1f, new: %.1f", temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
+			dbgmsg(2, 1, "\%s\": orig trip_temp: %.1f, adj: %.1f, new: %.1f", heat->name, temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
 			trip_temp += temp;
 		}
 
@@ -578,7 +575,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		}
 	}
 
-	dbgmsg("\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
+	dbgmsg(1, 1, "\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
 	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
 	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
 

@@ -116,7 +116,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 		goto out;
 	}
 
-	dbgmsg("identifier: \"%s\", tmp: \"%s\", v: %d, sz: %zu", identifier, tmpfile, *version, size);
+	dbgmsg(1, 1, "identifier: \"%s\", tmp: \"%s\", v: %d, sz: %zu", identifier, tmpfile, *version, size);
 
 	ret = ALL_OK;
 
@@ -154,7 +154,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	// open stream
 	fd = open(identifier, O_RDONLY);
 	if (fd < 0) {
-		dbgmsg("failed to open \"%s\" for reading", identifier);
+		dbgmsg(1, 1, "failed to open \"%s\" for reading", identifier);
 		return (-ESTORE);
 	}
 
@@ -184,7 +184,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	if (count)
 		return (-ESTORE);
 
-	dbgmsg("identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
+	dbgmsg(1, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
 
 	return (ALL_OK);
 }

@@ -235,7 +235,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	// stop PI operation if inputs are (temporarily) inverted or too close (would make K==0)
 	if (tempin_h - tempin_l <= 1000) {
 		valve->run.ctrl_ready = false;
-		dbgmsg("\"%s\": inputs inverted or input range too narrow", valve->name);
+		dbgerr("\"%s\": inputs inverted or input range too narrow", valve->name);
 		return (-EDEADZONE);
 	}
 
@@ -292,7 +292,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 */
 	perth = pthfl / VPI_FPDEC;
 
-	dbgmsg("\"%s\": Kp: %x, E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
+	dbgmsg(2, 1, "\"%s\": Kp: %x, E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
 	       valve->name, Kp, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
 
 	/*
@@ -787,7 +787,7 @@ int valve_run(struct s_valve * const valve)
 			return (-ENOTIMPLEMENTED);
 	}
 
-	dbgmsg("\"%s\": rq_act: %d, act: %d, pos: %.1f%%, rq_crs: %.1f%%",
+	dbgmsg(1, 1, "\"%s\": rq_act: %d, act: %d, pos: %.1f%%, rq_crs: %.1f%%",
 	       valve->name, valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
 	       (float)valve->run.target_course/10.0F);
 

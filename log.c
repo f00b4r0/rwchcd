@@ -287,7 +287,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 	*currlistp = lelmt;
 	// end fence
 
-	dbgmsg("registered \"%s %s\", interval: %d", lsource->basename, lsource->identifier, Log_sched[lsource->log_sched].interval);
+	dbgmsg(1, 1, "registered \"%s %s\", interval: %d", lsource->basename, lsource->identifier, Log_sched[lsource->log_sched].interval);
 
 	return (ALL_OK);
 
@@ -348,7 +348,7 @@ int log_deregister(const struct s_log_source * restrict const lsource)
 		}
 	}
 
-	dbgmsg("deregistered \"%s %s\"", lsource->basename, lsource->identifier);
+	dbgmsg(1, 1, "deregistered \"%s %s\"", lsource->basename, lsource->identifier);
 
 	return (ALL_OK);	// failure to find is ignored
 }
@@ -375,8 +375,7 @@ static int log_crawl(const int log_sched_id)
 		ldata.interval = Log_sched[log_sched_id].interval;		// XXX
 
 		ret = _log_dump(false, lsource->basename, lsource->identifier, &lsource->version, &ldata);
-		if (ret)
-			dbgmsg("log_dump failed on %s %s: %d", lsource->basename, lsource->identifier, ret);
+		dbgmsg(1, ret, "log_dump failed on %s %s: %d", lsource->basename, lsource->identifier, ret);
 	}
 
 	return (ret);	// XXX

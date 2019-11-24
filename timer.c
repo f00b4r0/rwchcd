@@ -169,7 +169,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 	// critical section ends - unlock
 	atomic_flag_clear_explicit(&Timer_cb_flag, memory_order_release);
 	
-	dbgmsg("name: \"%s\", period: %u, new_min: %u", name, period, Timer_period_min);
+	dbgmsg(1, 1, "name: \"%s\", period: %u, new_min: %u", name, period, Timer_period_min);
 	
 	return (ALL_OK);
 }

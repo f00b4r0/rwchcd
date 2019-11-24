@@ -12,7 +12,7 @@ CFLAGS := -I$(CURDIR) -std=gnu11 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"' -DRWCHCD
 LDLIBS := -lm
 
 ifeq ($(HOST_OS),Linux)
-CONFIG := -DHAS_DBUS -DHAS_HWP1 -DHAS_RRD -DDEBUG
+CONFIG := -DHAS_DBUS -DHAS_HWP1 -DHAS_RRD -DDEBUG=2
 CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 DBUSSYSTEMDIR := /etc/dbus-1/system.d

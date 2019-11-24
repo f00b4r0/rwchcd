@@ -303,7 +303,7 @@ static void * thread_master(void *arg)
 		timekeep_sleep(1);
 	}
 
-	dbgmsg("thread exiting!");
+	dbgmsg(1, 1, "thread exiting!");
 	pthread_exit(NULL);		// exit
 }
 

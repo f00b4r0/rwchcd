@@ -171,7 +171,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			return (-EINVALID);
 	}
 	
-	dbgmsg("sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.runmode, Runtime.dhwmode);
+	dbgmsg(1, 1, "sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.runmode, Runtime.dhwmode);
 	Runtime.systemmode = sysmode;
 	
 	runtime_save();

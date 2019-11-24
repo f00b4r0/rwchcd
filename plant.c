@@ -1060,7 +1060,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	if ((now - plant->run.summer_timer) < config->summer_run_interval)
 		return (ALL_OK);
 
-	dbgmsg("summer maintenance active");
+	dbgmsg(1, 1, "summer maintenance active");
 
 	// open all valves
 	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {

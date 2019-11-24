@@ -156,7 +156,7 @@ static int hw_p1_lcd_wline(struct s_hw_p1_lcd * const lcd, const uint8_t * restr
 	else
 		calclen = len;
 
-	//dbgmsg("pos: %d, calclen: %d", pos, calclen);
+	dbgmsg(3, 1, "pos: %d, calclen: %d", pos, calclen);
 	
 	// update the buffer from the selected position
 	memcpy(line+pos, data, calclen);
@@ -210,7 +210,7 @@ static int hw_p1_lcd_uline(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * 
 	else
 		id = 0;
 
-	//dbgmsg("update line %d from pos %d", linenb+1, id+1);
+	dbgmsg(3, 1, "update line %d from pos %d", linenb+1, id+1);
 	
 	// grab LCD
 	ret = hw_p1_lcd_grab(spi);
@@ -230,7 +230,7 @@ static int hw_p1_lcd_uline(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * 
 		ret = hw_p1_spi_lcd_data_w(spi, buf[id]);
 		if (ret)
 			return (ret);
-		//dbgmsg("sending: %c", buf[id]);
+		dbgmsg(4, 1, "sending: %c", buf[id]);
 		
 		cur[id] = buf[id];
 	}

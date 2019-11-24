@@ -216,7 +216,7 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 		return (-ENOTFOUND);
 
 	// we have the right type, let's go ahead
-	dbgmsg("HW P1 config found");
+	dbgmsg(1, 1, "HW P1 config found");
 
 	// instantiate hardware proto 1
 	hw = hw_p1_setup_new();

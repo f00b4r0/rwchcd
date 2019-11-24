@@ -128,7 +128,7 @@ static void scheduler_update_schedule(struct s_schedule * const sched)
 	schent_start = likely(schent_curr) ? schent_curr : sched->head;
 
 	if (unlikely(!schent_start)) {
-		dbgmsg("empty schedule");
+		dbgmsg(1, 1, "empty schedule");
 		return;
 	}
 

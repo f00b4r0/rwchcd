@@ -47,9 +47,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// forcefully undefine DEBUG to suppress (very verbose) dbgmsg output
-#undef DEBUG
-
 #include "hw_backends.h"
 #include "config.h"
 #include "lib.h"
@@ -172,11 +169,11 @@ int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_
 	const char * backend, * name;
 	int ret;
 
-	dbgmsg("Trying \"%s\"", node->name);
+	dbgmsg(3, 1, "Trying \"%s\"", node->name);
 
 	// don't report error on empty config
 	if (!node->children) {
-		dbgmsg("empty");
+		dbgmsg(3, 1, "empty");
 		return (ALL_OK);
 	}
 
@@ -212,11 +209,11 @@ int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_
 	const char * backend, * name;
 	int ret;
 
-	dbgmsg("Trying \"%s\"", node->name);
+	dbgmsg(3, 1, "Trying \"%s\"", node->name);
 
 	// don't report error on empty config
 	if (!node->children) {
-		dbgmsg("empty");
+		dbgmsg(3, 1, "empty");
 		return (ALL_OK);
 	}
 
@@ -630,16 +627,15 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 				continue;
 			}
 
-			dbgmsg("Trying %s node \"%s\"", node->name, sname);
+			dbgmsg(3, 1, "Trying %s node \"%s\"", node->name, sname);
 		}
 		else
-			dbgmsg("Trying %s node", node->name);
+			dbgmsg(3, 1, "Trying %s node", node->name);
 
 		// test parser
 		ret = parser(priv, node);
-		if (ALL_OK == ret)
-			dbgmsg("found!");
-		else
+		dbgmsg(3, (ALL_OK == ret), "found!");
+		if (ALL_OK != ret)
 			break;	// stop processing at first fault
 	}
 
@@ -1209,7 +1205,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 						break;	// should never happen
 				}
 
-				dbgmsg("%s: \"%s\" found", currnode->name, n);
+				dbgmsg(3, 1, "%s: \"%s\" found", currnode->name, n);
 				break;
 			default:
 				break;	// should never happen
@@ -1417,7 +1413,7 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 					default:
 						break;	// should never happen
 				}
-				dbgmsg("%s: \"%s\" found", currnode->name, n);
+				dbgmsg(3, 1, "%s: \"%s\" found", currnode->name, n);
 				break;
 			default:
 				break;	// should never happen
@@ -1571,7 +1567,7 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 					default:
 						break;	// should never happen
 				}
-				dbgmsg("%s: \"%s\" found", currnode->name, n);
+				dbgmsg(3, 1, "%s: \"%s\" found", currnode->name, n);
 				break;
 			default:
 				break;	// should never happen
@@ -1736,7 +1732,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 				return (-EINVALID);
 			}
 
-			dbgmsg("matched %s, %d", node->name, node->lineno);
+			dbgmsg(3, 1, "matched %s, %d", node->name, node->lineno);
 			matched = true;
 			if (parsers[i].node) {
 				fprintf(stderr, _("CONFIG WARNING! Ignoring duplicate node \"%s\" closing at line %d\n"), node->name, node->lineno);
@@ -1747,7 +1743,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 	}
 	if (!matched) {
 		// dbgmsg as there can be legit mismatch e.g. when parsing foreign backend config
-		dbgmsg("Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
+		dbgmsg(3, 1, "Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
 		return (-EUNKNOWN);
 	}
 
@@ -1822,7 +1818,7 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 
 	for (i = 0; i < nparsers; i++) {
 		if (parsers[i].node && parsers[i].parser) {
-			dbgmsg("running parser \"%s\"", parsers[i].identifier);
+			dbgmsg(3, 1, "running parser \"%s\"", parsers[i].identifier);
 			ret = parsers[i].parser(priv, parsers[i].node);
 			if (ALL_OK != ret)
 				return (ret);

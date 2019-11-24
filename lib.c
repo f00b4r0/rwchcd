@@ -44,10 +44,9 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 	const temp_t tdiff = (filtered - new_sample);
 	const timekeep_t tdt = (tau + dt);
 
-#ifdef DEBUG
-	if (unlikely(dt < 1))
-		dbgmsg("WARNING: rounding error. tau: %d, dt: %d", tau, dt);
-#endif
+	assert(tdt);
+
+	dbgmsg(2, (unlikely(dt < 1)), "WARNING: rounding error. tau: %d, dt: %d", tau, dt);
 
 	// assert (dt << TEMPT_MAX), assert (tdt << TEMPT_MAX)
 	return (filtered - (((signed)dt * tdiff + sign(tdiff)*(signed)(tdt)/2) / (signed)(tdt)));
@@ -111,7 +110,7 @@ temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp,
 		assert(tempdiff > (INT32_MIN / (signed)tau));
 
 		drv = temp_expw_mavg(drv, tempdiff * (signed)tau / (signed)timediff, tau, timediff);
-		dbgmsg("raw deriv: %d, tempdiff: %d, timediff: %d, tau: %d", drv, tempdiff, timediff, tau);
+		dbgmsg(2, 1, "raw deriv: %d, tempdiff: %d, timediff: %d, tau: %d", drv, tempdiff, timediff, tau);
 	}
 
 	deriv->derivative = drv;

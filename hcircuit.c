@@ -600,7 +600,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
 			}
-			dbgmsg("\"%s\": off, ambient: %.1f", circuit->name, temp_to_celsius(ambient_temp));
+			dbgmsg(1, 1, "\"%s\": off, ambient: %.1f", circuit->name, temp_to_celsius(ambient_temp));
 		}
 		else {
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
@@ -653,9 +653,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				default:
 					break;
 			}
-			if (circuit->run.transition)	// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
-				dbgmsg("\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %ld",
-				       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
+			// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
+			dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %ld",
+			       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
 		}
 	}
 
@@ -759,7 +759,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			if (circuit->run.target_wtemp && (circuit->pdata->consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-				dbgmsg("\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->consumer_sdelay));
+				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->consumer_sdelay));
 				return (ALL_OK);	// stop processing: maintain current output
 			}
 			else
@@ -833,6 +833,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		// interference: apply rate of rise limitation if any: update temp every minute
 		// applied first so it's not impacted by the next interferences (in particular power shift). XXX REVIEW: might be needed to move after if ror control is desired on cshift rising edges
 		if (circuit->set.wtemp_rorh) {
+			dbgmsg(2, 1, "\"%s\": ror last_tg: %.1f", circuit->name, temp_to_celsius(circuit->run.rorh_last_target));
 			// first sample: init target to current temp and set water_temp to current
 			if (!circuit->run.rorh_update_time) {
 				water_temp = curr_temp;
@@ -900,7 +901,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 #ifdef DEBUG
 	(void)!hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
-	dbgmsg("\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
+	dbgmsg(1, 1, "\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(circuit->run.target_wtemp), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));
 #endif

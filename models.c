@@ -372,7 +372,7 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
 	// calculate mixed temp last: makes it work at init
 	bmodel->run.t_out_mix = (bmodel->run.t_out + bmodel->run.t_out_filt)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 
-	dbgmsg("\"%s\": t_out: %.1f, t_filt: %.1f, t_mix: %.1f, t_att: %.1f", bmodel->name,
+	dbgmsg(1, 1, "\"%s\": t_out: %.1f, t_filt: %.1f, t_mix: %.1f, t_att: %.1f", bmodel->name,
 	       temp_to_celsius(bmodel->run.t_out),
 	       temp_to_celsius(bmodel->run.t_out_filt),
 	       temp_to_celsius(bmodel->run.t_out_mix),
@@ -753,7 +753,7 @@ static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parse
 
 	bmodel->set.configured = true;
 
-	dbgmsg("matched \"%s\"", bmdlname);
+	dbgmsg(3, 1, "matched \"%s\"", bmdlname);
 
 	return (ret);
 }
