@@ -63,7 +63,7 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * @param deriv derivative data
  * @param new_temp new temperature point
  * @param new_time new temperature time
- * @param tau the strictly positive time to average over (averaging window). Must be >= 8.
+ * @param tau the strictly positive time to average over (averaging window). Must be >= 16.
  * @return a derivative value congruent to temp_t units / timekeep_t units * tau.
  *
  * @note To reduce rounding errors, the function subsamples by an circa an order of magnitude when possible.
@@ -76,7 +76,7 @@ temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp,
 	temp_t tempdiff, drv;
 
 	assert(deriv);
-	assert((tau >= 8) && (tau < INT32_MAX));
+	assert((tau >= 16) && (tau < INT32_MAX));
 
 	drv = deriv->derivative;
 
@@ -86,8 +86,8 @@ temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp,
 		deriv->curr_time = new_time;
 	}
 	else {
-		// smooth internal representation of current temp over subsampling interval
-		deriv->curr_temp = temp_expw_mavg(deriv->curr_temp, new_temp, tsample, new_time - deriv->curr_time);
+		// smooth internal representation of current temp over half the subsampling interval
+		deriv->curr_temp = temp_expw_mavg(deriv->curr_temp, new_temp, tsample/2, new_time - deriv->curr_time);
 		deriv->curr_time = new_time;
 
 		assert(timekeep_a_ge_b(new_time, deriv->last_time));
