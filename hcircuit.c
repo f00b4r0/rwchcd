@@ -839,8 +839,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
 				circuit->run.rorh_update_time = now + timekeep_sec_to_tk(60);	// send update_time 60s ahead for low point settling (see below). XXX hardcoded
 			}
-			// at circuit startup (pump was previously off) let the water settle to lowest point, which we'll use as reference once it's reached. Test checks for overflow which means now is before rorh_update_time
-			else if ((now - circuit->run.rorh_update_time) >= TIMEKEEP_MAX/2) {
+			// at circuit startup (pump was previously off) let the water settle to lowest point, which we'll use as reference once it's reached.
+			else if (timekeep_a_ge_b(circuit->run.rorh_update_time, now)) {
 				water_temp = curr_temp;
 				if (curr_temp < circuit->run.rorh_last_target)
 					circuit->run.rorh_last_target = curr_temp;

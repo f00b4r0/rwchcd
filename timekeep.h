@@ -54,4 +54,12 @@ __attribute__((const, always_inline)) static inline long timekeep_tk_to_sec(time
 	return ((long)(tk / TIMEKEEP_SMULT));
 }
 
+/**
+ * Tests if timestamp a is after or at timestamp b.
+ * @param a timekeep_t timestamp
+ * @param b timekeep_t timestamp
+ * @return false is b is strictly after a, true otherwise (including a == b)
+ */
+#define timekeep_a_ge_b(a, b)		((a - b) < TIMEKEEP_MAX/2)
+
 #endif /* timekeep_h */
