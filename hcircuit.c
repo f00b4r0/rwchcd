@@ -735,10 +735,6 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	if (unlikely(!circuit->run.online))	// implies set.configured == true
 		return (-EOFFLINE);
 
-	ret = hcircuit_logic(circuit);
-	if (unlikely(ALL_OK != ret))
-		return (ret);
-
 	// safety checks
 	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);
 	if (unlikely(ALL_OK != ret)) {
@@ -748,6 +744,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// we're good to go - keep updating actual_wtemp when circuit is off
 	circuit->run.actual_wtemp = curr_temp;
+
+	ret = hcircuit_logic(circuit);
+	if (unlikely(ALL_OK != ret))
+		return (ret);
 
 	// force circuit ON during hs_overtemp condition
 	if (unlikely(circuit->pdata->hs_overtemp))
