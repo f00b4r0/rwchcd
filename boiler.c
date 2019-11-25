@@ -399,14 +399,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// if we reached this point then the boiler is active (online or antifreeze)
 
 	// Ensure safety first
-
+#if 0	// already executed in _logic()
 	// check we can run
 	ret = boiler_runchecklist(boiler);
 	if (unlikely(ALL_OK != ret)) {
 		boiler_failsafe(boiler);
 		return (ret);
 	}
-
+#endif
 	hardware_sensor_clone_time(boiler->set.tid_boiler, &boiler_ttime);
 	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler_temp);
 
