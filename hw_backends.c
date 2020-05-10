@@ -11,6 +11,7 @@
  * Hardware backends interface implementation.
  * This file implements tools to register specific hardware backends with the
  * system; and to identify sensors and relays provided by these backends by their names.
+ * @todo Write a test backend to inject test values and register outputs for testing coverage
  */
 
 #include <string.h>	// memset/strdup

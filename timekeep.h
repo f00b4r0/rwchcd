@@ -38,7 +38,7 @@ void * timekeep_thread(void * arg);
  * Convert seconds to timekeep_t format.
  * @param seconds value to convert.
  * @return the value correctly formatted.
- * @warning seconds must be < UINT32_MAX
+ * @warning seconds must be < UINT32_MAX/TIMEKEEP_SMULT
  */
 #define timekeep_sec_to_tk(seconds)	(timekeep_t)(seconds * TIMEKEEP_SMULT)
 

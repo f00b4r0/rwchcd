@@ -260,18 +260,18 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
 	// Kp is UNSIGNED (positive) by construction, assert result is < INT32_MAX
-	Kp = (signed)(vpriv->run.Kp_t * 1000 / (unsigned)(tempin_h - tempin_l));	// Make sure K cannot be 0 here. Kp_t is already * VPI_FDEC
+	Kp = (signed)(vpriv->run.Kp_t * 1000 / (unsigned)(tempin_h - tempin_l));	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
 	// Ti is UNSIGNED
-	Ti = vpriv->set.Tu;
+	Ti = vpriv->set.Tu;			// Ti is unscaled
 
 	// calculate error E: (target - actual) - SIGNED
-	error = target_tout - tempout;
+	error = target_tout - tempout;		// error is unscaled
 
 	// Integral term I: (Ki * error) * sample interval - SIGNED
-	iterm = (Kp * error / (signed)Ti) * (signed)dt;
+	iterm = (Kp * error / (signed)Ti) * (signed)dt;		// iterm is scaled by VPI_FDEC
 
 	// Proportional term P applied to output: Kp * (previous - actual) - SIGNED
-	pterm = Kp * (vpriv->run.prev_out - tempout);
+	pterm = Kp * (vpriv->run.prev_out - tempout);		// pterm is scaled by VPI_FDEC
 
 	/*
 	 Applying the proportional term to the output O avoids kicks when
@@ -282,7 +282,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 and setpoint change does not require specific treatment.
 	 */
 
-	output = iterm + pterm;
+	output = iterm + pterm;		// output is scaled by VPI_FDEC
 	pthfl = output + vpriv->run.db_acc;
 
 	/*
@@ -290,7 +290,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 No need to keep track of the residual since the requested value is
 	 an instantaneous calculation at the time of the algorithm run.
 	 */
-	perth = pthfl / VPI_FPDEC;
+	perth = pthfl / VPI_FPDEC;	// unscale
 
 	dbgmsg(2, 1, "\"%s\": Kp: %x, E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
 	       valve->name, Kp, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);

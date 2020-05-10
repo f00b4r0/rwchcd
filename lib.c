@@ -59,11 +59,11 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * This function computes a discrete derivative by subtracting the new sample value with the last sample
  * value over the total time elapsed between the two samples, and then averages this result over
  * #spread samples by using temp_expw_mavg().
- * Thus by design this function will lag the true derivative, especially for large #spread values.
+ * Thus by design this function will lag the true derivative, especially for large #tau values.
  * @param deriv derivative data
  * @param new_temp new temperature point
  * @param new_time new temperature time
- * @param tau the strictly positive time to average over (averaging window). Must be >= 16.
+ * @param tau the strictly positive time to average over (averaging window). Must be >= 16. Acts as scaling factor.
  * @return a derivative value congruent to temp_t units / timekeep_t units * tau.
  *
  * @note To reduce rounding errors, the function subsamples by an circa an order of magnitude when possible.

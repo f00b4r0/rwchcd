@@ -246,7 +246,6 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
  * @param hw HW P1 private data
  * @return exec status
  * @bug hardcoded identifier will collide if multiple instances.
- * @todo online save/restore from .run
  */
 int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw)
 {
@@ -261,9 +260,7 @@ int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw)
  * @return exec status
  * @bug hardcoded identifier will collide if multiple instances.
  * @note Each relay is "restored" in OFF state (due to initialization in
- * hw_p1_setup_new()). When restoring relays we must:
- * - account for elapsed time in last known state (at save time)
- * - restore off_since to either the saved value or to the current time (if relay was last ON)
+ * hw_p1_setup_new()).
  */
 int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 {

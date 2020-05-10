@@ -221,7 +221,7 @@ void storage_deconfig(void)
 
 /**
  * Configure the storage subsystem.
- * @param the `storage` node which contains a single `path` node, itself
+ * @param node the `storage` node which contains a single `path` node, itself
  * a string pointing to the @b absolute storage location.
  * @return exec status.
  */

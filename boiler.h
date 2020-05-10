@@ -19,7 +19,7 @@
 #include "heatsource.h"
 #include "timekeep.h"
 
-/** Boiler heatsource private structure. @todo XXX TODO: return mixing valve / isolation valve / modulating burner */
+/** Boiler heatsource private structure. @todo XXX TODO: isolation valve / modulating burner */
 struct s_boiler_priv {
 	struct {
 		enum {

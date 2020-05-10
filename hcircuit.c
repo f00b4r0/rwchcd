@@ -259,7 +259,7 @@ static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const te
 	t_output += tld->twaterinfl;
 
 	// shift output based on actual target temperature: (tgt - 20C) * (1 - tld->slope)
-	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (slopeden - slopenum)/slopeden;;
+	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (slopeden - slopenum) / slopeden;
 
 	return (t_output);
 }
