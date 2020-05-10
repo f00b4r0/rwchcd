@@ -63,33 +63,26 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  * @param deriv derivative data
  * @param new_temp new temperature point
  * @param new_time new temperature time
- * @param tau the strictly positive time to average over (averaging window). Must be >= 16. Acts as scaling factor.
- * @return a derivative value congruent to temp_t units / timekeep_t units * tau.
+ * @param tau the strictly positive time to average over (averaging window). Must be >= 8.
+ * @return a scaled derivative value congruent to temp_t units / timekeep_t units.
  *
- * @note To reduce rounding errors, the function subsamples by an circa an order of magnitude when possible.
- * The function will automatically adjust the derivative if tau changes between consecutive calls.
+ * @warning the output is scaled. Multiplication and division should use the correct accessors.
+ * @note To reduce rounding errors, the function subsamples 4 times.
  */
 temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau)
 {
-	const timekeep_t tsample = tau/8;	 // subsampling ratio, 8 is pow(2) approx of an order of magnitude
+	const timekeep_t tsample = tau/4;	 // subsampling ratio
 	timekeep_t timediff;
 	temp_t tempdiff, drv;
 
 	assert(deriv);
-	assert((tau >= 16) && (tau < INT32_MAX));
+	assert((tau >= 8) && (tau < INT32_MAX));
 
 	drv = deriv->derivative;
 
-	if (unlikely(!deriv->last_time)) {	// only compute derivative over a finite domain
+	if (unlikely(!deriv->last_time))	// only compute derivative over a finite domain
 		drv = 0;
-		deriv->curr_temp = new_temp;
-		deriv->curr_time = new_time;
-	}
 	else {
-		// smooth internal representation of current temp over half the subsampling interval
-		deriv->curr_temp = temp_expw_mavg(deriv->curr_temp, new_temp, tsample/2, new_time - deriv->curr_time);
-		deriv->curr_time = new_time;
-
 		assert(timekeep_a_ge_b(new_time, deriv->last_time));
 
 		timediff = new_time - deriv->last_time;
@@ -102,23 +95,16 @@ temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp,
 		if (timediff < tsample)
 			goto out;
 
-		// adjust if tau changes - XXX assert cannot overflow
-		if (unlikely(deriv->tau != tau))
-			drv = drv / deriv->tau * tau;
+		tempdiff = new_temp - deriv->last_temp;
+		tempdiff *= LIB_DERIV_FPDEC;
 
-		tempdiff = deriv->curr_temp - deriv->last_temp;
-
-		assert(tempdiff < (INT32_MAX / (signed)tau));
-		assert(tempdiff > (INT32_MIN / (signed)tau));
-
-		drv = temp_expw_mavg(drv, tempdiff * (signed)tau / (signed)timediff, tau, timediff);
+		drv = temp_expw_mavg(drv, tempdiff / (signed)timediff, tau, timediff);
 		dbgmsg(2, 1, "raw deriv: %d, tempdiff: %d, timediff: %d, tau: %d", drv, tempdiff, timediff, tau);
 	}
 
 	deriv->derivative = drv;
-	deriv->last_temp = deriv->curr_temp;
-	deriv->last_time = deriv->curr_time;
-	deriv->tau = tau;
+	deriv->last_temp = new_temp;
+	deriv->last_time = new_time;
 
 out:
 	return (drv);

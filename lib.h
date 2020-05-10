@@ -31,12 +31,9 @@ struct s_temp_intgrl {
 
 /** Temperature derivative data */
 struct s_temp_deriv {
-	temp_t derivative;		///< derivative value in temp_t / timekeep_t * internal precision
-	temp_t curr_temp;		///< derivative view of current temp
-	timekeep_t curr_time;		///< last update of current temp
+	temp_t derivative;		///< derivative value in temp_t / timekeep_t
 	temp_t last_temp;		///< last recorded temperature value
 	timekeep_t last_time;		///< last recorded temperature time
-	timekeep_t tau;			///< tau currently in use
 };
 
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt);
@@ -121,5 +118,25 @@ __attribute__((always_inline)) static inline void reset_intg(struct s_temp_intgr
 	if (intgrl->inuse)
 		memset(intgrl, 0x00, sizeof(*intgrl));
 }
+
+__attribute__((always_inline)) static inline int32_t lib_fpmul_s32(const int32_t a, const int32_t b, const uint32_t scale)
+{
+	int64_t temp = a;
+	temp *= b;
+	temp /= scale;
+	return ((int32_t)temp);
+}
+
+__attribute__((always_inline)) static inline uint32_t lib_fpmul_u32(const uint32_t a, const uint32_t b, const uint32_t scale)
+{
+	uint64_t temp = a;
+	temp *= b;
+	temp /= scale;
+	return ((uint32_t)temp);
+}
+
+#define LIB_DERIV_FPDEC		0x8000
+
+#define temp_expw_deriv_mul(_a, _b)	lib_fpmul_s32(_a, _b, LIB_DERIV_FPDEC)
 
 #endif /* rwchcd_lib_h */

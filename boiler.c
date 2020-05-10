@@ -369,8 +369,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
-#define BOILER_FPDEC		UINT32_C(1024)
 #define BOILER_DERIV_TAU_S	120
+	const uint32_t fpdec = 0x8000;	// good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp_deriv, temp, ret_temp = 0;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
@@ -495,9 +495,21 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 		// compute anticipation-corrected trip_temp - only on decreasing temperature
 		if (temp_deriv < 0) {
-			temp = ((unsigned)(temp_deriv * temp_deriv) / timekeep_sec_to_tk(BOILER_DERIV_TAU_S) * boiler->run.turnon_curr_adj) / BOILER_FPDEC;
-			dbgmsg(2, 1, "\%s\": orig trip_temp: %.1f, adj: %.1f, new: %.1f", heat->name, temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
-			trip_temp += temp;
+			uint64_t temp64 = (unsigned)-temp_deriv;
+			temp64 *= (unsigned)-temp_deriv;
+			// The above two lines are the only construct that yields the expected assembly result (rsb/umull)
+			temp64 /= LIB_DERIV_FPDEC;
+			temp64 *= boiler->run.turnon_curr_adj;
+			temp64 /= fpdec;
+			if (temp64 > INT32_MAX)
+				dbgerr("temp64 result overflow: %lld, deriv: %d, curradj: %d", temp64, temp_deriv, boiler->run.turnon_curr_adj);
+			else {
+				temp = (temp_t)temp64;
+				dbgmsg(2, 1, "\%s\": orig trip_temp: %.1f, adj: %.1f, new: %.1f", heat->name, temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
+				if (temp > boiler->set.hysteresis/2)
+					dbgerr("adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(boiler_temp), temp_deriv, boiler->run.turnon_curr_adj);
+				trip_temp += (temp > boiler->set.hysteresis/2) ? boiler->set.hysteresis/2 : temp;	// cap adjustment at hyst/2 to work around overflow
+			}
 		}
 
 		// cap trip_temp at limit_tmax - hysteresis/2
@@ -560,7 +572,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				/* NB: in the case of a 2-stage or variable output burner, this computation result would be physically linked to the power output of the burner itself.
 				   in the context of a single-stage constant output burner the approximation works but if we wanted to be more refined we would have to factor that output
 				   level in the stored data. XXX TODO */
-				boiler->run.turnon_next_adj = (timekeep_now() - boiler->run.negderiv_starttime) * BOILER_FPDEC;
+				boiler->run.turnon_next_adj = (timekeep_now() - boiler->run.negderiv_starttime) * fpdec;
 				boiler->run.turnon_next_adj /= (unsigned)-boiler->run.turnon_negderiv;
 				boiler->run.turnon_curr_adj = 0;	// reset current value
 			}
