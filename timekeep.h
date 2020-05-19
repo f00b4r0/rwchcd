@@ -42,17 +42,12 @@ void * timekeep_thread(void * arg);
  */
 #define timekeep_sec_to_tk(seconds)	(timekeep_t)(seconds * TIMEKEEP_SMULT)
 
-
 /**
  * Convert timekeep_t format back to seconds.
  * @param tk value to convert.
  * @return the value expressed in seconds.
  */
-__attribute__((const, always_inline)) static inline long timekeep_tk_to_sec(timekeep_t tk)
-{
-	// by definition, result is < LONG_MAX
-	return ((long)(tk / TIMEKEEP_SMULT));
-}
+#define timekeep_tk_to_sec(tk)		(long)(tk / TIMEKEEP_SMULT)		// by definition, result is < LONG_MAX
 
 /**
  * Tests if timestamp a is after or at timestamp b.
