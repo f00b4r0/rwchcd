@@ -485,6 +485,7 @@ static int log_config_parse(void * restrict const priv __attribute__((unused)), 
 				lbkend = &Log.set.async_bkend;
 				break;
 			default:
+				lbkend = NULL;
 				break;	// can ever happen
 		}
 
