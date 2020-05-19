@@ -36,6 +36,9 @@ struct s_temp_deriv {
 	timekeep_t last_time;		///< last recorded temperature time
 };
 
+float temp_to_celsius(const temp_t temp);
+float temp_to_deltaK(const temp_t temp);
+
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt);
 temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau);
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
@@ -47,17 +50,6 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
  * @param celsius temp value in Celsius
  */
 #define celsius_to_temp(celsius)	(temp_t)((celsius + 273)*KPRECISION)
-
-/**
- * Convert temperature from internal format to Celsius value.
- * @note Ensure this function is only used in non-fast code path (dbgmsg, config handling...).
- * @param temp temp value as temp_t
- * @return value converted to Celsius
- */
-__attribute__((const, always_inline)) static inline float temp_to_celsius(const temp_t temp)
-{
-	return ((float)((float)temp/KPRECISION - 273));
-}
 
 /**
  * Convert temperature from internal format to integer Kelvin (rounded)
@@ -77,17 +69,6 @@ __attribute__((const, always_inline)) static inline float temp_to_celsius(const 
  * @param delta the delta value to be converted
  */
 #define deltaK_to_temp(delta)		(temp_t)(delta * KPRECISION)
-
-/** 
- * Convert delta from internal to Kelvin value.
- * @note Ensure this function is only used in non-fast code path (dbgmsg, config handling...).
- * @param temp the internal delta value to be converted
- * @return the value converted to Kelvin
- */
-__attribute__((const, always_inline)) static inline float temp_to_deltaK(const temp_t temp)
-{
-	return ((float)((float)temp/KPRECISION));
-}
 
 /**
  * Calculate the minimum time interval to use with temp_expw_mavg() for a given
