@@ -130,9 +130,9 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	// XXX TODO: this logic should move at a higher level in the context of a pool of heatsources (some of which may or may not be connected to the DHWTs)
 	if (heat->pdata->dhwc_sliding) {
 		// jacket integral between -100Ks and 0
-		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), deltaK_to_temp(-100), 0);
+		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
-		heat->run.cshift_noncrit = temp/KPRECISION;
+		heat->run.cshift_noncrit = timekeep_tk_to_sec(temp_to_ikelvind(temp));
 	}
 	else
 		reset_intg(&heat->run.sld_itg);

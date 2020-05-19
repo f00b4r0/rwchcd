@@ -128,7 +128,7 @@ out:
  * @param new_time new temperature time
  * @param tlow_jacket low boundary for integral jacket
  * @param thigh_jacket high boundary for integral jacket
- * @return the integral value in temp_t units * seconds (millikelvins second)
+ * @return the integral value in temp_t units * timekeep_t units
  */
 temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
 		      const temp_t tlow_jacket, const temp_t thigh_jacket)
@@ -145,7 +145,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 	if (unlikely(!intgrl->last_time || !new_time))	// only compute integral over a finite domain
 		intg = 0;
 	else
-		intg += (((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * timekeep_tk_to_sec(new_time - intgrl->last_time);
+		intg += (((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * (new_time - intgrl->last_time);
 
 	// apply jackets
 	if (intg < tlow_jacket)
