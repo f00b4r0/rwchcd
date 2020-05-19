@@ -709,8 +709,12 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 
 	sample_intvl = timekeep_sec_to_tk(parsers[0].node->value.intval);
 	amount = parsers[1].node->value.intval;
+	if ((amount < 0) || (amount > UINT_FAST8_MAX)) {
+		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: amount is out of range"), node->name, node->lineno);
+		return -EINVALID;
+	}
 
-	ret = valve_make_sapprox(valve, amount, sample_intvl);
+	ret = valve_make_sapprox(valve, (uint_fast8_t)amount, sample_intvl);
 	switch (ret) {
 		case ALL_OK:
 			break;
@@ -749,7 +753,12 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	tune_f = parsers[3].node->value.intval;
 	Ksmax = (NODEFLT == parsers[4].node->type) ? deltaK_to_temp(parsers[4].node->value.floatval) : deltaK_to_temp(parsers[4].node->value.intval);
 
-	ret = valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, tune_f);
+	if ((tune_f < 0) || (tune_f > UINT_FAST8_MAX)) {
+		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: tune_f is out of rnage"), node->name, node->lineno);
+		return -EINVALID;
+	}
+
+	ret = valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, (uint_fast8_t)tune_f);
 	switch (ret) {
 		case ALL_OK:
 			break;
@@ -1112,9 +1121,9 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 			case 3:
 				iv = currnode->value.intval;
-				if (iv < 0)
+				if ((iv < 0) || (iv > UINT_FAST8_MAX))
 					goto invaliddata;
-				dhwt->set.prio = currnode->value.intval;
+				dhwt->set.prio = (typeof(dhwt->set.prio))currnode->value.intval;
 				break;
 			case 4:
 				if (ALL_OK != filecfg_parser_runmode_parse(&dhwt->set.runmode, currnode))
@@ -1636,9 +1645,9 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 				break;
 			case 2:
 				iv = currnode->value.intval;
-				if (iv < 0)
+				if ((iv < 0) || (iv > UINT_FAST8_MAX))
 					goto invaliddata;
-				heatsource->set.prio = iv;
+				heatsource->set.prio = (typeof(heatsource->set.prio))iv;
 				break;
 			case 3:
 				iv = currnode->value.intval;
