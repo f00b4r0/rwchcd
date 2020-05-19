@@ -86,7 +86,7 @@ static int runtime_restore(void)
  * @return exec status
  * @warning Locks runtime: do not call from master_thread
  */
-static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object)
+static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object __attribute__((unused)))
 {
 	static const log_key_t keys[] = {
 		"systemmode",

@@ -283,7 +283,7 @@ void log_statsd_filecfg_dump(void)
  * @param node a `backend "#LOG_BKEND_STATSD_NAME"` node
  * @return exec status
  */
-int log_statsd_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int log_statsd_filecfg_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR, "host", true, NULL, NULL, },		// 0

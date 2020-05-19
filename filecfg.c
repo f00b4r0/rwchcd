@@ -259,7 +259,7 @@ static int filecfg_pump_dump(const struct s_pump * restrict const pump)
 }
 
 
-static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve)
+static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve __attribute__((unused)))
 {
 	return (ALL_OK);
 }

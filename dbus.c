@@ -37,7 +37,7 @@ static GMainLoop *Mainloop = NULL;
  */
 static gboolean on_handle_toutdoor_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
-				      gpointer user_data)
+				      __attribute__((unused)) gpointer user_data)
 {
 	float temp = temp_to_celsius(models_outtemp());
 	
@@ -52,7 +52,7 @@ static gboolean on_handle_toutdoor_get(dbusRwchcdControl *object,
  */
 static gboolean on_handle_sysmode_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
-				      gpointer user_data)
+				      __attribute__((unused)) gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_systemmode cursys;
@@ -74,7 +74,7 @@ static gboolean on_handle_sysmode_get(dbusRwchcdControl *object,
 static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
 				      guchar Sysmode,
-				      gpointer user_data)
+				      __attribute__((unused)) gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_systemmode newsysmode;
@@ -103,7 +103,7 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 static gboolean on_handle_config_temp_mode_get(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
 					       guchar Runmode,
-					       gpointer user_data)
+					       __attribute__((unused)) gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_runmode runmode = Runmode;
@@ -152,7 +152,7 @@ static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
 					       guchar Runmode,
 					       gdouble NewTemp,
-					       gpointer user_data)
+					       __attribute__((unused)) gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = runtime_get();
 	temp_t newtemp = celsius_to_temp(NewTemp);
@@ -197,7 +197,7 @@ static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 static gboolean on_handle_config_outhoff_mode_get(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
 					       guchar Runmode,
-					       gpointer user_data)
+					       __attribute__((unused)) gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_runmode runmode = Runmode;
@@ -246,7 +246,7 @@ static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
 					       guchar Runmode,
 					       gdouble NewTemp,
-					       gpointer user_data)
+					       __attribute__((unused)) gpointer user_data)
 {
 	struct s_runtime * restrict const runtime = runtime_get();
 	temp_t newtemp = celsius_to_temp(NewTemp);
@@ -286,8 +286,8 @@ static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
  * Connects the D-Bus custom method handlers, and exports the Object and Interface.
  */
 static void on_name_acquired(GDBusConnection *connection,
-			     const gchar *name,
-			     gpointer user_data)
+			     __attribute__((unused)) const gchar *name,
+			     __attribute__((unused)) gpointer user_data)
 {
 	dbusRwchcdControl *skeleton = dbus_rwchcd_control_skeleton_new();
 	g_signal_connect(skeleton, "handle-sysmode-set", G_CALLBACK(on_handle_sysmode_set), NULL);
@@ -309,7 +309,7 @@ static void on_name_acquired(GDBusConnection *connection,
  */
 static void on_name_lost(GDBusConnection *connection,
 			 const gchar *name,
-			 gpointer user_data)
+			 __attribute__((unused)) gpointer user_data)
 {
 	dbgerr("Could not acquire name \"%s\", connection is %p", name, connection);	// pr_warn()
 }

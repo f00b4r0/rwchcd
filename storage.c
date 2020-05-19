@@ -225,7 +225,7 @@ void storage_deconfig(void)
  * a string pointing to the @b absolute storage location.
  * @return exec status.
  */
-int storage_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int storage_filecfg_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR, "path", true, NULL, NULL, },		// 0

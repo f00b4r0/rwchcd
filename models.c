@@ -711,7 +711,7 @@ int filecfg_models_dump(void)
 	return (ALL_OK);
 }
 
-static int bmodel_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int bmodel_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL, "logging", false, NULL, NULL, },
