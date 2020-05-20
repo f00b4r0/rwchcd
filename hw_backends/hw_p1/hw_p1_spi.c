@@ -472,9 +472,8 @@ int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[]
 	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, sensor))
 		ret = -ESPI;
 
-	tsval = 0;
+	tsval = low;
 	tsval |= (uint16_t)(high << 8);
-	tsval |= (uint16_t)(low);
 
 	if (ALL_OK == ret)
 		tsensors[sensor] = tsval;
@@ -519,7 +518,7 @@ int hw_p1_spi_ref_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refva
 
 	value = 0;
 	value |= (uint16_t)SPI_rw8bit(spi, (uint8_t)~cmd);	// we get LSB first, sent byte is ~cmd
-	value |= (SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+	value |= (uint16_t)(SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
 
 	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
 		ret = -ESPI;
@@ -553,7 +552,7 @@ int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings
 		return (-ESPI);
 	
 	for (i=0; i<sizeof(*settings); i++)
-		*((uint8_t *)settings+i) = SPI_rw8bit(spi, i);
+		*((uint8_t *)settings+i) = SPI_rw8bit(spi, (uint8_t)i);
 	
 	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSR))
 		ret = -ESPI;
