@@ -98,7 +98,7 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 		return (-EDEADBAND);
 
 	valve->run.request_action = (perth < 0) ? CLOSE : OPEN;
-	valve->run.target_course = tcourse;
+	valve->run.target_course = (typeof(valve->run.target_course))tcourse;
 
 	return (ALL_OK);
 }
@@ -430,11 +430,11 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set.tset.tmix.tdeadzone/2) {
-		valve_request_pth(valve, vpriv->set.amount);
+		valve_request_pth(valve, (signed)vpriv->set.amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
 	else if (tempout > target_tout + valve->set.tset.tmix.tdeadzone/2) {
-		valve_request_pth(valve, -vpriv->set.amount);
+		valve_request_pth(valve, (signed)-vpriv->set.amount);
 	}
 	// else we're in deadzone: stop valve
 	else {
@@ -690,7 +690,8 @@ int valve_run(struct s_valve * const valve)
 	valve->run.last_run_time = now;
 	valve->run.active = true;		// XXX never set false because we don't really need to for now
 
-	course = (dt * perth_ptk + perthmult/2) / perthmult;	// we don't keep track of residual because we're already in ‰.
+	assert(dt < valve->set.ete_time);	// approximation of overflow limit
+	course = (int_fast16_t)((dt * perth_ptk + perthmult/2) / perthmult);	// we don't keep track of residual because we're already in ‰.
 
 	// update counters
 	switch (valve->run.actual_action) {
@@ -820,12 +821,12 @@ int valve_make_bangbang(struct s_valve * const valve)
  * This controller requires @b tid_out to be set.
  * This controller ignores @b tid_hot and @b tid_cold
  * @param valve target valve
- * @param amount movement amount in %
+ * @param amount movement amount in ‰
  * @param intvl sample interval
  * @return exec status
  * @warning should ensure that the sample interval allows full amount movement
  */
-int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timekeep_t intvl)
+int valve_make_sapprox(struct s_valve * const valve, uint_fast16_t amount, timekeep_t intvl)
 {
 	struct s_valve_sapprox_priv * priv = NULL;
 
@@ -835,7 +836,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast8_t amount, timeke
 	if ((VA_TALG_NONE != valve->set.tset.tmix.algo) || valve->priv)
 		return (-EEXISTS);
 
-	if ((amount > 100) || (!intvl))
+	if ((amount > 1000) || (!intvl))
 		return (-EINVALID);
 
 	// create priv element
