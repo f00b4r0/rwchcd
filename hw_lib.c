@@ -2,7 +2,7 @@
 //  hw_lib.c
 //  rwchcd
 //
-//  (C) 2019 Thibaut VARENE
+//  (C) 2019-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
