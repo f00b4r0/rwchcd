@@ -277,12 +277,16 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
  * As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
+ * @note cold startup protection has a hardcoded 2% per 1Ks ratio
  * @todo burner turn-on anticipation
  */
 static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 {
+	const timekeep_t deriv_tau = timekeep_sec_to_tk(120);
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t target_temp = RWCHCD_TEMP_NOREQUEST;
+	temp_t temp_intgrl, ret_temp = 0, target_temp = RWCHCD_TEMP_NOREQUEST;
+	int_fast16_t cshift_boil = 0, cshift_ret = 0;
+	timekeep_t boiler_ttime, ttime;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
@@ -343,6 +347,65 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 	boiler->run.target_temp = target_temp;
 
+	hardware_sensor_clone_time(boiler->set.tid_boiler, &boiler_ttime);
+	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler->run.actual_temp);
+
+	// ensure boiler is within safety limits
+	if (unlikely((ALL_OK != ret) || (boiler->run.actual_temp > boiler->set.limit_thardmax))) {
+		boiler_failsafe(boiler);
+		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
+		heat->run.overtemp = true;
+		return (-ESAFETY);
+	}
+
+	/* Always compute boiler temp derivative over the past 2mn
+	 * this will make the derivative lag behind true value, but since we're only interested in the time
+	 * difference between two arbitrary values computed with the same lag, it doesn't matter. */
+	/// @todo variable tau
+	temp_expw_deriv(&boiler->run.temp_drv, boiler->run.actual_temp, boiler_ttime, deriv_tau);
+
+	/// @todo review integral jacketing - maybe use a PI(D) instead?
+	// handle boiler minimum temp if set
+	if (boiler->set.limit_tmin) {
+		// calculate boiler integral
+		// jacket integral between 0 and -100Ks - XXX hardcoded
+		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler->run.actual_temp, boiler_ttime, (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
+		cshift_boil = timekeep_tk_to_sec(temp_to_ikelvind(2 * temp_intgrl));
+
+		dbgmsg(2, (temp_intgrl < 0), "\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
+	}
+
+	// handler boiler return temp if set - @todo Consider handling of pump_load. Consider adjusting target temp
+	if (boiler->set.limit_treturnmin) {
+		// if we have a configured valve, use it
+		if (boiler->set.p.valve_ret) {
+			// set valve for target limit. If return is higher valve will be full closed.
+			ret = valve_mix_tcontrol(boiler->set.p.valve_ret, boiler->set.limit_treturnmin);
+			if (unlikely((ALL_OK != ret) && (-EDEADZONE != ret)))	// something bad happened. XXX further action?
+				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->set.p.valve_ret->name, ret);
+		}
+		else {
+			// calculate return integral
+			(void)!hardware_sensor_clone_time(boiler->set.tid_boiler_return, &ttime);
+			ret = hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
+			if (likely(ALL_OK == ret)) {
+				// jacket integral between 0 and -1000Ks - XXX hardcoded
+				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, (signed)timekeep_sec_to_tk(deltaK_to_temp(-1000)), 0);
+				// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - XXX hardcoded
+				cshift_ret = timekeep_tk_to_sec(temp_to_ikelvind(temp_intgrl / 10));
+
+				dbgmsg(2, (temp_intgrl < 0), "\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
+			}
+			else
+				reset_intg(&boiler->run.ret_itg);
+		}
+	}
+
+	// min each cshift (they're negative) to form the heatsource critical shift
+	heat->run.cshift_crit = (cshift_boil < cshift_ret) ? cshift_boil : cshift_ret;
+	dbgmsg(1, (heat->run.cshift_crit), "\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
+
 	return (ALL_OK);
 }
 
@@ -359,22 +422,16 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  *   - untrip temp cannot be higher than limit_tmax.
  *
  * @note As a special case in the plant, antifreeze takes over all states if the boiler is configured (and online).
- * @note cold startup protection has a hardcoded 2% per 1Ks ratio
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage
- * @todo review integral jacketing - maybe use a PI(D) instead?
- * @todo adaptive derivative spread adjustment
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
-#define BOILER_DERIV_TAU_S	120
 	const uint32_t fpdec = 0x8000;	// good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t boiler_temp, trip_temp, untrip_temp, temp_intgrl, temp_deriv, temp, ret_temp = 0;
-	int_fast16_t cshift_boil = 0, cshift_ret = 0;
-	timekeep_t boiler_ttime, ttime;
+	temp_t trip_temp, untrip_temp, temp_deriv, temp, ret_temp;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
@@ -406,7 +463,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		boiler_failsafe(boiler);
 		return (ret);
 	}
-#endif
+
 	hardware_sensor_clone_time(boiler->set.tid_boiler, &boiler_ttime);
 	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler_temp);
 
@@ -417,63 +474,15 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		heat->run.overtemp = true;
 		return (-ESAFETY);
 	}
+#endif
 
 	// we're good to go
 
-	// always compute boiler temp derivative over the past 2mn
-	// this will make the derivative lag behind true value, but since we're only interested in the time
-	// difference between two arbitrary values computed with the same lag, it doesn't matter.
-	/// @todo variable tau
-	temp_deriv = temp_expw_deriv(&boiler->run.temp_drv, boiler_temp, boiler_ttime, timekeep_sec_to_tk(BOILER_DERIV_TAU_S));
+	temp_deriv = temp_expw_deriv_val(&boiler->run.temp_drv);
 
 	// overtemp turn off at 2K hardcoded histeresis
-	if (unlikely(heat->run.overtemp) && (boiler_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
+	if (unlikely(heat->run.overtemp) && (boiler->run.actual_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
 		heat->run.overtemp = false;
-
-	/* todo handle return temp limit (limit low only for boiler):
-	 * if a return mixing valve is available, use it, else form a critical
-	 * shift signal. Consider handling of pump_load. Consider adjusting target temp */
-
-	// handle boiler minimum temp if set
-	if (boiler->set.limit_tmin) {
-		// calculate boiler integral
-		// jacket integral between 0 and -100Ks - XXX hardcoded
-		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler_temp, boiler_ttime, (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
-		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
-		cshift_boil = timekeep_tk_to_sec(temp_to_ikelvind(2 * temp_intgrl));
-
-		dbgmsg(2, (temp_intgrl < 0), "\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
-	}
-
-	// handler boiler return temp if set
-	if (boiler->set.limit_treturnmin) {
-		// if we have a configured valve, use it
-		if (boiler->set.p.valve_ret) {
-			// set valve for target limit. If return is higher valve will be full closed.
-			ret = valve_mix_tcontrol(boiler->set.p.valve_ret, boiler->set.limit_treturnmin);
-			if (unlikely((ALL_OK != ret) && (-EDEADZONE != ret)))	// something bad happened. XXX further action?
-				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->set.p.valve_ret->name, ret);
-		}
-		else {
-			// calculate return integral
-			(void)!hardware_sensor_clone_time(boiler->set.tid_boiler_return, &ttime);
-			ret = hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
-			if (likely(ALL_OK == ret)) {
-				// jacket integral between 0 and -1000Ks - XXX hardcoded
-				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, (signed)timekeep_sec_to_tk(deltaK_to_temp(-1000)), 0);
-				// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - XXX hardcoded
-				cshift_ret = timekeep_tk_to_sec(temp_to_ikelvind(temp_intgrl / 10));
-
-				dbgmsg(2, (temp_intgrl < 0), "\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
-			}
-			else
-				reset_intg(&boiler->run.ret_itg);
-		}
-	}
-
-	// min each cshift (they're negative) to form the heatsource critical shift
-	heat->run.cshift_crit = (cshift_boil < cshift_ret) ? cshift_boil : cshift_ret;
-	dbgmsg(1, (heat->run.cshift_crit), "\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
 
 	// turn pump on if any
 	if (boiler->set.p.pump_load) {
@@ -507,7 +516,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				temp = (temp_t)temp64;
 				dbgmsg(2, 1, "\%s\": orig trip_temp: %.1f, adj: %.1f, new: %.1f", heat->name, temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
 				if (temp > boiler->set.hysteresis/2)
-					dbgerr("adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(boiler_temp), temp_deriv, boiler->run.turnon_curr_adj);
+					dbgerr("adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(boiler->run.actual_temp), temp_deriv, boiler->run.turnon_curr_adj);
 				trip_temp += (temp > boiler->set.hysteresis/2) ? boiler->set.hysteresis/2 : temp;	// cap adjustment at hyst/2 to work around overflow
 			}
 		}
@@ -543,9 +552,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	/* burner control */
 	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
-	if (boiler_temp < trip_temp)		// trip condition
+	if (boiler->run.actual_temp < trip_temp)		// trip condition
 		ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
-	else if (boiler_temp > untrip_temp)	// untrip condition
+	else if (boiler->run.actual_temp > untrip_temp)	// untrip condition
 		ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
 
 	if (ret > 0)	// cooldown isn't an error
@@ -554,7 +563,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// computations performed while burner is on
 	if (hardware_relay_get_state(boiler->set.rid_burner_1) > 0) {
 		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
-		if (boiler->set.limit_tmin < boiler_temp)
+		if (boiler->set.limit_tmin < boiler->run.actual_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 
 		// compute turn-on anticipation for next run
@@ -587,10 +596,12 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		}
 	}
 
+#ifdef DEBUG
+	(void)!hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
 	dbgmsg(1, 1, "\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
 	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
-	       temp_to_celsius(boiler_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
-
+	       temp_to_celsius(boiler->run.actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
+#endif
 	return (ret);
 }
 

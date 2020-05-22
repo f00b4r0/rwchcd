@@ -126,4 +126,6 @@ __attribute__((always_inline)) static inline uint32_t lib_fpmul_u32(const uint32
 
 #define temp_expw_deriv_mul(_a, _b)	lib_fpmul_s32(_a, _b, LIB_DERIV_FPDEC)
 
+#define temp_expw_deriv_val(_deriv)	((_deriv)->derivative)
+
 #endif /* rwchcd_lib_h */
