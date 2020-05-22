@@ -99,6 +99,12 @@ __attribute__ ((pure)) ohm_to_celsius_ft * hw_lib_sensor_o_to_c(const enum e_hw_
 	}
 }
 
+static const char * const hw_lib_sensor_type_str[] = {
+	[HW_ST_NONE] = "",
+	[HW_ST_PT1000] = "PT1000",
+	[HW_ST_NI1000] = "NI1000",
+};
+
 /**
  * Dump a hardware sensor to config.
  * @param sensor the sensor to dump
@@ -112,14 +118,12 @@ void hw_lib_filecfg_sensor_dump(const struct s_hw_sensor * const sensor)
 
 	switch (sensor->set.type) {
 		case HW_ST_PT1000:
-			type = "PT1000";
-			break;
 		case HW_ST_NI1000:
-			type = "NI1000";
+			type = hw_lib_sensor_type_str[sensor->set.type];
 			break;
 		case HW_ST_NONE:
 		default:
-			type = "";
+			type = hw_lib_sensor_type_str[HW_ST_NONE];
 			break;
 	}
 
@@ -149,6 +153,7 @@ int hw_lib_filecfg_sensor_parse(void * restrict const priv, const struct s_filec
 	struct s_hw_sensor * const sensor = priv;
 	const char * sensor_stype;
 	float sensor_offset;
+	unsigned int i;
 	int ret;
 
 	assert(node);
@@ -172,17 +177,17 @@ int hw_lib_filecfg_sensor_parse(void * restrict const priv, const struct s_filec
 
 	sensor->set.offset = deltaK_to_temp(sensor_offset);
 
-	// match stype - XXX TODO REWORK
-	if (!strcmp("PT1000", sensor_stype))
-		sensor->set.type = HW_ST_PT1000;
-	else if (!strcmp("NI1000", sensor_stype))
-		sensor->set.type = HW_ST_NI1000;
-	else {
-		filecfg_parser_pr_err(_("Line %d: unknown sensor type \"%s\""), parsers[1].node->lineno, sensor_stype);
-		return (-EUNKNOWN);
+	// match stype
+	for (i = 0; i < ARRAY_SIZE(hw_lib_sensor_type_str); i++) {
+		if (!strcmp(hw_lib_sensor_type_str[i], sensor_stype)) {
+			sensor->set.type = i;
+			return (ret);
+		}
 	}
 
-	return (ret);
+	// matching failed
+	filecfg_parser_pr_err(_("Line %d: unknown sensor type \"%s\""), parsers[1].node->lineno, sensor_stype);
+	return (-EUNKNOWN);
 }
 
 /**
