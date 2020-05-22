@@ -98,7 +98,7 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
  * Replies with current config default circuit temperature for the given runmode. XXX QUICK HACK.
  * @param Runmode target runmode for query
  * @note only handles default circuit temp for now.
- * @todo make it generic to set any config temp
+ * @todo make it generic to get any config temp
  */
 static gboolean on_handle_config_temp_mode_get(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
@@ -140,14 +140,14 @@ static gboolean on_handle_config_temp_mode_get(dbusRwchcdControl *object,
 
 /**
  * D-Bus method ConfigTempModeSet handler.
- * Sets the desired config default circuit temperature for the given runmode. XXX QUICK HACK.
+ * Sets the desired config default circuit temperature for the given runmode.
  * @param Runmode target runmode for the new temp
  * @param NewTemp new temperature value
  * @note only handles default circuit temp for now.
  * @warning doesn't save runtime after set
- * @todo make it generic to set any config temp
- * @todo save config: cannot do for now because config_save() calls hardware
+ * @deprecated XXX QUICK HACK incompatible with file-based configuration.
  */
+__attribute__ ((deprecated))
 static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
 					       guchar Runmode,
@@ -234,14 +234,14 @@ static gboolean on_handle_config_outhoff_mode_get(dbusRwchcdControl *object,
 
 /**
  * D-Bus method ConfigOuthoffModeSet handler.
- * Sets the desired config default circuit outhoff temp for the given runmode. XXX QUICK HACK.
+ * Sets the desired config default circuit outhoff temp for the given runmode.
  * @param Runmode target runmode for the new temp
  * @param NewTemp new temperature value
  * @note only handles default circuit outhoff temp for now.
  * @warning doesn't save runtime after set
- * @todo make it generic to set any config temp
- * @todo save config: cannot do for now because config_save() calls hardware
+ * @deprecated XXX QUICK HACK incompatible with file-based configuration.
  */
+__attribute__ ((deprecated))
 static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
 					       GDBusMethodInvocation *invocation,
 					       guchar Runmode,
