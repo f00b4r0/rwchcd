@@ -200,7 +200,7 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const st
 	hw->Relays[id].set.failstate = relay->set.failstate;
 	hw->Relays[id].set.rid = relay->set.rid;
 
-	hw->Relays[id].run.off_since = timekeep_now();	// relay is by definition OFF since "now"
+	hw->Relays[id].run.state_since = timekeep_now();	// relay is by definition OFF since "now"
 
 	hw->Relays[id].set.configured = true;
 

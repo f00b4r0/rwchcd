@@ -57,8 +57,7 @@ struct s_hw_relay {
 	struct {
 		bool turn_on;		///< state requested by software
 		bool is_on;		///< current hardware active state
-		timekeep_t on_since;	///< last time on state was triggered, 0 if off
-		timekeep_t off_since;	///< last time off state was triggered, 0 if on
+		timekeep_t state_since;	///< last time state changed
 		timekeep_t state_time;	///< time spent in current state
 		uint_fast32_t on_totsecs;	///< total seconds spent in on state since epoch (updated at state change only)
 		uint_fast32_t off_totsecs;	///< total seconds spent in off state since epoch (updated at state change only)

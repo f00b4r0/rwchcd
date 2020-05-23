@@ -39,7 +39,7 @@
 
 #define CALIBRATION_PERIOD	(600 * TIMEKEEP_SMULT)	///< calibration period in seconds: every 10mn
 
-static const storage_version_t Hardware_sversion = 2;
+static const storage_version_t Hardware_sversion = 3;
 
 /**
  * Log relays change.

@@ -255,22 +255,12 @@ int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, 
 	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
 
-	// update state state request if delay permits
-	if (turn_on) {
-		if (!relay->run.is_on) {
-			if ((now - relay->run.off_since) < change_delay)
-				return ((int)(change_delay - (now - relay->run.off_since)));	// < INT_MAX - don't do anything if previous state hasn't been held long enough - return remaining time
+	// update state state request if necessary and delay permits
+	if (turn_on != relay->run.is_on) {
+		if ((now - relay->run.state_since) < change_delay)
+			return ((int)(change_delay - (now - relay->run.state_since)));	// < INT_MAX - don't do anything if previous state hasn't been held long enough - return remaining time
 
-			relay->run.turn_on = true;
-		}
-	}
-	else {	// turn off
-		if (relay->run.is_on) {
-			if ((now - relay->run.on_since) < change_delay)
-				return ((int)(change_delay - (now - relay->run.on_since)));	// < INT_MAX - don't do anything if previous state hasn't been held long enough - return remaining time
-
-			relay->run.turn_on = false;
-		}
+		relay->run.turn_on = turn_on;
 	}
 
 	return (ALL_OK);
@@ -284,13 +274,11 @@ int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, 
  */
 int hw_lib_relay_get_state(struct s_hw_relay * const relay)
 {
-	const timekeep_t now = timekeep_now();
-
 	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
 
 	// update state time counter
-	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
+	relay->run.state_time = (timekeep_now() - relay->run.state_since);
 
 	return (relay->run.is_on);
 }
@@ -299,10 +287,11 @@ int hw_lib_relay_get_state(struct s_hw_relay * const relay)
  * Update hardware relay state and accounting.
  * This function is meant to be called immediately before the hardware is updated.
  * It will update the is_on state of the relay as well as the accounting fields,
- * assuming the time of the call reflects the time the actual hardware is updated.
+ * assuming the #now parameter reflects the time the actual hardware is updated.
  * @param relay the target relay
  * @param now the current timestamp
- * @return #HW_LIB_RCHTURNON if the relay was previously off and turned on, #HW_LIB_RCHTURNOFF if the relay was previously on and turned off,
+ * @return #HW_LIB_RCHTURNON if the relay was previously off and turned on,
+ * #HW_LIB_RCHTURNOFF if the relay was previously on and turned off,
  * #HW_LIB_RCHNONE if no state change happened, or negative value for error.
  */
 int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
@@ -312,31 +301,25 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
 
+	// update state time counter
+	relay->run.state_time = now - relay->run.state_since;
+
 	// update state counters at state change
-	if (relay->run.turn_on) {	// turn on
-		if (!relay->run.is_on) {	// relay is currently off
+	if (relay->run.turn_on != relay->run.is_on) {
+		if (!relay->run.is_on) {	// relay is currently off => turn on
 			relay->run.cycles++;	// increment cycle count
-			relay->run.is_on = true;
-			relay->run.on_since = now;
-			if (relay->run.off_since)
-				relay->run.off_totsecs += (unsigned)timekeep_tk_to_sec(now - relay->run.off_since);
-			relay->run.off_since = 0;
+			relay->run.off_totsecs += (unsigned)timekeep_tk_to_sec(relay->run.state_time);
 			ret = HW_LIB_RCHTURNON;
 		}
-	}
-	else {	// turn off
-		if (relay->run.is_on) {	// relay is currently on
-			relay->run.is_on = false;
-			relay->run.off_since = now;
-			if (relay->run.on_since)
-				relay->run.on_totsecs += (unsigned)timekeep_tk_to_sec(now - relay->run.on_since);
-			relay->run.on_since = 0;
+		else {				// relay is currently on => turn off
+			relay->run.on_totsecs += (unsigned)timekeep_tk_to_sec(relay->run.state_time);
 			ret = HW_LIB_RCHTURNOFF;
 		}
-	}
 
-	// update state time counter
-	relay->run.state_time = relay->run.is_on ? (now - relay->run.on_since) : (now - relay->run.off_since);
+		relay->run.is_on = relay->run.turn_on;
+		relay->run.state_since = now;
+		relay->run.state_time = 0;
+	}
 
 	return (ret);
 }
@@ -346,21 +329,18 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
  * Restores cycles and on/off total time counts.
  * @param rdest target data structure
  * @param rsrc source data structure (e.g. from permanent storage)
- * @note destination relay is assumed to be "restored" in OFF state. When restoring we must:
- * - account for elapsed time in last known state (at save time)
- * - restore off_since to either the saved value or to the current time (if relay was last ON)
  */
 void hw_lib_relay_restore(struct s_hw_relay * restrict const rdest, const struct s_hw_relay * restrict const rsrc)
 {
 	assert(rdest && rsrc);
 	assert(!rdest->run.is_on);
 
-	// handle saved state (see @note)
+	// handle saved state
 	if (rsrc->run.is_on)
 		rdest->run.on_totsecs += (unsigned)timekeep_tk_to_sec(rsrc->run.state_time);
 	else
 		rdest->run.off_totsecs += (unsigned)timekeep_tk_to_sec(rsrc->run.state_time);
-	rdest->run.off_since = timekeep_now();	// off since "now"
+	rdest->run.state_since = timekeep_now();
 	rdest->run.on_totsecs += rsrc->run.on_totsecs;
 	rdest->run.off_totsecs += rsrc->run.off_totsecs;
 	rdest->run.cycles += rsrc->run.cycles;
