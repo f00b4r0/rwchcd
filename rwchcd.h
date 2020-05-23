@@ -54,7 +54,7 @@
 #endif
 
 #ifdef DEBUG	// debug output will be sent via stdout to nonblocking FIFO, normal logging information will go to stderr
- #define dbgmsg(level, cond, format, ...)	if ((DEBUG >= level) && (cond)) printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+ #define dbgmsg(level, cond, format, ...)	do { if ((DEBUG >= level) && (cond)) printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__); } while(0)
  #define pr_log(format, ...)	fprintf(stderr, format "\n", ## __VA_ARGS__)
 #else		// debug output is disabled, normal logging goes to stdout
  #define dbgmsg(level, cond, format, ...)	/* nothing */
