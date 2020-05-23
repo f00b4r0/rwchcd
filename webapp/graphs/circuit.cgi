@@ -19,8 +19,8 @@
  	DEF:aakelth=<RRD::GETVAR rrdb>:actual_ambient:LAST
  	DEF:twkelth=<RRD::GETVAR rrdb>:target_wtemp:LAST
  	DEF:awkelth=<RRD::GETVAR rrdb>:actual_wtemp:LAST
-	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
-	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>,0,50,LIMIT
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>,-20,50,LIMIT
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#f7ad0011:skipscale
@@ -38,8 +38,8 @@
  	DEF:aakelth=<RRD::GETVAR rrdb>:actual_ambient:LAST
  	DEF:twkelth=<RRD::GETVAR rrdb>:target_wtemp:LAST
  	DEF:awkelth=<RRD::GETVAR rrdb>:actual_wtemp:LAST
-	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
-	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>,0,50,LIMIT
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>,-20,50,LIMIT
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#f7ad0011:skipscale
@@ -57,8 +57,8 @@
  	DEF:aakelth=<RRD::GETVAR rrdb>:actual_ambient:AVERAGE
  	DEF:twkelth=<RRD::GETVAR rrdb>:target_wtemp:AVERAGE
  	DEF:awkelth=<RRD::GETVAR rrdb>:actual_wtemp:AVERAGE
-	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
-	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>,0,50,LIMIT
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>,-20,50,LIMIT
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#f7ad0011:skipscale

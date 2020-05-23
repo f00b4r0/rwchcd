@@ -32,7 +32,7 @@
 	TICK:frost#88a8a888:0.1:"frost"
 	TICK:summer#a8888888:-0.1:"summer"
 	HRULE:0#000000
-	HRULE:19#0ece0e80
+	HRULE:18#0ece0e80
  >
  </P>
  <P>
@@ -56,7 +56,7 @@
 	TICK:frost#88a8a888:0.1:"frost"
 	TICK:summer#a8888888:-0.1:"summer"
 	HRULE:0#000000
-	HRULE:19#0ece0e80
+	HRULE:18#0ece0e80
  >
  </P>
  <P>
@@ -77,7 +77,7 @@
 	TICK:frost#88a8a888:0.1:"frost"
 	TICK:summer#a8888888:-0.1:"summer"
 	HRULE:0#000000
-	HRULE:19#0ece0e80
+	HRULE:18#0ece0e80
  >
  </P>
  </BODY>

@@ -24,14 +24,13 @@
  	DEF:awkelth=<RRD::GETVAR rrdbc>:actual_wtemp:LAST
 	DEF:tomkelth=<RRD::GETVAR rrdbbm>:t_out_mix:LAST
 	CDEF:tbocel=tbokelth,<RRD::GETVAR cdeftconv>
-	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>
-	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>
+	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>,0,50,LIMIT
+	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>,-20,50,LIMIT
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT
 	CDEF:awcel=awkelth,<RRD::GETVAR cdeftconv>
 	CDEF:toutmix=tomkelth,<RRD::GETVAR cdeftconv>
  	AREA:twcel#f7ad0011:skipscale
  	LINE1:tbocel#c48880:"T chaud min"
- 	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:tacel#0000a0:"T cible ambiant"
  	LINE1:aacel#00a0a0:"T actuel ambiant"
  	LINE1:twcel#f7ad00:"T cible circuit"
