@@ -680,6 +680,8 @@ static int filecfg_dhwt_dump(const struct s_dhw_tank * restrict const dhwt)
 		filecfg_iprintf("anti_legionella %s;\n", filecfg_bool_str(dhwt->set.anti_legionella));
 	if (FCD_Exhaustive || dhwt->set.legionella_recycle)
 		filecfg_iprintf("legionella_recycle %s;\n", filecfg_bool_str(dhwt->set.legionella_recycle));
+	if (FCD_Exhaustive || dhwt->set.electric_recycle)
+		filecfg_iprintf("electric_recycle %s;\n", filecfg_bool_str(dhwt->set.electric_recycle));
 	if (FCD_Exhaustive || dhwt->set.prio)
 		filecfg_iprintf("prio %hd;\n", dhwt->set.prio);
 	if (FCD_Exhaustive || dhwt->set.schedid)

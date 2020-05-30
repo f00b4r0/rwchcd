@@ -274,7 +274,7 @@ static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
 		if ((SYS_AUTO == runtime->systemmode) && eparams) {
 			dhwt->run.runmode = eparams->dhwmode;
 			dhwt->run.legionella_on = eparams->legionella;
-			dhwt->run.recycle_on = eparams->recycle;
+			dhwt->run.recycle_on = (dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
 		}
 		else	// don't touch legionella/recycle
 			dhwt->run.runmode = runtime->dhwmode;

@@ -1083,6 +1083,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 		{ NODESTR, "pump_recycle", false, NULL, NULL, },	// 14
 		{ NODESTR, "valve_hwisol", false, NULL, NULL, },
 		{ NODESTR, "schedid", false, NULL, NULL, },		// 16
+		{ NODEBOL, "electric_recycle", false, NULL, NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_pump * pump;
@@ -1215,6 +1216,9 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 				}
 
 				dbgmsg(3, 1, "%s: \"%s\" found", currnode->name, n);
+				break;
+			case 17:
+				dhwt->set.electric_recycle = currnode->value.boolval;
 				break;
 			default:
 				break;	// should never happen
