@@ -67,6 +67,7 @@
 #include "heatsource.h"
 
 #include "scheduler.h"
+#include "scheduler_filecfg.h"
 
 #include "runtime.h"
 
@@ -189,7 +190,6 @@ static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, con
 }
 
 int models_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
-int scheduler_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int storage_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int log_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
