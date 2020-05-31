@@ -36,10 +36,9 @@
 #include "scheduler_filecfg.h"
 #include "models_filecfg.h"
 #include "storage_filecfg.h"
+#include "log_filecfg.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
-
-int log_filecfg_dump(void);
 
 bool FCD_Exhaustive = false;
 

@@ -87,6 +87,14 @@ struct s_log_bendcbs {
 	int (*log_update)(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data);
 };
 
+struct s_log {
+	struct {
+		bool configured;			///< true if properly configured (backends are online)
+		struct s_log_bendcbs sync_bkend;	///< logging backend for synchronous (periodic) logs. Config expects a user string for backend name.
+		struct s_log_bendcbs async_bkend;	///< logging backend for asynchronous logs. Config expects a user string for backend name.
+	} set;
+};
+
 typedef void (*log_bkend_hook_t)(struct s_log_bendcbs * restrict const callbacks);
 
 int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data);
