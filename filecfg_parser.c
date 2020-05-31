@@ -75,14 +75,6 @@
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
 
-#define FILECFG_PARSER_BOOL_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_bool_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	s->set._setmember = n->value.boolval;					\
-	return (ALL_OK);							\
-}
-
 #define FILECFG_PARSER_INT_PARSE_FUNC(_positiveonly, _struct, _setmember)			\
 static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
@@ -119,31 +111,6 @@ static int fcp_temp_##_struct##_##_setmember(void * restrict const priv, const s
 	ret = __fcp_get_node_celsius_temp(_positiveonly, _delta, n, &temp);	\
 	s->set._setmember = temp;	/* Note: always set */			\
 	return (ret);								\
-}
-
-#define FILECFG_PARSER_TIME_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_tk_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	int iv = n->value.intval;						\
-	if (iv < 0)								\
-		return (-EINVALID);						\
-	s->set._setmember = timekeep_sec_to_tk(iv);				\
-	return (ALL_OK);							\
-}
-
-#define FILECFG_PARSER_TID_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_tid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	return (filecfg_parser_tid_parse(&s->set._setmember, n));		\
-}
-
-#define FILECFG_PARSER_RID_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_rid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	return (filecfg_parser_rid_parse(&s->set._setmember, n));		\
 }
 
 #define FILECFG_PARSER_RUNMODE_PARSE_FUNC(_struct, _setmember)			\
