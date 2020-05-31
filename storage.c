@@ -30,8 +30,6 @@
 
 #include "storage.h"
 #include "rwchcd.h"
-#include "filecfg_parser.h"
-#include "filecfg.h"
 
 #define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL
@@ -39,8 +37,8 @@
 
 static const char Storage_magic[] = STORAGE_MAGIC;
 static const storage_version_t Storage_version = STORAGE_VERSION;
-static bool Storage_configured = false;
-static const char * Storage_path = NULL;
+bool Storage_configured = false;
+const char * Storage_path = NULL;
 
 /**
  * Generic storage backend write call.
@@ -217,68 +215,4 @@ void storage_deconfig(void)
 	Storage_configured = false;
 	free((void *)Storage_path);
 	Storage_path = NULL;
-}
-
-/**
- * Configure the storage subsystem.
- * @param node the `storage` node which contains a single `path` node, itself
- * a string pointing to the @b absolute storage location.
- * @return exec status.
- */
-int storage_filecfg_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
-{
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "path", true, NULL, NULL, },		// 0
-	};
-	const struct s_filecfg_parser_node * currnode;
-	const char * path;
-	int ret;
-
-	// we receive a 'storage' node
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);	// break if invalid config
-
-	currnode = parsers[0].node;
-	path = currnode->value.stringval;
-
-	if (strlen(path) < 1)
-		goto invaliddata;
-
-	if ('/' != *path) {
-		filecfg_parser_pr_err(_("Line %d: path \"%s\" is not absolute"), node->lineno, path);
-		goto invaliddata;
-	}
-
-	// all good
-	if (!Storage_path)
-		Storage_path = strdup(path);
-	else	// should never happen
-		return (-EEXISTS);
-
-	return (ret);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
-}
-
-/**
- * Dump the storage configuration to file.
- * @return exec status
- * @warning not thread safe
- */
-int storage_filecfg_dump(void)
-{
-	if (!Storage_path || !Storage_configured)
-		return (-EINVALID);
-
-	filecfg_iprintf("storage {\n");
-	filecfg_ilevel_inc();
-	filecfg_iprintf("path \"%s\";\n", Storage_path);
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
 }
