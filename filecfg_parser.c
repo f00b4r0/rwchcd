@@ -90,6 +90,17 @@ static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const st
 	return (ALL_OK);							\
 }
 
+#define FILECFG_PARSER_STR_PARSE_FUNC(_nonempty, _struct, _setmember)			\
+static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	const char *str = n->value.stringval;					\
+	if (_nonempty && (strlen(str) < 1))					\
+		return (-EINVALID);						\
+	s->set._setmember = str;						\
+	return (ALL_OK);							\
+}
+
 static int __fcp_get_node_celsius_temp(bool positiveonly, bool delta, const struct s_filecfg_parser_node * const n, temp_t *temp)
 {
 	float fv; int iv;
@@ -240,14 +251,24 @@ static int hardware_backend_parse(void * restrict const priv, const struct s_fil
 	return (ret);
 }
 
+struct s_fcp_hwbkend {
+	struct {
+		const char *backend;
+		const char *name;
+	} set;
+};
+
+FILECFG_PARSER_STR_PARSE_FUNC(true, s_fcp_hwbkend, backend)
+FILECFG_PARSER_STR_PARSE_FUNC(true, s_fcp_hwbkend, name)
+
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	tempid_t * restrict const tempid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "backend", true, NULL, NULL, },
-		{ NODESTR, "name", true, NULL, NULL, },
+		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
+		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },
 	};
-	const char * backend, * name;
+	struct s_fcp_hwbkend p;
 	int ret;
 
 	dbgmsg(3, 1, "Trying \"%s\"", node->name);
@@ -262,15 +283,16 @@ int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_
 	if (ALL_OK != ret)
 		return (ret);
 
-	backend = parsers[0].node->value.stringval;
-	name = parsers[1].node->value.stringval;
+	ret = filecfg_parser_run_parsers(&p, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
-	ret = hw_backends_sensor_fbn(tempid, backend, name);
+	ret = hw_backends_sensor_fbn(tempid, p.set.backend, p.set.name);
 	switch (ret) {
 		case ALL_OK:
 			break;
 		case -ENOTFOUND:
-			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or sensor \"%s\" not found"), node->name, node->lineno, backend, name);
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or sensor \"%s\" not found"), node->name, node->lineno, p.set.backend, p.set.name);
 			break;
 		default:	// should never happen
 			dbgerr("hw_backends_sensor_fbn() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
@@ -284,10 +306,10 @@ int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_
 {
 	relid_t * restrict const relid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "backend", true, NULL, NULL, },
-		{ NODESTR, "name", true, NULL, NULL, },
+		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
+		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },
 	};
-	const char * backend, * name;
+	struct s_fcp_hwbkend p;
 	int ret;
 
 	dbgmsg(3, 1, "Trying \"%s\"", node->name);
@@ -302,15 +324,16 @@ int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_
 	if (ALL_OK != ret)
 		return (ret);
 
-	backend = parsers[0].node->value.stringval;
-	name = parsers[1].node->value.stringval;
+	ret = filecfg_parser_run_parsers(&p, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
-	ret = hw_backends_relay_fbn(relid, backend, name);
+	ret = hw_backends_relay_fbn(relid, p.set.backend, p.set.name);
 	switch (ret) {
 		case ALL_OK:
 			break;
 		case -ENOTFOUND:
-			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or relay \"%s\" not found"), node->name, node->lineno, backend, name);
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or relay \"%s\" not found"), node->name, node->lineno, p.set.backend, p.set.name);
 			break;
 		default:	// should never happen
 			dbgerr("hw_backends_relay_fbn() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
