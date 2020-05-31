@@ -442,7 +442,7 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 		ret = -EDEADZONE;
 	}
 
-	return (ALL_OK);
+	return (ret);
 }
 
 /**
