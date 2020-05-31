@@ -2,7 +2,7 @@
 //  filecfg_parser.c
 //  rwchcd
 //
-//  (C) 2019 Thibaut VARENE
+//  (C) 2019-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -73,6 +73,120 @@
 #ifndef ARRAY_SIZE
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
+
+#define FILECFG_PARSER_BOOL_PARSE_FUNC(_struct, _setmember)			\
+static int fcp_bool_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	s->set._setmember = n->value.boolval;					\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_INT_PARSE_FUNC(_positiveonly, _struct, _setmember)			\
+static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int iv = n->value.intval;						\
+	if (_positiveonly && (iv < 0))						\
+		return (-EINVALID);						\
+	s->set._setmember = iv;							\
+	return (ALL_OK);							\
+}
+
+static int __fcp_get_node_celsius_temp(bool positiveonly, bool delta, const struct s_filecfg_parser_node * const n, temp_t *temp)
+{
+	float fv; int iv;
+	if (NODEFLT == n->type) {
+		fv = n->value.floatval;
+		if (positiveonly && (fv < 0))
+			return (-EINVALID);
+		*temp = delta ? deltaK_to_temp(fv) : celsius_to_temp(fv);
+	} else { /* NODEINT */
+		iv = n->value.intval;
+		if (positiveonly && (iv < 0))
+			return (-EINVALID);
+		*temp = delta ? deltaK_to_temp(iv) : celsius_to_temp(iv);
+	}
+	return (ALL_OK);
+}
+
+#define FILECFG_PARSER_CELSIUS_PARSE_FUNC(_positiveonly, _delta, _struct, _setmember)	\
+static int fcp_temp_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int ret; temp_t temp = 0;						\
+	ret = __fcp_get_node_celsius_temp(_positiveonly, _delta, n, &temp);	\
+	s->set._setmember = temp;	/* Note: always set */			\
+	return (ret);								\
+}
+
+#define FILECFG_PARSER_TIME_PARSE_FUNC(_struct, _setmember)			\
+static int fcp_tk_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int iv = n->value.intval;						\
+	if (iv < 0)								\
+		return (-EINVALID);						\
+	s->set._setmember = timekeep_sec_to_tk(iv);				\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_TID_PARSE_FUNC(_struct, _setmember)			\
+static int fcp_tid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	return (filecfg_parser_tid_parse(&s->set._setmember, n));		\
+}
+
+#define FILECFG_PARSER_RID_PARSE_FUNC(_struct, _setmember)			\
+static int fcp_rid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	return (filecfg_parser_rid_parse(&s->set._setmember, n));		\
+}
+
+#define FILECFG_PARSER_RUNMODE_PARSE_FUNC(_struct, _setmember)			\
+static int fcp_runmode_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	return (filecfg_parser_runmode_parse(&s->set._setmember, n));		\
+}
+
+#define FILECFG_PARSER_PRIO_PARSE_FUNC(_struct, _setmember)			\
+static int fcp_prio_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int iv = n->value.intval;						\
+	if ((iv < 0) || (iv > UINT_FAST8_MAX))					\
+		return (-EINVALID);						\
+	s->set._setmember = (typeof(s->set._setmember))iv;			\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_SCHEDID_PARSE_FUNC(_struct, _setmember)			\
+static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv; int iv;			\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	iv = scheduler_schedid_by_name(n->value.stringval);			\
+	if (iv <= 0)								\
+		return (-EINVALID);						\
+	s->set._setmember = (unsigned)iv;					\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_PBMODEL_PARSE_FUNC(_struct, _setpmember)			\
+static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	s->set.p._setpmember = models_fbn_bmodel(n->value.stringval);		\
+	if (!s->set.p._setpmember)						\
+		return (-EINVALID);						\
+	return (ALL_OK);							\
+}
 
 int models_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int scheduler_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
@@ -642,16 +756,18 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	return (ret);
 }
 
+FILECFG_PARSER_TIME_PARSE_FUNC(s_pump, cooldown_time)
+FILECFG_PARSER_RID_PARSE_FUNC(s_pump, rid_pump)
+
 static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT|NODEDUR, "cooldown_time", false, NULL, NULL, },
-		{ NODELST, "rid_pump", true, NULL, NULL, },
+		{ NODEINT|NODEDUR,	"cooldown_time",	false,	fcp_tk_s_pump_cooldown_time,	NULL, },
+		{ NODELST,		"rid_pump",		true,	fcp_rid_s_pump_rid_pump,	NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
 	struct s_pump * pump;
-	int ret = ALL_OK;
+	int ret;
 
 	// we receive a 'pump' node with a valid string attribute which is the pump name
 
@@ -664,28 +780,13 @@ static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_
 	if (!pump)
 		return (-EOOM);
 
-	currnode = parsers[0].node;
-	if (currnode) {
-		if (currnode->value.intval < 0) {
-			ret = -EINVALID;
-			goto invaliddata;
-		}
-		else
-			pump->set.cooldown_time = timekeep_sec_to_tk(currnode->value.intval);
-	}
-
-	currnode = parsers[1].node;
-	ret = filecfg_parser_rid_parse(&pump->set.rid_pump, currnode);
+	ret = filecfg_parser_run_parsers(pump, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
-		goto invaliddata;
+		return (ret);
 
 	pump->set.configured = true;
 
-	return (ret);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (ret);
+	return (ALL_OK);
 }
 
 static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -693,28 +794,34 @@ static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "pump", pump_parse));
 }
 
+FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_sapprox_priv, sample_intvl)
+FILECFG_PARSER_INT_PARSE_FUNC(true, s_valve_sapprox_priv, amount)
+
 static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT|NODEDUR, "sample_intvl", true, NULL, NULL, },
-		{ NODEINT, "amount", true, NULL, NULL, },
+		{ NODEINT|NODEDUR,	"sample_intvl",	true,	fcp_tk_s_valve_sapprox_priv_sample_intvl,	NULL, },
+		{ NODEINT,		"amount",	true,	fcp_int_s_valve_sapprox_priv_amount,		NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
-	timekeep_t sample_intvl;
-	int ret, amount;
+	struct s_valve_sapprox_priv sapriv = { 0 };
+	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	sample_intvl = timekeep_sec_to_tk(parsers[0].node->value.intval);
-	amount = parsers[1].node->value.intval;
-	if ((amount < 0) || (amount > UINT_FAST8_MAX)) {
+	ret = filecfg_parser_run_parsers(&sapriv, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	// XXX
+	if ((sapriv.set.amount < 0) || (sapriv.set.amount > UINT_FAST8_MAX)) {
 		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: amount is out of range"), node->name, node->lineno);
 		return -EINVALID;
 	}
 
-	ret = valve_make_sapprox(valve, (uint_fast8_t)amount, sample_intvl);
+	ret = valve_make_sapprox(valve, sapriv.set.amount, sapriv.set.sample_intvl);
 	switch (ret) {
 		case ALL_OK:
 			break;
@@ -729,36 +836,40 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 	return (ret);
 }
 
+FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_pi_priv, sample_intvl)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_pi_priv, Tu)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_pi_priv, Td)
+FILECFG_PARSER_INT_PARSE_FUNC(true, s_valve_pi_priv, tune_f)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, true, s_valve_pi_priv, Ksmax)
+
 static int valve_algo_PI_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT|NODEDUR, "sample_intvl", true, NULL, NULL, },
-		{ NODEINT|NODEDUR, "Tu", true, NULL, NULL, },
-		{ NODEINT|NODEDUR, "Td", true, NULL, NULL, },
-		{ NODEINT, "tune_f", true, NULL, NULL, },
-		{ NODEFLT|NODEINT, "Ksmax", true, NULL, NULL, },
+		{ NODEINT|NODEDUR,	"sample_intvl",	true,	fcp_tk_s_valve_pi_priv_sample_intvl,	NULL, },
+		{ NODEINT|NODEDUR,	"Tu",		true,	fcp_tk_s_valve_pi_priv_Tu,		NULL, },
+		{ NODEINT|NODEDUR,	"Td",		true,	fcp_tk_s_valve_pi_priv_Td,		NULL, },
+		{ NODEINT,		"tune_f",	true,	fcp_int_s_valve_pi_priv_tune_f,		NULL, },
+		{ NODEFLT|NODEINT,	"Ksmax",	true,	fcp_temp_s_valve_pi_priv_Ksmax,		NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
-	timekeep_t sample_intvl, Tu, Td;
-	int ret, tune_f;
-	temp_t Ksmax;
+	struct s_valve_pi_priv pipriv = { 0 };
+	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	sample_intvl = timekeep_sec_to_tk(parsers[0].node->value.intval);
-	Tu = timekeep_sec_to_tk(parsers[1].node->value.intval);
-	Td = timekeep_sec_to_tk(parsers[2].node->value.intval);
-	tune_f = parsers[3].node->value.intval;
-	Ksmax = (NODEFLT == parsers[4].node->type) ? deltaK_to_temp(parsers[4].node->value.floatval) : deltaK_to_temp(parsers[4].node->value.intval);
+	ret = filecfg_parser_run_parsers(&pipriv, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
-	if ((tune_f < 0) || (tune_f > UINT_FAST8_MAX)) {
+	// XXX
+	if ((pipriv.set.tune_f < 0) || (pipriv.set.tune_f > UINT_FAST8_MAX)) {
 		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: tune_f is out of rnage"), node->name, node->lineno);
 		return -EINVALID;
 	}
 
-	ret = valve_make_pi(valve, sample_intvl, Td, Tu, Ksmax, (uint_fast8_t)tune_f);
+	ret = valve_make_pi(valve, pipriv.set.sample_intvl, pipriv.set.Td, pipriv.set.Tu, pipriv.set.Ksmax, pipriv.set.tune_f);
 	switch (ret) {
 		case ALL_OK:
 			break;
@@ -776,21 +887,63 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	return (ret);
 }
 
+static int fcp_tid_valve_tmix_tid_hot(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	return (filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_hot, node));
+}
+
+static int fcp_tid_valve_tmix_tid_cold(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	return (filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_cold, node));
+}
+
+static int fcp_tid_valve_tmix_tid_out(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	return (filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_out, node));
+}
+
+static int fcp_temp_valve_tmix_tdeadzone(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	int ret; temp_t temp = 0;
+	ret = __fcp_get_node_celsius_temp(true, true, node, &temp);
+	valve->set.tset.tmix.tdeadzone = temp;	/* Note: always set */
+	return (ret);
+}
+
+static int fcp_valve_tmix_algo(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	const char * str;
+	int ret;
+
+	str = node->value.stringval;
+	if (!strcmp("PI", str))
+		ret = valve_algo_PI_parser(valve, node);
+	else if (!strcmp("sapprox", str))
+		ret = valve_algo_sapprox_parser(valve, node);
+	else if (!strcmp("bangbang", str))
+		ret = valve_make_bangbang(valve);
+	else
+		return (-EINVALID);
+
+	return (ret);
+}
+
 static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT, "tdeadzone", false, NULL, NULL, },	// 0
-		{ NODELST, "tid_hot", false, NULL, NULL, },
-		{ NODELST, "tid_cold", false, NULL, NULL, },	// 2
-		{ NODELST, "tid_out", true, NULL, NULL, },
-		{ NODESTR, "algo", true, NULL, NULL, },		// 4
+		{ NODEFLT|NODEINT,	"tdeadzone",	false,	fcp_temp_valve_tmix_tdeadzone,	NULL, },
+		{ NODELST,		"tid_hot",	false,	fcp_tid_valve_tmix_tid_hot,	NULL, },
+		{ NODELST,		"tid_cold",	false,	fcp_tid_valve_tmix_tid_cold,	NULL, },
+		{ NODELST,		"tid_out",	true,	fcp_tid_valve_tmix_tid_out,	NULL, },
+		{ NODESTR,		"algo",		true,	fcp_valve_tmix_algo,		NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_valve * restrict const valve = priv;
-	const char * n;
-	float fv;
 	int ret;
-	unsigned int i;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
@@ -798,66 +951,23 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 
 	valve->set.type = VA_TYPE_MIX;	// needed by valve_make_* algos
 
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
-
-		switch (i) {
-			case 0:
-				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : (float)currnode->value.intval;
-				if (fv < 0)
-					goto invaliddata;
-				else
-					valve->set.tset.tmix.tdeadzone = deltaK_to_temp(fv);
-				break;
-			case 1:
-				if (ALL_OK != filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_hot, currnode))
-					goto invaliddata;
-				break;
-			case 2:
-				if (ALL_OK != filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_cold, currnode))
-					goto invaliddata;
-				break;
-			case 3:
-				if (ALL_OK != filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_out, currnode))
-					goto invaliddata;
-				break;
-			case 4:
-				n = currnode->value.stringval;
-				if (!strcmp("PI", n))
-					ret = valve_algo_PI_parser(valve, currnode);
-				else if (!strcmp("sapprox", n))
-					ret = valve_algo_sapprox_parser(valve, currnode);
-				else if (!strcmp("bangbang", n))
-					ret = valve_make_bangbang(valve);
-				else
-					goto invaliddata;
-
-				if (ALL_OK != ret) {
-					valve->set.type = VA_TYPE_NONE;
-					return (ret);
-				}
-				break;
-			default:
-				break;	// should never happen
-		}
-	}
+	ret = filecfg_parser_run_parsers(valve, parsers, ARRAY_SIZE(parsers));
 
 	return (ret);
+}
 
-invaliddata:
-	valve->set.type = VA_TYPE_NONE;
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
+static int fcp_bool_valve_tisol_reverse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	valve->set.tset.tisol.reverse = node->value.boolval;
+	return (ALL_OK);
 }
 
 static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "reverse", true, NULL, NULL, },	// 0
+		{ NODEBOL,	"reverse",	true,	fcp_bool_valve_tisol_reverse,	NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_valve * restrict const valve = priv;
 	int ret;
 
@@ -865,21 +975,33 @@ static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	currnode = parsers[0].node;
-	valve->set.tset.tisol.reverse = currnode->value.boolval;
+	ret = filecfg_parser_run_parsers(valve, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
 	valve->set.type = VA_TYPE_ISOL;
 
 	return (ret);
 }
 
+static int fcp_rid_valve_m3way_rid_open(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	return (filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_open, node));
+}
+
+static int fcp_rid_valve_m3way_rid_close(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	return (filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_close, node));
+}
+
 static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST, "rid_open", true, NULL, NULL, },	// 0
-		{ NODELST, "rid_close", true, NULL, NULL, },
+		{ NODELST,	"rid_open",	true,	fcp_rid_valve_m3way_rid_open,	NULL, },
+		{ NODELST,	"rid_close",	true,	fcp_rid_valve_m3way_rid_close,	NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_valve * restrict const valve = priv;
 	int ret;
 
@@ -887,33 +1009,34 @@ static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	currnode = parsers[0].node;
-	ret = filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_open, currnode);
+	ret = filecfg_parser_run_parsers(valve, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
-		goto invaliddata;
+		return (ret);
 
-	currnode = parsers[1].node;
-	ret = filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_close, currnode);
-	if (ALL_OK != ret)
-		goto invaliddata;
+	valve->set.motor = VA_M_3WAY;
 
-	if (ALL_OK == ret)
-		valve->set.motor = VA_M_3WAY;
+	return (ALL_OK);
+}
 
-	return (ret);
+static int fcp_rid_valve_m2way_rid_trigger(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	return (filecfg_parser_rid_parse(&valve->set.mset.m2way.rid_trigger, node));
+}
 
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
+static int fcp_bool_valve_m2way_trigger_opens(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	valve->set.mset.m2way.trigger_opens = node->value.boolval;
+	return (ALL_OK);
 }
 
 static int valve_m2way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST, "rid_trigger", true, NULL, NULL, },	// 0
-		{ NODEBOL, "trigger_opens", true, NULL, NULL, },
+		{ NODELST,	"rid_trigger",		true,	fcp_rid_valve_m2way_rid_trigger,	NULL, },
+		{ NODEBOL,	"trigger_opens",	true,	fcp_bool_valve_m2way_trigger_opens,	NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_valve * restrict const valve = priv;
 	int ret;
 
@@ -921,38 +1044,63 @@ static int valve_m2way_parser(void * restrict const priv, const struct s_filecfg
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	currnode = parsers[0].node;
-	ret = filecfg_parser_rid_parse(&valve->set.mset.m2way.rid_trigger, currnode);
+	ret = filecfg_parser_run_parsers(valve, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
-		goto invaliddata;
+		return (ret);
 
-	currnode = parsers[1].node;
-	valve->set.mset.m2way.trigger_opens = currnode->value.boolval;
+	valve->set.motor = VA_M_2WAY;
 
-	if (ALL_OK == ret)
-		valve->set.motor = VA_M_2WAY;
+	return (ALL_OK);
+}
+
+FILECFG_PARSER_INT_PARSE_FUNC(true, s_valve, deadband)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_valve, ete_time)
+
+static int fcp_valve_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	const char * str;
+	int ret;
+
+	str = node->value.stringval;
+	if (!strcmp("mix", str))
+		ret = valve_tmix_parser(valve, node);
+	else if (!strcmp("isol", str))
+		ret = valve_tisol_parser(valve, node);
+	else
+		return (-EINVALID);
 
 	return (ret);
+}
 
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
+static int fcp_valve_motor(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_valve * restrict const valve = priv;
+	const char * str;
+	int ret;
+
+	str = node->value.stringval;
+	if (!strcmp("3way", str))
+		ret = valve_m3way_parser(valve, node);
+	else if (!strcmp("2way", str))
+		ret = valve_m2way_parser(valve, node);
+	else
+		return (-EINVALID);
+
+	return (ret);
 }
 
 static int valve_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "deadband", false, NULL, NULL, },	// 0
-		{ NODEINT|NODEDUR, "ete_time", true, NULL, NULL, },
-		{ NODESTR, "type", true, NULL, NULL, },		// 2
-		{ NODESTR, "motor", true, NULL, NULL, },
+		{ NODEINT,		"deadband",	false,	fcp_int_s_valve_deadband,	NULL, },
+		{ NODEINT|NODEDUR,	"ete_time",	true,	fcp_tk_s_valve_ete_time,	NULL, },
+		{ NODESTR,		"type",		true,	fcp_valve_type,			NULL, },
+		{ NODESTR,		"motor",	true,	fcp_valve_motor,		NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
 	struct s_valve * valve;
-	const char * n;
-	int iv, ret;
-	unsigned int i;
+	int ret;
 
 	// we receive a 'valve' node with a valid string attribute which is the valve name
 
@@ -965,59 +1113,13 @@ static int valve_parse(void * restrict const priv, const struct s_filecfg_parser
 	if (!valve)
 		return (-EOOM);
 
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
+	ret = filecfg_parser_run_parsers(valve, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
-		switch (i) {
-			case 0:
-			case 1:
-				iv = currnode->value.intval;
-				if (iv < 0)
-					goto invaliddata;
-				if (0 == i)
-					valve->set.deadband = (unsigned)iv;
-				else	// i == 1
-					valve->set.ete_time = timekeep_sec_to_tk(iv);
-				break;
-			case 2:
-				n = currnode->value.stringval;
-				if (!strcmp("mix", n))
-					ret = valve_tmix_parser(valve, currnode);
-				else if (!strcmp("isol", n))
-					ret = valve_tisol_parser(valve, currnode);
-				else
-					goto invaliddata;
+	valve->set.configured = true;
 
-				if (ALL_OK != ret)
-					return (ret);
-				break;
-			case 3:
-				n = currnode->value.stringval;
-				if (!strcmp("3way", n))
-					ret = valve_m3way_parser(valve, currnode);
-				else if (!strcmp("2way", n))
-					ret = valve_m2way_parser(valve, currnode);
-				else
-					goto invaliddata;
-
-				if (ALL_OK != ret)
-					return (ret);
-				break;
-			default:
-				break;	// should never happen
-		}
-	}
-
-	if (ALL_OK == ret)
-		valve->set.configured = true;
-
-	return (ret);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
+	return (ALL_OK);
 }
 
 static int valves_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1063,34 +1165,94 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 	return (ALL_OK);
 }
 
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, electric_failover)
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, anti_legionella)
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, legionella_recycle)
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, electric_recycle)
+FILECFG_PARSER_PRIO_PARSE_FUNC(s_dhwt, prio)
+FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_dhwt, runmode)
+FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_bottom)
+FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_top)
+FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_win)
+FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_wout)
+FILECFG_PARSER_RID_PARSE_FUNC(s_dhwt, rid_selfheater)
+FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_dhwt, schedid)
+
+static int fcp_dhwt_cprio(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_dhwt * restrict const dhwt = priv;
+	const char * str;
+
+	str = node->value.stringval;
+	if (!strcmp("paralmax", str))
+		dhwt->set.dhwt_cprio = DHWTP_PARALMAX;
+	else if (!strcmp("paraldhw", str))
+		dhwt->set.dhwt_cprio = DHWTP_PARALDHW;
+	else if (!strcmp("slidmax", str))
+		dhwt->set.dhwt_cprio = DHWTP_SLIDMAX;
+	else if (!strcmp("sliddhw", str))
+		dhwt->set.dhwt_cprio = DHWTP_SLIDDHW;
+	else if (!strcmp("absolute", str))
+		dhwt->set.dhwt_cprio = DHWTP_ABSOLUTE;
+	else
+		return (-EINVALID);
+
+	return (ALL_OK);
+}
+
+static int fcp_dhwt_force_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_dhwt * restrict const dhwt = priv;
+	const char * str;
+
+	str = node->value.stringval;
+	if (!strcmp("never", str))
+		dhwt->set.force_mode = DHWTF_NEVER;
+	else if (!strcmp("first", str))
+		dhwt->set.force_mode = DHWTF_FIRST;
+	else if (!strcmp("always", str))
+		dhwt->set.force_mode = DHWTF_ALWAYS;
+	else
+		return (-EINVALID);
+
+	return (ALL_OK);
+}
+
+static int fcp_dhwt_params(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_dhwt * restrict const dhwt = priv;
+	return (dhwt_params_parse(&dhwt->set.params, node));
+}
+
 static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "electric_failover", false, NULL, NULL, },	// 0
-		{ NODEBOL, "anti_legionella", false, NULL, NULL, },
-		{ NODEBOL, "legionella_recycle", false, NULL, NULL, },	// 2
-		{ NODEINT, "prio", false, NULL, NULL, },
-		{ NODESTR, "runmode", true, NULL, NULL, },		// 4
-		{ NODESTR, "dhwt_cprio", false, NULL, NULL, },
-		{ NODESTR, "force_mode", false, NULL, NULL, },		// 6
-		{ NODELST, "tid_bottom", false, NULL, NULL, },
-		{ NODELST, "tid_top", false, NULL, NULL, },		// 8
-		{ NODELST, "tid_win", false, NULL, NULL, },
-		{ NODELST, "tid_wout", false, NULL, NULL, },		// 10
-		{ NODELST, "rid_selfheater", false, NULL, NULL, },
-		{ NODELST, "params", false, NULL, NULL, },		// 12
-		{ NODESTR, "pump_feed", false, NULL, NULL, },
-		{ NODESTR, "pump_recycle", false, NULL, NULL, },	// 14
-		{ NODESTR, "valve_hwisol", false, NULL, NULL, },
-		{ NODESTR, "schedid", false, NULL, NULL, },		// 16
-		{ NODEBOL, "electric_recycle", false, NULL, NULL, },
+		{ NODESTR, "pump_feed", false, NULL, NULL, },		// 0
+		{ NODESTR, "pump_recycle", false, NULL, NULL, },	// 1
+		{ NODESTR, "valve_hwisol", false, NULL, NULL, },	// 2
+
+		{ NODEBOL,	"electric_failover",	false,	fcp_bool_s_dhwt_electric_failover,	NULL, },
+		{ NODEBOL,	"anti_legionella",	false,	fcp_bool_s_dhwt_anti_legionella,	NULL, },
+		{ NODEBOL,	"legionella_recycle",	false,	fcp_bool_s_dhwt_legionella_recycle,	NULL, },
+		{ NODEBOL,	"electric_recycle",	false,	fcp_bool_s_dhwt_electric_recycle,	NULL, },
+		{ NODEINT,	"prio",			false,	fcp_prio_s_dhwt_prio,			NULL, },
+		{ NODESTR,	"schedid",		false,	fcp_schedid_s_dhwt_schedid,		NULL, },
+		{ NODESTR,	"runmode",		true,	fcp_runmode_s_dhwt_runmode,		NULL, },
+		{ NODESTR,	"dhwt_cprio",		false,	fcp_dhwt_cprio,				NULL, },
+		{ NODESTR,	"force_mode",		false,	fcp_dhwt_force_mode,			NULL, },
+		{ NODELST,	"tid_bottom",		false,	fcp_tid_s_dhwt_tid_bottom,		NULL, },
+		{ NODELST,	"tid_top",		false,	fcp_tid_s_dhwt_tid_top,			NULL, },
+		{ NODELST,	"tid_win",		false,	fcp_tid_s_dhwt_tid_win,			NULL, },
+		{ NODELST,	"tid_wout",		false,	fcp_tid_s_dhwt_tid_wout,		NULL, },
+		{ NODELST,	"rid_selfheater",	false,	fcp_rid_s_dhwt_rid_selfheater,		NULL, },
+		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_pump * pump;
 	struct s_plant * restrict const plant = priv;
 	struct s_dhwt * dhwt;
 	const char * n;
-	int iv, ret;
+	int ret;
 	unsigned int i;
 
 	// we receive a 'dhwt' node with a valid string attribute which is the dhwt name
@@ -1104,131 +1266,49 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 	if (!dhwt)
 		return (-EOOM);
 
+	ret = filecfg_parser_run_parsers(dhwt, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	// deal with the pointers (XXX TODO: make that work with regular parsers)
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		if (parsers[i].parser)
+			continue;
+
 		currnode = parsers[i].node;
 		if (!currnode)
 			continue;
 
+		// we only deal with stringvals
+		n = currnode->value.stringval;
+		if (strlen(n) < 1)
+			break;	// nothing to do
+
 		switch (i) {
 			case 0:
-				dhwt->set.electric_failover = currnode->value.boolval;
-				break;
 			case 1:
-				dhwt->set.anti_legionella = currnode->value.boolval;
+				pump = plant_fbn_pump(plant, n);
+				if (!pump)
+					goto invaliddata;	// pump not found
+				if (0 == i)
+					dhwt->set.p.pump_feed = pump;
+				else	// i == 1
+					dhwt->set.p.pump_recycle = pump;
 				break;
+
 			case 2:
-				dhwt->set.legionella_recycle = currnode->value.boolval;
-				break;
-
-			case 3:
-				iv = currnode->value.intval;
-				if ((iv < 0) || (iv > UINT_FAST8_MAX))
+				dhwt->set.p.valve_hwisol = plant_fbn_valve(plant, n);
+				if (!dhwt->set.p.valve_hwisol)
 					goto invaliddata;
-				dhwt->set.prio = (typeof(dhwt->set.prio))currnode->value.intval;
-				break;
-			case 4:
-				if (ALL_OK != filecfg_parser_runmode_parse(&dhwt->set.runmode, currnode))
-					goto invaliddata;
-				break;
-			case 5:
-				n = currnode->value.stringval;
-				if (!strcmp("paralmax", n))
-					dhwt->set.dhwt_cprio = DHWTP_PARALMAX;
-				else if (!strcmp("paraldhw", n))
-					dhwt->set.dhwt_cprio = DHWTP_PARALDHW;
-				else if (!strcmp("slidmax", n))
-					dhwt->set.dhwt_cprio = DHWTP_SLIDMAX;
-				else if (!strcmp("sliddhw", n))
-					dhwt->set.dhwt_cprio = DHWTP_SLIDDHW;
-				else if (!strcmp("absolute", n))
-					dhwt->set.dhwt_cprio = DHWTP_ABSOLUTE;
-				else
-					goto invaliddata;
-				break;
-			case 6:
-				n = currnode->value.stringval;
-				if (!strcmp("never", n))
-					dhwt->set.force_mode = DHWTF_NEVER;
-				else if (!strcmp("first", n))
-					dhwt->set.force_mode = DHWTF_FIRST;
-				else if (!strcmp("always", n))
-					dhwt->set.force_mode = DHWTF_ALWAYS;
-				else
-					goto invaliddata;
-				break;
-			case 7:
-				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_bottom, currnode))
-					goto invaliddata;
-				break;
-			case 8:
-				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_top, currnode))
-					goto invaliddata;
-				break;
-			case 9:
-				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_win, currnode))
-					goto invaliddata;
-				break;
-			case 10:
-				if (ALL_OK != filecfg_parser_tid_parse(&dhwt->set.tid_wout, currnode))
-					goto invaliddata;
-				break;
-			case 11:
-				if (ALL_OK != filecfg_parser_rid_parse(&dhwt->set.rid_selfheater, currnode))
-					goto invaliddata;
-				break;
-			case 12:
-				if (ALL_OK != dhwt_params_parse(&dhwt->set.params, currnode))
-					goto invaliddata;
-				break;
-			case 13:
-			case 14:
-			case 15:
-			case 16:
-				n = currnode->value.stringval;
-				if (strlen(n) < 1)
-					break;	// nothing to do
-
-				switch (i) {
-					case 13:
-					case 14:
-						pump = plant_fbn_pump(plant, n);
-						if (!pump)
-							goto invaliddata;	// pump not found
-						if (13 == i)
-							dhwt->set.p.pump_feed = pump;
-						else	// i == 14
-							dhwt->set.p.pump_recycle = pump;
-						break;
-
-					case 15:
-						dhwt->set.p.valve_hwisol = plant_fbn_valve(plant, n);
-						if (!dhwt->set.p.valve_hwisol)
-							goto invaliddata;
-						break;
-					case 16:
-						iv = scheduler_schedid_by_name(n);
-						if (iv <= 0)
-							goto invaliddata;
-						dhwt->set.schedid = (unsigned)iv;
-						break;
-					default:
-						break;	// should never happen
-				}
-
-				dbgmsg(3, 1, "%s: \"%s\" found", currnode->name, n);
-				break;
-			case 17:
-				dhwt->set.electric_recycle = currnode->value.boolval;
 				break;
 			default:
 				break;	// should never happen
 		}
 	}
 
-	if (ALL_OK == ret)
-		dhwt->set.configured = true;
+	dhwt->set.configured = true;
 
-	return (ret);
+	return (ALL_OK);
 
 invaliddata:
 	filecfg_parser_report_invaliddata(currnode);
@@ -1240,35 +1320,44 @@ static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "dhwt", dhwt_parse));
 }
 
+struct s_fcp_tlbilin_params {
+	struct {
+		temp_t tout1;
+		temp_t twater1;
+		temp_t tout2;
+		temp_t twater2;
+		int nH100;
+	} set;
+};
+
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, tout1)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, twater1)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, tout2)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, twater2)
+FILECFG_PARSER_INT_PARSE_FUNC(false, s_fcp_tlbilin_params, nH100)
+
 static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT, "tout1", true, NULL, NULL, },
-		{ NODEFLT|NODEINT, "twater1", true, NULL, NULL, },
-		{ NODEFLT|NODEINT, "tout2", true, NULL, NULL, },
-		{ NODEFLT|NODEINT, "twater2", true, NULL, NULL, },
-		{ NODEINT, "nH100", false, NULL, NULL, },
-		// these shouldn't be user-configurable
-/*		{ NODEFLT, "toutinfl", false, NULL, NULL, },
-		{ NODEFLT, "twaterinfl", false, NULL, NULL, },
-		{ NODEFLT, "offset", false, NULL, NULL, },
-		{ NODEFLT, "slope", false, NULL, NULL, },*/
+		{ NODEFLT|NODEINT,	"tout1",	true,	fcp_temp_s_fcp_tlbilin_params_tout1,	NULL, },
+		{ NODEFLT|NODEINT,	"twater1",	true,	fcp_temp_s_fcp_tlbilin_params_twater1,	NULL, },
+		{ NODEFLT|NODEINT,	"tout2",	true,	fcp_temp_s_fcp_tlbilin_params_tout2,	NULL, },
+		{ NODEFLT|NODEINT,	"twater2",	true,	fcp_temp_s_fcp_tlbilin_params_twater2,	NULL, },
+		{ NODEINT,		"nH100",	true,	fcp_int_s_fcp_tlbilin_params_nH100,	NULL, },
 	};
 	struct s_hcircuit * restrict const hcircuit = priv;
-	temp_t tout1, twater1, tout2, twater2;
-	int ret, nH100;
+	struct s_fcp_tlbilin_params p;
+	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	tout1 = (NODEFLT == parsers[0].node->type) ? celsius_to_temp(parsers[0].node->value.floatval) : celsius_to_temp(parsers[0].node->value.intval);
-	twater1 = (NODEFLT == parsers[1].node->type) ? celsius_to_temp(parsers[1].node->value.floatval) : celsius_to_temp(parsers[1].node->value.intval);
-	tout2 = (NODEFLT == parsers[2].node->type) ? celsius_to_temp(parsers[2].node->value.floatval) : celsius_to_temp(parsers[2].node->value.intval);
-	twater2 = (NODEFLT == parsers[3].node->type) ? celsius_to_temp(parsers[3].node->value.floatval) : celsius_to_temp(parsers[3].node->value.intval);
-	nH100 = parsers[4].node->value.intval;
+	ret = filecfg_parser_run_parsers(&p, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
-	ret = hcircuit_make_bilinear(hcircuit, tout1, twater1, tout2, twater2, nH100);
+	ret = hcircuit_make_bilinear(hcircuit, p.set.tout1, p.set.twater1, p.set.tout2, p.set.twater2, p.set.nH100);
 	switch (ret) {
 		case ALL_OK:
 			break;
@@ -1283,33 +1372,74 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	return (ret);
 }
 
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_hcircuit, fast_cooldown)
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_hcircuit, logging)
+FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_hcircuit, runmode)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_hcircuit, wtemp_rorh)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_hcircuit, am_tambient_tK)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit, tambient_boostdelta)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_hcircuit, boost_maxtime)
+FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_outgoing)
+FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_return)
+FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_ambient)
+FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_hcircuit, schedid)
+FILECFG_PARSER_PBMODEL_PARSE_FUNC(s_hcircuit, bmodel)
+
+static int fcp_hcircuit_params(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hcircuit * restrict const hcircuit = priv;
+	return (hcircuit_params_parse(&hcircuit->set.params, node));
+}
+
+static int fcp_hcircuit_tlaw(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hcircuit * restrict const hcircuit = priv;
+	const char * str = node->value.stringval;
+
+	if (!strcmp("bilinear", str))
+		return (hcircuit_tlaw_bilinear_parser(hcircuit, node));
+	else
+		return (-EINVALID);
+}
+
+static int fcp_hcircuit_ambient_factor(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hcircuit * restrict const hcircuit = priv;
+	int iv = node->value.intval;
+
+	if (abs(iv) > 100)
+		return (-EINVALID);
+	hcircuit->set.ambient_factor = iv;
+	return (ALL_OK);
+}
+
 static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "fast_cooldown", false, NULL, NULL, },	// 0
-		{ NODEBOL, "logging", false, NULL, NULL, },
-		{ NODESTR, "runmode", true, NULL, NULL, },		// 2
-		{ NODEINT, "ambient_factor", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "wtemp_rorh", false, NULL, NULL, },		// 4
-		{ NODEINT|NODEDUR, "am_tambient_tK", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "tambient_boostdelta", false, NULL, NULL, },	// 6
-		{ NODEINT|NODEDUR, "boost_maxtime", false, NULL, NULL, },
-		{ NODELST, "tid_outgoing", true, NULL, NULL, },		// 8
-		{ NODELST, "tid_return", false, NULL, NULL, },
-		{ NODELST, "tid_ambient", false, NULL, NULL, },		// 10
-		{ NODELST, "params", false, NULL, NULL, },
-		{ NODESTR, "tlaw", true, NULL, NULL, },			// 12
-		{ NODESTR, "valve_mix", false, NULL, NULL, },
-		{ NODESTR, "pump_feed", false, NULL, NULL, },		// 14
-		{ NODESTR, "bmodel", true, NULL, NULL, },
-		{ NODESTR, "schedid", false, NULL, NULL },		// 16
+		{ NODESTR, "valve_mix", false, NULL, NULL, },	// 0
+		{ NODESTR, "pump_feed", false, NULL, NULL, },	// 1
+
+		{ NODEBOL,		"fast_cooldown",	false,	fcp_bool_s_hcircuit_fast_cooldown,	NULL, },
+		{ NODEBOL,		"logging",		false,	fcp_bool_s_hcircuit_logging,		NULL, },
+		{ NODESTR,		"runmode",		true,	fcp_runmode_s_hcircuit_runmode,		NULL, },
+		{ NODESTR,		"schedid",		false,	fcp_schedid_s_hcircuit_schedid,		NULL, },
+		{ NODEINT,		"ambient_factor",	false,	fcp_hcircuit_ambient_factor,		NULL, },
+		{ NODEFLT|NODEINT,	"wtemp_rorh",		false,	fcp_temp_s_hcircuit_wtemp_rorh,		NULL, },
+		{ NODEINT|NODEDUR,	"am_tambient_tK",	false,	fcp_tk_s_hcircuit_am_tambient_tK,	NULL, },
+		{ NODEFLT|NODEINT,	"tambient_boostdelta",	false,	fcp_temp_s_hcircuit_tambient_boostdelta, NULL, },
+		{ NODEINT|NODEDUR,	"boost_maxtime",	false,	fcp_tk_s_hcircuit_boost_maxtime,	NULL, },
+		{ NODELST,		"tid_outgoing",		true,	fcp_tid_s_hcircuit_tid_outgoing,	NULL, },
+		{ NODELST,		"tid_return",		false,	fcp_tid_s_hcircuit_tid_return,		NULL, },
+		{ NODELST,		"tid_ambient",		false,	fcp_tid_s_hcircuit_tid_ambient,		NULL, },
+		{ NODELST,		"params",		false,	fcp_hcircuit_params,			NULL, },
+		{ NODESTR,		"tlaw",			true,	fcp_hcircuit_tlaw,			NULL, },
+		{ NODESTR,		"bmodel",		true,	fcp_bmodel_s_hcircuit_pbmodel,		NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
 	struct s_hcircuit * hcircuit;
 	const char * n;
-	float fv;
-	int iv, ret;
+	int ret;
 	unsigned int i;
 
 	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
@@ -1323,120 +1453,43 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 	if (!hcircuit)
 		return (-EOOM);
 
+	ret = filecfg_parser_run_parsers(hcircuit, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	// deal with the pointers (XXX TODO: make that work with regular parsers)
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		if (parsers[i].parser)
+			continue;
+
 		currnode = parsers[i].node;
 		if (!currnode)
 			continue;
 
+		// we only deal with stringvals
+		n = currnode->value.stringval;
+		if (strlen(n) < 1)
+			break;	// nothing to do
+
 		switch (i) {
 			case 0:
-				hcircuit->set.fast_cooldown = currnode->value.boolval;
+				hcircuit->set.p.valve_mix = plant_fbn_valve(plant, n);
+				if (!hcircuit->set.p.valve_mix)
+					goto invaliddata;
 				break;
 			case 1:
-				hcircuit->set.logging = currnode->value.boolval;
-				break;
-			case 2:
-				if (ALL_OK != filecfg_parser_runmode_parse(&hcircuit->set.runmode, currnode))
+				hcircuit->set.p.pump_feed = plant_fbn_pump(plant, n);
+				if (!hcircuit->set.p.pump_feed)
 					goto invaliddata;
-				break;
-			case 3:
-				iv = currnode->value.intval;
-				if (abs(iv) > 100)
-					goto invaliddata;
-				hcircuit->set.ambient_factor = iv;
-				break;
-			case 4:
-				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : (float)currnode->value.intval;
-				if (fv < 0)
-					goto invaliddata;
-				hcircuit->set.wtemp_rorh = deltaK_to_temp(fv);
-				break;
-			case 5:
-				iv = currnode->value.intval;
-				if (iv < 0)
-					goto invaliddata;
-				hcircuit->set.am_tambient_tK = timekeep_sec_to_tk(iv);
-				break;
-			case 6:
-				fv = (NODEFLT == currnode->type) ? currnode->value.floatval : (float)currnode->value.intval;
-				hcircuit->set.tambient_boostdelta = deltaK_to_temp(fv);	// allow negative values because why not
-				break;
-			case 7:
-				iv = currnode->value.intval;
-				if (iv < 0)
-					goto invaliddata;
-				hcircuit->set.boost_maxtime = timekeep_sec_to_tk(iv);
-				break;
-			case 8:
-				if (ALL_OK != filecfg_parser_tid_parse(&hcircuit->set.tid_outgoing, currnode))
-					goto invaliddata;
-				break;
-			case 9:
-				if (ALL_OK != filecfg_parser_tid_parse(&hcircuit->set.tid_return, currnode))
-					goto invaliddata;
-				break;
-			case 10:
-				if (ALL_OK != filecfg_parser_tid_parse(&hcircuit->set.tid_ambient, currnode))
-					goto invaliddata;
-				break;
-			case 11:
-				if (ALL_OK != hcircuit_params_parse(&hcircuit->set.params, currnode))
-					goto invaliddata;
-				break;
-			case 12:
-				n = currnode->value.stringval;
-				if (!strcmp("bilinear", n))
-					ret = hcircuit_tlaw_bilinear_parser(hcircuit, currnode);
-				else
-					goto invaliddata;
-
-				if (ALL_OK != ret)
-					return (ret);
-				break;
-			case 13:
-			case 14:
-			case 15:
-			case 16:
-				n = currnode->value.stringval;
-				if (strlen(n) < 1)
-					break;	// nothing to do
-
-				switch (i) {
-					case 13:
-						hcircuit->set.p.valve_mix = plant_fbn_valve(plant, n);
-						if (!hcircuit->set.p.valve_mix)
-							goto invaliddata;
-						break;
-					case 14:
-						hcircuit->set.p.pump_feed = plant_fbn_pump(plant, n);
-						if (!hcircuit->set.p.pump_feed)
-							goto invaliddata;
-						break;
-					case 15:
-						hcircuit->set.p.bmodel = models_fbn_bmodel(n);
-						if (!hcircuit->set.p.bmodel)
-							goto invaliddata;
-						break;
-					case 16:
-						iv = scheduler_schedid_by_name(n);
-						if (iv <= 0)
-							goto invaliddata;
-						hcircuit->set.schedid = (unsigned)iv;
-						break;
-					default:
-						break;	// should never happen
-				}
-				dbgmsg(3, 1, "%s: \"%s\" found", currnode->name, n);
 				break;
 			default:
 				break;	// should never happen
 		}
 	}
 
-	if (ALL_OK == ret)
-		hcircuit->set.configured = true;
+	hcircuit->set.configured = true;
 
-	return (ret);
+	return (ALL_OK);
 
 invaliddata:
 	filecfg_parser_report_invaliddata(currnode);
@@ -1449,30 +1502,60 @@ static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_pa
 }
 
 #include "boiler.h"
+
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_boiler_priv, hysteresis)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_thardmax)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_tmax)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_tmin)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_treturnmin)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, t_freeze)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_boiler_priv, burner_min_time)
+FILECFG_PARSER_TID_PARSE_FUNC(s_boiler_priv, tid_boiler)
+FILECFG_PARSER_TID_PARSE_FUNC(s_boiler_priv, tid_boiler_return)
+FILECFG_PARSER_RID_PARSE_FUNC(s_boiler_priv, rid_burner_1)
+FILECFG_PARSER_RID_PARSE_FUNC(s_boiler_priv, rid_burner_2)
+
+static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_boiler_priv * restrict const boiler = priv;
+	const char * str;
+
+	str = node->value.stringval;
+	if (!strcmp("never", str))
+		boiler->set.idle_mode = IDLE_NEVER;
+	else if (!strcmp("frostonly", str))
+		boiler->set.idle_mode = IDLE_FROSTONLY;
+	else if (!strcmp("always", str))
+		boiler->set.idle_mode = IDLE_ALWAYS;
+	else
+		return (-EINVALID);
+
+	return (ALL_OK);
+}
+
 static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "idle_mode", false, NULL, NULL, },		// 0
-		{ NODEFLT|NODEINT, "hysteresis", true, NULL, NULL, },
-		{ NODEFLT|NODEINT, "limit_thardmax", true, NULL, NULL, },	// 2
-		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, NULL, },		// 4
-		{ NODEFLT|NODEINT, "limit_treturnmin", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "t_freeze", true, NULL, NULL, },		// 6
-		{ NODEINT|NODEDUR, "burner_min_time", false, NULL, NULL, },
-		{ NODELST, "tid_boiler", true, NULL, NULL, },		// 8
-		{ NODELST, "tid_boiler_return", false, NULL, NULL, },
-		{ NODELST, "rid_burner_1", true, NULL, NULL, },		// 10
-		{ NODELST, "rid_burner_2", false, NULL, NULL, },
-		{ NODESTR, "pump_load", false, NULL, NULL, },		// 12
-		{ NODESTR, "valve_ret", false, NULL, NULL, },
+		{ NODESTR, "pump_load", false, NULL, NULL, },		// 0
+		{ NODESTR, "valve_ret", false, NULL, NULL, },		// 1
+
+		{ NODESTR,		"idle_mode",		false,	fcp_hs_boiler_idle_mode,		NULL, },
+		{ NODEFLT|NODEINT,	"hysteresis",		true,	fcp_temp_s_boiler_priv_hysteresis,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_thardmax",	true,	fcp_temp_s_boiler_priv_limit_thardmax,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_tmax",		false,	fcp_temp_s_boiler_priv_limit_tmax,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_tmin",		false,	fcp_temp_s_boiler_priv_limit_tmin,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_treturnmin",	false,	fcp_temp_s_boiler_priv_limit_treturnmin, NULL, },
+		{ NODEFLT|NODEINT,	"t_freeze",		true,	fcp_temp_s_boiler_priv_t_freeze,	NULL, },
+		{ NODEINT|NODEDUR,	"burner_min_time",	false,	fcp_tk_s_boiler_priv_burner_min_time,	NULL, },
+		{ NODELST,		"tid_boiler",		true,	fcp_tid_s_boiler_priv_tid_boiler,	NULL, },
+		{ NODELST,		"tid_boiler_return",	false,	fcp_tid_s_boiler_priv_tid_boiler_return, NULL, },
+		{ NODELST,		"rid_burner_1",		true,	fcp_rid_s_boiler_priv_rid_burner_1,	NULL, },
+		{ NODELST,		"rid_burner_2",		false,	fcp_rid_s_boiler_priv_rid_burner_2,	NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_boiler_priv * boiler;
-	temp_t temp;
 	const char * n;
-	float fv;
-	int iv, ret;
+	int ret;
 	unsigned int i;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
@@ -1487,100 +1570,34 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 	// configure that boiler
 	boiler = heatsource->priv;
 
+	ret = filecfg_parser_run_parsers(boiler, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	// deal with the pointers (XXX TODO: make that work with regular parsers)
 	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
+		if (parsers[i].parser)
+			continue;
+
 		currnode = parsers[i].node;
 		if (!currnode)
 			continue;
 
+		// we only deal with stringvals
+		n = currnode->value.stringval;
+		if (strlen(n) < 1)
+			continue;	// nothing to do
+
 		switch (i) {
 			case 0:
-				n = currnode->value.stringval;
-				if (!strcmp("never", n))
-					boiler->set.idle_mode = IDLE_NEVER;
-				else if (!strcmp("frostonly", n))
-					boiler->set.idle_mode = IDLE_FROSTONLY;
-				else if (!strcmp("always", n))
-					boiler->set.idle_mode = IDLE_ALWAYS;
-				else
+				boiler->set.p.pump_load = plant_fbn_pump(plant, n);
+				if (!boiler->set.p.pump_load)
 					goto invaliddata;
 				break;
 			case 1:
-			case 2:
-			case 3:
-			case 4:
-			case 5:
-			case 6:
-				fv = (NODEFLT == currnode->type) ?  currnode->value.floatval : (float)currnode->value.intval;
-				if (fv < 0)
+				boiler->set.p.valve_ret = plant_fbn_valve(plant, n);
+				if (!boiler->set.p.valve_ret)
 					goto invaliddata;
-				temp = celsius_to_temp(fv);
-				switch (i) {
-					case 1:
-						boiler->set.hysteresis = deltaK_to_temp(fv);
-						break;
-					case 2:
-						boiler->set.limit_thardmax = temp;
-						break;
-					case 3:
-						boiler->set.limit_tmax = temp;
-						break;
-					case 4:
-						boiler->set.limit_tmin = temp;
-						break;
-					case 5:
-						boiler->set.limit_treturnmin = temp;
-						break;
-					case 6:
-						boiler->set.t_freeze = temp;
-						break;
-					default:
-						break;
-				}
-				break;
-			case 7:
-				iv = currnode->value.intval;
-				if (iv < 0)
-					goto invaliddata;
-				else
-					boiler->set.burner_min_time = timekeep_sec_to_tk(iv);
-				break;
-			case 8:
-				if (ALL_OK != filecfg_parser_tid_parse(&boiler->set.tid_boiler, currnode))
-					goto invaliddata;
-				break;
-			case 9:
-				if (ALL_OK != filecfg_parser_tid_parse(&boiler->set.tid_boiler_return, currnode))
-					goto invaliddata;
-				break;
-			case 10:
-				if (ALL_OK != filecfg_parser_rid_parse(&boiler->set.rid_burner_1, currnode))
-					goto invaliddata;
-				break;
-			case 11:
-				if (ALL_OK != filecfg_parser_rid_parse(&boiler->set.rid_burner_2, currnode))
-					goto invaliddata;
-				break;
-			case 12:
-			case 13:
-				n = currnode->value.stringval;
-				if (strlen(n) < 1)
-					break;	// nothing to do
-
-				switch (i) {
-					case 12:
-						boiler->set.p.pump_load = plant_fbn_pump(plant, n);
-						if (!boiler->set.p.pump_load)
-							goto invaliddata;
-						break;
-					case 13:
-						boiler->set.p.valve_ret = plant_fbn_valve(plant, n);
-						if (!boiler->set.p.valve_ret)
-							goto invaliddata;
-						break;
-					default:
-						break;	// should never happen
-				}
-				dbgmsg(3, 1, "%s: \"%s\" found", currnode->name, n);
 				break;
 			default:
 				break;	// should never happen
@@ -1607,20 +1624,25 @@ static int heatsource_type_parse(const struct s_plant * const plant, struct s_he
 	return (ret);
 }
 
+FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_heatsource, runmode)
+FILECFG_PARSER_PRIO_PARSE_FUNC(s_heatsource, prio)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_heatsource, consumer_sdelay)
+FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_heatsource, schedid)
+
 static int heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "runmode", true, NULL, NULL, },		// 0
-		{ NODESTR, "type", true, NULL, NULL, },
-		{ NODEINT, "prio", false, NULL, NULL, },			// 2
-		{ NODEINT|NODEDUR, "consumer_sdelay", false, NULL, NULL, },
-		{ NODESTR, "schedid", false, NULL, NULL, },			// 4
+		{ NODESTR, "type", true, NULL, NULL, },		// 0
+
+		{ NODESTR,		"runmode",		true,	fcp_runmode_s_heatsource_runmode,	NULL, },
+		{ NODEINT,		"prio",			false,	fcp_prio_s_heatsource_prio,		NULL, },
+		{ NODEINT|NODEDUR,	"consumer_sdelay",	false,	fcp_tk_s_heatsource_consumer_sdelay,	NULL, },
+		{ NODESTR,		"schedid",		false,	fcp_schedid_s_heatsource_schedid,	NULL, },
 	};
 	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
 	struct s_heatsource * heatsource;
-	int iv, ret;
-	unsigned int i;
+	int ret;
 
 	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
 
@@ -1633,49 +1655,19 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 	if (!heatsource)
 		return (-EOOM);
 
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
+	ret = filecfg_parser_run_parsers(heatsource, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
-		switch (i) {
-			case 0:
-				if (ALL_OK != filecfg_parser_runmode_parse(&heatsource->set.runmode, currnode))
-					goto invaliddata;
-				break;
-			case 1:
-				if (ALL_OK != heatsource_type_parse(plant, heatsource, currnode))
-					goto invaliddata;
-				break;
-			case 2:
-				iv = currnode->value.intval;
-				if ((iv < 0) || (iv > UINT_FAST8_MAX))
-					goto invaliddata;
-				heatsource->set.prio = (typeof(heatsource->set.prio))iv;
-				break;
-			case 3:
-				iv = currnode->value.intval;
-				if (iv < 0)
-					goto invaliddata;
-				heatsource->set.consumer_sdelay = timekeep_sec_to_tk(iv);
-				break;
-			case 4:
-				if (strlen(currnode->value.stringval) < 1)
-					break;	// nothing to do
-				iv = scheduler_schedid_by_name(currnode->value.stringval);
-				if (iv <= 0)
-					goto invaliddata;
-				heatsource->set.schedid = (unsigned)iv;
-				break;
-			default:
-				break;	// should never happen
-		}
-	}
+	// deal with the heatsource type (XXX TODO: make that work with regular parsers)
+	currnode = parsers[0].node;
+	ret = heatsource_type_parse(plant, heatsource, currnode);
+	if (ALL_OK != ret)
+		goto invaliddata;
 
-	if (ALL_OK == ret)
-		heatsource->set.configured = true;
+	heatsource->set.configured = true;
 
-	return (ret);
+	return (ALL_OK);
 
 invaliddata:
 	filecfg_parser_report_invaliddata(currnode);
@@ -1690,11 +1682,11 @@ static int heatsources_parse(void * restrict const priv, const struct s_filecfg_
 static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST, "pumps", false, pumps_parse, NULL, },
-		{ NODELST, "valves", false, valves_parse, NULL, },
-		{ NODELST, "dhwts", false, dhwts_parse, NULL, },
-		{ NODELST, "hcircuits", false, hcircuits_parse, NULL, },
-		{ NODELST, "heatsources", false, heatsources_parse, NULL, },
+		{ NODELST,	"pumps",	false,	pumps_parse,		NULL, },
+		{ NODELST,	"valves",	false,	valves_parse,		NULL, },
+		{ NODELST,	"dhwts",	false,	dhwts_parse,		NULL, },
+		{ NODELST,	"hcircuits",	false,	hcircuits_parse,	NULL, },
+		{ NODELST,	"heatsources",	false,	heatsources_parse,	NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_plant * plant;
@@ -1823,22 +1815,25 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
  * @param parsers the parsers to trigger, with their respective .node elements correctly set
  * @param nparsers the number of parsers available in parsers[]
  * @return exec status. @note will abort execution at first error
+ * @note reports invalid data
  */
 int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
 {
 	unsigned int i;
-	int ret = -EEMPTY;
+	int ret;
 
 	for (i = 0; i < nparsers; i++) {
 		if (parsers[i].node && parsers[i].parser) {
 			dbgmsg(3, 1, "running parser \"%s\"", parsers[i].identifier);
 			ret = parsers[i].parser(priv, parsers[i].node);
-			if (ALL_OK != ret)
+			if (ALL_OK != ret) {
+				filecfg_parser_report_invaliddata(parsers[i].node);
 				return (ret);
+			}
 		}
 	}
 
-	return (ret);
+	return (ALL_OK);
 }
 
 /**
@@ -1850,13 +1845,13 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
-		{ NODELST, "backends", false, hardware_backends_parse, NULL, },
-		{ NODELST, "scheduler", false, scheduler_filecfg_parse, NULL, },	// we need schedulers during plant setup
-		{ NODELST, "defconfig", false, defconfig_parse, NULL, },
-		{ NODELST, "models", false, models_filecfg_parse, NULL, },
-		{ NODELST, "plant", true, plant_parse, NULL, },
-		{ NODELST, "storage", false, storage_filecfg_parse, NULL, },
-		{ NODELST, "logging", false, log_filecfg_parse, NULL, },
+		{ NODELST,	"backends",	false,	hardware_backends_parse, NULL, },
+		{ NODELST,	"scheduler",	false,	scheduler_filecfg_parse, NULL, },	// we need schedulers during plant setup
+		{ NODELST,	"defconfig",	false,	defconfig_parse,	NULL, },
+		{ NODELST,	"models",	false,	models_filecfg_parse,	NULL, },
+		{ NODELST,	"plant",	true,	plant_parse,		NULL, },
+		{ NODELST,	"storage",	false,	storage_filecfg_parse,	NULL, },
+		{ NODELST,	"logging",	false,	log_filecfg_parse,	NULL, },
 	};
 	struct s_runtime * const runtime = runtime_get();
 	int ret;
