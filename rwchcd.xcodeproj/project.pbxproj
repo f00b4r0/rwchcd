@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		4F08254F248429910068FC22 /* scheduler_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08254E248429910068FC22 /* scheduler_filecfg.c */; };
+		4F0825522484383B0068FC22 /* models_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0825512484383B0068FC22 /* models_filecfg.c */; };
 		4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0E1D72220A16FD00DB5ACA /* timekeep.c */; };
 		4F15A85E1EBF74880000507A /* alarms.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F15A85C1EBF74880000507A /* alarms.c */; };
 		4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8A218E1DBE009DCBC2 /* log_rrd.c */; };
@@ -58,6 +59,8 @@
 /* Begin PBXFileReference section */
 		4F08254D248429910068FC22 /* scheduler_filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = scheduler_filecfg.h; sourceTree = SOURCE_ROOT; };
 		4F08254E248429910068FC22 /* scheduler_filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scheduler_filecfg.c; sourceTree = SOURCE_ROOT; };
+		4F0825502484383B0068FC22 /* models_filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = models_filecfg.h; sourceTree = SOURCE_ROOT; };
+		4F0825512484383B0068FC22 /* models_filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = models_filecfg.c; sourceTree = SOURCE_ROOT; };
 		4F0E1D72220A16FD00DB5ACA /* timekeep.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = timekeep.c; sourceTree = SOURCE_ROOT; };
 		4F0E1D73220A16FD00DB5ACA /* timekeep.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = timekeep.h; sourceTree = SOURCE_ROOT; };
 		4F15A85C1EBF74880000507A /* alarms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = alarms.c; sourceTree = SOURCE_ROOT; };
@@ -218,6 +221,8 @@
 				4FCD55111D835D04003BB848 /* plant.h */,
 				4FC304A61EBDCDB900D77AC6 /* models.c */,
 				4FC304A71EBDCDB900D77AC6 /* models.h */,
+				4F0825512484383B0068FC22 /* models_filecfg.c */,
+				4F0825502484383B0068FC22 /* models_filecfg.h */,
 				4F3AFBB01D88867600D86EE7 /* lib.c */,
 				4F3AFBB11D88867600D86EE7 /* lib.h */,
 				4F3AFBAA1D8873C500D86EE7 /* config.c */,
@@ -358,6 +363,7 @@
 				4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */,
 				4FC68951206FAB4D00A3A065 /* hardware.c in Sources */,
 				4F42A5D91F9687F3001B0A1F /* hcircuit.c in Sources */,
+				4F0825522484383B0068FC22 /* models_filecfg.c in Sources */,
 				4F15A85E1EBF74880000507A /* alarms.c in Sources */,
 				4FC689642071773C00A3A065 /* hw_p1_lcd.c in Sources */,
 				4F99FD2D208BCF3200DDAB75 /* hw_p1_filecfg.c in Sources */,

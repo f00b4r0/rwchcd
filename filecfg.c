@@ -34,10 +34,10 @@
 #include "timekeep.h"
 
 #include "scheduler_filecfg.h"
+#include "models_filecfg.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
-int filecfg_models_dump(void);
 int storage_filecfg_dump(void);
 int log_filecfg_dump(void);
 
@@ -996,7 +996,7 @@ int filecfg_dump(void)
 	filecfg_config_dump(runtime->config);
 
 	// dump models
-	filecfg_models_dump();
+	models_filecfg_dump();
 
 	// dump plant
 	filecfg_plant_dump(runtime->plant);
