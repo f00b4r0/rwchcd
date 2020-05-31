@@ -1088,7 +1088,7 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 	const struct s_filecfg_parser_node * currnode;
 	struct s_pump * pump;
 	struct s_plant * restrict const plant = priv;
-	struct s_dhw_tank * dhwt;
+	struct s_dhwt * dhwt;
 	const char * n;
 	int iv, ret;
 	unsigned int i;

@@ -622,7 +622,7 @@ static int filecfg_dhwt_params_dump(const struct s_dhwt_params * restrict const 
 	return (ALL_OK);
 }
 
-static int filecfg_dhwt_dump(const struct s_dhw_tank * restrict const dhwt)
+static int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 {
 	const char * cpriostr, * fmode;
 	int ret = ALL_OK;

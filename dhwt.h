@@ -18,7 +18,7 @@
 #include "timekeep.h"
 
 /** DHWT element structure */
-struct s_dhw_tank {
+struct s_dhwt {
 	struct {
 		bool configured;		///< if true, DHWT is properly configured
 		bool electric_failover;		///< if true, if none of the DHWT sensors are working the electric self-heating relay will be turned on in all active modes
@@ -71,10 +71,10 @@ struct s_dhw_tank {
 	const char * restrict name;		///< unique name for this tank
 };
 
-struct s_dhw_tank * dhwt_new(void) __attribute__((warn_unused_result));
-int dhwt_online(struct s_dhw_tank * const dhwt) __attribute__((warn_unused_result));
-int dhwt_offline(struct s_dhw_tank * const dhwt);
-int dhwt_run(struct s_dhw_tank * const dhwt) __attribute__((warn_unused_result));
-void dhwt_del(struct s_dhw_tank * restrict dhwt);
+struct s_dhwt * dhwt_new(void) __attribute__((warn_unused_result));
+int dhwt_online(struct s_dhwt * const dhwt) __attribute__((warn_unused_result));
+int dhwt_offline(struct s_dhwt * const dhwt);
+int dhwt_run(struct s_dhwt * const dhwt) __attribute__((warn_unused_result));
+void dhwt_del(struct s_dhwt * restrict dhwt);
 
 #endif /* dhwt_h */

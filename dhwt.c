@@ -44,9 +44,9 @@
  * Create a dhwt
  * @return the newly created dhwt or NULL
  */
-struct s_dhw_tank * dhwt_new(void)
+struct s_dhwt * dhwt_new(void)
 {
-	struct s_dhw_tank * const dhwt = calloc(1, sizeof(*dhwt));
+	struct s_dhwt * const dhwt = calloc(1, sizeof(*dhwt));
 	return (dhwt);
 }
 
@@ -57,7 +57,7 @@ struct s_dhw_tank * dhwt_new(void)
  * @param dhwt target dhwt
  * @return exec status
  */
-int dhwt_online(struct s_dhw_tank * const dhwt)
+int dhwt_online(struct s_dhwt * const dhwt)
 {
 	const struct s_config * restrict const config = runtime_get()->config;
 	temp_t temp;
@@ -162,7 +162,7 @@ out:
  * @param dhwt target dhwt
  * @param active flag status
  */
-static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active)
+static inline void dhwt_actuator_use(struct s_dhwt * const dhwt, bool active)
 {
 	assert(dhwt);
 
@@ -179,7 +179,7 @@ static inline void dhwt_actuator_use(struct s_dhw_tank * const dhwt, bool active
  * @param dhwt target dhwt
  * @return error status
  */
-int dhwt_shutdown(struct s_dhw_tank * const dhwt)
+int dhwt_shutdown(struct s_dhwt * const dhwt)
 {
 	assert(dhwt);
 	assert(dhwt->set.configured);
@@ -227,7 +227,7 @@ int dhwt_shutdown(struct s_dhw_tank * const dhwt)
  * @param dhwt target dhwt
  * @return error status
  */
-int dhwt_offline(struct s_dhw_tank * const dhwt)
+int dhwt_offline(struct s_dhwt * const dhwt)
 {
 	if (!dhwt)
 		return (-EINVALID);
@@ -251,7 +251,7 @@ int dhwt_offline(struct s_dhw_tank * const dhwt)
  * @return exec status
  */
 __attribute__((warn_unused_result))
-static int dhwt_logic(struct s_dhw_tank * restrict const dhwt)
+static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 {
 	const struct s_runtime * restrict const runtime = runtime_get();
 	const struct s_schedule_eparams * eparams;
@@ -362,7 +362,7 @@ settarget:
  * @warning DHWT could freeze - TODO: needs review
  * @param dhwt target dhwt
  */
-static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
+static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 {
 	int ret;
 
@@ -397,7 +397,7 @@ static void dhwt_failsafe(struct s_dhw_tank * restrict const dhwt)
  * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
  * although not necessarily at the planned time if there is delay in servicing the target DHWT priority.
  */
-int dhwt_run(struct s_dhw_tank * const dhwt)
+int dhwt_run(struct s_dhwt * const dhwt)
 {
 	const struct s_config * restrict const config = runtime_get()->config;
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp;
@@ -631,7 +631,7 @@ int dhwt_run(struct s_dhw_tank * const dhwt)
  * Frees all dhwt-local resources
  * @param dhwt the dhwt to delete
  */
-void dhwt_del(struct s_dhw_tank * restrict dhwt)
+void dhwt_del(struct s_dhwt * restrict dhwt)
 {
 	if (!dhwt)
 		return;

@@ -287,10 +287,10 @@ fail:
  * @param name target name to find
  * @return dhwt if found, NULL otherwise
  */
-struct s_dhw_tank * plant_fbn_dhwt(const struct s_plant * restrict const plant, const char * restrict const name)
+struct s_dhwt * plant_fbn_dhwt(const struct s_plant * restrict const plant, const char * restrict const name)
 {
 	const struct s_dhw_tank_l * restrict dhwtl;
-	struct s_dhw_tank * restrict dhwt = NULL;
+	struct s_dhwt * restrict dhwt = NULL;
 
 	if (!plant || !name)
 		return (NULL);
@@ -311,9 +311,9 @@ struct s_dhw_tank * plant_fbn_dhwt(const struct s_plant * restrict const plant, 
  * @param name @b UNIQUE dhwt name. A local copy is created
  * @return pointer to the created tank
  */
-struct s_dhw_tank * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
+struct s_dhwt * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
 {
-	struct s_dhw_tank * restrict dhwt = NULL;
+	struct s_dhwt * restrict dhwt = NULL;
 	struct s_dhw_tank_l * restrict dhwtelement = NULL;
 	char * restrict str = NULL;
 
