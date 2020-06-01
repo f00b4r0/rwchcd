@@ -11,6 +11,10 @@
 		4F0825522484383B0068FC22 /* models_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0825512484383B0068FC22 /* models_filecfg.c */; };
 		4F08255524844AF20068FC22 /* storage_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255424844AF20068FC22 /* storage_filecfg.c */; };
 		4F08255824844CD40068FC22 /* log_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255724844CD40068FC22 /* log_filecfg.c */; };
+		4F08255B248589B40068FC22 /* pump_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255A248589B40068FC22 /* pump_parse.c */; };
+		4F08255E248597620068FC22 /* valve_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255D248597620068FC22 /* valve_parse.c */; };
+		4F08256424859E110068FC22 /* pump_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08256324859E110068FC22 /* pump_dump.c */; };
+		4F08256724859F9D0068FC22 /* valve_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08256624859F9D0068FC22 /* valve_dump.c */; };
 		4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0E1D72220A16FD00DB5ACA /* timekeep.c */; };
 		4F15A85E1EBF74880000507A /* alarms.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F15A85C1EBF74880000507A /* alarms.c */; };
 		4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8A218E1DBE009DCBC2 /* log_rrd.c */; };
@@ -67,6 +71,14 @@
 		4F08255424844AF20068FC22 /* storage_filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = storage_filecfg.c; sourceTree = SOURCE_ROOT; };
 		4F08255624844CD40068FC22 /* log_filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_filecfg.h; sourceTree = SOURCE_ROOT; };
 		4F08255724844CD40068FC22 /* log_filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_filecfg.c; sourceTree = SOURCE_ROOT; };
+		4F082559248589B40068FC22 /* pump_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = pump_parse.h; path = filecfg/pump_parse.h; sourceTree = SOURCE_ROOT; };
+		4F08255A248589B40068FC22 /* pump_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = pump_parse.c; path = filecfg/pump_parse.c; sourceTree = SOURCE_ROOT; };
+		4F08255C248597620068FC22 /* valve_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = valve_parse.h; path = filecfg/valve_parse.h; sourceTree = SOURCE_ROOT; };
+		4F08255D248597620068FC22 /* valve_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = valve_parse.c; path = filecfg/valve_parse.c; sourceTree = SOURCE_ROOT; };
+		4F08256224859E110068FC22 /* pump_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pump_dump.h; sourceTree = "<group>"; };
+		4F08256324859E110068FC22 /* pump_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pump_dump.c; sourceTree = "<group>"; };
+		4F08256524859F9D0068FC22 /* valve_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = valve_dump.h; sourceTree = "<group>"; };
+		4F08256624859F9D0068FC22 /* valve_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = valve_dump.c; sourceTree = "<group>"; };
 		4F0E1D72220A16FD00DB5ACA /* timekeep.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = timekeep.c; sourceTree = SOURCE_ROOT; };
 		4F0E1D73220A16FD00DB5ACA /* timekeep.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = timekeep.h; sourceTree = SOURCE_ROOT; };
 		4F15A85C1EBF74880000507A /* alarms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = alarms.c; sourceTree = SOURCE_ROOT; };
@@ -155,6 +167,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4F08256124859BBE0068FC22 /* filecfg */ = {
+			isa = PBXGroup;
+			children = (
+				4F08256224859E110068FC22 /* pump_dump.h */,
+				4F08256324859E110068FC22 /* pump_dump.c */,
+				4F082559248589B40068FC22 /* pump_parse.h */,
+				4F08255A248589B40068FC22 /* pump_parse.c */,
+				4F08256524859F9D0068FC22 /* valve_dump.h */,
+				4F08256624859F9D0068FC22 /* valve_dump.c */,
+				4F08255C248597620068FC22 /* valve_parse.h */,
+				4F08255D248597620068FC22 /* valve_parse.c */,
+			);
+			path = filecfg;
+			sourceTree = SOURCE_ROOT;
+		};
 		4F99FD24208B7E5800DDAB75 /* hw_p1 */ = {
 			isa = PBXGroup;
 			children = (
@@ -213,6 +240,7 @@
 				4FC68950206FAB4D00A3A065 /* hardware.h */,
 				4F42A5CE1F967BC3001B0A1F /* pump.c */,
 				4F42A5CF1F967BC3001B0A1F /* pump.h */,
+				4F08256124859BBE0068FC22 /* filecfg */,
 				4F42A5D11F968069001B0A1F /* valve.c */,
 				4F42A5D21F968069001B0A1F /* valve.h */,
 				4F42A5D41F9683CC001B0A1F /* heatsource.c */,
@@ -361,8 +389,11 @@
 				4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */,
 				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,
 				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
+				4F08256724859F9D0068FC22 /* valve_dump.c in Sources */,
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,
 				4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */,
+				4F08255B248589B40068FC22 /* pump_parse.c in Sources */,
+				4F08256424859E110068FC22 /* pump_dump.c in Sources */,
 				4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */,
 				4F869E99233A5EF300541A07 /* log_statsd.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
@@ -389,6 +420,7 @@
 				4F08254F248429910068FC22 /* scheduler_filecfg.c in Sources */,
 				4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */,
 				4F99FD2A208BBE0000DDAB75 /* hw_p1_setup.c in Sources */,
+				4F08255E248597620068FC22 /* valve_parse.c in Sources */,
 				4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

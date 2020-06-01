@@ -46,6 +46,9 @@ LDLIBS += -lwiringPi
 SRCS += $(wildcard $(HWBACKENDS_DIR)/hw_p1/*.c)
 endif
 
+# file configuration subsystem
+SRCS += $(wildcard filecfg/*.c)
+
 OBJS := $(SRCS:.c=.o)
 DEPS := $(SRCS:.c=.d)
 
@@ -79,6 +82,7 @@ $(MAIN): $(MAINOBJS)
 
 clean:
 	$(RM) $(HWBACKENDS_DIR)/*/*.[od~]
+	$(RM) filecfg/*.[od~]
 	$(RM) *.o *.d *~ *.output $(MAIN)
 
 distclean:	clean

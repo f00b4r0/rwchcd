@@ -80,6 +80,8 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
+int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_filecfg_parser_node * const n, void *temp);
+
 /// Custom pr_err for configuration problems.
 #define filecfg_parser_pr_err(format, ...)		fprintf(stderr, "CONFIG ERROR! " format "\n", ## __VA_ARGS__)
 
@@ -122,6 +124,33 @@ static int fcp_bool_##_struct##_##_member(void * restrict const priv, const stru
 
 #define FILECFG_PARSER_BOOL_PARSE_FUNC(_struct, _member)			\
 FILECFG_PARSER_BOOL_PARSE_NEST_FUNC(_struct, , _member)
+
+#define FILECFG_PARSER_INT_PARSE_SET_FUNC(_positiveonly, _struct, _setmember)	\
+static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int iv = n->value.intval;						\
+	if (_positiveonly && (iv < 0))						\
+		return (-EINVALID);						\
+	s->set._setmember = iv;							\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_CELSIUS_PARSE_NEST_FUNC(_positiveonly, _delta, _struct, _nest, _member)	\
+static int fcp_temp_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int ret; temp_t temp = 0;						\
+	ret = filecfg_parser_get_node_temp(_positiveonly, _delta, n, &temp);	\
+	s->_nest _member = temp;	/* Note: always set */			\
+	return (ret);								\
+}
+
+#define FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(_positiveonly, _delta, _struct, _setmember)	\
+	FILECFG_PARSER_CELSIUS_PARSE_NEST_FUNC(_positiveonly, _delta, _struct, set., _setmember)
+
+#define FILECFG_PARSER_CELSIUS_PARSE_FUNC(_positiveonly, _delta, _struct, _member)	\
+	FILECFG_PARSER_CELSIUS_PARSE_NEST_FUNC(_positiveonly, _delta, _struct, , _member)
 
 #define FILECFG_PARSER_TIME_PARSE_NEST_FUNC(_struct, _nest, _member)		\
 static int fcp_tk_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
