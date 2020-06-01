@@ -79,7 +79,14 @@
  #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
 #endif
 
-#define FILECFG_PARSER_INT_PARSE_FUNC(_positiveonly, _struct, _setmember)			\
+#define container_of(ptr, type, member) ({					\
+	const typeof( ((type *)0)->member )					\
+	*__mptr = (ptr);							\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+
+#define pdata_to_plant(_pdata)	container_of(_pdata, struct s_plant, pdata)
+
+#define FILECFG_PARSER_INT_PARSE_FUNC(_positiveonly, _struct, _setmember)	\
 static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
@@ -90,7 +97,7 @@ static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const st
 	return (ALL_OK);							\
 }
 
-#define FILECFG_PARSER_STR_PARSE_FUNC(_nonempty, _struct, _setmember)			\
+#define FILECFG_PARSER_STR_PARSE_FUNC(_nonempty, _struct, _setmember)		\
 static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
@@ -166,6 +173,30 @@ static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, con
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	s->set.p._setpmember = models_fbn_bmodel(n->value.stringval);		\
+	if (!s->set.p._setpmember)						\
+		return (-EINVALID);						\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(_priv2plant, _struct, _setpmember)		\
+static int fcp_pump_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	s->set.p._setpmember = plant_fbn_pump(_priv2plant(priv), n->value.stringval);	\
+	if (!s->set.p._setpmember)						\
+		return (-EINVALID);						\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(_priv2plant, _struct, _setpmember)		\
+static int fcp_valve_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	s->set.p._setpmember = plant_fbn_valve(_priv2plant(priv), n->value.stringval);	\
 	if (!s->set.p._setpmember)						\
 		return (-EINVALID);						\
 	return (ALL_OK);							\
@@ -1155,6 +1186,11 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 	return (ALL_OK);
 }
 
+static inline const struct s_plant * __dhwt_to_plant(void * priv)
+{
+	return (pdata_to_plant(((struct s_dhwt *)priv)->pdata));
+}
+
 FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, electric_failover)
 FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, anti_legionella)
 FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, legionella_recycle)
@@ -1167,6 +1203,9 @@ FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_win)
 FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_wout)
 FILECFG_PARSER_RID_PARSE_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_dhwt, schedid)
+FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
+FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_recycle)
+FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_hwisol)
 
 static int fcp_dhwt_cprio(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -1217,10 +1256,6 @@ static int fcp_dhwt_params(void * restrict const priv, const struct s_filecfg_pa
 static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "pump_feed", false, NULL, NULL, },		// 0
-		{ NODESTR, "pump_recycle", false, NULL, NULL, },	// 1
-		{ NODESTR, "valve_hwisol", false, NULL, NULL, },	// 2
-
 		{ NODEBOL,	"electric_failover",	false,	fcp_bool_s_dhwt_electric_failover,	NULL, },
 		{ NODEBOL,	"anti_legionella",	false,	fcp_bool_s_dhwt_anti_legionella,	NULL, },
 		{ NODEBOL,	"legionella_recycle",	false,	fcp_bool_s_dhwt_legionella_recycle,	NULL, },
@@ -1236,14 +1271,13 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 		{ NODELST,	"tid_wout",		false,	fcp_tid_s_dhwt_tid_wout,		NULL, },
 		{ NODELST,	"rid_selfheater",	false,	fcp_rid_s_dhwt_rid_selfheater,		NULL, },
 		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },
+		{ NODESTR,	"pump_feed",		false,	fcp_pump_s_dhwt_ppump_feed,		NULL, },
+		{ NODESTR,	"pump_recycle",		false,	fcp_pump_s_dhwt_ppump_recycle,		NULL, },
+		{ NODESTR,	"valve_hwisol",		false,	fcp_valve_s_dhwt_pvalve_hwisol,		NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
-	struct s_pump * pump;
 	struct s_plant * restrict const plant = priv;
 	struct s_dhwt * dhwt;
-	const char * n;
 	int ret;
-	unsigned int i;
 
 	// we receive a 'dhwt' node with a valid string attribute which is the dhwt name
 
@@ -1260,49 +1294,9 @@ static int dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_
 	if (ALL_OK != ret)
 		return (ret);
 
-	// deal with the pointers (XXX TODO: make that work with regular parsers)
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		if (parsers[i].parser)
-			continue;
-
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
-
-		// we only deal with stringvals
-		n = currnode->value.stringval;
-		if (strlen(n) < 1)
-			break;	// nothing to do
-
-		switch (i) {
-			case 0:
-			case 1:
-				pump = plant_fbn_pump(plant, n);
-				if (!pump)
-					goto invaliddata;	// pump not found
-				if (0 == i)
-					dhwt->set.p.pump_feed = pump;
-				else	// i == 1
-					dhwt->set.p.pump_recycle = pump;
-				break;
-
-			case 2:
-				dhwt->set.p.valve_hwisol = plant_fbn_valve(plant, n);
-				if (!dhwt->set.p.valve_hwisol)
-					goto invaliddata;
-				break;
-			default:
-				break;	// should never happen
-		}
-	}
-
 	dhwt->set.configured = true;
 
 	return (ALL_OK);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
 }
 
 static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1362,6 +1356,11 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	return (ret);
 }
 
+static inline const struct s_plant * __hcircuit_to_plant(void * priv)
+{
+	return (pdata_to_plant(((struct s_hcircuit *)priv)->pdata));
+}
+
 FILECFG_PARSER_BOOL_PARSE_FUNC(s_hcircuit, fast_cooldown)
 FILECFG_PARSER_BOOL_PARSE_FUNC(s_hcircuit, logging)
 FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_hcircuit, runmode)
@@ -1374,6 +1373,8 @@ FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_return)
 FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_ambient)
 FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_hcircuit, schedid)
 FILECFG_PARSER_PBMODEL_PARSE_FUNC(s_hcircuit, bmodel)
+FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hcircuit_to_plant, s_hcircuit, pump_feed)
+FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hcircuit_to_plant, s_hcircuit, valve_mix)
 
 static int fcp_hcircuit_params(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -1406,9 +1407,6 @@ static int fcp_hcircuit_ambient_factor(void * restrict const priv, const struct 
 static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "valve_mix", false, NULL, NULL, },	// 0
-		{ NODESTR, "pump_feed", false, NULL, NULL, },	// 1
-
 		{ NODEBOL,		"fast_cooldown",	false,	fcp_bool_s_hcircuit_fast_cooldown,	NULL, },
 		{ NODEBOL,		"logging",		false,	fcp_bool_s_hcircuit_logging,		NULL, },
 		{ NODESTR,		"runmode",		true,	fcp_runmode_s_hcircuit_runmode,		NULL, },
@@ -1423,14 +1421,13 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 		{ NODELST,		"tid_ambient",		false,	fcp_tid_s_hcircuit_tid_ambient,		NULL, },
 		{ NODELST,		"params",		false,	fcp_hcircuit_params,			NULL, },
 		{ NODESTR,		"tlaw",			true,	fcp_hcircuit_tlaw,			NULL, },
+		{ NODESTR,		"valve_mix",		false,	fcp_valve_s_hcircuit_pvalve_mix,	NULL, },
+		{ NODESTR,		"pump_feed",		false,	fcp_pump_s_hcircuit_ppump_feed,		NULL, },
 		{ NODESTR,		"bmodel",		true,	fcp_bmodel_s_hcircuit_pbmodel,		NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
 	struct s_hcircuit * hcircuit;
-	const char * n;
 	int ret;
-	unsigned int i;
 
 	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
 
@@ -1447,43 +1444,9 @@ static int hcircuit_parse(void * restrict const priv, const struct s_filecfg_par
 	if (ALL_OK != ret)
 		return (ret);
 
-	// deal with the pointers (XXX TODO: make that work with regular parsers)
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		if (parsers[i].parser)
-			continue;
-
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
-
-		// we only deal with stringvals
-		n = currnode->value.stringval;
-		if (strlen(n) < 1)
-			break;	// nothing to do
-
-		switch (i) {
-			case 0:
-				hcircuit->set.p.valve_mix = plant_fbn_valve(plant, n);
-				if (!hcircuit->set.p.valve_mix)
-					goto invaliddata;
-				break;
-			case 1:
-				hcircuit->set.p.pump_feed = plant_fbn_pump(plant, n);
-				if (!hcircuit->set.p.pump_feed)
-					goto invaliddata;
-				break;
-			default:
-				break;	// should never happen
-		}
-	}
-
 	hcircuit->set.configured = true;
 
 	return (ALL_OK);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
 }
 
 static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -1523,12 +1486,19 @@ static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_fi
 	return (ALL_OK);
 }
 
-static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
+#define hspriv_to_heatsource(_priv)	container_of(_priv, struct s_heatsource, priv)
+
+static inline const struct s_plant * __hspriv_to_plant(void * priv)
+{
+	return (pdata_to_plant(hspriv_to_heatsource(priv)->pdata));
+}
+
+FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, pump_load)
+FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, valve_ret)
+
+static int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "pump_load", false, NULL, NULL, },		// 0
-		{ NODESTR, "valve_ret", false, NULL, NULL, },		// 1
-
 		{ NODESTR,		"idle_mode",		false,	fcp_hs_boiler_idle_mode,		NULL, },
 		{ NODEFLT|NODEINT,	"hysteresis",		true,	fcp_temp_s_boiler_priv_hysteresis,	NULL, },
 		{ NODEFLT|NODEINT,	"limit_thardmax",	true,	fcp_temp_s_boiler_priv_limit_thardmax,	NULL, },
@@ -1541,12 +1511,11 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 		{ NODELST,		"tid_boiler_return",	false,	fcp_tid_s_boiler_priv_tid_boiler_return, NULL, },
 		{ NODELST,		"rid_burner_1",		true,	fcp_rid_s_boiler_priv_rid_burner_1,	NULL, },
 		{ NODELST,		"rid_burner_2",		false,	fcp_rid_s_boiler_priv_rid_burner_2,	NULL, },
+		{ NODESTR,		"pump_load",		false,	fcp_pump_s_boiler_priv_ppump_load,	NULL, },
+		{ NODESTR,		"valve_ret",		false,	fcp_valve_s_boiler_priv_pvalve_ret,	NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_boiler_priv * boiler;
-	const char * n;
 	int ret;
-	unsigned int i;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
@@ -1561,53 +1530,16 @@ static int hs_boiler_parse(const struct s_plant * const plant, struct s_heatsour
 	boiler = heatsource->priv;
 
 	ret = filecfg_parser_run_parsers(boiler, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	// deal with the pointers (XXX TODO: make that work with regular parsers)
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		if (parsers[i].parser)
-			continue;
-
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
-
-		// we only deal with stringvals
-		n = currnode->value.stringval;
-		if (strlen(n) < 1)
-			continue;	// nothing to do
-
-		switch (i) {
-			case 0:
-				boiler->set.p.pump_load = plant_fbn_pump(plant, n);
-				if (!boiler->set.p.pump_load)
-					goto invaliddata;
-				break;
-			case 1:
-				boiler->set.p.valve_ret = plant_fbn_valve(plant, n);
-				if (!boiler->set.p.valve_ret)
-					goto invaliddata;
-				break;
-			default:
-				break;	// should never happen
-		}
-	}
-
-	return (ALL_OK);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
-
+	return (ret);
 }
 
-static int heatsource_type_parse(const struct s_plant * const plant, struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
+static int heatsource_type_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
+	struct s_heatsource * const heatsource = priv;
 	int ret;
 
 	if (!strcmp("boiler", node->value.stringval))
-		ret = hs_boiler_parse(plant, heatsource, node);
+		ret = hs_boiler_parse(heatsource, node);
 	else
 		ret = -EUNKNOWN;
 
@@ -1622,14 +1554,12 @@ FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_heatsource, schedid)
 static int heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "type", true, NULL, NULL, },		// 0
-
+		{ NODESTR,		"type",			true,	heatsource_type_parse,			NULL, },
 		{ NODESTR,		"runmode",		true,	fcp_runmode_s_heatsource_runmode,	NULL, },
 		{ NODEINT,		"prio",			false,	fcp_prio_s_heatsource_prio,		NULL, },
 		{ NODEINT|NODEDUR,	"consumer_sdelay",	false,	fcp_tk_s_heatsource_consumer_sdelay,	NULL, },
 		{ NODESTR,		"schedid",		false,	fcp_schedid_s_heatsource_schedid,	NULL, },
 	};
-	const struct s_filecfg_parser_node * currnode;
 	struct s_plant * restrict const plant = priv;
 	struct s_heatsource * heatsource;
 	int ret;
@@ -1649,19 +1579,9 @@ static int heatsource_parse(void * restrict const priv, const struct s_filecfg_p
 	if (ALL_OK != ret)
 		return (ret);
 
-	// deal with the heatsource type (XXX TODO: make that work with regular parsers)
-	currnode = parsers[0].node;
-	ret = heatsource_type_parse(plant, heatsource, currnode);
-	if (ALL_OK != ret)
-		goto invaliddata;
-
 	heatsource->set.configured = true;
 
 	return (ALL_OK);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
 }
 
 static int heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
