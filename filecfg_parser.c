@@ -86,7 +86,7 @@
 
 #define pdata_to_plant(_pdata)	container_of(_pdata, struct s_plant, pdata)
 
-#define FILECFG_PARSER_INT_PARSE_FUNC(_positiveonly, _struct, _setmember)	\
+#define FILECFG_PARSER_INT_PARSE_SET_FUNC(_positiveonly, _struct, _setmember)	\
 static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
@@ -97,7 +97,7 @@ static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const st
 	return (ALL_OK);							\
 }
 
-#define FILECFG_PARSER_STR_PARSE_FUNC(_nonempty, _struct, _setmember)		\
+#define FILECFG_PARSER_STR_PARSE_SET_FUNC(_nonempty, _struct, _setmember)		\
 static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
@@ -125,24 +125,36 @@ static int __fcp_get_node_celsius_temp(bool positiveonly, bool delta, const stru
 	return (ALL_OK);
 }
 
-#define FILECFG_PARSER_CELSIUS_PARSE_FUNC(_positiveonly, _delta, _struct, _setmember)	\
-static int fcp_temp_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+#define FILECFG_PARSER_CELSIUS_PARSE_NEST_FUNC(_positiveonly, _delta, _struct, _nest, _member)	\
+static int fcp_temp_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
 	int ret; temp_t temp = 0;						\
 	ret = __fcp_get_node_celsius_temp(_positiveonly, _delta, n, &temp);	\
-	s->set._setmember = temp;	/* Note: always set */			\
+	s->_nest _member = temp;	/* Note: always set */			\
 	return (ret);								\
 }
 
-#define FILECFG_PARSER_RUNMODE_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_runmode_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+#define FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(_positiveonly, _delta, _struct, _setmember)	\
+	FILECFG_PARSER_CELSIUS_PARSE_NEST_FUNC(_positiveonly, _delta, _struct, set., _setmember)
+
+#define FILECFG_PARSER_CELSIUS_PARSE_FUNC(_positiveonly, _delta, _struct, _member)	\
+	FILECFG_PARSER_CELSIUS_PARSE_NEST_FUNC(_positiveonly, _delta, _struct, , _member)
+
+#define FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, _nest, _member)		\
+static int fcp_runmode_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
-	return (filecfg_parser_runmode_parse(&s->set._setmember, n));		\
+	return (filecfg_parser_runmode_parse(&s->_nest _member, n));		\
 }
 
-#define FILECFG_PARSER_PRIO_PARSE_FUNC(_struct, _setmember)			\
+#define FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(_struct, _setmember)		\
+	FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, set., _setmember)
+
+#define FILECFG_PARSER_RUNMODE_PARSE_FUNC(_struct, _setmember)			\
+	FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, , _setmember)
+
+#define FILECFG_PARSER_PRIO_PARSE_SET_FUNC(_struct, _setmember)			\
 static int fcp_prio_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
@@ -153,7 +165,7 @@ static int fcp_prio_##_struct##_##_setmember(void * restrict const priv, const s
 	return (ALL_OK);							\
 }
 
-#define FILECFG_PARSER_SCHEDID_PARSE_FUNC(_struct, _setmember)			\
+#define FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(_struct, _setmember)			\
 static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv; int iv;			\
@@ -166,7 +178,7 @@ static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, cons
 	return (ALL_OK);							\
 }
 
-#define FILECFG_PARSER_PBMODEL_PARSE_FUNC(_struct, _setpmember)			\
+#define FILECFG_PARSER_PBMODEL_PARSE_SET_FUNC(_struct, _setpmember)			\
 static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
@@ -289,8 +301,8 @@ struct s_fcp_hwbkend {
 	} set;
 };
 
-FILECFG_PARSER_STR_PARSE_FUNC(true, s_fcp_hwbkend, backend)
-FILECFG_PARSER_STR_PARSE_FUNC(true, s_fcp_hwbkend, name)
+FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, backend)
+FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, name)
 
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -413,204 +425,116 @@ static int sysmode_parse(void * restrict const priv, const struct s_filecfg_pars
 	return (ALL_OK);
 }
 
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, t_comfort)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, t_eco)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, t_frostfree)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, t_legionella)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, limit_tmin)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, limit_tmax)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, limit_wintmax)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_dhwt_params, hysteresis)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, true, s_dhwt_params, temp_inoffset)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_dhwt_params, limit_chargetime)
+
 static int dhwt_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT, "t_comfort", false, NULL, NULL, },		// 0
-		{ NODEFLT|NODEINT, "t_eco", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, NULL, },		// 2
-		{ NODEFLT|NODEINT, "t_legionella", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "limit_tmin", false, NULL, NULL, },		// 4
-		{ NODEFLT|NODEINT, "limit_tmax", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "limit_wintmax", false, NULL, NULL, },	// 6
-		{ NODEFLT|NODEINT, "hysteresis", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, NULL, },	// 8
-		{ NODEINT|NODEDUR, "limit_chargetime", false, NULL, NULL, },
+		{ NODEFLT|NODEINT,	"t_comfort",		false,	fcp_temp_s_dhwt_params_t_comfort,	NULL, },
+		{ NODEFLT|NODEINT,	"t_eco",		false,	fcp_temp_s_dhwt_params_t_eco,		NULL, },
+		{ NODEFLT|NODEINT,	"t_frostfree",		false,	fcp_temp_s_dhwt_params_t_frostfree,	NULL, },
+		{ NODEFLT|NODEINT,	"t_legionella",		false,	fcp_temp_s_dhwt_params_t_legionella,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_tmin",		false,	fcp_temp_s_dhwt_params_limit_tmin,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_tmax",		false,	fcp_temp_s_dhwt_params_limit_tmax,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_wintmax",	false,	fcp_temp_s_dhwt_params_limit_wintmax,	NULL, },
+		{ NODEFLT|NODEINT,	"hysteresis",		false,	fcp_temp_s_dhwt_params_hysteresis,	NULL, },
+		{ NODEFLT|NODEINT,	"temp_inoffset",	false,	fcp_temp_s_dhwt_params_temp_inoffset,	NULL, },
+		{ NODEINT|NODEDUR,	"limit_chargetime",	false,	fcp_tk_s_dhwt_params_limit_chargetime,	NULL, },
 	};
-	struct s_dhwt_params * restrict const dhwt_params = priv;
-	const struct s_filecfg_parser_node *currnode;
-	unsigned int i;
-	float fv;
-	int iv;
-	temp_t delta, celsius;
 
 	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
-
-		if (NODEFLT == currnode->type) {
-			fv = currnode->value.floatval;
-			delta = deltaK_to_temp(fv);
-			celsius = celsius_to_temp(fv);
-		}
-		else {	// NODEINT
-			iv = currnode->value.intval;
-			delta = deltaK_to_temp(iv);
-			celsius = celsius_to_temp(iv);
-		}
-
-		switch (i) {
-			case 0:
-				dhwt_params->t_comfort = celsius;
-				break;
-			case 1:
-				dhwt_params->t_eco = celsius;
-				break;
-			case 2:
-				dhwt_params->t_frostfree = celsius;
-				break;
-			case 3:
-				dhwt_params->t_legionella = celsius;
-				break;
-			case 4:
-				dhwt_params->limit_tmin = celsius;
-				break;
-			case 5:
-				dhwt_params->limit_tmax = celsius;
-				break;
-			case 6:
-				dhwt_params->limit_wintmax = celsius;
-				break;
-			case 7:
-				if (delta < 0)
-					goto invaliddata;
-				else
-					dhwt_params->hysteresis = delta;
-				break;
-			case 8:
-				dhwt_params->temp_inoffset = delta;
-				break;
-			case 9:
-				if (currnode->value.intval < 0)
-					goto invaliddata;
-				else
-					dhwt_params->limit_chargetime = timekeep_sec_to_tk(currnode->value.intval);
-				break;
-			default:
-				break;	// never happen
-		}
-	}
-
-	return (ALL_OK);
-
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
+	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
 }
+
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_comfort)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_eco)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_frostfree)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_offset)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_comfort)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_eco)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_frostfree)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_hcircuit_params, outhoff_hysteresis)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmin)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmax)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, true, s_hcircuit_params, temp_inoffset)
 
 static int hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT, "t_comfort", false, NULL, NULL, },		// 0
-		{ NODEFLT|NODEINT, "t_eco", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "t_frostfree", false, NULL, NULL, },		// 2
-		{ NODEFLT|NODEINT, "t_offset", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "outhoff_comfort", false, NULL, NULL, },	// 4
-		{ NODEFLT|NODEINT, "outhoff_eco", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "outhoff_frostfree", false, NULL, NULL, },	// 6
-		{ NODEFLT|NODEINT, "outhoff_hysteresis", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "limit_wtmin", false, NULL, NULL, },		// 8
-		{ NODEFLT|NODEINT, "limit_wtmax", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "temp_inoffset", false, NULL, NULL, },	// 10
+		{ NODEFLT|NODEINT,	"t_comfort",		false,	fcp_temp_s_hcircuit_params_t_comfort,		NULL, },
+		{ NODEFLT|NODEINT,	"t_eco",		false,	fcp_temp_s_hcircuit_params_t_eco,		NULL, },
+		{ NODEFLT|NODEINT,	"t_frostfree",		false,	fcp_temp_s_hcircuit_params_t_frostfree,		NULL, },
+		{ NODEFLT|NODEINT,	"t_offset",		false,	fcp_temp_s_hcircuit_params_t_offset,		NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_comfort",	false,	fcp_temp_s_hcircuit_params_outhoff_comfort,	NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_eco",		false,	fcp_temp_s_hcircuit_params_outhoff_eco,		NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_frostfree",	false,	fcp_temp_s_hcircuit_params_outhoff_frostfree,	NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_hysteresis",	false,	fcp_temp_s_hcircuit_params_outhoff_hysteresis,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_wtmin",		false,	fcp_temp_s_hcircuit_params_limit_wtmin,		NULL, },
+		{ NODEFLT|NODEINT,	"limit_wtmax",		false,	fcp_temp_s_hcircuit_params_limit_wtmax,		NULL, },
+		{ NODEFLT|NODEINT,	"temp_inoffset",	false,	fcp_temp_s_hcircuit_params_temp_inoffset,	NULL, },
 	};
-	struct s_hcircuit_params * restrict const hcircuit_params = priv;
-	const struct s_filecfg_parser_node *currnode;
-	unsigned int i;
-	float fv;
-	int iv;
-	temp_t delta, celsius;
 
 	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
 
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
+	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
+}
 
-		if (NODEFLT == currnode->type) {
-			fv = currnode->value.floatval;
-			delta = deltaK_to_temp(fv);
-			celsius = celsius_to_temp(fv);
-		}
-		else {	// NODEINT
-			iv = currnode->value.intval;
-			delta = deltaK_to_temp(iv);
-			celsius = celsius_to_temp(iv);
-		}
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_config, summer_maintenance)
+FILECFG_PARSER_BOOL_PARSE_FUNC(s_config, logging)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_config, limit_tsummer)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_config, limit_tfrost)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_config, sleeping_delay)
+FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_config, startup_runmode)
+FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_config, startup_dhwmode)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_config, summer_run_interval)
+FILECFG_PARSER_TIME_PARSE_FUNC(s_config, summer_run_duration)
 
-		switch (i) {
-			case 0:
-				hcircuit_params->t_comfort = celsius;
-				break;
-			case 1:
-				hcircuit_params->t_eco = celsius;
-				break;
-			case 2:
-				hcircuit_params->t_frostfree = celsius;
-				break;
-			case 3:
-				hcircuit_params->t_offset = delta;
-				break;
-			case 4:
-				hcircuit_params->outhoff_comfort = celsius;
-				break;
-			case 5:
-				hcircuit_params->outhoff_eco = celsius;
-				break;
-			case 6:
-				hcircuit_params->outhoff_frostfree = celsius;
-				break;
-			case 7:
-				if (delta < 0)
-					goto invaliddata;
-				else
-					hcircuit_params->outhoff_hysteresis = delta;
-				break;
-			case 8:
-				hcircuit_params->limit_wtmin = celsius;
-				break;
-			case 9:
-				hcircuit_params->limit_wtmax = celsius;
-				break;
-			case 10:
-				hcircuit_params->temp_inoffset = delta;
-				break;
-			default:
-				break;	// never happen
-		}
-	}
+static int defconfig_sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_config * restrict const config = priv;
+	return (sysmode_parse(&config->startup_sysmode, node));
+}
 
-	return (ALL_OK);
+static int defconfig_def_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_config * restrict const config = priv;
+	return (hcircuit_params_parse(&config->def_hcircuit, node));
+}
 
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
+static int defconfig_def_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_config * restrict const config = priv;
+	return (dhwt_params_parse(&config->def_dhwt, node));
 }
 
 static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL, "summer_maintenance", false, NULL, NULL, },	// 0
-		{ NODEBOL, "logging", false, NULL, NULL, },
-		{ NODEFLT|NODEINT, "limit_tsummer", false, NULL, NULL, },	// 2
-		{ NODEFLT|NODEINT, "limit_tfrost", false, NULL, NULL, },
-		{ NODEINT|NODEDUR, "sleeping_delay", false, NULL, NULL, },	// 4
-		{ NODESTR, "startup_sysmode", true, NULL, NULL, },
-		{ NODESTR, "startup_runmode", false, NULL, NULL, },	// 6
-		{ NODESTR, "startup_dhwmode", false, NULL, NULL, },
-		{ NODELST, "def_hcircuit", false, NULL, NULL, },	// 8
-		{ NODELST, "def_dhwt", false, NULL, NULL, },
-		{ NODEINT|NODEDUR, "summer_run_interval", false, NULL, NULL, },	// 10
-		{ NODEINT|NODEDUR, "summer_run_duration", false, NULL, NULL, },
+		{ NODEBOL,		"summer_maintenance",	false,	fcp_bool_s_config_summer_maintenance,	NULL, },	// 0
+		{ NODEBOL,		"logging",		false,	fcp_bool_s_config_logging,		NULL, },
+		{ NODEFLT|NODEINT,	"limit_tsummer",	false,	fcp_temp_s_config_limit_tsummer,	NULL, },	// 2
+		{ NODEFLT|NODEINT,	"limit_tfrost",		false,	fcp_temp_s_config_limit_tfrost,		NULL, },
+		{ NODEINT|NODEDUR,	"sleeping_delay",	false,	fcp_tk_s_config_sleeping_delay,		NULL, },	// 4
+		{ NODESTR,		"startup_sysmode",	true,	defconfig_sysmode_parse,		NULL, },
+		{ NODESTR,		"startup_runmode",	false,	fcp_runmode_s_config_startup_runmode,	NULL, },	// 6
+		{ NODESTR,		"startup_dhwmode",	false,	fcp_runmode_s_config_startup_dhwmode,	NULL, },
+		{ NODELST,		"def_hcircuit",		false,	defconfig_def_hcircuit_parse,		NULL, },	// 8
+		{ NODELST,		"def_dhwt",		false,	defconfig_def_dhwt_parse,		NULL, },
+		{ NODEINT|NODEDUR,	"summer_run_interval",	false,	fcp_tk_s_config_summer_run_interval,	NULL, },	// 10
+		{ NODEINT|NODEDUR,	"summer_run_duration",	false,	fcp_tk_s_config_summer_run_duration,	NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_config * restrict config;
-	const struct s_filecfg_parser_node *currnode;
-	unsigned int i;
-	temp_t celsius;
 	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
@@ -621,82 +545,9 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 	if (!config)
 		return (-EOOM);
 
-	for (i = 0; i < ARRAY_SIZE(parsers); i++) {
-		currnode = parsers[i].node;
-		if (!currnode)
-			continue;
-
-		switch (i) {
-			case 0:
-				config->summer_maintenance = currnode->value.boolval;
-				break;
-			case 1:
-				config->logging = currnode->value.boolval;
-				break;
-			case 2:
-			case 3:
-				celsius = (NODEFLT == currnode->type) ? celsius_to_temp(currnode->value.floatval) : celsius_to_temp(currnode->value.intval);
-				switch (i) {
-					case 2:
-						if (ALL_OK != config_set_tsummer(config, celsius))
-							goto invaliddata;
-						break;
-					case 3:
-						if (ALL_OK != config_set_tfrost(config, celsius))
-							goto invaliddata;
-						break;
-					default:
-						break;
-				}
-				break;
-			case 4:
-			case 10:
-			case 11:
-				// positive time values
-				if (currnode->value.intval < 0)
-					goto invaliddata;
-				else
-					switch (i) {
-						case 4:
-							config->sleeping_delay = timekeep_sec_to_tk(currnode->value.intval);
-							break;
-						case 10:
-							config->summer_run_interval = timekeep_sec_to_tk(currnode->value.intval);
-							break;
-						case 11:
-							config->summer_run_duration = timekeep_sec_to_tk(currnode->value.intval);
-							break;
-						default:
-							break;
-					}
-				break;
-			case 5:
-				ret = sysmode_parse(&config->startup_sysmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
-				break;
-			case 6:
-				ret = filecfg_parser_runmode_parse(&config->startup_runmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
-				break;
-			case 7:
-				ret = filecfg_parser_runmode_parse(&config->startup_dhwmode, currnode);
-				if (ALL_OK != ret)
-					return (ret);
-				break;
-			case 8:
-				if (ALL_OK != hcircuit_params_parse(&config->def_hcircuit, currnode))
-					goto invaliddata;
-				break;
-			case 9:
-				if (ALL_OK != dhwt_params_parse(&config->def_dhwt, currnode))
-					goto invaliddata;
-				break;
-			default:
-				break;
-		}
-	}
+	ret = filecfg_parser_run_parsers(config, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
 	// consistency checks post matching
 
@@ -708,7 +559,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 	}
 
 	if (config->summer_maintenance) {
-		if (!parsers[10].node || !parsers[11].node) {
+		if (config->summer_run_interval || config->summer_run_duration) {
 			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: summer_maintenance is set but summer_run_interval and/or summer_run_duration are not set"), node->name, node->lineno);
 			return (-EINVALID);
 
@@ -719,11 +570,6 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 
 	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
 	return (ALL_OK);
-
-	// we choose to interrupt parsing if an error occurs in this function, but let the subparsers run to the end
-invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
-	return (-EINVALID);
 }
 
 /**
@@ -777,8 +623,8 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	return (ret);
 }
 
-FILECFG_PARSER_TIME_PARSE_FUNC(s_pump, cooldown_time)
-FILECFG_PARSER_RID_PARSE_FUNC(s_pump, rid_pump)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_pump, cooldown_time)
+FILECFG_PARSER_RID_PARSE_SET_FUNC(s_pump, rid_pump)
 
 static int pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -815,8 +661,8 @@ static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "pump", pump_parse));
 }
 
-FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_sapprox_priv, sample_intvl)
-FILECFG_PARSER_INT_PARSE_FUNC(true, s_valve_sapprox_priv, amount)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_sapprox_priv, sample_intvl)
+FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_valve_sapprox_priv, amount)
 
 static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -857,11 +703,11 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 	return (ret);
 }
 
-FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_pi_priv, sample_intvl)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_pi_priv, Tu)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_valve_pi_priv, Td)
-FILECFG_PARSER_INT_PARSE_FUNC(true, s_valve_pi_priv, tune_f)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, true, s_valve_pi_priv, Ksmax)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_pi_priv, sample_intvl)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_pi_priv, Tu)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_pi_priv, Td)
+FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_valve_pi_priv, tune_f)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, true, s_valve_pi_priv, Ksmax)
 
 static int valve_algo_PI_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -1074,8 +920,8 @@ static int valve_m2way_parser(void * restrict const priv, const struct s_filecfg
 	return (ALL_OK);
 }
 
-FILECFG_PARSER_INT_PARSE_FUNC(true, s_valve, deadband)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_valve, ete_time)
+FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_valve, deadband)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve, ete_time)
 
 static int fcp_valve_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -1191,18 +1037,18 @@ static inline const struct s_plant * __dhwt_to_plant(void * priv)
 	return (pdata_to_plant(((struct s_dhwt *)priv)->pdata));
 }
 
-FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, electric_failover)
-FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, anti_legionella)
-FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, legionella_recycle)
-FILECFG_PARSER_BOOL_PARSE_FUNC(s_dhwt, electric_recycle)
-FILECFG_PARSER_PRIO_PARSE_FUNC(s_dhwt, prio)
-FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_dhwt, runmode)
-FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_bottom)
-FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_top)
-FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_win)
-FILECFG_PARSER_TID_PARSE_FUNC(s_dhwt, tid_wout)
-FILECFG_PARSER_RID_PARSE_FUNC(s_dhwt, rid_selfheater)
-FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_dhwt, schedid)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, electric_failover)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, anti_legionella)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, legionella_recycle)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, electric_recycle)
+FILECFG_PARSER_PRIO_PARSE_SET_FUNC(s_dhwt, prio)
+FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_dhwt, runmode)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_bottom)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_top)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_win)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_wout)
+FILECFG_PARSER_RID_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
+FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_recycle)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_hwisol)
@@ -1314,11 +1160,11 @@ struct s_fcp_tlbilin_params {
 	} set;
 };
 
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, tout1)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, twater1)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, tout2)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_fcp_tlbilin_params, twater2)
-FILECFG_PARSER_INT_PARSE_FUNC(false, s_fcp_tlbilin_params, nH100)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout1)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater1)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout2)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater2)
+FILECFG_PARSER_INT_PARSE_SET_FUNC(false, s_fcp_tlbilin_params, nH100)
 
 static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -1361,18 +1207,18 @@ static inline const struct s_plant * __hcircuit_to_plant(void * priv)
 	return (pdata_to_plant(((struct s_hcircuit *)priv)->pdata));
 }
 
-FILECFG_PARSER_BOOL_PARSE_FUNC(s_hcircuit, fast_cooldown)
-FILECFG_PARSER_BOOL_PARSE_FUNC(s_hcircuit, logging)
-FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_hcircuit, runmode)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_hcircuit, wtemp_rorh)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_hcircuit, am_tambient_tK)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit, tambient_boostdelta)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_hcircuit, boost_maxtime)
-FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_outgoing)
-FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_return)
-FILECFG_PARSER_TID_PARSE_FUNC(s_hcircuit, tid_ambient)
-FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_hcircuit, schedid)
-FILECFG_PARSER_PBMODEL_PARSE_FUNC(s_hcircuit, bmodel)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, fast_cooldown)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, logging)
+FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_hcircuit, runmode)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_hcircuit, wtemp_rorh)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, am_tambient_tK)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_hcircuit, tambient_boostdelta)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, boost_maxtime)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_outgoing)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_return)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_ambient)
+FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_hcircuit, schedid)
+FILECFG_PARSER_PBMODEL_PARSE_SET_FUNC(s_hcircuit, bmodel)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hcircuit_to_plant, s_hcircuit, pump_feed)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hcircuit_to_plant, s_hcircuit, valve_mix)
 
@@ -1456,17 +1302,17 @@ static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_pa
 
 #include "boiler.h"
 
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_boiler_priv, hysteresis)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_thardmax)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_tmax)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_tmin)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, limit_treturnmin)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, false, s_boiler_priv, t_freeze)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_boiler_priv, burner_min_time)
-FILECFG_PARSER_TID_PARSE_FUNC(s_boiler_priv, tid_boiler)
-FILECFG_PARSER_TID_PARSE_FUNC(s_boiler_priv, tid_boiler_return)
-FILECFG_PARSER_RID_PARSE_FUNC(s_boiler_priv, rid_burner_1)
-FILECFG_PARSER_RID_PARSE_FUNC(s_boiler_priv, rid_burner_2)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_boiler_priv, hysteresis)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_thardmax)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_tmax)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_tmin)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_treturnmin)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, t_freeze)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_boiler_priv, burner_min_time)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_return)
+FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
+FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
 
 static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -1546,10 +1392,10 @@ static int heatsource_type_parse(void * restrict const priv, const struct s_file
 	return (ret);
 }
 
-FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_heatsource, runmode)
-FILECFG_PARSER_PRIO_PARSE_FUNC(s_heatsource, prio)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_heatsource, consumer_sdelay)
-FILECFG_PARSER_SCHEDID_PARSE_FUNC(s_heatsource, schedid)
+FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_heatsource, runmode)
+FILECFG_PARSER_PRIO_PARSE_SET_FUNC(s_heatsource, prio)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_heatsource, consumer_sdelay)
+FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_heatsource, schedid)
 
 static int heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {

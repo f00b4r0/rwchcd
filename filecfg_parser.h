@@ -109,38 +109,62 @@ int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_
  */
 #define filecfg_parser_parse_listsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODELST, parser)
 
-#define FILECFG_PARSER_BOOL_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_bool_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+#define FILECFG_PARSER_BOOL_PARSE_NEST_FUNC(_struct, _nest, _member)		\
+static int fcp_bool_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
-	s->set._setmember = n->value.boolval;					\
+	s->_nest _member = n->value.boolval;					\
 	return (ALL_OK);							\
 }
 
-#define FILECFG_PARSER_TIME_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_tk_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+#define FILECFG_PARSER_BOOL_PARSE_SET_FUNC(_struct, _setmember)			\
+	FILECFG_PARSER_BOOL_PARSE_NEST_FUNC(_struct, set., _setmember)
+
+#define FILECFG_PARSER_BOOL_PARSE_FUNC(_struct, _member)			\
+FILECFG_PARSER_BOOL_PARSE_NEST_FUNC(_struct, , _member)
+
+#define FILECFG_PARSER_TIME_PARSE_NEST_FUNC(_struct, _nest, _member)		\
+static int fcp_tk_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
 	if (iv < 0)								\
 		return (-EINVALID);						\
-	s->set._setmember = timekeep_sec_to_tk(iv);				\
+	s->_nest _member = timekeep_sec_to_tk(iv);				\
 	return (ALL_OK);							\
 }
 
-#define FILECFG_PARSER_TID_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_tid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+#define FILECFG_PARSER_TIME_PARSE_SET_FUNC(_struct, _setmember)			\
+	FILECFG_PARSER_TIME_PARSE_NEST_FUNC(_struct, set., _setmember)
+
+#define FILECFG_PARSER_TIME_PARSE_FUNC(_struct, _member)			\
+	FILECFG_PARSER_TIME_PARSE_NEST_FUNC(_struct, , _member)
+
+
+#define FILECFG_PARSER_TID_PARSE_NEST_FUNC(_struct, _nest, _member)		\
+static int fcp_tid_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
-	return (filecfg_parser_tid_parse(&s->set._setmember, n));		\
+	return (filecfg_parser_tid_parse(&s->_nest _member, n));		\
 }
 
-#define FILECFG_PARSER_RID_PARSE_FUNC(_struct, _setmember)			\
-static int fcp_rid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+#define FILECFG_PARSER_TID_PARSE_SET_FUNC(_struct, _setmember)			\
+	FILECFG_PARSER_TID_PARSE_NEST_FUNC(_struct, set., _setmember)
+
+#define FILECFG_PARSER_TID_PARSE_FUNC(_struct, _member)				\
+	FILECFG_PARSER_TID_PARSE_NEST_FUNC(_struct, , _setmember)
+
+#define FILECFG_PARSER_RID_PARSE_NEST_FUNC(_struct, _nest, _member)			\
+static int fcp_rid_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
-	return (filecfg_parser_rid_parse(&s->set._setmember, n));		\
+	return (filecfg_parser_rid_parse(&s->_nest _member, n));		\
 }
 
+#define FILECFG_PARSER_RID_PARSE_SET_FUNC(_struct, _setmember)			\
+	FILECFG_PARSER_RID_PARSE_NEST_FUNC(_struct, set., _setmember)
+
+#define FILECFG_PARSER_RID_PARSE_FUNC(_struct, _member)				\
+	FILECFG_PARSER_RID_PARSE_NEST_FUNC(_struct, , _setmember)
 
 #endif /* filecfg_parser_h */

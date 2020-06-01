@@ -57,9 +57,9 @@ int models_filecfg_dump(void)
 	return (ALL_OK);
 }
 
-FILECFG_PARSER_BOOL_PARSE_FUNC(s_bmodel, logging)
-FILECFG_PARSER_TIME_PARSE_FUNC(s_bmodel, tau)
-FILECFG_PARSER_TID_PARSE_FUNC(s_bmodel, tid_outdoor)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_bmodel, logging)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_bmodel, tau)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_bmodel, tid_outdoor)
 
 static int bmodel_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
