@@ -111,6 +111,18 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
  */
 #define filecfg_parser_parse_listsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODELST, parser)
 
+#ifndef ARRAY_SIZE
+ #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
+#endif
+
+#define container_of(ptr, type, member) ({					\
+	const typeof( ((type *)0)->member )					\
+	*__mptr = (ptr);							\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+
+#define pdata_to_plant(_pdata)	container_of(_pdata, struct s_plant, pdata)
+
+
 #define FILECFG_PARSER_BOOL_PARSE_NEST_FUNC(_struct, _nest, _member)		\
 static int fcp_bool_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
@@ -133,6 +145,17 @@ static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const st
 	if (_positiveonly && (iv < 0))						\
 		return (-EINVALID);						\
 	s->set._setmember = iv;							\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_STR_PARSE_SET_FUNC(_nonempty, _struct, _setmember)	\
+static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	const char *str = n->value.stringval;					\
+	if (_nonempty && (strlen(str) < 1))					\
+		return (-EINVALID);						\
+	s->set._setmember = str;						\
 	return (ALL_OK);							\
 }
 
@@ -195,5 +218,78 @@ static int fcp_rid_##_struct##_##_member(void * restrict const priv, const struc
 
 #define FILECFG_PARSER_RID_PARSE_FUNC(_struct, _member)				\
 	FILECFG_PARSER_RID_PARSE_NEST_FUNC(_struct, , _setmember)
+
+#define FILECFG_PARSER_PRIO_PARSE_SET_FUNC(_struct, _setmember)			\
+static int fcp_prio_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int iv = n->value.intval;						\
+	if ((iv < 0) || (iv > UINT_FAST8_MAX))					\
+		return (-EINVALID);						\
+	s->set._setmember = (typeof(s->set._setmember))iv;			\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, _nest, _member)		\
+static int fcp_runmode_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	return (filecfg_parser_runmode_parse(&s->_nest _member, n));		\
+}
+
+#define FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(_struct, _setmember)		\
+	FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, set., _setmember)
+
+#define FILECFG_PARSER_RUNMODE_PARSE_FUNC(_struct, _setmember)			\
+	FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, , _setmember)
+
+#define FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(_struct, _setmember)		\
+static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv; int iv;			\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	iv = scheduler_schedid_by_name(n->value.stringval);			\
+	if (iv <= 0)								\
+		return (-EINVALID);						\
+	s->set._setmember = (unsigned)iv;					\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_PBMODEL_PARSE_SET_FUNC(_struct, _setpmember)		\
+static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	s->set.p._setpmember = models_fbn_bmodel(n->value.stringval);		\
+	if (!s->set.p._setpmember)						\
+		return (-EINVALID);						\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(_priv2plant, _struct, _setpmember)		\
+static int fcp_pump_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	s->set.p._setpmember = plant_fbn_pump(_priv2plant(priv), n->value.stringval);	\
+	if (!s->set.p._setpmember)						\
+		return (-EINVALID);						\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(_priv2plant, _struct, _setpmember)		\
+static int fcp_valve_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	if (strlen(n->value.stringval) < 1)					\
+		return (ALL_OK);	/* nothing to do */			\
+	s->set.p._setpmember = plant_fbn_valve(_priv2plant(priv), n->value.stringval);	\
+	if (!s->set.p._setpmember)						\
+		return (-EINVALID);						\
+	return (ALL_OK);							\
+}
 
 #endif /* filecfg_parser_h */

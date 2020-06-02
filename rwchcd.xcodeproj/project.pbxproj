@@ -51,6 +51,10 @@
 		4FE70C3424864A4E0066007D /* models_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C3324864A4E0066007D /* models_dump.c */; };
 		4FE70C3724864BDF0066007D /* scheduler_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C3624864BDF0066007D /* scheduler_dump.c */; };
 		4FE70C3A248651360066007D /* storage_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C39248651360066007D /* storage_dump.c */; };
+		4FE70C3D248658540066007D /* boiler_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C3C248658540066007D /* boiler_dump.c */; };
+		4FE70C402486585E0066007D /* boiler_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C3F2486585E0066007D /* boiler_parse.c */; };
+		4FE70C43248659E90066007D /* heatsource_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C42248659E90066007D /* heatsource_dump.c */; };
+		4FE70C46248659F40066007D /* heatsource_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C45248659F40066007D /* heatsource_parse.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -163,6 +167,14 @@
 		4FE70C3624864BDF0066007D /* scheduler_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scheduler_dump.c; sourceTree = "<group>"; };
 		4FE70C38248651360066007D /* storage_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = storage_dump.h; sourceTree = "<group>"; };
 		4FE70C39248651360066007D /* storage_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = storage_dump.c; sourceTree = "<group>"; };
+		4FE70C3B248658540066007D /* boiler_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = boiler_dump.h; sourceTree = "<group>"; };
+		4FE70C3C248658540066007D /* boiler_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = boiler_dump.c; sourceTree = "<group>"; };
+		4FE70C3E2486585E0066007D /* boiler_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = boiler_parse.h; sourceTree = "<group>"; };
+		4FE70C3F2486585E0066007D /* boiler_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = boiler_parse.c; sourceTree = "<group>"; };
+		4FE70C41248659E90066007D /* heatsource_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heatsource_dump.h; sourceTree = "<group>"; };
+		4FE70C42248659E90066007D /* heatsource_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heatsource_dump.c; sourceTree = "<group>"; };
+		4FE70C44248659F40066007D /* heatsource_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heatsource_parse.h; sourceTree = "<group>"; };
+		4FE70C45248659F40066007D /* heatsource_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heatsource_parse.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -187,6 +199,14 @@
 				4F08256624859F9D0068FC22 /* valve_dump.c */,
 				4F08255C248597620068FC22 /* valve_parse.h */,
 				4F08255D248597620068FC22 /* valve_parse.c */,
+				4FE70C3B248658540066007D /* boiler_dump.h */,
+				4FE70C3C248658540066007D /* boiler_dump.c */,
+				4FE70C3E2486585E0066007D /* boiler_parse.h */,
+				4FE70C3F2486585E0066007D /* boiler_parse.c */,
+				4FE70C41248659E90066007D /* heatsource_dump.h */,
+				4FE70C42248659E90066007D /* heatsource_dump.c */,
+				4FE70C44248659F40066007D /* heatsource_parse.h */,
+				4FE70C45248659F40066007D /* heatsource_parse.c */,
 				4FE70C3224864A4E0066007D /* models_dump.h */,
 				4FE70C3324864A4E0066007D /* models_dump.c */,
 				4F0825502484383B0068FC22 /* models_parse.h */,
@@ -396,7 +416,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4FE70C46248659F40066007D /* heatsource_parse.c in Sources */,
 				4FC689632071773800A3A065 /* hw_p1.c in Sources */,
+				4FE70C43248659E90066007D /* heatsource_dump.c in Sources */,
 				4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */,
 				4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */,
 				4F08255824844CD40068FC22 /* log_filecfg.c in Sources */,
@@ -411,8 +433,10 @@
 				4F08256424859E110068FC22 /* pump_dump.c in Sources */,
 				4FE70C3424864A4E0066007D /* models_dump.c in Sources */,
 				4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */,
+				4FE70C3D248658540066007D /* boiler_dump.c in Sources */,
 				4F869E99233A5EF300541A07 /* log_statsd.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
+				4FE70C402486585E0066007D /* boiler_parse.c in Sources */,
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,

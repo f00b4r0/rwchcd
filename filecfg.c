@@ -21,8 +21,7 @@
 #include "hardware.h"
 #include "filecfg/pump_dump.h"
 #include "filecfg/valve_dump.h"
-#include "boiler.h"
-#include "heatsource.h"
+#include "filecfg/heatsource_dump.h"
 #include "dhwt.h"
 #include "hcircuit.h"
 #include "models.h"
@@ -238,123 +237,6 @@ const char * filecfg_sysmode_str(const enum e_systemmode sysmode)
 	}
 }
 
-
-
-static int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat)
-{
-	const char * idlemode;
-	const struct s_boiler_priv * restrict priv;
-	int ret = ALL_OK;
-
-	if (!heat)
-		return (-EINVALID);
-
-	if (HS_BOILER != heat->set.type)
-		return (-EINVALID);
-
-	priv = heat->priv;
-
-	switch (priv->set.idle_mode) {
-		case IDLE_NEVER:
-			idlemode = "never";
-			break;
-		case IDLE_ALWAYS:
-			idlemode = "always";
-			break;
-		case IDLE_FROSTONLY:
-			idlemode = "frostonly";
-			break;
-		default:
-			idlemode = "";
-			ret = -EMISCONFIGURED;
-	}
-
-	filecfg_printf(" {\n");
-	filecfg_ilevel_inc();
-
-	filecfg_iprintf("idle_mode \"%s\";\n", idlemode);
-	filecfg_iprintf("hysteresis %.1f;\n", temp_to_deltaK(priv->set.hysteresis));				// mandatory
-	filecfg_iprintf("limit_thardmax %.1f;\n", temp_to_celsius(priv->set.limit_thardmax));			// mandatory
-	if (FCD_Exhaustive || priv->set.limit_tmax)
-		filecfg_iprintf("limit_tmax %.1f;\n", temp_to_celsius(priv->set.limit_tmax));
-	if (FCD_Exhaustive || priv->set.limit_tmin)
-		filecfg_iprintf("limit_tmin %.1f;\n", temp_to_celsius(priv->set.limit_tmin));
-	if (FCD_Exhaustive || priv->set.limit_treturnmin)
-		filecfg_iprintf("limit_treturnmin %.1f;\n", temp_to_celsius(priv->set.limit_treturnmin));
-	filecfg_iprintf("t_freeze %.1f;\n", temp_to_celsius(priv->set.t_freeze));				// mandatory
-	if (FCD_Exhaustive || priv->set.burner_min_time)
-		filecfg_iprintf("burner_min_time %ld;\n", timekeep_tk_to_sec(priv->set.burner_min_time));
-
-	filecfg_iprintf("tid_boiler"); filecfg_tempid_dump(priv->set.tid_boiler);				// mandatory
-	if (FCD_Exhaustive || hardware_sensor_name(priv->set.tid_boiler_return))
-		filecfg_iprintf("tid_boiler_return"), filecfg_tempid_dump(priv->set.tid_boiler_return);
-	filecfg_iprintf("rid_burner_1"); filecfg_relid_dump(priv->set.rid_burner_1);				// mandatory
-	if (FCD_Exhaustive || hardware_relay_name(priv->set.rid_burner_2))
-		filecfg_iprintf("rid_burner_2"), filecfg_relid_dump(priv->set.rid_burner_2);
-
-	if (FCD_Exhaustive || priv->set.p.pump_load)
-		filecfg_iprintf("pump_load \"%s\";\n", priv->set.p.pump_load ? priv->set.p.pump_load->name : "");
-	if (FCD_Exhaustive || priv->set.p.valve_ret)
-		filecfg_iprintf("valve_ret \"%s\";\n", priv->set.p.valve_ret ? priv->set.p.valve_ret->name : "");
-
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ret);
-}
-
-static int filecfg_heatsource_type_dump(const struct s_heatsource * restrict const heat)
-{
-	const char * typename;
-	int (*privdump)(const struct s_heatsource * restrict const);
-	int ret = ALL_OK;
-
-	switch (heat->set.type) {
-		case HS_BOILER:
-			typename = "boiler";
-			privdump = filecfg_boiler_hs_dump;
-			break;
-		case HS_NONE:
-		case HS_UNKNOWN:
-		default:
-			ret = -EINVALID;
-			typename = "";
-			privdump = NULL;
-			break;
-	}
-
-	filecfg_printf(" \"%s\"", typename);
-	if (privdump)
-		privdump(heat);
-
-	return (ret);
-}
-
-static int filecfg_heatsource_dump(const struct s_heatsource * restrict const heat)
-{
-	if (!heat)
-		return (-EINVALID);
-
-	if (!heat->set.configured)
-		return (-ENOTCONFIGURED);
-
-	filecfg_iprintf("heatsource \"%s\" {\n", heat->name);
-	filecfg_ilevel_inc();
-
-	if (FCD_Exhaustive || heat->set.schedid)
-		filecfg_iprintf("schedid \"%s\";\n", scheduler_get_schedname(heat->set.schedid));
-	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(heat->set.runmode));	// mandatory
-	filecfg_iprintf("type"); filecfg_heatsource_type_dump(heat);			// mandatory
-	if (FCD_Exhaustive || heat->set.prio)
-		filecfg_iprintf("prio %hd;\n", heat->set.prio);
-	if (FCD_Exhaustive || heat->set.consumer_sdelay)
-		filecfg_iprintf("consumer_sdelay %ld;\n", timekeep_tk_to_sec(heat->set.consumer_sdelay));
-
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
-}
 
 static int filecfg_dhwt_params_dump(const struct s_dhwt_params * restrict const params)
 {

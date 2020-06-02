@@ -64,7 +64,7 @@
 #include "filecfg/valve_parse.h"
 #include "dhwt.h"
 #include "hcircuit.h"
-#include "heatsource.h"
+#include "filecfg/heatsource_parse.h"
 
 #include "scheduler.h"
 
@@ -114,79 +114,6 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 		*temp = delta ? deltaK_to_temp(iv) : celsius_to_temp(iv);
 	}
 	return (ALL_OK);
-}
-
-#define FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, _nest, _member)		\
-static int fcp_runmode_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	return (filecfg_parser_runmode_parse(&s->_nest _member, n));		\
-}
-
-#define FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(_struct, _setmember)		\
-	FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, set., _setmember)
-
-#define FILECFG_PARSER_RUNMODE_PARSE_FUNC(_struct, _setmember)			\
-	FILECFG_PARSER_RUNMODE_PARSE_NEST_FUNC(_struct, , _setmember)
-
-#define FILECFG_PARSER_PRIO_PARSE_SET_FUNC(_struct, _setmember)			\
-static int fcp_prio_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	int iv = n->value.intval;						\
-	if ((iv < 0) || (iv > UINT_FAST8_MAX))					\
-		return (-EINVALID);						\
-	s->set._setmember = (typeof(s->set._setmember))iv;			\
-	return (ALL_OK);							\
-}
-
-#define FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(_struct, _setmember)			\
-static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv; int iv;			\
-	if (strlen(n->value.stringval) < 1)					\
-		return (ALL_OK);	/* nothing to do */			\
-	iv = scheduler_schedid_by_name(n->value.stringval);			\
-	if (iv <= 0)								\
-		return (-EINVALID);						\
-	s->set._setmember = (unsigned)iv;					\
-	return (ALL_OK);							\
-}
-
-#define FILECFG_PARSER_PBMODEL_PARSE_SET_FUNC(_struct, _setpmember)			\
-static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	if (strlen(n->value.stringval) < 1)					\
-		return (ALL_OK);	/* nothing to do */			\
-	s->set.p._setpmember = models_fbn_bmodel(n->value.stringval);		\
-	if (!s->set.p._setpmember)						\
-		return (-EINVALID);						\
-	return (ALL_OK);							\
-}
-
-#define FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(_priv2plant, _struct, _setpmember)		\
-static int fcp_pump_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	if (strlen(n->value.stringval) < 1)					\
-		return (ALL_OK);	/* nothing to do */			\
-	s->set.p._setpmember = plant_fbn_pump(_priv2plant(priv), n->value.stringval);	\
-	if (!s->set.p._setpmember)						\
-		return (-EINVALID);						\
-	return (ALL_OK);							\
-}
-
-#define FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(_priv2plant, _struct, _setpmember)		\
-static int fcp_valve_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
-{										\
-	struct _struct * restrict const s = priv;				\
-	if (strlen(n->value.stringval) < 1)					\
-		return (ALL_OK);	/* nothing to do */			\
-	s->set.p._setpmember = plant_fbn_valve(_priv2plant(priv), n->value.stringval);	\
-	if (!s->set.p._setpmember)						\
-		return (-EINVALID);						\
-	return (ALL_OK);							\
 }
 
 /**
@@ -914,139 +841,10 @@ static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_pa
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "hcircuit", hcircuit_parse));
 }
 
-#include "boiler.h"
-
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_boiler_priv, hysteresis)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_thardmax)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_tmax)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_tmin)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_treturnmin)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, t_freeze)
-FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_boiler_priv, burner_min_time)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_return)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
-
-static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_boiler_priv * restrict const boiler = priv;
-	const char * str;
-
-	str = node->value.stringval;
-	if (!strcmp("never", str))
-		boiler->set.idle_mode = IDLE_NEVER;
-	else if (!strcmp("frostonly", str))
-		boiler->set.idle_mode = IDLE_FROSTONLY;
-	else if (!strcmp("always", str))
-		boiler->set.idle_mode = IDLE_ALWAYS;
-	else
-		return (-EINVALID);
-
-	return (ALL_OK);
-}
-
-#define hspriv_to_heatsource(_priv)	container_of(_priv, struct s_heatsource, priv)
-
-static inline const struct s_plant * __hspriv_to_plant(void * priv)
-{
-	return (pdata_to_plant(hspriv_to_heatsource(priv)->pdata));
-}
-
-FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, pump_load)
-FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, valve_ret)
-
-static int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
-{
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,		"idle_mode",		false,	fcp_hs_boiler_idle_mode,		NULL, },
-		{ NODEFLT|NODEINT,	"hysteresis",		true,	fcp_temp_s_boiler_priv_hysteresis,	NULL, },
-		{ NODEFLT|NODEINT,	"limit_thardmax",	true,	fcp_temp_s_boiler_priv_limit_thardmax,	NULL, },
-		{ NODEFLT|NODEINT,	"limit_tmax",		false,	fcp_temp_s_boiler_priv_limit_tmax,	NULL, },
-		{ NODEFLT|NODEINT,	"limit_tmin",		false,	fcp_temp_s_boiler_priv_limit_tmin,	NULL, },
-		{ NODEFLT|NODEINT,	"limit_treturnmin",	false,	fcp_temp_s_boiler_priv_limit_treturnmin, NULL, },
-		{ NODEFLT|NODEINT,	"t_freeze",		true,	fcp_temp_s_boiler_priv_t_freeze,	NULL, },
-		{ NODEINT|NODEDUR,	"burner_min_time",	false,	fcp_tk_s_boiler_priv_burner_min_time,	NULL, },
-		{ NODELST,		"tid_boiler",		true,	fcp_tid_s_boiler_priv_tid_boiler,	NULL, },
-		{ NODELST,		"tid_boiler_return",	false,	fcp_tid_s_boiler_priv_tid_boiler_return, NULL, },
-		{ NODELST,		"rid_burner_1",		true,	fcp_rid_s_boiler_priv_rid_burner_1,	NULL, },
-		{ NODELST,		"rid_burner_2",		false,	fcp_rid_s_boiler_priv_rid_burner_2,	NULL, },
-		{ NODESTR,		"pump_load",		false,	fcp_pump_s_boiler_priv_ppump_load,	NULL, },
-		{ NODESTR,		"valve_ret",		false,	fcp_valve_s_boiler_priv_pvalve_ret,	NULL, },
-	};
-	struct s_boiler_priv * boiler;
-	int ret;
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);	// break if invalid config
-
-	// make that heatsource a boiler
-	ret = boiler_heatsource(heatsource);
-	if (ret)
-		return (ret);
-
-	// configure that boiler
-	boiler = heatsource->priv;
-
-	ret = filecfg_parser_run_parsers(boiler, parsers, ARRAY_SIZE(parsers));
-	return (ret);
-}
-
-static int heatsource_type_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_heatsource * const heatsource = priv;
-	int ret;
-
-	if (!strcmp("boiler", node->value.stringval))
-		ret = hs_boiler_parse(heatsource, node);
-	else
-		ret = -EUNKNOWN;
-
-	return (ret);
-}
-
-FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_heatsource, runmode)
-FILECFG_PARSER_PRIO_PARSE_SET_FUNC(s_heatsource, prio)
-FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_heatsource, consumer_sdelay)
-FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_heatsource, schedid)
-
-static int heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,		"type",			true,	heatsource_type_parse,			NULL, },
-		{ NODESTR,		"runmode",		true,	fcp_runmode_s_heatsource_runmode,	NULL, },
-		{ NODEINT,		"prio",			false,	fcp_prio_s_heatsource_prio,		NULL, },
-		{ NODEINT|NODEDUR,	"consumer_sdelay",	false,	fcp_tk_s_heatsource_consumer_sdelay,	NULL, },
-		{ NODESTR,		"schedid",		false,	fcp_schedid_s_heatsource_schedid,	NULL, },
-	};
-	struct s_plant * restrict const plant = priv;
-	struct s_heatsource * heatsource;
-	int ret;
-
-	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);	// break if invalid config
-
-	// create the heatsource
-	heatsource = plant_new_heatsource(plant, node->value.stringval);
-	if (!heatsource)
-		return (-EOOM);
-
-	ret = filecfg_parser_run_parsers(heatsource, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	heatsource->set.configured = true;
-
-	return (ALL_OK);
-}
 
 static int heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "heatsource", heatsource_parse));
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "heatsource", filecfg_heatsource_parse));
 }
 
 static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
