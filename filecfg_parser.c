@@ -52,10 +52,7 @@
 #include "lib.h"
 #include "filecfg_parser.h"
 
-#ifdef HAS_HWP1		// XXX
- #include "hw_backends/hw_p1/hw_p1_filecfg.h"
-#endif
-
+#include "filecfg/backends_parse.h"
 #include "filecfg/plant_parse.h"
 #include "filecfg/models_parse.h"
 #include "filecfg/scheduler_parse.h"
@@ -150,17 +147,6 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 	listelmt->node = node;
 
 	return (listelmt);
-}
-
-static int hardware_backend_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	int ret = ALL_OK;
-
-#ifdef HAS_HWP1		// XXX
-	ret = hw_p1_filecfg_parse(node);
-#endif
-
-	return (ret);
 }
 
 struct s_fcp_hwbkend {
@@ -436,11 +422,6 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 }
 
 
-static int hardware_backends_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "backend", hardware_backend_parse));
-}
-
 /**
  * Match an indidual node against a list of parsers.
  * @param node the target node to match from
@@ -571,7 +552,7 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
-		{ NODELST,	"backends",	false,	hardware_backends_parse, NULL, },
+		{ NODELST,	"backends",	false,	filecfg_backends_parse, NULL, },
 		{ NODELST,	"scheduler",	false,	filecfg_scheduler_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST,	"defconfig",	false,	defconfig_parse,	NULL, },
 		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },

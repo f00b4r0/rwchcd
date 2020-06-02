@@ -28,6 +28,7 @@
 #include "filecfg/storage_dump.h"
 #include "filecfg/log_dump.h"
 #include "filecfg/plant_dump.h"
+#include "filecfg/backends_dump.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
@@ -104,26 +105,6 @@ int filecfg_ilevel_dec(void)
 	FCD_ilevel--;
 
 	return (ALL_OK);
-}
-
-static void filecfg_backends_dump()
-{
-	unsigned int id;
-
-	filecfg_iprintf("backends {\n");
-	filecfg_ilevel_inc();
-
-	for (id = 0; (id < ARRAY_SIZE(HW_backends) && HW_backends[id]); id++) {
-		filecfg_iprintf("backend \"%s\" {\n", HW_backends[id]->name);
-		filecfg_ilevel_inc();
-		if (HW_backends[id]->cb->filecfg_dump)
-			HW_backends[id]->cb->filecfg_dump(HW_backends[id]->priv);
-		filecfg_ilevel_dec();
-		filecfg_iprintf("};\n");
-	}
-
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
 }
 
 int filecfg_tempid_dump(const tempid_t tempid)

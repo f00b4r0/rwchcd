@@ -62,6 +62,8 @@
 		4FE70C552486A0020066007D /* log_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C542486A0020066007D /* log_dump.c */; };
 		4FE70C582486AA810066007D /* plant_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C572486AA810066007D /* plant_dump.c */; };
 		4FE70C5B2486AA8E0066007D /* plant_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C5A2486AA8E0066007D /* plant_parse.c */; };
+		4FE70C5E2486BBC90066007D /* backends_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C5D2486BBC90066007D /* backends_dump.c */; };
+		4FE70C612486BBD50066007D /* backends_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C602486BBD50066007D /* backends_parse.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -196,6 +198,10 @@
 		4FE70C572486AA810066007D /* plant_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = plant_dump.c; sourceTree = "<group>"; };
 		4FE70C592486AA8E0066007D /* plant_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = plant_parse.h; sourceTree = "<group>"; };
 		4FE70C5A2486AA8E0066007D /* plant_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = plant_parse.c; sourceTree = "<group>"; };
+		4FE70C5C2486BBC90066007D /* backends_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = backends_dump.h; sourceTree = "<group>"; };
+		4FE70C5D2486BBC90066007D /* backends_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = backends_dump.c; sourceTree = "<group>"; };
+		4FE70C5F2486BBD50066007D /* backends_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = backends_parse.h; sourceTree = "<group>"; };
+		4FE70C602486BBD50066007D /* backends_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = backends_parse.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -212,6 +218,10 @@
 		4F08256124859BBE0068FC22 /* filecfg */ = {
 			isa = PBXGroup;
 			children = (
+				4FE70C5C2486BBC90066007D /* backends_dump.h */,
+				4FE70C5D2486BBC90066007D /* backends_dump.c */,
+				4FE70C5F2486BBD50066007D /* backends_parse.h */,
+				4FE70C602486BBD50066007D /* backends_parse.c */,
 				4F08256224859E110068FC22 /* pump_dump.h */,
 				4F08256324859E110068FC22 /* pump_dump.c */,
 				4F082559248589B40068FC22 /* pump_parse.h */,
@@ -466,11 +476,13 @@
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,
 				4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */,
 				4F08255B248589B40068FC22 /* pump_parse.c in Sources */,
+				4FE70C612486BBD50066007D /* backends_parse.c in Sources */,
 				4F08256424859E110068FC22 /* pump_dump.c in Sources */,
 				4FE70C3424864A4E0066007D /* models_dump.c in Sources */,
 				4FE70C4924865E330066007D /* dhwt_dump.c in Sources */,
 				4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */,
 				4FE70C52248663B30066007D /* hcircuit_parse.c in Sources */,
+				4FE70C5E2486BBC90066007D /* backends_dump.c in Sources */,
 				4FE70C3D248658540066007D /* boiler_dump.c in Sources */,
 				4F869E99233A5EF300541A07 /* log_statsd.c in Sources */,
 				4FE70C4C24865E3B0066007D /* dhwt_parse.c in Sources */,
