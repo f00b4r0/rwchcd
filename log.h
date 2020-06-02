@@ -90,6 +90,7 @@ struct s_log_bendcbs {
 struct s_log {
 	struct {
 		bool configured;			///< true if properly configured (backends are online)
+		bool enabled;				///< true if data logging should be enabled
 		struct s_log_bendcbs sync_bkend;	///< logging backend for synchronous (periodic) logs. Config expects a user string for backend name.
 		struct s_log_bendcbs async_bkend;	///< logging backend for asynchronous logs. Config expects a user string for backend name.
 	} set;

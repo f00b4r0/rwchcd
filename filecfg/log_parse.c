@@ -1,5 +1,5 @@
 //
-//  log_filecfg.c
+//  filecfg/log_parse.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE
@@ -8,15 +8,15 @@
 
 /**
  * @file
- * Log subsystem file configuration.
+ * Log subsystem file configuration parsing.
  */
 
 #include <string.h>	// strcmp
 
-#include "log_filecfg.h"
+#include "log_parse.h"
 #include "log.h"
-#include "filecfg.h"
 #include "filecfg_parser.h"
+#include "rwchcd.h"
 
 #include "log_file.h"
 #ifdef HAS_RRD
@@ -44,6 +44,7 @@ static struct {
 /*
  logging {
 	 config {
+		 enabled true;
 		 sync_bkend "statsd";
 		 async_bkend "file";
 	 };
@@ -59,11 +60,12 @@ static struct {
 static int log_config_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "sync_bkend", true, NULL, NULL, },		// 0
-		{ NODESTR, "async_bkend", true, NULL, NULL, },		// 1
+		{ NODEBOL, "enabled", true, NULL, NULL, },		// 0
+		{ NODESTR, "sync_bkend", true, NULL, NULL, },		// 1
+		{ NODESTR, "async_bkend", true, NULL, NULL, },		// 2
 	};
 	const struct s_filecfg_parser_node * currnode;
-	struct s_log_bendcbs * restrict lbkend;
+	struct s_log_bendcbs * restrict lbkend = NULL;
 	unsigned int i, j;
 	int ret;
 
@@ -75,13 +77,16 @@ static int log_config_parse(void * restrict const priv __attribute__((unused)), 
 		currnode = parsers[j].node;
 		switch (j) {
 			case 0:
-				lbkend = &Log.set.sync_bkend;
+				Log.set.enabled = currnode->value.boolval;
+				continue;	// skip the rest of the loop
 				break;
 			case 1:
+				lbkend = &Log.set.sync_bkend;
+				break;
+			case 2:
 				lbkend = &Log.set.async_bkend;
 				break;
 			default:
-				lbkend = NULL;
 				break;	// can ever happen
 		}
 
@@ -103,28 +108,6 @@ static int log_config_parse(void * restrict const priv __attribute__((unused)), 
 invaliddata:
 	filecfg_parser_report_invaliddata(currnode);
 	return (ret);
-}
-
-static const char * log_config_dump_bkend_name(const struct s_log_bendcbs * restrict const lbkend)
-{
-	switch (lbkend->bkid) {
-		case LOG_BKEND_FILE:
-			return (LOG_BKEND_FILE_NAME);
-#ifdef HAS_RRD
-		case LOG_BKEND_RRD:
-			return (LOG_BKEND_RRD_NAME);
-#endif
-		case LOG_BKEND_STATSD:
-			return (LOG_BKEND_STATSD_NAME);
-		default:
-			return ("unknown");
-	}
-}
-
-static void log_config_dump(void)
-{
-	filecfg_iprintf("sync_bkend \"%s\";\n", log_config_dump_bkend_name(&Log.set.sync_bkend));
-	filecfg_iprintf("async_bkend \"%s\";\n", log_config_dump_bkend_name(&Log.set.async_bkend));
 }
 
 static int log_backend_conf_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -158,11 +141,11 @@ static int log_backends_conf_parse(void * restrict const priv, const struct s_fi
  * @param node a `logging` node
  * @return exec status
  */
-int log_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_log_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST, "config", true, log_config_parse, NULL, },			// 0
-		{ NODELST, "backends_conf", false, log_backends_conf_parse, NULL, },
+		{ NODELST,	"config",		true,	log_config_parse,		NULL, },
+		{ NODELST,	"backends_conf",	false,	log_backends_conf_parse,	NULL, },
 	};
 	int ret;
 
@@ -170,15 +153,17 @@ int log_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	ret = filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers));
-	return (ret);
+	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
 }
 
+// XXX currently must live in this file
+#include "filecfg.h"
+void log_config_dump(void);
 /**
- * Dump the logging subsystem to config file.
- * @return exec status
- */
-int log_filecfg_dump(void)
+* Dump the logging subsystem to config file.
+* @return exec status
+*/
+int filecfg_log_dump(void)
 {
 	unsigned int i;
 
@@ -225,4 +210,3 @@ empty:
 
 	return (ALL_OK);
 }
-

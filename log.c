@@ -89,7 +89,7 @@ struct s_log Log;
 static int _log_dump(const bool async, const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
-	const bool logging = runtime_get()->config->logging;
+	const bool logging = Log.set.enabled;
 	const char sep = async ? Log.set.async_bkend.separator : Log.set.sync_bkend.separator;
 	const bool unversioned = async ? Log.set.async_bkend.unversioned : Log.set.sync_bkend.unversioned;
 	log_version_t lversion = 0;

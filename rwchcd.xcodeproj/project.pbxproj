@@ -10,7 +10,7 @@
 		4F08254F248429910068FC22 /* scheduler_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08254E248429910068FC22 /* scheduler_parse.c */; };
 		4F0825522484383B0068FC22 /* models_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0825512484383B0068FC22 /* models_parse.c */; };
 		4F08255524844AF20068FC22 /* storage_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255424844AF20068FC22 /* storage_parse.c */; };
-		4F08255824844CD40068FC22 /* log_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255724844CD40068FC22 /* log_filecfg.c */; };
+		4F08255824844CD40068FC22 /* log_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255724844CD40068FC22 /* log_parse.c */; };
 		4F08255B248589B40068FC22 /* pump_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255A248589B40068FC22 /* pump_parse.c */; };
 		4F08255E248597620068FC22 /* valve_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255D248597620068FC22 /* valve_parse.c */; };
 		4F08256424859E110068FC22 /* pump_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08256324859E110068FC22 /* pump_dump.c */; };
@@ -59,6 +59,7 @@
 		4FE70C4C24865E3B0066007D /* dhwt_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C4B24865E3B0066007D /* dhwt_parse.c */; };
 		4FE70C4F248663AA0066007D /* hcircuit_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C4E248663AA0066007D /* hcircuit_dump.c */; };
 		4FE70C52248663B30066007D /* hcircuit_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C51248663B30066007D /* hcircuit_parse.c */; };
+		4FE70C552486A0020066007D /* log_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C542486A0020066007D /* log_dump.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -80,8 +81,8 @@
 		4F0825512484383B0068FC22 /* models_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = models_parse.c; path = filecfg/models_parse.c; sourceTree = SOURCE_ROOT; };
 		4F08255324844AF20068FC22 /* storage_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = storage_parse.h; path = filecfg/storage_parse.h; sourceTree = SOURCE_ROOT; };
 		4F08255424844AF20068FC22 /* storage_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = storage_parse.c; path = filecfg/storage_parse.c; sourceTree = SOURCE_ROOT; };
-		4F08255624844CD40068FC22 /* log_filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_filecfg.h; sourceTree = SOURCE_ROOT; };
-		4F08255724844CD40068FC22 /* log_filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_filecfg.c; sourceTree = SOURCE_ROOT; };
+		4F08255624844CD40068FC22 /* log_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = log_parse.h; path = filecfg/log_parse.h; sourceTree = SOURCE_ROOT; };
+		4F08255724844CD40068FC22 /* log_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = log_parse.c; path = filecfg/log_parse.c; sourceTree = SOURCE_ROOT; };
 		4F082559248589B40068FC22 /* pump_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = pump_parse.h; path = filecfg/pump_parse.h; sourceTree = SOURCE_ROOT; };
 		4F08255A248589B40068FC22 /* pump_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = pump_parse.c; path = filecfg/pump_parse.c; sourceTree = SOURCE_ROOT; };
 		4F08255C248597620068FC22 /* valve_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = valve_parse.h; path = filecfg/valve_parse.h; sourceTree = SOURCE_ROOT; };
@@ -187,6 +188,8 @@
 		4FE70C4E248663AA0066007D /* hcircuit_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hcircuit_dump.c; sourceTree = "<group>"; };
 		4FE70C50248663B30066007D /* hcircuit_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hcircuit_parse.h; sourceTree = "<group>"; };
 		4FE70C51248663B30066007D /* hcircuit_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hcircuit_parse.c; sourceTree = "<group>"; };
+		4FE70C532486A0020066007D /* log_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_dump.h; sourceTree = "<group>"; };
+		4FE70C542486A0020066007D /* log_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_dump.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -239,6 +242,10 @@
 				4FE70C39248651360066007D /* storage_dump.c */,
 				4F08255324844AF20068FC22 /* storage_parse.h */,
 				4F08255424844AF20068FC22 /* storage_parse.c */,
+				4FE70C532486A0020066007D /* log_dump.h */,
+				4FE70C542486A0020066007D /* log_dump.c */,
+				4F08255624844CD40068FC22 /* log_parse.h */,
+				4F08255724844CD40068FC22 /* log_parse.c */,
 			);
 			path = filecfg;
 			sourceTree = SOURCE_ROOT;
@@ -327,8 +334,6 @@
 				4FC1847A1DA6809E000E514B /* storage.h */,
 				4F299C9021AABD2C009DCBC2 /* log.c */,
 				4F299C9121AABD2C009DCBC2 /* log.h */,
-				4F08255724844CD40068FC22 /* log_filecfg.c */,
-				4F08255624844CD40068FC22 /* log_filecfg.h */,
 				4F299C8D218E4E2E009DCBC2 /* log_file.c */,
 				4F299C8E218E4E2E009DCBC2 /* log_file.h */,
 				4F299C8A218E1DBE009DCBC2 /* log_rrd.c */,
@@ -441,10 +446,11 @@
 				4FE70C43248659E90066007D /* heatsource_dump.c in Sources */,
 				4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */,
 				4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */,
-				4F08255824844CD40068FC22 /* log_filecfg.c in Sources */,
+				4F08255824844CD40068FC22 /* log_parse.c in Sources */,
 				4FC1847B1DA6809E000E514B /* storage.c in Sources */,
 				4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */,
 				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,
+				4FE70C552486A0020066007D /* log_dump.c in Sources */,
 				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
 				4F08256724859F9D0068FC22 /* valve_dump.c in Sources */,
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,

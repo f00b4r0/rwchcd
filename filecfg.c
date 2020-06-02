@@ -35,7 +35,7 @@
 #include "filecfg/scheduler_dump.h"
 #include "filecfg/models_dump.h"
 #include "filecfg/storage_dump.h"
-#include "log_filecfg.h"
+#include "filecfg/log_dump.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
@@ -375,7 +375,7 @@ int filecfg_dump(void)
 	filecfg_storage_dump();
 
 	// dump logging
-	log_filecfg_dump();
+	filecfg_log_dump();
 
 	// dump scheduler
 	filecfg_scheduler_dump();
