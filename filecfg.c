@@ -245,26 +245,13 @@ static int filecfg_config_dump(const struct s_config * restrict const config)
 	filecfg_iprintf("defconfig {\n");
 	filecfg_ilevel_inc();
 
-	if (FCD_Exhaustive || config->summer_maintenance)
-		filecfg_iprintf("summer_maintenance %s;\n", filecfg_bool_str(config->summer_maintenance));
-	if (FCD_Exhaustive || config->logging)
-		filecfg_iprintf("logging %s;\n", filecfg_bool_str(config->logging));
 	if (FCD_Exhaustive || config->limit_tsummer)
 		filecfg_iprintf("limit_tsummer %.1f;\n", temp_to_celsius(config->limit_tsummer));
 	if (FCD_Exhaustive || config->limit_tfrost)
 		filecfg_iprintf("limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
-	if (FCD_Exhaustive || config->sleeping_delay)
-		filecfg_iprintf("sleeping_delay %ld;\n", timekeep_tk_to_sec(config->sleeping_delay));
-	if (FCD_Exhaustive || config->summer_run_interval)
-		filecfg_iprintf("summer_run_interval %ld;\n", timekeep_tk_to_sec(config->summer_run_interval));
-	if (FCD_Exhaustive || config->summer_run_duration)
-		filecfg_iprintf("summer_run_duration %ld;\n", timekeep_tk_to_sec(config->summer_run_duration));
 	filecfg_iprintf("startup_sysmode \"%s\";\n", filecfg_sysmode_str(config->startup_sysmode));	// mandatory
 	filecfg_iprintf("startup_runmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
 	filecfg_iprintf("startup_dhwmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
-
-	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&config->def_hcircuit);
-	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&config->def_dhwt);
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -283,11 +270,26 @@ static int filecfg_plant_dump(const struct s_plant * restrict const plant)
 	if (!plant)
 		return (-EINVALID);
 
-	if (!plant->configured)
+	if (!plant->set.configured)
 		return (-ENOTCONFIGURED);
 
 	filecfg_iprintf("plant {\n");
 	filecfg_ilevel_inc();
+
+	filecfg_iprintf("config {\n");
+	filecfg_ilevel_inc();
+	if (FCD_Exhaustive || plant->set.summer_maintenance)
+		filecfg_iprintf("summer_maintenance %s;\n", filecfg_bool_str(plant->set.summer_maintenance));
+	if (FCD_Exhaustive || plant->set.sleeping_delay)
+		filecfg_iprintf("sleeping_delay %ld;\n", timekeep_tk_to_sec(plant->set.sleeping_delay));
+	if (FCD_Exhaustive || plant->set.summer_run_interval)
+		filecfg_iprintf("summer_run_interval %ld;\n", timekeep_tk_to_sec(plant->set.summer_run_interval));
+	if (FCD_Exhaustive || plant->set.summer_run_duration)
+		filecfg_iprintf("summer_run_duration %ld;\n", timekeep_tk_to_sec(plant->set.summer_run_duration));
+	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&plant->set.def_hcircuit);
+	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&plant->set.def_dhwt);
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");		// config
 
 	if (FCD_Exhaustive || plant->pump_head) {
 		filecfg_iprintf("pumps {\n");

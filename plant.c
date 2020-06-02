@@ -29,8 +29,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include "config.h"
-#include "runtime.h"	// for runtime_get()->config
 #include "lib.h"
 #include "pump.h"
 #include "valve.h"
@@ -616,7 +614,7 @@ int plant_online(struct s_plant * restrict const plant)
 	if (!plant)
 		return (-EINVALID);
 
-	if (!plant->configured)
+	if (!plant->set.configured)
 		return (-ENOTCONFIGURED);
 
 	//plant_restore(plant);
@@ -715,7 +713,7 @@ int plant_offline(struct s_plant * restrict const plant)
 	if (!plant)
 		return (-EINVALID);
 	
-	if (!plant->configured)
+	if (!plant->set.configured)
 		return (-ENOTCONFIGURED);
 
 	//plant_save(plant);
@@ -881,7 +879,6 @@ msgset:
 static void plant_collect_hrequests(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
-	const struct s_config * restrict const config = runtime_get()->config;
 	const struct s_heating_circuit_l * restrict circuitl;
 	const struct s_dhw_tank_l * restrict dhwtl;
 	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
@@ -889,7 +886,6 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 
 	assert(plant);
 	assert(plant->run.online);
-	assert(config);
 
 	// for consummers in runtime scheme, collect heat requests and max them
 	// circuits first
@@ -904,8 +900,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	}
 
 	// check if last request exceeds timeout, or if last_creqtime is unset (happens at startup)
-	if (!plant->run.last_creqtime || ((now - plant->run.last_creqtime) > config->sleeping_delay))
-		plant->pdata.plant_could_sleep = true;
+	if (!plant->run.last_creqtime || ((now - plant->run.last_creqtime) > plant->set.sleeping_delay))
 	else
 		plant->pdata.plant_could_sleep = false;
 
@@ -1032,17 +1027,15 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
-	const struct s_config * restrict const config = runtime_get()->config;
 	struct s_pump_l * pumpl;
 	struct s_valve_l * valvel;
 	int ret;
 
 	assert(plant);
 	assert(plant->run.online);
-	assert(config);
 
 	// coherent config is ensured during config parsing
-	assert(config->summer_run_interval && config->summer_run_duration);
+	assert(plant->set.summer_run_interval && plant->set.summer_run_duration);
 
 	// don't do anything if summer AND plant asleep aren't in effect
 	if (!(plant_summer_ok(plant) && plant->pdata.plant_could_sleep)) {
@@ -1051,13 +1044,13 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	}
 
 	// stop running when duration is exceeded (this also prevents running when summer is first triggered)
-	if ((now - plant->run.summer_timer) >= (config->summer_run_interval + config->summer_run_duration)) {
+	if ((now - plant->run.summer_timer) >= (plant->set.summer_run_interval + plant->set.summer_run_duration)) {
 		pr_log(_("Summer maintenance completed"));
 		plant->run.summer_timer = now;
 	}
 
 	// don't run too often
-	if ((now - plant->run.summer_timer) < config->summer_run_interval)
+	if ((now - plant->run.summer_timer) < plant->set.summer_run_interval)
 		return (ALL_OK);
 
 	dbgmsg(1, 1, "summer maintenance active");
@@ -1104,7 +1097,6 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
  */
 int plant_run(struct s_plant * restrict const plant)
 {
-	const struct s_config * restrict const config = runtime_get()->config;
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
@@ -1112,8 +1104,6 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_pump_l * pumpl;
 	bool overtemp = false, suberror = false;
 	timekeep_t stop_delay = 0;
-
-	assert(config);
 
 	if (unlikely(!plant))
 		return (-EINVALID);
@@ -1212,7 +1202,7 @@ int plant_run(struct s_plant * restrict const plant)
 	if (overtemp)
 		plant->pdata.plant_could_sleep = false;	// disable during overtemp
 
-	if (config->summer_maintenance)
+	if (plant->set.summer_maintenance)
 		plant_summer_maintenance(plant);
 
 	// run the valves
