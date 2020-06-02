@@ -1,5 +1,5 @@
 //
-//  storage_filecfg.c
+//  filecfg/storage_parse.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE
@@ -8,16 +8,15 @@
 
 /**
  * @file
- * Storage subsystem file configuration.
+ * Storage subsystem file configuration parsing.
  */
 
-#include <string.h>	// strlen
+#include <string.h>	// strdup
 
-#include "storage_filecfg.h"
+#include "storage_parse.h"
 #include "filecfg_parser.h"
 #include "filecfg.h"
 
-extern bool Storage_configured;
 extern const char * Storage_path;
 
 /**
@@ -26,7 +25,7 @@ extern const char * Storage_path;
  * a string pointing to the @b absolute storage location.
  * @return exec status.
  */
-int storage_filecfg_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
+int filecfg_storage_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR, "path", true, NULL, NULL, },		// 0
@@ -63,23 +62,4 @@ int storage_filecfg_parse(void * restrict const priv __attribute__((unused)), co
 invaliddata:
 	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
-}
-
-/**
- * Dump the storage configuration to file.
- * @return exec status
- * @warning not thread safe
- */
-int storage_filecfg_dump(void)
-{
-	if (!Storage_path || !Storage_configured)
-		return (-EINVALID);
-
-	filecfg_iprintf("storage {\n");
-	filecfg_ilevel_inc();
-	filecfg_iprintf("path \"%s\";\n", Storage_path);
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
 }

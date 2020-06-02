@@ -70,7 +70,7 @@
 
 #include "filecfg/models_parse.h"
 #include "filecfg/scheduler_parse.h"
-#include "storage_filecfg.h"
+#include "filecfg/storage_parse.h"
 #include "log_filecfg.h"
 
 #include "runtime.h"
@@ -1220,7 +1220,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 		{ NODELST,	"defconfig",	false,	defconfig_parse,	NULL, },
 		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },
 		{ NODELST,	"plant",	true,	plant_parse,		NULL, },
-		{ NODELST,	"storage",	false,	storage_filecfg_parse,	NULL, },
+		{ NODELST,	"storage",	false,	filecfg_storage_parse,	NULL, },
 		{ NODELST,	"logging",	false,	log_filecfg_parse,	NULL, },
 	};
 	struct s_runtime * const runtime = runtime_get();
