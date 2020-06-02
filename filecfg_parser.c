@@ -50,24 +50,13 @@
 #include "hw_backends.h"
 #include "config.h"
 #include "lib.h"
-#include "timekeep.h"
 #include "filecfg_parser.h"
 
 #ifdef HAS_HWP1		// XXX
  #include "hw_backends/hw_p1/hw_p1_filecfg.h"
 #endif
 
-#include "models.h"
-
-#include "plant.h"
-#include "filecfg/pump_parse.h"
-#include "filecfg/valve_parse.h"
-#include "filecfg/dhwt_parse.h"
-#include "filecfg/hcircuit_parse.h"
-#include "filecfg/heatsource_parse.h"
-
-#include "scheduler.h"
-
+#include "filecfg/plant_parse.h"
 #include "filecfg/models_parse.h"
 #include "filecfg/scheduler_parse.h"
 #include "filecfg/storage_parse.h"
@@ -408,68 +397,6 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	return (ret);
 }
 
-FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_plant, summer_maintenance)
-FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_plant, sleeping_delay)
-FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_plant, summer_run_interval)
-FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_plant, summer_run_duration)
-
-static int defconfig_def_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_plant * restrict const plant = priv;
-	return (filecfg_hcircuit_params_parse(&plant->set.def_hcircuit, node));
-}
-
-static int defconfig_def_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_plant * restrict const plant = priv;
-	return (filecfg_dhwt_params_parse(&plant->set.def_dhwt, node));
-}
-
-static int plant_config_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL,		"summer_maintenance",	false,	fcp_bool_s_plant_summer_maintenance,	NULL, },
-		{ NODEINT|NODEDUR,	"sleeping_delay",	false,	fcp_tk_s_plant_sleeping_delay,		NULL, },
-		{ NODEINT|NODEDUR,	"summer_run_interval",	false,	fcp_tk_s_plant_summer_run_interval,	NULL, },
-		{ NODEINT|NODEDUR,	"summer_run_duration",	false,	fcp_tk_s_plant_summer_run_duration,	NULL, },
-		{ NODELST,		"def_hcircuit",		false,	defconfig_def_hcircuit_parse,		NULL, },
-		{ NODELST,		"def_dhwt",		false,	defconfig_def_dhwt_parse,		NULL, },
-	};
-	struct s_plant * const plant = priv;
-	int ret;
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);	// break if invalid config
-
-	ret = filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	// consistency checks post matching
-
-	if (plant->set.summer_maintenance) {
-		if (plant->set.summer_run_interval || plant->set.summer_run_duration) {
-			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: summer_maintenance is set but summer_run_interval and/or summer_run_duration are not set"), node->name, node->lineno);
-			return (-EINVALID);
-
-		}
-	}
-
-	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
-	return (ALL_OK);
-}
-
-static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "pump", filecfg_pump_parse));
-}
-
-static int valves_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "valve", filecfg_valve_parse));
-}
-
 int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	const struct {
@@ -508,55 +435,6 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 	return (ALL_OK);
 }
 
-
-static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "dhwt", filecfg_dhwt_parse));
-}
-
-static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "hcircuit", hcircuit_parse));
-}
-
-
-static int heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "heatsource", filecfg_heatsource_parse));
-}
-
-static int plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST,	"config",	false,	plant_config_parse,	NULL, },
-		{ NODELST,	"pumps",	false,	pumps_parse,		NULL, },
-		{ NODELST,	"valves",	false,	valves_parse,		NULL, },
-		{ NODELST,	"dhwts",	false,	dhwts_parse,		NULL, },
-		{ NODELST,	"hcircuits",	false,	hcircuits_parse,	NULL, },
-		{ NODELST,	"heatsources",	false,	heatsources_parse,	NULL, },
-	};
-	struct s_runtime * const runtime = priv;
-	struct s_plant * plant;
-	int ret;
-
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	// create a new plant
-	plant = plant_new();
-	if (!plant)
-		return (-EOOM);
-
-	ret = filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	plant->set.configured = true;
-	runtime->plant = plant;
-
-	return (ret);
-}
 
 static int hardware_backends_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -697,7 +575,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 		{ NODELST,	"scheduler",	false,	filecfg_scheduler_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST,	"defconfig",	false,	defconfig_parse,	NULL, },
 		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },
-		{ NODELST,	"plant",	true,	plant_parse,		NULL, },
+		{ NODELST,	"plant",	true,	filecfg_plant_parse,	NULL, },
 		{ NODELST,	"storage",	false,	filecfg_storage_parse,	NULL, },
 		{ NODELST,	"logging",	false,	filecfg_log_parse,	NULL, },
 	};

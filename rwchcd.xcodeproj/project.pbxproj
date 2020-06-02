@@ -60,6 +60,8 @@
 		4FE70C4F248663AA0066007D /* hcircuit_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C4E248663AA0066007D /* hcircuit_dump.c */; };
 		4FE70C52248663B30066007D /* hcircuit_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C51248663B30066007D /* hcircuit_parse.c */; };
 		4FE70C552486A0020066007D /* log_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C542486A0020066007D /* log_dump.c */; };
+		4FE70C582486AA810066007D /* plant_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C572486AA810066007D /* plant_dump.c */; };
+		4FE70C5B2486AA8E0066007D /* plant_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C5A2486AA8E0066007D /* plant_parse.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -190,6 +192,10 @@
 		4FE70C51248663B30066007D /* hcircuit_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hcircuit_parse.c; sourceTree = "<group>"; };
 		4FE70C532486A0020066007D /* log_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_dump.h; sourceTree = "<group>"; };
 		4FE70C542486A0020066007D /* log_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_dump.c; sourceTree = "<group>"; };
+		4FE70C562486AA810066007D /* plant_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = plant_dump.h; sourceTree = "<group>"; };
+		4FE70C572486AA810066007D /* plant_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = plant_dump.c; sourceTree = "<group>"; };
+		4FE70C592486AA8E0066007D /* plant_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = plant_parse.h; sourceTree = "<group>"; };
+		4FE70C5A2486AA8E0066007D /* plant_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = plant_parse.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -230,6 +236,10 @@
 				4FE70C4E248663AA0066007D /* hcircuit_dump.c */,
 				4FE70C50248663B30066007D /* hcircuit_parse.h */,
 				4FE70C51248663B30066007D /* hcircuit_parse.c */,
+				4FE70C562486AA810066007D /* plant_dump.h */,
+				4FE70C572486AA810066007D /* plant_dump.c */,
+				4FE70C592486AA8E0066007D /* plant_parse.h */,
+				4FE70C5A2486AA8E0066007D /* plant_parse.c */,
 				4FE70C3224864A4E0066007D /* models_dump.h */,
 				4FE70C3324864A4E0066007D /* models_dump.c */,
 				4F0825502484383B0068FC22 /* models_parse.h */,
@@ -466,6 +476,7 @@
 				4FE70C4C24865E3B0066007D /* dhwt_parse.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
 				4FE70C402486585E0066007D /* boiler_parse.c in Sources */,
+				4FE70C582486AA810066007D /* plant_dump.c in Sources */,
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,
@@ -492,6 +503,7 @@
 				4F08254F248429910068FC22 /* scheduler_parse.c in Sources */,
 				4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */,
 				4F99FD2A208BBE0000DDAB75 /* hw_p1_setup.c in Sources */,
+				4FE70C5B2486AA8E0066007D /* plant_parse.c in Sources */,
 				4F08255E248597620068FC22 /* valve_parse.c in Sources */,
 				4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */,
 			);

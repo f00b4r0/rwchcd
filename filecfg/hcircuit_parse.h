@@ -17,6 +17,6 @@
 #include "filecfg_parser.h"
 
 int filecfg_hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
-int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
 #endif /* hcircuit_parse_h */

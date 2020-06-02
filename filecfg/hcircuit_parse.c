@@ -157,7 +157,7 @@ static int fcp_hcircuit_ambient_factor(void * restrict const priv, const struct 
 	return (ALL_OK);
 }
 
-int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL,		"fast_cooldown",	false,	fcp_bool_s_hcircuit_fast_cooldown,	NULL, },
