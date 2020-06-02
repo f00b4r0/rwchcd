@@ -901,8 +901,9 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 
 	// check if last request exceeds timeout, or if last_creqtime is unset (happens at startup)
 	if (!plant->run.last_creqtime || ((now - plant->run.last_creqtime) > plant->set.sleeping_delay))
+		plant->pdata.run.plant_could_sleep = true;
 	else
-		plant->pdata.plant_could_sleep = false;
+		plant->pdata.run.plant_could_sleep = false;
 
 	/// XXX @todo should update PCS if any DHWT is active and cannot do electric?
 
@@ -936,14 +937,14 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 			}
 
 			// make sure that plant-wide DHWT priority is always set to the current highest bidder
-			if (dhwtl->dhwt->set.prio < plant->pdata.dhwt_currprio)
-				plant->pdata.dhwt_currprio = dhwtl->dhwt->set.prio;
+			if (dhwtl->dhwt->set.prio < plant->pdata.run.dhwt_currprio)
+				plant->pdata.run.dhwt_currprio = dhwtl->dhwt->set.prio;
 		}
 	}
 
 	// if no heatsource-based DHWT charge is in progress, increase prio threshold (up to max)
-	if (!dhwt_charge && (plant->pdata.dhwt_currprio < plant->run.dhwt_maxprio))
-		plant->pdata.dhwt_currprio++;
+	if (!dhwt_charge && (plant->pdata.run.dhwt_currprio < plant->run.dhwt_maxprio))
+		plant->pdata.run.dhwt_currprio++;
 
 	/*
 	 if dhwt_absolute => circuits don't receive heat
@@ -957,8 +958,8 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	// select effective heat request
 	plant->run.plant_hrequest = dhwt_reqdhw ? temp_req_dhw : temp_request;
 
-	plant->pdata.dhwc_absolute = dhwt_absolute;
-	plant->pdata.dhwc_sliding = dhwt_sliding;
+	plant->pdata.run.dhwc_absolute = dhwt_absolute;
+	plant->pdata.run.dhwc_sliding = dhwt_sliding;
 }
 
 /**
@@ -1038,7 +1039,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	assert(plant->set.summer_run_interval && plant->set.summer_run_duration);
 
 	// don't do anything if summer AND plant asleep aren't in effect
-	if (!(plant_summer_ok(plant) && plant->pdata.plant_could_sleep)) {
+	if (!(plant_summer_ok(plant) && plant->pdata.run.plant_could_sleep)) {
 		plant->run.summer_timer = now;
 		return (ALL_OK);
 	}
@@ -1173,7 +1174,7 @@ int plant_run(struct s_plant * restrict const plant)
 
 			// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
 			assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment for consummer_shift
-			plant->pdata.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
+			plant->pdata.run.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
 		}
 		// always update overtemp (which can be triggered with -ESAFETY)
 		overtemp = heatsourcel->heats->run.overtemp ? heatsourcel->heats->run.overtemp : overtemp;
@@ -1197,10 +1198,10 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 
 	// reflect global stop delay and overtemp
-	plant->pdata.consumer_sdelay = stop_delay;
-	plant->pdata.hs_overtemp = overtemp;
+	plant->pdata.run.consumer_sdelay = stop_delay;
+	plant->pdata.run.hs_overtemp = overtemp;
 	if (overtemp)
-		plant->pdata.plant_could_sleep = false;	// disable during overtemp
+		plant->pdata.run.plant_could_sleep = false;	// disable during overtemp
 
 	if (plant->set.summer_maintenance)
 		plant_summer_maintenance(plant);

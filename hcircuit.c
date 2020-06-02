@@ -38,7 +38,6 @@
 #include "hardware.h"
 #include "lib.h"
 #include "runtime.h"
-#include "config.h"
 #include "log.h"
 #include "scheduler.h"
 #include "storage.h"
@@ -283,11 +282,10 @@ struct s_hcircuit * hcircuit_new(void)
  */
 int hcircuit_online(struct s_hcircuit * const circuit)
 {
-	const struct s_config * restrict const config = runtime_get()->config;
 	temp_t temp;
 	int ret;
 
-	assert(config);
+	assert(circuit->pdata);
 
 	if (!circuit)
 		return (-EINVALID);
@@ -304,7 +302,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		goto out;
 
 	// limit_wtmax must be > 0C
-	temp = SETorDEF(circuit->set.params.limit_wtmax, config->def_hcircuit.limit_wtmax);
+	temp = SETorDEF(circuit->set.params.limit_wtmax, circuit->pdata->set.def_hcircuit.limit_wtmax);
 	if (temp <= celsius_to_temp(0)) {
 		pr_err(_("\"%s\": limit_wtmax must be locally or globally > 0°C"), circuit->name);
 		ret = -EMISCONFIGURED;
@@ -423,12 +421,11 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
  */
 static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 {
-	const struct s_config * restrict const config = runtime_get()->config;
 	const struct s_bmodel * restrict const bmodel = circuit->set.p.bmodel;
 	temp_t temp_trigger;
 
 	// input sanitization performed in logic_hcircuit()
-	assert(config);
+	assert(circuit->pdata);
 	assert(bmodel);
 
 	// check for summer switch off first
@@ -439,14 +436,14 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 
 	switch (circuit->run.runmode) {
 		case RM_COMFORT:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, config->def_hcircuit.outhoff_comfort);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, circuit->pdata->set.def_hcircuit.outhoff_comfort);
 			break;
 		case RM_ECO:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_eco, config->def_hcircuit.outhoff_eco);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_eco, circuit->pdata->set.def_hcircuit.outhoff_eco);
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			temp_trigger = SETorDEF(circuit->set.params.outhoff_frostfree, config->def_hcircuit.outhoff_frostfree);
+			temp_trigger = SETorDEF(circuit->set.params.outhoff_frostfree, circuit->pdata->set.def_hcircuit.outhoff_frostfree);
 			break;
 		case RM_OFF:
 		case RM_AUTO:
@@ -469,7 +466,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 		circuit->run.outhoff = true;
 	}
 	else {
-		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, config->def_hcircuit.outhoff_hysteresis);
+		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, circuit->pdata->set.def_hcircuit.outhoff_hysteresis);
 		if ((bmodel->run.t_out < temp_trigger) &&
 		    (bmodel->run.t_out_mix < temp_trigger))
 			circuit->run.outhoff = false;
@@ -529,7 +526,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		circuit->run.runmode = circuit->set.runmode;
 
 	// if an absolute priority DHW charge is in progress, switch to dhw-only (will register the transition)
-	if (circuit->pdata->dhwc_absolute)
+	if (circuit->pdata->run.dhwc_absolute)
 		circuit->run.runmode = RM_DHWONLY;
 
 	// depending on circuit run mode, assess circuit target temp
@@ -538,14 +535,14 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		case RM_TEST:
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
-			request_temp = SETorDEF(circuit->set.params.t_comfort, runtime->config->def_hcircuit.t_comfort);
+			request_temp = SETorDEF(circuit->set.params.t_comfort, circuit->pdata->set.def_hcircuit.t_comfort);
 			break;
 		case RM_ECO:
-			request_temp = SETorDEF(circuit->set.params.t_eco, runtime->config->def_hcircuit.t_eco);
+			request_temp = SETorDEF(circuit->set.params.t_eco, circuit->pdata->set.def_hcircuit.t_eco);
 			break;
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			request_temp = SETorDEF(circuit->set.params.t_frostfree, runtime->config->def_hcircuit.t_frostfree);
+			request_temp = SETorDEF(circuit->set.params.t_frostfree, circuit->pdata->set.def_hcircuit.t_frostfree);
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
@@ -572,17 +569,17 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	// handle extra logic
 	// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
-	if ((TRANS_DOWN == circuit->run.transition) && circuit->pdata->consumer_sdelay && !circuit->pdata->dhwc_absolute)
+	if ((TRANS_DOWN == circuit->run.transition) && circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute)
 		circuit->run.floor_output = true;
 
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
-	if (!circuit->pdata->consumer_sdelay)
+	if (!circuit->pdata->run.consumer_sdelay)
 		circuit->run.floor_output = false;
 
 	// XXX OPTIM if return temp is known
 
 	// apply offset and save calculated target ambient temp to circuit
-	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, runtime->config->def_hcircuit.t_offset);
+	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
 
 	// Ambient temperature is either read or modelled
 	if (hardware_sensor_clone_temp(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
@@ -722,12 +719,9 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
-	const struct s_config * restrict const config = runtime_get()->config;
 	const timekeep_t now = timekeep_now();
 	temp_t water_temp, curr_temp, ret_temp, lwtmin, lwtmax, temp;
 	int ret;
-
-	assert(config);
 
 	if (unlikely(!circuit))
 		return (-EINVALID);
@@ -750,16 +744,16 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		return (ret);
 
 	// force circuit ON during hs_overtemp condition
-	if (unlikely(circuit->pdata->hs_overtemp))
+	if (unlikely(circuit->pdata->run.hs_overtemp))
 		circuit->run.runmode = RM_COMFORT;
 
 	// handle special runmode cases
 	switch (circuit->run.runmode) {
 		case RM_OFF:
-			if (circuit->run.target_wtemp && (circuit->pdata->consumer_sdelay > 0)) {
+			if (circuit->run.target_wtemp && (circuit->pdata->run.consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->consumer_sdelay));
+				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->run.consumer_sdelay));
 				return (ALL_OK);	// stop processing: maintain current output
 			}
 			else
@@ -801,8 +795,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 	// fetch limits
-	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, config->def_hcircuit.limit_wtmin);
-	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, config->def_hcircuit.limit_wtmax);
+	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, circuit->pdata->set.def_hcircuit.limit_wtmin);
+	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, circuit->pdata->set.def_hcircuit.limit_wtmax);
 
 	// calculate water pipe temp
 	switch (circuit->set.tlaw) {
@@ -826,7 +820,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	circuit->run.target_wtemp = water_temp;
 
 	// heat request is always computed based on non-interfered water_temp value
-	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, config->def_hcircuit.temp_inoffset);
+	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, circuit->pdata->set.def_hcircuit.temp_inoffset);
 
 	// alterations to the computed value only make sense if a mixing valve is available
 	if (circuit->set.p.valve_mix) {
@@ -846,7 +840,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				if (curr_temp < circuit->run.rorh_last_target)
 					circuit->run.rorh_last_target = curr_temp;
 				// if the heat source has not yet reached optimal output, wait before resuming normal algorithm operation
-				if (circuit->pdata->consumer_shift < 0)
+				if (circuit->pdata->run.consumer_shift < 0)
 					circuit->run.rorh_update_time = now + timekeep_sec_to_tk(30);
 			}
 			// startup is done.
@@ -873,18 +867,18 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			water_temp = (water_temp > curr_temp) ? water_temp : curr_temp;
 
 		// interference: apply global power shift
-		if (circuit->pdata->consumer_shift) {
+		if (circuit->pdata->run.consumer_shift) {
 			ret = hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
 			// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
 			if ((ALL_OK != ret) || (ret_temp >= water_temp))
 				ret_temp = celsius_to_temp(0);
 
 			// X% shift is (current + X*(current - ref)/100). ref is return temp
-			water_temp += circuit->pdata->consumer_shift * (water_temp - ret_temp) / 100;
+			water_temp += circuit->pdata->run.consumer_shift * (water_temp - ret_temp) / 100;
 		}
 
 		// enforce maximum temp during overtemp condition
-		if (circuit->pdata->hs_overtemp)
+		if (circuit->pdata->run.hs_overtemp)
 			water_temp = lwtmax;
 
 		// low limit can be overriden by external interferences

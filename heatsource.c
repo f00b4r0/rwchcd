@@ -124,11 +124,11 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	else
 		heat->run.runmode = heat->set.runmode;
 
-	heat->run.could_sleep = heat->pdata->plant_could_sleep;	// XXX
+	heat->run.could_sleep = heat->pdata->run.plant_could_sleep;	// XXX
 
 	// compute sliding integral in DHW sliding prio
 	// XXX TODO: this logic should move at a higher level in the context of a pool of heatsources (some of which may or may not be connected to the DHWTs)
-	if (heat->pdata->dhwc_sliding) {
+	if (heat->pdata->run.dhwc_sliding) {
 		// jacket integral between -100Ks and 0
 		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift

@@ -30,13 +30,13 @@ FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_plant, summer_run_duration)
 static int defconfig_def_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_plant * restrict const plant = priv;
-	return (filecfg_hcircuit_params_parse(&plant->set.def_hcircuit, node));
+	return (filecfg_hcircuit_params_parse(&plant->pdata.set.def_hcircuit, node));
 }
 
 static int defconfig_def_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_plant * restrict const plant = priv;
-	return (filecfg_dhwt_params_parse(&plant->set.def_dhwt, node));
+	return (filecfg_dhwt_params_parse(&plant->pdata.set.def_dhwt, node));
 }
 
 static int plant_config_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -46,6 +46,7 @@ static int plant_config_parse(void * restrict const priv, const struct s_filecfg
 		{ NODEINT|NODEDUR,	"sleeping_delay",	false,	fcp_tk_s_plant_sleeping_delay,		NULL, },
 		{ NODEINT|NODEDUR,	"summer_run_interval",	false,	fcp_tk_s_plant_summer_run_interval,	NULL, },
 		{ NODEINT|NODEDUR,	"summer_run_duration",	false,	fcp_tk_s_plant_summer_run_duration,	NULL, },
+		// the next two nodes affect plant->pdata
 		{ NODELST,		"def_hcircuit",		false,	defconfig_def_hcircuit_parse,		NULL, },
 		{ NODELST,		"def_dhwt",		false,	defconfig_def_dhwt_parse,		NULL, },
 	};

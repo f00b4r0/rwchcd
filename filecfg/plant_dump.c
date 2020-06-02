@@ -49,8 +49,8 @@ int filecfg_plant_dump(const struct s_plant * restrict const plant)
 		filecfg_iprintf("summer_run_interval %ld;\n", timekeep_tk_to_sec(plant->set.summer_run_interval));
 	if (FCD_Exhaustive || plant->set.summer_run_duration)
 		filecfg_iprintf("summer_run_duration %ld;\n", timekeep_tk_to_sec(plant->set.summer_run_duration));
-	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&plant->set.def_hcircuit);
-	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&plant->set.def_dhwt);
+	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&plant->pdata.set.def_hcircuit);
+	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&plant->pdata.set.def_dhwt);
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");		// config
 

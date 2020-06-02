@@ -71,8 +71,6 @@ struct s_plant {
 		timekeep_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep (will trigger electric switchover when available)
 		timekeep_t summer_run_interval;		///< interval between summer maintenance runs (suggested: 1 week). @note if #summer_maintenance is true then this MUST be set
 		timekeep_t summer_run_duration;		///< duration of summer maintenance operation (suggested: 10mn). @note if #summer_maintenance is true then this MUST be set
-		struct s_hcircuit_params def_hcircuit;	///< heating circuit defaults: if individual hcircuits don't set these values, these defaults will be used
-		struct s_dhwt_params def_dhwt;		///< DHWT defaults: if individual dhwts don't set these values, these defaults will be used
 	} set;
 	struct {
 		bool online;			///< true if plant is online

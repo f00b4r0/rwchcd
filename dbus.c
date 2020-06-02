@@ -21,9 +21,9 @@
  */
 
 #include "lib.h"
-#include "config.h"
 #include "runtime.h"
 #include "models.h"	// models_outtemp()
+#include "plant.h"
 #include "dbus.h"
 #include "dbus-generated.h"
 
@@ -114,13 +114,13 @@ static gboolean on_handle_config_temp_mode_get(dbusRwchcdControl *object,
 	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
 	switch (runmode) {
 		case RM_COMFORT:
-			systemp = runtime->config->def_hcircuit.t_comfort;
+			systemp = runtime->plant->pdata.set.def_hcircuit.t_comfort;
 			break;
 		case RM_ECO:
-			systemp = runtime->config->def_hcircuit.t_eco;
+			systemp = runtime->plant->pdata.set.def_hcircuit.t_eco;
 			break;
 		case RM_FROSTFREE:
-			systemp = runtime->config->def_hcircuit.t_frostfree;
+			systemp = runtime->plant->pdata.set.def_hcircuit.t_frostfree;
 			break;
 		default:
 			err = true;
@@ -165,13 +165,13 @@ static gboolean on_handle_config_temp_mode_set(dbusRwchcdControl *object,
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	switch (runmode) {
 		case RM_COMFORT:
-			runtime->config->def_hcircuit.t_comfort = newtemp;
+			runtime->plant->pdata.set.def_hcircuit.t_comfort = newtemp;
 			break;
 		case RM_ECO:
-			runtime->config->def_hcircuit.t_eco = newtemp;
+			runtime->plant->pdata.set.def_hcircuit.t_eco = newtemp;
 			break;
 		case RM_FROSTFREE:
-			runtime->config->def_hcircuit.t_frostfree = newtemp;
+			runtime->plant->pdata.set.def_hcircuit.t_frostfree = newtemp;
 			break;
 		default:
 			err = true;
@@ -208,13 +208,13 @@ static gboolean on_handle_config_outhoff_mode_get(dbusRwchcdControl *object,
 	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
 	switch (runmode) {
 		case RM_COMFORT:
-			systemp = runtime->config->def_hcircuit.outhoff_comfort;
+			systemp = runtime->plant->pdata.set.def_hcircuit.outhoff_comfort;
 			break;
 		case RM_ECO:
-			systemp = runtime->config->def_hcircuit.outhoff_eco;
+			systemp = runtime->plant->pdata.set.def_hcircuit.outhoff_eco;
 			break;
 		case RM_FROSTFREE:
-			systemp = runtime->config->def_hcircuit.outhoff_frostfree;
+			systemp = runtime->plant->pdata.set.def_hcircuit.outhoff_frostfree;
 			break;
 		default:
 			err = true;
@@ -259,13 +259,13 @@ static gboolean on_handle_config_outhoff_mode_set(dbusRwchcdControl *object,
 	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	switch (runmode) {
 		case RM_COMFORT:
-			runtime->config->def_hcircuit.outhoff_comfort = newtemp;
+			runtime->plant->pdata.set.def_hcircuit.outhoff_comfort = newtemp;
 			break;
 		case RM_ECO:
-			runtime->config->def_hcircuit.outhoff_eco = newtemp;
+			runtime->plant->pdata.set.def_hcircuit.outhoff_eco = newtemp;
 			break;
 		case RM_FROSTFREE:
-			runtime->config->def_hcircuit.outhoff_frostfree = newtemp;
+			runtime->plant->pdata.set.def_hcircuit.outhoff_frostfree = newtemp;
 			break;
 		default:
 			err = true;
