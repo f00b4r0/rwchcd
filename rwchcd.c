@@ -74,7 +74,7 @@
 #include "log.h"
 #include "timekeep.h"
 
-#include "filecfg.h"
+#include "filecfg_dump.h"
 
 #include "filecfg_parser.tab.h"
 extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser

@@ -15,7 +15,7 @@
 
 #include "storage_parse.h"
 #include "filecfg_parser.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 
 extern const char * Storage_path;
 

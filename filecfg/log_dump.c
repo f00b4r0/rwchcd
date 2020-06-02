@@ -12,7 +12,7 @@
  */
 
 #include "log_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "log.h"
 
 #include "log_file.h"

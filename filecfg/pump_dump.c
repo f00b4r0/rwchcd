@@ -12,7 +12,7 @@
  */
 
 #include "pump_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 
 int filecfg_pump_dump(const struct s_pump * restrict const pump)
 {

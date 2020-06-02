@@ -1,5 +1,5 @@
 //
-//  filecfg.c
+//  filecfg_dump.c
 //  rwchcd
 //
 //  (C) 2018-2020 Thibaut VARENE
@@ -21,7 +21,7 @@
 #include "hardware.h"
 #include "runtime.h"
 
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "filecfg/scheduler_dump.h"
 #include "filecfg/models_dump.h"
 #include "filecfg/storage_dump.h"

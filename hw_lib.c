@@ -16,7 +16,7 @@
 #include <math.h>	// sqrtf
 #include <assert.h>
 
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "lib.h"
 #include "hw_lib.h"
 

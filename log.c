@@ -23,7 +23,7 @@
 #include "timer.h"
 
 #include "filecfg_parser.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 
 #define LOG_PREFIX	"log"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names

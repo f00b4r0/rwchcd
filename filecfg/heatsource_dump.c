@@ -13,7 +13,7 @@
 
 #include "heatsource_dump.h"
 #include "heatsource.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "scheduler.h"
 
 #include "boiler_dump.h"

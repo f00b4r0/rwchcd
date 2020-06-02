@@ -31,7 +31,7 @@
 		4F43569C23157AE60030EB89 /* hw_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F43569B23157AE60030EB89 /* hw_lib.c */; };
 		4F869E99233A5EF300541A07 /* log_statsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42E98A23393156000A268A /* log_statsd.c */; };
 		4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */; };
-		4F99FD222088D18500DDAB75 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg.c */; };
+		4F99FD222088D18500DDAB75 /* filecfg_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg_dump.c */; };
 		4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */; };
 		4F99FD2A208BBE0000DDAB75 /* hw_p1_setup.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD28208BBE0000DDAB75 /* hw_p1_setup.c */; };
 		4F99FD2D208BCF3200DDAB75 /* hw_p1_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD2B208BCF3200DDAB75 /* hw_p1_filecfg.c */; };
@@ -130,8 +130,8 @@
 		4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_parser.c; sourceTree = SOURCE_ROOT; };
 		4F94475F21EA7BBE00FCF120 /* filecfg_parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg_parser.h; sourceTree = SOURCE_ROOT; };
 		4F961F9F1D899D5100E2A8AF /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = SOURCE_ROOT; };
-		4F99FD202088D18500DDAB75 /* filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg.c; sourceTree = SOURCE_ROOT; };
-		4F99FD212088D18500DDAB75 /* filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg.h; sourceTree = SOURCE_ROOT; };
+		4F99FD202088D18500DDAB75 /* filecfg_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_dump.c; sourceTree = SOURCE_ROOT; };
+		4F99FD212088D18500DDAB75 /* filecfg_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg_dump.h; sourceTree = SOURCE_ROOT; };
 		4F99FD25208B7F0F00DDAB75 /* hw_p1_backend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_p1_backend.c; sourceTree = "<group>"; };
 		4F99FD26208B7F0F00DDAB75 /* hw_p1_backend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_p1_backend.h; sourceTree = "<group>"; };
 		4F99FD28208BBE0000DDAB75 /* hw_p1_setup.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_p1_setup.c; sourceTree = "<group>"; };
@@ -366,8 +366,8 @@
 				4FCD55141D835D04003BB848 /* rwchcd.c */,
 				4FCD55151D835D04003BB848 /* rwchcd.h */,
 				4F08256124859BBE0068FC22 /* filecfg */,
-				4F99FD202088D18500DDAB75 /* filecfg.c */,
-				4F99FD212088D18500DDAB75 /* filecfg.h */,
+				4F99FD202088D18500DDAB75 /* filecfg_dump.c */,
+				4F99FD212088D18500DDAB75 /* filecfg_dump.h */,
 				4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */,
 				4F94475F21EA7BBE00FCF120 /* filecfg_parser.h */,
 				4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */,
@@ -502,7 +502,7 @@
 				4FC689652071773F00A3A065 /* hw_p1_spi.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
 				4FC689542071304900A3A065 /* hw_backends.c in Sources */,
-				4F99FD222088D18500DDAB75 /* filecfg.c in Sources */,
+				4F99FD222088D18500DDAB75 /* filecfg_dump.c in Sources */,
 				4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */,
 				4FE70C3724864BDF0066007D /* scheduler_dump.c in Sources */,
 				4FC304A81EBDCDB900D77AC6 /* models.c in Sources */,

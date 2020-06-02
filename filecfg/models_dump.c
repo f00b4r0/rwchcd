@@ -13,7 +13,7 @@
 
 #include "models_dump.h"
 #include "models.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "lib.h"
 
 extern struct s_models Models;

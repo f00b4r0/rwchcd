@@ -12,7 +12,7 @@
  */
 
 #include "valve_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "lib.h"
 #include "hardware.h"
 

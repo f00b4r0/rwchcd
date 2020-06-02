@@ -12,7 +12,7 @@
  */
 
 #include "storage_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 
 extern bool Storage_configured;
 extern const char * Storage_path;

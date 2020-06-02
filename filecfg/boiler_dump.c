@@ -13,7 +13,7 @@
 
 #include "boiler_dump.h"
 #include "boiler.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 
 #include "pump.h"
 #include "valve.h"

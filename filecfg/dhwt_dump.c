@@ -12,7 +12,7 @@
  */
 
 #include "dhwt_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "dhwt.h"
 #include "pump.h"
 #include "valve.h"

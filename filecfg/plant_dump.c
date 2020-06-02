@@ -12,7 +12,7 @@
  */
 
 #include "plant_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "rwchcd.h"
 #include "plant.h"
 

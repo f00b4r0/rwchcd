@@ -12,7 +12,7 @@
  */
 
 #include "backends_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "hw_backends.h"
 
 

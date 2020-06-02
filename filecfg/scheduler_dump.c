@@ -13,7 +13,7 @@
 
 #include "scheduler_dump.h"
 #include "scheduler.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 
 extern struct s_schedules Schedules;
 

@@ -12,7 +12,7 @@
  */
 
 #include "hcircuit_dump.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "hcircuit.h"
 #include "pump.h"
 #include "valve.h"

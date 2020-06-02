@@ -1,5 +1,5 @@
 //
-//  filecfg.h
+//  filecfg_dump.h
 //  rwchcd
 //
 //  (C) 2018-2019 Thibaut VARENE
@@ -8,11 +8,11 @@
 
 /**
  * @file
- * File configuration interface API.
+ * File configuration dump interface API.
  */
 
-#ifndef filecfg_h
-#define filecfg_h
+#ifndef filecfg_dump_h
+#define filecfg_dump_h
 
 #include "rwchcd.h"
 
@@ -34,4 +34,4 @@ int filecfg_relid_dump(const relid_t relid);
 
 int filecfg_dump(void);
 
-#endif /* filecfg_h */
+#endif /* filecfg_dump_h */

@@ -24,7 +24,7 @@
 
 #include "log_statsd.h"
 #include "rwchcd.h"
-#include "filecfg.h"
+#include "filecfg_dump.h"
 #include "filecfg_parser.h"
 
 #define LOG_STATSD_UDP_BUFSIZE	1432	///< udp buffer size. Untold rule seems to be that the datagram must not be fragmented.
