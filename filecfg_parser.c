@@ -67,9 +67,9 @@
 #include "heatsource.h"
 
 #include "scheduler.h"
-#include "scheduler_filecfg.h"
 
 #include "filecfg/models_parse.h"
+#include "filecfg/scheduler_parse.h"
 #include "storage_filecfg.h"
 #include "log_filecfg.h"
 
@@ -1216,7 +1216,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST,	"backends",	false,	hardware_backends_parse, NULL, },
-		{ NODELST,	"scheduler",	false,	scheduler_filecfg_parse, NULL, },	// we need schedulers during plant setup
+		{ NODELST,	"scheduler",	false,	filecfg_scheduler_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST,	"defconfig",	false,	defconfig_parse,	NULL, },
 		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },
 		{ NODELST,	"plant",	true,	plant_parse,		NULL, },

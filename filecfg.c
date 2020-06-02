@@ -33,7 +33,7 @@
 #include "filecfg.h"
 #include "timekeep.h"
 
-#include "scheduler_filecfg.h"
+#include "filecfg/scheduler_dump.h"
 #include "filecfg/models_dump.h"
 #include "storage_filecfg.h"
 #include "log_filecfg.h"
@@ -778,7 +778,7 @@ int filecfg_dump(void)
 	log_filecfg_dump();
 
 	// dump scheduler
-	scheduler_filecfg_dump();
+	filecfg_scheduler_dump();
 
 	fclose(FCD_File);
 	FCD_File = NULL;

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4F08254F248429910068FC22 /* scheduler_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08254E248429910068FC22 /* scheduler_filecfg.c */; };
+		4F08254F248429910068FC22 /* scheduler_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08254E248429910068FC22 /* scheduler_parse.c */; };
 		4F0825522484383B0068FC22 /* models_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0825512484383B0068FC22 /* models_parse.c */; };
 		4F08255524844AF20068FC22 /* storage_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255424844AF20068FC22 /* storage_filecfg.c */; };
 		4F08255824844CD40068FC22 /* log_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255724844CD40068FC22 /* log_filecfg.c */; };
@@ -49,6 +49,7 @@
 		4FCD55171D835D04003BB848 /* plant.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55101D835D04003BB848 /* plant.c */; };
 		4FCD55191D835D04003BB848 /* rwchcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FCD55141D835D04003BB848 /* rwchcd.c */; };
 		4FE70C3424864A4E0066007D /* models_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C3324864A4E0066007D /* models_dump.c */; };
+		4FE70C3724864BDF0066007D /* scheduler_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C3624864BDF0066007D /* scheduler_dump.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -64,8 +65,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4F08254D248429910068FC22 /* scheduler_filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = scheduler_filecfg.h; path = filecfg/scheduler_filecfg.h; sourceTree = SOURCE_ROOT; };
-		4F08254E248429910068FC22 /* scheduler_filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = scheduler_filecfg.c; path = filecfg/scheduler_filecfg.c; sourceTree = SOURCE_ROOT; };
+		4F08254D248429910068FC22 /* scheduler_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = scheduler_parse.h; path = filecfg/scheduler_parse.h; sourceTree = SOURCE_ROOT; };
+		4F08254E248429910068FC22 /* scheduler_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = scheduler_parse.c; path = filecfg/scheduler_parse.c; sourceTree = SOURCE_ROOT; };
 		4F0825502484383B0068FC22 /* models_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = models_parse.h; path = filecfg/models_parse.h; sourceTree = SOURCE_ROOT; };
 		4F0825512484383B0068FC22 /* models_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = models_parse.c; path = filecfg/models_parse.c; sourceTree = SOURCE_ROOT; };
 		4F08255324844AF20068FC22 /* storage_filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = storage_filecfg.h; path = filecfg/storage_filecfg.h; sourceTree = SOURCE_ROOT; };
@@ -157,6 +158,8 @@
 		4FCD55151D835D04003BB848 /* rwchcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchcd.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FE70C3224864A4E0066007D /* models_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = models_dump.h; sourceTree = "<group>"; };
 		4FE70C3324864A4E0066007D /* models_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = models_dump.c; sourceTree = "<group>"; };
+		4FE70C3524864BDF0066007D /* scheduler_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = scheduler_dump.h; sourceTree = "<group>"; };
+		4FE70C3624864BDF0066007D /* scheduler_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scheduler_dump.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -185,8 +188,10 @@
 				4FE70C3324864A4E0066007D /* models_dump.c */,
 				4F0825502484383B0068FC22 /* models_parse.h */,
 				4F0825512484383B0068FC22 /* models_parse.c */,
-				4F08254E248429910068FC22 /* scheduler_filecfg.c */,
-				4F08254D248429910068FC22 /* scheduler_filecfg.h */,
+				4FE70C3524864BDF0066007D /* scheduler_dump.h */,
+				4FE70C3624864BDF0066007D /* scheduler_dump.c */,
+				4F08254D248429910068FC22 /* scheduler_parse.h */,
+				4F08254E248429910068FC22 /* scheduler_parse.c */,
 				4F08255424844AF20068FC22 /* storage_filecfg.c */,
 				4F08255324844AF20068FC22 /* storage_filecfg.h */,
 			);
@@ -422,8 +427,9 @@
 				4FC689542071304900A3A065 /* hw_backends.c in Sources */,
 				4F99FD222088D18500DDAB75 /* filecfg.c in Sources */,
 				4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */,
+				4FE70C3724864BDF0066007D /* scheduler_dump.c in Sources */,
 				4FC304A81EBDCDB900D77AC6 /* models.c in Sources */,
-				4F08254F248429910068FC22 /* scheduler_filecfg.c in Sources */,
+				4F08254F248429910068FC22 /* scheduler_parse.c in Sources */,
 				4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */,
 				4F99FD2A208BBE0000DDAB75 /* hw_p1_setup.c in Sources */,
 				4F08255E248597620068FC22 /* valve_parse.c in Sources */,
