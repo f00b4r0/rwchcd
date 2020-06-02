@@ -23,7 +23,7 @@
 
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);
 
-static const storage_version_t Runtime_sversion = 9;
+static const storage_version_t Runtime_sversion = 10;
 
 static struct s_runtime Runtime;	///< Runtime private data
 
@@ -52,7 +52,7 @@ struct s_runtime * runtime_get(void)
  */
 static int runtime_save(void)
 {
-	return (storage_dump("runtime", &Runtime_sversion, &Runtime, sizeof(Runtime)));
+	return (storage_dump("runtime", &Runtime_sversion, &Runtime.run, sizeof(Runtime)));
 }
 
 /**
@@ -65,7 +65,7 @@ static int runtime_restore(void)
 	storage_version_t sversion;
 	
 	// try to restore key elements of last runtime
-	if (storage_fetch("runtime", &sversion, &temp_runtime, sizeof(temp_runtime)) == ALL_OK) {
+	if (storage_fetch("runtime", &sversion, &temp_runtime.run, sizeof(temp_runtime.run)) == ALL_OK) {
 		if (Runtime_sversion != sversion)
 			return (-EMISMATCH);
 		
