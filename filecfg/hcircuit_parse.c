@@ -1,0 +1,203 @@
+//
+//  filecfg/hcircuit_parse.c
+//  rwchcd
+//
+//  (C) 2020 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
+//
+
+/**
+ * @file
+ * Heating circuit file configuration parsing.
+ */
+
+#include <stdlib.h>	// abs
+#include <string.h>	// strlen/strcmp
+
+#include "hcircuit_parse.h"
+#include "filecfg_parser.h"
+#include "hcircuit.h"
+
+#include "scheduler.h"
+#include "plant.h"
+#include "models.h"
+
+
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_comfort)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_eco)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_frostfree)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, t_offset)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_comfort)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_eco)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_frostfree)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_hcircuit_params, outhoff_hysteresis)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmin)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmax)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, true, s_hcircuit_params, temp_inoffset)
+
+int filecfg_hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEFLT|NODEINT,	"t_comfort",		false,	fcp_temp_s_hcircuit_params_t_comfort,		NULL, },
+		{ NODEFLT|NODEINT,	"t_eco",		false,	fcp_temp_s_hcircuit_params_t_eco,		NULL, },
+		{ NODEFLT|NODEINT,	"t_frostfree",		false,	fcp_temp_s_hcircuit_params_t_frostfree,		NULL, },
+		{ NODEFLT|NODEINT,	"t_offset",		false,	fcp_temp_s_hcircuit_params_t_offset,		NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_comfort",	false,	fcp_temp_s_hcircuit_params_outhoff_comfort,	NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_eco",		false,	fcp_temp_s_hcircuit_params_outhoff_eco,		NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_frostfree",	false,	fcp_temp_s_hcircuit_params_outhoff_frostfree,	NULL, },
+		{ NODEFLT|NODEINT,	"outhoff_hysteresis",	false,	fcp_temp_s_hcircuit_params_outhoff_hysteresis,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_wtmin",		false,	fcp_temp_s_hcircuit_params_limit_wtmin,		NULL, },
+		{ NODEFLT|NODEINT,	"limit_wtmax",		false,	fcp_temp_s_hcircuit_params_limit_wtmax,		NULL, },
+		{ NODEFLT|NODEINT,	"temp_inoffset",	false,	fcp_temp_s_hcircuit_params_temp_inoffset,	NULL, },
+	};
+
+	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+
+	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
+}
+
+
+struct s_fcp_tlbilin_params {
+	struct {
+		temp_t tout1;
+		temp_t twater1;
+		temp_t tout2;
+		temp_t twater2;
+		int nH100;
+	} set;
+};
+
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout1)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater1)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout2)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater2)
+FILECFG_PARSER_INT_PARSE_SET_FUNC(false, s_fcp_tlbilin_params, nH100)
+
+static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEFLT|NODEINT,	"tout1",	true,	fcp_temp_s_fcp_tlbilin_params_tout1,	NULL, },
+		{ NODEFLT|NODEINT,	"twater1",	true,	fcp_temp_s_fcp_tlbilin_params_twater1,	NULL, },
+		{ NODEFLT|NODEINT,	"tout2",	true,	fcp_temp_s_fcp_tlbilin_params_tout2,	NULL, },
+		{ NODEFLT|NODEINT,	"twater2",	true,	fcp_temp_s_fcp_tlbilin_params_twater2,	NULL, },
+		{ NODEINT,		"nH100",	true,	fcp_int_s_fcp_tlbilin_params_nH100,	NULL, },
+	};
+	struct s_hcircuit * restrict const hcircuit = priv;
+	struct s_fcp_tlbilin_params p;
+	int ret;
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	ret = filecfg_parser_run_parsers(&p, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	ret = hcircuit_make_bilinear(hcircuit, p.set.tout1, p.set.twater1, p.set.tout2, p.set.twater2, p.set.nH100);
+	switch (ret) {
+		case ALL_OK:
+			break;
+		case -EINVALID:	// we're guaranteed that 'valid' arguments are passed: this error means the configuration is invalid
+			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: invalid configuration settings"), node->name, node->lineno);
+			break;
+		default:	// should never happen
+			dbgerr("hcircuit_make_bilinear() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
+			break;
+	}
+
+	return (ret);
+}
+
+static inline const struct s_plant * __hcircuit_to_plant(void * priv)
+{
+	return (pdata_to_plant(((struct s_hcircuit *)priv)->pdata));
+}
+
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, fast_cooldown)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, logging)
+FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_hcircuit, runmode)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_hcircuit, wtemp_rorh)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, am_tambient_tK)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_hcircuit, tambient_boostdelta)
+FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, boost_maxtime)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_outgoing)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_return)
+FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_ambient)
+FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_hcircuit, schedid)
+FILECFG_PARSER_PBMODEL_PARSE_SET_FUNC(s_hcircuit, bmodel)
+FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hcircuit_to_plant, s_hcircuit, pump_feed)
+FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hcircuit_to_plant, s_hcircuit, valve_mix)
+
+static int fcp_hcircuit_params(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hcircuit * restrict const hcircuit = priv;
+	return (filecfg_hcircuit_params_parse(&hcircuit->set.params, node));
+}
+
+static int fcp_hcircuit_tlaw(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hcircuit * restrict const hcircuit = priv;
+	const char * str = node->value.stringval;
+
+	if (!strcmp("bilinear", str))
+		return (hcircuit_tlaw_bilinear_parser(hcircuit, node));
+	else
+		return (-EINVALID);
+}
+
+static int fcp_hcircuit_ambient_factor(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hcircuit * restrict const hcircuit = priv;
+	int iv = node->value.intval;
+
+	if (abs(iv) > 100)
+		return (-EINVALID);
+	hcircuit->set.ambient_factor = iv;
+	return (ALL_OK);
+}
+
+int hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL,		"fast_cooldown",	false,	fcp_bool_s_hcircuit_fast_cooldown,	NULL, },
+		{ NODEBOL,		"logging",		false,	fcp_bool_s_hcircuit_logging,		NULL, },
+		{ NODESTR,		"runmode",		true,	fcp_runmode_s_hcircuit_runmode,		NULL, },
+		{ NODESTR,		"schedid",		false,	fcp_schedid_s_hcircuit_schedid,		NULL, },
+		{ NODEINT,		"ambient_factor",	false,	fcp_hcircuit_ambient_factor,		NULL, },
+		{ NODEFLT|NODEINT,	"wtemp_rorh",		false,	fcp_temp_s_hcircuit_wtemp_rorh,		NULL, },
+		{ NODEINT|NODEDUR,	"am_tambient_tK",	false,	fcp_tk_s_hcircuit_am_tambient_tK,	NULL, },
+		{ NODEFLT|NODEINT,	"tambient_boostdelta",	false,	fcp_temp_s_hcircuit_tambient_boostdelta, NULL, },
+		{ NODEINT|NODEDUR,	"boost_maxtime",	false,	fcp_tk_s_hcircuit_boost_maxtime,	NULL, },
+		{ NODELST,		"tid_outgoing",		true,	fcp_tid_s_hcircuit_tid_outgoing,	NULL, },
+		{ NODELST,		"tid_return",		false,	fcp_tid_s_hcircuit_tid_return,		NULL, },
+		{ NODELST,		"tid_ambient",		false,	fcp_tid_s_hcircuit_tid_ambient,		NULL, },
+		{ NODELST,		"params",		false,	fcp_hcircuit_params,			NULL, },
+		{ NODESTR,		"tlaw",			true,	fcp_hcircuit_tlaw,			NULL, },
+		{ NODESTR,		"valve_mix",		false,	fcp_valve_s_hcircuit_pvalve_mix,	NULL, },
+		{ NODESTR,		"pump_feed",		false,	fcp_pump_s_hcircuit_ppump_feed,		NULL, },
+		{ NODESTR,		"bmodel",		true,	fcp_bmodel_s_hcircuit_pbmodel,		NULL, },
+	};
+	struct s_plant * restrict const plant = priv;
+	struct s_hcircuit * hcircuit;
+	int ret;
+
+	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
+
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);	// break if invalid config
+
+	// create the hcircuit
+	hcircuit = plant_new_circuit(plant, node->value.stringval);
+	if (!hcircuit)
+		return (-EOOM);
+
+	ret = filecfg_parser_run_parsers(hcircuit, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	hcircuit->set.configured = true;
+
+	return (ALL_OK);
+}
