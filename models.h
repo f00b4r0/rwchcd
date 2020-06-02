@@ -36,6 +36,8 @@ struct s_bmodel {
 	struct {
 		bool configured;	///< true if configured
 		bool logging;		///< true if logging must be enabled for this bmodel
+		temp_t limit_tsummer;	///< outdoor temp for summer switch over
+		temp_t limit_tfrost;	///< outdoor temp for frost protection
 		timekeep_t tau;		///< bmodel time constant
 		tempid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
 	} set;

@@ -14,6 +14,7 @@
 #include "models_dump.h"
 #include "models.h"
 #include "filecfg.h"
+#include "lib.h"
 
 extern struct s_models Models;
 
@@ -30,7 +31,11 @@ static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
 
 	if (FCD_Exhaustive || bmodel->set.logging)
 		filecfg_iprintf("logging %s;\n", filecfg_bool_str(bmodel->set.logging));
-	filecfg_iprintf("tau %ld;\n", timekeep_tk_to_sec(bmodel->set.tau));						// mandatory
+	if (FCD_Exhaustive || bmodel->set.limit_tsummer)
+		filecfg_iprintf("limit_tsummer %.1f;\n", temp_to_celsius(bmodel->set.limit_tsummer));
+	if (FCD_Exhaustive || bmodel->set.limit_tfrost)
+		filecfg_iprintf("limit_tfrost %.1f;\n", temp_to_celsius(bmodel->set.limit_tfrost));
+	filecfg_iprintf("tau %ld;\n", timekeep_tk_to_sec(bmodel->set.tau));			// mandatory
 	filecfg_iprintf("tid_outdoor"); filecfg_tempid_dump(bmodel->set.tid_outdoor);		// mandatory
 
 	filecfg_ilevel_dec();

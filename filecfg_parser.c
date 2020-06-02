@@ -280,8 +280,6 @@ static int sysmode_parse(void * restrict const priv, const struct s_filecfg_pars
 	return (ALL_OK);
 }
 
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_config, limit_tsummer)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_config, limit_tfrost)
 FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_config, startup_runmode)
 FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_config, startup_dhwmode)
 
@@ -294,11 +292,9 @@ static int defconfig_sysmode_parse(void * restrict const priv, const struct s_fi
 static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT,	"limit_tsummer",	false,	fcp_temp_s_config_limit_tsummer,	NULL, },	// 0
-		{ NODEFLT|NODEINT,	"limit_tfrost",		false,	fcp_temp_s_config_limit_tfrost,		NULL, },
-		{ NODESTR,		"startup_sysmode",	true,	defconfig_sysmode_parse,		NULL, },	// 2
+		{ NODESTR,		"startup_sysmode",	true,	defconfig_sysmode_parse,		NULL, },	// 0
 		{ NODESTR,		"startup_runmode",	false,	fcp_runmode_s_config_startup_runmode,	NULL, },
-		{ NODESTR,		"startup_dhwmode",	false,	fcp_runmode_s_config_startup_dhwmode,	NULL, },	// 4
+		{ NODESTR,		"startup_dhwmode",	false,	fcp_runmode_s_config_startup_dhwmode,	NULL, },	// 2
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_config * restrict config;
@@ -319,7 +315,7 @@ static int defconfig_parse(void * restrict const priv, const struct s_filecfg_pa
 	// consistency checks post matching
 
 	if (SYS_MANUAL == config->startup_sysmode) {
-		if (!parsers[3].node || !parsers[4].node) {
+		if (!parsers[1].node || !parsers[2].node) {
 			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: startup_sysmode set to \"manual\" but startup_runmode and/or startup_dhwmode are not set"), node->name, node->lineno);
 			return (-EINVALID);
 		}

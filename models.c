@@ -16,8 +16,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "config.h"
-#include "runtime.h"	// for runtime_get()->config (read-only)
 #include "lib.h"
 #include "storage.h"
 #include "hardware.h"
@@ -237,6 +235,12 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
 
+	if (validate_temp(bmodel->set.limit_tsummer) != ALL_OK)
+		return (-EMISCONFIGURED);
+
+	if (validate_temp(bmodel->set.limit_tfrost) != ALL_OK)
+		return (-EMISCONFIGURED);
+
 	if (bmodel->set.tau <= 0) {
 		pr_err(_("Building model \"%s\": invalid value for tau: '%ld'"), bmodel->name, timekeep_tk_to_sec(bmodel->set.tau));
 		return (-EMISCONFIGURED);
@@ -322,7 +326,7 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 	}
 	else {
 		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
-		bmodel->run.t_out = runtime_get()->config->limit_tfrost-1;
+		bmodel->run.t_out = bmodel->set.limit_tfrost-1;
 		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
 	}
 }
@@ -398,28 +402,25 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
  */
 static int bmodel_summer(struct s_bmodel * const bmodel)
 {
-	const struct s_config * restrict const config = runtime_get()->config;
-
-	assert(config);
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
 	if (unlikely(!bmodel->run.online))	// but not necessarily online
 		return (-EOFFLINE);
 
-	if (unlikely(!config->limit_tsummer)) {
+	if (unlikely(!bmodel->set.limit_tsummer)) {
 		bmodel->run.summer = false;
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((bmodel->run.t_out > config->limit_tsummer)	&&
-	    (bmodel->run.t_out_mix > config->limit_tsummer)	&&
-	    (bmodel->run.t_out_att > config->limit_tsummer)) {
+	if ((bmodel->run.t_out > bmodel->set.limit_tsummer)	&&
+	    (bmodel->run.t_out_mix > bmodel->set.limit_tsummer)	&&
+	    (bmodel->run.t_out_att > bmodel->set.limit_tsummer)) {
 		bmodel->run.summer = true;
 	}
 	else {
-		if ((bmodel->run.t_out < config->limit_tsummer)	&&
-		    (bmodel->run.t_out_mix < config->limit_tsummer)	&&
-		    (bmodel->run.t_out_att < config->limit_tsummer))
+		if ((bmodel->run.t_out < bmodel->set.limit_tsummer)	&&
+		    (bmodel->run.t_out_mix < bmodel->set.limit_tsummer)	&&
+		    (bmodel->run.t_out_att < bmodel->set.limit_tsummer))
 			bmodel->run.summer = false;
 	}
 
@@ -436,23 +437,21 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
  */
 static int bmodel_frost(struct s_bmodel * restrict const bmodel)
 {
-	const struct s_config * restrict const config = runtime_get()->config;
-
 	assert(bmodel);	// guaranteed to be called with bmodel configured
 
 	if (unlikely(!bmodel->run.online))	// but not necessarily online
 		return (-EOFFLINE);
 
-	if (unlikely(!config->limit_tfrost)) {
+	if (unlikely(!bmodel->set.limit_tfrost)) {
 		bmodel->run.frost = false;
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((bmodel->run.t_out < config->limit_tfrost)) {
+	if ((bmodel->run.t_out < bmodel->set.limit_tfrost)) {
 		bmodel->run.frost = true;
 		bmodel->run.summer = false;	// override summer
 	}
-	else if ((bmodel->run.t_out > (config->limit_tfrost + deltaK_to_temp(1))))
+	else if ((bmodel->run.t_out > (bmodel->set.limit_tfrost + deltaK_to_temp(1))))
 		bmodel->run.frost = false;
 
 	return (ALL_OK);

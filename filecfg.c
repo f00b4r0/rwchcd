@@ -218,10 +218,6 @@ static int filecfg_config_dump(const struct s_config * restrict const config)
 	filecfg_iprintf("defconfig {\n");
 	filecfg_ilevel_inc();
 
-	if (FCD_Exhaustive || config->limit_tsummer)
-		filecfg_iprintf("limit_tsummer %.1f;\n", temp_to_celsius(config->limit_tsummer));
-	if (FCD_Exhaustive || config->limit_tfrost)
-		filecfg_iprintf("limit_tfrost %.1f;\n", temp_to_celsius(config->limit_tfrost));
 	filecfg_iprintf("startup_sysmode \"%s\";\n", filecfg_sysmode_str(config->startup_sysmode));	// mandatory
 	filecfg_iprintf("startup_runmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
 	filecfg_iprintf("startup_dhwmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
