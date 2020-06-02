@@ -520,7 +520,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	if (RM_AUTO == circuit->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(circuit->set.schedid);
-		circuit->run.runmode = ((SYS_AUTO == runtime->systemmode) && eparams) ? eparams->runmode : runtime->runmode;
+		circuit->run.runmode = ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode;
 	}
 	else
 		circuit->run.runmode = circuit->set.runmode;

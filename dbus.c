@@ -58,7 +58,7 @@ static gboolean on_handle_sysmode_get(dbusRwchcdControl *object,
 	enum e_systemmode cursys;
 	
 	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
-	cursys = runtime->systemmode;
+	cursys = runtime->run.systemmode;
 	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	dbus_rwchcd_control_complete_sysmode_get(object, invocation, (guchar)cursys);

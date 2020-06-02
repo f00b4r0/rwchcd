@@ -48,7 +48,6 @@
 #include <string.h>
 
 #include "hw_backends.h"
-#include "config.h"
 #include "lib.h"
 #include "filecfg_parser.h"
 
@@ -280,49 +279,43 @@ static int sysmode_parse(void * restrict const priv, const struct s_filecfg_pars
 	return (ALL_OK);
 }
 
-FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_config, startup_runmode)
-FILECFG_PARSER_RUNMODE_PARSE_FUNC(s_config, startup_dhwmode)
+FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_runtime, startup_runmode)
+FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_runtime, startup_dhwmode)
 
-static int defconfig_sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int runtime_sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_config * restrict const config = priv;
-	return (sysmode_parse(&config->startup_sysmode, node));
+	struct s_runtime * restrict const runtime = priv;
+	return (sysmode_parse(&runtime->set.startup_sysmode, node));
 }
 
-static int defconfig_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int runtime_config_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,		"startup_sysmode",	true,	defconfig_sysmode_parse,		NULL, },	// 0
-		{ NODESTR,		"startup_runmode",	false,	fcp_runmode_s_config_startup_runmode,	NULL, },
-		{ NODESTR,		"startup_dhwmode",	false,	fcp_runmode_s_config_startup_dhwmode,	NULL, },	// 2
+		{ NODESTR,		"startup_sysmode",	true,	runtime_sysmode_parse,			NULL, },	// 0
+		{ NODESTR,		"startup_runmode",	false,	fcp_runmode_s_runtime_startup_runmode,	NULL, },
+		{ NODESTR,		"startup_dhwmode",	false,	fcp_runmode_s_runtime_startup_dhwmode,	NULL, },	// 2
 	};
 	struct s_runtime * const runtime = priv;
-	struct s_config * restrict config;
 	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	config = config_new();
-	if (!config)
-		return (-EOOM);
-
-	ret = filecfg_parser_run_parsers(config, parsers, ARRAY_SIZE(parsers));
+	ret = filecfg_parser_run_parsers(runtime, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
 	// consistency checks post matching
 
-	if (SYS_MANUAL == config->startup_sysmode) {
+	if (SYS_MANUAL == runtime->set.startup_sysmode) {
 		if (!parsers[1].node || !parsers[2].node) {
 			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: startup_sysmode set to \"manual\" but startup_runmode and/or startup_dhwmode are not set"), node->name, node->lineno);
 			return (-EINVALID);
 		}
 	}
 
-	config->configured = true;
-	runtime->config = config;
+	runtime->set.configured = true;
 
 	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
 	return (ALL_OK);
@@ -550,7 +543,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST,	"backends",	false,	filecfg_backends_parse, NULL, },
 		{ NODELST,	"scheduler",	false,	filecfg_scheduler_parse, NULL, },	// we need schedulers during plant setup
-		{ NODELST,	"defconfig",	false,	defconfig_parse,	NULL, },
+		{ NODELST,	"defconfig",	false,	runtime_config_parse,	NULL, },
 		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },
 		{ NODELST,	"plant",	true,	filecfg_plant_parse,	NULL, },
 		{ NODELST,	"storage",	false,	filecfg_storage_parse,	NULL, },

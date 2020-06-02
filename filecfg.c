@@ -19,7 +19,6 @@
 #include "lib.h"
 #include "hw_backends.h"
 #include "hardware.h"
-#include "config.h"
 #include "runtime.h"
 
 #include "filecfg.h"
@@ -210,17 +209,17 @@ const char * filecfg_sysmode_str(const enum e_systemmode sysmode)
 	}
 }
 
-static int filecfg_config_dump(const struct s_config * restrict const config)
+static int runtime_config_dump(const struct s_runtime * restrict const runtime)
 {
-	if (!config)
+	if (!runtime)
 		return (-EINVALID);
 
 	filecfg_iprintf("defconfig {\n");
 	filecfg_ilevel_inc();
 
-	filecfg_iprintf("startup_sysmode \"%s\";\n", filecfg_sysmode_str(config->startup_sysmode));	// mandatory
-	filecfg_iprintf("startup_runmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
-	filecfg_iprintf("startup_dhwmode \"%s\";\n", filecfg_runmode_str(config->startup_runmode));	// mandatory if SYS_MANUAL
+	filecfg_iprintf("startup_sysmode \"%s\";\n", filecfg_sysmode_str(runtime->set.startup_sysmode));	// mandatory
+	filecfg_iprintf("startup_runmode \"%s\";\n", filecfg_runmode_str(runtime->set.startup_runmode));	// mandatory if SYS_MANUAL
+	filecfg_iprintf("startup_dhwmode \"%s\";\n", filecfg_runmode_str(runtime->set.startup_runmode));	// mandatory if SYS_MANUAL
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -251,7 +250,7 @@ int filecfg_dump(void)
 	filecfg_backends_dump();
 
 	// dump runtime config
-	filecfg_config_dump(runtime->config);
+	runtime_config_dump(runtime);
 
 	// dump models
 	filecfg_models_dump();

@@ -20,8 +20,6 @@
 #include "storage.h"
 
 #include "rwchcd.h"
-#include "runtime.h"	// to access config->logging
-#include "config.h"	// config->logging
 #include "timer.h"
 
 #include "filecfg_parser.h"

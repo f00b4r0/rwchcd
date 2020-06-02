@@ -62,7 +62,6 @@
 #include "rwchcd.h"
 #include "hw_backends.h"
 #include "hardware.h"
-#include "config.h"
 #include "runtime.h"
 #include "timer.h"
 #include "scheduler.h"
@@ -245,14 +244,14 @@ static void * thread_master(void *arg)
 	struct s_runtime * restrict const runtime = runtime_get();
 	int ret;
 
-	if (SYS_NONE == runtime->systemmode) {	// runtime was not restored
+	if (SYS_NONE == runtime->run.systemmode) {	// runtime was not restored
 						// set sysmode/runmode from startup config
-		ret = runtime_set_systemmode(runtime->config->startup_sysmode);
+		ret = runtime_set_systemmode(runtime->set.startup_sysmode);
 		if (ALL_OK != ret)
 			runtime_set_systemmode(SYS_FROSTFREE);	// fallback to frostfree
-		else if (SYS_MANUAL == runtime->config->startup_sysmode) {
-			runtime_set_runmode(runtime->config->startup_runmode);
-			runtime_set_dhwmode(runtime->config->startup_dhwmode);
+		else if (SYS_MANUAL == runtime->set.startup_sysmode) {
+			runtime_set_runmode(runtime->set.startup_runmode);
+			runtime_set_dhwmode(runtime->set.startup_dhwmode);
 		}
 	}
 

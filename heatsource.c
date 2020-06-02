@@ -119,7 +119,7 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	if (RM_AUTO == heat->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(heat->set.schedid);
-		heat->run.runmode = ((SYS_AUTO == runtime->systemmode) && eparams) ? eparams->runmode : runtime->runmode;
+		heat->run.runmode = ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode;
 	}
 	else
 		heat->run.runmode = heat->set.runmode;

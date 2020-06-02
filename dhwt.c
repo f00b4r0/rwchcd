@@ -269,13 +269,13 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	if (RM_AUTO == dhwt->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(dhwt->set.schedid);
-		if ((SYS_AUTO == runtime->systemmode) && eparams) {
+		if ((SYS_AUTO == runtime->run.systemmode) && eparams) {
 			dhwt->run.runmode = eparams->dhwmode;
 			dhwt->run.legionella_on = eparams->legionella;
 			dhwt->run.recycle_on = (dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
 		}
 		else	// don't touch legionella/recycle
-			dhwt->run.runmode = runtime->dhwmode;
+			dhwt->run.runmode = runtime->run.dhwmode;
 	}
 	else
 		dhwt->run.runmode = dhwt->set.runmode;

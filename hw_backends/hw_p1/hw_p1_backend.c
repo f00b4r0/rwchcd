@@ -255,7 +255,7 @@ static int hw_p1_input(void * priv)
 	}
 
 	if (!systout) {
-		if (syschg && (cursysmode != runtime->systemmode)) {
+		if (syschg && (cursysmode != runtime->run.systemmode)) {
 			// change system mode
 			pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 			runtime_set_systemmode(cursysmode);
@@ -264,7 +264,7 @@ static int hw_p1_input(void * priv)
 			hw->peripherals.o_buzz = 1;
 		}
 		syschg = false;
-		cursysmode = runtime->systemmode;
+		cursysmode = runtime->run.systemmode;
 	}
 	else
 		systout--;

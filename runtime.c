@@ -16,7 +16,6 @@
 #include <assert.h>
 
 #include "plant.h"
-#include "config.h"
 #include "runtime.h"
 #include "storage.h"
 #include "log.h"
@@ -70,9 +69,9 @@ static int runtime_restore(void)
 		if (Runtime_sversion != sversion)
 			return (-EMISMATCH);
 		
-		Runtime.systemmode = temp_runtime.systemmode;
-		Runtime.runmode = temp_runtime.runmode;
-		Runtime.dhwmode = temp_runtime.dhwmode;
+		Runtime.run.systemmode = temp_runtime.run.systemmode;
+		Runtime.run.runmode = temp_runtime.run.runmode;
+		Runtime.run.dhwmode = temp_runtime.run.dhwmode;
 		pr_log(_("Runtime state restored"));
 	}
 	
@@ -102,9 +101,9 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 	unsigned int i = 0;
 	
 	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
-	values[i++] = Runtime.systemmode;
-	values[i++] = Runtime.runmode;
-	values[i++] = Runtime.dhwmode;
+	values[i++] = Runtime.run.systemmode;
+	values[i++] = Runtime.run.runmode;
+	values[i++] = Runtime.run.dhwmode;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
 	
 	assert(ARRAY_SIZE(keys) >= i);
@@ -139,31 +138,31 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 {
 	switch (sysmode) {
 		case SYS_OFF:
-			Runtime.runmode = RM_OFF;
-			Runtime.dhwmode = RM_OFF;
+			Runtime.run.runmode = RM_OFF;
+			Runtime.run.dhwmode = RM_OFF;
 			break;
 		case SYS_COMFORT:
-			Runtime.runmode = RM_COMFORT;
-			Runtime.dhwmode = RM_COMFORT;
+			Runtime.run.runmode = RM_COMFORT;
+			Runtime.run.dhwmode = RM_COMFORT;
 			break;
 		case SYS_ECO:
-			Runtime.runmode = RM_ECO;
-			Runtime.dhwmode = RM_ECO;
+			Runtime.run.runmode = RM_ECO;
+			Runtime.run.dhwmode = RM_ECO;
 			break;
 		case SYS_AUTO:		// NOTE by default AUTO does not change the current run/dhwmodes
 		case SYS_MANUAL:
 			break;
 		case SYS_FROSTFREE:
-			Runtime.runmode = RM_FROSTFREE;
-			Runtime.dhwmode = RM_FROSTFREE;
+			Runtime.run.runmode = RM_FROSTFREE;
+			Runtime.run.dhwmode = RM_FROSTFREE;
 			break;
 		case SYS_TEST:
-			Runtime.runmode = RM_TEST;
-			Runtime.dhwmode = RM_TEST;
+			Runtime.run.runmode = RM_TEST;
+			Runtime.run.dhwmode = RM_TEST;
 			break;
 		case SYS_DHWONLY:
-			Runtime.runmode = RM_DHWONLY;
-			Runtime.dhwmode = RM_COMFORT;	// NOTE by default in comfort mode until further settings
+			Runtime.run.runmode = RM_DHWONLY;
+			Runtime.run.dhwmode = RM_COMFORT;	// NOTE by default in comfort mode until further settings
 			break;
 		case SYS_NONE:
 		case SYS_UNKNOWN:
@@ -171,8 +170,8 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 			return (-EINVALID);
 	}
 	
-	dbgmsg(1, 1, "sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.runmode, Runtime.dhwmode);
-	Runtime.systemmode = sysmode;
+	dbgmsg(1, 1, "sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.run.runmode, Runtime.run.dhwmode);
+	Runtime.run.systemmode = sysmode;
 	
 	runtime_save();
 
@@ -190,7 +189,7 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 int runtime_set_runmode(const enum e_runmode runmode)
 {
 	// runmode can only be directly modified in SYS_AUTO or SYS_MANUAL
-	if (!((SYS_MANUAL == Runtime.systemmode) || (SYS_AUTO == Runtime.systemmode)))
+	if (!((SYS_MANUAL == Runtime.run.systemmode) || (SYS_AUTO == Runtime.run.systemmode)))
 		return (-EINVALID);
 
 	// if set, runmode cannot be RM_AUTO
@@ -208,7 +207,7 @@ int runtime_set_runmode(const enum e_runmode runmode)
 			return (-EINVALIDMODE);
 	}
 
-	Runtime.runmode = runmode;
+	Runtime.run.runmode = runmode;
 
 	runtime_save();
 
@@ -226,7 +225,7 @@ int runtime_set_runmode(const enum e_runmode runmode)
 int runtime_set_dhwmode(const enum e_runmode dhwmode)
 {
 	// dhwmode can only be directly modified in SYS_AUTO, SYS_MANUAL or SYS_DHWONLY
-	if (!((SYS_MANUAL == Runtime.systemmode) || (SYS_AUTO == Runtime.systemmode) || (SYS_DHWONLY == Runtime.systemmode)))
+	if (!((SYS_MANUAL == Runtime.run.systemmode) || (SYS_AUTO == Runtime.run.systemmode) || (SYS_DHWONLY == Runtime.run.systemmode)))
 		return (-EINVALID);
 
 	// if set, dhwmode cannot be RM_AUTO or RM_DHWONLY
@@ -244,7 +243,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 			return (-EINVALIDMODE);
 	}
 
-	Runtime.dhwmode = dhwmode;
+	Runtime.run.dhwmode = dhwmode;
 
 	runtime_save();
 
@@ -260,7 +259,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
  */
 int runtime_online(void)
 {
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+	if (!Runtime.set.configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 
 	runtime_restore();
@@ -276,7 +275,7 @@ int runtime_online(void)
  */
 int runtime_run(void)
 {
-	if (unlikely(!Runtime.config || !Runtime.config->configured || !Runtime.plant))
+	if (unlikely(!Runtime.set.configured || !Runtime.plant))
 		return (-ENOTCONFIGURED);
 
 	return (plant_run(Runtime.plant));
@@ -288,7 +287,7 @@ int runtime_run(void)
  */
 int runtime_offline(void)
 {
-	if (!Runtime.config || !Runtime.config->configured || !Runtime.plant)
+	if (!Runtime.set.configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 
 	if (runtime_save() != ALL_OK)
@@ -308,6 +307,5 @@ int runtime_offline(void)
 void runtime_exit(void)
 {
 	plant_del(Runtime.plant);
-	config_del(Runtime.config);
 	runtime_init();		// clear runtime
 }

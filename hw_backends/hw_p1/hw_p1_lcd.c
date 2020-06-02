@@ -378,7 +378,7 @@ static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, 
 // XXX quick hack
 static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata * restrict const hw)
 {
-	const enum e_systemmode systemmode = runtime_get()->systemmode;
+	const enum e_systemmode systemmode = runtime_get()->run.systemmode;
 	static uint8_t buf[LCD_LINELEN];
 
 	memset(buf, ' ', LCD_LINELEN);

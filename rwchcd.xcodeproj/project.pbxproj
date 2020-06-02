@@ -20,7 +20,6 @@
 		4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8A218E1DBE009DCBC2 /* log_rrd.c */; };
 		4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8D218E4E2E009DCBC2 /* log_file.c */; };
 		4F299C9221AABD2C009DCBC2 /* log.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C9021AABD2C009DCBC2 /* log.c */; };
-		4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAA1D8873C500D86EE7 /* config.c */; };
 		4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAD1D8884ED00D86EE7 /* runtime.c */; };
 		4F3AFBB21D88867600D86EE7 /* lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBB01D88867600D86EE7 /* lib.c */; };
 		4F42A5D01F967BC3001B0A1F /* pump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5CE1F967BC3001B0A1F /* pump.c */; };
@@ -106,8 +105,6 @@
 		4F299C9021AABD2C009DCBC2 /* log.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log.c; sourceTree = SOURCE_ROOT; };
 		4F299C9121AABD2C009DCBC2 /* log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = SOURCE_ROOT; };
 		4F2F7F6A1DDF1DD80095AAEE /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = SOURCE_ROOT; };
-		4F3AFBAA1D8873C500D86EE7 /* config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = config.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		4F3AFBAB1D8873C500D86EE7 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBAD1D8884ED00D86EE7 /* runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = runtime.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBAE1D8884ED00D86EE7 /* runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBB01D88867600D86EE7 /* lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = lib.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -344,8 +341,6 @@
 				4FC304A71EBDCDB900D77AC6 /* models.h */,
 				4F3AFBB01D88867600D86EE7 /* lib.c */,
 				4F3AFBB11D88867600D86EE7 /* lib.h */,
-				4F3AFBAA1D8873C500D86EE7 /* config.c */,
-				4F3AFBAB1D8873C500D86EE7 /* config.h */,
 				4F15A85C1EBF74880000507A /* alarms.c */,
 				4F15A85D1EBF74880000507A /* alarms.h */,
 				4F3AFBAD1D8884ED00D86EE7 /* runtime.c */,
@@ -474,7 +469,6 @@
 				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
 				4F08256724859F9D0068FC22 /* valve_dump.c in Sources */,
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,
-				4F3AFBAC1D8873C500D86EE7 /* config.c in Sources */,
 				4F08255B248589B40068FC22 /* pump_parse.c in Sources */,
 				4FE70C612486BBD50066007D /* backends_parse.c in Sources */,
 				4F08256424859E110068FC22 /* pump_dump.c in Sources */,
