@@ -55,6 +55,8 @@
 		4FE70C402486585E0066007D /* boiler_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C3F2486585E0066007D /* boiler_parse.c */; };
 		4FE70C43248659E90066007D /* heatsource_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C42248659E90066007D /* heatsource_dump.c */; };
 		4FE70C46248659F40066007D /* heatsource_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C45248659F40066007D /* heatsource_parse.c */; };
+		4FE70C4924865E330066007D /* dhwt_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C4824865E330066007D /* dhwt_dump.c */; };
+		4FE70C4C24865E3B0066007D /* dhwt_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FE70C4B24865E3B0066007D /* dhwt_parse.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -175,6 +177,10 @@
 		4FE70C42248659E90066007D /* heatsource_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heatsource_dump.c; sourceTree = "<group>"; };
 		4FE70C44248659F40066007D /* heatsource_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heatsource_parse.h; sourceTree = "<group>"; };
 		4FE70C45248659F40066007D /* heatsource_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heatsource_parse.c; sourceTree = "<group>"; };
+		4FE70C4724865E330066007D /* dhwt_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt_dump.h; sourceTree = "<group>"; };
+		4FE70C4824865E330066007D /* dhwt_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dhwt_dump.c; sourceTree = "<group>"; };
+		4FE70C4A24865E3B0066007D /* dhwt_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt_parse.h; sourceTree = "<group>"; };
+		4FE70C4B24865E3B0066007D /* dhwt_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dhwt_parse.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -207,6 +213,10 @@
 				4FE70C42248659E90066007D /* heatsource_dump.c */,
 				4FE70C44248659F40066007D /* heatsource_parse.h */,
 				4FE70C45248659F40066007D /* heatsource_parse.c */,
+				4FE70C4724865E330066007D /* dhwt_dump.h */,
+				4FE70C4824865E330066007D /* dhwt_dump.c */,
+				4FE70C4A24865E3B0066007D /* dhwt_parse.h */,
+				4FE70C4B24865E3B0066007D /* dhwt_parse.c */,
 				4FE70C3224864A4E0066007D /* models_dump.h */,
 				4FE70C3324864A4E0066007D /* models_dump.c */,
 				4F0825502484383B0068FC22 /* models_parse.h */,
@@ -432,9 +442,11 @@
 				4F08255B248589B40068FC22 /* pump_parse.c in Sources */,
 				4F08256424859E110068FC22 /* pump_dump.c in Sources */,
 				4FE70C3424864A4E0066007D /* models_dump.c in Sources */,
+				4FE70C4924865E330066007D /* dhwt_dump.c in Sources */,
 				4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */,
 				4FE70C3D248658540066007D /* boiler_dump.c in Sources */,
 				4F869E99233A5EF300541A07 /* log_statsd.c in Sources */,
+				4FE70C4C24865E3B0066007D /* dhwt_parse.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
 				4FE70C402486585E0066007D /* boiler_parse.c in Sources */,
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
