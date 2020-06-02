@@ -69,7 +69,7 @@
 #include "scheduler.h"
 #include "scheduler_filecfg.h"
 
-#include "models_filecfg.h"
+#include "filecfg/models_parse.h"
 #include "storage_filecfg.h"
 #include "log_filecfg.h"
 
@@ -1218,7 +1218,7 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 		{ NODELST,	"backends",	false,	hardware_backends_parse, NULL, },
 		{ NODELST,	"scheduler",	false,	scheduler_filecfg_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST,	"defconfig",	false,	defconfig_parse,	NULL, },
-		{ NODELST,	"models",	false,	models_filecfg_parse,	NULL, },
+		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },
 		{ NODELST,	"plant",	true,	plant_parse,		NULL, },
 		{ NODELST,	"storage",	false,	storage_filecfg_parse,	NULL, },
 		{ NODELST,	"logging",	false,	log_filecfg_parse,	NULL, },

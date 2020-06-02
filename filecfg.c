@@ -34,7 +34,7 @@
 #include "timekeep.h"
 
 #include "scheduler_filecfg.h"
-#include "models_filecfg.h"
+#include "filecfg/models_dump.h"
 #include "storage_filecfg.h"
 #include "log_filecfg.h"
 
@@ -766,7 +766,7 @@ int filecfg_dump(void)
 	filecfg_config_dump(runtime->config);
 
 	// dump models
-	models_filecfg_dump();
+	filecfg_models_dump();
 
 	// dump plant
 	filecfg_plant_dump(runtime->plant);

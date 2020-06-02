@@ -1,5 +1,5 @@
 //
-//  models_filecfg.c
+//  filecfg/models_parse.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE
@@ -8,54 +8,12 @@
 
 /**
  * @file
- * Models subsystem file configuration.
+ * Models subsystem file configuration parsing.
  */
 
-#include "models_filecfg.h"
+#include "models_parse.h"
 #include "models.h"
-#include "filecfg.h"
 #include "filecfg_parser.h"
-
-extern struct s_models Models;
-
-static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
-{
-	if (!bmodel)
-		return (-EINVALID);
-
-	if (!bmodel->set.configured)
-		return (-ENOTCONFIGURED);
-
-	filecfg_iprintf("bmodel \"%s\" {\n", bmodel->name);
-	filecfg_ilevel_inc();
-
-	if (FCD_Exhaustive || bmodel->set.logging)
-		filecfg_iprintf("logging %s;\n", filecfg_bool_str(bmodel->set.logging));
-	filecfg_iprintf("tau %ld;\n", timekeep_tk_to_sec(bmodel->set.tau));						// mandatory
-	filecfg_iprintf("tid_outdoor"); filecfg_tempid_dump(bmodel->set.tid_outdoor);		// mandatory
-
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
-}
-
-int models_filecfg_dump(void)
-{
-	struct s_bmodel_l * restrict bmodelelmt;
-
-	filecfg_iprintf("models {\n");
-	filecfg_ilevel_inc();
-	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
-		if (!bmodelelmt->bmodel->set.configured)
-			continue;
-		filecfg_bmodel_dump(bmodelelmt->bmodel);
-	}
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
-}
 
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_bmodel, logging)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_bmodel, tau)
@@ -93,7 +51,7 @@ static int bmodel_parse(void * restrict const priv __attribute__((unused)), cons
 	return (ret);
 }
 
-int models_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_models_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "bmodel", bmodel_parse));
 }
