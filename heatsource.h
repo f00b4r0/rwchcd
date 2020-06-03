@@ -49,7 +49,7 @@ struct s_heatsource {
 		struct s_temp_intgrl sld_itg;	///< sliding priority integral, used to compute consummer shift when in DHW sliding priority
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;		///< unique name for this heatsource
-	const struct s_pdata * restrict pdata;	///< read-only plant data for this heatsource
+	const struct s_pdata * pdata;		///< read-only plant data for this heatsource
 	void * restrict priv;			///< pointer to source private data structure
 	struct {
 		int (*online)(struct s_heatsource * const);	///< pointer to source private online() function

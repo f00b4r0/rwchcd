@@ -79,7 +79,7 @@ struct s_hcircuit {
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 	} run;		///< private runtime (internally handled)
 	void * restrict tlaw_priv;		///< Reference data for templaw
-	const struct s_pdata * restrict pdata;	///< read-only plant data for this circuit
+	const struct s_pdata * pdata;		///< read-only plant data for this circuit
 	const char * restrict name;		///< unique name for this circuit
 };
 

@@ -19,7 +19,7 @@
 
 #include "plant.h"
 
-#define hspriv_to_heatsource(_priv)	container_of(_priv, struct s_heatsource, priv)
+#define hspriv_to_heatsource(_priv)	container_of(_priv, const struct s_heatsource, priv)
 
 static inline const struct s_plant * __hspriv_to_plant(void * priv)
 {

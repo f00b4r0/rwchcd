@@ -2,7 +2,7 @@
 //  filecfg_parser.h
 //  rwchcd
 //
-//  (C) 2019 Thibaut VARENE
+//  (C) 2019-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -117,11 +117,10 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 #endif
 
 #define container_of(ptr, type, member) ({					\
-	const typeof( ((type *)0)->member )					\
-	*__mptr = (ptr);							\
-	(type *)( (char *)__mptr - offsetof(type,member) );})
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);			\
+	(type *)( (const char *)__mptr - offsetof(type,member) ); })
 
-#define pdata_to_plant(_pdata)	container_of(_pdata, struct s_plant, pdata)
+#define pdata_to_plant(_pdata)	container_of(_pdata, const struct s_plant, pdata)
 
 
 #define FILECFG_PARSER_BOOL_PARSE_NEST_FUNC(_struct, _nest, _member)		\
