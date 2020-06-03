@@ -21,9 +21,10 @@
 static int heatsource_type_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_heatsource * const heatsource = priv;
+	const char * str = node->value.stringval;
 	int ret;
 
-	if (!strcmp("boiler", node->value.stringval))
+	if (!strcmp(str, "boiler"))
 		ret = hs_boiler_parse(heatsource, node);
 	else
 		ret = -EUNKNOWN;

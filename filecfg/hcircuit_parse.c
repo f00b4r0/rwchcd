@@ -140,7 +140,7 @@ static int fcp_hcircuit_tlaw(void * restrict const priv, const struct s_filecfg_
 	struct s_hcircuit * restrict const hcircuit = priv;
 	const char * str = node->value.stringval;
 
-	if (!strcmp("bilinear", str))
+	if (!strcmp(str, "bilinear"))
 		return (hcircuit_tlaw_bilinear_parser(hcircuit, node));
 	else
 		return (-EINVALID);

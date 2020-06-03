@@ -33,14 +33,13 @@ FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
 static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_boiler_priv * restrict const boiler = priv;
-	const char * str;
+	const char * str = node->value.stringval;
 
-	str = node->value.stringval;
-	if (!strcmp("never", str))
+	if	(!strcmp(str, "never"))
 		boiler->set.idle_mode = IDLE_NEVER;
-	else if (!strcmp("frostonly", str))
+	else if (!strcmp(str, "frostonly"))
 		boiler->set.idle_mode = IDLE_FROSTONLY;
-	else if (!strcmp("always", str))
+	else if (!strcmp(str, "always"))
 		boiler->set.idle_mode = IDLE_ALWAYS;
 	else
 		return (-EINVALID);

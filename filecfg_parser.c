@@ -60,11 +60,23 @@
 
 #include "runtime.h"
 
+/**
+ * Extract a temperature value from config.
+ * This function will handle a temperature value (in Celsius/Kelvin) expressed as
+ * either a pure int or a decimal value.
+ * @param positiveonly true if strictly negative values should be rejected
+ * @param delta true if the extracted temperature should be considered a delta (in Kelvin), false if absolute temp (in Celsius)
+ * @param n the configuration node to parse
+ * @param priv a pointer to temp_t storage for the extracted value
+ * @return exec status
+ */
 int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_filecfg_parser_node * const n, void *priv)
 {
 	temp_t *temp = priv;
-	
 	float fv; int iv;
+
+	assert((NODEFLT|NODEINT) & n->type);
+
 	if (NODEFLT == n->type) {
 		fv = n->value.floatval;
 		if (positiveonly && (fv < 0))
@@ -158,6 +170,12 @@ struct s_fcp_hwbkend {
 FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, backend)
 FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, name)
 
+/**
+ * Parse a temperature sensor configuration reference.
+ * @param priv a pointer to a tempid_t structure which will be populated
+ * @param node the configuration node to populate from
+ * @return exec status
+ */
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	tempid_t * restrict const tempid = priv;
@@ -167,6 +185,8 @@ int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_
 	};
 	struct s_fcp_hwbkend p;
 	int ret;
+
+	assert(NODELST == node->type);
 
 	dbgmsg(3, 1, "Trying \"%s\"", node->name);
 
@@ -199,6 +219,12 @@ int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_
 	return (ret);
 }
 
+/**
+ * Parse a relay configuration reference.
+ * @param priv a pointer to a relid_t structure which will be populated
+ * @param node the configuration node to populate from
+ * @return exec status
+ */
 int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	relid_t * restrict const relid = priv;
@@ -208,6 +234,8 @@ int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_
 	};
 	struct s_fcp_hwbkend p;
 	int ret;
+
+	assert(NODELST == node->type);
 
 	dbgmsg(3, 1, "Trying \"%s\"", node->name);
 
@@ -372,6 +400,12 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	return (ret);
 }
 
+/**
+ * Parse a runmode configuration reference.
+ * @param priv a pointer to a e_runmode variable which will be populated
+ * @param node the configuration node to populate from
+ * @return exec status
+ */
 int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	const struct {
@@ -390,6 +424,8 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 	enum e_runmode rm = RM_UNKNOWN;
 	const char * restrict n;
 	unsigned int i;
+
+	assert(NODESTR == node->type);
 
 	n = node->value.stringval;
 

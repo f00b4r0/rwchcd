@@ -142,18 +142,17 @@ static int fcp_temp_valve_tmix_tdeadzone(void * restrict const priv, const struc
 static int fcp_valve_tmix_algo(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	const char * str;
+	const char * str = node->value.stringval;
 	int ret;
 
-	str = node->value.stringval;
-	if (!strcmp("PI", str))
+	if	(!strcmp(str, "PI"))
 		ret = valve_algo_PI_parser(valve, node);
-	else if (!strcmp("sapprox", str))
+	else if (!strcmp(str, "sapprox"))
 		ret = valve_algo_sapprox_parser(valve, node);
-	else if (!strcmp("bangbang", str))
+	else if (!strcmp(str, "bangbang"))
 		ret = valve_make_bangbang(valve);
 	else
-		return (-EINVALID);
+		ret = -EINVALID;
 
 	return (ret);
 }
@@ -284,16 +283,15 @@ FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve, ete_time)
 static int fcp_valve_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	const char * str;
+	const char * str = node->value.stringval;;
 	int ret;
 
-	str = node->value.stringval;
-	if (!strcmp("mix", str))
+	if	(!strcmp(str, "mix"))
 		ret = valve_tmix_parser(valve, node);
-	else if (!strcmp("isol", str))
+	else if (!strcmp(str, "isol"))
 		ret = valve_tisol_parser(valve, node);
 	else
-		return (-EINVALID);
+		ret = -EINVALID;
 
 	return (ret);
 }
@@ -301,16 +299,15 @@ static int fcp_valve_type(void * restrict const priv, const struct s_filecfg_par
 static int fcp_valve_motor(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	const char * str;
+	const char * str = node->value.stringval;;
 	int ret;
 
-	str = node->value.stringval;
-	if (!strcmp("3way", str))
+	if	(!strcmp(str, "3way"))
 		ret = valve_m3way_parser(valve, node);
-	else if (!strcmp("2way", str))
+	else if (!strcmp(str, "2way"))
 		ret = valve_m2way_parser(valve, node);
 	else
-		return (-EINVALID);
+		ret = -EINVALID;
 
 	return (ret);
 }

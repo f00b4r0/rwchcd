@@ -15,6 +15,7 @@
 #define filecfg_parser_h
 
 #include <stdbool.h>
+#include <assert.h>
 
 /** Union for node value */
 union u_filecfg_parser_nodeval {
@@ -127,6 +128,7 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 static int fcp_bool_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
+	assert(NODEBOL == n->type);						\
 	s->_nest _member = n->value.boolval;					\
 	return (ALL_OK);							\
 }
@@ -142,6 +144,7 @@ static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const st
 {										\
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
+	assert(NODEINT == n->type);						\
 	if (_positiveonly && (iv < 0))						\
 		return (-EINVALID);						\
 	s->set._setmember = iv;							\
@@ -153,6 +156,7 @@ static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const st
 {										\
 	struct _struct * restrict const s = priv;				\
 	const char *str = n->value.stringval;					\
+	assert(NODESTR == n->type);						\
 	if (_nonempty && (strlen(str) < 1))					\
 		return (-EINVALID);						\
 	s->set._setmember = str;						\
@@ -180,6 +184,7 @@ static int fcp_tk_##_struct##_##_member(void * restrict const priv, const struct
 {										\
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
+	assert((NODEINT|NODEDUR) & n->type);					\
 	if (iv < 0)								\
 		return (-EINVALID);						\
 	s->_nest _member = timekeep_sec_to_tk(iv);				\
@@ -224,6 +229,7 @@ static int fcp_prio_##_struct##_##_setmember(void * restrict const priv, const s
 {										\
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
+	assert(NODEINT == n->type);						\
 	if ((iv < 0) || (iv > UINT_FAST8_MAX))					\
 		return (-EINVALID);						\
 	s->set._setmember = (typeof(s->set._setmember))iv;			\
@@ -247,6 +253,7 @@ static int fcp_runmode_##_struct##_##_member(void * restrict const priv, const s
 static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv; int iv;			\
+	assert(NODESTR == n->type);						\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	iv = scheduler_schedid_by_name(n->value.stringval);			\
@@ -260,6 +267,7 @@ static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, cons
 static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
+	assert(NODESTR == n->type);						\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	s->set.p._setpmember = models_fbn_bmodel(n->value.stringval);		\
@@ -272,6 +280,7 @@ static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, con
 static int fcp_pump_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
+	assert(NODESTR == n->type);						\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	s->set.p._setpmember = plant_fbn_pump(_priv2plant(priv), n->value.stringval);	\
@@ -284,6 +293,7 @@ static int fcp_pump_##_struct##_p##_setpmember(void * restrict const priv, const
 static int fcp_valve_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
+	assert(NODESTR == n->type);						\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	s->set.p._setpmember = plant_fbn_valve(_priv2plant(priv), n->value.stringval);	\

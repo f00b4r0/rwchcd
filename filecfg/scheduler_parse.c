@@ -64,9 +64,9 @@ static int scheduler_fcp_entry_time_min(void * restrict const priv, const struct
 static int scheduler_entry_time_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "wday", true, scheduler_fcp_entry_time_wday, NULL, },
-		{ NODEINT, "hour", true, scheduler_fcp_entry_time_hour, NULL, },
-		{ NODEINT, "min", true, scheduler_fcp_entry_time_min, NULL, },
+		{ NODEINT,	"wday",	true,	scheduler_fcp_entry_time_wday,	NULL, },
+		{ NODEINT,	"hour",	true,	scheduler_fcp_entry_time_hour,	NULL, },
+		{ NODEINT,	"min",	true,	scheduler_fcp_entry_time_min,	NULL, },
 	};
 	int ret;
 
@@ -74,8 +74,7 @@ static int scheduler_entry_time_parse(void * restrict const priv, const struct s
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	ret = filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers));
-	return (ret);
+	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
 }
 
 static int scheduler_fcp_entry_param_legionella(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -112,10 +111,10 @@ static int scheduler_fcp_entry_param_dhwmode(void * restrict const priv, const s
 static int scheduler_entry_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR, "runmode", false, scheduler_fcp_entry_param_runmode, NULL, },
-		{ NODESTR, "dhwmode", false, scheduler_fcp_entry_param_dhwmode, NULL, },
-		{ NODEBOL, "legionella", false, scheduler_fcp_entry_param_legionella, NULL, },
-		{ NODEBOL, "recycle", false, scheduler_fcp_entry_param_recycle, NULL, },
+		{ NODESTR,	"runmode",	false,	scheduler_fcp_entry_param_runmode,	NULL, },
+		{ NODESTR,	"dhwmode",	false,	scheduler_fcp_entry_param_dhwmode,	NULL, },
+		{ NODEBOL,	"legionella",	false,	scheduler_fcp_entry_param_legionella,	NULL, },
+		{ NODEBOL,	"recycle",	false,	scheduler_fcp_entry_param_recycle,	NULL, },
 	};
 	struct s_schedule_e * const schent = priv;
 	int ret;
@@ -131,15 +130,14 @@ static int scheduler_entry_params_parse(void * restrict const priv, const struct
 	schent->params.runmode = RM_UNKNOWN;
 	schent->params.dhwmode = RM_UNKNOWN;
 
-	ret = filecfg_parser_run_parsers(schent, parsers, ARRAY_SIZE(parsers));
-	return (ret);
+	return (filecfg_parser_run_parsers(schent, parsers, ARRAY_SIZE(parsers)));
 }
 
 static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST, "time", true, scheduler_entry_time_parse, NULL, },		// 0
-		{ NODELST, "params", true, scheduler_entry_params_parse, NULL, },
+		{ NODELST,	"time",		true,	scheduler_entry_time_parse,	NULL, },
+		{ NODELST,	"params",	true,	scheduler_entry_params_parse,	NULL, },
 	};
 	const schedid_t schedid = *(schedid_t *)priv;
 	struct s_schedule_e schent;
@@ -174,11 +172,8 @@ static int scheduler_schedule_parse(void * restrict const priv __attribute__((un
 	if (!node)
 		return (-EINVALID);
 
-	if (NODESTR != node->type)
-		return (-EINVALID);	// we only accept NODESTR backend node with children
-
 	if (!node->children)
-		return (-EEMPTY);
+		return (-EEMPTY);	// we only accept NODESTR backend node with children
 
 	if (strlen(node->value.stringval) <= 0)
 		return (-EINVALID);

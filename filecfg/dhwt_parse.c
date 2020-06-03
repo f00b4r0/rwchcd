@@ -77,18 +77,17 @@ FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_hwisol
 static int fcp_dhwt_cprio(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_dhwt * restrict const dhwt = priv;
-	const char * str;
+	const char * str = node->value.stringval;
 
-	str = node->value.stringval;
-	if (!strcmp("paralmax", str))
+	if	(!strcmp(str, "paralmax"))
 		dhwt->set.dhwt_cprio = DHWTP_PARALMAX;
-	else if (!strcmp("paraldhw", str))
+	else if (!strcmp(str, "paraldhw"))
 		dhwt->set.dhwt_cprio = DHWTP_PARALDHW;
-	else if (!strcmp("slidmax", str))
+	else if (!strcmp(str, "slidmax"))
 		dhwt->set.dhwt_cprio = DHWTP_SLIDMAX;
-	else if (!strcmp("sliddhw", str))
+	else if (!strcmp(str, "sliddhw"))
 		dhwt->set.dhwt_cprio = DHWTP_SLIDDHW;
-	else if (!strcmp("absolute", str))
+	else if (!strcmp(str, "absolute"))
 		dhwt->set.dhwt_cprio = DHWTP_ABSOLUTE;
 	else
 		return (-EINVALID);
@@ -99,14 +98,13 @@ static int fcp_dhwt_cprio(void * restrict const priv, const struct s_filecfg_par
 static int fcp_dhwt_force_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_dhwt * restrict const dhwt = priv;
-	const char * str;
+	const char * str = node->value.stringval;
 
-	str = node->value.stringval;
-	if (!strcmp("never", str))
+	if	(!strcmp(str, "never"))
 		dhwt->set.force_mode = DHWTF_NEVER;
-	else if (!strcmp("first", str))
+	else if (!strcmp(str, "first"))
 		dhwt->set.force_mode = DHWTF_FIRST;
-	else if (!strcmp("always", str))
+	else if (!strcmp(str, "always"))
 		dhwt->set.force_mode = DHWTF_ALWAYS;
 	else
 		return (-EINVALID);
