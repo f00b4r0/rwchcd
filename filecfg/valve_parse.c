@@ -283,7 +283,7 @@ FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve, ete_time)
 static int fcp_valve_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	const char * str = node->value.stringval;;
+	const char * str = node->value.stringval;
 	int ret;
 
 	if	(!strcmp(str, "mix"))
@@ -299,7 +299,7 @@ static int fcp_valve_type(void * restrict const priv, const struct s_filecfg_par
 static int fcp_valve_motor(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	const char * str = node->value.stringval;;
+	const char * str = node->value.stringval;
 	int ret;
 
 	if	(!strcmp(str, "3way"))
