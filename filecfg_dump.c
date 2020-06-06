@@ -106,34 +106,39 @@ int filecfg_ilevel_dec(void)
 	return (ALL_OK);
 }
 
-int filecfg_tempid_dump(const tempid_t tempid)
+int filecfg_dump_nodestr(const char *name, const char *value)
+{
+	return (filecfg_iprintf("%s \"%s\";\n", name, value));
+}
+
+int filecfg_dump_tempid(const char *name, const tempid_t tempid)
 {
 	if (!hardware_sensor_name(tempid)) {
-		filecfg_printf(" {};\n");
+		filecfg_printf("%s {};\n", name);
 		return (-EINVALID);
 	}
 
-	filecfg_printf(" {\n");
+	filecfg_iprintf("%s {\n", name);
 	filecfg_ilevel_inc();
-	filecfg_iprintf("backend \"%s\";\n", hw_backends_name(tempid.bid));
-	filecfg_iprintf("name \"%s\";\n", hardware_sensor_name(tempid));
+	filecfg_dump_nodestr("backend", hw_backends_name(tempid.bid));
+	filecfg_dump_nodestr("name", hardware_sensor_name(tempid));
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-int filecfg_relid_dump(const relid_t relid)
+int filecfg_dump_relid(const char *name, const relid_t relid)
 {
 	if (!hardware_relay_name(relid)) {
-		filecfg_printf(" {};\n");
+		filecfg_printf("%s {};\n", name);
 		return (-EINVALID);
 	}
 
-	filecfg_printf(" {\n");
+	filecfg_iprintf("%s {\n", name);
 	filecfg_ilevel_inc();
-	filecfg_iprintf("backend \"%s\";\n", hw_backends_name(relid.bid));
-	filecfg_iprintf("name \"%s\";\n", hardware_relay_name(relid));
+	filecfg_dump_nodestr("backend", hw_backends_name(relid.bid));
+	filecfg_dump_nodestr("name", hardware_relay_name(relid));
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 
@@ -145,9 +150,29 @@ int filecfg_relid_dump(const relid_t relid)
  * @param test the value to represent
  * @return a statically allocated string
  */
-const char * filecfg_bool_str(const bool test)
+static const char * filecfg_bool_str(const bool test)
 {
 	return (test ? "yes" : "no");
+}
+
+int filecfg_dump_nodebool(const char *name, bool value)
+{
+	return (filecfg_iprintf("%s %s;\n", name, filecfg_bool_str(value)));
+}
+
+int filecfg_dump_celsius(const char *name, temp_t value)
+{
+	return (filecfg_iprintf("%s %.1f;\n", name, temp_to_celsius(value)));
+}
+
+int filecfg_dump_deltaK(const char *name, temp_t value)
+{
+	return (filecfg_iprintf("%s %.1f;\n", name, temp_to_deltaK(value)));
+}
+
+int filecfg_dump_tk(const char *name, timekeep_t value)
+{
+	return (filecfg_iprintf("%s %ld;\n", name, timekeep_tk_to_sec(value)));
 }
 
 /**
@@ -217,9 +242,9 @@ static int runtime_config_dump(const struct s_runtime * restrict const runtime)
 	filecfg_iprintf("defconfig {\n");
 	filecfg_ilevel_inc();
 
-	filecfg_iprintf("startup_sysmode \"%s\";\n", filecfg_sysmode_str(runtime->set.startup_sysmode));	// mandatory
-	filecfg_iprintf("startup_runmode \"%s\";\n", filecfg_runmode_str(runtime->set.startup_runmode));	// mandatory if SYS_MANUAL
-	filecfg_iprintf("startup_dhwmode \"%s\";\n", filecfg_runmode_str(runtime->set.startup_runmode));	// mandatory if SYS_MANUAL
+	filecfg_dump_nodestr("startup_sysmode", filecfg_sysmode_str(runtime->set.startup_sysmode));	// mandatory
+	filecfg_dump_nodestr("startup_runmode", filecfg_runmode_str(runtime->set.startup_runmode));	// mandatory if SYS_MANUAL
+	filecfg_dump_nodestr("startup_dhwmode", filecfg_runmode_str(runtime->set.startup_runmode));	// mandatory if SYS_MANUAL
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

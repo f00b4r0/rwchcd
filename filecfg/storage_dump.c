@@ -29,7 +29,7 @@ int filecfg_storage_dump(void)
 
 	filecfg_iprintf("storage {\n");
 	filecfg_ilevel_inc();
-	filecfg_iprintf("path \"%s\";\n", Storage_path);
+	filecfg_dump_nodestr("path", Storage_path);
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 

@@ -42,13 +42,13 @@ int filecfg_plant_dump(const struct s_plant * restrict const plant)
 	filecfg_iprintf("config {\n");
 	filecfg_ilevel_inc();
 	if (FCD_Exhaustive || plant->set.summer_maintenance)
-		filecfg_iprintf("summer_maintenance %s;\n", filecfg_bool_str(plant->set.summer_maintenance));
+		filecfg_dump_nodebool("summer_maintenance", plant->set.summer_maintenance);
 	if (FCD_Exhaustive || plant->set.sleeping_delay)
-		filecfg_iprintf("sleeping_delay %ld;\n", timekeep_tk_to_sec(plant->set.sleeping_delay));
+		filecfg_dump_tk("sleeping_delay", plant->set.sleeping_delay);
 	if (FCD_Exhaustive || plant->set.summer_run_interval)
-		filecfg_iprintf("summer_run_interval %ld;\n", timekeep_tk_to_sec(plant->set.summer_run_interval));
+		filecfg_dump_tk("summer_run_interval", plant->set.summer_run_interval);
 	if (FCD_Exhaustive || plant->set.summer_run_duration)
-		filecfg_iprintf("summer_run_duration %ld;\n", timekeep_tk_to_sec(plant->set.summer_run_duration));
+		filecfg_dump_tk("summer_run_duration", plant->set.summer_run_duration);
 	filecfg_iprintf("def_hcircuit"); filecfg_hcircuit_params_dump(&plant->pdata.set.def_hcircuit);
 	filecfg_iprintf("def_dhwt"); filecfg_dhwt_params_dump(&plant->pdata.set.def_dhwt);
 	filecfg_ilevel_dec();

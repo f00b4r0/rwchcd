@@ -57,13 +57,13 @@ int filecfg_heatsource_dump(const struct s_heatsource * restrict const heat)
 	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || heat->set.schedid)
-		filecfg_iprintf("schedid \"%s\";\n", scheduler_get_schedname(heat->set.schedid));
-	filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(heat->set.runmode));	// mandatory
+		filecfg_dump_nodestr("schedid", scheduler_get_schedname(heat->set.schedid));
+	filecfg_dump_nodestr("runmode", filecfg_runmode_str(heat->set.runmode));	// mandatory
 	filecfg_iprintf("type"); filecfg_heatsource_type_dump(heat);			// mandatory
 	if (FCD_Exhaustive || heat->set.prio)
 		filecfg_iprintf("prio %hd;\n", heat->set.prio);
 	if (FCD_Exhaustive || heat->set.consumer_sdelay)
-		filecfg_iprintf("consumer_sdelay %ld;\n", timekeep_tk_to_sec(heat->set.consumer_sdelay));
+		filecfg_dump_tk("consumer_sdelay", heat->set.consumer_sdelay);
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

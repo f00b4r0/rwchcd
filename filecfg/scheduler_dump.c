@@ -36,13 +36,13 @@ static void scheduler_entry_dump(const struct s_schedule_e * const schent)
 	filecfg_iprintf("params {\n");
 	filecfg_ilevel_inc();
 	if (RM_UNKNOWN != schent->params.runmode)
-		filecfg_iprintf("runmode \"%s\";\n", filecfg_runmode_str(schent->params.runmode));
+		filecfg_dump_nodestr("runmode", filecfg_runmode_str(schent->params.runmode));
 	if (RM_UNKNOWN != schent->params.dhwmode)
-		filecfg_iprintf("dhwmode \"%s\";\n", filecfg_runmode_str(schent->params.runmode));
+		filecfg_dump_nodestr("dhwmode", filecfg_runmode_str(schent->params.runmode));
 	if (schent->params.legionella)
-		filecfg_iprintf("legionella %s;\n", filecfg_bool_str(schent->params.legionella));
+		filecfg_dump_nodebool("legionella", schent->params.legionella);
 	if (schent->params.recycle)
-		filecfg_iprintf("recycle %s;\n", filecfg_bool_str(schent->params.recycle));
+		filecfg_dump_nodebool("recycle", schent->params.recycle);
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 

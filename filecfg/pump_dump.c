@@ -25,8 +25,8 @@ int filecfg_pump_dump(const struct s_pump * restrict const pump)
 	filecfg_iprintf("pump \"%s\" {\n", pump->name);
 	filecfg_ilevel_inc();
 	if (FCD_Exhaustive || pump->set.cooldown_time)
-		filecfg_iprintf("cooldown_time %ld;\n", timekeep_tk_to_sec(pump->set.cooldown_time));
-	filecfg_iprintf("rid_pump"); filecfg_relid_dump(pump->set.rid_pump);	// mandatory
+		filecfg_dump_tk("cooldown_time", pump->set.cooldown_time);
+	filecfg_dump_relid("rid_pump", pump->set.rid_pump);	// mandatory
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 

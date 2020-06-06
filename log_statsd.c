@@ -271,10 +271,10 @@ void log_statsd_filecfg_dump(void)
 	if (!Log_statsd.run.online)
 		return;
 
-	filecfg_iprintf("host \"%s\";\n", Log_statsd.set.host);	// mandatory
-	filecfg_iprintf("port \"%s\";\n", Log_statsd.set.port);	// mandatory
+	filecfg_dump_nodestr("host", Log_statsd.set.host);	// mandatory
+	filecfg_dump_nodestr("port", Log_statsd.set.port);	// mandatory
 	if (FCD_Exhaustive || Log_statsd.set.prefix)
-		filecfg_iprintf("prefix \"%s\";\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "");	// optional
+		filecfg_dump_nodestr("prefix", Log_statsd.set.prefix ? Log_statsd.set.prefix : "");	// optional
 }
 
 /**

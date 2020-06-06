@@ -41,6 +41,7 @@ static const char * log_config_dump_bkend_name(const struct s_log_bendcbs * rest
 
 void log_config_dump(void)
 {
-	filecfg_iprintf("sync_bkend \"%s\";\n", log_config_dump_bkend_name(&Log.set.sync_bkend));
-	filecfg_iprintf("async_bkend \"%s\";\n", log_config_dump_bkend_name(&Log.set.async_bkend));
+	filecfg_dump_nodebool("enabled", Log.set.enabled);
+	filecfg_dump_nodestr("sync_bkend", log_config_dump_bkend_name(&Log.set.sync_bkend));
+	filecfg_dump_nodestr("async_bkend", log_config_dump_bkend_name(&Log.set.async_bkend));
 }

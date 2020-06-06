@@ -30,13 +30,13 @@ static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
 	filecfg_ilevel_inc();
 
 	if (FCD_Exhaustive || bmodel->set.logging)
-		filecfg_iprintf("logging %s;\n", filecfg_bool_str(bmodel->set.logging));
+		filecfg_dump_nodebool("logging", bmodel->set.logging);
 	if (FCD_Exhaustive || bmodel->set.limit_tsummer)
-		filecfg_iprintf("limit_tsummer %.1f;\n", temp_to_celsius(bmodel->set.limit_tsummer));
+		filecfg_dump_celsius("limit_tsummer", bmodel->set.limit_tsummer);
 	if (FCD_Exhaustive || bmodel->set.limit_tfrost)
-		filecfg_iprintf("limit_tfrost %.1f;\n", temp_to_celsius(bmodel->set.limit_tfrost));
-	filecfg_iprintf("tau %ld;\n", timekeep_tk_to_sec(bmodel->set.tau));			// mandatory
-	filecfg_iprintf("tid_outdoor"); filecfg_tempid_dump(bmodel->set.tid_outdoor);		// mandatory
+		filecfg_dump_celsius("limit_tfrost", bmodel->set.limit_tfrost);
+	filecfg_dump_tk("tau", bmodel->set.tau);			// mandatory
+	filecfg_dump_tempid("tid_outdoor", bmodel->set.tid_outdoor);	// mandatory
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

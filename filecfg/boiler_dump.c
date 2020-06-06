@@ -51,30 +51,30 @@ int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat)
 	filecfg_printf(" {\n");
 	filecfg_ilevel_inc();
 
-	filecfg_iprintf("idle_mode \"%s\";\n", idlemode);
-	filecfg_iprintf("hysteresis %.1f;\n", temp_to_deltaK(priv->set.hysteresis));				// mandatory
-	filecfg_iprintf("limit_thardmax %.1f;\n", temp_to_celsius(priv->set.limit_thardmax));			// mandatory
+	filecfg_dump_nodestr("idle_mode", idlemode);
+	filecfg_dump_deltaK("hysteresis", priv->set.hysteresis);			// mandatory
+	filecfg_dump_celsius("limit_thardmax", priv->set.limit_thardmax);		// mandatory
 	if (FCD_Exhaustive || priv->set.limit_tmax)
-		filecfg_iprintf("limit_tmax %.1f;\n", temp_to_celsius(priv->set.limit_tmax));
+		filecfg_dump_celsius("limit_tmax", priv->set.limit_tmax);
 	if (FCD_Exhaustive || priv->set.limit_tmin)
-		filecfg_iprintf("limit_tmin %.1f;\n", temp_to_celsius(priv->set.limit_tmin));
+		filecfg_dump_celsius("limit_tmin", priv->set.limit_tmin);
 	if (FCD_Exhaustive || priv->set.limit_treturnmin)
-		filecfg_iprintf("limit_treturnmin %.1f;\n", temp_to_celsius(priv->set.limit_treturnmin));
-	filecfg_iprintf("t_freeze %.1f;\n", temp_to_celsius(priv->set.t_freeze));				// mandatory
+		filecfg_dump_celsius("limit_treturnmin", priv->set.limit_treturnmin);
+	filecfg_dump_celsius("t_freeze", priv->set.t_freeze);				// mandatory
 	if (FCD_Exhaustive || priv->set.burner_min_time)
-		filecfg_iprintf("burner_min_time %ld;\n", timekeep_tk_to_sec(priv->set.burner_min_time));
+		filecfg_dump_tk("burner_min_time", priv->set.burner_min_time);
 
-	filecfg_iprintf("tid_boiler"); filecfg_tempid_dump(priv->set.tid_boiler);				// mandatory
+	filecfg_dump_tempid("tid_boiler", priv->set.tid_boiler);			// mandatory
 	if (FCD_Exhaustive || hardware_sensor_name(priv->set.tid_boiler_return))
-		filecfg_iprintf("tid_boiler_return"), filecfg_tempid_dump(priv->set.tid_boiler_return);
-	filecfg_iprintf("rid_burner_1"); filecfg_relid_dump(priv->set.rid_burner_1);				// mandatory
+		filecfg_dump_tempid("tid_boiler_return", priv->set.tid_boiler_return);
+	filecfg_dump_relid("rid_burner_1", priv->set.rid_burner_1);			// mandatory
 	if (FCD_Exhaustive || hardware_relay_name(priv->set.rid_burner_2))
-		filecfg_iprintf("rid_burner_2"), filecfg_relid_dump(priv->set.rid_burner_2);
+		filecfg_dump_relid("rid_burner_2", priv->set.rid_burner_2);
 
 	if (FCD_Exhaustive || priv->set.p.pump_load)
-		filecfg_iprintf("pump_load \"%s\";\n", priv->set.p.pump_load ? priv->set.p.pump_load->name : "");
+		filecfg_dump_nodestr("pump_load", priv->set.p.pump_load ? priv->set.p.pump_load->name : "");
 	if (FCD_Exhaustive || priv->set.p.valve_ret)
-		filecfg_iprintf("valve_ret \"%s\";\n", priv->set.p.valve_ret ? priv->set.p.valve_ret->name : "");
+		filecfg_dump_nodestr("valve_ret", priv->set.p.valve_ret ? priv->set.p.valve_ret->name : "");
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

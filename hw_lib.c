@@ -130,9 +130,9 @@ void hw_lib_filecfg_sensor_dump(const struct s_hw_sensor * const sensor)
 	filecfg_iprintf("sensor \"%s\" {\n", sensor->name);
 	filecfg_ilevel_inc();
 	filecfg_iprintf("sid %d;\n", sensor->set.sid);
-	filecfg_iprintf("type \"%s\";\n", type);
+	filecfg_dump_nodestr("type", type);
 	if (FCD_Exhaustive || sensor->set.offset)
-		filecfg_iprintf("offset %.1f;\n", temp_to_deltaK(sensor->set.offset));
+		filecfg_dump_deltaK("offset", sensor->set.offset);
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 }
