@@ -37,7 +37,7 @@ enum e_hw_stype {
 struct s_hw_sensor {
 	struct {
 		bool configured;	///< sensor is configured
-		sid_t sid;		///< sensor id
+		sid_t sid;		///< sensor id, valid iff >0
 		enum e_hw_stype type;	///< sensor type
 		temp_t offset;		///< sensor value offset
 	} set;		///< settings (externally set)
@@ -52,7 +52,7 @@ struct s_hw_relay {
 	struct {
 		bool configured;	///< true if properly configured
 		bool failstate;		///< default state assumed by hardware in failsafe mode
-		rid_t rid;		///< relay id
+		rid_t rid;		///< relay id, valid iff >0
 	} set;		///< settings (externally set)
 	struct {
 		bool turn_on;		///< state requested by software

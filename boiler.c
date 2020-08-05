@@ -278,7 +278,6 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
  * @param heat heatsource parent structure
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @note cold startup protection has a hardcoded 2% per 1Ks ratio
- * @todo burner turn-on anticipation
  */
 static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 {

@@ -119,9 +119,7 @@ struct s_hw_callbacks {
 	 * executed, this function will return an OFF state for this relay.
 	 * @param priv hardware backend private data
 	 * @param rid hardware relay id
-	 * @param turn_on true for turn on request
-	 * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
-	 * @return exec status
+	 * @return relay state
 	 */
 	int (*relay_get_state)(void * priv, const rid_t rid);
 

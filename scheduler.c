@@ -25,7 +25,6 @@
 #include <stdlib.h>	// calloc
 #include <unistd.h>	// sleep
 #include <time.h>
-#include <pthread.h>
 #include <string.h>	// strcmp/memcpy
 #include <stdatomic.h>
 #include <limits.h>
