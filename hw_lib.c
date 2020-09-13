@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <math.h>	// sqrtf
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>	// free
 
 #include "filecfg_dump.h"
 #include "lib.h"
@@ -241,6 +243,37 @@ int hw_lib_filecfg_relay_parse(void * restrict const priv, const struct s_filecf
 }
 
 /**
+ * Duplicate a hardware relay from source.
+ * This function is typically intended to be used in a setup process post config parsing.
+ * @param rnew an allocated relay structure which will be populated according #rsrc
+ * @param rsrc the source relay whose configuration will be copied
+ * @return exec status
+ * @note sets relay's run.off_since
+ */
+int hw_lib_relay_setup_copy(struct s_hw_relay * restrict const rnew, const struct s_hw_relay * restrict const rsrc)
+{
+	char * str;
+
+	assert(rnew && rsrc);
+
+	str = strdup(rsrc->name);
+	if (!str)
+		return(-EOOM);
+
+	rnew->name = str;
+
+	// register failover state
+	rnew->set.failstate = rsrc->set.failstate;
+	rnew->set.rid = rsrc->set.rid;
+
+	rnew->run.state_since = timekeep_now();	// relay is by definition OFF since "now"
+
+	rnew->set.configured = true;
+
+	return (ALL_OK);
+}
+
+/**
  * Set (request) hardware relay state.
  * @param relay the hardware relay to modify
  * @param turn_on true if relay is meant to be turned on
@@ -268,17 +301,15 @@ int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, 
 
 /**
  * Get (request) hardware relay state.
- * Updates run.state_time and returns current state
+ * Returns current state
  * @param relay the hardware relay to read
- * @return run.is_on
+ * @return run.is_on or error
+ * @note after successful call to hw_lib_relay_update() this function is guaranteed not to fail.
  */
-int hw_lib_relay_get_state(struct s_hw_relay * const relay)
+int hw_lib_relay_get_state(const struct s_hw_relay * const relay)
 {
 	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
-
-	// update state time counter
-	relay->run.state_time = (timekeep_now() - relay->run.state_since);
 
 	return (relay->run.is_on);
 }
@@ -325,6 +356,21 @@ int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now)
 }
 
 /**
+ * Get relay name.
+ * @param relay the relay to get the name
+ * @return relay name if available, NULL otherwise
+ */
+const char * hw_lib_relay_get_name(const struct s_hw_relay * restrict const relay)
+{
+	assert(relay);
+
+	if (relay->set.configured)
+		return (relay->name);
+	else
+		return NULL;
+}
+
+/**
  * Routine to restore relevant data for hardware relays state from permanent storage.
  * Restores cycles and on/off total time counts.
  * @param rdest target data structure
@@ -344,4 +390,16 @@ void hw_lib_relay_restore(struct s_hw_relay * restrict const rdest, const struct
 	rdest->run.on_totsecs += rsrc->run.on_totsecs;
 	rdest->run.off_totsecs += rsrc->run.off_totsecs;
 	rdest->run.cycles += rsrc->run.cycles;
+}
+
+/**
+ * Discard a relay.
+ * @param relay the relay to trash
+ * @warning not thread safe (should be only used in exit routine)
+ */
+void hw_lib_relay_discard(struct s_hw_relay * const relay)
+{
+	free((void *)relay->name);
+
+	memset(relay, 0x00, sizeof(*relay));
 }

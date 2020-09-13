@@ -59,18 +59,16 @@ static void hw_p1_relays_log(const struct s_hw_p1_pdata * restrict const hw)
 	};
 	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
-	
+	int ret;
+
 	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(hw->Relays));
 	
 	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
-		if (hw->Relays[i].set.configured) {
-			if (hw->Relays[i].run.is_on)
-				values[i] = 1;
-			else
-				values[i] = 0;
-		}
-		else
+		ret = hw_lib_relay_get_state(&hw->Relays[i]);
+		if (ret < 0)
 			values[i] = -1;
+		else
+			values[i] = (ret > 0) ? 1 : 0;
 	}
 	
 	const struct s_log_data data = {
@@ -324,11 +322,11 @@ static void hw_p1_rwchcsettings_deffail(struct s_hw_p1_pdata * restrict const hw
 
 	// update each known hardware relay
 	for (i = 0; i < ARRAY_SIZE(hw->Relays); i++) {
-		if (!hw->Relays[i].set.configured)
+		if (!hw_lib_relay_is_configured(&hw->Relays[i]))
 			continue;
 
 		// update internal structure
-		rwchc_relay_set(&hw->settings.deffail, i, hw->Relays[i].set.failstate);
+		rwchc_relay_set(&hw->settings.deffail, i, hw_lib_relay_cfg_get_failstate(&hw->Relays[i]));
 	}
 }
 /**
@@ -484,8 +482,8 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 	struct s_hw_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const timekeep_t now = timekeep_now();	// we assume the whole thing will take much less than a second
-	uint_fast8_t i, chflags = HW_LIB_RCHNONE;
-	int ret = -EGENERIC;
+	uint_fast8_t i;
+	int ret = -EGENERIC, chflags = HW_LIB_RCHNONE;
 
 	assert(hw->run.online);
 
@@ -504,7 +502,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 			chflags |= ret;
 
 		// update internal structure
-		rwchc_relay_set(&rWCHC_relays, i, relay->run.turn_on);
+		rwchc_relay_set(&rWCHC_relays, i, (bool)hw_lib_relay_get_state(relay));
 	}
 
 	// save/log relays state if there was a change
@@ -589,10 +587,10 @@ int hw_p1_rid_by_name(const struct s_hw_p1_pdata * const restrict hw, const char
 	assert(hw && name);
 
 	for (id = 0; (id < ARRAY_SIZE(hw->Relays)); id++) {
-		if (!hw->Relays[id].set.configured)
+		if (!hw_lib_relay_is_configured(&hw->Relays[id]))
 			continue;
-		if (!strcmp(hw->Relays[id].name, name)) {
-			ret = hw->Relays[id].set.rid;
+		if (!strcmp(hw_lib_relay_get_name(&hw->Relays[id]),name)) {
+			ret = hw_lib_relay_cfg_get_rid(&hw->Relays[id]);
 			break;
 		}
 	}

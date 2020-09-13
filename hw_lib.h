@@ -47,7 +47,7 @@ struct s_hw_sensor {
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the sensor
 };
 
-/** software representation of a hardware relay */
+/** software representation of a hardware relay. @note must be considered opaque */
 struct s_hw_relay {
 	struct {
 		bool configured;	///< true if properly configured
@@ -58,6 +58,8 @@ struct s_hw_relay {
 		bool turn_on;		///< state requested by software
 		bool is_on;		///< current hardware active state
 		timekeep_t state_since;	///< last time state changed
+		/* The following elements are only accessed within _relay_update()
+		 * and _relay_restore() which can never happen concurrently */
 		timekeep_t state_time;	///< time spent in current state
 		uint_fast32_t on_totsecs;	///< total seconds spent in on state since epoch (updated at state change only)
 		uint_fast32_t off_totsecs;	///< total seconds spent in off state since epoch (updated at state change only)
@@ -73,9 +75,15 @@ int hw_lib_filecfg_sensor_parse(void * restrict const priv, const struct s_filec
 void hw_lib_filecfg_relay_dump(const struct s_hw_relay * const relay);
 int hw_lib_filecfg_relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
+int hw_lib_relay_setup_copy(struct s_hw_relay * restrict const rnew, const struct s_hw_relay * restrict const rsrc);
+#define hw_lib_relay_is_configured(r) ((r)->set.configured)
 int hw_lib_relay_set_state(struct s_hw_relay * const relay, const bool turn_on, const timekeep_t change_delay);
-int hw_lib_relay_get_state(struct s_hw_relay * const relay);
+int hw_lib_relay_get_state(const struct s_hw_relay * const relay);
+#define hw_lib_relay_cfg_get_rid(r)		((r)->set.rid)
+#define hw_lib_relay_cfg_get_failstate(r)	((r)->set.failstate)
 int hw_lib_relay_update(struct s_hw_relay * const relay, const timekeep_t now);
+const char * hw_lib_relay_get_name(const struct s_hw_relay * restrict const relay);
 void hw_lib_relay_restore(struct s_hw_relay * restrict const rdest, const struct s_hw_relay * restrict const rsrc);
+void hw_lib_relay_discard(struct s_hw_relay * const relay);
 
 #endif /* hw_lib_h */

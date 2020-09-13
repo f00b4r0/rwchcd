@@ -166,11 +166,9 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
  * @param hw private hw_p1 hardware data
  * @param relay an allocated relay structure which will be used as the configuration source for the new relay
  * @return exec status
- * @note sets relay's run.off_since
  */
 int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_relay * restrict const relay)
 {
-	char * str = NULL;
 	rid_t id;
 
 	assert(hw);
@@ -178,33 +176,19 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const st
 	if (!relay || !relay->name)
 		return (-EUNKNOWN);
 
-	id = relay->set.rid;
+	id = hw_lib_relay_cfg_get_rid(relay);
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
 	id--;	// relay array indexes from 0
-	if (hw->Relays[id-1].set.configured)
+	if (hw_lib_relay_is_configured(&hw->Relays[id-1]))
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_rid_by_name(hw, relay->name) > 0)
+	if (hw_p1_rid_by_name(hw, hw_lib_relay_get_name(relay)) > 0)
 		return (-EEXISTS);
 
-	str = strdup(relay->name);
-	if (!str)
-		return(-EOOM);
-
-	hw->Relays[id].name = str;
-
-	// register failover state
-	hw->Relays[id].set.failstate = relay->set.failstate;
-	hw->Relays[id].set.rid = relay->set.rid;
-
-	hw->Relays[id].run.state_since = timekeep_now();	// relay is by definition OFF since "now"
-
-	hw->Relays[id].set.configured = true;
-
-	return (ALL_OK);
+	return (hw_lib_relay_setup_copy(&hw->Relays[id], relay));
 }
 
 /**
@@ -221,12 +205,10 @@ int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const ri
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	if (!hw->Relays[id-1].set.configured)
+	if (!hw_lib_relay_is_configured(&hw->Relays[id-1]))
 		return (-ENOTCONFIGURED);
 
-	free((void *)hw->Relays[id-1].name);
-
-	memset(&hw->Relays[id-1], 0x00, sizeof(hw->Relays[id-1]));
+	hw_lib_relay_discard(&hw->Relays[id-1]);
 
 	return (ALL_OK);
 }

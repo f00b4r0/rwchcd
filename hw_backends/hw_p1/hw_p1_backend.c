@@ -380,12 +380,8 @@ static int hw_p1_offline(void * priv)
 	hw_p1_lcd_offline(&hw->lcd);
 
 	// turn off each known hardware relay
-	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
-		if (!hw->Relays[i].set.configured)
-			continue;
-
-		hw->Relays[i].run.turn_on = false;
-	}
+	for (i=0; i<ARRAY_SIZE(hw->Relays); i++)
+		hw_lib_relay_set_state(&hw->Relays[i], OFF, 0);
 
 	// update the hardware
 	ret = hw_p1_rwchcrelays_write(hw);
@@ -459,7 +455,7 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (NULL);
 
-	return (hw->Relays[id-1].name);
+	return (hw_lib_relay_get_name(&hw->Relays[id-1]));
 }
 
 /**
@@ -474,7 +470,7 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
 static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const timekeep_t change_delay)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_hw_relay * relay = NULL;
+	struct s_hw_relay * relay;
 
 	assert(hw);
 
@@ -495,7 +491,7 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_hw_relay * relay = NULL;
+	struct s_hw_relay * relay;
 
 	assert(hw);
 
