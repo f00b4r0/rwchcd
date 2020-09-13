@@ -19,7 +19,6 @@
 #include <stdbool.h>	// bool
 #include <time.h>	// time()
 #include <stdio.h>	// (f)printf
-#include <pthread.h>	// rwlocks
 
 #define testbit(var, bit)	((var) & (1U << (bit)))
 #define setbit(var, bit)	((var) |= (typeof (var))(1U << (bit)))

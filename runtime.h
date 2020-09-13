@@ -17,6 +17,8 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
+#include <pthread.h>	// rwlocks
+
 /** Runtime environment structure */
 struct s_runtime {
 	struct {
