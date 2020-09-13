@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>	// free
+#include <stdatomic.h>
 
 #include "filecfg_dump.h"
 #include "lib.h"
@@ -293,7 +294,7 @@ int hw_lib_sensor_clone_temp(const struct s_hw_sensor * restrict const sensor, t
 	if (!sensor->set.configured)
 		return (-ENOTCONFIGURED);
 
-	temp = sensor->run.value;
+	temp = atomic_load_explicit(&sensor->run.value, memory_order_relaxed);
 
 	if (tclone)
 		*tclone = temp + (adjust ? sensor->set.offset : 0);
@@ -330,7 +331,7 @@ int hw_lib_sensor_set_temp(struct s_hw_sensor * restrict const sensor, const tem
 {
 	assert(sensor);
 
-	sensor->run.value = temp;
+	atomic_store_explicit(&sensor->run.value, temp, memory_order_relaxed);
 
 	return (ALL_OK);
 }

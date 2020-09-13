@@ -42,7 +42,7 @@ struct s_hw_sensor {
 		temp_t offset;		///< sensor value offset
 	} set;		///< settings (externally set)
 	struct {
-		temp_t value;		///< sensor current temperature value
+		_Atomic temp_t value;	///< sensor current temperature value
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the sensor
 };

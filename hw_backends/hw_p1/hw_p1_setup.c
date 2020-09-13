@@ -29,8 +29,7 @@ static struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
 void * hw_p1_setup_new(void)
 {
 	memset(&Hardware, 0x0, sizeof(Hardware));
-	pthread_rwlock_init(&Hardware.Sensors_rwlock, NULL);
-
+	
 	Hardware.spi.set.chan = SPICHAN;
 	Hardware.spi.set.clock = SPICLOCK;
 

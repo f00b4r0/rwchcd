@@ -43,7 +43,6 @@ struct s_hw_p1_pdata {
 	union rwchc_u_relays relays;		///< local copy of hardware relays data
 	union rwchc_u_periphs peripherals;	///< local copy of hardware peripheral data
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
-	pthread_rwlock_t Sensors_rwlock;	///< For thread safe access to ::Sensors.value
 	struct s_hw_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
 	struct s_hw_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 	uint_fast8_t scount[RWCHC_NTSENSORS];	///< counter for decimation

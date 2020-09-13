@@ -184,7 +184,6 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 	
 	assert(hw->run.initialized);
 
-	pthread_rwlock_wrlock(&hw->Sensors_rwlock);
 	for (i = 0; i < hw->settings.nsensors; i++) {
 		sensor = &hw->Sensors[i];
 		if (!hw_lib_sensor_is_configured(sensor)) {
@@ -238,7 +237,6 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			}
 		}
 	}
-	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 }
 
 /**

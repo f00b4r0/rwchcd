@@ -58,10 +58,8 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	if (!hw->run.sensors_ftime)
 		return (-EINVALID);	// data not ready
 
-	pthread_rwlock_rdlock(&hw->Sensors_rwlock);
 	for (i = 0; i < hw->settings.nsensors; i++)
 		hw_lib_sensor_clone_temp(&hw->Sensors[i], &values[i], true);
-	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 
 	ldata->keys = keys;
 	ldata->metrics = metrics;
@@ -537,8 +535,6 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
 int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	int ret;
-	temp_t temp;
 
 	assert(hw);
 
@@ -552,14 +548,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 		return (-EHARDWARE);
 	}
 
-	pthread_rwlock_rdlock(&hw->Sensors_rwlock);
-	ret = hw_lib_sensor_clone_temp(&hw->Sensors[id-1], &temp, true);
-	pthread_rwlock_unlock(&hw->Sensors_rwlock);
-
-	if ((ALL_OK == ret) && tclone)
-		*tclone = temp;
-
-	return (ret);
+	return (hw_lib_sensor_clone_temp(&hw->Sensors[id-1], tclone, true));
 }
 
 /**
