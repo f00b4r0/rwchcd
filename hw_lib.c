@@ -88,9 +88,10 @@ __attribute__((const)) static float ni1000_ohm_to_celsius(const uint_fast16_t oh
  * @param stype the sensor type identifier
  * @return correct function pointer for sensor type or NULL if invalid type
  */
-__attribute__ ((pure)) ohm_to_celsius_ft * hw_lib_sensor_o_to_c(const enum e_hw_stype stype)
+__attribute__ ((pure)) ohm_to_celsius_ft * hw_lib_sensor_o_to_c(const struct s_hw_sensor * restrict const sensor)
 {
-	switch (stype) {
+	assert(sensor);
+	switch (sensor->set.type) {
 		case HW_ST_PT1000:
 			return (pt1000_ohm_to_celsius);
 		case HW_ST_NI1000:
@@ -240,6 +241,125 @@ int hw_lib_filecfg_relay_parse(void * restrict const priv, const struct s_filecf
 	relay->set.failstate = parsers[1].node->value.boolval;
 
 	return (ret);
+}
+
+/**
+ * Duplicate a hardware sensor from source.
+ * This function is typically intended to be used in a setup process post config parsing.
+ * @param snew an allocated sensor structure which will be populated according #ssrc
+ * @param ssrc the source sensor whose configuration will be copied
+ * @return exec status
+ */
+int hw_lib_sensor_setup_copy(struct s_hw_sensor * restrict const snew, const struct s_hw_sensor * restrict const ssrc)
+{
+	char * str;
+
+	assert(snew && ssrc);
+
+	// ensure valid type
+	if (!hw_lib_sensor_o_to_c(ssrc))
+		return (-EINVALID);
+
+	str = strdup(ssrc->name);
+	if (!str)
+		return(-EOOM);
+
+	snew->name = str;
+	snew->set.sid = ssrc->set.sid;
+	snew->set.type = ssrc->set.type;
+	snew->set.offset = ssrc->set.offset;
+	snew->set.configured = true;
+
+	return (ALL_OK);
+}
+
+/**
+ * Clone sensor temperature.
+ * This function checks that the designated sensor is properly configured in software.
+ * Finally, if parameter #tclone is non-null, the temperature of the sensor
+ * is copied, with configuration offset applied.
+ * @param sensor target sensor
+ * @param tclone optional location to copy the sensor temperature.
+ * @param adjust result will be offset-adjusted if true
+ * @return exec status
+ */
+int hw_lib_sensor_clone_temp(const struct s_hw_sensor * restrict const sensor, temp_t * const tclone, bool adjust)
+{
+	int ret;
+	temp_t temp;
+
+	assert(sensor);
+
+	if (!sensor->set.configured)
+		return (-ENOTCONFIGURED);
+
+	temp = sensor->run.value;
+
+	if (tclone)
+		*tclone = temp + (adjust ? sensor->set.offset : 0);
+
+	switch (temp) {
+		case TEMPUNSET:
+			ret = -ESENSORINVAL;
+			break;
+		case TEMPSHORT:
+			ret = -ESENSORSHORT;
+			break;
+		case TEMPDISCON:
+			ret = -ESENSORDISCON;
+			break;
+		case TEMPINVALID:
+			ret = -EINVALID;
+			break;
+		default:
+			ret = ALL_OK;
+			break;
+	}
+
+	return (ret);
+}
+
+/**
+ * Store raw sensor value.
+ * @param sensor the target sensor
+ * @param temp the value to store
+ * @return ALL_OK
+ * @warning no sanity check is performed
+ */
+int hw_lib_sensor_set_temp(struct s_hw_sensor * restrict const sensor, const temp_t temp)
+{
+	assert(sensor);
+
+	sensor->run.value = temp;
+
+	return (ALL_OK);
+}
+
+/**
+ * Get sensor name.
+ * @param relay the relay to get the name
+ * @return relay name if available, NULL otherwise
+ */
+const char * hw_lib_sensor_get_name(const struct s_hw_sensor * restrict const sensor)
+{
+	assert(sensor);
+
+	if (sensor->set.configured)
+		return (sensor->name);
+	else
+		return NULL;
+}
+
+/**
+ * Discard a sensor.
+ * @param sensor the sensor to trash
+ * @warning not thread safe (should be only used in exit routine)
+ */
+void hw_lib_sensor_discard(struct s_hw_sensor * const sensor)
+{
+	free((void *)sensor->name);
+
+	memset(sensor, 0x00, sizeof(*sensor));
 }
 
 /**

@@ -11,8 +11,7 @@
  * Hardware Prototype 1 setup implementation.
  */
 
-#include <stdlib.h>	// calloc/free
-#include <string.h>	// memset/strdup
+#include <string.h>	// memset
 #include <assert.h>
 
 #include "hw_p1_setup.h"
@@ -100,7 +99,6 @@ int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint
  */
 int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_sensor * restrict const sensor)
 {
-	char * str = NULL;
 	sid_t id;
 
 	assert(hw);
@@ -108,33 +106,19 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 	if (!sensor || !sensor->name)
 		return (-EUNKNOWN);
 
-	id = sensor->set.sid;
+	id = hw_lib_sensor_cfg_get_sid(sensor);
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
 	id--;	// sensor array indexes from 0
-	if (hw->Sensors[id].set.configured)
+	if (hw_lib_sensor_is_configured(&hw->Sensors[id]))
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_sid_by_name(hw, sensor->name) > 0)
+	if (hw_p1_sid_by_name(hw, hw_lib_sensor_get_name(sensor)) > 0)
 		return (-EEXISTS);
 
-	// ensure valid type
-	if (!hw_lib_sensor_o_to_c(sensor->set.type))
-		return (-EINVALID);
-
-	str = strdup(sensor->name);
-	if (!str)
-		return(-EOOM);
-
-	hw->Sensors[id].name = str;
-	hw->Sensors[id].set.sid = sensor->set.sid;
-	hw->Sensors[id].set.type = sensor->set.type;
-	hw->Sensors[id].set.offset = sensor->set.offset;
-	hw->Sensors[id].set.configured = true;
-
-	return (ALL_OK);
+	return (hw_lib_sensor_setup_copy(&hw->Sensors[id], sensor));
 }
 
 /**
@@ -150,12 +134,10 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw->Sensors[id-1].set.configured)
+	if (!hw_lib_sensor_is_configured(&hw->Sensors[id-1]))
 		return (-ENOTCONFIGURED);
 
-	free((void *)hw->Sensors[id-1].name);
-
-	memset(&hw->Sensors[id-1], 0x00, sizeof(hw->Sensors[id-1]));
+	hw_lib_sensor_discard(&hw->Sensors[id-1]);
 
 	return (ALL_OK);
 }

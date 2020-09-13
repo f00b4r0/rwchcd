@@ -140,11 +140,11 @@ static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const si
 	switch (error) {
 		case -ESENSORSHORT:
 			fail = _("shorted");
-			name = hw->Sensors[id-1].name;
+			name = hw_lib_sensor_get_name(&hw->Sensors[id-1]);
 			break;
 		case -ESENSORDISCON:
 			fail = _("disconnected");
-			name = hw->Sensors[id-1].name;
+			name = hw_lib_sensor_get_name(&hw->Sensors[id-1]);
 			break;
 		case -ESENSORINVAL:
 			fail = _("invalid");
@@ -176,6 +176,7 @@ static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const si
  */
 static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 {
+	struct s_hw_sensor * sensor;
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
@@ -185,17 +186,18 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 
 	pthread_rwlock_wrlock(&hw->Sensors_rwlock);
 	for (i = 0; i < hw->settings.nsensors; i++) {
-		if (!hw->Sensors[i].set.configured) {
-			hw->Sensors[i].run.value = TEMPUNSET;
+		sensor = &hw->Sensors[i];
+		if (!hw_lib_sensor_is_configured(sensor)) {
+			hw_lib_sensor_set_temp(sensor, TEMPUNSET);
 			continue;
 		}
 
 		ohm = sensor_to_ohm(hw, hw->sensors[i], true);
-		o_to_c = hw_lib_sensor_o_to_c(hw->Sensors[i].set.type);
+		o_to_c = hw_lib_sensor_o_to_c(sensor);
 		assert(o_to_c);
 
-		current = celsius_to_temp(o_to_c(ohm)) + hw->Sensors[i].set.offset;
-		previous = hw->Sensors[i].run.value;
+		current = celsius_to_temp(o_to_c(ohm));
+		hw_lib_sensor_clone_temp(sensor, &previous, false);
 
 		if (current <= RWCHCD_TEMPMIN) {
 			// delay by hardcoded 5 samples
@@ -204,7 +206,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 				dbgmsg(1, 1, "delaying sensor %d short, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
-				hw->Sensors[i].run.value = TEMPSHORT;
+				hw_lib_sensor_set_temp(sensor, TEMPSHORT);
 				sensor_alarm(hw, (sid_t)(i+1), -ESENSORSHORT);
 			}
 		}
@@ -215,14 +217,14 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 				dbgmsg(1, 1, "delaying sensor %d disconnect, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
-				hw->Sensors[i].run.value = TEMPDISCON;
+				hw_lib_sensor_set_temp(sensor, TEMPDISCON);
 				sensor_alarm(hw, (sid_t)(i+1), -ESENSORDISCON);
 			}
 		}
 		// init or recovery
 		else if (previous <= TEMPINVALID) {
 			hw->scount[i] = 0;
-			hw->Sensors[i].run.value = current;
+			hw_lib_sensor_set_temp(sensor, current);
 		}
 		// normal operation
 		else {
@@ -232,7 +234,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			else {
 				// apply LP filter - ensure we only apply filtering on valid temps
 				hw->scount[i] = 0;
-				hw->Sensors[i].run.value = temp_expw_mavg(previous, current, hw->set.nsamples, 1);
+				hw_lib_sensor_set_temp(sensor, temp_expw_mavg(previous, current, hw->set.nsamples, 1));
 			}
 		}
 	}
@@ -562,10 +564,10 @@ int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char
 	assert(hw && name);
 
 	for (id = 0; (id < ARRAY_SIZE(hw->Sensors)); id++) {
-		if (!hw->Sensors[id].set.configured)
+		if (!hw_lib_sensor_is_configured(&hw->Sensors[id]))
 			continue;
-		if (!strcmp(hw->Sensors[id].name, name)) {
-			ret = hw->Sensors[id].set.sid;
+		if (!strcmp(hw_lib_sensor_get_name(&hw->Sensors[id]), name)) {
+			ret = hw_lib_sensor_cfg_get_sid(&hw->Sensors[id]);
 			break;
 		}
 	}

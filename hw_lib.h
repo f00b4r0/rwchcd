@@ -33,7 +33,7 @@ enum e_hw_stype {
 	 ST_LGNI1000, */
 };
 
-/** software representation of a hardware sensor */
+/** software representation of a hardware sensor. @note must be considered opaque */
 struct s_hw_sensor {
 	struct {
 		bool configured;	///< sensor is configured
@@ -42,7 +42,7 @@ struct s_hw_sensor {
 		temp_t offset;		///< sensor value offset
 	} set;		///< settings (externally set)
 	struct {
-		temp_t value;		///< sensor current temperature value (offset applied)
+		temp_t value;		///< sensor current temperature value
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the sensor
 };
@@ -68,12 +68,20 @@ struct s_hw_relay {
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the relay
 };
 
-ohm_to_celsius_ft * hw_lib_sensor_o_to_c(const enum e_hw_stype stype);
+ohm_to_celsius_ft * hw_lib_sensor_o_to_c(const struct s_hw_sensor * restrict const sensor);
 
 void hw_lib_filecfg_sensor_dump(const struct s_hw_sensor * const sensor);
 int hw_lib_filecfg_sensor_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 void hw_lib_filecfg_relay_dump(const struct s_hw_relay * const relay);
 int hw_lib_filecfg_relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
+
+int hw_lib_sensor_setup_copy(struct s_hw_sensor * restrict const snew, const struct s_hw_sensor * restrict const ssrc);
+#define hw_lib_sensor_is_configured(s)	((s)->set.configured)
+#define hw_lib_sensor_cfg_get_sid(s)	((s)->set.sid)
+int hw_lib_sensor_set_temp(struct s_hw_sensor * restrict const sensor, const temp_t temp);
+int hw_lib_sensor_clone_temp(const struct s_hw_sensor * restrict const sensor, temp_t * const tclone, bool adjust);
+const char * hw_lib_sensor_get_name(const struct s_hw_sensor * restrict const sensor);
+void hw_lib_sensor_discard(struct s_hw_sensor * const sensor);
 
 int hw_lib_relay_setup_copy(struct s_hw_relay * restrict const rnew, const struct s_hw_relay * restrict const rsrc);
 #define hw_lib_relay_is_configured(r) ((r)->set.configured)

@@ -60,7 +60,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 
 	pthread_rwlock_rdlock(&hw->Sensors_rwlock);
 	for (i = 0; i < hw->settings.nsensors; i++)
-		values[i] = hw->Sensors[i].run.value;
+		hw_lib_sensor_clone_temp(&hw->Sensors[i], &values[i], true);
 	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 
 	ldata->keys = keys;
@@ -518,7 +518,7 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
 	if ((!id) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
 		return (NULL);
 
-	return (hw->Sensors[id-1].name);
+	return (hw_lib_sensor_get_name(&hw->Sensors[id-1]));
 }
 
 /**
@@ -545,9 +545,6 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw->Sensors[id-1].set.configured)
-		return (-ENOTCONFIGURED);
-
 	// make sure available data is valid - XXX HW_P1_TIMEOUT_TK timeout hardcoded
 	if ((timekeep_now() - hw->run.sensors_ftime) > HW_P1_TIMEOUT_TK) {
 		if (tclone)
@@ -556,29 +553,11 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 	}
 
 	pthread_rwlock_rdlock(&hw->Sensors_rwlock);
-	temp = hw->Sensors[id-1].run.value;
+	ret = hw_lib_sensor_clone_temp(&hw->Sensors[id-1], &temp, true);
 	pthread_rwlock_unlock(&hw->Sensors_rwlock);
 
-	if (tclone)
+	if ((ALL_OK == ret) && tclone)
 		*tclone = temp;
-
-	switch (temp) {
-		case TEMPUNSET:
-			ret = -ESENSORINVAL;
-			break;
-		case TEMPSHORT:
-			ret = -ESENSORSHORT;
-			break;
-		case TEMPDISCON:
-			ret = -ESENSORDISCON;
-			break;
-		case TEMPINVALID:
-			ret = -EINVALID;
-			break;
-		default:
-			ret = ALL_OK;
-			break;
-	}
 
 	return (ret);
 }
@@ -604,7 +583,7 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, timekeep_t * con
 	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw->Sensors[id-1].set.configured)
+	if (!hw_lib_sensor_is_configured(&hw->Sensors[id-1]))
 		return (-ENOTCONFIGURED);
 
 	if (ctime)
