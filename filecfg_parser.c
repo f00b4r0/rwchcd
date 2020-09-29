@@ -401,6 +401,29 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 }
 
 /**
+ * Count a list of sibling nodes.
+ * @param nodelist the list of sibling nodes
+ * @param nname the expected name for sibling nodes
+ * @return number of siblings found
+ */
+unsigned int filecfg_parser_count_siblings(const struct s_filecfg_parser_nodelist * const nodelist, const char * nname)
+{
+	const struct s_filecfg_parser_nodelist *nlist;
+	const struct s_filecfg_parser_node *node;
+	unsigned int i = 0;
+
+	for (nlist = nodelist; nlist; nlist = nlist->next) {
+		node = nlist->node;
+		if (strcmp(nname, node->name))
+			continue;
+
+		i++;
+	}
+
+	return (i);
+}
+
+/**
  * Parse a runmode configuration reference.
  * @param priv a pointer to a e_runmode variable which will be populated
  * @param node the configuration node to populate from

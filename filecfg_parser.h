@@ -76,6 +76,7 @@ int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const
 int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser);
+unsigned int filecfg_parser_count_siblings(const struct s_filecfg_parser_nodelist * const nodelist, const char * nname);
 
 int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
@@ -299,6 +300,21 @@ static int fcp_valve_##_struct##_p##_setpmember(void * restrict const priv, cons
 	if (!s->set.p._setpmember)						\
 		return (-EINVALID);						\
 	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_ENUM_PARSE_SET_FUNC(_strarray, _struct, _setmember)	\
+static int fcp_enum_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	unsigned int i;									\
+	assert(NODESTR == n->type);						\
+	for (i = 0; i < ARRAY_SIZE(_strarray); i++) {				\
+		if (!strcmp(_strarray[i], n->value.stringval)) {		\
+			s->set._setmember = (typeof(s->set._setmember))i;	\
+			return (ALL_OK);					\
+		}								\
+	}									\
+	return (-EINVALID);							\
 }
 
 #endif /* filecfg_parser_h */

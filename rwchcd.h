@@ -106,6 +106,8 @@ enum e_execs {
 	ENOTFOUND,	///< entity not found
 	EUNKNOWN,	///< entity is unknown
 	EEMPTY,		///< entity is empty
+	ETOOBIG,	///< entity is too large
+	ERSTALE,	///< data is stale
 	EGENERIC,
 };
 

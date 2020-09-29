@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F01C2AD25220A74008AA53D /* temperature.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F01C2AC25220A74008AA53D /* temperature.c */; };
 		4F08254F248429910068FC22 /* scheduler_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08254E248429910068FC22 /* scheduler_parse.c */; };
 		4F0825522484383B0068FC22 /* models_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0825512484383B0068FC22 /* models_parse.c */; };
 		4F08255524844AF20068FC22 /* storage_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08255424844AF20068FC22 /* storage_parse.c */; };
@@ -37,6 +38,11 @@
 		4F99FD2D208BCF3200DDAB75 /* hw_p1_filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD2B208BCF3200DDAB75 /* hw_p1_filecfg.c */; };
 		4FA61C3E1E06F75100B4D862 /* timer.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3C1E06F75100B4D862 /* timer.c */; };
 		4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3F1E0955AA00B4D862 /* scheduler.c */; };
+		4FBFEB7D252889480062B1FB /* inputs_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB7C252889480062B1FB /* inputs_dump.c */; };
+		4FBFEB81252889E40062B1FB /* temperature_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB80252889E40062B1FB /* temperature_dump.c */; };
+		4FC1132225235AA2009AA17D /* inputs.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1132125235AA2009AA17D /* inputs.c */; };
+		4FC1132625239963009AA17D /* temperature_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1132525239963009AA17D /* temperature_parse.c */; };
+		4FC1132A25239B50009AA17D /* inputs_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1132925239B50009AA17D /* inputs_parse.c */; };
 		4FC1847B1DA6809E000E514B /* storage.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC184791DA6809E000E514B /* storage.c */; };
 		4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1847C1DA7B2F9000E514B /* dbus.c */; };
 		4FC304A81EBDCDB900D77AC6 /* models.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC304A61EBDCDB900D77AC6 /* models.c */; };
@@ -78,6 +84,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4F01C2AB25220A74008AA53D /* temperature.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature.h; sourceTree = SOURCE_ROOT; };
+		4F01C2AC25220A74008AA53D /* temperature.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = temperature.c; sourceTree = SOURCE_ROOT; };
 		4F08254D248429910068FC22 /* scheduler_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = scheduler_parse.h; path = filecfg/scheduler_parse.h; sourceTree = SOURCE_ROOT; };
 		4F08254E248429910068FC22 /* scheduler_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = scheduler_parse.c; path = filecfg/scheduler_parse.c; sourceTree = SOURCE_ROOT; };
 		4F0825502484383B0068FC22 /* models_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = models_parse.h; path = filecfg/models_parse.h; sourceTree = SOURCE_ROOT; };
@@ -142,6 +150,16 @@
 		4FA61C3D1E06F75100B4D862 /* timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = timer.h; sourceTree = SOURCE_ROOT; };
 		4FA61C3F1E0955AA00B4D862 /* scheduler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scheduler.c; sourceTree = SOURCE_ROOT; };
 		4FA61C401E0955AA00B4D862 /* scheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scheduler.h; sourceTree = SOURCE_ROOT; };
+		4FBFEB7B252889480062B1FB /* inputs_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs_dump.h; sourceTree = "<group>"; };
+		4FBFEB7C252889480062B1FB /* inputs_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs_dump.c; sourceTree = "<group>"; };
+		4FBFEB7F252889E40062B1FB /* temperature_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature_dump.h; sourceTree = "<group>"; };
+		4FBFEB80252889E40062B1FB /* temperature_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = temperature_dump.c; sourceTree = "<group>"; };
+		4FC1132025235AA2009AA17D /* inputs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs.h; sourceTree = SOURCE_ROOT; };
+		4FC1132125235AA2009AA17D /* inputs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs.c; sourceTree = SOURCE_ROOT; };
+		4FC1132425239963009AA17D /* temperature_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature_parse.h; sourceTree = "<group>"; };
+		4FC1132525239963009AA17D /* temperature_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = temperature_parse.c; sourceTree = "<group>"; };
+		4FC1132825239B50009AA17D /* inputs_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs_parse.h; sourceTree = "<group>"; };
+		4FC1132925239B50009AA17D /* inputs_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs_parse.c; sourceTree = "<group>"; };
 		4FC184791DA6809E000E514B /* storage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = storage.c; sourceTree = SOURCE_ROOT; };
 		4FC1847A1DA6809E000E514B /* storage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = storage.h; sourceTree = SOURCE_ROOT; };
 		4FC1847C1DA7B2F9000E514B /* dbus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dbus.c; sourceTree = SOURCE_ROOT; };
@@ -263,6 +281,14 @@
 				4FE70C542486A0020066007D /* log_dump.c */,
 				4F08255624844CD40068FC22 /* log_parse.h */,
 				4F08255724844CD40068FC22 /* log_parse.c */,
+				4FBFEB7F252889E40062B1FB /* temperature_dump.h */,
+				4FBFEB80252889E40062B1FB /* temperature_dump.c */,
+				4FC1132425239963009AA17D /* temperature_parse.h */,
+				4FC1132525239963009AA17D /* temperature_parse.c */,
+				4FBFEB7B252889480062B1FB /* inputs_dump.h */,
+				4FBFEB7C252889480062B1FB /* inputs_dump.c */,
+				4FC1132825239B50009AA17D /* inputs_parse.h */,
+				4FC1132925239B50009AA17D /* inputs_parse.c */,
 			);
 			path = filecfg;
 			sourceTree = SOURCE_ROOT;
@@ -321,6 +347,10 @@
 				4FC689532071304900A3A065 /* hw_backends.h */,
 				4F43569B23157AE60030EB89 /* hw_lib.c */,
 				4F43569A23157AE60030EB89 /* hw_lib.h */,
+				4F01C2AB25220A74008AA53D /* temperature.h */,
+				4F01C2AC25220A74008AA53D /* temperature.c */,
+				4FC1132025235AA2009AA17D /* inputs.h */,
+				4FC1132125235AA2009AA17D /* inputs.c */,
 				4FC6894F206FAB4D00A3A065 /* hardware.c */,
 				4FC68950206FAB4D00A3A065 /* hardware.h */,
 				4F42A5CE1F967BC3001B0A1F /* pump.c */,
@@ -456,10 +486,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4FBFEB7D252889480062B1FB /* inputs_dump.c in Sources */,
+				4FC1132225235AA2009AA17D /* inputs.c in Sources */,
 				4FE70C46248659F40066007D /* heatsource_parse.c in Sources */,
 				4FC689632071773800A3A065 /* hw_p1.c in Sources */,
 				4FE70C43248659E90066007D /* heatsource_dump.c in Sources */,
 				4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */,
+				4FBFEB81252889E40062B1FB /* temperature_dump.c in Sources */,
 				4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */,
 				4F08255824844CD40068FC22 /* log_parse.c in Sources */,
 				4FC1847B1DA6809E000E514B /* storage.c in Sources */,
@@ -479,6 +512,7 @@
 				4FE70C5E2486BBC90066007D /* backends_dump.c in Sources */,
 				4FE70C3D248658540066007D /* boiler_dump.c in Sources */,
 				4F869E99233A5EF300541A07 /* log_statsd.c in Sources */,
+				4FC1132A25239B50009AA17D /* inputs_parse.c in Sources */,
 				4FE70C4C24865E3B0066007D /* dhwt_parse.c in Sources */,
 				4F3AFBB21D88867600D86EE7 /* lib.c in Sources */,
 				4FE70C402486585E0066007D /* boiler_parse.c in Sources */,
@@ -486,6 +520,7 @@
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,
+				4FC1132625239963009AA17D /* temperature_parse.c in Sources */,
 				4F43569C23157AE60030EB89 /* hw_lib.c in Sources */,
 				4FE70C3A248651360066007D /* storage_dump.c in Sources */,
 				4F299C9221AABD2C009DCBC2 /* log.c in Sources */,
@@ -498,6 +533,7 @@
 				4FC689642071773C00A3A065 /* hw_p1_lcd.c in Sources */,
 				4F99FD2D208BCF3200DDAB75 /* hw_p1_filecfg.c in Sources */,
 				4F42A5D01F967BC3001B0A1F /* pump.c in Sources */,
+				4F01C2AD25220A74008AA53D /* temperature.c in Sources */,
 				4FE70C4F248663AA0066007D /* hcircuit_dump.c in Sources */,
 				4FC689652071773F00A3A065 /* hw_p1_spi.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
