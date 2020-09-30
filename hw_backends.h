@@ -17,7 +17,6 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
-#define HW_MAX_BKENDS	8	///< Maximum number of hardware backends allowed
 
 /**
  * Backend hardware callbacks.
@@ -196,8 +195,11 @@ struct s_hw_backend {
 	const char * restrict name;	///< unique backend name
 };
 
-// hardware.c needs access
-extern struct s_hw_backend * HW_backends[HW_MAX_BKENDS];
+struct s_hw_backends {
+	bid_t n;			///< number of allocated hw backends
+	bid_t last;			///< id of last free backend slot
+	struct s_hw_backend * all;	///< pointer to array of hw backends of size n
+};
 
 int hw_backends_init(void);
 int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * const priv, const char * const name);

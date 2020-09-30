@@ -2,7 +2,7 @@
 //  hw_backends.c
 //  rwchcd
 //
-//  (C) 2018 Thibaut VARENE
+//  (C) 2018,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -21,7 +21,7 @@
 #include "timekeep.h"
 #include "hw_backends.h"
 
-struct s_hw_backend * HW_backends[];	///< Array of available hardware backends
+struct s_hw_backends HW_backends;	///<  hardware backends
 
 /**
  * Find backend by name.
@@ -30,14 +30,13 @@ struct s_hw_backend * HW_backends[];	///< Array of available hardware backends
  */
 static int hw_backends_bid_by_name(const char * const name)
 {
-	unsigned int id;
+	bid_t id;
 	int ret = -ENOTFOUND;
 
 	assert(name);
 
-	for (id = 0; (id < ARRAY_SIZE(HW_backends) && HW_backends[id]); id++) {
-		if (!strcmp(HW_backends[id]->name, name)) {
-			// assert id < INT_MAX
+	for (id = 0; id < HW_backends.last; id++) {
+		if (!strcmp(HW_backends.all[id].name, name)) {
 			ret = (int)id;
 			break;
 		}
@@ -52,7 +51,7 @@ static int hw_backends_bid_by_name(const char * const name)
  */
 int hw_backends_init(void)
 {
-	memset(HW_backends, 0x00, sizeof(HW_backends));
+	memset(&HW_backends, 0x00, sizeof(HW_backends));
 
 	return (ALL_OK);
 }
@@ -63,11 +62,11 @@ int hw_backends_init(void)
  * @param callbacks a populated, valid backend structure
  * @param priv backend-specific private data
  * @param name @b unique user-defined name for this backend
- * @return negative error code or positive backend id
+ * @return exec status
  */
 int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * const priv, const char * const name)
 {
-	unsigned int id;
+	bid_t id;
 	char * str = NULL;
 	struct s_hw_backend * bkend;
 
@@ -79,13 +78,7 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
 	if (hw_backends_bid_by_name(name) >= 0)
 		return (-EEXISTS);
 
-	// find first available spot in array
-	for (id = 0; id < ARRAY_SIZE(HW_backends); id++) {
-		if (!HW_backends[id])
-			break;
-	}
-
-	if (ARRAY_SIZE(HW_backends) == id)
+	if (HW_backends.last >= HW_backends.n)
 		return (-EOOM);		// out of space
 
 	// clone name if any
@@ -93,24 +86,20 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
 	if (!str)
 		return(-EOOM);
 
+	id = HW_backends.last;
+
 	// allocate new backend
-	bkend = calloc(1, sizeof(*bkend));
-	if (!bkend) {
-		free(str);
-		return (-EOOM);
-	}
+	bkend = &HW_backends.all[id];
 
 	// populate backend
 	bkend->name = str;
 	bkend->cb = callbacks;
 	bkend->priv = priv;
 
-	// register backend
-	HW_backends[id] = bkend;
+	HW_backends.last++;
 
 	// return backend id
-	// assert id < INT_MAX
-	return ((int)id);
+	return (ALL_OK);
 }
 
 /**
@@ -139,11 +128,11 @@ int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, con
 
 	bid = (bid_t)ret;
 
-	if (!HW_backends[bid]->cb->sensor_ibn)
+	if (!HW_backends.all[bid].cb->sensor_ibn)
 		return (-ENOTIMPLEMENTED);
 
 	// find sensor in that backend
-	ret = HW_backends[bid]->cb->sensor_ibn(HW_backends[bid]->priv, sensor_name);
+	ret = HW_backends.all[bid].cb->sensor_ibn(HW_backends.all[bid].priv, sensor_name);
 	if (ret < 0)
 		return (ret);
 
@@ -182,11 +171,11 @@ int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const 
 
 	bid = (bid_t)ret;
 
-	if (!HW_backends[bid]->cb->relay_ibn)
+	if (!HW_backends.all[bid].cb->relay_ibn)
 		return (-ENOTIMPLEMENTED);
 
 	// find relay in that backend
-	ret = HW_backends[bid]->cb->relay_ibn(HW_backends[bid]->priv, relay_name);
+	ret = HW_backends.all[bid].cb->relay_ibn(HW_backends.all[bid].priv, relay_name);
 	if (ret < 0)
 		return (ret);
 
@@ -206,16 +195,13 @@ void hw_backends_exit(void)
 {
 	unsigned int id;
 
-	// exit all registered backends
-	for (id = 0; HW_backends[id] && (id < ARRAY_SIZE(HW_backends)); id++) {
-		if (HW_backends[id]->name) {
-			free((void *)HW_backends[id]->name);
-			HW_backends[id]->name = NULL;
-		}
-		free(HW_backends[id]);
-		HW_backends[id] = NULL;
+	// cleanup all backends
+	for (id = 0; id < HW_backends.last; id++) {
+		free((void *)HW_backends.all[id].name);
+		HW_backends.all[id].name = NULL;
 	}
 
+	memset(&HW_backends, 0x00, sizeof(HW_backends));
 }
 
 /**
@@ -225,8 +211,8 @@ void hw_backends_exit(void)
  */
 const char * hw_backends_name(const bid_t bid)
 {
-	if ((bid >= ARRAY_SIZE(HW_backends)) || !HW_backends[bid])
+	if (bid >= HW_backends.last)
 		return (NULL);
 
-	return (HW_backends[bid]->name);
+	return (HW_backends.all[bid].name);
 }

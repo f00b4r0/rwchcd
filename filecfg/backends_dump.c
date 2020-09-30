@@ -15,6 +15,7 @@
 #include "filecfg_dump.h"
 #include "hw_backends.h"
 
+extern struct s_hw_backends HW_backends;
 
 void filecfg_backends_dump()
 {
@@ -23,11 +24,11 @@ void filecfg_backends_dump()
 	filecfg_iprintf("backends {\n");
 	filecfg_ilevel_inc();
 
-	for (id = 0; (id < ARRAY_SIZE(HW_backends) && HW_backends[id]); id++) {
-		filecfg_iprintf("backend \"%s\" {\n", HW_backends[id]->name);
+	for (id = 0; id < HW_backends.last; id++) {
+		filecfg_iprintf("backend \"%s\" {\n", HW_backends.all[id].name);
 		filecfg_ilevel_inc();
-		if (HW_backends[id]->cb->filecfg_dump)
-			HW_backends[id]->cb->filecfg_dump(HW_backends[id]->priv);
+		if (HW_backends.all[id].cb->filecfg_dump)
+			HW_backends.all[id].cb->filecfg_dump(HW_backends.all[id].priv);
 		filecfg_ilevel_dec();
 		filecfg_iprintf("};\n");
 	}
