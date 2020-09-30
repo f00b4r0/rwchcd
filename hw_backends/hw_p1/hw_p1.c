@@ -24,6 +24,7 @@
 #include <stdlib.h>	// calloc/free
 #include <string.h>	// memset/strdup
 #include <assert.h>
+#include <stdatomic.h>
 
 #include "lib.h"
 #include "storage.h"
@@ -33,6 +34,10 @@
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
 #include "hw_p1.h"
+
+#define HW_P1_RCHNONE		0x00	///< no change
+#define HW_P1_RCHTURNON	0x01	///< turn on
+#define HW_P1_RCHTURNOFF	0x02	///< turn off
 
 #define VALID_CALIB_MIN		(uint_fast16_t)(RWCHC_CALIB_OHM*0.9)	///< minimum valid calibration value (-10%)
 #define VALID_CALIB_MAX		(uint_fast16_t)(RWCHC_CALIB_OHM*1.1)	///< maximum valid calibration value (+10%)
@@ -59,16 +64,14 @@ static void hw_p1_relays_log(const struct s_hw_p1_pdata * restrict const hw)
 	};
 	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
-	int ret;
 
 	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(hw->Relays));
 	
 	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
-		ret = hw_lib_relay_get_state(&hw->Relays[i]);
-		if (ret < 0)
-			values[i] = -1;
+		if (hw->Relays[i].set.configured)
+			values[i] = hw->Relays[i].run.is_on ? 1 : 0;
 		else
-			values[i] = (ret > 0) ? 1 : 0;
+			values[i] = -1;
 	}
 	
 	const struct s_log_data data = {
@@ -121,6 +124,25 @@ __attribute__((pure)) static uint_fast16_t sensor_to_ohm(const struct s_hw_p1_pd
 }
 
 /**
+ * Return a sensor ohm to celsius converter callback based on sensor type.
+ * @param stype the sensor type identifier
+ * @return correct function pointer for sensor type or NULL if invalid type
+ */
+__attribute__ ((pure)) ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw_p1_sensor * restrict const sensor)
+{
+	assert(sensor);
+	switch (sensor->set.type) {
+		case HW_P1_ST_PT1000:
+			return (hw_lib_pt1000_ohm_to_celsius);
+		case HW_P1_ST_NI1000:
+			return (hw_lib_ni1000_ohm_to_celsius);
+		case HW_P1_ST_NONE:
+		default:
+			return (NULL);
+	}
+}
+
+/**
  * Raise an alarm for a specific sensor.
  * This function raises an alarm if the sensor's temperature is invalid.
  * @param hw HW P1 private data
@@ -140,11 +162,11 @@ static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const si
 	switch (error) {
 		case -ESENSORSHORT:
 			fail = _("shorted");
-			name = hw_lib_sensor_get_name(&hw->Sensors[id-1]);
+			name = hw->Sensors[id-1].name;
 			break;
 		case -ESENSORDISCON:
 			fail = _("disconnected");
-			name = hw_lib_sensor_get_name(&hw->Sensors[id-1]);
+			name = hw->Sensors[id-1].name;
 			break;
 		case -ESENSORINVAL:
 			fail = _("invalid");
@@ -176,7 +198,7 @@ static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const si
  */
 static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 {
-	struct s_hw_sensor * sensor;
+	struct s_hw_p1_sensor * sensor;
 	ohm_to_celsius_ft * o_to_c;
 	uint_fast16_t ohm;
 	uint_fast8_t i;
@@ -186,17 +208,17 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 
 	for (i = 0; i < hw->settings.nsensors; i++) {
 		sensor = &hw->Sensors[i];
-		if (!hw_lib_sensor_is_configured(sensor)) {
-			hw_lib_sensor_set_temp(sensor, TEMPUNSET);
+		if (!sensor->set.configured) {
+			atomic_store_explicit(&sensor->run.value, TEMPUNSET, memory_order_relaxed);
 			continue;
 		}
 
 		ohm = sensor_to_ohm(hw, hw->sensors[i], true);
-		o_to_c = hw_lib_sensor_o_to_c(sensor);
+		o_to_c = hw_p1_sensor_o_to_c(sensor);
 		assert(o_to_c);
 
 		current = celsius_to_temp(o_to_c(ohm));
-		hw_lib_sensor_clone_temp(sensor, &previous, false);
+		previous = atomic_load_explicit(&sensor->run.value, memory_order_relaxed);
 
 		if (current <= RWCHCD_TEMPMIN) {
 			// delay by hardcoded 5 samples
@@ -205,7 +227,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 				dbgmsg(1, 1, "delaying sensor %d short, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
-				hw_lib_sensor_set_temp(sensor, TEMPSHORT);
+				atomic_store_explicit(&sensor->run.value, TEMPSHORT, memory_order_relaxed);
 				sensor_alarm(hw, (sid_t)(i+1), -ESENSORSHORT);
 			}
 		}
@@ -216,14 +238,14 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 				dbgmsg(1, 1, "delaying sensor %d disconnect, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
-				hw_lib_sensor_set_temp(sensor, TEMPDISCON);
+				atomic_store_explicit(&sensor->run.value, TEMPDISCON, memory_order_relaxed);
 				sensor_alarm(hw, (sid_t)(i+1), -ESENSORDISCON);
 			}
 		}
 		// init or recovery
 		else if (previous <= TEMPINVALID) {
 			hw->scount[i] = 0;
-			hw_lib_sensor_set_temp(sensor, current);
+			atomic_store_explicit(&sensor->run.value, current, memory_order_relaxed);
 		}
 		// normal operation
 		else {
@@ -233,7 +255,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			else {
 				// apply LP filter - ensure we only apply filtering on valid temps
 				hw->scount[i] = 0;
-				hw_lib_sensor_set_temp(sensor, temp_expw_mavg(previous, current, hw->set.nsamples, 1));
+				atomic_store_explicit(&sensor->run.value, temp_expw_mavg(previous, current, hw->set.nsamples, 1), memory_order_relaxed);
 			}
 		}
 	}
@@ -262,9 +284,10 @@ int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw)
  */
 int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 {
+	const timekeep_t now = timekeep_now();
 	static typeof (hw->Relays) blob;
 	storage_version_t sversion;
-	typeof(&hw->Relays[0]) relayptr = (typeof(relayptr))&blob;
+	typeof(&hw->Relays[0]) blobptr = (typeof(blobptr))&blob;
 	unsigned int i;
 	int ret;
 	
@@ -276,8 +299,15 @@ int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 
 		for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
 			// handle saved state (see @note)
-			hw_lib_relay_restore(&hw->Relays[i], relayptr);
-			relayptr++;
+			if (blobptr->run.is_on)
+				hw->Relays[i].run.on_totsecs += (unsigned)timekeep_tk_to_sec(blobptr->run.state_time);
+			else
+				hw->Relays[i].run.off_totsecs += (unsigned)timekeep_tk_to_sec(blobptr->run.state_time);
+			hw->Relays[i].run.state_since = now;
+			hw->Relays[i].run.on_totsecs += blobptr->run.on_totsecs;
+			hw->Relays[i].run.off_totsecs += blobptr->run.off_totsecs;
+			hw->Relays[i].run.cycles += blobptr->run.cycles;
+			blobptr++;
 		}
 		dbgmsg(1, 1, "Hardware relay state restored");
 	}
@@ -322,11 +352,11 @@ static void hw_p1_rwchcsettings_deffail(struct s_hw_p1_pdata * restrict const hw
 
 	// update each known hardware relay
 	for (i = 0; i < ARRAY_SIZE(hw->Relays); i++) {
-		if (!hw_lib_relay_is_configured(&hw->Relays[i]))
+		if (!hw->Relays[i].set.configured)
 			continue;
 
 		// update internal structure
-		rwchc_relay_set(&hw->settings.deffail, i, hw_lib_relay_cfg_get_failstate(&hw->Relays[i]));
+		rwchc_relay_set(&hw->settings.deffail, i, hw->Relays[i].set.failstate);
 	}
 }
 /**
@@ -470,6 +500,47 @@ out:
 }
 
 /**
+ * Update hardware relay state and accounting.
+ * This function is meant to be called immediately before the hardware is updated.
+ * It will update the is_on state of the relay as well as the accounting fields,
+ * assuming the #now parameter reflects the time the actual hardware is updated.
+ * @param relay the target relay
+ * @param now the current timestamp
+ * @return #HW_P1_RCHTURNON if the relay was previously off and turned on,
+ * #HW_P1_RCHTURNOFF if the relay was previously on and turned off,
+ * #HW_P1_RCHNONE if no state change happened, or negative value for error.
+ */
+static int hw_p1_relay_update(struct s_hw_p1_relay * const relay, const timekeep_t now)
+{
+	int ret = HW_P1_RCHNONE;
+
+	if (unlikely(!relay->set.configured))
+		return (-ENOTCONFIGURED);
+
+	// update state time counter
+	relay->run.state_time = now - relay->run.state_since;
+
+	// update state counters at state change
+	if (relay->run.turn_on != relay->run.is_on) {
+		if (!relay->run.is_on) {	// relay is currently off => turn on
+			relay->run.cycles++;	// increment cycle count
+			relay->run.off_totsecs += (unsigned)timekeep_tk_to_sec(relay->run.state_time);
+			ret = HW_P1_RCHTURNON;
+		}
+		else {				// relay is currently on => turn off
+			relay->run.on_totsecs += (unsigned)timekeep_tk_to_sec(relay->run.state_time);
+			ret = HW_P1_RCHTURNOFF;
+		}
+
+		relay->run.is_on = relay->run.turn_on;
+		relay->run.state_since = now;
+		relay->run.state_time = 0;
+	}
+
+	return (ret);
+}
+
+/**
  * Write all relays
  * This function updates all known hardware relays according to their desired turn_on
  * state. This function also does time and cycle accounting for the relays.
@@ -479,11 +550,11 @@ out:
  */
 __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_pdata * restrict const hw)
 {
-	struct s_hw_relay * restrict relay;
+	struct s_hw_p1_relay * restrict relay;
 	union rwchc_u_relays rWCHC_relays;
 	const timekeep_t now = timekeep_now();	// we assume the whole thing will take much less than a second
 	uint_fast8_t i;
-	int ret = -EGENERIC, chflags = HW_LIB_RCHNONE;
+	int ret = -EGENERIC, chflags = HW_P1_RCHNONE;
 
 	assert(hw->run.online);
 
@@ -495,20 +566,20 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 		relay = &hw->Relays[i];
 
 		// perform relay accounting
-		ret = hw_lib_relay_update(relay, now);
+		ret = hw_p1_relay_update(relay, now);
 		if (ret < 0)
 			continue;
 		else
 			chflags |= ret;
 
 		// update internal structure
-		rwchc_relay_set(&rWCHC_relays, i, (bool)hw_lib_relay_get_state(relay));
+		rwchc_relay_set(&rWCHC_relays, i, (bool)relay->run.is_on);
 	}
 
 	// save/log relays state if there was a change
 	if (chflags) {
 		hw_p1_relays_log(hw);
-		if (chflags & HW_LIB_RCHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
+		if (chflags & HW_P1_RCHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
 			// XXX there's no real motive to do this besides lowering storage pressure
 			ret = hw_p1_save_relays(hw);
 			if (ret)
@@ -562,10 +633,10 @@ int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char
 	assert(hw && name);
 
 	for (id = 0; (id < ARRAY_SIZE(hw->Sensors)); id++) {
-		if (!hw_lib_sensor_is_configured(&hw->Sensors[id]))
+		if (!hw->Sensors[id].set.configured)
 			continue;
-		if (!strcmp(hw_lib_sensor_get_name(&hw->Sensors[id]), name)) {
-			ret = hw_lib_sensor_cfg_get_sid(&hw->Sensors[id]);
+		if (!strcmp(hw->Sensors[id].name, name)) {
+			ret = hw->Sensors[id].set.sid;
 			break;
 		}
 	}
@@ -587,10 +658,10 @@ int hw_p1_rid_by_name(const struct s_hw_p1_pdata * const restrict hw, const char
 	assert(hw && name);
 
 	for (id = 0; (id < ARRAY_SIZE(hw->Relays)); id++) {
-		if (!hw_lib_relay_is_configured(&hw->Relays[id]))
+		if (!hw->Relays[id].set.configured)
 			continue;
-		if (!strcmp(hw_lib_relay_get_name(&hw->Relays[id]),name)) {
-			ret = hw_lib_relay_cfg_get_rid(&hw->Relays[id]);
+		if (!strcmp(hw->Relays[id].name, name)) {
+			ret = hw->Relays[id].set.rid;
 			break;
 		}
 	}

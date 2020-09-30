@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdatomic.h>
 
 #include "hw_backends.h"
 #include "hw_p1.h"
@@ -59,7 +60,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		return (-EINVALID);	// data not ready
 
 	for (i = 0; i < hw->settings.nsensors; i++)
-		hw_lib_sensor_clone_temp(&hw->Sensors[i], &values[i], true);
+		values[i] = atomic_load_explicit(&hw->Sensors[i].run.value, memory_order_relaxed) + hw->Sensors[i].set.offset;
 
 	ldata->keys = keys;
 	ldata->metrics = metrics;
@@ -378,8 +379,11 @@ static int hw_p1_offline(void * priv)
 	hw_p1_lcd_offline(&hw->lcd);
 
 	// turn off each known hardware relay
-	for (i=0; i<ARRAY_SIZE(hw->Relays); i++)
-		hw_lib_relay_set_state(&hw->Relays[i], OFF, 0);
+	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
+		if (!hw->Relays[i].set.configured)
+			continue;
+		hw->Relays[i].run.turn_on = false;
+	}
 
 	// update the hardware
 	ret = hw_p1_rwchcrelays_write(hw);
@@ -453,7 +457,7 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (NULL);
 
-	return (hw_lib_relay_get_name(&hw->Relays[id-1]));
+	return (hw->Relays[id-1].name);
 }
 
 /**
@@ -467,8 +471,9 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
  */
 static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const timekeep_t change_delay)
 {
+	const timekeep_t now = timekeep_now();
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_hw_relay * relay;
+	struct s_hw_p1_relay * relay;
 
 	assert(hw);
 
@@ -477,7 +482,18 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 
 	relay = &hw->Relays[id-1];
 
-	return (hw_lib_relay_set_state(relay, turn_on, change_delay));
+	if (unlikely(!relay->set.configured))
+		return (-ENOTCONFIGURED);
+
+	// update state state request if necessary and delay permits
+	if (turn_on != relay->run.is_on) {
+		if ((now - relay->run.state_since) < change_delay)
+			return ((int)(change_delay - (now - relay->run.state_since)));	// < INT_MAX - don't do anything if previous state hasn't been held long enough - return remaining time
+
+		relay->run.turn_on = turn_on;
+	}
+
+	return (ALL_OK);
 }
 
 /**
@@ -489,7 +505,7 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 static int hw_p1_relay_get_state(void * priv, const rid_t id)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_hw_relay * relay;
+	struct s_hw_p1_relay * relay;
 
 	assert(hw);
 
@@ -498,7 +514,10 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
 
 	relay = &hw->Relays[id-1];
 
-	return (hw_lib_relay_get_state(relay));
+	if (!relay->set.configured)
+		return (-ENOTCONFIGURED);
+
+	return (relay->run.is_on);
 }
 
 /**
@@ -516,7 +535,7 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
 	if ((!id) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
 		return (NULL);
 
-	return (hw_lib_sensor_get_name(&hw->Sensors[id-1]));
+	return (hw->Sensors[id-1].name);
 }
 
 /**
@@ -535,6 +554,9 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
 int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
+	const struct s_hw_p1_sensor * sensor;
+	temp_t temp;
+	int ret;
 
 	assert(hw);
 
@@ -548,7 +570,35 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 		return (-EHARDWARE);
 	}
 
-	return (hw_lib_sensor_clone_temp(&hw->Sensors[id-1], tclone, true));
+	sensor = &hw->Sensors[id-1];
+
+	if (!sensor->set.configured)
+		return (-ENOTCONFIGURED);
+
+	temp = atomic_load_explicit(&sensor->run.value, memory_order_relaxed);
+
+	if (tclone)
+		*tclone = temp + sensor->set.offset;
+
+	switch (temp) {
+		case TEMPUNSET:
+			ret = -ESENSORINVAL;
+			break;
+		case TEMPSHORT:
+			ret = -ESENSORSHORT;
+			break;
+		case TEMPDISCON:
+			ret = -ESENSORDISCON;
+			break;
+		case TEMPINVALID:
+			ret = -EINVALID;
+			break;
+		default:
+			ret = ALL_OK;
+			break;
+	}
+
+	return (ret);
 }
 
 /**
@@ -572,7 +622,7 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, timekeep_t * con
 	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw_lib_sensor_is_configured(&hw->Sensors[id-1]))
+	if (!hw->Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (ctime)

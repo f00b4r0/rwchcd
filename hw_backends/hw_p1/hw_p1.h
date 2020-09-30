@@ -23,6 +23,50 @@
 
 #define RELAY_MAX_ID		14	///< maximum valid relay id
 
+/** valid types of temperature sensors */
+enum e_hw_p1_stype {
+	HW_P1_ST_NONE = 0,	///< No type, misconfiguration
+	HW_P1_ST_PT1000,	///< PT1000 sensor. Config `PT1000`
+	HW_P1_ST_NI1000,	///< NI1000 sensor. Config `NI1000`
+	/*	ST_PT100,
+	 ST_LGNI1000, */
+};
+
+/** software representation of a hardware sensor. */
+struct s_hw_p1_sensor {
+	struct {
+		bool configured;	///< sensor is configured
+		sid_t sid;		///< sensor id, valid iff >0
+		enum e_hw_p1_stype type;///< sensor type
+		temp_t offset;		///< sensor value offset
+	} set;		///< settings (externally set)
+	struct {
+		_Atomic temp_t value;	///< sensor current temperature value
+	} run;		///< private runtime (internally handled)
+	const char * restrict name;	///< @b unique (per backend) user-defined name for the sensor
+};
+
+/** software representation of a hardware relay. */
+struct s_hw_p1_relay {
+	struct {
+		bool configured;	///< true if properly configured
+		bool failstate;		///< default state assumed by hardware in failsafe mode
+		rid_t rid;		///< relay id, valid iff >0
+	} set;		///< settings (externally set)
+	struct {
+		bool turn_on;		///< state requested by software
+		bool is_on;		///< current hardware active state
+		timekeep_t state_since;	///< last time state changed
+		/* The following elements are only accessed within _relay_update()
+		 * and _relay_restore() which can never happen concurrently */
+		timekeep_t state_time;	///< time spent in current state
+		uint_fast32_t on_totsecs;	///< total seconds spent in on state since epoch (updated at state change only)
+		uint_fast32_t off_totsecs;	///< total seconds spent in off state since epoch (updated at state change only)
+		uint_fast32_t cycles;	///< number of power cycles since epoch
+	} run;		///< private runtime (internally handled)
+	const char * restrict name;	///< @b unique (per backend) user-defined name for the relay
+};
+
 /** driver runtime data */
 struct s_hw_p1_pdata {
 	struct {
@@ -43,10 +87,14 @@ struct s_hw_p1_pdata {
 	union rwchc_u_relays relays;		///< local copy of hardware relays data
 	union rwchc_u_periphs peripherals;	///< local copy of hardware peripheral data
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
-	struct s_hw_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
-	struct s_hw_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
+	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
+	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 	uint_fast8_t scount[RWCHC_NTSENSORS];	///< counter for decimation
 };
+
+typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
+
+ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw_p1_sensor * restrict const sensor);
 
 int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw);

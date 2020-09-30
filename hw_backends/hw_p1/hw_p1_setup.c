@@ -13,7 +13,9 @@
 
 #include <string.h>	// memset
 #include <assert.h>
+#include <stdlib.h>
 
+#include "timekeep.h"
 #include "hw_p1_setup.h"
 
 #define SPICLOCK	1000000		///< SPI clock 1MHz
@@ -96,28 +98,43 @@ int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint
  * @param sensor an allocated sensor structure which will be used as the configuration source for the new sensor
  * @return exec status
  */
-int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_sensor * restrict const sensor)
+int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_p1_sensor * restrict const sensor)
 {
 	sid_t id;
+	char * str;
 
 	assert(hw);
 
 	if (!sensor || !sensor->name)
 		return (-EUNKNOWN);
 
-	id = hw_lib_sensor_cfg_get_sid(sensor);
+	id = sensor->set.sid;
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
 	id--;	// sensor array indexes from 0
-	if (hw_lib_sensor_is_configured(&hw->Sensors[id]))
+	if (hw->Sensors[id].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_sid_by_name(hw, hw_lib_sensor_get_name(sensor)) > 0)
+	if (hw_p1_sid_by_name(hw, sensor->name) > 0)
 		return (-EEXISTS);
 
-	return (hw_lib_sensor_setup_copy(&hw->Sensors[id], sensor));
+	// ensure valid type
+	if (!hw_p1_sensor_o_to_c(sensor))
+		return (-EUNKNOWN);
+
+	str = strdup(sensor->name);
+	if (!str)
+		return(-EOOM);
+
+	hw->Sensors[id].name = str;
+	hw->Sensors[id].set.sid = sensor->set.sid;
+	hw->Sensors[id].set.type = sensor->set.type;
+	hw->Sensors[id].set.offset = sensor->set.offset;
+	hw->Sensors[id].set.configured = true;
+
+	return (ALL_OK);
 }
 
 /**
@@ -133,10 +150,11 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw_lib_sensor_is_configured(&hw->Sensors[id-1]))
+	if (!hw->Sensors[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	hw_lib_sensor_discard(&hw->Sensors[id-1]);
+	free((void *)hw->Sensors[id-1].name);
+	memset(&hw->Sensors[id-1], 0x00, sizeof(hw->Sensors[id-1]));
 
 	return (ALL_OK);
 }
@@ -148,8 +166,9 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
  * @param relay an allocated relay structure which will be used as the configuration source for the new relay
  * @return exec status
  */
-int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_relay * restrict const relay)
+int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_p1_relay * restrict const relay)
 {
+	char * str;
 	rid_t id;
 
 	assert(hw);
@@ -157,19 +176,29 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const st
 	if (!relay || !relay->name)
 		return (-EUNKNOWN);
 
-	id = hw_lib_relay_cfg_get_rid(relay);
+	id = relay->set.rid;
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
 	id--;	// relay array indexes from 0
-	if (hw_lib_relay_is_configured(&hw->Relays[id-1]))
+	if (hw->Relays[id-1].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_rid_by_name(hw, hw_lib_relay_get_name(relay)) > 0)
+	if (hw_p1_rid_by_name(hw, relay->name) > 0)
 		return (-EEXISTS);
 
-	return (hw_lib_relay_setup_copy(&hw->Relays[id], relay));
+	str = strdup(relay->name);
+	if (!str)
+		return(-EOOM);
+
+	hw->Relays[id].name = str;
+	hw->Relays[id].set.failstate = relay->set.failstate;	// register failover state
+	hw->Relays[id].set.channel = relay->set.channel;
+	hw->Relays[id].run.state_since = timekeep_now();	// relay is by definition OFF since "now"
+	hw->Relays[id].set.configured = true;
+
+	return (ALL_OK);
 }
 
 /**
@@ -186,10 +215,12 @@ int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const ri
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	if (!hw_lib_relay_is_configured(&hw->Relays[id-1]))
+	if (!hw->Relays[id-1].set.configured)
 		return (-ENOTCONFIGURED);
 
-	hw_lib_relay_discard(&hw->Relays[id-1]);
+	free((void *)hw->Relays[id-1].name);
+
+	memset(&hw->Relays[id-1], 0x00, sizeof(hw->Relays[id-1]));
 
 	return (ALL_OK);
 }
