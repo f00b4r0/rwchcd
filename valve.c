@@ -601,8 +601,8 @@ int valve_offline(struct s_valve * const valve)
 
 	// stop the valve uncondiditonally
 	if (VA_M_3WAY == valve->set.motor) {
-		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
-		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF);
+		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF);
 	}
 
 	memset(&valve->run, 0x00, sizeof(valve->run));
@@ -730,19 +730,19 @@ int valve_run(struct s_valve * const valve)
 		if (VA_M_3WAY == valve->set.motor) {
 			switch (valve->run.request_action) {
 				case OPEN:
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);	// break before make
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF);	// break before make
 					if (unlikely(ALL_OK != ret))
 						goto fail;
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, ON, 0);
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, ON);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = OPEN;
 					break;
 				case CLOSE:
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);	// break before make
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF);	// break before make
 					if (unlikely(ALL_OK != ret))
 						goto fail;
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, ON, 0);
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, ON);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = CLOSE;
@@ -751,10 +751,10 @@ int valve_run(struct s_valve * const valve)
 					ret = -EINVALID;
 					// fallthrough
 				case STOP:
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = STOP;
@@ -765,20 +765,20 @@ int valve_run(struct s_valve * const valve)
 			m2wtopens = valve->set.mset.m2way.trigger_opens;
 			switch (valve->run.request_action) {
 				case OPEN:
-					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, m2wtopens, 0);
+					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, m2wtopens);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = OPEN;
 					break;
 				case CLOSE:
-					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, !m2wtopens, 0);
+					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, !m2wtopens);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = CLOSE;
 					break;
 				default:
 				case STOP:	// there's no way to "stop" a 2way motor, but for compatibility with the rest of the API we unconditionally turn off the relay
-					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, OFF, 0);
+					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, OFF);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = STOP;

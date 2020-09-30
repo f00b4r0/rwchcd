@@ -208,7 +208,7 @@ int dhwt_shutdown(struct s_dhwt * const dhwt)
 
 	dhwt_actuator_use(dhwt, false);
 
-	(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+	(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, OFF);
 
 	// isolate DHWT if possible
 	if (dhwt->set.p.valve_hwisol)
@@ -371,7 +371,7 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 
 	dhwt_shutdown(dhwt);
 
-	ret = hardware_relay_set_state(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF, 0);
+	ret = hardware_relay_set_state(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF);
 	if (ALL_OK == ret)
 		dhwt->run.electric_mode = dhwt->set.electric_failover;
 }
@@ -434,7 +434,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 				(void)!pump_set_state(dhwt->set.p.pump_feed, ON, FORCE);
 			if (dhwt->set.p.pump_recycle)
 				(void)!pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
-			(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, ON, 0);
+			(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, ON);
 			return (ALL_OK);
 		case RM_AUTO:
 		case RM_DHWONLY:
@@ -570,7 +570,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		// stop all heat input (ensures they're all off at switchover)
 		if (test) {
 			// stop self-heater (if any)
-			(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, OFF, 0);
+			(void)!hardware_relay_set_state(dhwt->set.rid_selfheater, OFF);
 
 			// clear heat request
 			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;

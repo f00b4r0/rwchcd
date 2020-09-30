@@ -131,10 +131,9 @@ struct s_hw_callbacks {
 	 * @param priv hardware backend private data
 	 * @param rid hardware relay id
 	 * @param turn_on true for turn on request
-	 * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
 	 * @return exec status
 	 */
-	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on, timekeep_t change_delay);
+	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on);
 
 	/**
 	 * Return a hardware sensor name.

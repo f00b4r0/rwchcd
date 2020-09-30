@@ -465,13 +465,11 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
  * @param priv private hardware data
  * @param id id of the internal relay to modify
  * @param turn_on true if relay is meant to be turned on
- * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
- * @return 0 on success, positive number for cooldown wait remaining, negative for error
+ * @return exec status
  * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
  */
-static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const timekeep_t change_delay)
+static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on)
 {
-	const timekeep_t now = timekeep_now();
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	struct s_hw_p1_relay * relay;
 
@@ -486,12 +484,8 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 		return (-ENOTCONFIGURED);
 
 	// update state state request if necessary and delay permits
-	if (turn_on != relay->run.is_on) {
-		if ((now - relay->run.state_since) < change_delay)
-			return ((int)(change_delay - (now - relay->run.state_since)));	// < INT_MAX - don't do anything if previous state hasn't been held long enough - return remaining time
-
+	if (turn_on != relay->run.is_on)
 		relay->run.turn_on = turn_on;
-	}
 
 	return (ALL_OK);
 }

@@ -216,8 +216,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	// reset runtime
 	memset(&boiler->run, 0x0, sizeof(boiler->run));
 
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF);
 
 	if (boiler->set.p.pump_load)
 		pump_shutdown(boiler->set.p.pump_load);
@@ -239,8 +239,8 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 	reset_intg(&boiler->run.boil_itg);
 	reset_intg(&boiler->run.ret_itg);
 
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF);
+	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF);
 	// failsafe() is called after runchecklist(), the above can't fail
 
 	if (boiler->set.p.pump_load)
@@ -557,14 +557,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (boiler->run.actual_temp < trip_temp) {		// trip condition
 		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// cooldown start
-			ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON, 0);
+			ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}
 	else if (boiler->run.actual_temp > untrip_temp) {	// untrip condition
 		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
-			ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
+			ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}

@@ -141,7 +141,7 @@ int pump_offline(struct s_pump * restrict const pump)
 		return (-ENOTCONFIGURED);
 
 	// unconditionally turn pump off
-	(void)!hardware_relay_set_state(pump->set.rid_pump, false, 0);
+	(void)!hardware_relay_set_state(pump->set.rid_pump, false);
 
 	memset(&pump->run, 0x00, sizeof(pump->run));
 	//pump->run.online = false;	// handled by memset
@@ -177,7 +177,7 @@ int pump_run(struct s_pump * restrict const pump)
 	}
 
 	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	ret = hardware_relay_set_state(pump->set.rid_pump, pump->run.req_on, 0);
+	ret = hardware_relay_set_state(pump->set.rid_pump, pump->run.req_on);
 	if (unlikely(ret < 0))
 		return (ret);
 
