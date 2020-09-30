@@ -1,14 +1,21 @@
 //
-//  relay_dump.h
-//  daemon
+//  filecfg/relay_dump.h
+//  rwchcd
 //
-//  Created by Thibaut VARÈNE on 03/10/2020.
-//  Copyright © 2020 Slashdirt. All rights reserved.
+//  (C) 2020 Thibaut VARENE
+//  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
+
+/**
+ * @file
+ * Relay file configuration dumping API.
+ */
 
 #ifndef relay_dump_h
 #define relay_dump_h
 
-#include <stdio.h>
+#include "relay.h"
+
+void filecfg_relay_dump(const struct s_relay * r);
 
 #endif /* relay_dump_h */

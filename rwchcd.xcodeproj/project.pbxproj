@@ -23,6 +23,10 @@
 		4F299C9221AABD2C009DCBC2 /* log.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C9021AABD2C009DCBC2 /* log.c */; };
 		4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBAD1D8884ED00D86EE7 /* runtime.c */; };
 		4F3AFBB21D88867600D86EE7 /* lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3AFBB01D88867600D86EE7 /* lib.c */; };
+		4F3EC1612524CE8500ACE8BA /* outputs.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3EC1602524CE8500ACE8BA /* outputs.c */; };
+		4F3EC1652524CED300ACE8BA /* relay.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3EC1642524CED300ACE8BA /* relay.c */; };
+		4F3EC1692524E42B00ACE8BA /* relay_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3EC1682524E42B00ACE8BA /* relay_parse.c */; };
+		4F3EC16D2524E5C400ACE8BA /* outputs_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F3EC16C2524E5C400ACE8BA /* outputs_parse.c */; };
 		4F42A5D01F967BC3001B0A1F /* pump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5CE1F967BC3001B0A1F /* pump.c */; };
 		4F42A5D31F968069001B0A1F /* valve.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5D11F968069001B0A1F /* valve.c */; };
 		4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5D41F9683CC001B0A1F /* heatsource.c */; };
@@ -40,6 +44,8 @@
 		4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3F1E0955AA00B4D862 /* scheduler.c */; };
 		4FBFEB7D252889480062B1FB /* inputs_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB7C252889480062B1FB /* inputs_dump.c */; };
 		4FBFEB81252889E40062B1FB /* temperature_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB80252889E40062B1FB /* temperature_dump.c */; };
+		4FBFEB8525288C6D0062B1FB /* relay_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB8425288C6D0062B1FB /* relay_dump.c */; };
+		4FBFEB8925288D360062B1FB /* outputs_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB8825288D360062B1FB /* outputs_dump.c */; };
 		4FC1132225235AA2009AA17D /* inputs.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1132125235AA2009AA17D /* inputs.c */; };
 		4FC1132625239963009AA17D /* temperature_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1132525239963009AA17D /* temperature_parse.c */; };
 		4FC1132A25239B50009AA17D /* inputs_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FC1132925239B50009AA17D /* inputs_parse.c */; };
@@ -117,6 +123,14 @@
 		4F3AFBAE1D8884ED00D86EE7 /* runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBB01D88867600D86EE7 /* lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = lib.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBB11D88867600D86EE7 /* lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = lib.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4F3EC15F2524CE8400ACE8BA /* outputs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = outputs.h; sourceTree = SOURCE_ROOT; };
+		4F3EC1602524CE8500ACE8BA /* outputs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = outputs.c; sourceTree = SOURCE_ROOT; };
+		4F3EC1632524CED300ACE8BA /* relay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = relay.h; sourceTree = SOURCE_ROOT; };
+		4F3EC1642524CED300ACE8BA /* relay.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = relay.c; sourceTree = SOURCE_ROOT; };
+		4F3EC1672524E42B00ACE8BA /* relay_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = relay_parse.h; sourceTree = "<group>"; };
+		4F3EC1682524E42B00ACE8BA /* relay_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = relay_parse.c; sourceTree = "<group>"; };
+		4F3EC16B2524E5C400ACE8BA /* outputs_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = outputs_parse.h; sourceTree = "<group>"; };
+		4F3EC16C2524E5C400ACE8BA /* outputs_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = outputs_parse.c; sourceTree = "<group>"; };
 		4F42A5CE1F967BC3001B0A1F /* pump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pump.c; sourceTree = SOURCE_ROOT; };
 		4F42A5CF1F967BC3001B0A1F /* pump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pump.h; sourceTree = SOURCE_ROOT; };
 		4F42A5D11F968069001B0A1F /* valve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = valve.c; sourceTree = SOURCE_ROOT; };
@@ -154,6 +168,10 @@
 		4FBFEB7C252889480062B1FB /* inputs_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs_dump.c; sourceTree = "<group>"; };
 		4FBFEB7F252889E40062B1FB /* temperature_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature_dump.h; sourceTree = "<group>"; };
 		4FBFEB80252889E40062B1FB /* temperature_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = temperature_dump.c; sourceTree = "<group>"; };
+		4FBFEB8325288C6D0062B1FB /* relay_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = relay_dump.h; sourceTree = "<group>"; };
+		4FBFEB8425288C6D0062B1FB /* relay_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = relay_dump.c; sourceTree = "<group>"; };
+		4FBFEB8725288D360062B1FB /* outputs_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = outputs_dump.h; sourceTree = "<group>"; };
+		4FBFEB8825288D360062B1FB /* outputs_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = outputs_dump.c; sourceTree = "<group>"; };
 		4FC1132025235AA2009AA17D /* inputs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs.h; sourceTree = SOURCE_ROOT; };
 		4FC1132125235AA2009AA17D /* inputs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs.c; sourceTree = SOURCE_ROOT; };
 		4FC1132425239963009AA17D /* temperature_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature_parse.h; sourceTree = "<group>"; };
@@ -289,6 +307,14 @@
 				4FBFEB7C252889480062B1FB /* inputs_dump.c */,
 				4FC1132825239B50009AA17D /* inputs_parse.h */,
 				4FC1132925239B50009AA17D /* inputs_parse.c */,
+				4FBFEB8325288C6D0062B1FB /* relay_dump.h */,
+				4FBFEB8425288C6D0062B1FB /* relay_dump.c */,
+				4F3EC1672524E42B00ACE8BA /* relay_parse.h */,
+				4F3EC1682524E42B00ACE8BA /* relay_parse.c */,
+				4FBFEB8725288D360062B1FB /* outputs_dump.h */,
+				4FBFEB8825288D360062B1FB /* outputs_dump.c */,
+				4F3EC16B2524E5C400ACE8BA /* outputs_parse.h */,
+				4F3EC16C2524E5C400ACE8BA /* outputs_parse.c */,
 			);
 			path = filecfg;
 			sourceTree = SOURCE_ROOT;
@@ -351,6 +377,10 @@
 				4F01C2AC25220A74008AA53D /* temperature.c */,
 				4FC1132025235AA2009AA17D /* inputs.h */,
 				4FC1132125235AA2009AA17D /* inputs.c */,
+				4F3EC1632524CED300ACE8BA /* relay.h */,
+				4F3EC1642524CED300ACE8BA /* relay.c */,
+				4F3EC15F2524CE8400ACE8BA /* outputs.h */,
+				4F3EC1602524CE8500ACE8BA /* outputs.c */,
 				4FC6894F206FAB4D00A3A065 /* hardware.c */,
 				4FC68950206FAB4D00A3A065 /* hardware.h */,
 				4F42A5CE1F967BC3001B0A1F /* pump.c */,
@@ -486,6 +516,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4FBFEB8525288C6D0062B1FB /* relay_dump.c in Sources */,
 				4FBFEB7D252889480062B1FB /* inputs_dump.c in Sources */,
 				4FC1132225235AA2009AA17D /* inputs.c in Sources */,
 				4FE70C46248659F40066007D /* heatsource_parse.c in Sources */,
@@ -505,6 +536,7 @@
 				4F08255B248589B40068FC22 /* pump_parse.c in Sources */,
 				4FE70C612486BBD50066007D /* backends_parse.c in Sources */,
 				4F08256424859E110068FC22 /* pump_dump.c in Sources */,
+				4F3EC1692524E42B00ACE8BA /* relay_parse.c in Sources */,
 				4FE70C3424864A4E0066007D /* models_dump.c in Sources */,
 				4FE70C4924865E330066007D /* dhwt_dump.c in Sources */,
 				4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */,
@@ -537,7 +569,9 @@
 				4FE70C4F248663AA0066007D /* hcircuit_dump.c in Sources */,
 				4FC689652071773F00A3A065 /* hw_p1_spi.c in Sources */,
 				4FCD55191D835D04003BB848 /* rwchcd.c in Sources */,
+				4F3EC1612524CE8500ACE8BA /* outputs.c in Sources */,
 				4FC689542071304900A3A065 /* hw_backends.c in Sources */,
+				4F3EC1652524CED300ACE8BA /* relay.c in Sources */,
 				4F99FD222088D18500DDAB75 /* filecfg_dump.c in Sources */,
 				4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */,
 				4FE70C3724864BDF0066007D /* scheduler_dump.c in Sources */,
@@ -546,7 +580,9 @@
 				4F3AFBAF1D8884ED00D86EE7 /* runtime.c in Sources */,
 				4F99FD2A208BBE0000DDAB75 /* hw_p1_setup.c in Sources */,
 				4FE70C5B2486AA8E0066007D /* plant_parse.c in Sources */,
+				4FBFEB8925288D360062B1FB /* outputs_dump.c in Sources */,
 				4F08255E248597620068FC22 /* valve_parse.c in Sources */,
+				4F3EC16D2524E5C400ACE8BA /* outputs_parse.c in Sources */,
 				4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
