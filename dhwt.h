@@ -17,6 +17,7 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 #include "inputs.h"
+#include "outputs.h"
 
 /** DHWT element structure */
 struct s_dhwt {
@@ -45,7 +46,7 @@ struct s_dhwt {
 		itid_t tid_top;			///< temp sensor id at top of dhw tank
 		itid_t tid_win;			///< temp sensor id heatwater inlet. @note must @b NOT rely on feedpump operation for accurate temp read.
 		itid_t tid_wout;		///< temp sensor id heatwater outlet - XXX UNUSED
-		relid_t rid_selfheater;		///< relay for internal electric heater (if available)
+		orid_t rid_selfheater;		///< relay for internal electric heater (if available)
 		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 		struct {
 			struct s_pump * restrict pump_feed;	///< optional feed pump for this tank

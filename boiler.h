@@ -19,6 +19,7 @@
 #include "heatsource.h"
 #include "timekeep.h"
 #include "inputs.h"
+#include "outputs.h"
 
 /** Boiler heatsource private structure. @todo XXX TODO: isolation valve / modulating burner */
 struct s_boiler_priv {
@@ -37,8 +38,8 @@ struct s_boiler_priv {
 		timekeep_t burner_min_time;	///< minimum burner state time (i.e. minimum time spent in either on or off state). Prevents pumping
 		itid_t tid_boiler;		///< boiler temp id
 		itid_t tid_boiler_return;	///< boiler inflow temp id
-		relid_t rid_burner_1;		///< first stage of burner
-		relid_t rid_burner_2;		///< second stage of burner
+		orid_t rid_burner_1;		///< first stage of burner
+		orid_t rid_burner_2;		///< second stage of burner
 		struct {
 			struct s_pump * restrict pump_load;	///< optional load pump for the boiler, if present
 			struct s_valve * restrict valve_ret;	///< optional return valve for the boiler, if present

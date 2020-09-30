@@ -13,6 +13,7 @@
 
 #include <string.h>	// strlen/strcmp
 
+#include "outputs_parse.h"
 #include "inputs_parse.h"
 #include "dhwt_parse.h"
 #include "filecfg_parser.h"
@@ -69,7 +70,7 @@ FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_bottom)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_top)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_win)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_wout)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
+FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_recycle)
@@ -135,7 +136,7 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODESTR,	"tid_top",		false,	fcp_inputs_temperature_s_dhwt_tid_top,	NULL, },
 		{ NODESTR,	"tid_win",		false,	fcp_inputs_temperature_s_dhwt_tid_win,	NULL, },
 		{ NODESTR,	"tid_wout",		false,	fcp_inputs_temperature_s_dhwt_tid_wout,	NULL, },
-		{ NODELST,	"rid_selfheater",	false,	fcp_rid_s_dhwt_rid_selfheater,		NULL, },
+		{ NODESTR,	"rid_selfheater",	false,	fcp_outputs_relay_s_dhwt_rid_selfheater,NULL, },
 		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },
 		{ NODESTR,	"pump_feed",		false,	fcp_pump_s_dhwt_ppump_feed,		NULL, },
 		{ NODESTR,	"pump_recycle",		false,	fcp_pump_s_dhwt_ppump_recycle,		NULL, },

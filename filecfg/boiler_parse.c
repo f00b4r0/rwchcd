@@ -16,6 +16,7 @@
 #include "filecfg_parser.h"
 #include "heatsource_parse.h"
 #include "inputs_parse.h"
+#include "outputs_parse.h"
 
 #include "plant.h"
 
@@ -28,8 +29,8 @@ FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, t_freeze)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_boiler_priv, burner_min_time)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_boiler_priv, tid_boiler)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_return)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
+FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
+FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
 
 static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -64,8 +65,8 @@ int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filec
 		{ NODEINT|NODEDUR,	"burner_min_time",	false,	fcp_tk_s_boiler_priv_burner_min_time,	NULL, },
 		{ NODESTR,		"tid_boiler",		true,	fcp_inputs_temperature_s_boiler_priv_tid_boiler,	NULL, },
 		{ NODESTR,		"tid_boiler_return",	false,	fcp_inputs_temperature_s_boiler_priv_tid_boiler_return, NULL, },
-		{ NODELST,		"rid_burner_1",		true,	fcp_rid_s_boiler_priv_rid_burner_1,	NULL, },
-		{ NODELST,		"rid_burner_2",		false,	fcp_rid_s_boiler_priv_rid_burner_2,	NULL, },
+		{ NODESTR,		"rid_burner_1",		true,	fcp_outputs_relay_s_boiler_priv_rid_burner_1,	NULL, },
+		{ NODESTR,		"rid_burner_2",		false,	fcp_outputs_relay_s_boiler_priv_rid_burner_2,	NULL, },
 		{ NODESTR,		"pump_load",		false,	fcp_pump_s_boiler_priv_ppump_load,	NULL, },
 		{ NODESTR,		"valve_ret",		false,	fcp_valve_s_boiler_priv_pvalve_ret,	NULL, },
 	};

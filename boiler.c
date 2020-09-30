@@ -31,9 +31,9 @@
 #include "valve.h"
 #include "lib.h"
 #include "boiler.h"
-#include "hardware.h"
 #include "alarms.h"
 #include "inputs.h"
+#include "outputs.h"
 
 /**
  * Checklist for safe operation of a boiler.
@@ -216,8 +216,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	// reset runtime
 	memset(&boiler->run, 0x0, sizeof(boiler->run));
 
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF);
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
 
 	if (boiler->set.p.pump_load)
 		pump_shutdown(boiler->set.p.pump_load);
@@ -239,8 +239,8 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 	reset_intg(&boiler->run.boil_itg);
 	reset_intg(&boiler->run.ret_itg);
 
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF);
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
 	// failsafe() is called after runchecklist(), the above can't fail
 
 	if (boiler->set.p.pump_load)
@@ -557,14 +557,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (boiler->run.actual_temp < trip_temp) {		// trip condition
 		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// cooldown start
-			ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON);
+			ret = outputs_relay_state_set(boiler->set.rid_burner_1, ON);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}
 	else if (boiler->run.actual_temp > untrip_temp) {	// untrip condition
 		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
-			ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF);
+			ret = outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}
@@ -573,7 +573,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		ret = ALL_OK;
 
 	// computations performed while burner is on
-	if (hardware_relay_get_state(boiler->set.rid_burner_1) > 0) {
+	if (outputs_relay_state_get(boiler->set.rid_burner_1) > 0) {
 		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
 		if (boiler->set.limit_tmin < boiler->run.actual_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
@@ -611,7 +611,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 #ifdef DEBUG
 	(void)!inputs_temperature_get(boiler->set.tid_boiler_return, &ret_temp);
 	dbgmsg(1, 1, "\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
-	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
+	       heat->name, outputs_relay_state_get(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
 	       temp_to_celsius(boiler->run.actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
 #endif
 	return (ret);

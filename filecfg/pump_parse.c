@@ -15,15 +15,16 @@
 #include "pump.h"
 #include "plant.h"
 #include "filecfg_parser.h"
+#include "outputs_parse.h"
 
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_pump, cooldown_time)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_pump, rid_pump)
+FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_pump, rid_pump)
 
 int filecfg_pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT|NODEDUR,	"cooldown_time",	false,	fcp_tk_s_pump_cooldown_time,	NULL, },
-		{ NODELST,		"rid_pump",		true,	fcp_rid_s_pump_rid_pump,	NULL, },
+		{ NODEINT|NODEDUR,	"cooldown_time",	false,	fcp_tk_s_pump_cooldown_time,		NULL, },
+		{ NODESTR,		"rid_pump",		true,	fcp_outputs_relay_s_pump_rid_pump,	NULL, },
 	};
 	struct s_plant * restrict const plant = priv;
 	struct s_pump * pump;

@@ -16,6 +16,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "outputs.h"
 
 #define FORCE	true	///< to force pump state (bypass cooldown), see pump_set_state()
 #define NOFORCE	false	///< to not force pump state (let cooldown operate), see pump_set_state()
@@ -25,7 +26,7 @@ struct s_pump {
 	struct {
 		bool configured;		///< true if properly configured
 		timekeep_t cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
-		relid_t rid_pump;		///< hardware relay controlling that pump
+		orid_t rid_pump;		///< relay controlling that pump
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)

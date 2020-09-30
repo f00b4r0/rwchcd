@@ -13,6 +13,7 @@
 
 #include "pump_dump.h"
 #include "filecfg_dump.h"
+#include "outputs.h"
 
 int filecfg_pump_dump(const struct s_pump * restrict const pump)
 {
@@ -26,7 +27,7 @@ int filecfg_pump_dump(const struct s_pump * restrict const pump)
 	filecfg_ilevel_inc();
 	if (FCD_Exhaustive || pump->set.cooldown_time)
 		filecfg_dump_tk("cooldown_time", pump->set.cooldown_time);
-	filecfg_dump_relid("rid_pump", pump->set.rid_pump);	// mandatory
+	filecfg_dump_nodestr("rid_pump", outputs_relay_name(pump->set.rid_pump));	// mandatory
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 

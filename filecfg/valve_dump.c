@@ -14,8 +14,8 @@
 #include "valve_dump.h"
 #include "filecfg_dump.h"
 #include "lib.h"
-#include "hardware.h"
 #include "inputs.h"
+#include "outputs.h"
 
 static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve __attribute__((unused)))
 {
@@ -155,15 +155,15 @@ static int filecfg_valve_type_dump(const struct s_valve * restrict const valve)
 
 static int filecfg_valve_m3way_dump(const struct s_valve * restrict const valve)
 {
-	filecfg_dump_relid("rid_open", valve->set.mset.m3way.rid_open);		// mandatory
-	filecfg_dump_relid("rid_close", valve->set.mset.m3way.rid_close);	// mandatory
+	filecfg_dump_nodestr("rid_open", outputs_relay_name(valve->set.mset.m3way.rid_open));	// mandatory
+	filecfg_dump_nodestr("rid_close", outputs_relay_name(valve->set.mset.m3way.rid_close));	// mandatory
 
 	return (ALL_OK);
 }
 
 static int filecfg_valve_m2way_dump(const struct s_valve * restrict const valve)
 {
-	filecfg_dump_relid("rid_trigger", valve->set.mset.m2way.rid_trigger);		// mandatory
+	filecfg_dump_nodestr("rid_trigger", outputs_relay_name(valve->set.mset.m2way.rid_trigger));	// mandatory
 	filecfg_dump_nodebool("trigger_opens", valve->set.mset.m2way.trigger_opens);	// mandatory
 
 	return (ALL_OK);

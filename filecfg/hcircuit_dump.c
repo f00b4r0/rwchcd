@@ -16,7 +16,6 @@
 #include "hcircuit.h"
 #include "pump.h"
 #include "valve.h"
-#include "hardware.h"
 #include "lib.h"
 #include "inputs.h"
 

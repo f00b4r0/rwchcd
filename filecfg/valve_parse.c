@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "inputs_parse.h"
+#include "outputs_parse.h"
 #include "valve_parse.h"
 #include "valve.h"
 #include "plant.h"
@@ -212,20 +213,20 @@ static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg
 static int fcp_rid_valve_m3way_rid_open(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_open, node));
+	return (filecfg_outputs_parse_helper_rid(&valve->set.mset.m3way.rid_open, node));
 }
 
 static int fcp_rid_valve_m3way_rid_close(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_parser_rid_parse(&valve->set.mset.m3way.rid_close, node));
+	return (filecfg_outputs_parse_helper_rid(&valve->set.mset.m3way.rid_close, node));
 }
 
 static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST,	"rid_open",	true,	fcp_rid_valve_m3way_rid_open,	NULL, },
-		{ NODELST,	"rid_close",	true,	fcp_rid_valve_m3way_rid_close,	NULL, },
+		{ NODESTR,	"rid_open",	true,	fcp_rid_valve_m3way_rid_open,	NULL, },
+		{ NODESTR,	"rid_close",	true,	fcp_rid_valve_m3way_rid_close,	NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
 	int ret;
@@ -246,7 +247,7 @@ static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg
 static int fcp_rid_valve_m2way_rid_trigger(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_parser_rid_parse(&valve->set.mset.m2way.rid_trigger, node));
+	return (filecfg_outputs_parse_helper_rid(&valve->set.mset.m2way.rid_trigger, node));
 }
 
 static int fcp_bool_valve_m2way_trigger_opens(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -259,7 +260,7 @@ static int fcp_bool_valve_m2way_trigger_opens(void * restrict const priv, const 
 static int valve_m2way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODELST,	"rid_trigger",		true,	fcp_rid_valve_m2way_rid_trigger,	NULL, },
+		{ NODESTR,	"rid_trigger",		true,	fcp_rid_valve_m2way_rid_trigger,	NULL, },
 		{ NODEBOL,	"trigger_opens",	true,	fcp_bool_valve_m2way_trigger_opens,	NULL, },
 	};
 	struct s_valve * restrict const valve = priv;

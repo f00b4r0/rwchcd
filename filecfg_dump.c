@@ -29,6 +29,7 @@
 #include "filecfg/plant_dump.h"
 #include "filecfg/backends_dump.h"
 #include "filecfg/inputs_dump.h"
+#include "filecfg/outputs_dump.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
@@ -277,6 +278,9 @@ int filecfg_dump(void)
 
 	// dump inputs
 	filecfg_inputs_dump();
+
+	// dump outputs
+	filecfg_outputs_dump();
 
 	// dump runtime config
 	runtime_config_dump(runtime);

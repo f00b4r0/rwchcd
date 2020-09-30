@@ -16,9 +16,9 @@
 #include "dhwt.h"
 #include "pump.h"
 #include "valve.h"
-#include "hardware.h"
 #include "lib.h"
 #include "inputs.h"
+#include "outputs.h"
 
 #include "scheduler.h"
 
@@ -135,8 +135,8 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 		filecfg_dump_nodestr("tid_win", inputs_temperature_name(dhwt->set.tid_win));
 	if (FCD_Exhaustive || inputs_temperature_name(dhwt->set.tid_wout))
 		filecfg_dump_nodestr("tid_wout", inputs_temperature_name(dhwt->set.tid_wout));
-	if (FCD_Exhaustive || hardware_relay_name(dhwt->set.rid_selfheater))
-		filecfg_dump_relid("rid_selfheater", dhwt->set.rid_selfheater);
+	if (FCD_Exhaustive || outputs_relay_name(dhwt->set.rid_selfheater))
+		filecfg_dump_nodestr("rid_selfheater", outputs_relay_name(dhwt->set.rid_selfheater));
 
 	filecfg_iprintf("params"); filecfg_dhwt_params_dump(&dhwt->set.params);
 
