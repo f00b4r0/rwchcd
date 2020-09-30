@@ -13,6 +13,7 @@
 
 #include <string.h>	// strlen/strcmp
 
+#include "inputs_parse.h"
 #include "dhwt_parse.h"
 #include "filecfg_parser.h"
 #include "dhwt.h"
@@ -64,10 +65,10 @@ FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, legionella_recycle)
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, electric_recycle)
 FILECFG_PARSER_PRIO_PARSE_SET_FUNC(s_dhwt, prio)
 FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_dhwt, runmode)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_bottom)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_top)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_win)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_wout)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_bottom)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_top)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_win)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_wout)
 FILECFG_PARSER_RID_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
@@ -130,10 +131,10 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODESTR,	"runmode",		true,	fcp_runmode_s_dhwt_runmode,		NULL, },
 		{ NODESTR,	"dhwt_cprio",		false,	fcp_dhwt_cprio,				NULL, },
 		{ NODESTR,	"force_mode",		false,	fcp_dhwt_force_mode,			NULL, },
-		{ NODELST,	"tid_bottom",		false,	fcp_tid_s_dhwt_tid_bottom,		NULL, },
-		{ NODELST,	"tid_top",		false,	fcp_tid_s_dhwt_tid_top,			NULL, },
-		{ NODELST,	"tid_win",		false,	fcp_tid_s_dhwt_tid_win,			NULL, },
-		{ NODELST,	"tid_wout",		false,	fcp_tid_s_dhwt_tid_wout,		NULL, },
+		{ NODESTR,	"tid_bottom",		false,	fcp_inputs_temperature_s_dhwt_tid_bottom,NULL, },
+		{ NODESTR,	"tid_top",		false,	fcp_inputs_temperature_s_dhwt_tid_top,	NULL, },
+		{ NODESTR,	"tid_win",		false,	fcp_inputs_temperature_s_dhwt_tid_win,	NULL, },
+		{ NODESTR,	"tid_wout",		false,	fcp_inputs_temperature_s_dhwt_tid_wout,	NULL, },
 		{ NODELST,	"rid_selfheater",	false,	fcp_rid_s_dhwt_rid_selfheater,		NULL, },
 		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },
 		{ NODESTR,	"pump_feed",		false,	fcp_pump_s_dhwt_ppump_feed,		NULL, },

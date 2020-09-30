@@ -14,6 +14,7 @@
 #include <stdlib.h>	// abs
 #include <string.h>	// strlen/strcmp
 
+#include "inputs_parse.h"
 #include "hcircuit_parse.h"
 #include "filecfg_parser.h"
 #include "hcircuit.h"
@@ -121,9 +122,9 @@ FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_hcircuit, wtemp_rorh)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, am_tambient_tK)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, true, s_hcircuit, tambient_boostdelta)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, boost_maxtime)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_outgoing)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_return)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_hcircuit, tid_ambient)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_hcircuit, tid_outgoing)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_hcircuit, tid_return)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_hcircuit, tid_ambient)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_hcircuit, schedid)
 FILECFG_PARSER_PBMODEL_PARSE_SET_FUNC(s_hcircuit, bmodel)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hcircuit_to_plant, s_hcircuit, pump_feed)
@@ -169,9 +170,9 @@ int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODEINT|NODEDUR,	"am_tambient_tK",	false,	fcp_tk_s_hcircuit_am_tambient_tK,	NULL, },
 		{ NODEFLT|NODEINT,	"tambient_boostdelta",	false,	fcp_temp_s_hcircuit_tambient_boostdelta, NULL, },
 		{ NODEINT|NODEDUR,	"boost_maxtime",	false,	fcp_tk_s_hcircuit_boost_maxtime,	NULL, },
-		{ NODELST,		"tid_outgoing",		true,	fcp_tid_s_hcircuit_tid_outgoing,	NULL, },
-		{ NODELST,		"tid_return",		false,	fcp_tid_s_hcircuit_tid_return,		NULL, },
-		{ NODELST,		"tid_ambient",		false,	fcp_tid_s_hcircuit_tid_ambient,		NULL, },
+		{ NODESTR,		"tid_outgoing",		true,	fcp_inputs_temperature_s_hcircuit_tid_outgoing,	NULL, },
+		{ NODESTR,		"tid_return",		false,	fcp_inputs_temperature_s_hcircuit_tid_return,	NULL, },
+		{ NODESTR,		"tid_ambient",		false,	fcp_inputs_temperature_s_hcircuit_tid_ambient,	NULL, },
 		{ NODELST,		"params",		false,	fcp_hcircuit_params,			NULL, },
 		{ NODESTR,		"tlaw",			true,	fcp_hcircuit_tlaw,			NULL, },
 		{ NODESTR,		"valve_mix",		false,	fcp_valve_s_hcircuit_pvalve_mix,	NULL, },

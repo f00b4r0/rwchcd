@@ -15,7 +15,7 @@
 #include "filecfg_dump.h"
 #include "lib.h"
 #include "hardware.h"
-
+#include "inputs.h"
 
 static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve __attribute__((unused)))
 {
@@ -102,11 +102,11 @@ static int filecfg_valve_tmix_dump(const struct s_valve * restrict const valve)
 {
 	if (FCD_Exhaustive || valve->set.tset.tmix.tdeadzone)
 		filecfg_dump_deltaK("tdeadzone", valve->set.tset.tmix.tdeadzone);
-	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tset.tmix.tid_hot))
-		filecfg_dump_tempid("tid_hot", valve->set.tset.tmix.tid_hot);
-	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tset.tmix.tid_cold))
-		filecfg_dump_tempid("tid_cold", valve->set.tset.tmix.tid_cold);
-	filecfg_dump_tempid("tid_out", valve->set.tset.tmix.tid_out);		// mandatory
+	if (FCD_Exhaustive || inputs_temperature_name(valve->set.tset.tmix.tid_hot))
+		filecfg_dump_nodestr("tid_hot", inputs_temperature_name(valve->set.tset.tmix.tid_hot));
+	if (FCD_Exhaustive || inputs_temperature_name(valve->set.tset.tmix.tid_cold))
+		filecfg_dump_nodestr("tid_cold", inputs_temperature_name(valve->set.tset.tmix.tid_cold));
+	filecfg_dump_nodestr("tid_out", inputs_temperature_name(valve->set.tset.tmix.tid_out));	// mandatory
 
 	filecfg_iprintf("algo");
 	return (filecfg_valve_algo_dump(valve));			// mandatory

@@ -18,6 +18,7 @@
 #include "valve.h"
 #include "hardware.h"
 #include "lib.h"
+#include "inputs.h"
 
 #include "scheduler.h"
 
@@ -126,14 +127,14 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 	filecfg_dump_nodestr("dhwt_cprio", cpriostr);
 	filecfg_dump_nodestr("force_mode", fmode);
 
-	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_bottom))
-		filecfg_dump_tempid("tid_bottom", dhwt->set.tid_bottom);
-	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_top))
-		filecfg_dump_tempid("tid_top", dhwt->set.tid_top);
-	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_win))
-		filecfg_dump_tempid("tid_win", dhwt->set.tid_win);
-	if (FCD_Exhaustive || hardware_sensor_name(dhwt->set.tid_wout))
-		filecfg_dump_tempid("tid_wout", dhwt->set.tid_wout);
+	if (FCD_Exhaustive || inputs_temperature_name(dhwt->set.tid_bottom))
+		filecfg_dump_nodestr("tid_bottom", inputs_temperature_name(dhwt->set.tid_bottom));
+	if (FCD_Exhaustive || inputs_temperature_name(dhwt->set.tid_top))
+		filecfg_dump_nodestr("tid_top", inputs_temperature_name(dhwt->set.tid_top));
+	if (FCD_Exhaustive || inputs_temperature_name(dhwt->set.tid_win))
+		filecfg_dump_nodestr("tid_win", inputs_temperature_name(dhwt->set.tid_win));
+	if (FCD_Exhaustive || inputs_temperature_name(dhwt->set.tid_wout))
+		filecfg_dump_nodestr("tid_wout", inputs_temperature_name(dhwt->set.tid_wout));
 	if (FCD_Exhaustive || hardware_relay_name(dhwt->set.rid_selfheater))
 		filecfg_dump_relid("rid_selfheater", dhwt->set.rid_selfheater);
 

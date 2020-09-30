@@ -36,7 +36,7 @@ static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
 	if (FCD_Exhaustive || bmodel->set.limit_tfrost)
 		filecfg_dump_celsius("limit_tfrost", bmodel->set.limit_tfrost);
 	filecfg_dump_tk("tau", bmodel->set.tau);			// mandatory
-	filecfg_dump_tempid("tid_outdoor", bmodel->set.tid_outdoor);	// mandatory
+	filecfg_dump_nodestr("tid_outdoor", inputs_temperature_name(bmodel->set.tid_outdoor));	// mandatory
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

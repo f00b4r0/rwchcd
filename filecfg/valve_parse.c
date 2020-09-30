@@ -13,6 +13,7 @@
 
 #include <string.h>
 
+#include "inputs_parse.h"
 #include "valve_parse.h"
 #include "valve.h"
 #include "plant.h"
@@ -115,19 +116,19 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 static int fcp_tid_valve_tmix_tid_hot(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_hot, node));
+	return (filecfg_inputs_parse_helper_tid(&valve->set.tset.tmix.tid_hot, node));
 }
 
 static int fcp_tid_valve_tmix_tid_cold(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_cold, node));
+	return (filecfg_inputs_parse_helper_tid(&valve->set.tset.tmix.tid_cold, node));
 }
 
 static int fcp_tid_valve_tmix_tid_out(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_parser_tid_parse(&valve->set.tset.tmix.tid_out, node));
+	return (filecfg_inputs_parse_helper_tid(&valve->set.tset.tmix.tid_out, node));
 }
 
 static int fcp_temp_valve_tmix_tdeadzone(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -161,9 +162,9 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEFLT|NODEINT,	"tdeadzone",	false,	fcp_temp_valve_tmix_tdeadzone,	NULL, },
-		{ NODELST,		"tid_hot",	false,	fcp_tid_valve_tmix_tid_hot,	NULL, },
-		{ NODELST,		"tid_cold",	false,	fcp_tid_valve_tmix_tid_cold,	NULL, },
-		{ NODELST,		"tid_out",	true,	fcp_tid_valve_tmix_tid_out,	NULL, },
+		{ NODESTR,		"tid_hot",	false,	fcp_tid_valve_tmix_tid_hot,	NULL, },
+		{ NODESTR,		"tid_cold",	false,	fcp_tid_valve_tmix_tid_cold,	NULL, },
+		{ NODESTR,		"tid_out",	true,	fcp_tid_valve_tmix_tid_out,	NULL, },
 		{ NODESTR,		"algo",		true,	fcp_valve_tmix_algo,		NULL, },
 	};
 	struct s_valve * restrict const valve = priv;

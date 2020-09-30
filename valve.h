@@ -16,6 +16,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "inputs.h"
 
 /** private structure for sapprox valve tcontrol */
 struct s_valve_sapprox_priv {
@@ -92,9 +93,9 @@ union u_valve_motor_set {
 /** Private structure for mixing type valve */
 struct s_valve_type_mix_set {
 	temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
-	tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
-	tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
-	tempid_t tid_out;	///< temp at the output
+	itid_t tid_hot;		///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
+	itid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
+	itid_t tid_out;		///< temp at the output
 	enum e_valve_talgos algo;///< valve tcontrol algorithm identifier
 };
 

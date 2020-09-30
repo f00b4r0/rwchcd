@@ -91,3 +91,19 @@ int filecfg_inputs_parse(void * restrict const priv, const struct s_filecfg_pars
 
 	return (ret);
 }
+
+int filecfg_inputs_parse_helper_tid(itid_t *tid, const struct s_filecfg_parser_node * const node)
+{
+	int ret;
+	const char *str = node->value.stringval;
+
+	assert(NODESTR == node->type);
+
+	ret = inputs_temperature_fbn(str);
+	if (ret < 0)
+		return (ret);
+
+	*tid = (itid_t)ret;
+
+	return (ALL_OK);
+}

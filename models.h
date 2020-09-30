@@ -16,6 +16,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "inputs.h"
 
 /** Models */
 struct s_models {
@@ -39,7 +40,7 @@ struct s_bmodel {
 		temp_t limit_tsummer;	///< outdoor temp for summer switch over
 		temp_t limit_tfrost;	///< outdoor temp for frost protection
 		timekeep_t tau;		///< bmodel time constant
-		tempid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
+		itid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
 	} set;
 	struct {
 		bool online;		///< true if bmodel is online

@@ -14,12 +14,13 @@
 #include "models_parse.h"
 #include "models.h"
 #include "filecfg_parser.h"
+#include "inputs_parse.h"
 
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_bmodel, logging)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_bmodel, limit_tsummer)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_bmodel, limit_tfrost)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_bmodel, tau)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_bmodel, tid_outdoor)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_bmodel, tid_outdoor)
 
 static int bmodel_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
@@ -28,7 +29,7 @@ static int bmodel_parse(void * restrict const priv __attribute__((unused)), cons
 		{ NODEFLT|NODEINT,	"limit_tsummer",	false,	fcp_temp_s_bmodel_limit_tsummer,	NULL, },
 		{ NODEFLT|NODEINT,	"limit_tfrost",		false,	fcp_temp_s_bmodel_limit_tfrost,		NULL, },
 		{ NODEINT|NODEDUR,	"tau",			true,	fcp_tk_s_bmodel_tau,			NULL, },
-		{ NODELST,		"tid_outdoor",		true,	fcp_tid_s_bmodel_tid_outdoor,		NULL, },
+		{ NODESTR,		"tid_outdoor",		true,	fcp_inputs_temperature_s_bmodel_tid_outdoor,	NULL, },
 	};
 	struct s_bmodel * bmodel;
 	const char * bmdlname = node->value.stringval;

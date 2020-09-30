@@ -15,6 +15,7 @@
 #include "boiler.h"
 #include "filecfg_parser.h"
 #include "heatsource_parse.h"
+#include "inputs_parse.h"
 
 #include "plant.h"
 
@@ -25,8 +26,8 @@ FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_tmin)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_treturnmin)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, t_freeze)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_boiler_priv, burner_min_time)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_return)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_boiler_priv, tid_boiler)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_return)
 FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
 FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
 
@@ -61,8 +62,8 @@ int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filec
 		{ NODEFLT|NODEINT,	"limit_treturnmin",	false,	fcp_temp_s_boiler_priv_limit_treturnmin, NULL, },
 		{ NODEFLT|NODEINT,	"t_freeze",		true,	fcp_temp_s_boiler_priv_t_freeze,	NULL, },
 		{ NODEINT|NODEDUR,	"burner_min_time",	false,	fcp_tk_s_boiler_priv_burner_min_time,	NULL, },
-		{ NODELST,		"tid_boiler",		true,	fcp_tid_s_boiler_priv_tid_boiler,	NULL, },
-		{ NODELST,		"tid_boiler_return",	false,	fcp_tid_s_boiler_priv_tid_boiler_return, NULL, },
+		{ NODESTR,		"tid_boiler",		true,	fcp_inputs_temperature_s_boiler_priv_tid_boiler,	NULL, },
+		{ NODESTR,		"tid_boiler_return",	false,	fcp_inputs_temperature_s_boiler_priv_tid_boiler_return, NULL, },
 		{ NODELST,		"rid_burner_1",		true,	fcp_rid_s_boiler_priv_rid_burner_1,	NULL, },
 		{ NODELST,		"rid_burner_2",		false,	fcp_rid_s_boiler_priv_rid_burner_2,	NULL, },
 		{ NODESTR,		"pump_load",		false,	fcp_pump_s_boiler_priv_ppump_load,	NULL, },
