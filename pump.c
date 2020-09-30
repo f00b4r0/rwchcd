@@ -156,7 +156,8 @@ int pump_offline(struct s_pump * restrict const pump)
  */
 int pump_run(struct s_pump * restrict const pump)
 {
-	timekeep_t cooldown = 0;	// by default, no wait
+	const timekeep_t now = timekeep_now();
+	timekeep_t elapsed;
 	int ret;
 
 	if (unlikely(!pump))
@@ -169,15 +170,18 @@ int pump_run(struct s_pump * restrict const pump)
 
 	// apply cooldown to turn off, only if not forced.
 	// If ongoing cooldown, resume it, otherwise restore default value
-	if (!pump->run.req_on && !pump->run.force_state)
-		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
+	if (!pump->run.req_on && !pump->run.force_state) {
+		elapsed = now - pump->run.last_switch;
+		if (elapsed < pump->set.cooldown_time)
+			return (ALL_OK);
+	}
 
 	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	ret = hardware_relay_set_state(pump->set.rid_pump, pump->run.req_on, cooldown);
+	ret = hardware_relay_set_state(pump->set.rid_pump, pump->run.req_on, 0);
 	if (unlikely(ret < 0))
 		return (ret);
 
-	pump->run.actual_cooldown_time = (timekeep_t)ret;
+	pump->run.last_switch = now;
 
 	return (ALL_OK);
 }

@@ -432,6 +432,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	const uint32_t fpdec = 0x8000;	// good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t trip_temp, untrip_temp, temp_deriv, temp, ret_temp;
+	timekeep_t elapsed, now;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
@@ -551,11 +552,22 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	ret = ALL_OK;
 
 	/* burner control */
+	now = timekeep_now();
 	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
-	if (boiler->run.actual_temp < trip_temp)		// trip condition
-		ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
-	else if (boiler->run.actual_temp > untrip_temp)	// untrip condition
-		ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
+	if (boiler->run.actual_temp < trip_temp) {		// trip condition
+		elapsed = now - boiler->run.burner_1_last_switch;
+		if (elapsed >= boiler->set.burner_min_time) {	// cooldown start
+			ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON, 0);
+			boiler->run.burner_1_last_switch = now;
+		}
+	}
+	else if (boiler->run.actual_temp > untrip_temp) {	// untrip condition
+		elapsed = now - boiler->run.burner_1_last_switch;
+		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
+			ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
+			boiler->run.burner_1_last_switch = now;
+		}
+	}
 
 	if (ret > 0)	// cooldown isn't an error
 		ret = ALL_OK;
