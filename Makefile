@@ -3,6 +3,7 @@ VARLIBDIR := /var/lib/rwchcd
 REVISION := $(shell git describe --tags --always --dirty)
 HOST_OS := $(shell uname)
 CC := gcc
+LD := ld
 FLEX := flex
 BISON := bison
 #-Wdouble-promotion should be checked but triggers warnings with printf
@@ -27,6 +28,10 @@ HWBACKENDS_DIR := hw_backends
 
 SRCS := $(wildcard *.c)
 
+SUBDIRS := filecfg/
+#SUBDIRS := filecfg/ hw_backends/
+#SUBDIRS := $(wildcard */)
+
 DBUSGEN_SRCS := $(DBUSGEN_BASE).c
 SRCS := $(filter-out $(DBUSGEN_SRCS),$(SRCS))
 ifeq (,$(findstring HAS_DBUS,$(CONFIG)))
@@ -46,9 +51,6 @@ LDLIBS += -lwiringPi
 SRCS += $(wildcard $(HWBACKENDS_DIR)/hw_p1/*.c)
 endif
 
-# file configuration subsystem
-SRCS += $(wildcard filecfg/*.c)
-
 OBJS := $(SRCS:.c=.o)
 DEPS := $(SRCS:.c=.d)
 
@@ -63,9 +65,21 @@ CFLAGS += $(shell pkg-config --cflags gio-unix-2.0)
 LDLIBS += $(shell pkg-config --libs gio-unix-2.0)
 endif
 
-.PHONY:	all clean distclean install uninstall dbus-gen doc
+TOPTARGETS := all clean distclean install uninstall dbus-gen doc
 
-all:	$(MAIN)
+SUBDIRBIN := _payload.o
+
+export SUBDIRBIN CC LD CFLAGS WFLAGS
+
+$(TOPTARGETS): $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+
+SUBDIRS_OBJS := $(SUBDIRS:/=/$(SUBDIRBIN))
+MAINOBJS += SUBDIRS_OBJS
+
+all:	$(SUBDIRS) $(MAIN)
 	@echo	Done
 
 $(MAIN): $(MAINOBJS)
@@ -82,7 +96,6 @@ $(MAIN): $(MAINOBJS)
 
 clean:
 	$(RM) $(HWBACKENDS_DIR)/*/*.[od~]
-	$(RM) filecfg/*.[od~]
 	$(RM) *.o *.d *~ *.output $(MAIN)
 
 distclean:	clean
@@ -136,3 +149,4 @@ tools/hwp1_prelays:	tools/hwp1_prelays.o $(filter-out rwchcd.o hw_backends/hw_p1
 %.c: %.l
 
 -include $(DEPS) $(DBUSGEN_DEPS)
+.PHONY:	$(TOPTARGETS) $(SUBDIRS)

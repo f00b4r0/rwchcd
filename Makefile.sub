@@ -1,0 +1,24 @@
+SRCS := $(wildcard *.c)
+
+OBJS := $(SRCS:.c=.o)
+DEPS := $(SRCS:.c=.d)
+
+TARGET := $(SUBDIRBIN)
+TARGETOBJS := $(OBJS)
+
+all:	$(TARGET)
+
+$(TARGET): $(TARGETOBJS)
+	$(LD) -o $@ -r $^
+
+.c.o:
+	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
+
+clean:
+	$(RM) *.o *.d *~ $(TARGET)
+
+distclean:	clean
+
+-include $(DEPS) 
+.PHONY:	all clean distclean
+.DEFAULT: ;
