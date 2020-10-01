@@ -34,6 +34,8 @@
 		4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DA1F968AE8001B0A1F /* dhwt.c */; };
 		4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DD1F96AD0A001B0A1F /* boiler.c */; };
 		4F43569C23157AE60030EB89 /* hw_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F43569B23157AE60030EB89 /* hw_lib.c */; };
+		4F650A0025261AB90071EC45 /* backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F6509FF25261AB90071EC45 /* backend.c */; };
+		4F650A09252626580071EC45 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F650A08252626580071EC45 /* filecfg.c */; };
 		4F869E99233A5EF300541A07 /* log_statsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42E98A23393156000A268A /* log_statsd.c */; };
 		4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */; };
 		4F99FD222088D18500DDAB75 /* filecfg_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg_dump.c */; };
@@ -148,6 +150,10 @@
 		4F42E98B23393156000A268A /* log_statsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_statsd.h; sourceTree = SOURCE_ROOT; };
 		4F43569A23157AE60030EB89 /* hw_lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_lib.h; sourceTree = SOURCE_ROOT; };
 		4F43569B23157AE60030EB89 /* hw_lib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_lib.c; sourceTree = SOURCE_ROOT; };
+		4F6509FE25261AB90071EC45 /* backend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = backend.h; sourceTree = "<group>"; };
+		4F6509FF25261AB90071EC45 /* backend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = backend.c; sourceTree = "<group>"; };
+		4F650A07252626580071EC45 /* filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg.h; sourceTree = "<group>"; };
+		4F650A08252626580071EC45 /* filecfg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg.c; sourceTree = "<group>"; };
 		4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.lex; path = filecfg_parser.l; sourceTree = SOURCE_ROOT; };
 		4F94475D21DAA14200FCF120 /* filecfg_parser.y */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.yacc; path = filecfg_parser.y; sourceTree = SOURCE_ROOT; };
 		4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_parser.c; sourceTree = SOURCE_ROOT; };
@@ -320,6 +326,17 @@
 			path = filecfg;
 			sourceTree = SOURCE_ROOT;
 		};
+		4F6509FC25261A650071EC45 /* dummy */ = {
+			isa = PBXGroup;
+			children = (
+				4F6509FE25261AB90071EC45 /* backend.h */,
+				4F6509FF25261AB90071EC45 /* backend.c */,
+				4F650A07252626580071EC45 /* filecfg.h */,
+				4F650A08252626580071EC45 /* filecfg.c */,
+			);
+			path = dummy;
+			sourceTree = "<group>";
+		};
 		4F99FD24208B7E5800DDAB75 /* hw_p1 */ = {
 			isa = PBXGroup;
 			children = (
@@ -343,6 +360,7 @@
 		4FC6895C207176F800A3A065 /* hw_backends */ = {
 			isa = PBXGroup;
 			children = (
+				4F6509FC25261A650071EC45 /* dummy */,
 				4F99FD24208B7E5800DDAB75 /* hw_p1 */,
 			);
 			path = hw_backends;
@@ -545,6 +563,7 @@
 				4FE70C52248663B30066007D /* hcircuit_parse.c in Sources */,
 				4FE70C5E2486BBC90066007D /* backends_dump.c in Sources */,
 				4FE70C3D248658540066007D /* boiler_dump.c in Sources */,
+				4F650A0025261AB90071EC45 /* backend.c in Sources */,
 				4F869E99233A5EF300541A07 /* log_statsd.c in Sources */,
 				4FC1132A25239B50009AA17D /* inputs_parse.c in Sources */,
 				4FE70C4C24865E3B0066007D /* dhwt_parse.c in Sources */,
@@ -585,6 +604,7 @@
 				4FBFEB8925288D360062B1FB /* outputs_dump.c in Sources */,
 				4F08255E248597620068FC22 /* valve_parse.c in Sources */,
 				4F3EC16D2524E5C400ACE8BA /* outputs_parse.c in Sources */,
+				4F650A09252626580071EC45 /* filecfg.c in Sources */,
 				4FC1847E1DA7B2F9000E514B /* dbus.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
