@@ -238,10 +238,6 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 {
 	const bid_t bid = tempid.bid;
 
-	// make sure sid is non null
-	if (unlikely(!tempid.sid))
-		return (-EINVALID);
-
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
 		return (-EINVALID);
@@ -269,10 +265,6 @@ int hardware_sensor_clone_time(const tempid_t tempid, timekeep_t * const clast)
 {
 	const bid_t bid = tempid.bid;
 
-	// make sure sid is non null
-	if (unlikely(!tempid.sid))
-		return (-EINVALID);
-
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
 		return (-EINVALID);
@@ -298,10 +290,6 @@ const char * hardware_sensor_name(const tempid_t tempid)
 {
 	const bid_t bid = tempid.bid;
 
-	// make sure sid is non null
-	if (unlikely(!tempid.sid))
-		return (NULL);
-
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
 		return (NULL);
@@ -319,10 +307,6 @@ const char * hardware_sensor_name(const tempid_t tempid)
 int hardware_relay_get_state(const relid_t relid)
 {
 	const bid_t bid = relid.bid;
-
-	// make sure rid is non null
-	if (unlikely(!relid.rid))
-		return (-EINVALID);
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -351,10 +335,6 @@ int hardware_relay_set_state(const relid_t relid, bool turn_on)
 {
 	const bid_t bid = relid.bid;
 
-	// make sure rid is non null
-	if (unlikely(!relid.rid))
-		return (-EINVALID);
-
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
 		return (-EINVALID);
@@ -379,10 +359,6 @@ int hardware_relay_set_state(const relid_t relid, bool turn_on)
 const char * hardware_relay_name(const relid_t relid)
 {
 	const bid_t bid = relid.bid;
-
-	// make sure rid is non null
-	if (unlikely(!relid.rid))
-		return (NULL);
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
