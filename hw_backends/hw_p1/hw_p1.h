@@ -2,7 +2,7 @@
 //  hw_backends/hw_p1/hw_p1.h
 //  rwchcd
 //
-//  (C) 2016 Thibaut VARENE
+//  (C) 2016,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -36,7 +36,7 @@ enum e_hw_p1_stype {
 struct s_hw_p1_sensor {
 	struct {
 		bool configured;	///< sensor is configured
-		sid_t sid;		///< sensor id, valid iff >0
+		uint_fast8_t channel;	///< sensor channel, numbered from 1 to 15
 		enum e_hw_p1_stype type;///< sensor type
 		temp_t offset;		///< sensor value offset
 	} set;		///< settings (externally set)
@@ -51,7 +51,7 @@ struct s_hw_p1_relay {
 	struct {
 		bool configured;	///< true if properly configured
 		bool failstate;		///< default state assumed by hardware in failsafe mode
-		rid_t rid;		///< relay id, valid iff >0
+		uint_fast8_t channel;	///< relay channel, numbered from 1 to 14 (R1 and R2 are 13 and 14)
 	} set;		///< settings (externally set)
 	struct {
 		bool turn_on;		///< state requested by software

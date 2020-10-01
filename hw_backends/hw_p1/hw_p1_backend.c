@@ -48,7 +48,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
 	};
 	static log_value_t values[ARRAY_SIZE(keys)];
-	unsigned int i = 0;
+	uint_fast8_t i = 0;
 
 	assert(ldata);
 	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
@@ -201,7 +201,7 @@ static int hw_p1_input(void * priv)
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	struct s_runtime * restrict const runtime = runtime_get();
 	static unsigned int count = 0, systout = 0;
-	static sid_t tempid = 1;
+	static uint_fast8_t tempid = 0;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
 	static bool syschg = false;
 	int ret;
@@ -275,8 +275,8 @@ static int hw_p1_input(void * priv)
 		hw->peripherals.i_SW2 = 0;
 		count = 5;
 
-		if (tempid > hw->settings.nsensors)
-			tempid = 1;
+		if (tempid >= hw->settings.nsensors)
+			tempid = 0;
 
 		hw_p1_lcd_set_tempid(&hw->lcd, tempid);	// update sensor
 	}
@@ -424,11 +424,11 @@ static void hw_p1_exit(void * priv)
 	hw_p1_lcd_exit(&hw->lcd);
 
 	// cleanup all resources
-	for (i = 1; i <= ARRAY_SIZE(hw->Relays); i++)
+	for (i = 0; i < ARRAY_SIZE(hw->Relays); i++)
 		hw_p1_setup_relay_release(hw, i);
 
 	// deconfigure all sensors
-	for (i = 1; i <= ARRAY_SIZE(hw->Sensors); i++)
+	for (i = 0; i < ARRAY_SIZE(hw->Sensors); i++)
 		hw_p1_setup_sensor_deconfigure(hw, i);
 
 	// reset the hardware
@@ -454,10 +454,10 @@ static const char * hw_p1_relay_name(void * priv, const rid_t id)
 
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
+	if ((id >= ARRAY_SIZE(hw->Relays)))
 		return (NULL);
 
-	return (hw->Relays[id-1].name);
+	return (hw->Relays[id].name);
 }
 
 /**
@@ -475,10 +475,10 @@ static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on
 
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
+	if ((id >= ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	relay = &hw->Relays[id-1];
+	relay = &hw->Relays[id];
 
 	if (unlikely(!relay->set.configured))
 		return (-ENOTCONFIGURED);
@@ -503,10 +503,10 @@ static int hw_p1_relay_get_state(void * priv, const rid_t id)
 
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
+	if ((id >= ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	relay = &hw->Relays[id-1];
+	relay = &hw->Relays[id];
 
 	if (!relay->set.configured)
 		return (-ENOTCONFIGURED);
@@ -526,10 +526,10 @@ static const char * hw_p1_sensor_name(void * priv, const sid_t id)
 
 	assert(hw);
 
-	if ((!id) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
+	if ((id >= hw->settings.nsensors) || (id >= ARRAY_SIZE(hw->Sensors)))
 		return (NULL);
 
-	return (hw->Sensors[id-1].name);
+	return (hw->Sensors[id].name);
 }
 
 /**
@@ -554,7 +554,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 
 	assert(hw);
 
-	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
+	if ((id >= hw->settings.nsensors) || (id >= ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
 	// make sure available data is valid - XXX HW_P1_TIMEOUT_TK timeout hardcoded
@@ -564,7 +564,7 @@ int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
 		return (-EHARDWARE);
 	}
 
-	sensor = &hw->Sensors[id-1];
+	sensor = &hw->Sensors[id];
 
 	if (!sensor->set.configured)
 		return (-ENOTCONFIGURED);
@@ -613,10 +613,10 @@ static int hw_p1_sensor_clone_time(void * priv, const sid_t id, timekeep_t * con
 
 	assert(hw);
 
-	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
+	if ((id >= hw->settings.nsensors) || (id >= ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw->Sensors[id-1].set.configured)
+	if (!hw->Sensors[id].set.configured)
 		return (-ENOTCONFIGURED);
 
 	if (ctime)

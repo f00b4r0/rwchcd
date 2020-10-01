@@ -62,7 +62,7 @@ int hw_p1_setup_setbl(struct s_hw_p1_pdata * restrict const hw, const uint8_t pe
  * @param lastid last connected sensor id
  * @return exec status
  */
-int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const sid_t lastid)
+int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t lastid)
 {
 	assert(hw);
 
@@ -100,7 +100,7 @@ int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint
  */
 int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_p1_sensor * restrict const sensor)
 {
-	sid_t id;
+	uint_fast8_t id;
 	char * str;
 
 	assert(hw);
@@ -108,7 +108,7 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 	if (!sensor || !sensor->name)
 		return (-EUNKNOWN);
 
-	id = sensor->set.sid;
+	id = sensor->set.channel;
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
@@ -129,7 +129,7 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 		return(-EOOM);
 
 	hw->Sensors[id].name = str;
-	hw->Sensors[id].set.sid = sensor->set.sid;
+	hw->Sensors[id].set.channel = sensor->set.channel;
 	hw->Sensors[id].set.type = sensor->set.type;
 	hw->Sensors[id].set.offset = sensor->set.offset;
 	hw->Sensors[id].set.configured = true;
@@ -140,21 +140,21 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 /**
  * Deconfigure a temperature sensor.
  * @param hw private hw_p1 hardware data
- * @param id the physical id of the sensor to deconfigure (starting from 1)
+ * @param id the id of the sensor to deconfigure (starting from 0)
  * @return exec status
  */
-int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, const sid_t id)
+int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t id)
 {
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
+	if ((id >= ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw->Sensors[id-1].set.configured)
+	if (!hw->Sensors[id].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free((void *)hw->Sensors[id-1].name);
-	memset(&hw->Sensors[id-1], 0x00, sizeof(hw->Sensors[id-1]));
+	free((void *)hw->Sensors[id].name);
+	memset(&hw->Sensors[id], 0x00, sizeof(hw->Sensors[id]));
 
 	return (ALL_OK);
 }
@@ -169,14 +169,14 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
 int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_p1_relay * restrict const relay)
 {
 	char * str;
-	rid_t id;
+	uint_fast8_t id;
 
 	assert(hw);
 
 	if (!relay || !relay->name)
 		return (-EUNKNOWN);
 
-	id = relay->set.rid;
+	id = relay->set.channel;
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
@@ -205,22 +205,22 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const st
  * Release a hardware relay.
  * @param hw private hw_p1 hardware data
  * Frees and cleans up the target hardware relay.
- * @param id target relay id (starting from 1)
+ * @param id target relay id (starting from 0)
  * @return exec status
  */
-int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const rid_t id)
+int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t id)
 {
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
+	if ((id >= ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	if (!hw->Relays[id-1].set.configured)
+	if (!hw->Relays[id].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free((void *)hw->Relays[id-1].name);
+	free((void *)hw->Relays[id].name);
 
-	memset(&hw->Relays[id-1], 0x00, sizeof(hw->Relays[id-1]));
+	memset(&hw->Relays[id], 0x00, sizeof(hw->Relays[id]));
 
 	return (ALL_OK);
 }

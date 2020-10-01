@@ -2,7 +2,7 @@
 //  hw_backends/hw_p1/hw_p1.c
 //  rwchcd
 //
-//  (C) 2016-2019 Thibaut VARENE
+//  (C) 2016-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -145,16 +145,16 @@ __attribute__ ((pure)) ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw
 /**
  * Raise an alarm for a specific sensor.
  * This function raises an alarm if the sensor's temperature is invalid.
- * @param hw HW P1 private data
- * @param id target sensor id
+ * @param sensor target sensor
  * @param error sensor error
  * @return exec status
  */
-static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const sid_t id, const int error)
+static int sensor_alarm(const struct s_hw_p1_sensor * const sensor, const int error)
 {
 	const char * restrict const msgf = _("sensor fail: \"%s\" (%d) %s");
 	const char * restrict const msglcdf = _("sensor fail: %d");
 	const char * restrict fail, * restrict name = NULL;
+	const uint_fast8_t channel = sensor->set.channel;
 	char * restrict msg, * restrict msglcd;
 	size_t size;
 	int ret;
@@ -162,11 +162,11 @@ static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const si
 	switch (error) {
 		case -ESENSORSHORT:
 			fail = _("shorted");
-			name = hw->Sensors[id-1].name;
+			name = sensor->name;
 			break;
 		case -ESENSORDISCON:
 			fail = _("disconnected");
-			name = hw->Sensors[id-1].name;
+			name = sensor->name;
 			break;
 		case -ESENSORINVAL:
 			fail = _("invalid");
@@ -176,8 +176,8 @@ static int sensor_alarm(const struct s_hw_p1_pdata * restrict const hw, const si
 			break;
 	}
 
-	snprintf_automalloc(msg, size, msgf, name, id, fail);
-	snprintf_automalloc(msglcd, size, msglcdf, id);
+	snprintf_automalloc(msg, size, msgf, name, channel, fail);
+	snprintf_automalloc(msglcd, size, msglcdf, channel);
 
 	ret = alarms_raise(error, msg, msglcd);
 
@@ -228,7 +228,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			}
 			else {
 				atomic_store_explicit(&sensor->run.value, TEMPSHORT, memory_order_relaxed);
-				sensor_alarm(hw, (sid_t)(i+1), -ESENSORSHORT);
+				sensor_alarm(sensor, -ESENSORSHORT);
 			}
 		}
 		else if (current >= RWCHCD_TEMPMAX) {
@@ -239,7 +239,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			}
 			else {
 				atomic_store_explicit(&sensor->run.value, TEMPDISCON, memory_order_relaxed);
-				sensor_alarm(hw, (sid_t)(i+1), -ESENSORDISCON);
+				sensor_alarm(sensor, -ESENSORDISCON);
 			}
 		}
 		// init or recovery
@@ -627,7 +627,7 @@ __attribute__((warn_unused_result, always_inline)) inline int hw_p1_rwchcperiphs
  */
 int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char * restrict const name)
 {
-	unsigned int id;
+	uint_fast8_t id;
 	int ret = -ENOTFOUND;
 
 	assert(hw && name);
@@ -636,7 +636,7 @@ int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char
 		if (!hw->Sensors[id].set.configured)
 			continue;
 		if (!strcmp(hw->Sensors[id].name, name)) {
-			ret = hw->Sensors[id].set.sid;
+			ret = (int)id;
 			break;
 		}
 	}
@@ -652,7 +652,7 @@ int hw_p1_sid_by_name(const struct s_hw_p1_pdata * restrict const hw, const char
  */
 int hw_p1_rid_by_name(const struct s_hw_p1_pdata * const restrict hw, const char * restrict const name)
 {
-	unsigned int id;
+	uint_fast8_t id;
 	int ret = -ENOTFOUND;
 
 	assert(hw && name);
@@ -661,7 +661,7 @@ int hw_p1_rid_by_name(const struct s_hw_p1_pdata * const restrict hw, const char
 		if (!hw->Relays[id].set.configured)
 			continue;
 		if (!strcmp(hw->Relays[id].name, name)) {
-			ret = hw->Relays[id].set.rid;
+			ret = (int)id;
 			break;
 		}
 	}

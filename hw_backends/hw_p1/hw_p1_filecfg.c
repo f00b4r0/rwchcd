@@ -69,7 +69,7 @@ static void sensor_dump(const struct s_hw_p1_sensor * const sensor)
 
 	filecfg_iprintf("sensor \"%s\" {\n", sensor->name);
 	filecfg_ilevel_inc();
-	filecfg_iprintf("sid %d;\n", sensor->set.sid);
+	filecfg_iprintf("channel %d;\n", sensor->set.channel);
 	filecfg_dump_nodestr("type", type);
 	if (FCD_Exhaustive || sensor->set.offset)
 		filecfg_dump_deltaK("offset", sensor->set.offset);
@@ -107,7 +107,7 @@ static void relay_dump(const struct s_hw_p1_relay * const relay)
 
 	filecfg_iprintf("relay \"%s\" {\n", relay->name);
 	filecfg_ilevel_inc();
-	filecfg_iprintf("rid %d;\n", relay->set.rid);
+	filecfg_iprintf("channel %d;\n", relay->set.channel);
 	filecfg_iprintf("failstate %s;\n", relay->set.failstate ? "on" : "off");
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -192,7 +192,7 @@ static int parse_type(void * restrict const priv, const struct s_filecfg_parser_
 static int sensor_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "sid", true, NULL, NULL, },
+		{ NODEINT, "channel", true, NULL, NULL, },
 		{ NODESTR, "type", true, NULL, NULL, },
 		{ NODEFLT|NODEINT, "offset", false, NULL, NULL, },
 	};
@@ -207,7 +207,7 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	sensor.set.sid = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
+	sensor.set.channel = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
 	sensor_stype = parsers[1].node->value.stringval;
 	if (parsers[2].node)
 		sensor_offset = (NODEFLT == parsers[2].node->type) ? parsers[2].node->value.floatval : (float)parsers[2].node->value.intval;
@@ -252,7 +252,7 @@ static int sensors_parse(void * restrict const priv, const struct s_filecfg_pars
 static int relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "rid", true, NULL, NULL, },
+		{ NODEINT, "channel", true, NULL, NULL, },
 		{ NODEBOL, "failstate", true, NULL, NULL, },
 	};
 	struct s_hw_p1_relay relay;
@@ -263,7 +263,7 @@ static int relay_parse(void * restrict const priv, const struct s_filecfg_parser
 	if (ALL_OK != ret)
 		return (ret);	// return if invalid config
 
-	relay.set.rid = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
+	relay.set.channel = parsers[0].node->value.intval;		// XXX REVIEW DIRECT INDEXING
 	relay.set.failstate = parsers[1].node->value.boolval;
 	relay.name = node->value.stringval;	// will be copied in relay_request()
 
