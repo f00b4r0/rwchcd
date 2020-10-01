@@ -181,7 +181,7 @@ int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const st
 		return (-EINVALID);
 
 	id--;	// relay array indexes from 0
-	if (hw->Relays[id-1].set.configured)
+	if (hw->Relays[id].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
