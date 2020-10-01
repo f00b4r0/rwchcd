@@ -29,8 +29,6 @@ HWBACKENDS_DIR := hw_backends
 SRCS := $(wildcard *.c)
 
 SUBDIRS := filecfg/
-#SUBDIRS := filecfg/ hw_backends/
-#SUBDIRS := $(wildcard */)
 
 DBUSGEN_SRCS := $(DBUSGEN_BASE).c
 SRCS := $(filter-out $(DBUSGEN_SRCS),$(SRCS))
@@ -48,7 +46,7 @@ endif
 
 ifneq (,$(findstring HAS_HWP1,$(CONFIG)))
 LDLIBS += -lwiringPi
-SRCS += $(wildcard $(HWBACKENDS_DIR)/hw_p1/*.c)
+SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
 endif
 
 OBJS := $(SRCS:.c=.o)
@@ -95,7 +93,6 @@ $(MAIN): $(MAINOBJS)
 	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
 
 clean:
-	$(RM) $(HWBACKENDS_DIR)/*/*.[od~]
 	$(RM) *.o *.d *~ *.output $(MAIN)
 
 distclean:	clean

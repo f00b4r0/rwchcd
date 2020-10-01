@@ -34,7 +34,6 @@
 		4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DA1F968AE8001B0A1F /* dhwt.c */; };
 		4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DD1F96AD0A001B0A1F /* boiler.c */; };
 		4F43569C23157AE60030EB89 /* hw_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F43569B23157AE60030EB89 /* hw_lib.c */; };
-		4F68530C2525EF9F002B50FA /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 4F68530B2525EF9F002B50FA /* Makefile */; };
 		4F869E99233A5EF300541A07 /* log_statsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42E98A23393156000A268A /* log_statsd.c */; };
 		4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */; };
 		4F99FD222088D18500DDAB75 /* filecfg_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg_dump.c */; };
@@ -149,7 +148,6 @@
 		4F42E98B23393156000A268A /* log_statsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_statsd.h; sourceTree = SOURCE_ROOT; };
 		4F43569A23157AE60030EB89 /* hw_lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_lib.h; sourceTree = SOURCE_ROOT; };
 		4F43569B23157AE60030EB89 /* hw_lib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_lib.c; sourceTree = SOURCE_ROOT; };
-		4F68530B2525EF9F002B50FA /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.lex; path = filecfg_parser.l; sourceTree = SOURCE_ROOT; };
 		4F94475D21DAA14200FCF120 /* filecfg_parser.y */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.yacc; path = filecfg_parser.y; sourceTree = SOURCE_ROOT; };
 		4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_parser.c; sourceTree = SOURCE_ROOT; };
