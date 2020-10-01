@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 
+#include "hw_backends/dummy/filecfg.h"
 #ifdef HAS_HWP1		// XXX
  #include "hw_backends/hw_p1/hw_p1_filecfg.h"
 #endif
@@ -22,15 +23,24 @@
 #include "rwchcd.h"
 #include "hw_backends.h"
 
+typedef int (* const hw_bknd_parser_t)(const struct s_filecfg_parser_node * const);
+
 extern struct s_hw_backends HW_backends;
+
+static hw_bknd_parser_t HWparsers[] = {
+	dummy_filecfg_parse,
+#ifdef HAS_HWP1		// XXX
+	hw_p1_filecfg_parse,
+#endif
+};
 
 static int hardware_backend_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	int ret = ALL_OK;
+	unsigned int i;
+	int ret = -EGENERIC;
 
-#ifdef HAS_HWP1		// XXX
-	ret = hw_p1_filecfg_parse(node);
-#endif
+	for (i = 0; ret && (i < ARRAY_SIZE(HWparsers)); i++)
+		ret = HWparsers[i](node);
 
 	return (ret);
 }
