@@ -108,6 +108,7 @@ enum e_execs {
 	EEMPTY,		///< entity is empty
 	ETOOBIG,	///< entity is too large
 	ERSTALE,	///< data is stale
+	ENOTWANTED,	///< extra data not wanted
 	EGENERIC,
 };
 

@@ -79,6 +79,9 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 
 	assert((NODEFLT|NODEINT) & n->type);
 
+	if (n->children)
+		return(-ENOTWANTED);
+
 	if (NODEFLT == n->type) {
 		fv = n->value.floatval;
 		if (positiveonly && (fv < 0))
@@ -290,6 +293,9 @@ static int sysmode_parse(void * restrict const priv, const struct s_filecfg_pars
 	const char * restrict n;
 	unsigned int i;
 
+	if (node->children)
+		return(-ENOTWANTED);
+
 	n = node->value.stringval;
 
 	for (i = 0; i < ARRAY_SIZE(params); i++) {
@@ -451,6 +457,9 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 	unsigned int i;
 
 	assert(NODESTR == node->type);
+
+	if (node->children)
+		return(-ENOTWANTED);
 
 	n = node->value.stringval;
 
@@ -635,6 +644,9 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 
 fail:
 	switch (ret) {
+		case -ENOTWANTED:
+			pr_err(_("Unknown extra data in config!"));
+			break;
 		case -EOOM:
 			pr_err(_("Out of memory while parsing configuration!"));
 			break;
