@@ -39,8 +39,6 @@
 #include "relay_parse.h"
 
 
-// XXX ENSURE PARSING ORDER FOR targets
-
 static const char * const relay_op_str[] = {
 	[R_OP_FIRST]	= "first",
 	[R_OP_ALL]	= "all",

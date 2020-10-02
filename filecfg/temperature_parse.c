@@ -41,8 +41,6 @@
 #include "temperature_parse.h"
 
 
-// XXX ENSURE PARSING ORDER FOR sources
-
 static const char * const temp_op_str[] = {
 	[T_OP_FIRST]	= "first",
 	[T_OP_MIN]	= "min",

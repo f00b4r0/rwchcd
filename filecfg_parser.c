@@ -159,6 +159,8 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 		exit(-1);
 	}
 
+	if (next)
+		next->prev = listelmt;
 	listelmt->next = next;
 	listelmt->node = node;
 
@@ -365,6 +367,7 @@ static int runtime_config_parse(void * restrict const priv, const struct s_filec
  * @param ntype the expected type for sibling nodes
  * @param parser the parser to apply to each sibling node
  * @return exec status
+ * @note this function will parse siblings in the same order they appear in the config file.
  */
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist,
 				  const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser)
@@ -374,7 +377,10 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	const char * sname;
 	int ret = -EEMPTY;	// immediate return if nodelist is empty
 
-	for (nlist = nodelist; nlist; nlist = nlist->next) {
+	// by construction the bison parser creates a reverse-ordered list (wrt config file natural order): reverse it
+	for (nlist = nodelist; nlist && nlist->next; nlist = nlist->next);
+
+	for (; nlist; nlist = nlist->prev) {
 		node = nlist->node;
 		if (ntype != node->type) {
 			fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d\n"), node->name, node->lineno);
@@ -606,7 +612,7 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
  * Process the root list of config nodes.
  * This routine is used by the Bison parser.
  * @param nodelist the root nodelist for all the configuration nodes
- * @return 0 on success, 1 on failure
+ * @return 0 on success, 1 on failure (bison requirement)
  */
 int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const nodelist)
 {

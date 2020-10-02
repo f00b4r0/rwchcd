@@ -54,6 +54,7 @@ typedef int (* const parser_t)(void * restrict const priv, const struct s_filecf
 struct s_filecfg_parser_nodelist {
 	struct s_filecfg_parser_node *node;		///< current node
 	struct s_filecfg_parser_nodelist *next;		///< next list member
+	struct s_filecfg_parser_nodelist *prev;		///< previous list member
 };
 
 /** Structure for node parsers */
