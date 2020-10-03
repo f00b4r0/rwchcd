@@ -237,6 +237,8 @@ void hardware_exit(void)
 int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 {
 	const bid_t bid = tempid.bid;
+	u_hw_in_value_t value;
+	int ret;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -246,12 +248,16 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 	if (unlikely(!HW_backends.all[bid].run.online))
 		return (-EOFFLINE);
 
-	// make sure backend supports sensor_temp_clone
-	if (unlikely(!HW_backends.all[bid].cb->sensor_clone_temp))
+	// make sure backend supports op
+	if (unlikely(!HW_backends.all[bid].cb->input_value_get))
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->sensor_clone_temp(HW_backends.all[bid].priv, tempid.sid, ctemp));
+	ret = HW_backends.all[bid].cb->input_value_get(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.sid, &value);
+
+	*ctemp = value.temperature;
+
+	return (ret);
 }
 
 /**
@@ -274,11 +280,11 @@ int hardware_sensor_clone_time(const tempid_t tempid, timekeep_t * const clast)
 		return (-EOFFLINE);
 
 	// make sure backend supports op
-	if (unlikely(!HW_backends.all[bid].cb->sensor_clone_time))
+	if (unlikely(!HW_backends.all[bid].cb->input_time_get))
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->sensor_clone_time(HW_backends.all[bid].priv, tempid.sid, clast));
+	return (HW_backends.all[bid].cb->input_time_get(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.sid, clast));
 }
 
 /**
@@ -295,7 +301,7 @@ const char * hardware_sensor_name(const tempid_t tempid)
 		return (NULL);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->sensor_name(HW_backends.all[bid].priv, tempid.sid));
+	return (HW_backends.all[bid].cb->input_name(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.sid));
 }
 
 /**
@@ -307,6 +313,8 @@ const char * hardware_sensor_name(const tempid_t tempid)
 int hardware_relay_get_state(const relid_t relid)
 {
 	const bid_t bid = relid.bid;
+	u_hw_out_state_t state;
+	int ret;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -316,24 +324,29 @@ int hardware_relay_get_state(const relid_t relid)
 	if (unlikely(!HW_backends.all[bid].run.online))
 		return (-EOFFLINE);
 
-	// make sure backend supports relay_get_state
-	if (unlikely(!HW_backends.all[bid].cb->relay_get_state))
+	// make sure backend supports op
+	if (unlikely(!HW_backends.all[bid].cb->output_state_get))
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->relay_get_state(HW_backends.all[bid].priv, relid.rid));
+	ret = HW_backends.all[bid].cb->output_state_get(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid, &state);
+	if (ALL_OK != ret)
+		return (ret);
+	else
+		return (state.relay);
 }
 
 /**
  * Set relay state (request)
  * @param relid id of the hardware relay to modify
  * @param turn_on true if relay is meant to be turned on
- * @return 0 on success, positive number for cooldown wait remaining, negative for error
+ * @return exec status
  * @note actual (hardware) relay state will only be updated by a call to hardware_output()
  */
-int hardware_relay_set_state(const relid_t relid, bool turn_on)
+int hardware_relay_set_state(const relid_t relid, const bool turn_on)
 {
 	const bid_t bid = relid.bid;
+	const u_hw_out_state_t state = { turn_on };
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -343,12 +356,12 @@ int hardware_relay_set_state(const relid_t relid, bool turn_on)
 	if (unlikely(!HW_backends.all[bid].run.online))
 		return (-EOFFLINE);
 
-	// make sure backend supports relay_set_state
-	if (unlikely(!HW_backends.all[bid].cb->relay_set_state))
+	// make sure backend supports op
+	if (unlikely(!HW_backends.all[bid].cb->output_state_set))
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->relay_set_state(HW_backends.all[bid].priv, relid.rid, turn_on));
+	return (HW_backends.all[bid].cb->output_state_set(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid, &state));
 }
 
 /**
@@ -365,5 +378,5 @@ const char * hardware_relay_name(const relid_t relid)
 		return (NULL);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->relay_name(HW_backends.all[bid].priv, relid.rid));
+	return (HW_backends.all[bid].cb->output_name(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid));
 }
