@@ -2,7 +2,7 @@
 //  hw_backends.h
 //  rwchcd
 //
-//  (C) 2018 Thibaut VARENE
+//  (C) 2018,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -17,6 +17,32 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
+union u_hw_out_state {
+	bool relay;
+};
+
+typedef union u_hw_out_state u_hw_out_state_t;
+
+union u_hw_in_value {
+	temp_t temperature;
+	bool inswitch;
+};
+
+typedef union u_hw_in_value u_hw_in_value_t;
+
+enum e_hw_input_type {
+	HW_INPUT_NONE = 0,
+	HW_INPUT_TEMP,
+	HW_INPUT_SWITCH,
+};
+
+enum e_hw_output_type {
+	HW_OUTPUT_NONE = 0,
+	HW_OUTPUT_RELAY,
+};
+
+typedef uint_fast8_t inid_t;
+typedef uint_fast8_t outid_t;
 
 /**
  * Backend hardware callbacks.
@@ -88,91 +114,100 @@ struct s_hw_callbacks {
 	void (*exit)(void * priv);
 
 	/**
-	 * Return a hardware relay name.
+	 * Return a backend output name.
 	 * @warning if the backend implements @b ANY relay callback, this callback is @b MANDATORY.
 	 * @param priv hardware backend private data
-	 * @param rid hardware relay id
-	 * @return target relay name or NULL if error
+	 * @param type the type of requested output
+	 * @param oid backend output id
+	 * @return target output name or NULL if error
 	 */
-	const char * (*relay_name)(void * priv, const rid_t rid);
+	const char * (*output_name)(void * const priv, const enum e_hw_output_type type, const outid_t oid);
 
 	/**
-	 * Find hardware relay id by name.
-	 * This callback looks up a hardware relay in the backend by its name.
-	 * @warning if the backend implements @b ANY relay callback, this callback is @b MANDATORY.
-	 * @warning for a given backend, relay names must be unique.
+	 * Find backend output id by name.
+	 * This callback looks up an output in the backend by its name.
+	 * @warning if the backend implements @b ANY output callback, this callback is @b MANDATORY.
+	 * @warning for a given backend and output type, output names must be unique.
 	 * @param priv hardware backend private data
-	 * @param name target relay name to look for
-	 * @return error if not found or hardware relay id (must fit rid_t)
+	 * @param type the type of requested output
+	 * @param name target output name to look for
+	 * @return error if not found or backend output id (must fit outid_t)
 	 */
-	int (*relay_ibn)(void * priv, const char * const name);
+	int (*output_ibn)(void * const priv, const enum e_hw_output_type type, const char * const name);
 
 	/**
-	 * Get relay state.
-	 * This callback reads the software representation of the state of a
-	 * relay. The state returned by this callback accounts for the last
+	 * Get backend output state.
+	 * This callback reads the software representation of the state of an output.
+	 * The state returned by this callback accounts for the last
 	 * execution of hardware_output(), i.e. the returned state corresponds to
 	 * the last enacted hardware state.
-	 * Specifically, if relay_set_state() is called to turn ON a currently OFF
-	 * relay, and then relay_get_state() is called @b before output() has been
+	 * Specifically, for example if output_state_set() is called to turn ON a currently OFF
+	 * relay, and then output_state_get() is called @b before output() has been
 	 * executed, this function will return an OFF state for this relay.
 	 * @param priv hardware backend private data
-	 * @param rid hardware relay id
-	 * @return relay state
-	 */
-	int (*relay_get_state)(void * priv, const rid_t rid);
-
-	/**
-	 * Set relay state.
-	 * This callback updates the software representation of the state of a
-	 * relay. The hardware will reflect the state matching the last call to
-	 * this function after hardware_output() has been executed.
-	 * @param priv hardware backend private data
-	 * @param rid hardware relay id
-	 * @param turn_on true for turn on request
+	 * @param type the type of requested output
+	 * @param oid backend output id
+	 * @param state a pointer to a state location suitable for the target output in which the current state of the output will be stored
 	 * @return exec status
 	 */
-	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on);
+	int (*output_state_get)(void * const priv, const enum e_hw_output_type type, const outid_t oid, u_hw_out_state_t * const state);
 
 	/**
-	 * Return a hardware sensor name.
-	 * @warning if the backend implements @b ANY sensor callback, this callback is @b MANDATORY.
+	 * Set backend output state.
+	 * This callback updates the software representation of the state of an output.
+	 * The hardware will reflect the state matching the last call to
+	 * this function once hardware_output() has been executed.
 	 * @param priv hardware backend private data
-	 * @param sid hardware sensor id
-	 * @return target sensor name or NULL if error
-	 */
-	const char * (*sensor_name)(void * priv, const sid_t sid);
-
-	/**
-	 * Find hardware sensor id by name.
-	 * This callback looks up a hardware sensor in the backend by its name.
-	 * @warning if the backend implements @b ANY sensor callback, this callback is @b MANDATORY.
-	 * @warning for a given backend, sensor names must be unique.
-	 * @param priv hardware backend private data
-	 * @param name target sensor name to look for
-	 * @return error if not found or hardware sensor id (must fit sid_t)
-	 */
-	int (*sensor_ibn)(void * priv, const char * const name);
-
-	/**
-	 * Clone sensor temperature value.
-	 * @param priv hardware backend private data
-	 * @param sid hardware sendor id
-	 * @param ctime optional pointer to allocated space for value storage, can be NULL
+	 * @param type the type of requested output
+	 * @param oid backend output id
+	 * @param state a pointer to a state suitable for the target output
 	 * @return exec status
 	 */
-	int (*sensor_clone_temp)(void * priv, const sid_t sid, temp_t * const ctemp);
+	int (*output_state_set)(void * const priv, const enum e_hw_output_type type, const outid_t oid, const u_hw_out_state_t * const state);
+
+	/**
+	 * Return a backend input name.
+	 * @warning if the backend implements @b ANY input callback, this callback is @b MANDATORY.
+	 * @param priv hardware backend private data
+	 * @param type the type of requested input
+	 * @param inid backend input id
+	 * @return target input name or NULL if error
+	 */
+	const char * (*input_name)(void * const priv, const enum e_hw_input_type type, const inid_t inid);
+
+	/**
+	 * Find backend input id by name.
+	 * This callback looks up an input in the backend by its name.
+	 * @warning if the backend implements @b ANY input callback, this callback is @b MANDATORY.
+	 * @warning for a given backend and input type, input names must be unique.
+	 * @param priv hardware backend private data
+	 * @param type the type of requested input
+	 * @param name target input name to look for
+	 * @return error if not found or backend input id (must fit inid_t)
+	 */
+	int (*input_ibn)(void * const priv, const enum e_hw_input_type type, const char * const name);
+
+	/**
+	 * Get backend input value.
+	 * @param priv hardware backend private data
+	 * @param type the type of requested input
+	 * @param inid backend input id
+	 * @param value pointer to a value location suitable for the target input in which the current value of the input will be stored
+	 * @return exec status
+	 */
+	int (*input_value_get)(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value);
 
 	/**
 	 * Clone sensor update time.
 	 * @param priv hardware backend private data
-	 * @param sid hardware sendor id
-	 * @param ctime optional pointer to allocated space for time storage, can be NULL
+	 * @param type the type of requested input
+	 * @param inid backend input id
+	 * @param ctime pointer to location where last update time will be stored
 	 * @return exec status
 	 * @note This function must @b ALWAYS return successfully if the target
 	 * sensor is properly configured and the underlying hardware is online.
 	 */
-	int (*sensor_clone_time)(void * priv, const sid_t sid, timekeep_t * const ctime);
+	int (*input_time_get)(void * const priv, const enum e_hw_input_type type, const inid_t inid, timekeep_t * const ctime);
 
 	/**
 	 * Dump hardware backend configuration.

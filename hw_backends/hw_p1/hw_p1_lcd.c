@@ -346,7 +346,7 @@ static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 	return msg;
 }
 
-int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
+int hw_p1_input_value_get(void * const priv, const int type, const uint_fast8_t inid, void * const value);
 //* XXX quick hack for LCD
 static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t tempid)
 {
@@ -355,7 +355,7 @@ static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, 
 	float celsius;
 	int ret;
 
-	ret = hw_p1_sensor_clone_temp(hw, tempid, &temp);
+	ret = hw_p1_input_value_get(hw, 1, tempid, &temp);
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISION))
  #error Non representable minimum temperature

@@ -128,11 +128,11 @@ int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, con
 
 	bid = (bid_t)ret;
 
-	if (!HW_backends.all[bid].cb->sensor_ibn)
+	if (!HW_backends.all[bid].cb->input_ibn)
 		return (-ENOTIMPLEMENTED);
 
 	// find sensor in that backend
-	ret = HW_backends.all[bid].cb->sensor_ibn(HW_backends.all[bid].priv, sensor_name);
+	ret = HW_backends.all[bid].cb->input_ibn(HW_backends.all[bid].priv, HW_INPUT_TEMP, sensor_name);
 	if (ret < 0)
 		return (ret);
 
@@ -171,11 +171,11 @@ int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const 
 
 	bid = (bid_t)ret;
 
-	if (!HW_backends.all[bid].cb->relay_ibn)
+	if (!HW_backends.all[bid].cb->output_ibn)
 		return (-ENOTIMPLEMENTED);
 
 	// find relay in that backend
-	ret = HW_backends.all[bid].cb->relay_ibn(HW_backends.all[bid].priv, relay_name);
+	ret = HW_backends.all[bid].cb->output_ibn(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relay_name);
 	if (ret < 0)
 		return (ret);
 
