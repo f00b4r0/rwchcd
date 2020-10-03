@@ -21,21 +21,22 @@
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0		///< RaspberryPi SPI channel 0
 
-static struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
-
 /**
- * Initialize local data.
- * Cannot fail.
- * @return #Hardware
+ * Allocate & initialize local HW P1 data.
+ * @return pointer to HW P1 private data
  */
 void * hw_p1_setup_new(void)
 {
-	memset(&Hardware, 0x0, sizeof(Hardware));
-	
-	Hardware.spi.set.chan = SPICHAN;
-	Hardware.spi.set.clock = SPICLOCK;
+	struct s_hw_p1_pdata * hw;
 
-	return (&Hardware);
+	hw = calloc(1, sizeof(*hw));
+	if (!hw)
+		return (NULL);
+
+	hw->spi.set.chan = SPICHAN;
+	hw->spi.set.clock = SPICLOCK;
+
+	return (hw);
 }
 
 /**
@@ -226,11 +227,10 @@ int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const ui
 }
 
 /**
- * Fake destructor.
- * For the sake of API consistency, this simulates a destructor
- * to the "allocated" data in hw_p1_setup_new().
+ * HW P1 destructor.
+ * Frees data allocated in hw_p1_setup_new().
  */
 void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw)
 {
-	return;
+	free(hw);
 }

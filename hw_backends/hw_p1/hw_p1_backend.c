@@ -9,10 +9,6 @@
 /**
  * @file
  * Hardware Prototype 1 backend implementation.
- *
- * @note while the backend interface makes use of the @b priv data pointer for
- * documentation purposes, behind the scenes the code assumes access to statically
- * allocated data.
  */
 
 #include <assert.h>
