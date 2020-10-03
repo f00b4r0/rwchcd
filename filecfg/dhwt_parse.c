@@ -76,43 +76,23 @@ FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_recycle)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_hwisol)
 
-static int fcp_dhwt_cprio(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_dhwt * restrict const dhwt = priv;
-	const char * str = node->value.stringval;
+static const char * dhwt_cprio_str[] = {
+	[DHWTP_PARALMAX]	= "paralmax",
+	[DHWTP_PARALDHW]	= "paraldhw",
+	[DHWTP_SLIDMAX]		= "slidmax",
+	[DHWTP_SLIDDHW]		= "sliddhw",
+	[DHWTP_ABSOLUTE]	= "absolute",
+};
 
-	if	(!strcmp(str, "paralmax"))
-		dhwt->set.dhwt_cprio = DHWTP_PARALMAX;
-	else if (!strcmp(str, "paraldhw"))
-		dhwt->set.dhwt_cprio = DHWTP_PARALDHW;
-	else if (!strcmp(str, "slidmax"))
-		dhwt->set.dhwt_cprio = DHWTP_SLIDMAX;
-	else if (!strcmp(str, "sliddhw"))
-		dhwt->set.dhwt_cprio = DHWTP_SLIDDHW;
-	else if (!strcmp(str, "absolute"))
-		dhwt->set.dhwt_cprio = DHWTP_ABSOLUTE;
-	else
-		return (-EINVALID);
+FILECFG_PARSER_ENUM_PARSE_SET_FUNC(dhwt_cprio_str, s_dhwt, dhwt_cprio)
 
-	return (ALL_OK);
-}
+static const char * dhwt_force_mode_str[] = {
+	[DHWTF_NEVER]		= "never",
+	[DHWTF_FIRST]		= "first",
+	[DHWTF_ALWAYS]		= "always",
+};
 
-static int fcp_dhwt_force_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_dhwt * restrict const dhwt = priv;
-	const char * str = node->value.stringval;
-
-	if	(!strcmp(str, "never"))
-		dhwt->set.force_mode = DHWTF_NEVER;
-	else if (!strcmp(str, "first"))
-		dhwt->set.force_mode = DHWTF_FIRST;
-	else if (!strcmp(str, "always"))
-		dhwt->set.force_mode = DHWTF_ALWAYS;
-	else
-		return (-EINVALID);
-
-	return (ALL_OK);
-}
+FILECFG_PARSER_ENUM_PARSE_SET_FUNC(dhwt_force_mode_str, s_dhwt, force_mode)
 
 static int fcp_dhwt_params(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -130,8 +110,8 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODEINT,	"prio",			false,	fcp_prio_s_dhwt_prio,			NULL, },
 		{ NODESTR,	"schedid",		false,	fcp_schedid_s_dhwt_schedid,		NULL, },
 		{ NODESTR,	"runmode",		true,	fcp_runmode_s_dhwt_runmode,		NULL, },
-		{ NODESTR,	"dhwt_cprio",		false,	fcp_dhwt_cprio,				NULL, },
-		{ NODESTR,	"force_mode",		false,	fcp_dhwt_force_mode,			NULL, },
+		{ NODESTR,	"dhwt_cprio",		false,	fcp_enum_s_dhwt_dhwt_cprio,		NULL, },
+		{ NODESTR,	"force_mode",		false,	fcp_enum_s_dhwt_force_mode,		NULL, },
 		{ NODESTR,	"tid_bottom",		false,	fcp_inputs_temperature_s_dhwt_tid_bottom,NULL, },
 		{ NODESTR,	"tid_top",		false,	fcp_inputs_temperature_s_dhwt_tid_top,	NULL, },
 		{ NODESTR,	"tid_win",		false,	fcp_inputs_temperature_s_dhwt_tid_win,	NULL, },

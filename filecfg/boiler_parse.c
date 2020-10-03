@@ -32,22 +32,13 @@ FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_retur
 FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
 FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
 
-static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_boiler_priv * restrict const boiler = priv;
-	const char * str = node->value.stringval;
+const char * idle_mode_str[] = {
+	[IDLE_NEVER]		= "never",
+	[IDLE_FROSTONLY]	= "frostonly",
+	[IDLE_ALWAYS]		= "always",
+};
 
-	if	(!strcmp(str, "never"))
-		boiler->set.idle_mode = IDLE_NEVER;
-	else if (!strcmp(str, "frostonly"))
-		boiler->set.idle_mode = IDLE_FROSTONLY;
-	else if (!strcmp(str, "always"))
-		boiler->set.idle_mode = IDLE_ALWAYS;
-	else
-		return (-EINVALID);
-
-	return (ALL_OK);
-}
+FILECFG_PARSER_ENUM_PARSE_SET_FUNC(idle_mode_str, s_boiler_priv, idle_mode)
 
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, pump_load)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, valve_ret)
@@ -55,7 +46,7 @@ FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, val
 int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,		"idle_mode",		false,	fcp_hs_boiler_idle_mode,		NULL, },
+		{ NODESTR,		"idle_mode",		false,	fcp_enum_s_boiler_priv_idle_mode,	NULL, },
 		{ NODEFLT|NODEINT,	"hysteresis",		true,	fcp_temp_s_boiler_priv_hysteresis,	NULL, },
 		{ NODEFLT|NODEINT,	"limit_thardmax",	true,	fcp_temp_s_boiler_priv_limit_thardmax,	NULL, },
 		{ NODEFLT|NODEINT,	"limit_tmax",		false,	fcp_temp_s_boiler_priv_limit_tmax,	NULL, },
