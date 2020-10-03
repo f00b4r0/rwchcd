@@ -34,10 +34,12 @@
 #include <stdint.h>
 
 #include "lib.h"
-#include "filecfg_parser.h"
+#include "hw_backends.h"
+#include "backends_parse.h"
 #include "relay.h"
 #include "relay_parse.h"
 
+#define filecfg_backends_rid_parse(priv, node)	filecfg_backends_parser_outid_parse(HW_OUTPUT_RELAY, priv, node)
 
 static const char * const relay_op_str[] = {
 	[R_OP_FIRST]	= "first",
@@ -57,7 +59,7 @@ static int target_parse(void * restrict const priv, const struct s_filecfg_parse
 	if (r->rlast >= r->rnum)
 		return (-EOOM);		// cannot happen
 
-	ret = filecfg_parser_rid_parse(&r->rlist[r->rlast], node);
+	ret = filecfg_backends_rid_parse(&r->rlist[r->rlast], node);
 	if (ALL_OK != ret)
 		return (ret);
 

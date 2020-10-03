@@ -238,9 +238,9 @@ struct s_hw_backends {
 
 int hw_backends_init(void);
 int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * const priv, const char * const name);
-int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, const char * const sensor_name);
-int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const char * const relay_name);
 void hw_backends_exit(void);
+
+int hw_backends_bid_by_name(const char * const name);
 const char * hw_backends_name(const bid_t bid);
 
 #endif /* hw_backends_h */

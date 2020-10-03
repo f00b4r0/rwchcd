@@ -36,10 +36,12 @@
 #include <stdint.h>
 
 #include "lib.h"
-#include "filecfg_parser.h"
+#include "hw_backends.h"
+#include "backends_parse.h"
 #include "temperature.h"
 #include "temperature_parse.h"
 
+#define filecfg_backends_tid_parse(priv, node)	filecfg_backends_parser_inid_parse(HW_INPUT_TEMP, priv, node)
 
 static const char * const temp_op_str[] = {
 	[T_OP_FIRST]	= "first",
@@ -61,7 +63,7 @@ static int source_parse(void * restrict const priv, const struct s_filecfg_parse
 	if (t->tlast >= t->tnum)
 		return (-EOOM);		// cannot happen
 
-	ret = filecfg_parser_tid_parse(&t->tlist[t->tlast], node);
+	ret = filecfg_backends_tid_parse(&t->tlist[t->tlast], node);
 	if (ALL_OK != ret)
 		return (ret);
 
