@@ -35,13 +35,7 @@
  * - All `temp_t` values must be expressed in Celsius degrees (integer or decimal accepted).
  * - All `valves_`, `pump_` and `bmodel` settings expect a quoted string referencing the name of the related item.
  * - All `schedid_t` settings expect a quoted string referencing the name of the target schedule.
- * - All `rid_` and `tid_` are specified as a block specifying the backend name and the name of the relay or sensor within that backend. For instance:
-\verbatim
- rid_open {
- 	backend "prototype";
- 	name "v_open";
- };
-\endverbatim
+ * - All `itid_t` and `orid_t` settings expect a quoted string referencing the name of the target input or output matching the expected type (temperature, relay).
  */
 
 #include <stdlib.h>

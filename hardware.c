@@ -289,6 +289,7 @@ int hardware_input_time_get(const binid_t binid, const enum e_hw_input_type type
  * @param type the type of requested input
  * @param value pointer to target to store the input value
  * @return exec status
+ * @deprecated this function probably doesn't make much sense in the current code, it isn't used anywhere and might be removed in the future
  */
 int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state)
 {

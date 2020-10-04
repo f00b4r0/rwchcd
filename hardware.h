@@ -28,7 +28,7 @@ int hardware_offline(void);
 void hardware_exit(void);
 
 // relay ops
-int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state);
+int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state) __attribute__ ((deprecated));
 int hardware_output_state_set(const boutid_t boutid, const enum e_hw_output_type type, const u_hw_out_state_t * const state) __attribute__((warn_unused_result));
 
 // sensor ops

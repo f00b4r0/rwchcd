@@ -28,6 +28,7 @@
 	};
  };
 \endverbatim
+ * `source` are name of backend and name of temperature input within that backend.
  */
 
 #include <stdlib.h>	// calloc

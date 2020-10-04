@@ -34,7 +34,6 @@
  * - Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
- * @todo config reload
  * @todo implement a flexible logic system that would take user-definable conditions
  * and user-selectable actions to trigger custom actions (for more flexible plants),
  * for instance the ability to switch from internal boiler DHWT to external electric DHWT

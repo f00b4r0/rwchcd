@@ -26,6 +26,7 @@
 	};
  };
 \endverbatim
+ * `target` are name of backend and name of relay within that backend
  */
 
 #include <stdlib.h>	// calloc

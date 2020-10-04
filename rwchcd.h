@@ -12,6 +12,8 @@
 /**
  * @file
  * Main API.
+ * Within the program, the code assumes that the .set{} members of structures, representing settings, are only modified once during configuration parsing (while
+ * the program runs single-threaded), and considered read-only afterwards. In particular, no atomic operations are performed on these members.
  */
 
 #include <stddef.h>

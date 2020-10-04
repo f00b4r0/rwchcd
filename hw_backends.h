@@ -18,33 +18,37 @@
 #include "timekeep.h"
 
 union u_hw_out_state {
-	bool relay;
+	bool relay;	///< accessor for #HW_OUTPUT_RELAY state
 };
 
+/** Type for hardware output states */
 typedef union u_hw_out_state u_hw_out_state_t;
 
 union u_hw_in_value {
-	temp_t temperature;
-	bool inswitch;
+	temp_t temperature;	///< accessor for HW_INPUT_TEMP value
+	bool inswitch;		///< accessor for HW_INPUT_SWITCH value
 };
 
+/** Type for hardware input states */
 typedef union u_hw_in_value u_hw_in_value_t;
 
+/** Known hardware input types */
 enum e_hw_input_type {
-	HW_INPUT_NONE = 0,
-	HW_INPUT_TEMP,
-	HW_INPUT_SWITCH,
+	HW_INPUT_NONE = 0,	///< input type not configured
+	HW_INPUT_TEMP,		///< temperature input
+	HW_INPUT_SWITCH,	///< switch input
 };
 
+/** Known hardware output types */
 enum e_hw_output_type {
-	HW_OUTPUT_NONE = 0,
-	HW_OUTPUT_RELAY,
+	HW_OUTPUT_NONE = 0,	///< output type not configured
+	HW_OUTPUT_RELAY,	///< relay output
 };
 
-typedef uint_fast8_t inid_t;
-typedef uint_fast8_t outid_t;
+typedef uint_fast8_t	bid_t;	///< backend idex type - defines theoretical maximum number of backends
+typedef uint_fast8_t	inid_t;	///< hardware input index type - defines theoretical maximum number of inputs per backend
+typedef uint_fast8_t	outid_t;///< hardware output index type - defines theoretical maximum number of outputs per backend
 
-typedef uint_fast8_t	bid_t;		///< backend id type
 /** backend input id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
@@ -161,6 +165,7 @@ struct s_hw_callbacks {
 	 * @param oid backend output id
 	 * @param state a pointer to a state location suitable for the target output in which the current state of the output will be stored
 	 * @return exec status
+	 * @deprecated this callback probably doesn't make much sense in the current code, it isn't used anywhere and might be removed in the future
 	 */
 	int (*output_state_get)(void * const priv, const enum e_hw_output_type type, const outid_t oid, u_hw_out_state_t * const state);
 
