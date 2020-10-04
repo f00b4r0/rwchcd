@@ -64,7 +64,7 @@ static const char * hardware_sensor_name(const binid_t tempid)
 		return (NULL);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->input_name(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.sid));
+	return (HW_backends.all[bid].cb->input_name(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.inid));
 }
 
 /**
@@ -81,7 +81,7 @@ static const char * hardware_relay_name(const boutid_t relid)
 		return (NULL);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->output_name(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid));
+	return (HW_backends.all[bid].cb->output_name(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.outid));
 }
 
 int filecfg_dump_tempid(const char *name, const binid_t tempid)

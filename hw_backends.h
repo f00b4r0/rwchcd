@@ -48,12 +48,12 @@ typedef uint_fast8_t	bid_t;		///< backend id type
 /** backend input id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
-	inid_t sid;	///< input id
+	inid_t inid;	///< input id
 } binid_t;
 /** backend output id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
-	outid_t rid;	///< output id
+	outid_t outid;	///< output id
 } boutid_t;
 
 /**

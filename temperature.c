@@ -68,7 +68,7 @@ static int temperature_update(struct s_temperature * const t)
 	for (i = 0; i < t->tlast; i++) {
 		ret = hardware_sensor_clone_time(t->tlist[i], &tsens);
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("hw clone time %d/%d returned (%d)", t->tlist[i].bid, t->tlist[i].sid, ret);
+			dbgerr("hw clone time %d/%d returned (%d)", t->tlist[i].bid, t->tlist[i].inid, ret);
 			switch (t->set.missing) {
 				case T_MISS_IGN:
 					continue;
@@ -89,7 +89,7 @@ static int temperature_update(struct s_temperature * const t)
 				ret = -ERSTALE;
 
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("hw clone temp %d/%d returned (%d)", t->tlist[i].bid, t->tlist[i].sid, ret);
+			dbgerr("hw clone temp %d/%d returned (%d)", t->tlist[i].bid, t->tlist[i].inid, ret);
 			switch (t->set.missing) {
 				case T_MISS_IGN:
 					continue;

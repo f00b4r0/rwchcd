@@ -82,7 +82,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * tempid, const char * const bkend_name, const char * const input_name)
 {
 	bid_t bid;
-	inid_t sid;
+	inid_t inid;
 	int ret;
 
 	// input sanitization
@@ -104,11 +104,11 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * temp
 	if (ret < 0)
 		return (ret);
 
-	sid = (inid_t)ret;
+	inid = (inid_t)ret;
 
 	// populate target
 	tempid->bid = bid;
-	tempid->sid = sid;
+	tempid->inid = inid;
 
 	return (ALL_OK);
 }
@@ -125,7 +125,7 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * temp
 static int hw_backends_output_fbn(const enum e_hw_output_type type, boutid_t * relid, const char * const bkend_name, const char * const output_name)
 {
 	bid_t bid;
-	outid_t rid;
+	outid_t outid;
 	int ret;
 
 	// input sanitization
@@ -147,11 +147,11 @@ static int hw_backends_output_fbn(const enum e_hw_output_type type, boutid_t * r
 	if (ret < 0)
 		return (ret);
 
-	rid = (outid_t)ret;
+	outid = (outid_t)ret;
 
 	// populate target
 	relid->bid = bid;
-	relid->rid = rid;
+	relid->outid = outid;
 
 	return (ALL_OK);
 }
@@ -175,7 +175,7 @@ FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, name)
  */
 int filecfg_backends_parser_inid_parse(const enum e_hw_input_type type, void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	binid_t * restrict const tempid = priv;
+	binid_t * restrict const binid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
 		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },
@@ -202,7 +202,7 @@ int filecfg_backends_parser_inid_parse(const enum e_hw_input_type type, void * r
 		return (ret);
 
 	// XXX
-	ret = hw_backends_input_fbn(type, tempid, p.set.backend, p.set.name);
+	ret = hw_backends_input_fbn(type, binid, p.set.backend, p.set.name);
 	switch (ret) {
 		case ALL_OK:
 			break;
@@ -225,7 +225,7 @@ int filecfg_backends_parser_inid_parse(const enum e_hw_input_type type, void * r
  */
 int filecfg_backends_parser_outid_parse(const enum e_hw_output_type type, void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	boutid_t * restrict const relid = priv;
+	boutid_t * restrict const boutid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
 		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },
@@ -251,7 +251,7 @@ int filecfg_backends_parser_outid_parse(const enum e_hw_output_type type, void *
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = hw_backends_output_fbn(type, relid, p.set.backend, p.set.name);
+	ret = hw_backends_output_fbn(type, boutid, p.set.backend, p.set.name);
 	switch (ret) {
 		case ALL_OK:
 			break;

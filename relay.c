@@ -64,7 +64,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 	for (i = 0; i < r->rlast; i++) {
 		ret = hardware_relay_set_state(r->rlist[i], turn_on);
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("hw relay set state %d/%d returned (%d)", r->rlist[i].bid, r->rlist[i].rid, ret);
+			dbgerr("hw relay set state %d/%d returned (%d)", r->rlist[i].bid, r->rlist[i].outid, ret);
 			switch (r->set.missing) {
 				case R_MISS_IGN:
 					continue;

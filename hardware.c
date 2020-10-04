@@ -252,7 +252,7 @@ int hardware_input_value_get(const binid_t binid, const enum e_hw_input_type typ
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->input_value_get(HW_backends.all[bid].priv, type, binid.sid, value));
+	return (HW_backends.all[bid].cb->input_value_get(HW_backends.all[bid].priv, type, binid.inid, value));
 }
 
 /**
@@ -280,7 +280,7 @@ int hardware_input_time_get(const binid_t binid, const enum e_hw_input_type type
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->input_time_get(HW_backends.all[bid].priv, type, binid.sid, clast));
+	return (HW_backends.all[bid].cb->input_time_get(HW_backends.all[bid].priv, type, binid.inid, clast));
 }
 
 /**
@@ -307,7 +307,7 @@ int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->output_state_get(HW_backends.all[bid].priv, type, boutid.rid, state));
+	return (HW_backends.all[bid].cb->output_state_get(HW_backends.all[bid].priv, type, boutid.outid, state));
 }
 
 /**
@@ -335,5 +335,5 @@ int hardware_output_state_set(const boutid_t boutid, const enum e_hw_output_type
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->output_state_set(HW_backends.all[bid].priv, type, boutid.rid, state));
+	return (HW_backends.all[bid].cb->output_state_set(HW_backends.all[bid].priv, type, boutid.outid, state));
 }
