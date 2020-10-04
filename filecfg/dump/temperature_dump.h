@@ -14,7 +14,7 @@
 #ifndef temperature_dump_h
 #define temperature_dump_h
 
-#include "temperature.h"
+#include "io/inputs/temperature.h"
 
 void filecfg_temperature_dump(const struct s_temperature * t);
 

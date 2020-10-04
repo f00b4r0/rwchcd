@@ -14,7 +14,7 @@
 #include "outputs_dump.h"
 #include "filecfg_dump.h"
 #include "relay_dump.h"
-#include "outputs.h"
+#include "io/outputs.h"
 
 extern struct s_outputs Outputs;
 

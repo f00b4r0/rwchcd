@@ -17,7 +17,7 @@
 #include "plant/pump.h"
 #include "plant/valve.h"
 #include "lib.h"
-#include "inputs.h"
+#include "io/inputs.h"
 
 #include "scheduler.h"
 #include "models.h"

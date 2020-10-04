@@ -14,7 +14,7 @@
 #ifndef relay_dump_h
 #define relay_dump_h
 
-#include "relay.h"
+#include "io/outputs/relay.h"
 
 void filecfg_relay_dump(const struct s_relay * r);
 

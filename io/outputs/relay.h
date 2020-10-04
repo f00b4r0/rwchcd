@@ -17,7 +17,7 @@
 #include <stdatomic.h>
 
 #include "rwchcd.h"
-#include "hardware.h"
+#include "io/hardware.h"
 
 
 enum e_relay_op {

@@ -39,7 +39,7 @@
 #include "lib.h"
 #include "hw_backends.h"
 #include "backends_parse.h"
-#include "temperature.h"
+#include "io/inputs/temperature.h"
 #include "temperature_parse.h"
 
 #define filecfg_backends_tid_parse(priv, node)	filecfg_backends_parser_inid_parse(HW_INPUT_TEMP, priv, node)

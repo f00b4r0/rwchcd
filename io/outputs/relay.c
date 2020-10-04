@@ -20,7 +20,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "hardware.h"
+#include "io/hardware.h"
 #include "relay.h"
 
 static inline int hardware_relay_set_state(const boutid_t relid, const bool turn_on)

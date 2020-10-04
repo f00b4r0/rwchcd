@@ -13,7 +13,7 @@
 
 #include "pump_dump.h"
 #include "filecfg_dump.h"
-#include "outputs.h"
+#include "io/outputs.h"
 
 int filecfg_pump_dump(const struct s_pump * restrict const pump)
 {

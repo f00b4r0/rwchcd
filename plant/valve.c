@@ -24,8 +24,8 @@
 
 #include "valve.h"
 #include "lib.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 
 
 /**

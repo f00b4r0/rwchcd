@@ -32,8 +32,8 @@
 #include "lib.h"
 #include "boiler.h"
 #include "alarms.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 
 /**
  * Checklist for safe operation of a boiler.

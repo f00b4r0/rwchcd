@@ -60,10 +60,10 @@
 
 #include "rwchcd.h"
 #include "hw_backends.h"
-#include "hardware.h"
+#include "io/hardware.h"
 #include "runtime.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 #include "timer.h"
 #include "scheduler.h"
 #include "models.h"

@@ -37,8 +37,8 @@
 #include "lib.h"
 #include "runtime.h"
 #include "scheduler.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 
 /**
  * Create a dhwt

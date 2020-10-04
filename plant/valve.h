@@ -16,8 +16,8 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 
 /** private structure for sapprox valve tcontrol */
 struct s_valve_sapprox_priv {

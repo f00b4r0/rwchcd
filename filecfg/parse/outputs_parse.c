@@ -23,9 +23,9 @@
 #include <stdlib.h>
 
 #include "filecfg_parser.h"
-#include "relay.h"
+#include "io/outputs/relay.h"
 #include "relay_parse.h"
-#include "outputs.h"
+#include "io/outputs.h"
 #include "outputs_parse.h"
 
 extern struct s_outputs Outputs;

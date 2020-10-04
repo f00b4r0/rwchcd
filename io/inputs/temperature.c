@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include "timekeep.h"
-#include "hardware.h"
+#include "io/hardware.h"
 #include "temperature.h"
 
 static inline int hardware_sensor_clone_temp(const binid_t tempid, temp_t * const ctemp)

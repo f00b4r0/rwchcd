@@ -13,7 +13,7 @@
 
 #include "filecfg_dump.h"
 #include "backends_dump.h"
-#include "temperature.h"
+#include "io/inputs/temperature.h"
 
 static const char * const temp_op_str[] = {
 	[T_OP_FIRST]	= "first",

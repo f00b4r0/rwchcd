@@ -14,8 +14,8 @@
 #include "valve_dump.h"
 #include "filecfg_dump.h"
 #include "lib.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 
 static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve __attribute__((unused)))
 {

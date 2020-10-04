@@ -18,7 +18,7 @@
 #include <string.h>
 
 #include "rwchcd.h"
-#include "temperature.h"
+#include "inputs/temperature.h"
 #include "inputs.h"
 
 struct s_inputs Inputs;

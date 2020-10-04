@@ -18,8 +18,8 @@
 #include "lib.h"	// for s_temp_intgrl
 #include "heatsource.h"
 #include "timekeep.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 
 /** Boiler heatsource private structure. @todo XXX TODO: isolation valve / modulating burner */
 struct s_boiler_priv {

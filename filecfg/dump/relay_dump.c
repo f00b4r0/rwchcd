@@ -13,7 +13,7 @@
 
 #include "filecfg_dump.h"
 #include "backends_dump.h"
-#include "relay.h"
+#include "io/outputs/relay.h"
 
 static const char * const relay_op_str[] = {
 	[R_OP_FIRST]	= "first",

@@ -18,7 +18,7 @@
 
 #include "lib.h"
 #include "storage.h"
-#include "inputs.h"
+#include "io/inputs.h"
 #include "alarms.h"
 #include "models.h"
 #include "log.h"

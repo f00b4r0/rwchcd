@@ -16,7 +16,7 @@
 #define outputs_parse_h
 
 #include "filecfg_parser.h"
-#include "outputs.h"
+#include "io/outputs.h"
 
 int filecfg_outputs_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_outputs_parse_helper_rid(orid_t *rid, const struct s_filecfg_parser_node * const node);

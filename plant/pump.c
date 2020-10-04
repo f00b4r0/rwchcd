@@ -18,7 +18,7 @@
 #include <string.h>	// memset
 
 #include "pump.h"
-#include "outputs.h"
+#include "io/outputs.h"
 
 /**
  * Create a pump.

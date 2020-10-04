@@ -35,7 +35,7 @@
 #include "valve.h"
 #include "models.h"
 #include "hcircuit.h"
-#include "inputs.h"
+#include "io/inputs.h"
 #include "lib.h"
 #include "runtime.h"
 #include "log.h"

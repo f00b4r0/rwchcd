@@ -21,7 +21,7 @@
 
 #include "lib.h"
 #include "hw_backends.h"
-#include "hardware.h"
+#include "io/hardware.h"
 #include "runtime.h"
 
 #include "filecfg_dump.h"

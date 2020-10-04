@@ -23,9 +23,9 @@
 #include <stdlib.h>
 
 #include "filecfg_parser.h"
-#include "temperature.h"
+#include "io/inputs/temperature.h"
 #include "temperature_parse.h"
-#include "inputs.h"
+#include "io/inputs.h"
 #include "inputs_parse.h"
 
 extern struct s_inputs Inputs;

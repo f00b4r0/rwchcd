@@ -16,7 +16,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
-#include "inputs.h"
+#include "io/inputs.h"
 
 /** private data for templaw_bilinear (for 20C ambient target) */
 struct s_tlaw_bilin20C_priv {

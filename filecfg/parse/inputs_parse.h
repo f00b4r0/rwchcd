@@ -25,7 +25,7 @@
 #define inputs_parse_h
 
 #include "filecfg_parser.h"
-#include "inputs.h"
+#include "io/inputs.h"
 
 int filecfg_inputs_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_inputs_parse_helper_tid(itid_t *tid, const struct s_filecfg_parser_node * const node);

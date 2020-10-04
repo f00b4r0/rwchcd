@@ -18,7 +18,7 @@
 #include <string.h>
 
 #include "rwchcd.h"
-#include "relay.h"
+#include "outputs/relay.h"
 #include "outputs.h"
 
 struct s_outputs Outputs;

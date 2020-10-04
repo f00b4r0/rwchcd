@@ -37,7 +37,7 @@
 #include "lib.h"
 #include "hw_backends.h"
 #include "backends_parse.h"
-#include "relay.h"
+#include "io/outputs/relay.h"
 #include "relay_parse.h"
 
 #define filecfg_backends_rid_parse(priv, node)	filecfg_backends_parser_outid_parse(HW_OUTPUT_RELAY, priv, node)

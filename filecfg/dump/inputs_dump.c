@@ -14,7 +14,7 @@
 #include "inputs_dump.h"
 #include "filecfg_dump.h"
 #include "temperature_dump.h"
-#include "inputs.h"
+#include "io/inputs.h"
 
 extern struct s_inputs Inputs;
 

@@ -17,8 +17,8 @@
 
 #include "plant/pump.h"
 #include "plant/valve.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 
 int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat)
 {
