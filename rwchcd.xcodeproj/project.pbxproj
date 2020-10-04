@@ -95,8 +95,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4F01C2AB25220A74008AA53D /* temperature.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature.h; sourceTree = SOURCE_ROOT; };
-		4F01C2AC25220A74008AA53D /* temperature.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = temperature.c; sourceTree = SOURCE_ROOT; };
+		4F01C2AB25220A74008AA53D /* temperature.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = temperature.h; path = io/inputs/temperature.h; sourceTree = SOURCE_ROOT; };
+		4F01C2AC25220A74008AA53D /* temperature.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = temperature.c; path = io/inputs/temperature.c; sourceTree = SOURCE_ROOT; };
 		4F08254D248429910068FC22 /* scheduler_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = scheduler_parse.h; path = filecfg/parse/scheduler_parse.h; sourceTree = SOURCE_ROOT; };
 		4F08254E248429910068FC22 /* scheduler_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = scheduler_parse.c; path = filecfg/parse/scheduler_parse.c; sourceTree = SOURCE_ROOT; };
 		4F0825502484383B0068FC22 /* models_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = models_parse.h; path = filecfg/parse/models_parse.h; sourceTree = SOURCE_ROOT; };
@@ -129,10 +129,10 @@
 		4F3AFBAE1D8884ED00D86EE7 /* runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBB01D88867600D86EE7 /* lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = lib.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBB11D88867600D86EE7 /* lib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = lib.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		4F3EC15F2524CE8400ACE8BA /* outputs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = outputs.h; sourceTree = SOURCE_ROOT; };
-		4F3EC1602524CE8500ACE8BA /* outputs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = outputs.c; sourceTree = SOURCE_ROOT; };
-		4F3EC1632524CED300ACE8BA /* relay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = relay.h; sourceTree = SOURCE_ROOT; };
-		4F3EC1642524CED300ACE8BA /* relay.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = relay.c; sourceTree = SOURCE_ROOT; };
+		4F3EC15F2524CE8400ACE8BA /* outputs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = outputs.h; path = io/outputs.h; sourceTree = SOURCE_ROOT; };
+		4F3EC1602524CE8500ACE8BA /* outputs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = outputs.c; path = io/outputs.c; sourceTree = SOURCE_ROOT; };
+		4F3EC1632524CED300ACE8BA /* relay.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = relay.h; path = io/outputs/relay.h; sourceTree = SOURCE_ROOT; };
+		4F3EC1642524CED300ACE8BA /* relay.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = relay.c; path = io/outputs/relay.c; sourceTree = SOURCE_ROOT; };
 		4F3EC1672524E42B00ACE8BA /* relay_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = relay_parse.h; sourceTree = "<group>"; };
 		4F3EC1682524E42B00ACE8BA /* relay_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = relay_parse.c; sourceTree = "<group>"; };
 		4F3EC16B2524E5C400ACE8BA /* outputs_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = outputs_parse.h; sourceTree = "<group>"; };
@@ -183,8 +183,8 @@
 		4FBFEB8425288C6D0062B1FB /* relay_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = relay_dump.c; sourceTree = "<group>"; };
 		4FBFEB8725288D360062B1FB /* outputs_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = outputs_dump.h; sourceTree = "<group>"; };
 		4FBFEB8825288D360062B1FB /* outputs_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = outputs_dump.c; sourceTree = "<group>"; };
-		4FC1132025235AA2009AA17D /* inputs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs.h; sourceTree = SOURCE_ROOT; };
-		4FC1132125235AA2009AA17D /* inputs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs.c; sourceTree = SOURCE_ROOT; };
+		4FC1132025235AA2009AA17D /* inputs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = inputs.h; path = io/inputs.h; sourceTree = SOURCE_ROOT; };
+		4FC1132125235AA2009AA17D /* inputs.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = inputs.c; path = io/inputs.c; sourceTree = SOURCE_ROOT; };
 		4FC1132425239963009AA17D /* temperature_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature_parse.h; sourceTree = "<group>"; };
 		4FC1132525239963009AA17D /* temperature_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = temperature_parse.c; sourceTree = "<group>"; };
 		4FC1132825239B50009AA17D /* inputs_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs_parse.h; sourceTree = "<group>"; };
@@ -198,8 +198,8 @@
 		4FC184831DA7D19D000E514B /* rwchcd.service */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rwchcd.service; sourceTree = SOURCE_ROOT; };
 		4FC304A61EBDCDB900D77AC6 /* models.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = models.c; sourceTree = SOURCE_ROOT; };
 		4FC304A71EBDCDB900D77AC6 /* models.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = models.h; sourceTree = SOURCE_ROOT; };
-		4FC6894F206FAB4D00A3A065 /* hardware.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hardware.c; sourceTree = SOURCE_ROOT; };
-		4FC68950206FAB4D00A3A065 /* hardware.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hardware.h; sourceTree = SOURCE_ROOT; };
+		4FC6894F206FAB4D00A3A065 /* hardware.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = hardware.c; path = io/hardware.c; sourceTree = SOURCE_ROOT; };
+		4FC68950206FAB4D00A3A065 /* hardware.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = hardware.h; path = io/hardware.h; sourceTree = SOURCE_ROOT; };
 		4FC689522071304900A3A065 /* hw_backends.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hw_backends.c; sourceTree = SOURCE_ROOT; };
 		4FC689532071304900A3A065 /* hw_backends.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_backends.h; sourceTree = SOURCE_ROOT; };
 		4FC6895D207176F800A3A065 /* hw_p1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hw_p1.c; sourceTree = "<group>"; };
@@ -374,6 +374,39 @@
 			path = plant;
 			sourceTree = SOURCE_ROOT;
 		};
+		4F4D5C0A252A345B003130BC /* io */ = {
+			isa = PBXGroup;
+			children = (
+				4FC6894F206FAB4D00A3A065 /* hardware.c */,
+				4FC68950206FAB4D00A3A065 /* hardware.h */,
+				4FC1132025235AA2009AA17D /* inputs.h */,
+				4FC1132125235AA2009AA17D /* inputs.c */,
+				4F3EC15F2524CE8400ACE8BA /* outputs.h */,
+				4F3EC1602524CE8500ACE8BA /* outputs.c */,
+				4F4D5C0C252A345B003130BC /* inputs */,
+				4F4D5C0B252A345B003130BC /* outputs */,
+			);
+			path = io;
+			sourceTree = SOURCE_ROOT;
+		};
+		4F4D5C0B252A345B003130BC /* outputs */ = {
+			isa = PBXGroup;
+			children = (
+				4F3EC1632524CED300ACE8BA /* relay.h */,
+				4F3EC1642524CED300ACE8BA /* relay.c */,
+			);
+			path = outputs;
+			sourceTree = "<group>";
+		};
+		4F4D5C0C252A345B003130BC /* inputs */ = {
+			isa = PBXGroup;
+			children = (
+				4F01C2AB25220A74008AA53D /* temperature.h */,
+				4F01C2AC25220A74008AA53D /* temperature.c */,
+			);
+			path = inputs;
+			sourceTree = "<group>";
+		};
 		4F6509FC25261A650071EC45 /* dummy */ = {
 			isa = PBXGroup;
 			children = (
@@ -441,16 +474,7 @@
 				4FC689532071304900A3A065 /* hw_backends.h */,
 				4F43569B23157AE60030EB89 /* hw_lib.c */,
 				4F43569A23157AE60030EB89 /* hw_lib.h */,
-				4FC6894F206FAB4D00A3A065 /* hardware.c */,
-				4FC68950206FAB4D00A3A065 /* hardware.h */,
-				4F01C2AB25220A74008AA53D /* temperature.h */,
-				4F01C2AC25220A74008AA53D /* temperature.c */,
-				4FC1132025235AA2009AA17D /* inputs.h */,
-				4FC1132125235AA2009AA17D /* inputs.c */,
-				4F3EC1632524CED300ACE8BA /* relay.h */,
-				4F3EC1642524CED300ACE8BA /* relay.c */,
-				4F3EC15F2524CE8400ACE8BA /* outputs.h */,
-				4F3EC1602524CE8500ACE8BA /* outputs.c */,
+				4F4D5C0A252A345B003130BC /* io */,
 				4F4D5C09252A31D5003130BC /* plant */,
 				4FC304A61EBDCDB900D77AC6 /* models.c */,
 				4FC304A71EBDCDB900D77AC6 /* models.h */,
