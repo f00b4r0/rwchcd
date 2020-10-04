@@ -1,5 +1,5 @@
 //
-//  plant.h
+//  plant/plant.h
 //  rwchcd
 //
 //  (C) 2016-2017 Thibaut VARENE

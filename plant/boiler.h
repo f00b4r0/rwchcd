@@ -1,5 +1,5 @@
 //
-//  boiler.h
+//  plant/boiler.h
 //  rwchcd
 //
 //  (C) 2017 Thibaut VARENE

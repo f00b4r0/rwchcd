@@ -1,5 +1,5 @@
 //
-//  dhwt.h
+//  plant/dhwt.h
 //  rwchcd
 //
 //  (C) 2017,2019 Thibaut VARENE
