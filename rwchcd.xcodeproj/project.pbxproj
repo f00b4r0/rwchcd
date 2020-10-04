@@ -137,18 +137,18 @@
 		4F3EC1682524E42B00ACE8BA /* relay_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = relay_parse.c; sourceTree = "<group>"; };
 		4F3EC16B2524E5C400ACE8BA /* outputs_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = outputs_parse.h; sourceTree = "<group>"; };
 		4F3EC16C2524E5C400ACE8BA /* outputs_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = outputs_parse.c; sourceTree = "<group>"; };
-		4F42A5CE1F967BC3001B0A1F /* pump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pump.c; sourceTree = SOURCE_ROOT; };
-		4F42A5CF1F967BC3001B0A1F /* pump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pump.h; sourceTree = SOURCE_ROOT; };
-		4F42A5D11F968069001B0A1F /* valve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = valve.c; sourceTree = SOURCE_ROOT; };
-		4F42A5D21F968069001B0A1F /* valve.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = valve.h; sourceTree = SOURCE_ROOT; };
-		4F42A5D41F9683CC001B0A1F /* heatsource.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = heatsource.c; sourceTree = SOURCE_ROOT; };
-		4F42A5D51F9683CC001B0A1F /* heatsource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heatsource.h; sourceTree = SOURCE_ROOT; };
-		4F42A5D71F9687F3001B0A1F /* hcircuit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hcircuit.c; sourceTree = SOURCE_ROOT; };
-		4F42A5D81F9687F3001B0A1F /* hcircuit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hcircuit.h; sourceTree = SOURCE_ROOT; };
-		4F42A5DA1F968AE8001B0A1F /* dhwt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dhwt.c; sourceTree = SOURCE_ROOT; };
-		4F42A5DB1F968AE8001B0A1F /* dhwt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt.h; sourceTree = SOURCE_ROOT; };
-		4F42A5DD1F96AD0A001B0A1F /* boiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = boiler.c; sourceTree = SOURCE_ROOT; };
-		4F42A5DE1F96AD0A001B0A1F /* boiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = boiler.h; sourceTree = SOURCE_ROOT; };
+		4F42A5CE1F967BC3001B0A1F /* pump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = pump.c; path = plant/pump.c; sourceTree = SOURCE_ROOT; };
+		4F42A5CF1F967BC3001B0A1F /* pump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = pump.h; path = plant/pump.h; sourceTree = SOURCE_ROOT; };
+		4F42A5D11F968069001B0A1F /* valve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = valve.c; path = plant/valve.c; sourceTree = SOURCE_ROOT; };
+		4F42A5D21F968069001B0A1F /* valve.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = valve.h; path = plant/valve.h; sourceTree = SOURCE_ROOT; };
+		4F42A5D41F9683CC001B0A1F /* heatsource.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = heatsource.c; path = plant/heatsource.c; sourceTree = SOURCE_ROOT; };
+		4F42A5D51F9683CC001B0A1F /* heatsource.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = heatsource.h; path = plant/heatsource.h; sourceTree = SOURCE_ROOT; };
+		4F42A5D71F9687F3001B0A1F /* hcircuit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = hcircuit.c; path = plant/hcircuit.c; sourceTree = SOURCE_ROOT; };
+		4F42A5D81F9687F3001B0A1F /* hcircuit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = hcircuit.h; path = plant/hcircuit.h; sourceTree = SOURCE_ROOT; };
+		4F42A5DA1F968AE8001B0A1F /* dhwt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = dhwt.c; path = plant/dhwt.c; sourceTree = SOURCE_ROOT; };
+		4F42A5DB1F968AE8001B0A1F /* dhwt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dhwt.h; path = plant/dhwt.h; sourceTree = SOURCE_ROOT; };
+		4F42A5DD1F96AD0A001B0A1F /* boiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = boiler.c; path = plant/boiler.c; sourceTree = SOURCE_ROOT; };
+		4F42A5DE1F96AD0A001B0A1F /* boiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = boiler.h; path = plant/boiler.h; sourceTree = SOURCE_ROOT; };
 		4F42E98A23393156000A268A /* log_statsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_statsd.c; sourceTree = SOURCE_ROOT; };
 		4F42E98B23393156000A268A /* log_statsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_statsd.h; sourceTree = SOURCE_ROOT; };
 		4F43569A23157AE60030EB89 /* hw_lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hw_lib.h; sourceTree = SOURCE_ROOT; };
@@ -210,8 +210,8 @@
 		4FC68962207176F800A3A065 /* hw_p1_spi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hw_p1_spi.h; sourceTree = "<group>"; };
 		4FCD55051D835CF6003BB848 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FCD550D1D835D04003BB848 /* rwchc_export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = rwchc_export.h; path = hw_backends/hw_p1/rwchc_export.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
-		4FCD55101D835D04003BB848 /* plant.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = plant.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
-		4FCD55111D835D04003BB848 /* plant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = plant.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
+		4FCD55101D835D04003BB848 /* plant.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; name = plant.c; path = plant/plant.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
+		4FCD55111D835D04003BB848 /* plant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; name = plant.h; path = plant/plant.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FCD55141D835D04003BB848 /* rwchcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = rwchcd.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4FCD55151D835D04003BB848 /* rwchcd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; lineEnding = 0; path = rwchcd.h; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objcpp; };
 		4FE70C3224864A4E0066007D /* models_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = models_dump.h; sourceTree = "<group>"; };
@@ -353,6 +353,27 @@
 			path = parse;
 			sourceTree = "<group>";
 		};
+		4F4D5C09252A31D5003130BC /* plant */ = {
+			isa = PBXGroup;
+			children = (
+				4FCD55101D835D04003BB848 /* plant.c */,
+				4FCD55111D835D04003BB848 /* plant.h */,
+				4F42A5CE1F967BC3001B0A1F /* pump.c */,
+				4F42A5CF1F967BC3001B0A1F /* pump.h */,
+				4F42A5D11F968069001B0A1F /* valve.c */,
+				4F42A5D21F968069001B0A1F /* valve.h */,
+				4F42A5D41F9683CC001B0A1F /* heatsource.c */,
+				4F42A5D51F9683CC001B0A1F /* heatsource.h */,
+				4F42A5DD1F96AD0A001B0A1F /* boiler.c */,
+				4F42A5DE1F96AD0A001B0A1F /* boiler.h */,
+				4F42A5DA1F968AE8001B0A1F /* dhwt.c */,
+				4F42A5DB1F968AE8001B0A1F /* dhwt.h */,
+				4F42A5D71F9687F3001B0A1F /* hcircuit.c */,
+				4F42A5D81F9687F3001B0A1F /* hcircuit.h */,
+			);
+			path = plant;
+			sourceTree = SOURCE_ROOT;
+		};
 		4F6509FC25261A650071EC45 /* dummy */ = {
 			isa = PBXGroup;
 			children = (
@@ -430,20 +451,7 @@
 				4F3EC1642524CED300ACE8BA /* relay.c */,
 				4F3EC15F2524CE8400ACE8BA /* outputs.h */,
 				4F3EC1602524CE8500ACE8BA /* outputs.c */,
-				4F42A5CE1F967BC3001B0A1F /* pump.c */,
-				4F42A5CF1F967BC3001B0A1F /* pump.h */,
-				4F42A5D11F968069001B0A1F /* valve.c */,
-				4F42A5D21F968069001B0A1F /* valve.h */,
-				4F42A5D41F9683CC001B0A1F /* heatsource.c */,
-				4F42A5D51F9683CC001B0A1F /* heatsource.h */,
-				4F42A5DD1F96AD0A001B0A1F /* boiler.c */,
-				4F42A5DE1F96AD0A001B0A1F /* boiler.h */,
-				4F42A5DA1F968AE8001B0A1F /* dhwt.c */,
-				4F42A5DB1F968AE8001B0A1F /* dhwt.h */,
-				4F42A5D71F9687F3001B0A1F /* hcircuit.c */,
-				4F42A5D81F9687F3001B0A1F /* hcircuit.h */,
-				4FCD55101D835D04003BB848 /* plant.c */,
-				4FCD55111D835D04003BB848 /* plant.h */,
+				4F4D5C09252A31D5003130BC /* plant */,
 				4FC304A61EBDCDB900D77AC6 /* models.c */,
 				4FC304A71EBDCDB900D77AC6 /* models.h */,
 				4F3AFBB01D88867600D86EE7 /* lib.c */,
