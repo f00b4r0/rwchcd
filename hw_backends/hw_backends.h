@@ -1,5 +1,5 @@
 //
-//  hw_backends.h
+//  hw_backends/hw_backends.h
 //  rwchcd
 //
 //  (C) 2018,2020 Thibaut VARENE

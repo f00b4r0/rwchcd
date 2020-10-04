@@ -1,5 +1,5 @@
 //
-//  hw_lib.c
+//  hw_backends/hw_lib.c
 //  rwchcd
 //
 //  (C) 2019-2020 Thibaut VARENE
