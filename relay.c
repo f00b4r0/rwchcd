@@ -23,7 +23,7 @@
 #include "hardware.h"
 #include "relay.h"
 
-static inline int hardware_relay_set_state(const relid_t relid, const bool turn_on)
+static inline int hardware_relay_set_state(const boutid_t relid, const bool turn_on)
 {
 	const u_hw_out_state_t state = { turn_on };
 	return (hardware_output_state_set(relid, HW_OUTPUT_RELAY, &state));

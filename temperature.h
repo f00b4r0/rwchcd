@@ -48,7 +48,7 @@ struct s_temperature {
 	} run;		///< private runtime
 	uint_fast8_t tnum;		///< number of temperature sources allocated. Max 256
 	uint_fast8_t tlast;		///< last free source slot. if tlast == tnum, array is full.
-	tempid_t * tlist;		///< an ordered array of temperature sources
+	binid_t * tlist;		///< an ordered array of temperature sources
 	const char * restrict name;	///< @b unique user-defined name for the temperature
 };
 

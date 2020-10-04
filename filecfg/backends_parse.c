@@ -74,12 +74,12 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
  * Find a registered backend input by name.
  * This function finds the sensor named sensor_name in backend named bkend_name
  * and populates tempid with these elements.
- * @param tempid target tempid_t to populate
+ * @param tempid target binid_t to populate
  * @param bkend_name name of the backend to look into
  * @param sensor_name name of the sensor to look for in that backend
  * @return execution status
  */
-static int hw_backends_input_fbn(const enum e_hw_input_type type, tempid_t * tempid, const char * const bkend_name, const char * const input_name)
+static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * tempid, const char * const bkend_name, const char * const input_name)
 {
 	bid_t bid;
 	inid_t sid;
@@ -117,12 +117,12 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, tempid_t * tem
  * Find a registered backend output by name.
  * This function finds the relay named relay_name in backend named bkend_name
  * and populates relid with these elements.
- * @param relid target relid_t to populate
+ * @param relid target boutid_t to populate
  * @param bkend_name name of the backend to look into
  * @param relay_name name of the relay to look for in that backend
  * @return execution status
  */
-static int hw_backends_output_fbn(const enum e_hw_output_type type, relid_t * relid, const char * const bkend_name, const char * const output_name)
+static int hw_backends_output_fbn(const enum e_hw_output_type type, boutid_t * relid, const char * const bkend_name, const char * const output_name)
 {
 	bid_t bid;
 	outid_t rid;
@@ -169,13 +169,13 @@ FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, name)
 
 /**
  * Parse a temperature sensor configuration reference.
- * @param priv a pointer to a tempid_t structure which will be populated
+ * @param priv a pointer to a binid_t structure which will be populated
  * @param node the configuration node to populate from
  * @return exec status
  */
 int filecfg_backends_parser_inid_parse(const enum e_hw_input_type type, void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	tempid_t * restrict const tempid = priv;
+	binid_t * restrict const tempid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
 		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },
@@ -219,13 +219,13 @@ int filecfg_backends_parser_inid_parse(const enum e_hw_input_type type, void * r
 
 /**
  * Parse a relay configuration reference.
- * @param priv a pointer to a relid_t structure which will be populated
+ * @param priv a pointer to a boutid_t structure which will be populated
  * @param node the configuration node to populate from
  * @return exec status
  */
 int filecfg_backends_parser_outid_parse(const enum e_hw_output_type type, void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	relid_t * restrict const relid = priv;
+	boutid_t * restrict const relid = priv;
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
 		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },

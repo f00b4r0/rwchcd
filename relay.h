@@ -43,7 +43,7 @@ struct s_relay {
 	} run;		///< private runtime (internally handled)
 	uint_fast8_t rnum;		///< number of relay targets allocated. Max 256
 	uint_fast8_t rlast;		///< last free target slot. if rlast == rnum, array is full.
-	relid_t * rlist;		///< an ordered array of relay targets
+	boutid_t * rlist;		///< an ordered array of relay targets
 	const char * restrict name;	///< @b unique user-defined name for the relay
 };
 

@@ -55,7 +55,7 @@ void filecfg_backends_dump()
  * @param tempid id of the target hardware sensor
  * @return target hardware sensor name or NULL if error
  */
-static const char * hardware_sensor_name(const tempid_t tempid)
+static const char * hardware_sensor_name(const binid_t tempid)
 {
 	const bid_t bid = tempid.bid;
 
@@ -72,7 +72,7 @@ static const char * hardware_sensor_name(const tempid_t tempid)
  * @param relid id of the target hardware relay
  * @return target hardware relay name or NULL if error
  */
-static const char * hardware_relay_name(const relid_t relid)
+static const char * hardware_relay_name(const boutid_t relid)
 {
 	const bid_t bid = relid.bid;
 
@@ -84,7 +84,7 @@ static const char * hardware_relay_name(const relid_t relid)
 	return (HW_backends.all[bid].cb->output_name(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid));
 }
 
-int filecfg_dump_tempid(const char *name, const tempid_t tempid)
+int filecfg_dump_tempid(const char *name, const binid_t tempid)
 {
 	if (!hardware_sensor_name(tempid)) {
 		filecfg_printf("%s {};\n", name);
@@ -101,7 +101,7 @@ int filecfg_dump_tempid(const char *name, const tempid_t tempid)
 	return (ALL_OK);
 }
 
-int filecfg_dump_relid(const char *name, const relid_t relid)
+int filecfg_dump_relid(const char *name, const boutid_t relid)
 {
 	if (!hardware_relay_name(relid)) {
 		filecfg_printf("%s {};\n", name);

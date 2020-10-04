@@ -24,7 +24,7 @@
 #include "hardware.h"
 #include "temperature.h"
 
-static inline int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
+static inline int hardware_sensor_clone_temp(const binid_t tempid, temp_t * const ctemp)
 {
 	u_hw_in_value_t value;
 	int ret;

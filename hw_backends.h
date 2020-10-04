@@ -45,16 +45,16 @@ typedef uint_fast8_t inid_t;
 typedef uint_fast8_t outid_t;
 
 typedef uint_fast8_t	bid_t;		///< backend id type
-/** temperature sensor id. @note struct assignment is used in the code: must not embed pointers */
+/** backend input id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
-	inid_t sid;	///< sensor id
-} tempid_t;
-/** relay identifier. @note struct assignment is used in the code: must not embed pointers */
+	inid_t sid;	///< input id
+} binid_t;
+/** backend output id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id
-	outid_t rid;	///< relay id
-} relid_t;
+	outid_t rid;	///< output id
+} boutid_t;
 
 /**
  * Backend hardware callbacks.

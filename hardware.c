@@ -235,7 +235,7 @@ void hardware_exit(void)
  * @param value pointer to target to store the input value
  * @return exec status
  */
-int hardware_input_value_get(const tempid_t binid, const enum e_hw_input_type type, u_hw_in_value_t * const value)
+int hardware_input_value_get(const binid_t binid, const enum e_hw_input_type type, u_hw_in_value_t * const value)
 {
 	const bid_t bid = binid.bid;
 
@@ -263,7 +263,7 @@ int hardware_input_value_get(const tempid_t binid, const enum e_hw_input_type ty
  * @param clast pointer to target to store the time value
  * @return exec status
  */
-int hardware_input_time_get(const tempid_t binid, const enum e_hw_input_type type, timekeep_t * const clast)
+int hardware_input_time_get(const binid_t binid, const enum e_hw_input_type type, timekeep_t * const clast)
 {
 	const bid_t bid = binid.bid;
 
@@ -290,7 +290,7 @@ int hardware_input_time_get(const tempid_t binid, const enum e_hw_input_type typ
  * @param value pointer to target to store the input value
  * @return exec status
  */
-int hardware_output_state_get(const relid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state)
+int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state)
 {
 	const bid_t bid = boutid.bid;
 
@@ -318,7 +318,7 @@ int hardware_output_state_get(const relid_t boutid, const enum e_hw_output_type 
  * @return exec status
  * @note actual (hardware) relay state will only be updated by a call to hardware_output()
  */
-int hardware_output_state_set(const relid_t boutid, const enum e_hw_output_type type, const u_hw_out_state_t * const state)
+int hardware_output_state_set(const boutid_t boutid, const enum e_hw_output_type type, const u_hw_out_state_t * const state)
 {
 	const bid_t bid = boutid.bid;
 

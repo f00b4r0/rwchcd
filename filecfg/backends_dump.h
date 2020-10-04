@@ -18,7 +18,7 @@
 #include "hw_backends.h"
 
 void filecfg_backends_dump(void);
-int filecfg_dump_tempid(const char *name, const tempid_t tempid);
-int filecfg_dump_relid(const char *name, const relid_t relid);
+int filecfg_dump_tempid(const char *name, const binid_t tempid);
+int filecfg_dump_relid(const char *name, const boutid_t relid);
 
 #endif /* backends_dump_h */
