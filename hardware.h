@@ -17,6 +17,8 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
+#include "hw_backends.h"	// for types
+
 // basic ops
 int hardware_init(void) __attribute__((warn_unused_result));
 int hardware_online(void) __attribute__((warn_unused_result));
@@ -26,12 +28,12 @@ int hardware_offline(void);
 void hardware_exit(void);
 
 // relay ops
-int hardware_relay_get_state(const relid_t);
-int hardware_relay_set_state(const relid_t, bool turn_on) __attribute__((warn_unused_result));
+int hardware_output_state_get(const relid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state);
+int hardware_output_state_set(const relid_t boutid, const enum e_hw_output_type type, const u_hw_out_state_t * const state) __attribute__((warn_unused_result));
 
 // sensor ops
-int hardware_sensor_clone_temp(const tempid_t, temp_t * const ctemp) __attribute__((warn_unused_result));
-int hardware_sensor_clone_time(const tempid_t, timekeep_t * const clast);
+int hardware_input_value_get(const tempid_t binid, const enum e_hw_input_type type, u_hw_in_value_t * const value) __attribute__((warn_unused_result));
+int hardware_input_time_get(const tempid_t binid, const enum e_hw_input_type type, timekeep_t * const clast);
 
 /* display/alarm ops */
 

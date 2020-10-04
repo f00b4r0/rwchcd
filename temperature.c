@@ -24,6 +24,20 @@
 #include "hardware.h"
 #include "temperature.h"
 
+static inline int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
+{
+	u_hw_in_value_t value;
+	int ret;
+
+	ret = hardware_input_value_get(tempid, HW_INPUT_TEMP, &value);
+
+	*ctemp = value.temperature;
+
+	return (ret);
+}
+
+#define hardware_sensor_clone_time(tempid, clast)	hardware_input_time_get(tempid, HW_INPUT_TEMP, clast)
+
 /**
  * Update a temperature value.
  * This function will update a temperature value if the last update time exceeds the set period.

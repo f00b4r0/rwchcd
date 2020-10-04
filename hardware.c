@@ -229,16 +229,15 @@ void hardware_exit(void)
 }
 
 /**
- * Clone temp from a hardware sensor.
- * @param tempid id of the hardware sensor to query
- * @param ctemp pointer to target to store the temperature value
+ * Get value from a hardware input.
+ * @param binid id of the hardware input to query
+ * @param type the type of requested input
+ * @param value pointer to target to store the input value
  * @return exec status
  */
-int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
+int hardware_input_value_get(const tempid_t binid, const enum e_hw_input_type type, u_hw_in_value_t * const value)
 {
-	const bid_t bid = tempid.bid;
-	u_hw_in_value_t value;
-	int ret;
+	const bid_t bid = binid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -253,23 +252,20 @@ int hardware_sensor_clone_temp(const tempid_t tempid, temp_t * const ctemp)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	ret = HW_backends.all[bid].cb->input_value_get(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.sid, &value);
-
-	*ctemp = value.temperature;
-
-	return (ret);
+	return (HW_backends.all[bid].cb->input_value_get(HW_backends.all[bid].priv, type, binid.sid, value));
 }
 
 /**
- * Clone hardware sensor last update time.
+ * Get last update time from hardware input.
  * @note This function must @b ALWAYS return successfully if the target sensor is properly configured.
- * @param tempid id of the hardware sensor to query
+ * @param binid id of the hardware input to query
+ * @param type the type of requested input
  * @param clast pointer to target to store the time value
  * @return exec status
  */
-int hardware_sensor_clone_time(const tempid_t tempid, timekeep_t * const clast)
+int hardware_input_time_get(const tempid_t binid, const enum e_hw_input_type type, timekeep_t * const clast)
 {
-	const bid_t bid = tempid.bid;
+	const bid_t bid = binid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -284,20 +280,19 @@ int hardware_sensor_clone_time(const tempid_t tempid, timekeep_t * const clast)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->input_time_get(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.sid, clast));
+	return (HW_backends.all[bid].cb->input_time_get(HW_backends.all[bid].priv, type, binid.sid, clast));
 }
 
 /**
- * Get relay state (request).
- * Returns current state
- * @param relid id of the hardware relay to query
- * @return true if relay is on, false if off, negative if error.
+ * Get hardware output state.
+ * @param boutid id of the hardware input to query
+ * @param type the type of requested input
+ * @param value pointer to target to store the input value
+ * @return exec status
  */
-int hardware_relay_get_state(const relid_t relid)
+int hardware_output_state_get(const relid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state)
 {
-	const bid_t bid = relid.bid;
-	u_hw_out_state_t state;
-	int ret;
+	const bid_t bid = boutid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -312,24 +307,20 @@ int hardware_relay_get_state(const relid_t relid)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	ret = HW_backends.all[bid].cb->output_state_get(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid, &state);
-	if (ALL_OK != ret)
-		return (ret);
-	else
-		return (state.relay);
+	return (HW_backends.all[bid].cb->output_state_get(HW_backends.all[bid].priv, type, boutid.rid, state));
 }
 
 /**
- * Set relay state (request)
- * @param relid id of the hardware relay to modify
- * @param turn_on true if relay is meant to be turned on
+ * Set hardware output state.
+ * @param boutid id of the hardware input to query
+ * @param type the type of requested input
+ * @param value pointer to requested output value
  * @return exec status
  * @note actual (hardware) relay state will only be updated by a call to hardware_output()
  */
-int hardware_relay_set_state(const relid_t relid, const bool turn_on)
+int hardware_output_state_set(const relid_t boutid, const enum e_hw_output_type type, const u_hw_out_state_t * const state)
 {
-	const bid_t bid = relid.bid;
-	const u_hw_out_state_t state = { turn_on };
+	const bid_t bid = boutid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -344,5 +335,5 @@ int hardware_relay_set_state(const relid_t relid, const bool turn_on)
 		return (-ENOTIMPLEMENTED);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->output_state_set(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid, &state));
+	return (HW_backends.all[bid].cb->output_state_set(HW_backends.all[bid].priv, type, boutid.rid, state));
 }
