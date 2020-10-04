@@ -82,7 +82,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 static int hw_backends_input_fbn(const enum e_hw_input_type type, tempid_t * tempid, const char * const bkend_name, const char * const input_name)
 {
 	bid_t bid;
-	sid_t sid;
+	inid_t sid;
 	int ret;
 
 	// input sanitization
@@ -104,7 +104,7 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, tempid_t * tem
 	if (ret < 0)
 		return (ret);
 
-	sid = (sid_t)ret;
+	sid = (inid_t)ret;
 
 	// populate target
 	tempid->bid = bid;
@@ -125,7 +125,7 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, tempid_t * tem
 static int hw_backends_output_fbn(const enum e_hw_output_type type, relid_t * relid, const char * const bkend_name, const char * const output_name)
 {
 	bid_t bid;
-	rid_t rid;
+	outid_t rid;
 	int ret;
 
 	// input sanitization
@@ -147,7 +147,7 @@ static int hw_backends_output_fbn(const enum e_hw_output_type type, relid_t * re
 	if (ret < 0)
 		return (ret);
 
-	rid = (rid_t)ret;
+	rid = (outid_t)ret;
 
 	// populate target
 	relid->bid = bid;
