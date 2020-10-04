@@ -25,14 +25,14 @@
 #include "runtime.h"
 
 #include "filecfg_dump.h"
-#include "filecfg/scheduler_dump.h"
-#include "filecfg/models_dump.h"
-#include "filecfg/storage_dump.h"
-#include "filecfg/log_dump.h"
-#include "filecfg/plant_dump.h"
-#include "filecfg/backends_dump.h"
-#include "filecfg/inputs_dump.h"
-#include "filecfg/outputs_dump.h"
+#include "scheduler_dump.h"
+#include "models_dump.h"
+#include "storage_dump.h"
+#include "log_dump.h"
+#include "plant_dump.h"
+#include "backends_dump.h"
+#include "inputs_dump.h"
+#include "outputs_dump.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 

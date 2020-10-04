@@ -31,7 +31,7 @@ backend "toto" {
 
 #include "backend.h"
 #include "filecfg.h"
-#include "filecfg_parser.h"
+#include "filecfg/parse/filecfg_parser.h"
 
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_dummy_temperature, value)
 

@@ -75,9 +75,9 @@
 #include "log.h"
 #include "timekeep.h"
 
-#include "filecfg_dump.h"
+#include "filecfg/dump/filecfg_dump.h"
 
-#include "filecfg_parser.tab.h"
+#include "filecfg/parse/filecfg_parser.tab.h"
 extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser
 
 #ifndef RWCHCD_PRIO

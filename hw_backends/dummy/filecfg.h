@@ -14,7 +14,7 @@
 #ifndef filecfg_h
 #define filecfg_h
 
-#include "filecfg_parser.h"
+#include "filecfg/parse/filecfg_parser.h"
 
 int dummy_filecfg_parse(const struct s_filecfg_parser_node * const node);
 

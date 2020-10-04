@@ -15,8 +15,8 @@
 #include <assert.h>
 
 #include "lib.h"
-#include "filecfg_dump.h"
-#include "filecfg_parser.h"
+#include "filecfg/dump/filecfg_dump.h"
+#include "filecfg/parse/filecfg_parser.h"
 #include "hw_lib.h"
 #include "hw_p1.h"
 #include "hw_p1_setup.h"

@@ -15,7 +15,7 @@
 #define log_statsd_h
 
 #include "log.h"
-#include "filecfg_parser.h"
+#include "filecfg/parse/filecfg_parser.h"
 
 #define LOG_BKEND_STATSD_NAME	"statsd"
 

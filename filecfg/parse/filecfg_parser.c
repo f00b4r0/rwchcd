@@ -45,14 +45,14 @@
 #include "lib.h"
 #include "filecfg_parser.h"
 
-#include "filecfg/backends_parse.h"
-#include "filecfg/plant_parse.h"
-#include "filecfg/models_parse.h"
-#include "filecfg/scheduler_parse.h"
-#include "filecfg/storage_parse.h"
-#include "filecfg/log_parse.h"
-#include "filecfg/inputs_parse.h"
-#include "filecfg/outputs_parse.h"
+#include "backends_parse.h"
+#include "plant_parse.h"
+#include "models_parse.h"
+#include "scheduler_parse.h"
+#include "storage_parse.h"
+#include "log_parse.h"
+#include "inputs_parse.h"
+#include "outputs_parse.h"
 
 #include "runtime.h"
 

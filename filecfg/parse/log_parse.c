@@ -157,7 +157,7 @@ int filecfg_log_parse(void * restrict const priv, const struct s_filecfg_parser_
 }
 
 // XXX currently must live in this file
-#include "filecfg_dump.h"
+#include "filecfg/dump/filecfg_dump.h"
 void log_config_dump(void);
 /**
 * Dump the logging subsystem to config file.

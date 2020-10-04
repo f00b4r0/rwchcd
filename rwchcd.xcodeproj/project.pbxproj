@@ -46,6 +46,7 @@
 		4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FA61C3F1E0955AA00B4D862 /* scheduler.c */; };
 		4FA9A53E252B47220091D0F5 /* filecfg_parser.y in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475D21DAA14200FCF120 /* filecfg_parser.y */; };
 		4FA9A53F252B47220091D0F5 /* filecfg_parser.l in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */; };
+		4FA9A542252B48580091D0F5 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 4FA9A541252B48580091D0F5 /* Makefile */; };
 		4FBFEB7D252889480062B1FB /* inputs_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB7C252889480062B1FB /* inputs_dump.c */; };
 		4FBFEB81252889E40062B1FB /* temperature_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB80252889E40062B1FB /* temperature_dump.c */; };
 		4FBFEB8525288C6D0062B1FB /* relay_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB8425288C6D0062B1FB /* relay_dump.c */; };
@@ -173,6 +174,7 @@
 		4FA61C3D1E06F75100B4D862 /* timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = timer.h; sourceTree = SOURCE_ROOT; };
 		4FA61C3F1E0955AA00B4D862 /* scheduler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scheduler.c; sourceTree = SOURCE_ROOT; };
 		4FA61C401E0955AA00B4D862 /* scheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scheduler.h; sourceTree = SOURCE_ROOT; };
+		4FA9A541252B48580091D0F5 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		4FBFEB7B252889480062B1FB /* inputs_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs_dump.h; sourceTree = "<group>"; };
 		4FBFEB7C252889480062B1FB /* inputs_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs_dump.c; sourceTree = "<group>"; };
 		4FBFEB7F252889E40062B1FB /* temperature_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature_dump.h; sourceTree = "<group>"; };
@@ -310,6 +312,7 @@
 		4F4D5C01252A2DF2003130BC /* parse */ = {
 			isa = PBXGroup;
 			children = (
+				4FA9A541252B48580091D0F5 /* Makefile */,
 				4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */,
 				4F94475F21EA7BBE00FCF120 /* filecfg_parser.h */,
 				4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */,
@@ -560,6 +563,7 @@
 				4FE70C46248659F40066007D /* heatsource_parse.c in Sources */,
 				4FC689632071773800A3A065 /* hw_p1.c in Sources */,
 				4FE70C43248659E90066007D /* heatsource_dump.c in Sources */,
+				4FA9A542252B48580091D0F5 /* Makefile in Sources */,
 				4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */,
 				4FBFEB81252889E40062B1FB /* temperature_dump.c in Sources */,
 				4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */,

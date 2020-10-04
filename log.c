@@ -22,8 +22,8 @@
 #include "rwchcd.h"
 #include "timer.h"
 
-#include "filecfg_parser.h"
-#include "filecfg_dump.h"
+#include "filecfg/parse/filecfg_parser.h"
+#include "filecfg/dump/filecfg_dump.h"
 
 #define LOG_PREFIX	"log"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names

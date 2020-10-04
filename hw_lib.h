@@ -16,7 +16,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
-#include "filecfg_parser.h"
+#include "filecfg/parse/filecfg_parser.h"
 
 float hw_lib_pt1000_ohm_to_celsius(const uint_fast16_t ohm);
 float hw_lib_ni1000_ohm_to_celsius(const uint_fast16_t ohm);

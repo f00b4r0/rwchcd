@@ -28,7 +28,7 @@ HWBACKENDS_DIR := hw_backends
 
 SRCS := $(wildcard *.c)
 
-SUBDIRS := filecfg/
+SUBDIRS := filecfg/parse/ filecfg/dump/
 SUBDIRS += $(HWBACKENDS_DIR)/dummy/
 
 DBUSGEN_SRCS := $(DBUSGEN_BASE).c
@@ -57,7 +57,7 @@ DBUSGEN_OBJS := $(DBUSGEN_SRCS:.c=.o)
 DBUSGEN_DEPS := $(DBUSGEN_SRCS:.c=.d)
 
 MAIN := rwchcd
-MAINOBJS := $(OBJS) filecfg_parser.tab.o filecfg_parser.lex.o
+MAINOBJS := $(OBJS)
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
 MAINOBJS += $(DBUSGEN_OBJS)
 CFLAGS += $(shell pkg-config --cflags gio-unix-2.0)
@@ -67,8 +67,9 @@ endif
 TOPTARGETS := all clean distclean install uninstall dbus-gen doc
 
 SUBDIRBIN := _payload.o
+SRCROOT := $(CURDIR)
 
-export SUBDIRBIN CC LD CFLAGS WFLAGS
+export SUBDIRBIN CC LD CFLAGS WFLAGS CONFIG SRCROOT FLEX BISON
 
 $(TOPTARGETS): $(SUBDIRS)
 
@@ -84,17 +85,11 @@ all:	$(SUBDIRS) $(MAIN)
 $(MAIN): $(MAINOBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
 
-%.lex.c: %.l %.tab.h
-	$(FLEX) -s -P$*_ -o$@ $<
-
-%.tab.h %.tab.c: %.y
-	$(BISON) -b $* -p $*_ -d $<
-
 .c.o:
 	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
 
 clean:
-	$(RM) *.o *.d *~ *.output $(MAIN)
+	$(RM) *.o *.d *~ $(MAIN)
 
 distclean:	clean
 	$(RM) *-generated.[ch]
@@ -135,16 +130,12 @@ doc:	Doxyfile
 # quick hack
 dbus.o:	$(DBUSGEN_BASE).h
 # rebuild rwchcd.o if anything changes to update version
-rwchcd.o:       $(filter-out rwchcd.o,$(OBJS)) filecfg_parser.tab.h
+rwchcd.o:       $(filter-out rwchcd.o,$(OBJS))
 
 tools:	tools/hwp1_prelays
 
 tools/hwp1_prelays:	tools/hwp1_prelays.o $(filter-out rwchcd.o hw_backends/hw_p1/hw_p1.o,$(MAINOBJS))
 	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
-
-# disable implicit rules we don't want
-%.c: %.y
-%.c: %.l
 
 -include $(DEPS) $(DBUSGEN_DEPS)
 .PHONY:	$(TOPTARGETS) $(SUBDIRS)
