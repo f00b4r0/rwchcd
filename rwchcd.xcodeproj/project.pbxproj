@@ -118,12 +118,12 @@
 		4F15A85C1EBF74880000507A /* alarms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = alarms.c; sourceTree = SOURCE_ROOT; };
 		4F15A85D1EBF74880000507A /* alarms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alarms.h; sourceTree = SOURCE_ROOT; };
 		4F263EFE2528A19500733F75 /* Makefile.sub */ = {isa = PBXFileReference; explicitFileType = sourcecode.make; path = Makefile.sub; sourceTree = SOURCE_ROOT; };
-		4F299C8A218E1DBE009DCBC2 /* log_rrd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_rrd.c; sourceTree = SOURCE_ROOT; };
-		4F299C8B218E1DBE009DCBC2 /* log_rrd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_rrd.h; sourceTree = SOURCE_ROOT; };
-		4F299C8D218E4E2E009DCBC2 /* log_file.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_file.c; sourceTree = SOURCE_ROOT; };
-		4F299C8E218E4E2E009DCBC2 /* log_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_file.h; sourceTree = SOURCE_ROOT; };
-		4F299C9021AABD2C009DCBC2 /* log.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log.c; sourceTree = SOURCE_ROOT; };
-		4F299C9121AABD2C009DCBC2 /* log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = SOURCE_ROOT; };
+		4F299C8A218E1DBE009DCBC2 /* log_rrd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = log_rrd.c; path = log/log_rrd.c; sourceTree = SOURCE_ROOT; };
+		4F299C8B218E1DBE009DCBC2 /* log_rrd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = log_rrd.h; path = log/log_rrd.h; sourceTree = SOURCE_ROOT; };
+		4F299C8D218E4E2E009DCBC2 /* log_file.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = log_file.c; path = log/log_file.c; sourceTree = SOURCE_ROOT; };
+		4F299C8E218E4E2E009DCBC2 /* log_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = log_file.h; path = log/log_file.h; sourceTree = SOURCE_ROOT; };
+		4F299C9021AABD2C009DCBC2 /* log.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = log.c; path = log/log.c; sourceTree = SOURCE_ROOT; };
+		4F299C9121AABD2C009DCBC2 /* log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = log.h; path = log/log.h; sourceTree = SOURCE_ROOT; };
 		4F2F7F6A1DDF1DD80095AAEE /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = SOURCE_ROOT; };
 		4F3AFBAD1D8884ED00D86EE7 /* runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = runtime.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBAE1D8884ED00D86EE7 /* runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = SOURCE_ROOT; };
@@ -149,8 +149,8 @@
 		4F42A5DB1F968AE8001B0A1F /* dhwt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = dhwt.h; path = plant/dhwt.h; sourceTree = SOURCE_ROOT; };
 		4F42A5DD1F96AD0A001B0A1F /* boiler.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = boiler.c; path = plant/boiler.c; sourceTree = SOURCE_ROOT; };
 		4F42A5DE1F96AD0A001B0A1F /* boiler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = boiler.h; path = plant/boiler.h; sourceTree = SOURCE_ROOT; };
-		4F42E98A23393156000A268A /* log_statsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_statsd.c; sourceTree = SOURCE_ROOT; };
-		4F42E98B23393156000A268A /* log_statsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_statsd.h; sourceTree = SOURCE_ROOT; };
+		4F42E98A23393156000A268A /* log_statsd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = log_statsd.c; path = log/log_statsd.c; sourceTree = SOURCE_ROOT; };
+		4F42E98B23393156000A268A /* log_statsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = log_statsd.h; path = log/log_statsd.h; sourceTree = SOURCE_ROOT; };
 		4F43569A23157AE60030EB89 /* hw_lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = hw_lib.h; path = hw_backends/hw_lib.h; sourceTree = SOURCE_ROOT; };
 		4F43569B23157AE60030EB89 /* hw_lib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = hw_lib.c; path = hw_backends/hw_lib.c; sourceTree = SOURCE_ROOT; };
 		4F6509FE25261AB90071EC45 /* backend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = backend.h; sourceTree = "<group>"; };
@@ -407,6 +407,21 @@
 			path = inputs;
 			sourceTree = "<group>";
 		};
+		4F4D5C0D252A38FF003130BC /* log */ = {
+			isa = PBXGroup;
+			children = (
+				4F299C9021AABD2C009DCBC2 /* log.c */,
+				4F299C9121AABD2C009DCBC2 /* log.h */,
+				4F299C8D218E4E2E009DCBC2 /* log_file.c */,
+				4F299C8E218E4E2E009DCBC2 /* log_file.h */,
+				4F299C8A218E1DBE009DCBC2 /* log_rrd.c */,
+				4F299C8B218E1DBE009DCBC2 /* log_rrd.h */,
+				4F42E98A23393156000A268A /* log_statsd.c */,
+				4F42E98B23393156000A268A /* log_statsd.h */,
+			);
+			path = log;
+			sourceTree = SOURCE_ROOT;
+		};
 		4F6509FC25261A650071EC45 /* dummy */ = {
 			isa = PBXGroup;
 			children = (
@@ -486,14 +501,7 @@
 				4F3AFBAE1D8884ED00D86EE7 /* runtime.h */,
 				4FC184791DA6809E000E514B /* storage.c */,
 				4FC1847A1DA6809E000E514B /* storage.h */,
-				4F299C9021AABD2C009DCBC2 /* log.c */,
-				4F299C9121AABD2C009DCBC2 /* log.h */,
-				4F299C8D218E4E2E009DCBC2 /* log_file.c */,
-				4F299C8E218E4E2E009DCBC2 /* log_file.h */,
-				4F299C8A218E1DBE009DCBC2 /* log_rrd.c */,
-				4F299C8B218E1DBE009DCBC2 /* log_rrd.h */,
-				4F42E98A23393156000A268A /* log_statsd.c */,
-				4F42E98B23393156000A268A /* log_statsd.h */,
+				4F4D5C0D252A38FF003130BC /* log */,
 				4FC1847C1DA7B2F9000E514B /* dbus.c */,
 				4FC1847D1DA7B2F9000E514B /* dbus.h */,
 				4FA61C3C1E06F75100B4D862 /* timer.c */,
