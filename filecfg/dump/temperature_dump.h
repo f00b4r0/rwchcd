@@ -1,5 +1,5 @@
 //
-//  filecfg/temperature_dump.h
+//  filecfg/dump/temperature_dump.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

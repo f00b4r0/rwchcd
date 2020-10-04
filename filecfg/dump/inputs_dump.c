@@ -1,5 +1,5 @@
 //
-//  filecfg/inputs_dump.c
+//  filecfg/dump/inputs_dump.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

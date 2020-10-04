@@ -1,5 +1,5 @@
 //
-//  filecfg/pump_dump.c
+//  filecfg/dump/pump_dump.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

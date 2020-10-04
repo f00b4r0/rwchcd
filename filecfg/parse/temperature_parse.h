@@ -1,5 +1,5 @@
 //
-//  filecfg/temperature_parse.h
+//  filecfg/parse/temperature_parse.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

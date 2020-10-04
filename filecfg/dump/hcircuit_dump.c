@@ -1,5 +1,5 @@
 //
-//  filecfg/hcircuit_dump.c
+//  filecfg/dump/hcircuit_dump.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

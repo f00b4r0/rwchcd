@@ -1,5 +1,5 @@
 //
-//  filecfg/boiler_parse.c
+//  filecfg/parse/boiler_parse.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

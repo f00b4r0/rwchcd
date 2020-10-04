@@ -1,5 +1,5 @@
 //
-//  filecfg_dump.c
+//  filecfg/dump/filecfg_dump.c
 //  rwchcd
 //
 //  (C) 2018-2020 Thibaut VARENE
@@ -9,6 +9,9 @@
 /**
  * @file
  * File configuration dump interface implementation.
+ *
+ * @note the ability to dump the current configuration to file is a nice-to-have, but not a must-have.
+ * As such, the code that handles this side of things is a rather hackish second-class citizen, and proper operation is not guaranteed.
  */
 
 #include <inttypes.h>

@@ -1,5 +1,5 @@
 //
-//  filecfg/storage_dump.h
+//  filecfg/dump/storage_dump.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

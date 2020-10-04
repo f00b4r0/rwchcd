@@ -1,5 +1,5 @@
 //
-//  filecfg/relay_parse.h
+//  filecfg/parse/relay_parse.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

@@ -1,5 +1,5 @@
 //
-//  filecfg/models_dump.h
+//  filecfg/dump/models_dump.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

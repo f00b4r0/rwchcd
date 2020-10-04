@@ -1,5 +1,5 @@
 //
-//  filecfg/relay_dump.c
+//  filecfg/dump/relay_dump.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

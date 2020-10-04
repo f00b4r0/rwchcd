@@ -1,5 +1,5 @@
 //
-//  filecfg/scheduler_parse.h
+//  filecfg/parse/scheduler_parse.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

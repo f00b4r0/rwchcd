@@ -1,5 +1,5 @@
 //
-//  filecfg/outputs_parse.c
+//  filecfg/parse/outputs_parse.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

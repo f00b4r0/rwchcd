@@ -1,5 +1,5 @@
 /*
-//  filecfg_parser.l
+//  filecfg/parse/filecfg_parser.l
 //  rwchcd
 //
 //  (C) 2019 Thibaut VARENE

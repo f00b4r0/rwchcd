@@ -1,5 +1,5 @@
 //
-//  filecfg/boiler_dump.h
+//  filecfg/dump/boiler_dump.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE
