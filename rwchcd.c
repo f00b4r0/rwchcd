@@ -72,7 +72,7 @@
  #include "dbus.h"
 #endif
 #include "storage.h"
-#include "log.h"
+#include "log/log.h"
 #include "timekeep.h"
 
 #include "filecfg/dump/filecfg_dump.h"

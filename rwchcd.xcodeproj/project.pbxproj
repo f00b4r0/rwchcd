@@ -34,6 +34,7 @@
 		4F42A5DC1F968AE8001B0A1F /* dhwt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DA1F968AE8001B0A1F /* dhwt.c */; };
 		4F42A5DF1F96AD0A001B0A1F /* boiler.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42A5DD1F96AD0A001B0A1F /* boiler.c */; };
 		4F43569C23157AE60030EB89 /* hw_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F43569B23157AE60030EB89 /* hw_lib.c */; };
+		4F4D5C0F252A3A91003130BC /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 4F4D5C0E252A3A91003130BC /* Makefile */; };
 		4F650A0025261AB90071EC45 /* backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F6509FF25261AB90071EC45 /* backend.c */; };
 		4F650A09252626580071EC45 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F650A08252626580071EC45 /* filecfg.c */; };
 		4F869E99233A5EF300541A07 /* log_statsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42E98A23393156000A268A /* log_statsd.c */; };
@@ -153,6 +154,7 @@
 		4F42E98B23393156000A268A /* log_statsd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = log_statsd.h; path = log/log_statsd.h; sourceTree = SOURCE_ROOT; };
 		4F43569A23157AE60030EB89 /* hw_lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = hw_lib.h; path = hw_backends/hw_lib.h; sourceTree = SOURCE_ROOT; };
 		4F43569B23157AE60030EB89 /* hw_lib.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = hw_lib.c; path = hw_backends/hw_lib.c; sourceTree = SOURCE_ROOT; };
+		4F4D5C0E252A3A91003130BC /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		4F6509FE25261AB90071EC45 /* backend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = backend.h; sourceTree = "<group>"; };
 		4F6509FF25261AB90071EC45 /* backend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = backend.c; sourceTree = "<group>"; };
 		4F650A07252626580071EC45 /* filecfg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = filecfg.h; sourceTree = "<group>"; };
@@ -410,6 +412,7 @@
 		4F4D5C0D252A38FF003130BC /* log */ = {
 			isa = PBXGroup;
 			children = (
+				4F4D5C0E252A3A91003130BC /* Makefile */,
 				4F299C9021AABD2C009DCBC2 /* log.c */,
 				4F299C9121AABD2C009DCBC2 /* log.h */,
 				4F299C8D218E4E2E009DCBC2 /* log_file.c */,
@@ -621,6 +624,7 @@
 				4F08256424859E110068FC22 /* pump_dump.c in Sources */,
 				4F3EC1692524E42B00ACE8BA /* relay_parse.c in Sources */,
 				4FE70C3424864A4E0066007D /* models_dump.c in Sources */,
+				4F4D5C0F252A3A91003130BC /* Makefile in Sources */,
 				4FE70C4924865E330066007D /* dhwt_dump.c in Sources */,
 				4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */,
 				4FE70C52248663B30066007D /* hcircuit_parse.c in Sources */,

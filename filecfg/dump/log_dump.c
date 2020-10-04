@@ -13,13 +13,13 @@
 
 #include "log_dump.h"
 #include "filecfg_dump.h"
-#include "log.h"
+#include "log/log.h"
 
-#include "log_file.h"
+#include "log/log_file.h"
 #ifdef HAS_RRD
- #include "log_rrd.h"
+ #include "log/log_rrd.h"
 #endif
-#include "log_statsd.h"
+#include "log/log_statsd.h"
 
 extern struct s_log Log;
 

@@ -38,7 +38,7 @@
 #include "io/inputs.h"
 #include "lib.h"
 #include "runtime.h"
-#include "log.h"
+#include "log/log.h"
 #include "scheduler.h"
 #include "storage.h"
 

@@ -14,15 +14,15 @@
 #include <string.h>	// strcmp
 
 #include "log_parse.h"
-#include "log.h"
+#include "log/log.h"
 #include "filecfg_parser.h"
 #include "rwchcd.h"
 
-#include "log_file.h"
+#include "log/log_file.h"
 #ifdef HAS_RRD
- #include "log_rrd.h"
+ #include "log/log_rrd.h"
 #endif
-#include "log_statsd.h"
+#include "log/log_statsd.h"
 
 extern struct s_log Log;
 

@@ -23,7 +23,7 @@
 #include "hw_p1_filecfg.h"
 #include "runtime.h"
 #include "alarms.h"
-#include "log.h"
+#include "log/log.h"
 
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
 #define HW_P1_TIMEOUT_TK	(30 * TIMEKEEP_SMULT)	///< hardcoded hardware timeout delay: 30s

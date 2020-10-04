@@ -21,7 +21,7 @@
 #include "io/inputs.h"
 #include "alarms.h"
 #include "models.h"
-#include "log.h"
+#include "log/log.h"
 
 #define OUTDOOR_SMOOTH_TIME		(60*TIMEKEEP_SMULT)	///< time in seconds over which outdoor temp is smoothed
 #define OUTDOOR_AVG_UPDATE_DT		(600*TIMEKEEP_SMULT)	///< prevents running averages at less than 10mn interval. Should be good up to 100h tau.
