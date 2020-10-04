@@ -51,42 +51,42 @@ void filecfg_backends_dump()
 }
 
 /**
- * Return hardware sensor name.
- * @param tempid id of the target hardware sensor
- * @return target hardware sensor name or NULL if error
+ * Return hardware input name.
+ * @param binid id of the target hardware input
+ * @return target hardware input name or NULL if error
  */
-static const char * hardware_sensor_name(const binid_t tempid)
+static const char * hardware_input_name(const enum e_hw_input_type type, const binid_t binid)
 {
-	const bid_t bid = tempid.bid;
+	const bid_t bid = binid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
 		return (NULL);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->input_name(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.inid));
+	return (HW_backends.all[bid].cb->input_name(HW_backends.all[bid].priv, type, binid.inid));
 }
 
 /**
- * Return hardware relay name.
- * @param relid id of the target hardware relay
- * @return target hardware relay name or NULL if error
+ * Return hardware output name.
+ * @param boutid id of the target hardware output
+ * @return target hardware output name or NULL if error
  */
-static const char * hardware_relay_name(const boutid_t relid)
+static const char * hardware_output_name(const enum e_hw_output_type type, const boutid_t boutid)
 {
-	const bid_t bid = relid.bid;
+	const bid_t bid = boutid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
 		return (NULL);
 
 	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->output_name(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.outid));
+	return (HW_backends.all[bid].cb->output_name(HW_backends.all[bid].priv, type, boutid.outid));
 }
 
-int filecfg_dump_tempid(const char *name, const binid_t tempid)
+int filecfg_backends_dump_binid(const enum e_hw_input_type type, const char *name, const binid_t tempid)
 {
-	if (!hardware_sensor_name(tempid)) {
+	if (!hardware_input_name(type, tempid)) {
 		filecfg_printf("%s {};\n", name);
 		return (-EINVALID);
 	}
@@ -94,24 +94,24 @@ int filecfg_dump_tempid(const char *name, const binid_t tempid)
 	filecfg_iprintf("%s {\n", name);
 	filecfg_ilevel_inc();
 	filecfg_dump_nodestr("backend", hw_backends_name(tempid.bid));
-	filecfg_dump_nodestr("name", hardware_sensor_name(tempid));
+	filecfg_dump_nodestr("name", hardware_input_name(type, tempid));
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 
 	return (ALL_OK);
 }
 
-int filecfg_dump_relid(const char *name, const boutid_t relid)
+int filecfg_backends_dump_boutid(const enum e_hw_output_type type, const char *name, const boutid_t boutid)
 {
-	if (!hardware_relay_name(relid)) {
+	if (!hardware_output_name(type, boutid)) {
 		filecfg_printf("%s {};\n", name);
 		return (-EINVALID);
 	}
 
 	filecfg_iprintf("%s {\n", name);
 	filecfg_ilevel_inc();
-	filecfg_dump_nodestr("backend", hw_backends_name(relid.bid));
-	filecfg_dump_nodestr("name", hardware_relay_name(relid));
+	filecfg_dump_nodestr("backend", hw_backends_name(boutid.bid));
+	filecfg_dump_nodestr("name", hardware_output_name(type, boutid));
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
 

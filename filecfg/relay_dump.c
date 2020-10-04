@@ -42,7 +42,7 @@ void filecfg_relay_dump(const struct s_relay * r)
 	filecfg_ilevel_inc();
 
 	for (i = 0; i < r->rlast; i++)
-		filecfg_dump_relid("target", r->rlist[i]);
+		filecfg_backends_dump_relay("target", r->rlist[i]);
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

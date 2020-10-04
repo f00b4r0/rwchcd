@@ -47,7 +47,7 @@ void filecfg_temperature_dump(const struct s_temperature * t)
 	filecfg_ilevel_inc();
 
 	for (i = 0; i < t->tlast; i++)
-		filecfg_dump_tempid("source", t->tlist[i]);
+		filecfg_backends_dump_temperature("source", t->tlist[i]);
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
