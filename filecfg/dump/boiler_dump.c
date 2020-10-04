@@ -12,11 +12,11 @@
  */
 
 #include "boiler_dump.h"
-#include "boiler.h"
+#include "plant/boiler.h"
 #include "filecfg_dump.h"
 
-#include "pump.h"
-#include "valve.h"
+#include "plant/pump.h"
+#include "plant/valve.h"
 #include "inputs.h"
 #include "outputs.h"
 

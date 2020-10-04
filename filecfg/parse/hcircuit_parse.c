@@ -17,10 +17,10 @@
 #include "inputs_parse.h"
 #include "hcircuit_parse.h"
 #include "filecfg_parser.h"
-#include "hcircuit.h"
+#include "plant/hcircuit.h"
 
 #include "scheduler.h"
-#include "plant.h"
+#include "plant/plant.h"
 #include "models.h"
 
 

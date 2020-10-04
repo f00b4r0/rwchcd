@@ -12,13 +12,13 @@
  */
 
 #include "boiler_parse.h"
-#include "boiler.h"
+#include "plant/boiler.h"
 #include "filecfg_parser.h"
 #include "heatsource_parse.h"
 #include "inputs_parse.h"
 #include "outputs_parse.h"
 
-#include "plant.h"
+#include "plant/plant.h"
 
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_boiler_priv, hysteresis)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_thardmax)

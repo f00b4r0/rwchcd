@@ -23,7 +23,7 @@
 #include "lib.h"
 #include "runtime.h"
 #include "models.h"	// models_outtemp()
-#include "plant.h"
+#include "plant/plant.h"
 #include "dbus.h"
 #include "dbus-generated.h"
 

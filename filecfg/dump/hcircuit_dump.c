@@ -13,9 +13,9 @@
 
 #include "hcircuit_dump.h"
 #include "filecfg_dump.h"
-#include "hcircuit.h"
-#include "pump.h"
-#include "valve.h"
+#include "plant/hcircuit.h"
+#include "plant/pump.h"
+#include "plant/valve.h"
 #include "lib.h"
 #include "inputs.h"
 

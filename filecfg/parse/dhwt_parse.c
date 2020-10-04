@@ -17,10 +17,10 @@
 #include "inputs_parse.h"
 #include "dhwt_parse.h"
 #include "filecfg_parser.h"
-#include "dhwt.h"
+#include "plant/dhwt.h"
 
 #include "scheduler.h"
-#include "plant.h"
+#include "plant/plant.h"
 
 
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, t_comfort)

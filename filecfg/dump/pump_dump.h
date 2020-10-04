@@ -14,7 +14,7 @@
 #ifndef pump_dump_h
 #define pump_dump_h
 
-#include "pump.h"
+#include "plant/pump.h"
 
 int filecfg_pump_dump(const struct s_pump * restrict const pump);
 

@@ -13,7 +13,7 @@
 
 #include "plant_parse.h"
 #include "filecfg_parser.h"
-#include "plant.h"
+#include "plant/plant.h"
 #include "pump_parse.h"
 #include "valve_parse.h"
 #include "dhwt_parse.h"

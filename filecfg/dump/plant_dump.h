@@ -14,7 +14,7 @@
 #ifndef plant_dump_h
 #define plant_dump_h
 
-#include "plant.h"
+#include "plant/plant.h"
 
 int filecfg_plant_dump(const struct s_plant * restrict const plant);
 

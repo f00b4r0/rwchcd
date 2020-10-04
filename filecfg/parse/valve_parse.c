@@ -16,8 +16,8 @@
 #include "inputs_parse.h"
 #include "outputs_parse.h"
 #include "valve_parse.h"
-#include "valve.h"
-#include "plant.h"
+#include "plant/valve.h"
+#include "plant/plant.h"
 #include "filecfg_parser.h"
 
 

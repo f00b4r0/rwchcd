@@ -15,7 +15,7 @@
 #include <string.h>	// memset/memcpy
 #include <assert.h>
 
-#include "plant.h"
+#include "plant/plant.h"
 #include "runtime.h"
 #include "storage.h"
 #include "log.h"

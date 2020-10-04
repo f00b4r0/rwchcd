@@ -16,7 +16,7 @@
 #include "boiler_parse.h"
 
 #include "scheduler.h"
-#include "plant.h"
+#include "plant/plant.h"
 
 static int heatsource_type_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {

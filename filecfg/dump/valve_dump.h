@@ -14,7 +14,7 @@
 #ifndef valve_dump_h
 #define valve_dump_h
 
-#include "valve.h"
+#include "plant/valve.h"
 
 int filecfg_valve_dump(const struct s_valve * restrict const valve);
 

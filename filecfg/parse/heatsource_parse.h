@@ -15,9 +15,9 @@
 #define heatsource_parse_h
 
 #include "filecfg_parser.h"
-#include "heatsource.h"
+#include "plant/heatsource.h"
 
-#include "plant.h"
+#include "plant/plant.h"
 
 #define hspriv_to_heatsource(_priv)	container_of(_priv, const struct s_heatsource, priv)
 

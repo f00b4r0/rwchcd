@@ -15,7 +15,7 @@
 #define boiler_parse_h
 
 #include "filecfg_parser.h"
-#include "heatsource.h"
+#include "plant/heatsource.h"
 
 int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node);
 

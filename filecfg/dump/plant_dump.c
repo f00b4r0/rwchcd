@@ -14,7 +14,7 @@
 #include "plant_dump.h"
 #include "filecfg_dump.h"
 #include "rwchcd.h"
-#include "plant.h"
+#include "plant/plant.h"
 
 #include "pump_dump.h"
 #include "valve_dump.h"

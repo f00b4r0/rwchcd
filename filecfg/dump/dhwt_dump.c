@@ -13,9 +13,9 @@
 
 #include "dhwt_dump.h"
 #include "filecfg_dump.h"
-#include "dhwt.h"
-#include "pump.h"
-#include "valve.h"
+#include "plant/dhwt.h"
+#include "plant/pump.h"
+#include "plant/valve.h"
 #include "lib.h"
 #include "inputs.h"
 #include "outputs.h"

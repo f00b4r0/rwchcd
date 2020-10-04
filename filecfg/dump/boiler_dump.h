@@ -14,7 +14,7 @@
 #ifndef boiler_dump_h
 #define boiler_dump_h
 
-#include "heatsource.h"
+#include "plant/heatsource.h"
 
 int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat);
 
