@@ -15,6 +15,7 @@
 #define backends_dump_h
 
 #include "rwchcd.h"
+#include "hw_backends.h"
 
 void filecfg_backends_dump(void);
 int filecfg_dump_tempid(const char *name, const tempid_t tempid);

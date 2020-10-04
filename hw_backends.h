@@ -44,6 +44,20 @@ enum e_hw_output_type {
 typedef uint_fast8_t inid_t;
 typedef uint_fast8_t outid_t;
 
+typedef uint_fast8_t	bid_t;		///< backend id type
+typedef outid_t	rid_t;		///< relay id type
+typedef inid_t	sid_t;		///< sensor id type
+/** temperature sensor id. @note struct assignment is used in the code: must not embed pointers */
+typedef struct {
+	bid_t bid;	///< backend id
+	inid_t sid;	///< sensor id
+} tempid_t;
+/** relay identifier. @note struct assignment is used in the code: must not embed pointers */
+typedef struct {
+	bid_t bid;	///< backend id
+	outid_t rid;	///< relay id
+} relid_t;
+
 /**
  * Backend hardware callbacks.
  * These callbacks provide an implementation-agnostic way to access and operate

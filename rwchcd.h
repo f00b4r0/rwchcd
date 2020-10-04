@@ -130,19 +130,6 @@ enum {
 };
 
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
-typedef uint_fast8_t	bid_t;		///< backend id type
-typedef uint_fast8_t	rid_t;		///< relay id type
-typedef uint_fast8_t	sid_t;		///< sensor id type
-/** temperature sensor id. @note struct assignment is used in the code: must not embed pointers */
-typedef struct {
-	bid_t bid;	///< backend id
-	sid_t sid;	///< sensor id
-} tempid_t;
-/** relay identifier. @note struct assignment is used in the code: must not embed pointers */
-typedef struct {
-	bid_t bid;	///< backend id
-	rid_t rid;	///< relay id
-} relid_t;
 typedef uint_fast16_t	schedid_t;	///< schedule id type
 
 /** Valid run modes */
