@@ -411,8 +411,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 		}
 	}
 	if (!matched) {
-		// dbgmsg as there can be legit mismatch e.g. when parsing foreign backend config
-		dbgmsg(3, 1, "Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
+		fprintf(stderr, "CONFIG WARNING! Ignoring unknown node \"%s\" closing at line %d\n", node->name, node->lineno);
 		return (-EUNKNOWN);
 	}
 
