@@ -288,23 +288,6 @@ int hardware_sensor_clone_time(const tempid_t tempid, timekeep_t * const clast)
 }
 
 /**
- * Return hardware sensor name.
- * @param tempid id of the target hardware sensor
- * @return target hardware sensor name or NULL if error
- */
-const char * hardware_sensor_name(const tempid_t tempid)
-{
-	const bid_t bid = tempid.bid;
-
-	// make sure bid is valid
-	if (unlikely(HW_backends.last <= bid))
-		return (NULL);
-
-	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->input_name(HW_backends.all[bid].priv, HW_INPUT_TEMP, tempid.sid));
-}
-
-/**
  * Get relay state (request).
  * Returns current state
  * @param relid id of the hardware relay to query
@@ -362,21 +345,4 @@ int hardware_relay_set_state(const relid_t relid, const bool turn_on)
 
 	// call backend callback - input sanitizing left to cb
 	return (HW_backends.all[bid].cb->output_state_set(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid, &state));
-}
-
-/**
- * Return hardware relay name.
- * @param relid id of the target hardware relay
- * @return target hardware relay name or NULL if error
- */
-const char * hardware_relay_name(const relid_t relid)
-{
-	const bid_t bid = relid.bid;
-
-	// make sure bid is valid
-	if (unlikely(HW_backends.last <= bid))
-		return (NULL);
-
-	// call backend callback - input sanitizing left to cb
-	return (HW_backends.all[bid].cb->output_name(HW_backends.all[bid].priv, HW_OUTPUT_RELAY, relid.rid));
 }

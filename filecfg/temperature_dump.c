@@ -12,6 +12,7 @@
  */
 
 #include "filecfg_dump.h"
+#include "backends_dump.h"
 #include "temperature.h"
 
 static const char * const temp_op_str[] = {

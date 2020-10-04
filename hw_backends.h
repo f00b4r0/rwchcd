@@ -241,6 +241,5 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
 void hw_backends_exit(void);
 
 int hw_backends_bid_by_name(const char * const name);
-const char * hw_backends_name(const bid_t bid);
 
 #endif /* hw_backends_h */

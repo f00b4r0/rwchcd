@@ -12,6 +12,7 @@
  */
 
 #include "filecfg_dump.h"
+#include "backends_dump.h"
 #include "relay.h"
 
 static const char * const relay_op_str[] = {

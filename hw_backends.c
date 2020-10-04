@@ -117,16 +117,3 @@ void hw_backends_exit(void)
 
 	memset(&HW_backends, 0x00, sizeof(HW_backends));
 }
-
-/**
- * Return a backend name.
- * @param bid target backend id
- * @return target backend name or NULL if error.
- */
-const char * hw_backends_name(const bid_t bid)
-{
-	if (bid >= HW_backends.last)
-		return (NULL);
-
-	return (HW_backends.all[bid].name);
-}
