@@ -13,7 +13,7 @@
 
 #include "backends_dump.h"
 #include "filecfg_dump.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 
 extern struct s_hw_backends HW_backends;
 

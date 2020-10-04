@@ -22,7 +22,7 @@
 #include "backends_parse.h"
 #include "filecfg_parser.h"
 #include "rwchcd.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 
 typedef int (* const hw_bknd_parser_t)(const struct s_filecfg_parser_node * const);
 

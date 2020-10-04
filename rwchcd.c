@@ -59,7 +59,7 @@
 #endif
 
 #include "rwchcd.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 #include "io/hardware.h"
 #include "runtime.h"
 #include "io/inputs.h"

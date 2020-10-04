@@ -17,7 +17,7 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
-#include "hw_backends.h"	// for types
+#include "hw_backends/hw_backends.h"	// for types
 
 // basic ops
 int hardware_init(void) __attribute__((warn_unused_result));

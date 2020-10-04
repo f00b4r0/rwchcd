@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 #include "lib.h"
 #include "filecfg_parser.h"
 

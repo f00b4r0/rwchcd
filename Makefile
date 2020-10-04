@@ -29,7 +29,7 @@ HWBACKENDS_DIR := hw_backends
 SRCS := $(wildcard *.c)
 
 SUBDIRS := plant/ io/ io/inputs/ io/outputs/ filecfg/parse/ filecfg/dump/
-SUBDIRS += $(HWBACKENDS_DIR)/dummy/
+SUBDIRS += $(HWBACKENDS_DIR)/ $(HWBACKENDS_DIR)/dummy/
 
 DBUSGEN_SRCS := $(DBUSGEN_BASE).c
 SRCS := $(filter-out $(DBUSGEN_SRCS),$(SRCS))

@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 #include "lib.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 #include "backends_parse.h"
 #include "io/outputs/relay.h"
 #include "relay_parse.h"

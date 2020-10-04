@@ -18,7 +18,7 @@
 #include "rwchc_export.h"
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
-#include "hw_lib.h"
+#include "hw_backends/hw_lib.h"
 #include "timekeep.h"
 
 #define RELAY_MAX_ID		14	///< maximum valid relay id

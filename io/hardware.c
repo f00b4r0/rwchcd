@@ -13,7 +13,7 @@
  * @todo implement exclusive relay use (should be a good idea esp for config validation).
  */
 
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 #include "hardware.h"
 
 extern struct s_hw_backends HW_backends;

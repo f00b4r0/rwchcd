@@ -15,7 +15,7 @@
 #define backends_dump_h
 
 #include "rwchcd.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 
 void filecfg_backends_dump(void);
 int filecfg_backends_dump_binid(const enum e_hw_input_type type, const char *name, const binid_t tempid);

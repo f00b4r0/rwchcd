@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdatomic.h>
 
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 #include "hw_p1.h"
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"

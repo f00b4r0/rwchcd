@@ -15,7 +15,7 @@
 #define backends_parse_h
 
 #include "filecfg_parser.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 
 int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 

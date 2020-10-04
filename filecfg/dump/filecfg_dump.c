@@ -20,7 +20,7 @@
 #include <stdarg.h>
 
 #include "lib.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 #include "io/hardware.h"
 #include "runtime.h"
 
