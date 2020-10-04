@@ -1,5 +1,5 @@
 //
-//  hardware.h
+//  io/hardware.h
 //  rwchcd
 //
 //  (C) 2018 Thibaut VARENE

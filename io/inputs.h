@@ -1,5 +1,5 @@
 //
-//  inputs.h
+//  io/inputs.h
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

@@ -1,5 +1,5 @@
 //
-//  relay.c
+//  io/outputs/relay.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE

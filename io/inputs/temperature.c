@@ -1,5 +1,5 @@
 //
-//  temperature.c
+//  io/inputs/temperature.c
 //  rwchcd
 //
 //  (C) 2020 Thibaut VARENE
