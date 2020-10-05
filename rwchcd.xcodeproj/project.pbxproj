@@ -48,6 +48,7 @@
 		4FA9A53E252B47220091D0F5 /* filecfg_parser.y in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475D21DAA14200FCF120 /* filecfg_parser.y */; };
 		4FA9A53F252B47220091D0F5 /* filecfg_parser.l in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */; };
 		4FA9A542252B48580091D0F5 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 4FA9A541252B48580091D0F5 /* Makefile */; };
+		4FA9A550252B594C0091D0F5 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 4FA9A54F252B594C0091D0F5 /* Makefile */; };
 		4FBFEB7D252889480062B1FB /* inputs_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB7C252889480062B1FB /* inputs_dump.c */; };
 		4FBFEB81252889E40062B1FB /* temperature_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB80252889E40062B1FB /* temperature_dump.c */; };
 		4FBFEB8525288C6D0062B1FB /* relay_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4FBFEB8425288C6D0062B1FB /* relay_dump.c */; };
@@ -177,6 +178,7 @@
 		4FA61C3F1E0955AA00B4D862 /* scheduler.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = scheduler.c; sourceTree = SOURCE_ROOT; };
 		4FA61C401E0955AA00B4D862 /* scheduler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scheduler.h; sourceTree = SOURCE_ROOT; };
 		4FA9A541252B48580091D0F5 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		4FA9A54F252B594C0091D0F5 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		4FBFEB7B252889480062B1FB /* inputs_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = inputs_dump.h; sourceTree = "<group>"; };
 		4FBFEB7C252889480062B1FB /* inputs_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs_dump.c; sourceTree = "<group>"; };
 		4FBFEB7F252889E40062B1FB /* temperature_dump.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = temperature_dump.h; sourceTree = "<group>"; };
@@ -193,11 +195,11 @@
 		4FC1132925239B50009AA17D /* inputs_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = inputs_parse.c; sourceTree = "<group>"; };
 		4FC184791DA6809E000E514B /* storage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = storage.c; sourceTree = SOURCE_ROOT; };
 		4FC1847A1DA6809E000E514B /* storage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = storage.h; sourceTree = SOURCE_ROOT; };
-		4FC1847C1DA7B2F9000E514B /* dbus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dbus.c; sourceTree = SOURCE_ROOT; };
-		4FC1847D1DA7B2F9000E514B /* dbus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dbus.h; sourceTree = SOURCE_ROOT; };
-		4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; lineEnding = 0; path = rwchcd_introspection.xml; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.xml; };
-		4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = org.slashdirt.rwchcd.conf; sourceTree = SOURCE_ROOT; };
-		4FC184831DA7D19D000E514B /* rwchcd.service */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rwchcd.service; sourceTree = SOURCE_ROOT; };
+		4FC1847C1DA7B2F9000E514B /* dbus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dbus.c; path = dbus/dbus.c; sourceTree = SOURCE_ROOT; };
+		4FC1847D1DA7B2F9000E514B /* dbus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dbus.h; path = dbus/dbus.h; sourceTree = SOURCE_ROOT; };
+		4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; lineEnding = 0; name = rwchcd_introspection.xml; path = dbus/rwchcd_introspection.xml; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.xml; };
+		4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = org.slashdirt.rwchcd.conf; path = dbus/org.slashdirt.rwchcd.conf; sourceTree = SOURCE_ROOT; };
+		4FC184831DA7D19D000E514B /* rwchcd.service */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = rwchcd.service; path = dbus/rwchcd.service; sourceTree = SOURCE_ROOT; };
 		4FC304A61EBDCDB900D77AC6 /* models.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = models.c; sourceTree = SOURCE_ROOT; };
 		4FC304A71EBDCDB900D77AC6 /* models.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = models.h; sourceTree = SOURCE_ROOT; };
 		4FC6894F206FAB4D00A3A065 /* hardware.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = hardware.c; path = io/hardware.c; sourceTree = SOURCE_ROOT; };
@@ -456,6 +458,19 @@
 			path = hw_p1;
 			sourceTree = "<group>";
 		};
+		4FA9A54E252B594C0091D0F5 /* dbus */ = {
+			isa = PBXGroup;
+			children = (
+				4FA9A54F252B594C0091D0F5 /* Makefile */,
+				4FC1847C1DA7B2F9000E514B /* dbus.c */,
+				4FC1847D1DA7B2F9000E514B /* dbus.h */,
+				4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */,
+				4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */,
+				4FC184831DA7D19D000E514B /* rwchcd.service */,
+			);
+			path = dbus;
+			sourceTree = SOURCE_ROOT;
+		};
 		4FC6895C207176F800A3A065 /* hw_backends */ = {
 			isa = PBXGroup;
 			children = (
@@ -505,8 +520,7 @@
 				4FC184791DA6809E000E514B /* storage.c */,
 				4FC1847A1DA6809E000E514B /* storage.h */,
 				4F4D5C0D252A38FF003130BC /* log */,
-				4FC1847C1DA7B2F9000E514B /* dbus.c */,
-				4FC1847D1DA7B2F9000E514B /* dbus.h */,
+				4FA9A54E252B594C0091D0F5 /* dbus */,
 				4FA61C3C1E06F75100B4D862 /* timer.c */,
 				4FA61C3D1E06F75100B4D862 /* timer.h */,
 				4FA61C3F1E0955AA00B4D862 /* scheduler.c */,
@@ -516,9 +530,6 @@
 				4FCD55141D835D04003BB848 /* rwchcd.c */,
 				4FCD55151D835D04003BB848 /* rwchcd.h */,
 				4F08256124859BBE0068FC22 /* filecfg */,
-				4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */,
-				4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */,
-				4FC184831DA7D19D000E514B /* rwchcd.service */,
 			);
 			path = daemon;
 			sourceTree = "<group>";
@@ -615,6 +626,7 @@
 				4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */,
 				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,
 				4FE70C552486A0020066007D /* log_dump.c in Sources */,
+				4FA9A550252B594C0091D0F5 /* Makefile in Sources */,
 				4F42A5D31F968069001B0A1F /* valve.c in Sources */,
 				4F08256724859F9D0068FC22 /* valve_dump.c in Sources */,
 				4FA61C3E1E06F75100B4D862 /* timer.c in Sources */,

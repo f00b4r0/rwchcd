@@ -69,7 +69,7 @@
 #include "models.h"
 #include "alarms.h"
 #ifdef HAS_DBUS
- #include "dbus.h"
+ #include "dbus/dbus.h"
 #endif
 #include "storage.h"
 #include "log/log.h"
