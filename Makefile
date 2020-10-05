@@ -66,6 +66,7 @@ $(SUBDIRS):
 SUBDIRS_OBJS := $(SUBDIRS:/=/$(SUBDIRBIN))
 MAINOBJS += SUBDIRS_OBJS
 
+all:	MAKECMDGOALS ?= all
 all:	$(SUBDIRS) $(MAIN)
 	@echo	Done
 
