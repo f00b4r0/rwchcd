@@ -21,9 +21,14 @@ endif
 
 CFLAGS += $(CONFIG)
 
-HWBACKENDS_DIR := hw_backends
-
 SRCS := $(wildcard *.c)
+OBJS := $(SRCS:.c=.o)
+DEPS := $(SRCS:.c=.d)
+
+MAIN := rwchcd
+MAINOBJS := $(OBJS)
+
+HWBACKENDS_DIR := hw_backends
 
 SUBDIRS := plant/ io/ io/inputs/ io/outputs/ filecfg/parse/ filecfg/dump/
 SUBDIRS += $(HWBACKENDS_DIR)/ $(HWBACKENDS_DIR)/dummy/
@@ -37,12 +42,6 @@ ifneq (,$(findstring HAS_HWP1,$(CONFIG)))
 LDLIBS += -lwiringPi
 SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
 endif
-
-OBJS := $(SRCS:.c=.o)
-DEPS := $(SRCS:.c=.d)
-
-MAIN := rwchcd
-MAINOBJS := $(OBJS)
 
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
 SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
@@ -64,7 +63,7 @@ $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 SUBDIRS_OBJS := $(SUBDIRS:/=/$(SUBDIRBIN))
-MAINOBJS += SUBDIRS_OBJS
+MAINOBJS += $(SUBDIRS_OBJS)
 
 all:	MAKECMDGOALS ?= all
 all:	$(SUBDIRS) $(MAIN)
@@ -106,7 +105,7 @@ doc:	Doxyfile
 	( cat Doxyfile; echo "PROJECT_NUMBER=$(REVISION)" ) | doxygen -
 	
 # rebuild rwchcd.o if anything changes to update version
-rwchcd.o:       $(filter-out rwchcd.o,$(OBJS))
+rwchcd.o:       $(filter-out rwchcd.o,$(MAINOBJS))
 
 tools:	tools/hwp1_prelays
 
