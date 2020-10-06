@@ -45,11 +45,18 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 		      const temp_t tlow_jacket, const temp_t thigh_jacket);
 
 /**
+ * Convert kelvin value to internal temp_t format (Kelvin * KPRECISION).
+ * @note The preprocessor will do the right thing whether kelvin is a float or a native integer type.
+ * @param kelvin temp value in Kelvin
+ */
+#define kelvin_to_temp(kelvin)		(temp_t)((kelvin) * KPRECISION)
+
+/**
  * Convert celsius value to internal temp_t format (Kelvin * KPRECISION).
  * @note The preprocessor will do the right thing whether celsius is a float or a native integer type.
  * @param celsius temp value in Celsius
  */
-#define celsius_to_temp(celsius)	(temp_t)((celsius + 273)*KPRECISION)
+#define celsius_to_temp(celsius)	kelvin_to_temp((celsius) + 273)
 
 /**
  * Convert temperature from internal format to integer Kelvin (rounded)
