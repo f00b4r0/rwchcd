@@ -68,14 +68,14 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 * Convert temperature from internal format to integer Kelvin (floored)
 * @param temp temp value as temp_t
 */
-#define temp_to_ikelvind(temp)		(temp/KPRECISION)
+#define temp_to_ikelvind(temp)		((temp)/KPRECISION)
 
 /**
  * Convert a temperature delta (in Kelvin) to internal type.
  * @note The preprocessor will do the right thing whether delta is a float or a native integer type.
  * @param delta the delta value to be converted
  */
-#define deltaK_to_temp(delta)		(temp_t)(delta * KPRECISION)
+#define deltaK_to_temp(delta)		(temp_t)((delta) * KPRECISION)
 
 /**
  * Calculate the minimum time interval to use with temp_expw_mavg() for a given
