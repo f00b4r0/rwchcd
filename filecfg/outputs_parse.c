@@ -62,11 +62,14 @@ static int outputs_relays_parse(void * restrict const priv, const struct s_filec
 	if (!n)
 		return (-EEMPTY);
 
+	if (n >= ORID_MAX)
+		return (-ETOOBIG);
+
 	outputs->relays.all = calloc(n, sizeof(outputs->relays.all[0]));
 	if (!outputs->relays.all)
 		return (-EOOM);
 
-	outputs->relays.n = n;
+	outputs->relays.n = (orid_t)n;
 	//outputs->relays.last = 0;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "relay", outputs_relay_wrap_parse));

@@ -56,7 +56,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 	if (!n)
 		return (-EEMPTY);
 
-	if (n >= UINT_FAST8_MAX)	// b->n is uint_fast8_t
+	if (n >= BID_MAX)
 		return (-ETOOBIG);
 
 	b->all = calloc(n, sizeof(b->all[0]));

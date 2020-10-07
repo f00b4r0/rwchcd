@@ -62,11 +62,14 @@ static int inputs_temperatures_parse(void * restrict const priv, const struct s_
 	if (!n)
 		return (-EEMPTY);
 
+	if (n >= ITID_MAX)
+		return (-ETOOBIG);
+
 	inputs->temps.all = calloc(n, sizeof(inputs->temps.all[0]));
 	if (!inputs->temps.all)
 		return (-EOOM);
 
-	inputs->temps.n = n;
+	inputs->temps.n = (itid_t)n;
 	//inputs->temps.last = 0;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "temperature", inputs_temperature_wrap_parse));

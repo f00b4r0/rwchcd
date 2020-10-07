@@ -18,6 +18,8 @@
 
 typedef uint_fast8_t itid_t;	///< input temperature id
 
+#define ITID_MAX	UINT_FAST8_MAX
+
 /** Inputs internal data */
 struct s_inputs {
 	struct {

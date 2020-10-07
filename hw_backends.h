@@ -49,6 +49,10 @@ typedef uint_fast8_t	bid_t;	///< backend idex type - defines theoretical maximum
 typedef uint_fast8_t	inid_t;	///< hardware input index type - defines theoretical maximum number of inputs per backend
 typedef uint_fast8_t	outid_t;///< hardware output index type - defines theoretical maximum number of outputs per backend
 
+#define BID_MAX		UINT_FAST8_MAX
+#define INID_MAX	UINT_FAST8_MAX
+#define OUTID_MAX	UINT_FAST8_MAX
+
 /** backend input id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
 	bid_t bid;	///< backend id

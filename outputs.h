@@ -18,6 +18,8 @@
 
 typedef uint_fast8_t orid_t;	///< output relay id
 
+#define ORID_MAX	UINT_FAST8_MAX
+
 /** Outputs internal data */
 struct s_outputs {
 	struct {
