@@ -31,6 +31,18 @@ struct s_mqtt_temperature {
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the temperature
 };
 
+/** software representation of an MQTT switch input */
+struct s_mqtt_switch {
+	struct {
+		bool configured;	///< true if properly configured
+	} set;		///< settings
+	struct {
+		_Atomic bool state;	///< switch state: `true`, `1`, `on`, or `false`, `0`, `off`
+		_Atomic timekeep_t tstamp;	///< last update timestamp
+	} run;		///< private runtime
+	const char * restrict name;	///< @b unique (per backend) user-defined name for the switch
+};
+
 /** software representation of an MQTT relay output */
 struct s_mqtt_relay {
 	struct {
@@ -69,6 +81,11 @@ struct s_mqtt_pdata {
 			inid_t l;	///< last free temps slot
 			struct s_mqtt_temperature * all;	///< pointer to array of temperatures size #n
 		} temps;
+		struct {
+			inid_t n;///< number of allocated switches
+			inid_t l;///< last free switch slot
+			struct s_mqtt_switch * all;	///< pointer to array of input switchs size #n
+		} switchs;
 	} in;
 	struct {
 		struct {

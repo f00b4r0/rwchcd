@@ -44,6 +44,56 @@ static const char * mqtt_intype_subtopics[] = {
 };
 
 /**
+ * Parse a string representing a bool value.
+ * This function parses a lowercase string as follows:
+ * - Valid "true" values: `1`, `on`, `true`
+ * - Valid "false" values: `0`, `off`, `false`
+ * @param str the string to parse
+ * @return `1` for true values, `0` for false values and negative otherwise
+ */
+static int mqtt_str_to_bool(const char * str)
+{
+	int ret = -EINVALID;
+
+	if (!str)
+		return (ret);
+
+	switch (*str) {
+		case '0':
+		case '1':
+			if ('\0' == str[1])
+				ret = (*str - '0');
+			break;
+		case 'o':
+			switch (str[1]) {
+				case 'n':
+					if ('\0' == str[2])
+						ret = 1;
+					break;
+				case 'f':
+					if (('f' == str[2]) && ('\0' == str[4]))
+						ret = 0;
+					break;
+				default:
+					break;
+			}
+			break;
+		case 't':
+			if (!strcmp(str, "true"))
+				ret = 1;
+			break;
+		case 'f':
+			if (!strcmp(str, "false"))
+				ret = 0;
+			break;
+		default:
+			break;
+	}
+
+	return (ret);
+}
+
+/**
  * MQTT message callback to process incoming messages from subscriptions.
  * @param mosq unused
  * @param obj MQTT backend private data
@@ -112,6 +162,19 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 			atomic_store_explicit(&hw->in.temps.all[id].run.tstamp, timekeep_now(), memory_order_relaxed);
 			break;
 		case HW_INPUT_SWITCH:
+			/// For switches we expect a string representing a boolean values compatible with mqtt_str_to_bool()
+			ret = mqtt_str_to_bool(message->payload);
+			if (ret < 0)
+				return;
+			u.inswitch = !!ret;
+
+			ret = mqtt_input_ibn(hw, type, str);
+			if (ret < 0)
+				return;
+			id = (inid_t)ret;
+
+			atomic_store_explicit(&hw->in.switchs.all[id].run.state, u.inswitch, memory_order_relaxed);
+			atomic_store_explicit(&hw->in.switchs.all[id].run.tstamp, timekeep_now(), memory_order_relaxed);
 		case HW_INPUT_NONE:
 		default:
 			return;	// not for us
@@ -198,6 +261,9 @@ static int mqtt_online(void * priv)
 					continue;
 				break;
 			case HW_INPUT_SWITCH:
+				if (!hw->in.switchs.l)
+					continue;
+				break;
 			case HW_INPUT_NONE:
 			default:
 				continue;
@@ -360,10 +426,14 @@ static void mqtt_exit(void * priv)
 	for (id = 0; (id < hw->in.temps.l); id++)
 		free((void *)hw->in.temps.all[id].name);
 
+	for (id = 0; (id < hw->in.switchs.l); id++)
+		free((void *)hw->in.switchs.all[id].name);
+
 	for (id = 0; (id < hw->out.rels.l); id++)
 		free((void *)hw->out.rels.all[id].name);
 
 	free(hw->in.temps.all);
+	free(hw->in.switchs.all);
 	free(hw->out.rels.all);
 
 	free(hw);
@@ -450,6 +520,8 @@ static const char * mqtt_input_name(void * const priv, const enum e_hw_input_typ
 			str = (inid >= hw->in.temps.l) ? NULL : hw->in.temps.all[inid].name;
 			break;
 		case HW_INPUT_SWITCH:
+			str = (inid >= hw->in.switchs.l) ? NULL : hw->in.switchs.all[inid].name;
+			break;
 		case HW_OUTPUT_NONE:
 		default:
 			str = NULL;
@@ -472,6 +544,7 @@ int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, con
 	struct s_mqtt_pdata * restrict const hw = priv;
 	union {
 		struct s_mqtt_temperature * t;
+		struct s_mqtt_switch * s;
 	} u;
 
 	assert(hw && value);
@@ -486,6 +559,13 @@ int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, con
 			value->temperature = atomic_load_explicit(&u.t->run.value, memory_order_relaxed);
 			break;
 		case HW_INPUT_SWITCH:
+			if (unlikely((inid >= hw->in.switchs.l)))
+				return (-EINVALID);
+			u.s = &hw->in.switchs.all[inid];
+			if (unlikely(!u.s->set.configured))
+				return (-ENOTCONFIGURED);
+			value->inswitch = atomic_load_explicit(&u.s->run.state, memory_order_relaxed);
+			break;
 		case HW_INPUT_NONE:
 		default:
 			return (-EINVALID);
@@ -517,6 +597,12 @@ static int mqtt_input_time_get(void * const priv, const enum e_hw_input_type typ
 			*ctime = atomic_load_explicit(&hw->in.temps.all[inid].run.tstamp, memory_order_relaxed);
 			break;
 		case HW_INPUT_SWITCH:
+			if (unlikely((inid >= hw->in.switchs.l)))
+				return (-EINVALID);
+			if (unlikely(!hw->in.switchs.all[inid].set.configured))
+				return (-ENOTCONFIGURED);
+			*ctime = atomic_load_explicit(&hw->in.switchs.all[inid].run.tstamp, memory_order_relaxed);
+			break;
 		case HW_INPUT_NONE:
 		default:
 			return (-EINVALID);
@@ -555,6 +641,15 @@ int mqtt_input_ibn(void * const priv, const enum e_hw_input_type type, const cha
 			}
 			break;
 		case HW_INPUT_SWITCH:
+			for (id = 0; (id < hw->in.switchs.l); id++) {
+				if (!hw->in.switchs.all[id].set.configured)
+					continue;
+				if (!strcmp(hw->in.switchs.all[id].name, name)) {
+					ret = (int)id;
+					break;
+				}
+			}
+			break;
 		case HW_INPUT_NONE:
 		default:
 			ret = -EINVALID;
