@@ -425,7 +425,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
  * @param nparsers the number of available parsers in parsers[]
  * @return -ENOTFOUND if a required parser didn't match, ALL_OK otherwise
  */
-int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
+static int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
 {
 	const struct s_filecfg_parser_nodelist *list;
 	unsigned int i;

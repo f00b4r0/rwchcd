@@ -49,7 +49,7 @@ int filecfg_dhwt_params_parse(void * restrict const priv, const struct s_filecfg
 		{ NODEINT|NODEDUR,	"limit_chargetime",	false,	fcp_tk_s_dhwt_params_limit_chargetime,	NULL, },
 	};
 
-	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 
 	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
 }

@@ -52,7 +52,7 @@ int filecfg_hcircuit_params_parse(void * restrict const priv, const struct s_fil
 		{ NODEFLT|NODEINT,	"temp_inoffset",	false,	fcp_temp_s_hcircuit_params_temp_inoffset,	NULL, },
 	};
 
-	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 
 	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
 }

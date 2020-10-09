@@ -81,7 +81,7 @@ int filecfg_outputs_parse(void * restrict const priv, const struct s_filecfg_par
 	struct s_outputs * outputs = &Outputs;
 	int ret;
 
-	ret = filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
