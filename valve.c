@@ -23,8 +23,9 @@
 #include <string.h>	// memset
 
 #include "valve.h"
-#include "hardware.h"
 #include "lib.h"
+#include "inputs.h"
+#include "outputs.h"
 
 
 /**
@@ -120,13 +121,13 @@ static int v_pi_online(struct s_valve * const valve)
 	}
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_out, NULL);
 	if (ALL_OK != ret) {
 		pr_err(_("\"%s\": Problem with output temperature sensor"), valve->name);
 		return (ret);
 	}
 
-	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_hot, NULL);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_hot, NULL);
 	if (ALL_OK != ret)
 		pr_err(_("\"%s\": Problem with hot input temperature sensor"), valve->name);
 
@@ -186,7 +187,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	vpriv->run.last_time = now;
 
 	// get current outpout
-	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_out, &tempout);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -198,12 +199,12 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	}
 
 	// get current high input
-	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_hot, &tempin_h);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_hot, &tempin_h);
 	if (ALL_OK != ret)
 		return (ret);
 
 	// if we don't have a sensor for low input, guesstimate it
-	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_cold, &tempin_l);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_cold, &tempin_l);
 	if (ALL_OK != ret)
 		tempin_l = tempin_h - vpriv->set.Ksmax;
 
@@ -328,7 +329,7 @@ static int v_bangbang_online(struct s_valve * const valve)
 	assert(valve);
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_out, NULL);
 	if (ALL_OK != ret)
 		pr_err(_("\"%s\": Problem with output temperature sensor"), valve->name);
 
@@ -348,7 +349,7 @@ static int v_bangbang_tcontrol(struct s_valve * const valve, const temp_t target
 	int ret;
 	temp_t tempout;
 
-	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_out, &tempout);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -383,7 +384,7 @@ static int v_sapprox_online(struct s_valve * const valve)
 	}
 
 	// ensure required sensors are configured
-	ret = hardware_sensor_clone_time(valve->set.tset.tmix.tid_out, NULL);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_out, NULL);
 	if (ALL_OK != ret)
 		pr_err(_("\"%s\": Problem with output temperature sensor"), valve->name);
 
@@ -423,7 +424,7 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 
 	vpriv->run.last_time = now;
 
-	ret = hardware_sensor_clone_temp(valve->set.tset.tmix.tid_out, &tempout);
+	ret = inputs_temperature_get(valve->set.tset.tmix.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
 
@@ -452,12 +453,12 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
  */
 static int valve_m3way_online(struct s_valve * const valve)
 {
-	if (!hardware_relay_name(valve->set.mset.m3way.rid_open)) {
+	if (!outputs_relay_name(valve->set.mset.m3way.rid_open)) {
 		pr_err(_("\"%s\": Invalid relay ID for motor open"), valve->name);
 		return (-EMISCONFIGURED);
 	}
 
-	if (!hardware_relay_name(valve->set.mset.m3way.rid_close)) {
+	if (!outputs_relay_name(valve->set.mset.m3way.rid_close)) {
 		pr_err(_("\"%s\": Invalid relay ID for motor close"), valve->name);
 		return (-EMISCONFIGURED);
 	}
@@ -472,7 +473,7 @@ static int valve_m3way_online(struct s_valve * const valve)
  */
 static int valve_m2way_online(struct s_valve * const valve)
 {
-	if (!hardware_relay_name(valve->set.mset.m2way.rid_trigger)) {
+	if (!outputs_relay_name(valve->set.mset.m2way.rid_trigger)) {
 		pr_err(_("\"%s\": Invalid relay ID for motor trigger"), valve->name);
 		return (-EMISCONFIGURED);
 	}
@@ -600,8 +601,8 @@ int valve_offline(struct s_valve * const valve)
 
 	// stop the valve uncondiditonally
 	if (VA_M_3WAY == valve->set.motor) {
-		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
-		(void)!hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+		(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_open, OFF);
+		(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_close, OFF);
 	}
 
 	memset(&valve->run, 0x00, sizeof(valve->run));
@@ -729,19 +730,19 @@ int valve_run(struct s_valve * const valve)
 		if (VA_M_3WAY == valve->set.motor) {
 			switch (valve->run.request_action) {
 				case OPEN:
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);	// break before make
+					ret = outputs_relay_state_set(valve->set.mset.m3way.rid_close, OFF);	// break before make
 					if (unlikely(ALL_OK != ret))
 						goto fail;
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, ON, 0);
+					ret = outputs_relay_state_set(valve->set.mset.m3way.rid_open, ON);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = OPEN;
 					break;
 				case CLOSE:
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);	// break before make
+					ret = outputs_relay_state_set(valve->set.mset.m3way.rid_open, OFF);	// break before make
 					if (unlikely(ALL_OK != ret))
 						goto fail;
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, ON, 0);
+					ret = outputs_relay_state_set(valve->set.mset.m3way.rid_close, ON);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = CLOSE;
@@ -750,10 +751,10 @@ int valve_run(struct s_valve * const valve)
 					ret = -EINVALID;
 					// fallthrough
 				case STOP:
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_open, OFF, 0);
+					ret = outputs_relay_state_set(valve->set.mset.m3way.rid_open, OFF);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
-					ret = hardware_relay_set_state(valve->set.mset.m3way.rid_close, OFF, 0);
+					ret = outputs_relay_state_set(valve->set.mset.m3way.rid_close, OFF);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = STOP;
@@ -764,20 +765,20 @@ int valve_run(struct s_valve * const valve)
 			m2wtopens = valve->set.mset.m2way.trigger_opens;
 			switch (valve->run.request_action) {
 				case OPEN:
-					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, m2wtopens, 0);
+					ret = outputs_relay_state_set(valve->set.mset.m2way.rid_trigger, m2wtopens);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = OPEN;
 					break;
 				case CLOSE:
-					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, !m2wtopens, 0);
+					ret = outputs_relay_state_set(valve->set.mset.m2way.rid_trigger, !m2wtopens);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = CLOSE;
 					break;
 				default:
 				case STOP:	// there's no way to "stop" a 2way motor, but for compatibility with the rest of the API we unconditionally turn off the relay
-					ret = hardware_relay_set_state(valve->set.mset.m2way.rid_trigger, OFF, 0);
+					ret = outputs_relay_state_set(valve->set.mset.m2way.rid_trigger, OFF);
 					if (unlikely(ALL_OK != ret))
 						goto fail;
 					valve->run.actual_action = STOP;

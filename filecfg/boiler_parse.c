@@ -15,6 +15,8 @@
 #include "boiler.h"
 #include "filecfg_parser.h"
 #include "heatsource_parse.h"
+#include "inputs_parse.h"
+#include "outputs_parse.h"
 
 #include "plant.h"
 
@@ -25,27 +27,18 @@ FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_tmin)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_treturnmin)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, t_freeze)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_boiler_priv, burner_min_time)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_return)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_boiler_priv, tid_boiler)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_boiler_priv, tid_boiler_return)
+FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_boiler_priv, rid_burner_1)
+FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_boiler_priv, rid_burner_2)
 
-static int fcp_hs_boiler_idle_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_boiler_priv * restrict const boiler = priv;
-	const char * str = node->value.stringval;
+const char * idle_mode_str[] = {
+	[IDLE_NEVER]		= "never",
+	[IDLE_FROSTONLY]	= "frostonly",
+	[IDLE_ALWAYS]		= "always",
+};
 
-	if	(!strcmp(str, "never"))
-		boiler->set.idle_mode = IDLE_NEVER;
-	else if (!strcmp(str, "frostonly"))
-		boiler->set.idle_mode = IDLE_FROSTONLY;
-	else if (!strcmp(str, "always"))
-		boiler->set.idle_mode = IDLE_ALWAYS;
-	else
-		return (-EINVALID);
-
-	return (ALL_OK);
-}
+FILECFG_PARSER_ENUM_PARSE_SET_FUNC(idle_mode_str, s_boiler_priv, idle_mode)
 
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, pump_load)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, valve_ret)
@@ -53,7 +46,7 @@ FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, val
 int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,		"idle_mode",		false,	fcp_hs_boiler_idle_mode,		NULL, },
+		{ NODESTR,		"idle_mode",		false,	fcp_enum_s_boiler_priv_idle_mode,	NULL, },
 		{ NODEFLT|NODEINT,	"hysteresis",		true,	fcp_temp_s_boiler_priv_hysteresis,	NULL, },
 		{ NODEFLT|NODEINT,	"limit_thardmax",	true,	fcp_temp_s_boiler_priv_limit_thardmax,	NULL, },
 		{ NODEFLT|NODEINT,	"limit_tmax",		false,	fcp_temp_s_boiler_priv_limit_tmax,	NULL, },
@@ -61,10 +54,10 @@ int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filec
 		{ NODEFLT|NODEINT,	"limit_treturnmin",	false,	fcp_temp_s_boiler_priv_limit_treturnmin, NULL, },
 		{ NODEFLT|NODEINT,	"t_freeze",		true,	fcp_temp_s_boiler_priv_t_freeze,	NULL, },
 		{ NODEINT|NODEDUR,	"burner_min_time",	false,	fcp_tk_s_boiler_priv_burner_min_time,	NULL, },
-		{ NODELST,		"tid_boiler",		true,	fcp_tid_s_boiler_priv_tid_boiler,	NULL, },
-		{ NODELST,		"tid_boiler_return",	false,	fcp_tid_s_boiler_priv_tid_boiler_return, NULL, },
-		{ NODELST,		"rid_burner_1",		true,	fcp_rid_s_boiler_priv_rid_burner_1,	NULL, },
-		{ NODELST,		"rid_burner_2",		false,	fcp_rid_s_boiler_priv_rid_burner_2,	NULL, },
+		{ NODESTR,		"tid_boiler",		true,	fcp_inputs_temperature_s_boiler_priv_tid_boiler,	NULL, },
+		{ NODESTR,		"tid_boiler_return",	false,	fcp_inputs_temperature_s_boiler_priv_tid_boiler_return, NULL, },
+		{ NODESTR,		"rid_burner_1",		true,	fcp_outputs_relay_s_boiler_priv_rid_burner_1,	NULL, },
+		{ NODESTR,		"rid_burner_2",		false,	fcp_outputs_relay_s_boiler_priv_rid_burner_2,	NULL, },
 		{ NODESTR,		"pump_load",		false,	fcp_pump_s_boiler_priv_ppump_load,	NULL, },
 		{ NODESTR,		"valve_ret",		false,	fcp_valve_s_boiler_priv_pvalve_ret,	NULL, },
 	};

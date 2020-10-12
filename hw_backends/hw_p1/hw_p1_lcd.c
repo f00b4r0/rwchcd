@@ -253,7 +253,7 @@ int hw_p1_lcd_init(struct s_hw_p1_lcd * const lcd)
 	lcd->L2mngd = false;
 	lcd->L2mngd_prev = false;
 	lcd->sysmchg = false;
-	lcd->sensor = 1;
+	lcd->sensor = 0;
 
 	memset(lcd->Line1Buf, ' ', LCD_LINELEN);
 	memset(lcd->Line1Cur, ' ', LCD_LINELEN);
@@ -346,22 +346,22 @@ static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 	return msg;
 }
 
-int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone);
+int hw_p1_input_value_get(void * const priv, const int type, const uint_fast8_t inid, void * const value);
 //* XXX quick hack for LCD
-static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, const sid_t tempid)
+static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t tempid)
 {
 	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
 	temp_t temp;
 	float celsius;
 	int ret;
 
-	ret = hw_p1_sensor_clone_temp(hw, tempid, &temp);
+	ret = hw_p1_input_value_get(hw, 1, tempid, &temp);
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISION))
  #error Non representable minimum temperature
 #endif
 
-	snprintf(snpbuf, 4, "%2d:", tempid);	// print in human readable
+	snprintf(snpbuf, 4, "%2d:", hw->Sensors[tempid].set.channel);	// print in human readable
 
 	if (-ESENSORDISCON == ret)
 		strncpy(snpbuf+3, _("DISCON"), 6);
@@ -422,7 +422,7 @@ int hw_p1_lcd_reset(struct s_hw_p1_lcd * const lcd)
  * @return exec status
  * @warning no sanitization on tempid
  */
-int hw_p1_lcd_set_tempid(struct s_hw_p1_lcd * const lcd, const sid_t tempid)
+int hw_p1_lcd_set_tempid(struct s_hw_p1_lcd * const lcd, const uint_fast8_t tempid)
 {
 	if (!lcd->online)
 		return (-EOFFLINE);

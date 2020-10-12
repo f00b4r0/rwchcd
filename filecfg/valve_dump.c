@@ -14,8 +14,8 @@
 #include "valve_dump.h"
 #include "filecfg_dump.h"
 #include "lib.h"
-#include "hardware.h"
-
+#include "inputs.h"
+#include "outputs.h"
 
 static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve __attribute__((unused)))
 {
@@ -102,11 +102,11 @@ static int filecfg_valve_tmix_dump(const struct s_valve * restrict const valve)
 {
 	if (FCD_Exhaustive || valve->set.tset.tmix.tdeadzone)
 		filecfg_dump_deltaK("tdeadzone", valve->set.tset.tmix.tdeadzone);
-	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tset.tmix.tid_hot))
-		filecfg_dump_tempid("tid_hot", valve->set.tset.tmix.tid_hot);
-	if (FCD_Exhaustive || hardware_sensor_name(valve->set.tset.tmix.tid_cold))
-		filecfg_dump_tempid("tid_cold", valve->set.tset.tmix.tid_cold);
-	filecfg_dump_tempid("tid_out", valve->set.tset.tmix.tid_out);		// mandatory
+	if (FCD_Exhaustive || inputs_temperature_name(valve->set.tset.tmix.tid_hot))
+		filecfg_dump_nodestr("tid_hot", inputs_temperature_name(valve->set.tset.tmix.tid_hot));
+	if (FCD_Exhaustive || inputs_temperature_name(valve->set.tset.tmix.tid_cold))
+		filecfg_dump_nodestr("tid_cold", inputs_temperature_name(valve->set.tset.tmix.tid_cold));
+	filecfg_dump_nodestr("tid_out", inputs_temperature_name(valve->set.tset.tmix.tid_out));	// mandatory
 
 	filecfg_iprintf("algo");
 	return (filecfg_valve_algo_dump(valve));			// mandatory
@@ -155,15 +155,15 @@ static int filecfg_valve_type_dump(const struct s_valve * restrict const valve)
 
 static int filecfg_valve_m3way_dump(const struct s_valve * restrict const valve)
 {
-	filecfg_dump_relid("rid_open", valve->set.mset.m3way.rid_open);		// mandatory
-	filecfg_dump_relid("rid_close", valve->set.mset.m3way.rid_close);	// mandatory
+	filecfg_dump_nodestr("rid_open", outputs_relay_name(valve->set.mset.m3way.rid_open));	// mandatory
+	filecfg_dump_nodestr("rid_close", outputs_relay_name(valve->set.mset.m3way.rid_close));	// mandatory
 
 	return (ALL_OK);
 }
 
 static int filecfg_valve_m2way_dump(const struct s_valve * restrict const valve)
 {
-	filecfg_dump_relid("rid_trigger", valve->set.mset.m2way.rid_trigger);		// mandatory
+	filecfg_dump_nodestr("rid_trigger", outputs_relay_name(valve->set.mset.m2way.rid_trigger));	// mandatory
 	filecfg_dump_nodebool("trigger_opens", valve->set.mset.m2way.trigger_opens);	// mandatory
 
 	return (ALL_OK);

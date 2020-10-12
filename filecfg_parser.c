@@ -35,13 +35,7 @@
  * - All `temp_t` values must be expressed in Celsius degrees (integer or decimal accepted).
  * - All `valves_`, `pump_` and `bmodel` settings expect a quoted string referencing the name of the related item.
  * - All `schedid_t` settings expect a quoted string referencing the name of the target schedule.
- * - All `rid_` and `tid_` are specified as a block specifying the backend name and the name of the relay or sensor within that backend. For instance:
-\verbatim
- rid_open {
- 	backend "prototype";
- 	name "v_open";
- };
-\endverbatim
+ * - All `itid_t` and `orid_t` settings expect a quoted string referencing the name of the target input or output matching the expected type (temperature, relay).
  */
 
 #include <stdlib.h>
@@ -57,6 +51,8 @@
 #include "filecfg/scheduler_parse.h"
 #include "filecfg/storage_parse.h"
 #include "filecfg/log_parse.h"
+#include "filecfg/inputs_parse.h"
+#include "filecfg/outputs_parse.h"
 
 #include "runtime.h"
 
@@ -76,6 +72,9 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 	float fv; int iv;
 
 	assert((NODEFLT|NODEINT) & n->type);
+
+	if (n->children)
+		return(-ENOTWANTED);
 
 	if (NODEFLT == n->type) {
 		fv = n->value.floatval;
@@ -154,118 +153,12 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 		exit(-1);
 	}
 
+	if (next)
+		next->prev = listelmt;
 	listelmt->next = next;
 	listelmt->node = node;
 
 	return (listelmt);
-}
-
-struct s_fcp_hwbkend {
-	struct {
-		const char *backend;
-		const char *name;
-	} set;
-};
-
-FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, backend)
-FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, name)
-
-/**
- * Parse a temperature sensor configuration reference.
- * @param priv a pointer to a tempid_t structure which will be populated
- * @param node the configuration node to populate from
- * @return exec status
- */
-int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	tempid_t * restrict const tempid = priv;
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
-		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },
-	};
-	struct s_fcp_hwbkend p;
-	int ret;
-
-	assert(NODELST == node->type);
-
-	dbgmsg(3, 1, "Trying \"%s\"", node->name);
-
-	// don't report error on empty config
-	if (!node->children) {
-		dbgmsg(3, 1, "empty");
-		return (ALL_OK);
-	}
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	ret = filecfg_parser_run_parsers(&p, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	ret = hw_backends_sensor_fbn(tempid, p.set.backend, p.set.name);
-	switch (ret) {
-		case ALL_OK:
-			break;
-		case -ENOTFOUND:
-			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or sensor \"%s\" not found"), node->name, node->lineno, p.set.backend, p.set.name);
-			break;
-		default:	// should never happen
-			dbgerr("hw_backends_sensor_fbn() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
-			break;
-	}
-
-	return (ret);
-}
-
-/**
- * Parse a relay configuration reference.
- * @param priv a pointer to a relid_t structure which will be populated
- * @param node the configuration node to populate from
- * @return exec status
- */
-int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	relid_t * restrict const relid = priv;
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,	"backend",	true,	fcp_str_s_fcp_hwbkend_backend,	NULL, },
-		{ NODESTR,	"name",		true,	fcp_str_s_fcp_hwbkend_name,	NULL, },
-	};
-	struct s_fcp_hwbkend p;
-	int ret;
-
-	assert(NODELST == node->type);
-
-	dbgmsg(3, 1, "Trying \"%s\"", node->name);
-
-	// don't report error on empty config
-	if (!node->children) {
-		dbgmsg(3, 1, "empty");
-		return (ALL_OK);
-	}
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	ret = filecfg_parser_run_parsers(&p, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-	ret = hw_backends_relay_fbn(relid, p.set.backend, p.set.name);
-	switch (ret) {
-		case ALL_OK:
-			break;
-		case -ENOTFOUND:
-			filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: backend \"%s\" and/or relay \"%s\" not found"), node->name, node->lineno, p.set.backend, p.set.name);
-			break;
-		default:	// should never happen
-			dbgerr("hw_backends_relay_fbn() failed with '%d', node \"%s\" closing at line %d", ret, node->name, node->lineno);
-			break;
-	}
-
-	return (ret);
 }
 
 static int sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -287,6 +180,9 @@ static int sysmode_parse(void * restrict const priv, const struct s_filecfg_pars
 	enum e_systemmode sm = SYS_UNKNOWN;
 	const char * restrict n;
 	unsigned int i;
+
+	if (node->children)
+		return(-ENOTWANTED);
 
 	n = node->value.stringval;
 
@@ -357,6 +253,7 @@ static int runtime_config_parse(void * restrict const priv, const struct s_filec
  * @param ntype the expected type for sibling nodes
  * @param parser the parser to apply to each sibling node
  * @return exec status
+ * @note this function will parse siblings in the same order they appear in the config file.
  */
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist,
 				  const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser)
@@ -366,7 +263,10 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	const char * sname;
 	int ret = -EEMPTY;	// immediate return if nodelist is empty
 
-	for (nlist = nodelist; nlist; nlist = nlist->next) {
+	// by construction the bison parser creates a reverse-ordered list (wrt config file natural order): reverse it
+	for (nlist = nodelist; nlist && nlist->next; nlist = nlist->next);
+
+	for (; nlist; nlist = nlist->prev) {
 		node = nlist->node;
 		if (ntype != node->type) {
 			fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d\n"), node->name, node->lineno);
@@ -401,6 +301,29 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 }
 
 /**
+ * Count a list of sibling nodes.
+ * @param nodelist the list of sibling nodes
+ * @param nname the expected name for sibling nodes
+ * @return number of siblings found
+ */
+unsigned int filecfg_parser_count_siblings(const struct s_filecfg_parser_nodelist * const nodelist, const char * nname)
+{
+	const struct s_filecfg_parser_nodelist *nlist;
+	const struct s_filecfg_parser_node *node;
+	unsigned int i = 0;
+
+	for (nlist = nodelist; nlist; nlist = nlist->next) {
+		node = nlist->node;
+		if (strcmp(nname, node->name))
+			continue;
+
+		i++;
+	}
+
+	return (i);
+}
+
+/**
  * Parse a runmode configuration reference.
  * @param priv a pointer to a e_runmode variable which will be populated
  * @param node the configuration node to populate from
@@ -426,6 +349,9 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 	unsigned int i;
 
 	assert(NODESTR == node->type);
+
+	if (node->children)
+		return(-ENOTWANTED);
 
 	n = node->value.stringval;
 
@@ -479,8 +405,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
 		}
 	}
 	if (!matched) {
-		// dbgmsg as there can be legit mismatch e.g. when parsing foreign backend config
-		dbgmsg(3, 1, "Ignoring unknown node \"%s\" closing at line %d", node->name, node->lineno);
+		fprintf(stderr, "CONFIG WARNING! Ignoring unknown node \"%s\" closing at line %d\n", node->name, node->lineno);
 		return (-EUNKNOWN);
 	}
 
@@ -494,7 +419,7 @@ int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, s
  * @param nparsers the number of available parsers in parsers[]
  * @return -ENOTFOUND if a required parser didn't match, ALL_OK otherwise
  */
-int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
+static int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
 {
 	const struct s_filecfg_parser_nodelist *list;
 	unsigned int i;
@@ -572,12 +497,14 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
  * Process the root list of config nodes.
  * This routine is used by the Bison parser.
  * @param nodelist the root nodelist for all the configuration nodes
- * @return 0 on success, 1 on failure
+ * @return 0 on success, 1 on failure (bison requirement)
  */
 int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const nodelist)
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST,	"backends",	false,	filecfg_backends_parse, NULL, },
+		{ NODELST,	"inputs",	false,	filecfg_inputs_parse,	NULL, },
+		{ NODELST,	"outputs",	false,	filecfg_outputs_parse,	NULL, },
 		{ NODELST,	"scheduler",	false,	filecfg_scheduler_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST,	"defconfig",	false,	runtime_config_parse,	NULL, },
 		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },
@@ -608,6 +535,9 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 
 fail:
 	switch (ret) {
+		case -ENOTWANTED:
+			pr_err(_("Unknown extra data in config!"));
+			break;
 		case -EOOM:
 			pr_err(_("Out of memory while parsing configuration!"));
 			break;

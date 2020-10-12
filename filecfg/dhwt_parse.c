@@ -13,6 +13,8 @@
 
 #include <string.h>	// strlen/strcmp
 
+#include "outputs_parse.h"
+#include "inputs_parse.h"
 #include "dhwt_parse.h"
 #include "filecfg_parser.h"
 #include "dhwt.h"
@@ -47,7 +49,7 @@ int filecfg_dhwt_params_parse(void * restrict const priv, const struct s_filecfg
 		{ NODEINT|NODEDUR,	"limit_chargetime",	false,	fcp_tk_s_dhwt_params_limit_chargetime,	NULL, },
 	};
 
-	filecfg_parser_match_nodelist(node->children, parsers, ARRAY_SIZE(parsers));
+	filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 
 	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
 }
@@ -64,53 +66,33 @@ FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, legionella_recycle)
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, electric_recycle)
 FILECFG_PARSER_PRIO_PARSE_SET_FUNC(s_dhwt, prio)
 FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_dhwt, runmode)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_bottom)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_top)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_win)
-FILECFG_PARSER_TID_PARSE_SET_FUNC(s_dhwt, tid_wout)
-FILECFG_PARSER_RID_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_bottom)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_top)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_win)
+FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_wout)
+FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_recycle)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_hwisol)
 
-static int fcp_dhwt_cprio(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_dhwt * restrict const dhwt = priv;
-	const char * str = node->value.stringval;
+static const char * dhwt_cprio_str[] = {
+	[DHWTP_PARALMAX]	= "paralmax",
+	[DHWTP_PARALDHW]	= "paraldhw",
+	[DHWTP_SLIDMAX]		= "slidmax",
+	[DHWTP_SLIDDHW]		= "sliddhw",
+	[DHWTP_ABSOLUTE]	= "absolute",
+};
 
-	if	(!strcmp(str, "paralmax"))
-		dhwt->set.dhwt_cprio = DHWTP_PARALMAX;
-	else if (!strcmp(str, "paraldhw"))
-		dhwt->set.dhwt_cprio = DHWTP_PARALDHW;
-	else if (!strcmp(str, "slidmax"))
-		dhwt->set.dhwt_cprio = DHWTP_SLIDMAX;
-	else if (!strcmp(str, "sliddhw"))
-		dhwt->set.dhwt_cprio = DHWTP_SLIDDHW;
-	else if (!strcmp(str, "absolute"))
-		dhwt->set.dhwt_cprio = DHWTP_ABSOLUTE;
-	else
-		return (-EINVALID);
+FILECFG_PARSER_ENUM_PARSE_SET_FUNC(dhwt_cprio_str, s_dhwt, dhwt_cprio)
 
-	return (ALL_OK);
-}
+static const char * dhwt_force_mode_str[] = {
+	[DHWTF_NEVER]		= "never",
+	[DHWTF_FIRST]		= "first",
+	[DHWTF_ALWAYS]		= "always",
+};
 
-static int fcp_dhwt_force_mode(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_dhwt * restrict const dhwt = priv;
-	const char * str = node->value.stringval;
-
-	if	(!strcmp(str, "never"))
-		dhwt->set.force_mode = DHWTF_NEVER;
-	else if (!strcmp(str, "first"))
-		dhwt->set.force_mode = DHWTF_FIRST;
-	else if (!strcmp(str, "always"))
-		dhwt->set.force_mode = DHWTF_ALWAYS;
-	else
-		return (-EINVALID);
-
-	return (ALL_OK);
-}
+FILECFG_PARSER_ENUM_PARSE_SET_FUNC(dhwt_force_mode_str, s_dhwt, force_mode)
 
 static int fcp_dhwt_params(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -128,13 +110,13 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODEINT,	"prio",			false,	fcp_prio_s_dhwt_prio,			NULL, },
 		{ NODESTR,	"schedid",		false,	fcp_schedid_s_dhwt_schedid,		NULL, },
 		{ NODESTR,	"runmode",		true,	fcp_runmode_s_dhwt_runmode,		NULL, },
-		{ NODESTR,	"dhwt_cprio",		false,	fcp_dhwt_cprio,				NULL, },
-		{ NODESTR,	"force_mode",		false,	fcp_dhwt_force_mode,			NULL, },
-		{ NODELST,	"tid_bottom",		false,	fcp_tid_s_dhwt_tid_bottom,		NULL, },
-		{ NODELST,	"tid_top",		false,	fcp_tid_s_dhwt_tid_top,			NULL, },
-		{ NODELST,	"tid_win",		false,	fcp_tid_s_dhwt_tid_win,			NULL, },
-		{ NODELST,	"tid_wout",		false,	fcp_tid_s_dhwt_tid_wout,		NULL, },
-		{ NODELST,	"rid_selfheater",	false,	fcp_rid_s_dhwt_rid_selfheater,		NULL, },
+		{ NODESTR,	"dhwt_cprio",		false,	fcp_enum_s_dhwt_dhwt_cprio,		NULL, },
+		{ NODESTR,	"force_mode",		false,	fcp_enum_s_dhwt_force_mode,		NULL, },
+		{ NODESTR,	"tid_bottom",		false,	fcp_inputs_temperature_s_dhwt_tid_bottom,NULL, },
+		{ NODESTR,	"tid_top",		false,	fcp_inputs_temperature_s_dhwt_tid_top,	NULL, },
+		{ NODESTR,	"tid_win",		false,	fcp_inputs_temperature_s_dhwt_tid_win,	NULL, },
+		{ NODESTR,	"tid_wout",		false,	fcp_inputs_temperature_s_dhwt_tid_wout,	NULL, },
+		{ NODESTR,	"rid_selfheater",	false,	fcp_outputs_relay_s_dhwt_rid_selfheater,NULL, },
 		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },
 		{ NODESTR,	"pump_feed",		false,	fcp_pump_s_dhwt_ppump_feed,		NULL, },
 		{ NODESTR,	"pump_recycle",		false,	fcp_pump_s_dhwt_ppump_recycle,		NULL, },

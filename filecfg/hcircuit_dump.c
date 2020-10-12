@@ -16,8 +16,8 @@
 #include "hcircuit.h"
 #include "pump.h"
 #include "valve.h"
-#include "hardware.h"
 #include "lib.h"
+#include "inputs.h"
 
 #include "scheduler.h"
 #include "models.h"
@@ -148,11 +148,11 @@ int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 	if (FCD_Exhaustive || circuit->set.boost_maxtime)
 		filecfg_dump_tk("boost_maxtime", circuit->set.boost_maxtime);
 
-	filecfg_dump_tempid("tid_outgoing", circuit->set.tid_outgoing);			// mandatory
-	if (FCD_Exhaustive || hardware_sensor_name(circuit->set.tid_return))
-		filecfg_dump_tempid("tid_return", circuit->set.tid_return);
-	if (FCD_Exhaustive || hardware_sensor_name(circuit->set.tid_ambient))
-		filecfg_dump_tempid("tid_ambient", circuit->set.tid_ambient);
+	filecfg_dump_nodestr("tid_outgoing", inputs_temperature_name(circuit->set.tid_outgoing));
+	if (FCD_Exhaustive || inputs_temperature_name(circuit->set.tid_return))
+		filecfg_dump_nodestr("tid_return", inputs_temperature_name(circuit->set.tid_return));
+	if (FCD_Exhaustive || inputs_temperature_name(circuit->set.tid_ambient))
+		filecfg_dump_nodestr("tid_ambient", inputs_temperature_name(circuit->set.tid_ambient));
 
 	filecfg_iprintf("params"); filecfg_hcircuit_params_dump(&circuit->set.params);
 

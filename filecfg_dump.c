@@ -28,6 +28,8 @@
 #include "filecfg/log_dump.h"
 #include "filecfg/plant_dump.h"
 #include "filecfg/backends_dump.h"
+#include "filecfg/inputs_dump.h"
+#include "filecfg/outputs_dump.h"
 
 #define FILECONFIG_NAME		"dumpcfg.txt"	///< target file for configuration dump
 
@@ -109,40 +111,6 @@ int filecfg_ilevel_dec(void)
 int filecfg_dump_nodestr(const char *name, const char *value)
 {
 	return (filecfg_iprintf("%s \"%s\";\n", name, value));
-}
-
-int filecfg_dump_tempid(const char *name, const tempid_t tempid)
-{
-	if (!hardware_sensor_name(tempid)) {
-		filecfg_printf("%s {};\n", name);
-		return (-EINVALID);
-	}
-
-	filecfg_iprintf("%s {\n", name);
-	filecfg_ilevel_inc();
-	filecfg_dump_nodestr("backend", hw_backends_name(tempid.bid));
-	filecfg_dump_nodestr("name", hardware_sensor_name(tempid));
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
-}
-
-int filecfg_dump_relid(const char *name, const relid_t relid)
-{
-	if (!hardware_relay_name(relid)) {
-		filecfg_printf("%s {};\n", name);
-		return (-EINVALID);
-	}
-
-	filecfg_iprintf("%s {\n", name);
-	filecfg_ilevel_inc();
-	filecfg_dump_nodestr("backend", hw_backends_name(relid.bid));
-	filecfg_dump_nodestr("name", hardware_relay_name(relid));
-	filecfg_ilevel_dec();
-	filecfg_iprintf("};\n");
-
-	return (ALL_OK);
 }
 
 /**
@@ -273,6 +241,12 @@ int filecfg_dump(void)
 
 	// dump backends
 	filecfg_backends_dump();
+
+	// dump inputs
+	filecfg_inputs_dump();
+
+	// dump outputs
+	filecfg_outputs_dump();
 
 	// dump runtime config
 	runtime_config_dump(runtime);

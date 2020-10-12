@@ -17,7 +17,8 @@
 
 #include "pump.h"
 #include "valve.h"
-#include "hardware.h"
+#include "inputs.h"
+#include "outputs.h"
 
 int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat)
 {
@@ -64,12 +65,12 @@ int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat)
 	if (FCD_Exhaustive || priv->set.burner_min_time)
 		filecfg_dump_tk("burner_min_time", priv->set.burner_min_time);
 
-	filecfg_dump_tempid("tid_boiler", priv->set.tid_boiler);			// mandatory
-	if (FCD_Exhaustive || hardware_sensor_name(priv->set.tid_boiler_return))
-		filecfg_dump_tempid("tid_boiler_return", priv->set.tid_boiler_return);
-	filecfg_dump_relid("rid_burner_1", priv->set.rid_burner_1);			// mandatory
-	if (FCD_Exhaustive || hardware_relay_name(priv->set.rid_burner_2))
-		filecfg_dump_relid("rid_burner_2", priv->set.rid_burner_2);
+	filecfg_dump_nodestr("tid_boiler", inputs_temperature_name(priv->set.tid_boiler));	// mandatory
+	if (FCD_Exhaustive || inputs_temperature_name(priv->set.tid_boiler_return))
+		filecfg_dump_nodestr("tid_boiler_return", inputs_temperature_name(priv->set.tid_boiler_return));
+	filecfg_dump_nodestr("rid_burner_1", outputs_relay_name(priv->set.rid_burner_1));	// mandatory
+	if (FCD_Exhaustive || outputs_relay_name(priv->set.rid_burner_2))
+		filecfg_dump_nodestr("rid_burner_2", outputs_relay_name(priv->set.rid_burner_2));
 
 	if (FCD_Exhaustive || priv->set.p.pump_load)
 		filecfg_dump_nodestr("pump_load", priv->set.p.pump_load ? priv->set.p.pump_load->name : "");

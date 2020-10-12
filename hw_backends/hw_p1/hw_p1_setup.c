@@ -13,27 +13,30 @@
 
 #include <string.h>	// memset
 #include <assert.h>
+#include <stdlib.h>
 
+#include "timekeep.h"
 #include "hw_p1_setup.h"
 
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0		///< RaspberryPi SPI channel 0
 
-static struct s_hw_p1_pdata Hardware;	///< Prototype 1 private data
-
 /**
- * Initialize local data.
- * Cannot fail.
- * @return #Hardware
+ * Allocate & initialize local HW P1 data.
+ * @return pointer to HW P1 private data
  */
 void * hw_p1_setup_new(void)
 {
-	memset(&Hardware, 0x0, sizeof(Hardware));
-	
-	Hardware.spi.set.chan = SPICHAN;
-	Hardware.spi.set.clock = SPICLOCK;
+	struct s_hw_p1_pdata * hw;
 
-	return (&Hardware);
+	hw = calloc(1, sizeof(*hw));
+	if (!hw)
+		return (NULL);
+
+	hw->spi.set.chan = SPICHAN;
+	hw->spi.set.clock = SPICLOCK;
+
+	return (hw);
 }
 
 /**
@@ -60,7 +63,7 @@ int hw_p1_setup_setbl(struct s_hw_p1_pdata * restrict const hw, const uint8_t pe
  * @param lastid last connected sensor id
  * @return exec status
  */
-int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const sid_t lastid)
+int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t lastid)
 {
 	assert(hw);
 
@@ -96,47 +99,63 @@ int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint
  * @param sensor an allocated sensor structure which will be used as the configuration source for the new sensor
  * @return exec status
  */
-int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_sensor * restrict const sensor)
+int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_p1_sensor * restrict const sensor)
 {
-	sid_t id;
+	uint_fast8_t id;
+	char * str;
 
 	assert(hw);
 
 	if (!sensor || !sensor->name)
 		return (-EUNKNOWN);
 
-	id = hw_lib_sensor_cfg_get_sid(sensor);
+	id = sensor->set.channel;
 	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
 	id--;	// sensor array indexes from 0
-	if (hw_lib_sensor_is_configured(&hw->Sensors[id]))
+	if (hw->Sensors[id].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_sid_by_name(hw, hw_lib_sensor_get_name(sensor)) > 0)
+	if (hw_p1_sid_by_name(hw, sensor->name) > 0)
 		return (-EEXISTS);
 
-	return (hw_lib_sensor_setup_copy(&hw->Sensors[id], sensor));
+	// ensure valid type
+	if (!hw_p1_sensor_o_to_c(sensor))
+		return (-EUNKNOWN);
+
+	str = strdup(sensor->name);
+	if (!str)
+		return(-EOOM);
+
+	hw->Sensors[id].name = str;
+	hw->Sensors[id].set.channel = sensor->set.channel;
+	hw->Sensors[id].set.type = sensor->set.type;
+	hw->Sensors[id].set.offset = sensor->set.offset;
+	hw->Sensors[id].set.configured = true;
+
+	return (ALL_OK);
 }
 
 /**
  * Deconfigure a temperature sensor.
  * @param hw private hw_p1 hardware data
- * @param id the physical id of the sensor to deconfigure (starting from 1)
+ * @param id the id of the sensor to deconfigure (starting from 0)
  * @return exec status
  */
-int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, const sid_t id)
+int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t id)
 {
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
+	if ((id >= ARRAY_SIZE(hw->Sensors)))
 		return (-EINVALID);
 
-	if (!hw_lib_sensor_is_configured(&hw->Sensors[id-1]))
+	if (!hw->Sensors[id].set.configured)
 		return (-ENOTCONFIGURED);
 
-	hw_lib_sensor_discard(&hw->Sensors[id-1]);
+	free((void *)hw->Sensors[id].name);
+	memset(&hw->Sensors[id], 0x00, sizeof(hw->Sensors[id]));
 
 	return (ALL_OK);
 }
@@ -148,58 +167,70 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
  * @param relay an allocated relay structure which will be used as the configuration source for the new relay
  * @return exec status
  */
-int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_relay * restrict const relay)
+int hw_p1_setup_relay_request(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_p1_relay * restrict const relay)
 {
-	rid_t id;
+	char * str;
+	uint_fast8_t id;
 
 	assert(hw);
 
 	if (!relay || !relay->name)
 		return (-EUNKNOWN);
 
-	id = hw_lib_relay_cfg_get_rid(relay);
+	id = relay->set.channel;
 	if (!id || (id > ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
 	id--;	// relay array indexes from 0
-	if (hw_lib_relay_is_configured(&hw->Relays[id-1]))
+	if (hw->Relays[id].set.configured)
 		return (-EEXISTS);
 
 	// ensure unique name
-	if (hw_p1_rid_by_name(hw, hw_lib_relay_get_name(relay)) > 0)
+	if (hw_p1_rid_by_name(hw, relay->name) > 0)
 		return (-EEXISTS);
 
-	return (hw_lib_relay_setup_copy(&hw->Relays[id], relay));
+	str = strdup(relay->name);
+	if (!str)
+		return(-EOOM);
+
+	hw->Relays[id].name = str;
+	hw->Relays[id].set.failstate = relay->set.failstate;	// register failover state
+	hw->Relays[id].set.channel = relay->set.channel;
+	hw->Relays[id].run.state_since = timekeep_now();	// relay is by definition OFF since "now"
+	hw->Relays[id].set.configured = true;
+
+	return (ALL_OK);
 }
 
 /**
  * Release a hardware relay.
  * @param hw private hw_p1 hardware data
  * Frees and cleans up the target hardware relay.
- * @param id target relay id (starting from 1)
+ * @param id target relay id (starting from 0)
  * @return exec status
  */
-int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const rid_t id)
+int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t id)
 {
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
+	if ((id >= ARRAY_SIZE(hw->Relays)))
 		return (-EINVALID);
 
-	if (!hw_lib_relay_is_configured(&hw->Relays[id-1]))
+	if (!hw->Relays[id].set.configured)
 		return (-ENOTCONFIGURED);
 
-	hw_lib_relay_discard(&hw->Relays[id-1]);
+	free((void *)hw->Relays[id].name);
+
+	memset(&hw->Relays[id], 0x00, sizeof(hw->Relays[id]));
 
 	return (ALL_OK);
 }
 
 /**
- * Fake destructor.
- * For the sake of API consistency, this simulates a destructor
- * to the "allocated" data in hw_p1_setup_new().
+ * HW P1 destructor.
+ * Frees data allocated in hw_p1_setup_new().
  */
 void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw)
 {
-	return;
+	free(hw);
 }

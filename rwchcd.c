@@ -34,7 +34,6 @@
  * - Auto tuning http://controlguru.com/controller-tuning-using-set-point-driven-data/
  * - connection of multiple instances
  * - multiple heatsources + switchover (e.g. wood furnace -> gas/fuel boiler)
- * @todo config reload
  * @todo implement a flexible logic system that would take user-definable conditions
  * and user-selectable actions to trigger custom actions (for more flexible plants),
  * for instance the ability to switch from internal boiler DHWT to external electric DHWT
@@ -63,6 +62,8 @@
 #include "hw_backends.h"
 #include "hardware.h"
 #include "runtime.h"
+#include "inputs.h"
+#include "outputs.h"
 #include "timer.h"
 #include "scheduler.h"
 #include "models.h"
@@ -166,6 +167,20 @@ static int init_process(void)
 		return (ret);
 	}
 
+	/* init inputs - clears data used by config */
+	ret = inputs_init();
+	if (ret) {
+		pr_err(_("Failed to initialize inputs (%d)"), ret);
+		return (ret);
+	}
+
+	/* init outputs - clears data used by config */
+	ret = outputs_init();
+	if (ret) {
+		pr_err(_("Failed to initialize outputs (%d)"), ret);
+		return (ret);
+	}
+
 	// this is where we should call the parser
 	if (!(filecfg_parser_in = fopen(RWCHCD_CONFIG, "r"))) {
 		perror(RWCHCD_CONFIG);
@@ -233,6 +248,8 @@ static void exit_process(void)
 	log_exit();
 	storage_deconfig();
 	hardware_exit();
+	outputs_exit();
+	inputs_exit();
 	models_exit();
 	runtime_exit();
 	hw_backends_exit();

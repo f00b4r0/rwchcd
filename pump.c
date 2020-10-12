@@ -18,7 +18,7 @@
 #include <string.h>	// memset
 
 #include "pump.h"
-#include "hardware.h"
+#include "outputs.h"
 
 /**
  * Create a pump.
@@ -60,7 +60,7 @@ int pump_online(struct s_pump * restrict const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!pump->set.rid_pump.rid) {
+	if (!outputs_relay_name(pump->set.rid_pump)) {
 		pr_err(_("\"%s\": invalid relay id"), pump->name);
 		return (-EMISCONFIGURED);
 	}
@@ -105,7 +105,7 @@ int pump_get_state(const struct s_pump * restrict const pump)
 		return (-EOFFLINE);
 
 	// NOTE we could return remaining cooldown time if necessary
-	return (hardware_relay_get_state(pump->set.rid_pump));
+	return (outputs_relay_state_get(pump->set.rid_pump));
 }
 
 /**
@@ -141,7 +141,7 @@ int pump_offline(struct s_pump * restrict const pump)
 		return (-ENOTCONFIGURED);
 
 	// unconditionally turn pump off
-	(void)!hardware_relay_set_state(pump->set.rid_pump, false, 0);
+	(void)!outputs_relay_state_set(pump->set.rid_pump, false);
 
 	memset(&pump->run, 0x00, sizeof(pump->run));
 	//pump->run.online = false;	// handled by memset
@@ -156,7 +156,8 @@ int pump_offline(struct s_pump * restrict const pump)
  */
 int pump_run(struct s_pump * restrict const pump)
 {
-	timekeep_t cooldown = 0;	// by default, no wait
+	const timekeep_t now = timekeep_now();
+	timekeep_t elapsed;
 	int ret;
 
 	if (unlikely(!pump))
@@ -169,15 +170,18 @@ int pump_run(struct s_pump * restrict const pump)
 
 	// apply cooldown to turn off, only if not forced.
 	// If ongoing cooldown, resume it, otherwise restore default value
-	if (!pump->run.req_on && !pump->run.force_state)
-		cooldown = pump->run.actual_cooldown_time ? pump->run.actual_cooldown_time : pump->set.cooldown_time;
+	if (!pump->run.req_on && !pump->run.force_state) {
+		elapsed = now - pump->run.last_switch;
+		if (elapsed < pump->set.cooldown_time)
+			return (ALL_OK);
+	}
 
 	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
-	ret = hardware_relay_set_state(pump->set.rid_pump, pump->run.req_on, cooldown);
+	ret = outputs_relay_state_set(pump->set.rid_pump, pump->run.req_on);
 	if (unlikely(ret < 0))
 		return (ret);
 
-	pump->run.actual_cooldown_time = (timekeep_t)ret;
+	pump->run.last_switch = now;
 
 	return (ALL_OK);
 }

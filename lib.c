@@ -68,7 +68,7 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 
 	assert(tdt);
 
-	dbgmsg(2, (unlikely(dt < 1)), "WARNING: rounding error. tau: %d, dt: %d", tau, dt);
+	dbgmsg(3, (unlikely(dt < 1)), "WARNING: possible rounding error. tau: %d, dt: %d", tau, dt);
 
 	// assert (dt << TEMPT_MAX), assert (tdt << TEMPT_MAX)
 	return (filtered - (((signed)dt * tdiff + sign(tdiff)*(signed)(tdt)/2) / (signed)(tdt)));

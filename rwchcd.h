@@ -12,6 +12,8 @@
 /**
  * @file
  * Main API.
+ * Within the program, the code assumes that the .set{} members of structures, representing settings, are only modified once during configuration parsing (while
+ * the program runs single-threaded), and considered read-only afterwards. In particular, no atomic operations are performed on these members.
  */
 
 #include <stddef.h>
@@ -106,6 +108,9 @@ enum e_execs {
 	ENOTFOUND,	///< entity not found
 	EUNKNOWN,	///< entity is unknown
 	EEMPTY,		///< entity is empty
+	ETOOBIG,	///< entity is too large
+	ERSTALE,	///< data is stale
+	ENOTWANTED,	///< extra data not wanted
 	EGENERIC,
 };
 
@@ -127,19 +132,6 @@ enum {
 };
 
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
-typedef uint_fast8_t	bid_t;		///< backend id type
-typedef uint_fast8_t	rid_t;		///< relay id type
-typedef uint_fast8_t	sid_t;		///< sensor id type
-/** temperature sensor id. @note struct assignment is used in the code: must not embed pointers */
-typedef struct {
-	bid_t bid;	///< backend id
-	sid_t sid;	///< sensor id - @warning MUST START FROM `1`
-} tempid_t;
-/** relay identifier. @note struct assignment is used in the code: must not embed pointers */
-typedef struct {
-	bid_t bid;	///< backend id
-	rid_t rid;	///< relay id - @warning MUST START FROM `1`
-} relid_t;
 typedef uint_fast16_t	schedid_t;	///< schedule id type
 
 /** Valid run modes */

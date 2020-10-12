@@ -25,7 +25,7 @@ struct s_hw_p1_lcd {
 	bool L2mngd;		///< true if 2nd line is managed by software
 	bool L2mngd_prev;	///< this flag is necessary to account for the fact that the firmware will modify the 2nd line
 	bool sysmchg;		///< true if sysmode change in progress
-	sid_t sensor;		///< current sensor displayed on LCD
+	uint_fast8_t sensor;	///< current sensor displayed on LCD
 	enum e_systemmode newsysmode;	///< upcoming system mode
 	uint8_t Line1Buf[LCD_LINELEN], Line1Cur[LCD_LINELEN];
 	uint8_t Line2Buf[LCD_LINELEN], Line2Cur[LCD_LINELEN];
@@ -34,7 +34,7 @@ struct s_hw_p1_lcd {
 int hw_p1_lcd_init(struct s_hw_p1_lcd * const lcd);
 int hw_p1_lcd_online(struct s_hw_p1_lcd * const lcd);
 int hw_p1_lcd_reset(struct s_hw_p1_lcd * const lcd);
-int hw_p1_lcd_set_tempid(struct s_hw_p1_lcd * const lcd, const sid_t tempid);
+int hw_p1_lcd_set_tempid(struct s_hw_p1_lcd * const lcd, const uint_fast8_t tempid);
 int hw_p1_lcd_sysmode_change(struct s_hw_p1_lcd * const lcd, enum e_systemmode newsysmode);
 int hw_p1_lcd_fade(struct s_hw_p1_spi * const spi);
 int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi, void * restrict const hwpriv);

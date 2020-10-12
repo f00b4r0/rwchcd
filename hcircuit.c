@@ -35,7 +35,7 @@
 #include "valve.h"
 #include "models.h"
 #include "hcircuit.h"
-#include "hardware.h"
+#include "inputs.h"
 #include "lib.h"
 #include "runtime.h"
 #include "log.h"
@@ -297,7 +297,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		return (-EMISCONFIGURED);
 
 	// check that mandatory sensors are set
-	ret = hardware_sensor_clone_time(circuit->set.tid_outgoing, NULL);
+	ret = inputs_temperature_get(circuit->set.tid_outgoing, NULL);
 	if (ret)
 		goto out;
 
@@ -582,7 +582,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
 
 	// Ambient temperature is either read or modelled
-	if (hardware_sensor_clone_temp(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
+	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 												// calculate ambient shift based on measured ambient temp influence in percent
 		ambient_delta = (circuit->set.ambient_factor) * (circuit->run.target_ambient - ambient_temp) / 100;
 	}
@@ -730,7 +730,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		return (-EOFFLINE);
 
 	// safety checks
-	ret = hardware_sensor_clone_temp(circuit->set.tid_outgoing, &curr_temp);
+	ret = inputs_temperature_get(circuit->set.tid_outgoing, &curr_temp);
 	if (unlikely(ALL_OK != ret)) {
 		hcircuit_failsafe(circuit);
 		return (ret);
@@ -868,7 +868,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 		// interference: apply global power shift
 		if (circuit->pdata->run.consumer_shift) {
-			ret = hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
+			ret = inputs_temperature_get(circuit->set.tid_return, &ret_temp);
 			// if we don't have a return temp or if the return temp is higher than the outgoing temp, use 0°C (absolute physical minimum) as reference
 			if ((ALL_OK != ret) || (ret_temp >= water_temp))
 				ret_temp = celsius_to_temp(0);
@@ -894,7 +894,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 #ifdef DEBUG
-	(void)!hardware_sensor_clone_temp(circuit->set.tid_return, &ret_temp);
+	(void)!inputs_temperature_get(circuit->set.tid_return, &ret_temp);
 	dbgmsg(1, 1, "\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
 	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
 	       temp_to_celsius(circuit->run.target_wtemp), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));

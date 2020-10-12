@@ -16,6 +16,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "inputs.h"
 
 /** private data for templaw_bilinear (for 20C ambient target) */
 struct s_tlaw_bilin20C_priv {
@@ -47,9 +48,9 @@ struct s_hcircuit {
 		timekeep_t am_tambient_tK;	///< ambient model: time necessary for 1 Kelvin temperature rise (0 to disable)
 		temp_t tambient_boostdelta;	///< temperature delta applied during boost turn-on (0 to disable)
 		timekeep_t boost_maxtime;	///< maximum duration of transition boost
-		tempid_t tid_outgoing;		///< outgoing temp sensor id for this circuit
-		tempid_t tid_return;		///< return temp sensor id for this circuit
-		tempid_t tid_ambient;		///< ambient temp sensor id related to this circuit
+		itid_t tid_outgoing;		///< outgoing temp sensor id for this circuit
+		itid_t tid_return;		///< return temp sensor id for this circuit
+		itid_t tid_ambient;		///< ambient temp sensor id related to this circuit
 		struct s_hcircuit_params params;///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 		enum e_hcircuit_laws tlaw;	///< temperature law identifier
 		struct {

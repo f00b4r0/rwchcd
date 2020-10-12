@@ -16,6 +16,8 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "inputs.h"
+#include "outputs.h"
 
 /** private structure for sapprox valve tcontrol */
 struct s_valve_sapprox_priv {
@@ -73,13 +75,13 @@ enum e_valve_type {
 
 /** Private structure for 3way motorisation settings */
 struct s_valve_motor_3way_set {
-	relid_t rid_open;	///< relay for opening the valve
-	relid_t rid_close;	///< relay for closing the valve
+	orid_t rid_open;	///< relay for opening the valve
+	orid_t rid_close;	///< relay for closing the valve
 };
 
 /** Private structure for 2way motorisation settings */
 struct s_valve_motor_2way_set {
-	relid_t rid_trigger;	///< relay for triggering the motor
+	orid_t rid_trigger;	///< relay for triggering the motor
 	bool trigger_opens;	///< true if the trigger opens the valve (false if the trigger closes the valve)
 };
 
@@ -92,9 +94,9 @@ union u_valve_motor_set {
 /** Private structure for mixing type valve */
 struct s_valve_type_mix_set {
 	temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone
-	tempid_t tid_hot;	///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
-	tempid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
-	tempid_t tid_out;	///< temp at the output
+	itid_t tid_hot;		///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input
+	itid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input
+	itid_t tid_out;		///< temp at the output
 	enum e_valve_talgos algo;///< valve tcontrol algorithm identifier
 };
 

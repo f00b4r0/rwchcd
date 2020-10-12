@@ -9,14 +9,11 @@
 /**
  * @file
  * Hardware Prototype 1 backend implementation.
- *
- * @note while the backend interface makes use of the @b priv data pointer for
- * documentation purposes, behind the scenes the code assumes access to statically
- * allocated data.
  */
 
 #include <assert.h>
 #include <string.h>
+#include <stdatomic.h>
 
 #include "hw_backends.h"
 #include "hw_p1.h"
@@ -47,7 +44,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
 	};
 	static log_value_t values[ARRAY_SIZE(keys)];
-	unsigned int i = 0;
+	uint_fast8_t i = 0;
 
 	assert(ldata);
 	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
@@ -59,7 +56,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		return (-EINVALID);	// data not ready
 
 	for (i = 0; i < hw->settings.nsensors; i++)
-		hw_lib_sensor_clone_temp(&hw->Sensors[i], &values[i], true);
+		values[i] = atomic_load_explicit(&hw->Sensors[i].run.value, memory_order_relaxed) + hw->Sensors[i].set.offset;
 
 	ldata->keys = keys;
 	ldata->metrics = metrics;
@@ -200,7 +197,7 @@ static int hw_p1_input(void * priv)
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	struct s_runtime * restrict const runtime = runtime_get();
 	static unsigned int count = 0, systout = 0;
-	static sid_t tempid = 1;
+	static uint_fast8_t tempid = 0;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
 	static bool syschg = false;
 	int ret;
@@ -274,8 +271,8 @@ static int hw_p1_input(void * priv)
 		hw->peripherals.i_SW2 = 0;
 		count = 5;
 
-		if (tempid > hw->settings.nsensors)
-			tempid = 1;
+		if (tempid >= hw->settings.nsensors)
+			tempid = 0;
 
 		hw_p1_lcd_set_tempid(&hw->lcd, tempid);	// update sensor
 	}
@@ -378,8 +375,11 @@ static int hw_p1_offline(void * priv)
 	hw_p1_lcd_offline(&hw->lcd);
 
 	// turn off each known hardware relay
-	for (i=0; i<ARRAY_SIZE(hw->Relays); i++)
-		hw_lib_relay_set_state(&hw->Relays[i], OFF, 0);
+	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
+		if (!hw->Relays[i].set.configured)
+			continue;
+		hw->Relays[i].run.turn_on = false;
+	}
 
 	// update the hardware
 	ret = hw_p1_rwchcrelays_write(hw);
@@ -420,11 +420,11 @@ static void hw_p1_exit(void * priv)
 	hw_p1_lcd_exit(&hw->lcd);
 
 	// cleanup all resources
-	for (i = 1; i <= ARRAY_SIZE(hw->Relays); i++)
+	for (i = 0; i < ARRAY_SIZE(hw->Relays); i++)
 		hw_p1_setup_relay_release(hw, i);
 
 	// deconfigure all sensors
-	for (i = 1; i <= ARRAY_SIZE(hw->Sensors); i++)
+	for (i = 0; i < ARRAY_SIZE(hw->Sensors); i++)
 		hw_p1_setup_sensor_deconfigure(hw, i);
 
 	// reset the hardware
@@ -439,173 +439,230 @@ static void hw_p1_exit(void * priv)
 }
 
 /**
- * Return relay name.
+ * Return output name.
  * @param priv private hardware data
- * @param id id of the target internal relay
- * @return target relay name or NULL if error
+ * @param type the type of requested output
+ * @param oid id of the target internal output
+ * @return target output name or NULL if error
  */
-static const char * hw_p1_relay_name(void * priv, const rid_t id)
+static const char * hw_p1_output_name(void * const priv, const enum e_hw_output_type type, const outid_t oid)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
+	const char * str;
 
 	assert(hw);
 
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
-		return (NULL);
-
-	return (hw_lib_relay_get_name(&hw->Relays[id-1]));
-}
-
-/**
- * Set internal relay state (request)
- * @param priv private hardware data
- * @param id id of the internal relay to modify
- * @param turn_on true if relay is meant to be turned on
- * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
- * @return 0 on success, positive number for cooldown wait remaining, negative for error
- * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
- */
-static int hw_p1_relay_set_state(void * priv, const rid_t id, const bool turn_on, const timekeep_t change_delay)
-{
-	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_hw_relay * relay;
-
-	assert(hw);
-
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
-		return (-EINVALID);
-
-	relay = &hw->Relays[id-1];
-
-	return (hw_lib_relay_set_state(relay, turn_on, change_delay));
-}
-
-/**
- * Get internal relay state (request).
- * @param priv private hardware data
- * @param id id of the internal relay to modify
- * @return relay state
- */
-static int hw_p1_relay_get_state(void * priv, const rid_t id)
-{
-	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_hw_relay * relay;
-
-	assert(hw);
-
-	if (!id || (id > ARRAY_SIZE(hw->Relays)))
-		return (-EINVALID);
-
-	relay = &hw->Relays[id-1];
-
-	return (hw_lib_relay_get_state(relay));
-}
-
-/**
- * Return sensor name.
- * @param priv private hardware data
- * @param id id of the target internal sensor
- * @return target sensor name or NULL if error
- */
-static const char * hw_p1_sensor_name(void * priv, const sid_t id)
-{
-	struct s_hw_p1_pdata * restrict const hw = priv;
-
-	assert(hw);
-
-	if ((!id) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
-		return (NULL);
-
-	return (hw_lib_sensor_get_name(&hw->Sensors[id-1]));
-}
-
-/**
- * Clone sensor temperature.
- * This function checks that the provided hardware id is valid, that is that it
- * is within boundaries of the hardware limits and the configured number of sensors.
- * It also checks that the designated sensor is properly configured in software.
- * Finally, if parameter @b tclone is non-null, the temperature of the sensor
- * is copied if it isn't stale (i.e. less than HW_P1_TIMEOUT_TK old).
- * @param priv private hardware data
- * @param id target sensor id
- * @param tclone optional location to copy the sensor temperature.
- * @return exec status
- * @todo review hardcoded timeout.
- */
-int hw_p1_sensor_clone_temp(void * priv, const sid_t id, temp_t * const tclone)
-{
-	struct s_hw_p1_pdata * restrict const hw = priv;
-
-	assert(hw);
-
-	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
-		return (-EINVALID);
-
-	// make sure available data is valid - XXX HW_P1_TIMEOUT_TK timeout hardcoded
-	if ((timekeep_now() - hw->run.sensors_ftime) > HW_P1_TIMEOUT_TK) {
-		if (tclone)
-			*tclone = 0;
-		return (-EHARDWARE);
+	switch (type) {
+		case HW_OUTPUT_RELAY:
+			str = (oid >= ARRAY_SIZE(hw->Relays)) ? NULL : hw->Relays[oid].name;
+			break;
+		case HW_OUTPUT_NONE:
+		default:
+			str = NULL;
+			break;
 	}
 
-	return (hw_lib_sensor_clone_temp(&hw->Sensors[id-1], tclone, true));
+	return (str);
 }
 
 /**
- * Clone sensor last update time.
- * This function checks that the provided hardware id is valid, that is that it
- * is within boundaries of the hardware limits and the configured number of sensors.
- * It also checks that the designated sensor is properly configured in software.
- * Finally, if parameter @b ctime is non-null, the time of the last sensor update
- * is copied.
+ * Set internal output state (request)
  * @param priv private hardware data
- * @param id target sensor id
- * @param ctime optional location to copy the sensor update time.
+ * @param type the type of requested output
+ * @param oid id of the internal output to modify
+ * @param state pointer to desired target state of the output
  * @return exec status
+ * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
  */
-static int hw_p1_sensor_clone_time(void * priv, const sid_t id, timekeep_t * const ctime)
+static int hw_p1_output_state_set(void * const priv, const enum e_hw_output_type type, const outid_t oid, const u_hw_out_state_t * const state)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
+	struct s_hw_p1_relay * relay;
 
-	assert(hw);
+	assert(hw && state);
 
-	if ((id <= 0) || (id > hw->settings.nsensors) || (id > ARRAY_SIZE(hw->Sensors)))
-		return (-EINVALID);
-
-	if (!hw_lib_sensor_is_configured(&hw->Sensors[id-1]))
-		return (-ENOTCONFIGURED);
-
-	if (ctime)
-		*ctime = hw->run.sensors_ftime;
+	switch (type) {
+		case HW_OUTPUT_RELAY:
+			if (unlikely(oid >= ARRAY_SIZE(hw->Relays)))
+				return (-EINVALID);
+			relay = &hw->Relays[oid];
+			if (unlikely(!relay->set.configured))
+				return (-ENOTCONFIGURED);
+			relay->run.turn_on = state->relay;
+			break;
+		case HW_OUTPUT_NONE:
+		default:
+			return (-EINVALID);
+	}
 
 	return (ALL_OK);
 }
 
 /**
- * Find sensor id by name.
- * @param priv unused
- * @param name target name to look for
- * @return error if not found or sensor id
+ * Get internal output state (request).
+ * @param priv private hardware data
+ * @param type the type of requested output
+ * @param oid id of the internal output to modify
+ * @param state pointer in which the current state of the output will be stored
+ * @return exec status
  */
-static int hw_p1_sensor_ibn(void * priv, const char * const name)
+static int hw_p1_output_state_get(void * const priv, const enum e_hw_output_type type, const outid_t oid, u_hw_out_state_t * const state)
 {
-	const struct s_hw_p1_pdata * restrict const hw = priv;
+	struct s_hw_p1_pdata * restrict const hw = priv;
+	struct s_hw_p1_relay * relay;
 
-	assert(hw);
+	assert(hw && state);
 
-	if (!name)
-		return (-EINVALID);
+	switch (type) {
+		case HW_OUTPUT_RELAY:
+			if (unlikely(oid >= ARRAY_SIZE(hw->Relays)))
+				return (-EINVALID);
+			relay = &hw->Relays[oid];
+			if (unlikely(!relay->set.configured))
+				return (-ENOTCONFIGURED);
+			state->relay = relay->run.is_on;
+			break;
+		case HW_OUTPUT_NONE:
+		default:
+			return (-EINVALID);
+	}
 
-	return (hw_p1_sid_by_name(hw, name));
+	return (ALL_OK);
 }
 
 /**
- * Find relay id by name.
- * @param priv unused
- * @param name target name to look for
- * @return error if not found or sensor id
+ * Return input name.
+ * @param priv private hardware data
+ * @param type the type of requested input
+ * @param inid id of the target internal input
+ * @return target input name or NULL if error
  */
-static int hw_p1_relay_ibn(void * priv, const char * const name)
+static const char * hw_p1_input_name(void * const priv, const enum e_hw_input_type type, const inid_t inid)
+{
+	struct s_hw_p1_pdata * restrict const hw = priv;
+	const char * str;
+
+	assert(hw);
+
+	switch (type) {
+		case HW_INPUT_TEMP:
+			str = ((inid >= hw->settings.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors))) ? NULL : hw->Sensors[inid].name;
+			break;
+		case HW_INPUT_SWITCH:
+		case HW_OUTPUT_NONE:
+		default:
+			str = NULL;
+			break;
+	}
+
+	return (str);
+}
+
+/**
+ * Get input value.
+ * This function checks that the provided hardware id is valid, that is that it
+ * is within boundaries of the hardware limits and the configured number of sensors.
+ * It also checks that the designated sensor is properly configured in software.
+ * Finally, the value of the input is copied if it isn't stale (i.e. less than HW_P1_TIMEOUT_TK old).
+ * @param priv private hardware data
+ * @param type the type of requested output
+ * @param inid id of the internal output to modify
+ * @param value location to copy the current value of the input
+ * @return exec status
+ * @todo review hardcoded timeout.
+ */
+int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value)
+{
+	struct s_hw_p1_pdata * restrict const hw = priv;
+	const struct s_hw_p1_sensor * sensor;
+	temp_t temp;
+	int ret;
+
+	assert(hw && value);
+
+	switch (type) {
+		case HW_INPUT_TEMP:
+			if (unlikely((inid >= hw->settings.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors))))
+				return (-EINVALID);
+			// make sure available data is valid - XXX HW_P1_TIMEOUT_TK timeout hardcoded
+			if (unlikely((timekeep_now() - hw->run.sensors_ftime) > HW_P1_TIMEOUT_TK))
+				return (-EHARDWARE);
+			sensor = &hw->Sensors[inid];
+			if (!sensor->set.configured)
+				return (-ENOTCONFIGURED);
+			temp = atomic_load_explicit(&sensor->run.value, memory_order_relaxed);
+			value->temperature = temp + sensor->set.offset;
+
+			switch (temp) {
+				case TEMPUNSET:
+					ret = -ESENSORINVAL;
+					break;
+				case TEMPSHORT:
+					ret = -ESENSORSHORT;
+					break;
+				case TEMPDISCON:
+					ret = -ESENSORDISCON;
+					break;
+				case TEMPINVALID:
+					ret = -EINVALID;
+					break;
+				default:
+					ret = ALL_OK;
+					break;
+			}
+			break;
+		case HW_INPUT_SWITCH:
+		case HW_INPUT_NONE:
+		default:
+			return (-EINVALID);
+	}
+
+	return (ret);
+}
+
+/**
+ * Get input last update time.
+ * This function checks that the provided hardware id is valid, that is that it
+ * is within boundaries of the hardware limits and the configured number of sensors.
+ * It also checks that the designated sensor is properly configured in software.
+ * @param priv private hardware data
+ * @param type the type of requested output
+ * @param inid id of the internal output to modify
+ * @param ctime location to copy the input update time.
+ * @return exec status
+ */
+static int hw_p1_input_time_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, timekeep_t * const ctime)
+{
+	struct s_hw_p1_pdata * restrict const hw = priv;
+
+	assert(hw && ctime);
+
+	switch (type) {
+		case HW_INPUT_TEMP:
+			if ((inid >= hw->settings.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors)))
+				return (-EINVALID);
+			if (!hw->Sensors[inid].set.configured)
+				return (-ENOTCONFIGURED);
+			break;
+		case HW_INPUT_SWITCH:
+		case HW_INPUT_NONE:
+		default:
+			return (-EINVALID);
+	}
+
+	*ctime = hw->run.sensors_ftime;
+
+	return (ALL_OK);
+}
+
+/**
+ * Find input id by name.
+ * @param priv private hardware data
+ * @param type the type of requested input
+ * @param name target name to look for
+ * @return error if not found or input id
+ */
+static int hw_p1_input_ibn(void * const priv, const enum e_hw_input_type type, const char * const name)
 {
 	const struct s_hw_p1_pdata * restrict const hw = priv;
 
@@ -614,7 +671,39 @@ static int hw_p1_relay_ibn(void * priv, const char * const name)
 	if (!name)
 		return (-EINVALID);
 
-	return (hw_p1_rid_by_name(hw, name));
+	switch (type) {
+		case HW_INPUT_TEMP:
+			return (hw_p1_sid_by_name(hw, name));
+		case HW_INPUT_SWITCH:
+		case HW_INPUT_NONE:
+		default:
+			return (-EINVALID);
+	}
+}
+
+/**
+ * Find output id by name.
+ * @param priv private hardware data
+ * @param type the type of requested output
+ * @param name target name to look for
+ * @return error if not found or output id
+ */
+static int hw_p1_output_ibn(void * const priv, const enum e_hw_output_type type, const char * const name)
+{
+	const struct s_hw_p1_pdata * restrict const hw = priv;
+
+	assert(hw);
+
+	if (!name)
+		return (-EINVALID);
+
+	switch (type) {
+		case HW_OUTPUT_RELAY:
+			return (hw_p1_rid_by_name(hw, name));
+		case HW_OUTPUT_NONE:
+		default:
+			return (-EINVALID);
+	}
 }
 
 /** Hardware callbacks for Prototype 1 hardware */
@@ -625,14 +714,14 @@ static struct s_hw_callbacks hw_p1_callbacks = {
 	.offline = hw_p1_offline,
 	.input = hw_p1_input,
 	.output = hw_p1_output,
-	.sensor_clone_temp = hw_p1_sensor_clone_temp,
-	.sensor_clone_time = hw_p1_sensor_clone_time,
-	.relay_get_state = hw_p1_relay_get_state,
-	.relay_set_state = hw_p1_relay_set_state,
-	.sensor_ibn = hw_p1_sensor_ibn,
-	.relay_ibn = hw_p1_relay_ibn,
-	.sensor_name = hw_p1_sensor_name,
-	.relay_name = hw_p1_relay_name,
+	.input_value_get = hw_p1_input_value_get,
+	.input_time_get = hw_p1_input_time_get,
+	.output_state_get = hw_p1_output_state_get,
+	.output_state_set = hw_p1_output_state_set,
+	.input_ibn = hw_p1_input_ibn,
+	.output_ibn = hw_p1_output_ibn,
+	.input_name = hw_p1_input_name,
+	.output_name = hw_p1_output_name,
 	.filecfg_dump = hw_p1_filecfg_dump,
 };
 

@@ -2,7 +2,7 @@
 //  hw_backends.h
 //  rwchcd
 //
-//  (C) 2018 Thibaut VARENE
+//  (C) 2018,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -17,7 +17,52 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
-#define HW_MAX_BKENDS	8	///< Maximum number of hardware backends allowed
+union u_hw_out_state {
+	bool relay;	///< accessor for #HW_OUTPUT_RELAY state
+};
+
+/** Type for hardware output states */
+typedef union u_hw_out_state u_hw_out_state_t;
+
+union u_hw_in_value {
+	temp_t temperature;	///< accessor for HW_INPUT_TEMP value
+	bool inswitch;		///< accessor for HW_INPUT_SWITCH value
+};
+
+/** Type for hardware input states */
+typedef union u_hw_in_value u_hw_in_value_t;
+
+/** Known hardware input types */
+enum e_hw_input_type {
+	HW_INPUT_NONE = 0,	///< input type not configured
+	HW_INPUT_TEMP,		///< temperature input
+	HW_INPUT_SWITCH,	///< switch input
+};
+
+/** Known hardware output types */
+enum e_hw_output_type {
+	HW_OUTPUT_NONE = 0,	///< output type not configured
+	HW_OUTPUT_RELAY,	///< relay output
+};
+
+typedef uint_fast8_t	bid_t;	///< backend idex type - defines theoretical maximum number of backends
+typedef uint_fast8_t	inid_t;	///< hardware input index type - defines theoretical maximum number of inputs per backend
+typedef uint_fast8_t	outid_t;///< hardware output index type - defines theoretical maximum number of outputs per backend
+
+#define BID_MAX		UINT_FAST8_MAX
+#define INID_MAX	UINT_FAST8_MAX
+#define OUTID_MAX	UINT_FAST8_MAX
+
+/** backend input id. @note struct assignment is used in the code: must not embed pointers */
+typedef struct {
+	bid_t bid;	///< backend id
+	inid_t inid;	///< input id
+} binid_t;
+/** backend output id. @note struct assignment is used in the code: must not embed pointers */
+typedef struct {
+	bid_t bid;	///< backend id
+	outid_t outid;	///< output id
+} boutid_t;
 
 /**
  * Backend hardware callbacks.
@@ -89,92 +134,101 @@ struct s_hw_callbacks {
 	void (*exit)(void * priv);
 
 	/**
-	 * Return a hardware relay name.
+	 * Return a backend output name.
 	 * @warning if the backend implements @b ANY relay callback, this callback is @b MANDATORY.
 	 * @param priv hardware backend private data
-	 * @param rid hardware relay id
-	 * @return target relay name or NULL if error
+	 * @param type the type of requested output
+	 * @param oid backend output id
+	 * @return target output name or NULL if error
 	 */
-	const char * (*relay_name)(void * priv, const rid_t rid);
+	const char * (*output_name)(void * const priv, const enum e_hw_output_type type, const outid_t oid);
 
 	/**
-	 * Find hardware relay id by name.
-	 * This callback looks up a hardware relay in the backend by its name.
-	 * @warning if the backend implements @b ANY relay callback, this callback is @b MANDATORY.
-	 * @warning for a given backend, relay names must be unique.
+	 * Find backend output id by name.
+	 * This callback looks up an output in the backend by its name.
+	 * @warning if the backend implements @b ANY output callback, this callback is @b MANDATORY.
+	 * @warning for a given backend and output type, output names must be unique.
 	 * @param priv hardware backend private data
-	 * @param name target relay name to look for
-	 * @return error if not found or hardware relay id (must fit rid_t)
+	 * @param type the type of requested output
+	 * @param name target output name to look for
+	 * @return error if not found or backend output id (must fit outid_t)
 	 */
-	int (*relay_ibn)(void * priv, const char * const name);
+	int (*output_ibn)(void * const priv, const enum e_hw_output_type type, const char * const name);
 
 	/**
-	 * Get relay state.
-	 * This callback reads the software representation of the state of a
-	 * relay. The state returned by this callback accounts for the last
+	 * Get backend output state.
+	 * This callback reads the software representation of the state of an output.
+	 * The state returned by this callback accounts for the last
 	 * execution of hardware_output(), i.e. the returned state corresponds to
 	 * the last enacted hardware state.
-	 * Specifically, if relay_set_state() is called to turn ON a currently OFF
-	 * relay, and then relay_get_state() is called @b before output() has been
+	 * Specifically, for example if output_state_set() is called to turn ON a currently OFF
+	 * relay, and then output_state_get() is called @b before output() has been
 	 * executed, this function will return an OFF state for this relay.
 	 * @param priv hardware backend private data
-	 * @param rid hardware relay id
-	 * @return relay state
+	 * @param type the type of requested output
+	 * @param oid backend output id
+	 * @param state a pointer to a state location suitable for the target output in which the current state of the output will be stored
+	 * @return exec status
+	 * @deprecated this callback probably doesn't make much sense in the current code, it isn't used anywhere and might be removed in the future
 	 */
-	int (*relay_get_state)(void * priv, const rid_t rid);
+	int (*output_state_get)(void * const priv, const enum e_hw_output_type type, const outid_t oid, u_hw_out_state_t * const state);
 
 	/**
-	 * Set relay state.
-	 * This callback updates the software representation of the state of a
-	 * relay. The hardware will reflect the state matching the last call to
-	 * this function after hardware_output() has been executed.
+	 * Set backend output state.
+	 * This callback updates the software representation of the state of an output.
+	 * The hardware will reflect the state matching the last call to
+	 * this function once hardware_output() has been executed.
 	 * @param priv hardware backend private data
-	 * @param rid hardware relay id
-	 * @param turn_on true for turn on request
-	 * @param change_delay the minimum time the previous running state must be maintained ("cooldown")
+	 * @param type the type of requested output
+	 * @param oid backend output id
+	 * @param state a pointer to a state suitable for the target output
 	 * @return exec status
 	 */
-	int (*relay_set_state)(void * priv, const rid_t rid, bool turn_on, timekeep_t change_delay);
+	int (*output_state_set)(void * const priv, const enum e_hw_output_type type, const outid_t oid, const u_hw_out_state_t * const state);
 
 	/**
-	 * Return a hardware sensor name.
-	 * @warning if the backend implements @b ANY sensor callback, this callback is @b MANDATORY.
+	 * Return a backend input name.
+	 * @warning if the backend implements @b ANY input callback, this callback is @b MANDATORY.
 	 * @param priv hardware backend private data
-	 * @param sid hardware sensor id
-	 * @return target sensor name or NULL if error
+	 * @param type the type of requested input
+	 * @param inid backend input id
+	 * @return target input name or NULL if error
 	 */
-	const char * (*sensor_name)(void * priv, const sid_t sid);
+	const char * (*input_name)(void * const priv, const enum e_hw_input_type type, const inid_t inid);
 
 	/**
-	 * Find hardware sensor id by name.
-	 * This callback looks up a hardware sensor in the backend by its name.
-	 * @warning if the backend implements @b ANY sensor callback, this callback is @b MANDATORY.
-	 * @warning for a given backend, sensor names must be unique.
+	 * Find backend input id by name.
+	 * This callback looks up an input in the backend by its name.
+	 * @warning if the backend implements @b ANY input callback, this callback is @b MANDATORY.
+	 * @warning for a given backend and input type, input names must be unique.
 	 * @param priv hardware backend private data
-	 * @param name target sensor name to look for
-	 * @return error if not found or hardware sensor id (must fit sid_t)
+	 * @param type the type of requested input
+	 * @param name target input name to look for
+	 * @return error if not found or backend input id (must fit inid_t)
 	 */
-	int (*sensor_ibn)(void * priv, const char * const name);
+	int (*input_ibn)(void * const priv, const enum e_hw_input_type type, const char * const name);
 
 	/**
-	 * Clone sensor temperature value.
+	 * Get backend input value.
 	 * @param priv hardware backend private data
-	 * @param sid hardware sendor id
-	 * @param ctime optional pointer to allocated space for value storage, can be NULL
+	 * @param type the type of requested input
+	 * @param inid backend input id
+	 * @param value pointer to a value location suitable for the target input in which the current value of the input will be stored
 	 * @return exec status
 	 */
-	int (*sensor_clone_temp)(void * priv, const sid_t sid, temp_t * const ctemp);
+	int (*input_value_get)(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value);
 
 	/**
 	 * Clone sensor update time.
 	 * @param priv hardware backend private data
-	 * @param sid hardware sendor id
-	 * @param ctime optional pointer to allocated space for time storage, can be NULL
+	 * @param type the type of requested input
+	 * @param inid backend input id
+	 * @param ctime pointer to location where last update time will be stored
 	 * @return exec status
 	 * @note This function must @b ALWAYS return successfully if the target
 	 * sensor is properly configured and the underlying hardware is online.
 	 */
-	int (*sensor_clone_time)(void * priv, const sid_t sid, timekeep_t * const ctime);
+	int (*input_time_get)(void * const priv, const enum e_hw_input_type type, const inid_t inid, timekeep_t * const ctime);
 
 	/**
 	 * Dump hardware backend configuration.
@@ -197,14 +251,16 @@ struct s_hw_backend {
 	const char * restrict name;	///< unique backend name
 };
 
-// hardware.c needs access
-extern struct s_hw_backend * HW_backends[HW_MAX_BKENDS];
+struct s_hw_backends {
+	bid_t n;			///< number of allocated hw backends
+	bid_t last;			///< id of last free backend slot
+	struct s_hw_backend * all;	///< pointer to array of hw backends of size n
+};
 
 int hw_backends_init(void);
 int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * const priv, const char * const name);
-int hw_backends_sensor_fbn(tempid_t * tempid, const char * const bkend_name, const char * const sensor_name);
-int hw_backends_relay_fbn(relid_t * relid, const char * const bkend_name, const char * const relay_name);
 void hw_backends_exit(void);
-const char * hw_backends_name(const bid_t bid);
+
+int hw_backends_bid_by_name(const char * const name);
 
 #endif /* hw_backends_h */

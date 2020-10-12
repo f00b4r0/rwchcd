@@ -31,8 +31,9 @@
 #include "valve.h"
 #include "lib.h"
 #include "boiler.h"
-#include "hardware.h"
 #include "alarms.h"
+#include "inputs.h"
+#include "outputs.h"
 
 /**
  * Checklist for safe operation of a boiler.
@@ -48,7 +49,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 	assert(boiler);
 
 	// check that mandatory sensors are working
-	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, NULL);
+	ret = inputs_temperature_get(boiler->set.tid_boiler, NULL);
 	if (ALL_OK != ret)
 		alarms_raise(ret, _("Boiler sensor failure"), _("Boiler sens fail"));
 
@@ -112,7 +113,7 @@ static temp_t boiler_hscb_temp(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	hardware_sensor_clone_temp(boiler->set.tid_boiler, &temp);
+	inputs_temperature_get(boiler->set.tid_boiler, &temp);
 
 	return (temp);
 }
@@ -131,7 +132,7 @@ static timekeep_t boiler_hscb_time(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	hardware_sensor_clone_time(boiler->set.tid_boiler, &ttime);
+	inputs_temperature_time(boiler->set.tid_boiler, &ttime);
 
 	return (ttime);
 }
@@ -152,7 +153,7 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		return (-EINVALID);
 
 	// check that mandatory sensors are set
-	ret = hardware_sensor_clone_time(boiler->set.tid_boiler, NULL);
+	ret = inputs_temperature_get(boiler->set.tid_boiler, NULL);
 	if (ret)
 		goto out;
 
@@ -182,7 +183,7 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	if (boiler->set.limit_treturnmin) {
 		// if return min is set make sure the associated sensor is configured.
-		ret = hardware_sensor_clone_time(boiler->set.tid_boiler_return, NULL);
+		ret = inputs_temperature_get(boiler->set.tid_boiler_return, NULL);
 		if (ALL_OK != ret) {
 			pr_err(_("\"%s\": limit_treturnmin is set but return sensor is unavaiable (%d)"), heat->name, ret);
 			ret = -EMISCONFIGURED;
@@ -215,8 +216,8 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	// reset runtime
 	memset(&boiler->run, 0x0, sizeof(boiler->run));
 
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
 
 	if (boiler->set.p.pump_load)
 		pump_shutdown(boiler->set.p.pump_load);
@@ -238,8 +239,8 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 	reset_intg(&boiler->run.boil_itg);
 	reset_intg(&boiler->run.ret_itg);
 
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_1, OFF, 0);
-	(void)!hardware_relay_set_state(boiler->set.rid_burner_2, OFF, 0);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
 	// failsafe() is called after runchecklist(), the above can't fail
 
 	if (boiler->set.p.pump_load)
@@ -258,7 +259,7 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
 
 	assert(boiler);
 
-	(void)!hardware_sensor_clone_temp(boiler->set.tid_boiler, &boilertemp);
+	(void)!inputs_temperature_get(boiler->set.tid_boiler, &boilertemp);
 	// antifreeze() is called after runchecklist(), the above can't fail
 
 	// trip at set.t_freeze point
@@ -346,8 +347,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 	boiler->run.target_temp = target_temp;
 
-	hardware_sensor_clone_time(boiler->set.tid_boiler, &boiler_ttime);
-	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler->run.actual_temp);
+	ret = inputs_temperature_get(boiler->set.tid_boiler, &boiler->run.actual_temp);
+	inputs_temperature_time(boiler->set.tid_boiler, &boiler_ttime);
 
 	// ensure boiler is within safety limits
 	if (unlikely((ALL_OK != ret) || (boiler->run.actual_temp > boiler->set.limit_thardmax))) {
@@ -386,8 +387,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 		}
 		else {
 			// calculate return integral
-			(void)!hardware_sensor_clone_time(boiler->set.tid_boiler_return, &ttime);
-			ret = hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
+			ret = inputs_temperature_get(boiler->set.tid_boiler_return, &ret_temp);
+			(void)!inputs_temperature_time(boiler->set.tid_boiler_return, &ttime);
 			if (likely(ALL_OK == ret)) {
 				// jacket integral between 0 and -1000Ks - XXX hardcoded
 				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, (signed)timekeep_sec_to_tk(deltaK_to_temp(-1000)), 0);
@@ -431,6 +432,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	const uint32_t fpdec = 0x8000;	// good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t trip_temp, untrip_temp, temp_deriv, temp, ret_temp;
+	timekeep_t elapsed, now;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
@@ -463,8 +465,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		return (ret);
 	}
 
-	hardware_sensor_clone_time(boiler->set.tid_boiler, &boiler_ttime);
-	ret = hardware_sensor_clone_temp(boiler->set.tid_boiler, &boiler_temp);
+	ret = inputs_temperature_get(boiler->set.tid_boiler, &boiler_temp);
+	inputs_temperature_time(boiler->set.tid_boiler, &boiler_ttime);
 
 	// ensure boiler is within safety limits
 	if (unlikely((ALL_OK != ret) || (boiler_temp > boiler->set.limit_thardmax))) {
@@ -550,17 +552,28 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	ret = ALL_OK;
 
 	/* burner control */
+	now = timekeep_now();
 	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
-	if (boiler->run.actual_temp < trip_temp)		// trip condition
-		ret = hardware_relay_set_state(boiler->set.rid_burner_1, ON, boiler->set.burner_min_time);	// cooldown start
-	else if (boiler->run.actual_temp > untrip_temp)	// untrip condition
-		ret = hardware_relay_set_state(boiler->set.rid_burner_1, OFF, boiler->set.burner_min_time);	// delayed stop
+	if (boiler->run.actual_temp < trip_temp) {		// trip condition
+		elapsed = now - boiler->run.burner_1_last_switch;
+		if (elapsed >= boiler->set.burner_min_time) {	// cooldown start
+			ret = outputs_relay_state_set(boiler->set.rid_burner_1, ON);
+			boiler->run.burner_1_last_switch = now;
+		}
+	}
+	else if (boiler->run.actual_temp > untrip_temp) {	// untrip condition
+		elapsed = now - boiler->run.burner_1_last_switch;
+		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
+			ret = outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
+			boiler->run.burner_1_last_switch = now;
+		}
+	}
 
 	if (ret > 0)	// cooldown isn't an error
 		ret = ALL_OK;
 
 	// computations performed while burner is on
-	if (hardware_relay_get_state(boiler->set.rid_burner_1) > 0) {
+	if (outputs_relay_state_get(boiler->set.rid_burner_1) > 0) {
 		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
 		if (boiler->set.limit_tmin < boiler->run.actual_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
@@ -596,9 +609,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	}
 
 #ifdef DEBUG
-	(void)!hardware_sensor_clone_temp(boiler->set.tid_boiler_return, &ret_temp);
+	(void)!inputs_temperature_get(boiler->set.tid_boiler_return, &ret_temp);
 	dbgmsg(1, 1, "\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
-	       heat->name, hardware_relay_get_state(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
+	       heat->name, outputs_relay_state_get(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
 	       temp_to_celsius(boiler->run.actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
 #endif
 	return (ret);

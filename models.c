@@ -18,7 +18,7 @@
 
 #include "lib.h"
 #include "storage.h"
-#include "hardware.h"
+#include "inputs.h"
 #include "alarms.h"
 #include "models.h"
 #include "log.h"
@@ -247,21 +247,21 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 	}
 
 	// make sure specified outdoor sensor is available
-	ret = hardware_sensor_clone_temp(bmodel->set.tid_outdoor, &tout);
+	ret = inputs_temperature_get(bmodel->set.tid_outdoor, &tout);
 	if (ALL_OK != ret) {
 		pr_err(_("Building model \"%s\": outdoor sensor error (%d)"), bmodel->name, ret);
 		return (ret);
 	}
 
 	bmodel->run.t_out = tout;
-	hardware_sensor_clone_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
+	inputs_temperature_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
 
 	// set sane values if necessary
 	if (!bmodel->run.t_out_att || !bmodel->run.t_out_filt) {
 		bmodel->run.t_out_att = bmodel->run.t_out_filt = tout;
 	}
 	// force set t_out_faltime since we can't restore it
-	hardware_sensor_clone_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_faltime);
+	inputs_temperature_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_faltime);
 
 	// log registration shouldn't cause online failure
 	if (bmodel_log_register(bmodel) != ALL_OK)
@@ -318,9 +318,9 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 	temp_t toutdoor;
 	int ret;
 
-	ret = hardware_sensor_clone_temp(bmodel->set.tid_outdoor, &toutdoor);
+	ret = inputs_temperature_get(bmodel->set.tid_outdoor, &toutdoor);
 	if (likely(ALL_OK == ret)) {
-		hardware_sensor_clone_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
+		inputs_temperature_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
 		dt = bmodel->run.t_out_ltime - last;
 		bmodel->run.t_out = temp_expw_mavg(bmodel->run.t_out, toutdoor, OUTDOOR_SMOOTH_TIME, dt);
 	}

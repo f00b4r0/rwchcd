@@ -54,6 +54,7 @@ typedef int (* const parser_t)(void * restrict const priv, const struct s_filecf
 struct s_filecfg_parser_nodelist {
 	struct s_filecfg_parser_node *node;		///< current node
 	struct s_filecfg_parser_nodelist *next;		///< next list member
+	struct s_filecfg_parser_nodelist *prev;		///< previous list member
 };
 
 /** Structure for node parsers */
@@ -72,10 +73,10 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist *nodelist);
 void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist);
 int filecfg_parser_match_node(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
-int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist * const nodelist, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers);
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser);
+unsigned int filecfg_parser_count_siblings(const struct s_filecfg_parser_nodelist * const nodelist, const char * nname);
 
 int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
@@ -128,6 +129,7 @@ static int fcp_bool_##_struct##_##_member(void * restrict const priv, const stru
 {										\
 	struct _struct * restrict const s = priv;				\
 	assert(NODEBOL == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	s->_nest _member = n->value.boolval;					\
 	return (ALL_OK);							\
 }
@@ -144,6 +146,7 @@ static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const st
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
 	assert(NODEINT == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	if (_positiveonly && (iv < 0))						\
 		return (-EINVALID);						\
 	s->set._setmember = iv;							\
@@ -156,6 +159,7 @@ static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const st
 	struct _struct * restrict const s = priv;				\
 	const char *str = n->value.stringval;					\
 	assert(NODESTR == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	if (_nonempty && (strlen(str) < 1))					\
 		return (-EINVALID);						\
 	s->set._setmember = str;						\
@@ -184,6 +188,7 @@ static int fcp_tk_##_struct##_##_member(void * restrict const priv, const struct
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
 	assert((NODEINT|NODEDUR) & n->type);					\
+	if (n->children) return(-ENOTWANTED);					\
 	if (iv < 0)								\
 		return (-EINVALID);						\
 	s->_nest _member = timekeep_sec_to_tk(iv);				\
@@ -229,6 +234,7 @@ static int fcp_prio_##_struct##_##_setmember(void * restrict const priv, const s
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
 	assert(NODEINT == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	if ((iv < 0) || (iv > UINT_FAST8_MAX))					\
 		return (-EINVALID);						\
 	s->set._setmember = (typeof(s->set._setmember))iv;			\
@@ -253,6 +259,7 @@ static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, cons
 {										\
 	struct _struct * restrict const s = priv; int iv;			\
 	assert(NODESTR == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	iv = scheduler_schedid_by_name(n->value.stringval);			\
@@ -267,6 +274,7 @@ static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, con
 {										\
 	struct _struct * restrict const s = priv;				\
 	assert(NODESTR == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	s->set.p._setpmember = models_fbn_bmodel(n->value.stringval);		\
@@ -280,6 +288,7 @@ static int fcp_pump_##_struct##_p##_setpmember(void * restrict const priv, const
 {										\
 	struct _struct * restrict const s = priv;				\
 	assert(NODESTR == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	s->set.p._setpmember = plant_fbn_pump(_priv2plant(priv), n->value.stringval);	\
@@ -293,12 +302,29 @@ static int fcp_valve_##_struct##_p##_setpmember(void * restrict const priv, cons
 {										\
 	struct _struct * restrict const s = priv;				\
 	assert(NODESTR == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
 	s->set.p._setpmember = plant_fbn_valve(_priv2plant(priv), n->value.stringval);	\
 	if (!s->set.p._setpmember)						\
 		return (-EINVALID);						\
 	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_ENUM_PARSE_SET_FUNC(_strarray, _struct, _setmember)	\
+static int fcp_enum_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	unsigned int i;									\
+	assert(NODESTR == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
+	for (i = 0; i < ARRAY_SIZE(_strarray); i++) {				\
+		if (!strcmp(_strarray[i], n->value.stringval)) {		\
+			s->set._setmember = (typeof(s->set._setmember))i;	\
+			return (ALL_OK);					\
+		}								\
+	}									\
+	return (-EINVALID);							\
 }
 
 #endif /* filecfg_parser_h */
