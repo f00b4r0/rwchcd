@@ -15,6 +15,9 @@ LDLIBS := -lm
 ifeq ($(HOST_OS),Linux)
 CONFIG := -DHAS_DBUS -DHAS_HWP1 -DHAS_RRD -DDEBUG=2
 CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
+ ifeq ($(shell pkg-config --exists libmosquitto && echo 1),1)
+ CONFIG += -DHAS_MQTT
+ endif
 else
 CONFIG :=
 endif
@@ -41,6 +44,11 @@ endif
 ifneq (,$(findstring HAS_HWP1,$(CONFIG)))
 LDLIBS += -lwiringPi
 SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
+endif
+
+ifneq (,$(findstring HAS_MQTT,$(CONFIG)))
+LDLIBS += $(shell pkg-config --libs libmosquitto)
+SUBDIRS += $(HWBACKENDS_DIR)/mqtt/
 endif
 
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))

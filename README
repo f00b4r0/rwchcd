@@ -13,7 +13,7 @@ rwchcd: a weather compensated central heating controller daemon
  GNU General Public License for more details.
 
 Dependencies: gcc flex bison
-Optional dependencies: libglib2.0-dev wiringpi pkg-config librrd-dev
+Optional dependencies: libglib2.0-dev wiringpi pkg-config librrd-dev libmosquitto-dev
 Documentation deps: doxygen graphviz
 
 To build, run 'make'

@@ -18,6 +18,9 @@
 #ifdef HAS_HWP1		// XXX
  #include "hw_backends/hw_p1/hw_p1_filecfg.h"
 #endif
+#ifdef HAS_MQTT
+ #include "hw_backends/mqtt/filecfg.h"
+#endif
 
 #include "backends_parse.h"
 #include "filecfg_parser.h"
@@ -32,6 +35,9 @@ static hw_bknd_parser_t HWparsers[] = {
 	dummy_filecfg_parse,
 #ifdef HAS_HWP1		// XXX
 	hw_p1_filecfg_parse,
+#endif
+#ifdef HAS_MQTT
+	mqtt_filecfg_parse,
 #endif
 };
 
