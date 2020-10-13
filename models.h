@@ -16,7 +16,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
-#include "inputs.h"
+#include "io/inputs.h"
 
 /** Models */
 struct s_models {

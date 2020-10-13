@@ -1,10 +1,10 @@
-SRCS := $(wildcard *.c)
+SRCS ?= $(wildcard *.c)
 
 OBJS := $(SRCS:.c=.o)
 DEPS := $(SRCS:.c=.d)
 
 TARGET := $(SUBDIRBIN)
-TARGETOBJS := $(OBJS)
+TARGETOBJS += $(OBJS)
 
 all:	$(TARGET)
 

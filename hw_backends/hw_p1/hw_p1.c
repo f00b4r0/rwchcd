@@ -25,9 +25,9 @@
 
 #include "lib.h"
 #include "storage.h"
-#include "log.h"
+#include "log/log.h"
 #include "alarms.h"
-#include "hw_lib.h"
+#include "hw_backends/hw_lib.h"
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
 #include "hw_p1.h"

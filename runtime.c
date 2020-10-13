@@ -15,10 +15,10 @@
 #include <string.h>	// memset/memcpy
 #include <assert.h>
 
-#include "plant.h"
+#include "plant/plant.h"
 #include "runtime.h"
 #include "storage.h"
-#include "log.h"
+#include "log/log.h"
 #include "alarms.h"	// alarms_raise()
 
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);

@@ -15,7 +15,7 @@
 #define backend_h
 
 #include "rwchcd.h"
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 
 /** software representation of a hardware sensor. */
 struct s_dummy_temperature {

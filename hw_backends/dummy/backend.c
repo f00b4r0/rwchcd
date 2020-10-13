@@ -16,7 +16,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 
-#include "hw_backends.h"
+#include "hw_backends/hw_backends.h"
 #include "timekeep.h"
 #include "backend.h"
 

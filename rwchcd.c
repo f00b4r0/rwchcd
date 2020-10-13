@@ -59,25 +59,25 @@
 #endif
 
 #include "rwchcd.h"
-#include "hw_backends.h"
-#include "hardware.h"
+#include "hw_backends/hw_backends.h"
+#include "io/hardware.h"
 #include "runtime.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "io/inputs.h"
+#include "io/outputs.h"
 #include "timer.h"
 #include "scheduler.h"
 #include "models.h"
 #include "alarms.h"
 #ifdef HAS_DBUS
- #include "dbus.h"
+ #include "dbus/dbus.h"
 #endif
 #include "storage.h"
-#include "log.h"
+#include "log/log.h"
 #include "timekeep.h"
 
-#include "filecfg_dump.h"
+#include "filecfg/dump/filecfg_dump.h"
 
-#include "filecfg_parser.tab.h"
+#include "filecfg/parse/filecfg_parser.tab.h"
 extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser
 
 #ifndef RWCHCD_PRIO

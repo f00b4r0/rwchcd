@@ -16,7 +16,7 @@
 
 #include "rwchcd.h"
 #include "hw_p1.h"
-#include "hw_lib.h"
+#include "hw_backends/hw_lib.h"
 
 void * hw_p1_setup_new(void);
 void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw);

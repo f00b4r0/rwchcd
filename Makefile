@@ -15,33 +15,26 @@ LDLIBS := -lm
 ifeq ($(HOST_OS),Linux)
 CONFIG := -DHAS_DBUS -DHAS_HWP1 -DHAS_RRD -DDEBUG=2
 CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
-SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
-DBUSSYSTEMDIR := /etc/dbus-1/system.d
 else
 CONFIG :=
 endif
 
 CFLAGS += $(CONFIG)
 
-DBUSGEN_BASE := dbus-generated
+SRCS := $(wildcard *.c)
+OBJS := $(SRCS:.c=.o)
+DEPS := $(SRCS:.c=.d)
+
+MAIN := rwchcd
+MAINOBJS := $(OBJS)
+
 HWBACKENDS_DIR := hw_backends
 
-SRCS := $(wildcard *.c)
+SUBDIRS := plant/ io/ io/inputs/ io/outputs/ filecfg/parse/ filecfg/dump/
+SUBDIRS += $(HWBACKENDS_DIR)/ $(HWBACKENDS_DIR)/dummy/
 
-SUBDIRS := filecfg/
-SUBDIRS += $(HWBACKENDS_DIR)/dummy/
-
-DBUSGEN_SRCS := $(DBUSGEN_BASE).c
-SRCS := $(filter-out $(DBUSGEN_SRCS),$(SRCS))
-ifeq (,$(findstring HAS_DBUS,$(CONFIG)))
-SRCS := $(filter-out dbus.c,$(SRCS))
-endif
-
-# filter out log subsystems, re-add log_file which is libc-only, then add based on config
-SRCS := $(filter-out $(wildcard log_*.c),$(SRCS))
-SRCS += log_file.c log_statsd.c
+SUBDIRS += log/
 ifneq (,$(findstring HAS_RRD,$(CONFIG)))
-SRCS += log_rrd.c
 LDLIBS += -lrrd
 endif
 
@@ -50,25 +43,19 @@ LDLIBS += -lwiringPi
 SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
 endif
 
-OBJS := $(SRCS:.c=.o)
-DEPS := $(SRCS:.c=.d)
-
-DBUSGEN_OBJS := $(DBUSGEN_SRCS:.c=.o)
-DBUSGEN_DEPS := $(DBUSGEN_SRCS:.c=.d)
-
-MAIN := rwchcd
-MAINOBJS := $(OBJS) filecfg_parser.tab.o filecfg_parser.lex.o
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
-MAINOBJS += $(DBUSGEN_OBJS)
-CFLAGS += $(shell pkg-config --cflags gio-unix-2.0)
+SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
+DBUSSYSTEMDIR := /etc/dbus-1/system.d
 LDLIBS += $(shell pkg-config --libs gio-unix-2.0)
+SUBDIRS += dbus/
 endif
 
-TOPTARGETS := all clean distclean install uninstall dbus-gen doc
+TOPTARGETS := all clean distclean install uninstall doc
 
 SUBDIRBIN := _payload.o
+SRCROOT := $(CURDIR)
 
-export SUBDIRBIN CC LD CFLAGS WFLAGS
+export SUBDIRBIN CC LD CFLAGS WFLAGS CONFIG SRCROOT FLEX BISON
 
 $(TOPTARGETS): $(SUBDIRS)
 
@@ -76,45 +63,31 @@ $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 SUBDIRS_OBJS := $(SUBDIRS:/=/$(SUBDIRBIN))
-MAINOBJS += SUBDIRS_OBJS
+MAINOBJS += $(SUBDIRS_OBJS)
 
+all:	MAKECMDGOALS ?= all
 all:	$(SUBDIRS) $(MAIN)
 	@echo	Done
 
 $(MAIN): $(MAINOBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
 
-%.lex.c: %.l %.tab.h
-	$(FLEX) -s -P$*_ -o$@ $<
-
-%.tab.h %.tab.c: %.y
-	$(BISON) -b $* -p $*_ -d $<
-
 .c.o:
 	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
 
 clean:
-	$(RM) *.o *.d *~ *.output $(MAIN)
+	$(RM) *.o *.d *~ $(MAIN)
 
 distclean:	clean
-	$(RM) *-generated.[ch]
 	$(RM) -r doc
-
-$(DBUSGEN_SRCS):	rwchcd_introspection.xml
-	gdbus-codegen --generate-c-code $(DBUSGEN_BASE) --c-namespace dbus --interface-prefix org.slashdirt. rwchcd_introspection.xml
-
-$(DBUSGEN_OBJS):	$(DBUSGEN_SRCS)
-	$(CC) $(CFLAGS) -MMD -c $< -o $@
-
-$(DBUSGEN_BASE).h:	$(DBUSGEN_SRCS)
-dbus-gen:	$(DBUSGEN_SRCS)
+	$(MAKE) -C tools $@
 
 install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
 	install -m 755 -o nobody -g nogroup -d $(VARLIBDIR)/
 	install -D -s $(MAIN) -t /usr/sbin/
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
-	install -m 644 -D org.slashdirt.rwchcd.conf -t $(DBUSSYSTEMDIR)/
-	install -m 644 -D rwchcd.service -t $(SYSTEMDUNITDIR)/
+	install -m 644 -D dbus/org.slashdirt.rwchcd.conf -t $(DBUSSYSTEMDIR)/
+	install -m 644 -D dbus/rwchcd.service -t $(SYSTEMDUNITDIR)/
 	systemctl enable rwchcd.service
 endif
 	@echo Done
@@ -132,19 +105,8 @@ endif
 doc:	Doxyfile
 	( cat Doxyfile; echo "PROJECT_NUMBER=$(REVISION)" ) | doxygen -
 	
-# quick hack
-dbus.o:	$(DBUSGEN_BASE).h
 # rebuild rwchcd.o if anything changes to update version
-rwchcd.o:       $(filter-out rwchcd.o,$(OBJS)) filecfg_parser.tab.h
+rwchcd.o:       $(filter-out rwchcd.o,$(MAINOBJS))
 
-tools:	tools/hwp1_prelays
-
-tools/hwp1_prelays:	tools/hwp1_prelays.o $(filter-out rwchcd.o hw_backends/hw_p1/hw_p1.o,$(MAINOBJS))
-	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
-
-# disable implicit rules we don't want
-%.c: %.y
-%.c: %.l
-
--include $(DEPS) $(DBUSGEN_DEPS)
+-include $(DEPS)
 .PHONY:	$(TOPTARGETS) $(SUBDIRS)
