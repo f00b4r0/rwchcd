@@ -44,8 +44,6 @@ SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
 endif
 
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
-SYSTEMDUNITDIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
-DBUSSYSTEMDIR := /etc/dbus-1/system.d
 LDLIBS += $(shell pkg-config --libs gio-unix-2.0)
 SUBDIRS += dbus/
 endif
@@ -82,24 +80,14 @@ distclean:	clean
 	$(RM) -r doc
 	$(MAKE) -C tools $@
 
-install: $(MAIN) org.slashdirt.rwchcd.conf rwchcd.service
+install: $(MAIN)
 	install -m 755 -o nobody -g nogroup -d $(VARLIBDIR)/
 	install -D -s $(MAIN) -t /usr/sbin/
-ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
-	install -m 644 -D dbus/org.slashdirt.rwchcd.conf -t $(DBUSSYSTEMDIR)/
-	install -m 644 -D dbus/rwchcd.service -t $(SYSTEMDUNITDIR)/
-	systemctl enable rwchcd.service
-endif
 	@echo Done
 
 uninstall:
 	$(RM) /usr/sbin/$(MAIN)
 	$(RM) -r $(VARLIBDIR)
-ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
-	$(RM) $(DBUSSYSTEMDIR)/org.slashdirt.rwchcd.conf
-	systemctl disable rwchcd.service
-	$(RM) $(SYSTEMDUNITDIR)/rwchcd.service
-endif
 	@echo Done
 
 doc:	Doxyfile

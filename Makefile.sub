@@ -20,5 +20,5 @@ clean:
 distclean:	clean
 
 -include $(DEPS) 
-.PHONY:	all clean distclean
+.PHONY:	all clean distclean install uninstall
 .DEFAULT: ;
