@@ -53,7 +53,7 @@ struct s_dummy_pdata {
 			inid_t l;	///< last free temps slot
 			struct s_dummy_temperature * all;	///< pointer to array of temperatures size n
 		} temps;
-	 in;		///< inputs
+	} in;		///< inputs
 	struct {
 		struct {
 			outid_t n;	///< number of allocated relays
