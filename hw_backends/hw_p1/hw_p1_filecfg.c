@@ -86,7 +86,7 @@ static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw)
 	if (!FCD_Exhaustive && !hw->settings.nsensors)
 		return;
 
-	filecfg_iprintf("sensors {\n");
+	filecfg_iprintf("temperatures {\n");
 	filecfg_ilevel_inc();
 
 	for (id = 0; id < hw->settings.nsensors; id++)
@@ -296,7 +296,7 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers hw_p1_parsers[] = {
 		{ NODESTR, "type", true, parse_type, NULL, },
-		{ NODELST, "sensors", false, sensors_parse, NULL, },
+		{ NODELST, "temperatures", false, sensors_parse, NULL, },
 		{ NODELST, "relays", false, relays_parse, NULL, },
 	};
 	void * hw;
