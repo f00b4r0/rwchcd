@@ -776,7 +776,7 @@ int plant_offline(struct s_plant * restrict const plant)
 	}
 
 	memset(&plant->run, 0x0, sizeof(plant->run));
-	memset(&plant->pdata, 0x0, sizeof(plant->pdata));
+	memset(&plant->pdata.run, 0x0, sizeof(plant->pdata.run));
 	
 	if (suberror)
 		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
