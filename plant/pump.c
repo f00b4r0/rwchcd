@@ -54,14 +54,17 @@ void pump_del(struct s_pump * restrict pump)
  */
 int pump_online(struct s_pump * restrict const pump)
 {
+	int ret;
+
 	if (!pump)
 		return (-EINVALID);
 
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!outputs_relay_name(pump->set.rid_pump)) {
-		pr_err(_("\"%s\": invalid relay id"), pump->name);
+	ret = outputs_relay_state_get(pump->set.rid_pump);
+	if (ret < 0) {
+		pr_err(_("\"%s\": failed to get relay state (%d)"), pump->name, ret);
 		return (-EMISCONFIGURED);
 	}
 

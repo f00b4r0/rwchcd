@@ -453,13 +453,17 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
  */
 static int valve_m3way_online(struct s_valve * const valve)
 {
-	if (!outputs_relay_name(valve->set.mset.m3way.rid_open)) {
-		pr_err(_("\"%s\": Invalid relay ID for motor open"), valve->name);
+	int ret;
+
+	ret = outputs_relay_state_get(valve->set.mset.m3way.rid_open);
+	if (ret < 0) {
+		pr_err(_("\"%s\": Failed to get relay state for motor open (%d)"), valve->name, ret);
 		return (-EMISCONFIGURED);
 	}
 
-	if (!outputs_relay_name(valve->set.mset.m3way.rid_close)) {
-		pr_err(_("\"%s\": Invalid relay ID for motor close"), valve->name);
+	ret = outputs_relay_state_get(valve->set.mset.m3way.rid_close);
+	if (ret < 0) {
+		pr_err(_("\"%s\": Failed to get relay state for motor close (%d)"), valve->name, ret);
 		return (-EMISCONFIGURED);
 	}
 
@@ -473,8 +477,11 @@ static int valve_m3way_online(struct s_valve * const valve)
  */
 static int valve_m2way_online(struct s_valve * const valve)
 {
-	if (!outputs_relay_name(valve->set.mset.m2way.rid_trigger)) {
-		pr_err(_("\"%s\": Invalid relay ID for motor trigger"), valve->name);
+	int ret;
+
+	ret = outputs_relay_state_get(valve->set.mset.m2way.rid_trigger);
+	if (ret < 0) {
+		pr_err(_("\"%s\": Failed to get relay state for motor trigger (%d)"), valve->name, ret);
 		return (-EMISCONFIGURED);
 	}
 
