@@ -158,6 +158,7 @@ int pump_run(struct s_pump * restrict const pump)
 {
 	const timekeep_t now = timekeep_now();
 	timekeep_t elapsed;
+	bool state;
 	int ret;
 
 	if (unlikely(!pump))
@@ -167,6 +168,10 @@ int pump_run(struct s_pump * restrict const pump)
 		return (-EOFFLINE);
 
 	pump->run.active = true;	// XXX never set false because we don't really need to for now
+
+	state = !!outputs_relay_state_get(pump->set.rid_pump);	// assumed cannot fail
+	if (state == pump->run.req_on)
+		return (ALL_OK);
 
 	// apply cooldown to turn off, only if not forced.
 	// If ongoing cooldown, resume it, otherwise restore default value
