@@ -553,24 +553,21 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	/* burner control */
 	now = timekeep_now();
-	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner
-	if (boiler->run.actual_temp < trip_temp) {		// trip condition
+	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner - state_get() is assumed not to fail
+	if ((boiler->run.actual_temp < trip_temp) && !outputs_relay_state_get(boiler->set.rid_burner_1)) {		// trip condition
 		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// cooldown start
 			ret = outputs_relay_state_set(boiler->set.rid_burner_1, ON);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}
-	else if (boiler->run.actual_temp > untrip_temp) {	// untrip condition
+	else if ((boiler->run.actual_temp > untrip_temp) && outputs_relay_state_get(boiler->set.rid_burner_1)) {	// untrip condition
 		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
 			ret = outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}
-
-	if (ret > 0)	// cooldown isn't an error
-		ret = ALL_OK;
 
 	// computations performed while burner is on
 	if (outputs_relay_state_get(boiler->set.rid_burner_1) > 0) {
