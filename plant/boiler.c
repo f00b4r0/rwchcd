@@ -302,7 +302,7 @@ static void boiler_antifreeze(struct s_boiler_priv * const boiler)
  */
 static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 {
-	const timekeep_t deriv_tau = timekeep_sec_to_tk(120);
+	timekeep_t deriv_tau;
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t temp_intgrl, ret_temp = 0, target_temp = RWCHCD_TEMP_NOREQUEST;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
@@ -382,6 +382,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	 * this will make the derivative lag behind true value, but since we're only interested in the time
 	 * difference between two arbitrary values computed with the same lag, it doesn't matter. */
 	/// @todo variable tau
+	deriv_tau = outputs_relay_state_get(boiler->set.rid_burner_1) ? timekeep_sec_to_tk(20) : timekeep_sec_to_tk(120);
 	temp_lin_deriv(&boiler->run.temp_drv, boiler->run.actual_temp, boiler_ttime, deriv_tau);
 
 	/// @todo review integral jacketing - maybe use a PI(D) instead?
