@@ -124,7 +124,7 @@ static int temperature_update(struct s_temperature * const t)
 
 end:
 	// temperature is updated if the above loop returns successfully
-	if (ALL_OK == ret) {
+	if (likely(ALL_OK == ret)) {
 		atomic_store_explicit(&t->run.value, new, memory_order_relaxed);
 		atomic_store_explicit(&t->run.last_update, now, memory_order_relaxed);
 	}

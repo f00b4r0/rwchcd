@@ -89,7 +89,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 
 end:
 	// at least one good relay must be reached for the value to be updated
-	if (ALL_OK == ret)
+	if (likely(ALL_OK == ret))
 		atomic_store_explicit(&r->run.turn_on, turn_on, memory_order_relaxed);
 
 	atomic_flag_clear_explicit(&r->run.lock, memory_order_release);
