@@ -210,6 +210,8 @@ static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg
 	return (ret);
 }
 
+FILECFG_PARSER_INT_PARSE_NEST_FUNC(true, s_valve, set.mset.m3way., deadband)
+
 static int fcp_rid_valve_m3way_rid_open(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
@@ -225,6 +227,7 @@ static int fcp_rid_valve_m3way_rid_close(void * restrict const priv, const struc
 static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEINT,	"deadband",	false,	fcp_int_s_valve_deadband,	NULL, },
 		{ NODESTR,	"rid_open",	true,	fcp_rid_valve_m3way_rid_open,	NULL, },
 		{ NODESTR,	"rid_close",	true,	fcp_rid_valve_m3way_rid_close,	NULL, },
 	};
@@ -279,7 +282,6 @@ static int valve_m2way_parser(void * restrict const priv, const struct s_filecfg
 	return (ALL_OK);
 }
 
-FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_valve, deadband)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve, ete_time)
 
 static int fcp_valve_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -317,7 +319,6 @@ static int fcp_valve_motor(void * restrict const priv, const struct s_filecfg_pa
 int filecfg_valve_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT,		"deadband",	false,	fcp_int_s_valve_deadband,	NULL, },
 		{ NODEINT|NODEDUR,	"ete_time",	true,	fcp_tk_s_valve_ete_time,	NULL, },
 		{ NODESTR,		"type",		true,	fcp_valve_type,			NULL, },
 		{ NODESTR,		"motor",	true,	fcp_valve_motor,		NULL, },

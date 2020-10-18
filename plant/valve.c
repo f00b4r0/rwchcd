@@ -95,7 +95,8 @@ int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
 	if (tcourse >= 1000)
 		tcourse = 1000;
 
-	if (tcourse < valve->set.deadband)
+	// deadband only applies to 3way motors
+	if ((VA_M_3WAY == valve->set.motor) && (tcourse < valve->set.mset.m3way.deadband))
 		return (-EDEADBAND);
 
 	valve->run.request_action = (perth < 0) ? CLOSE : OPEN;

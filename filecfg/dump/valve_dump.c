@@ -155,6 +155,8 @@ static int filecfg_valve_type_dump(const struct s_valve * restrict const valve)
 
 static int filecfg_valve_m3way_dump(const struct s_valve * restrict const valve)
 {
+	if (FCD_Exhaustive || valve->set.mset.m3way.deadband)
+		filecfg_iprintf("deadband %" PRIdFAST16 ";\n", valve->set.mset.m3way.deadband);
 	filecfg_dump_nodestr("rid_open", outputs_relay_name(valve->set.mset.m3way.rid_open));	// mandatory
 	filecfg_dump_nodestr("rid_close", outputs_relay_name(valve->set.mset.m3way.rid_close));	// mandatory
 
@@ -213,8 +215,6 @@ int filecfg_valve_dump(const struct s_valve * restrict const valve)
 	filecfg_iprintf("valve \"%s\" {\n", valve->name);
 	filecfg_ilevel_inc();
 
-	if (FCD_Exhaustive || valve->set.deadband)
-		filecfg_iprintf("deadband %" PRIdFAST16 ";\n", valve->set.deadband);
 	filecfg_dump_tk("ete_time", valve->set.ete_time);		// mandatory
 
 	filecfg_iprintf("type"); filecfg_valve_type_dump(valve);	// mandatory

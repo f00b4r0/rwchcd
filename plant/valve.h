@@ -75,6 +75,7 @@ enum e_valve_type {
 
 /** Private structure for 3way motorisation settings */
 struct s_valve_motor_3way_set {
+	uint_fast16_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
 	orid_t rid_open;	///< relay for opening the valve
 	orid_t rid_close;	///< relay for closing the valve
 };
@@ -116,7 +117,6 @@ union u_valve_type_set {
 struct s_valve {
 	struct {
 		bool configured;	///< true if properly configured
-		uint_fast16_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
 		timekeep_t ete_time;	///< end-to-end run time
 		enum e_valve_type type;	///< type of valve
 		enum e_valve_motor motor;	///< type of motor
