@@ -382,7 +382,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	 * this will make the derivative lag behind true value, but since we're only interested in the time
 	 * difference between two arbitrary values computed with the same lag, it doesn't matter. */
 	/// @todo variable tau
-	temp_expw_deriv(&boiler->run.temp_drv, boiler->run.actual_temp, boiler_ttime, deriv_tau);
+	temp_lin_deriv(&boiler->run.temp_drv, boiler->run.actual_temp, boiler_ttime, deriv_tau);
 
 	/// @todo review integral jacketing - maybe use a PI(D) instead?
 	// handle boiler minimum temp if set

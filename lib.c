@@ -76,29 +76,24 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 }
 
 /**
- * Exponentially weighted derivative.
- * Computes an exponentially weighted discrete derivative in the time domain.
+ * Compute a linear discrete derivative in the time domain.
  * This function computes a discrete derivative by subtracting the new sample value with the last sample
- * value over the total time elapsed between the two samples, and then averages this result over
- * #spread samples by using temp_expw_mavg().
- * Thus by design this function will lag the true derivative, especially for large #tau values.
+ * value over the total time elapsed between the two samples.
  * @param deriv derivative data
  * @param new_temp new temperature point
  * @param new_time new temperature time
- * @param tau the strictly positive time to average over (averaging window). Must be >= 8.
+ * @param tau the strictly positive time to sample over.
  * @return a scaled derivative value congruent to temp_t units / timekeep_t units.
  *
  * @warning the output is scaled. Multiplication and division should use the correct accessors.
- * @note To reduce rounding errors, the function subsamples 4 times.
  */
-temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau)
+temp_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau)
 {
-	const timekeep_t tsample = tau/4;	 // subsampling ratio
 	timekeep_t timediff;
 	temp_t tempdiff, drv;
 
 	assert(deriv);
-	assert((tau >= 8) && (tau < INT32_MAX));
+	assert(tau < INT32_MAX);
 
 	drv = deriv->derivative;
 
@@ -113,14 +108,14 @@ temp_t temp_expw_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp,
 		if (unlikely(!timediff))
 			goto out;
 
-		// subsample
-		if (timediff < tsample)
+		// wait
+		if (timediff < tau)
 			goto out;
 
 		tempdiff = new_temp - deriv->last_temp;
 		tempdiff *= LIB_DERIV_FPDEC;
 
-		drv = temp_expw_mavg(drv, tempdiff / (signed)timediff, tau, timediff);
+		drv = tempdiff / (signed)timediff;
 		dbgmsg(2, 1, "raw deriv: %d, tempdiff: %d, timediff: %d, tau: %d", drv, tempdiff, timediff, tau);
 	}
 
