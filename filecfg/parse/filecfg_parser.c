@@ -449,7 +449,7 @@ static int filecfg_parser_match_nodelist(const struct s_filecfg_parser_nodelist 
  * @param node the target node to match from children
  * @param parsers the parsers to match with
  * @param nparsers the number of available parsers in parsers[]
- * @return -ENOTFOUND if a required parser didn't match, ALL_OK otherwise
+ * @return -ENOTFOUND if a required parser didn't match, -EEMPTY if node has no children, ALL_OK otherwise
  * @note will report error
  */
 int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const node, struct s_filecfg_parser_parsers parsers[], const unsigned int nparsers)
@@ -457,7 +457,7 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 	int ret;
 
 	if (!node->children)
-		return (-EINVALID);
+		return (-EEMPTY);
 
 	ret = filecfg_parser_match_nodelist(node->children, parsers, nparsers);
 	if (ALL_OK != ret)
