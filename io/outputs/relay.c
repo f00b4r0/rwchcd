@@ -38,6 +38,8 @@ static inline int hardware_relay_set_state(const boutid_t relid, const bool turn
  * @param r the output relay to act on
  * @return exec status
  * @note this function spinlocks
+ * @warning this function assumes that a given software relay has only @b one user that can set its state, and that this user cannot send concurrent requests.
+ * Using this assumption enables to move the check for current state outside of the lock to spare the overhead when the same order is repeated.
  */
 int relay_state_set(struct s_relay * const r, const bool turn_on)
 {
@@ -50,14 +52,14 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 	if (unlikely(!r->set.configured))
 		return (-ENOTCONFIGURED);
 
-	// we must ensure all requests get through. Spinlock if someone else is touching the target
-	while (unlikely(atomic_flag_test_and_set_explicit(&r->run.lock, memory_order_acquire)));
-
+	// we can check here based on the assumption described in the top comment.
 	state = atomic_load_explicit(&r->run.turn_on, memory_order_relaxed);
-	if (turn_on == state) {
-		atomic_flag_clear_explicit(&r->run.lock, memory_order_release);
+	if (turn_on == state)
 		return (ALL_OK);
-	}
+
+	// we must ensure all requests get through. Spinlock if someone else is touching the target.
+	// XXX based on top comment assumption, there should never be contention here
+	while (unlikely(atomic_flag_test_and_set_explicit(&r->run.lock, memory_order_acquire)));
 
 	// a change is needed, let's dive in
 	ret = -EGENERIC;
