@@ -195,6 +195,23 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		}
 	}
 
+	// grab relays
+	if (outputs_relay_name(boiler->set.rid_burner_1)) {
+		ret = outputs_relay_grab(boiler->set.rid_burner_1);
+		if (ALL_OK != ret) {
+			pr_err(_("\"%s\": rid_burner1 is unavailable (%d)"), heat->name, ret);
+			ret = -EMISCONFIGURED;
+		}
+	}
+
+	if (outputs_relay_name(boiler->set.rid_burner_2)) {
+		ret = outputs_relay_grab(boiler->set.rid_burner_2);
+		if (ALL_OK != ret) {
+			pr_err(_("\"%s\": rid_burner2 is unavailable (%d)"), heat->name, ret);
+			ret = -EMISCONFIGURED;
+		}
+	}
+
 out:
 	return (ret);
 }
@@ -218,6 +235,9 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 
 	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
+
+	outputs_relay_thaw(boiler->set.rid_burner_1);
+	outputs_relay_thaw(boiler->set.rid_burner_2);
 
 	if (boiler->set.p.pump_load)
 		pump_shutdown(boiler->set.p.pump_load);

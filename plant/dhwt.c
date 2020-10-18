@@ -138,6 +138,15 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		ret = -EMISCONFIGURED;
 	}
 
+	// grab relay as needed
+	if (outputs_relay_name(dhwt->set.rid_selfheater)) {
+		ret = outputs_relay_grab(dhwt->set.rid_selfheater);
+		if (ALL_OK != ret) {
+			pr_err(_("\"%s\": Relay for self-heater is unavailable (%d)"), dhwt->name, ret);
+			ret = -EMISCONFIGURED;
+		}
+	}
+
 	if (ALL_OK == ret)
 		dhwt->run.online = true;
 
@@ -235,6 +244,8 @@ int dhwt_offline(struct s_dhwt * const dhwt)
 		return (-ENOTCONFIGURED);
 
 	dhwt_shutdown(dhwt);
+
+	outputs_relay_thaw(dhwt->set.rid_selfheater);
 
 	memset(&dhwt->run, 0x0, sizeof(dhwt->run));
 	//dhwt->run.runmode = RM_OFF;	// handled by memset

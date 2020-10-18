@@ -455,15 +455,15 @@ static int valve_m3way_online(struct s_valve * const valve)
 {
 	int ret;
 
-	ret = outputs_relay_state_get(valve->set.mset.m3way.rid_open);
+	ret = outputs_relay_grab(valve->set.mset.m3way.rid_open);
 	if (ret < 0) {
-		pr_err(_("\"%s\": Failed to get relay state for motor open (%d)"), valve->name, ret);
+		pr_err(_("\"%s\": Relay for motor open is unavailable (%d)"), valve->name, ret);
 		return (-EMISCONFIGURED);
 	}
 
-	ret = outputs_relay_state_get(valve->set.mset.m3way.rid_close);
+	ret = outputs_relay_grab(valve->set.mset.m3way.rid_close);
 	if (ret < 0) {
-		pr_err(_("\"%s\": Failed to get relay state for motor close (%d)"), valve->name, ret);
+		pr_err(_("\"%s\": Relay for motor close is unavailable (%d)"), valve->name, ret);
 		return (-EMISCONFIGURED);
 	}
 
@@ -479,9 +479,9 @@ static int valve_m2way_online(struct s_valve * const valve)
 {
 	int ret;
 
-	ret = outputs_relay_state_get(valve->set.mset.m2way.rid_trigger);
+	ret = outputs_relay_grab(valve->set.mset.m2way.rid_trigger);
 	if (ret < 0) {
-		pr_err(_("\"%s\": Failed to get relay state for motor trigger (%d)"), valve->name, ret);
+		pr_err(_("\"%s\": Relay for motor trigger is unavailable (%d)"), valve->name, ret);
 		return (-EMISCONFIGURED);
 	}
 
@@ -607,9 +607,19 @@ int valve_offline(struct s_valve * const valve)
 		return (-ENOTCONFIGURED);
 
 	// stop the valve uncondiditonally
-	if (VA_M_3WAY == valve->set.motor) {
-		(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_open, OFF);
-		(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_close, OFF);
+	switch (valve->set.motor) {
+		case VA_M_3WAY:
+			(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_open, OFF);
+			(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_close, OFF);
+			outputs_relay_thaw(valve->set.mset.m3way.rid_open);
+			outputs_relay_thaw(valve->set.mset.m3way.rid_close);
+			break;
+		case VA_M_2WAY:
+			outputs_relay_thaw(valve->set.mset.m2way.rid_trigger);
+			break;
+		case VA_M_NONE:
+		default:
+			break;
 	}
 
 	memset(&valve->run, 0x00, sizeof(valve->run));

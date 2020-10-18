@@ -62,9 +62,9 @@ int pump_online(struct s_pump * restrict const pump)
 	if (!pump->set.configured)
 		return (-ENOTCONFIGURED);
 
-	ret = outputs_relay_state_get(pump->set.rid_pump);
-	if (ret < 0) {
-		pr_err(_("\"%s\": failed to get relay state (%d)"), pump->name, ret);
+	ret = outputs_relay_grab(pump->set.rid_pump);
+	if (ALL_OK != ret) {
+		pr_err(_("\"%s\": Pump relay is unavailable (%d)"), pump->name, ret);
 		return (-EMISCONFIGURED);
 	}
 
@@ -145,6 +145,8 @@ int pump_offline(struct s_pump * restrict const pump)
 
 	// unconditionally turn pump off
 	(void)!outputs_relay_state_set(pump->set.rid_pump, false);
+
+	outputs_relay_thaw(pump->set.rid_pump);
 
 	memset(&pump->run, 0x00, sizeof(pump->run));
 	//pump->run.online = false;	// handled by memset
