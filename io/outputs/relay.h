@@ -38,6 +38,7 @@ struct s_relay {
 		enum e_relay_miss missing;	///< missing relay behavior see #e_relay_miss. OPTIONAL, defaults to R_MISS_FAIL
 	} set;		///< settings (externally set)
 	struct {
+		atomic_flag grabbed;	///< relay has been claimed by an active user (that will set its state)
 		atomic_flag lock;	///< basic spinlock to avoid multiple threads updating at the same time
 		_Atomic bool turn_on;
 	} run;		///< private runtime (internally handled)
@@ -47,6 +48,8 @@ struct s_relay {
 	const char * restrict name;	///< @b unique user-defined name for the relay
 };
 
+int relay_grab(struct s_relay * const r);
+int relay_thaw(struct s_relay * const r);
 int relay_state_set(struct s_relay * const r, const bool turn_on);
 int relay_state_get(const struct s_relay * const r);
 void relay_clear(struct s_relay * const r);

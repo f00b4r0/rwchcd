@@ -32,6 +32,8 @@ struct s_outputs {
 int outputs_init(void);
 int outputs_relay_fbn(const char * name);
 const char * outputs_relay_name(const orid_t tid);
+int outputs_relay_grab(const orid_t rid);
+int outputs_relay_thaw(const orid_t rid);
 int outputs_relay_state_set(const orid_t tid, const bool turn_on) __attribute__((warn_unused_result));
 int outputs_relay_state_get(const orid_t tid);
 void outputs_exit(void);

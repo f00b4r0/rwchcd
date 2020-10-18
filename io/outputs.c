@@ -75,6 +75,38 @@ const char * outputs_relay_name(const orid_t rid)
 }
 
 /**
+ * Grab an output relay for exclusive use.
+ * This function must be called by every active user (i.e. a state-setting user) of a relay to ensure exclusive write-access to the underlying relay.
+ * @param rid the relay output id to grab
+ * @return exec status
+ * @note This function should obviously be used only once, typically in online() call
+ */
+int outputs_relay_grab(const orid_t rid)
+{
+	const orid_t id = outputs_orid_to_id(rid);
+
+	if (unlikely(id >= Outputs.relays.last))
+		return (-EINVALID);
+
+	return (relay_grab(&Outputs.relays.all[id]));
+}
+
+/**
+ * Thaw an output relay that was previously grabbed.
+ * @param rid the relay output id to grab
+ * @return exec status
+ */
+int outputs_relay_thaw(const orid_t rid)
+{
+	const orid_t id = outputs_orid_to_id(rid);
+
+	if (unlikely(id >= Outputs.relays.last))
+		return (-EINVALID);
+
+	return (relay_thaw(&Outputs.relays.all[id]));
+}
+
+/**
  * Get a relay output value.
  * @param rid the relay output id to act on
  * @param turn_on the requested state for the relay

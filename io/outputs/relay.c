@@ -23,6 +23,45 @@
 #include "io/hardware.h"
 #include "relay.h"
 
+/**
+ * Grab a relay for exclusive use.
+ * @param r the relay to claim
+ * @return exec status
+ */
+int relay_grab(struct s_relay * const r)
+{
+	bool prev;
+
+	assert(r);
+
+	if (unlikely(!r->set.configured))
+		return (-ENOTCONFIGURED);
+
+	prev = atomic_flag_test_and_set(&r->run.grabbed);
+
+	if (prev)
+		return (-EEXISTS);
+	else
+		return (ALL_OK);
+}
+
+/**
+ * Thaw a relay that was previously grabbed.
+ * @param r the relay to claim
+ * @return exec status
+ */
+int relay_thaw(struct s_relay * const r)
+{
+	assert(r);
+
+	if (unlikely(!r->set.configured))
+		return (-ENOTCONFIGURED);
+
+	atomic_flag_clear(&r->run.grabbed);
+
+	return (ALL_OK);
+}
+
 static inline int hardware_relay_set_state(const boutid_t relid, const bool turn_on)
 {
 	const u_hw_out_state_t state = { turn_on };
@@ -38,7 +77,7 @@ static inline int hardware_relay_set_state(const boutid_t relid, const bool turn
  * @param r the output relay to act on
  * @return exec status
  * @note this function spinlocks
- * @warning this function assumes that a given software relay has only @b one user that can set its state, and that this user cannot send concurrent requests.
+ * @warning this function assumes that a given software relay has only @b one user that can set its state (as enforced by relay_grab()), and that this user cannot send concurrent requests.
  * Using this assumption enables to move the check for current state outside of the lock to spare the overhead when the same order is repeated.
  */
 int relay_state_set(struct s_relay * const r, const bool turn_on)
