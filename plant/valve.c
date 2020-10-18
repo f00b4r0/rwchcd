@@ -939,10 +939,10 @@ int valve_make_pi(struct s_valve * const valve,
  */
 int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 {
-	if (!valve || (VA_TYPE_MIX != valve->set.type))
+	if (unlikely(!valve || (VA_TYPE_MIX != valve->set.type)))
 		return (-EINVALID);
 
-	if (!valve->run.online)
+	if (unlikely(!valve->run.online))
 		return (-EOFFLINE);
 
 	switch (valve->set.tset.tmix.algo) {
@@ -969,10 +969,10 @@ int valve_isol_trigger(struct s_valve * const valve, bool isolate)
 	int_fast16_t reqisol = -VALVE_REQMAXPTH;	// full close by default
 	int ret;
 
-	if (!valve || (VA_TYPE_ISOL != valve->set.type))
+	if (unlikely(!valve || (VA_TYPE_ISOL != valve->set.type)))
 		return (-EINVALID);
 
-	if (!valve->run.online)
+	if (unlikely(!valve->run.online))
 		return (-EOFFLINE);
 
 	if (valve->set.tset.tisol.reverse)
