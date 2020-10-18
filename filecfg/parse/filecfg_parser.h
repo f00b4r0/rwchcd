@@ -140,8 +140,8 @@ static int fcp_bool_##_struct##_##_member(void * restrict const priv, const stru
 #define FILECFG_PARSER_BOOL_PARSE_FUNC(_struct, _member)			\
 FILECFG_PARSER_BOOL_PARSE_NEST_FUNC(_struct, , _member)
 
-#define FILECFG_PARSER_INT_PARSE_SET_FUNC(_positiveonly, _struct, _setmember)	\
-static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+#define FILECFG_PARSER_INT_PARSE_NEST_FUNC(_positiveonly, _struct, _nest, _member)	\
+static int fcp_int_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
 	int iv = n->value.intval;						\
@@ -149,9 +149,12 @@ static int fcp_int_##_struct##_##_setmember(void * restrict const priv, const st
 	if (n->children) return(-ENOTWANTED);					\
 	if (_positiveonly && (iv < 0))						\
 		return (-EINVALID);						\
-	s->set._setmember = iv;							\
+	s->_nest _member = iv;							\
 	return (ALL_OK);							\
 }
+
+#define FILECFG_PARSER_INT_PARSE_SET_FUNC(_positiveonly, _struct, _setmember)	\
+FILECFG_PARSER_INT_PARSE_NEST_FUNC(_positiveonly, _struct, set., _setmember)
 
 #define FILECFG_PARSER_STR_PARSE_SET_FUNC(_nonempty, _struct, _setmember)	\
 static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
