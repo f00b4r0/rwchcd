@@ -192,10 +192,16 @@ static int fcp_bool_valve_tisol_reverse(void * restrict const priv, const struct
 static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL,	"reverse",	true,	fcp_bool_valve_tisol_reverse,	NULL, },
+		{ NODEBOL,	"reverse",	false,	fcp_bool_valve_tisol_reverse,	NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
 	int ret;
+
+	// empty config
+	if (!node->children) {
+		ret = ALL_OK;
+		goto out;
+	}
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
@@ -205,6 +211,7 @@ static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg
 	if (ALL_OK != ret)
 		return (ret);
 
+out:
 	valve->set.type = VA_TYPE_ISOL;
 
 	return (ret);
