@@ -447,6 +447,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage
+ * @note will trigger an alarm if burner stays on for >6h without heat output
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
@@ -574,16 +575,15 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	/* burner control */
 	now = timekeep_now();
+	elapsed = now - boiler->run.burner_1_last_switch;
 	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner - state_get() is assumed not to fail
 	if ((boiler->run.actual_temp < trip_temp) && !outputs_relay_state_get(boiler->set.rid_burner_1)) {		// trip condition
-		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// cooldown start
 			ret = outputs_relay_state_set(boiler->set.rid_burner_1, ON);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}
 	else if ((boiler->run.actual_temp > untrip_temp) && outputs_relay_state_get(boiler->set.rid_burner_1)) {	// untrip condition
-		elapsed = now - boiler->run.burner_1_last_switch;
 		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
 			ret = outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 			boiler->run.burner_1_last_switch = now;
@@ -595,6 +595,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
 		if (boiler->set.limit_tmin < boiler->run.actual_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
+		// otherwise if boiler doesn't heat up after 6h we very likely have a problem
+		else if (unlikely(elapsed > timekeep_sec_to_tk(3600*6)))
+			alarms_raise(-EGENERIC, "Burner failure", NULL);
 
 		// compute turn-on anticipation for next run
 		if (temp_deriv < 0) {
