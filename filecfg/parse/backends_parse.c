@@ -46,8 +46,11 @@ static int hardware_backend_parse(void * restrict const priv, const struct s_fil
 	unsigned int i;
 	int ret = -EGENERIC;
 
-	for (i = 0; ret && (i < ARRAY_SIZE(HWparsers)); i++)
+	for (i = 0; ret && (i < ARRAY_SIZE(HWparsers)); i++) {
 		ret = HWparsers[i](node);
+		if (ALL_OK == ret)
+			break;
+	}
 
 	return (ret);
 }
