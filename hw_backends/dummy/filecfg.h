@@ -11,11 +11,11 @@
  * Dummy backend file configuration API.
  */
 
-#ifndef filecfg_h
-#define filecfg_h
+#ifndef dummy_filecfg_h
+#define dummy_filecfg_h
 
 #include "filecfg/parse/filecfg_parser.h"
 
 int dummy_filecfg_parse(const struct s_filecfg_parser_node * const node);
 
-#endif /* filecfg_h */
+#endif /* dummy_filecfg_h */

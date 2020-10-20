@@ -11,8 +11,8 @@
  * Dummy backend interface.
  */
 
-#ifndef backend_h
-#define backend_h
+#ifndef dummy_backend_h
+#define dummy_backend_h
 
 #include "rwchcd.h"
 #include "hw_backends/hw_backends.h"
@@ -67,4 +67,4 @@ int dummy_input_ibn(void * const priv, const enum e_hw_input_type type, const ch
 int dummy_output_ibn(void * const priv, const enum e_hw_output_type type, const char * const name);
 int dummy_backend_register(void * priv, const char * const name);
 
-#endif /* backend_h */
+#endif /* dummy_backend_h */
