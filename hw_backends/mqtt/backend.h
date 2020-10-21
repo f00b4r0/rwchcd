@@ -48,10 +48,6 @@ struct s_mqtt_relay {
 	struct {
 		bool configured;	///< true if properly configured
 	} set;		///< settings (externally set)
-	struct {
-		_Atomic bool turn_on;	///< desired target state
-		_Atomic bool state;	///< last published state (in output() cycle)
-	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the relay
 };
 

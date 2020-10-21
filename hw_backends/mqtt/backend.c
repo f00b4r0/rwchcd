@@ -12,7 +12,7 @@
  * The backend exchanges string messages, and uses the mosquitto_loop_start() threaded model.
  * For the time being the backend publishes and subscribes under a single topic root, set in config.
  * It will publish messages for its outputs, and will subscribe to messages for its inputs.
- * Outputs are coalesced, inputs are updated as received.
+ * Outputs are published when toggled, inputs are updated as received.
  * @warning This backend is a convenience-only implementation.
  * For safety reasons discernment shall be applied when using it to interface with inputs, let alone outputs connected to appliances.
  */
@@ -332,44 +332,6 @@ static int mqtt_pub_state(const struct s_mqtt_pdata * const hw, enum e_hw_output
 }
 
 /**
- * MQTT backend output loop, publish output changes.
- * Using this function instead of publishing messages directly in mqtt_output_state_set() allows for coalescing and synchronization of outputs changes.
- * The resulting MQTT topic is in the form `<topic_root>/<type>/<output_name>` where `<topic_root>` is the backend setting, `<type>` is the output type string
- * (see #mqtt_outtype_subtopics) and `<output_name>` is the output name from configuration.
- * @param priv private backend data
- * @return exec status
- * @note this function systematically publishes all states of all outputs (even if no change occured)
- */
-static int mqtt_output(void * priv)
-{
-	struct s_mqtt_pdata * restrict const hw = priv;
-	union {
-		struct s_mqtt_relay * r;
-	} u;
-	union u_hw_out_state s;
-	outid_t id;
-	int ret;
-
-	assert(hw);
-
-	if (!hw->run.online)
-		return (-EOFFLINE);
-
-	for (id = 0; id < hw->out.rels.l; id++) {
-		u.r = &hw->out.rels.all[id];
-		if (unlikely(!u.r->set.configured))
-			continue;
-		s.relay = atomic_load_explicit(&u.r->run.turn_on, memory_order_relaxed);
-		ret = mqtt_pub_state(hw, HW_OUTPUT_RELAY, u.r->name, s.relay ? "1" : "0");
-		if (ALL_OK != ret)
-			return (ret);
-		atomic_store_explicit(&u.r->run.state, s.relay, memory_order_relaxed);
-	}
-
-	return (ALL_OK);
-}
-
-/**
  * Offline MQTT backend.
  * @param priv private backend data
  * @return exec status
@@ -480,25 +442,26 @@ static int mqtt_output_state_set(void * const priv, const enum e_hw_output_type 
 	union {
 		struct s_mqtt_relay * r;
 	} u;
+	int ret;
 
 	assert(hw && state);
 
 	switch (type) {
 		case HW_OUTPUT_RELAY:
-			/// For relays he message is either "0" or "1" depending on the target state.
+			/// For relays he message is either "off" or "on" depending on the target state.
 			if (unlikely((oid >= hw->out.rels.l)))
 				return (-EINVALID);
 			u.r = &hw->out.rels.all[oid];
 			if (unlikely(!u.r->set.configured))
 				return (-ENOTCONFIGURED);
-			atomic_store_explicit(&u.r->run.turn_on, state->relay, memory_order_relaxed);
+			ret = mqtt_pub_state(hw, HW_OUTPUT_RELAY, u.r->name, state->relay ? "on" : "off");
 			break;
 		case HW_OUTPUT_NONE:
 		default:
-			return (-EINVALID);
+			ret = -EINVALID;
 	}
 
-	return (ALL_OK);
+	return (ret);
 }
 
 /**
@@ -703,7 +666,6 @@ static struct s_hw_callbacks mqtt_callbacks = {
 	.exit = mqtt_exit,
 	.online = mqtt_online,
 	.offline = mqtt_offline,
-	.output = mqtt_output,
 	.input_value_get = mqtt_input_value_get,
 	.input_time_get = mqtt_input_time_get,
 	.output_state_set = mqtt_output_state_set,
