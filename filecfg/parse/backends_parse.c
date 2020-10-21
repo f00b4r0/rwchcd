@@ -164,8 +164,8 @@ struct s_fcp_hwbkend {
 	} set;
 };
 
-FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, backend)
-FILECFG_PARSER_STR_PARSE_SET_FUNC(true, s_fcp_hwbkend, name)
+FILECFG_PARSER_STR_PARSE_SET_FUNC(true, false, s_fcp_hwbkend, backend)
+FILECFG_PARSER_STR_PARSE_SET_FUNC(true, false, s_fcp_hwbkend, name)
 
 /**
  * Parse a temperature sensor configuration reference.

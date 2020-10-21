@@ -156,7 +156,7 @@ static int fcp_int_##_struct##_##_member(void * restrict const priv, const struc
 #define FILECFG_PARSER_INT_PARSE_SET_FUNC(_positiveonly, _struct, _setmember)	\
 FILECFG_PARSER_INT_PARSE_NEST_FUNC(_positiveonly, _struct, set., _setmember)
 
-#define FILECFG_PARSER_STR_PARSE_SET_FUNC(_nonempty, _struct, _setmember)	\
+#define FILECFG_PARSER_STR_PARSE_SET_FUNC(_nonempty, _dup, _struct, _setmember)	\
 static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
@@ -165,7 +165,7 @@ static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const st
 	if (n->children) return(-ENOTWANTED);					\
 	if (_nonempty && (strlen(str) < 1))					\
 		return (-EINVALID);						\
-	s->set._setmember = str;						\
+	s->set._setmember = (_dup) ? strdup(str) : str;						\
 	return (ALL_OK);							\
 }
 
