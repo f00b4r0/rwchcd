@@ -251,8 +251,9 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 				dbgmsg(1, 1, "decimating sensor %d value, samples ignored: %d", i+1, hw->scount[i]);
 			else {
 				// apply LP filter - ensure we only apply filtering on valid temps
+				// scount[i]+1 will ensure that if we exceed decimation threshold, the new value "weighs in" immediately
+				atomic_store_explicit(&sensor->run.value, temp_expw_mavg(previous, current, hw->set.nsamples, hw->scount[i]+1), memory_order_relaxed);
 				hw->scount[i] = 0;
-				atomic_store_explicit(&sensor->run.value, temp_expw_mavg(previous, current, hw->set.nsamples, 1), memory_order_relaxed);
 			}
 		}
 	}
