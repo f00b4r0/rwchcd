@@ -111,7 +111,7 @@ int filecfg_temperature_parse(void * restrict const priv, const struct s_filecfg
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEDUR,	"period",	true,	fcp_tk_s_temperature_period,	NULL, },
 		{ NODEINT|NODEFLT, "igntemp",	false,	fcp_temp_s_temperature_igntemp,	NULL, },
-		{ NODESTR,	"operation",	false,	fcp_enum_s_temperature_op,	NULL, },
+		{ NODESTR,	"op",		false,	fcp_enum_s_temperature_op,	NULL, },
 		{ NODESTR,	"missing",	false,	fcp_enum_s_temperature_missing,	NULL, },
 		{ NODELST,	"sources",	true,	sources_parse,			NULL, },
 	};

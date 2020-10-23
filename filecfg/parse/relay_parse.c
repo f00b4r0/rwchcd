@@ -103,7 +103,7 @@ FILECFG_PARSER_ENUM_PARSE_SET_FUNC(relay_miss_str, s_relay, missing)
 int filecfg_relay_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,	"operation",	false,	fcp_enum_s_relay_op,		NULL, },
+		{ NODESTR,	"op",		false,	fcp_enum_s_relay_op,		NULL, },
 		{ NODESTR,	"missing",	false,	fcp_enum_s_relay_missing,	NULL, },
 		{ NODELST,	"targets",	true,	targets_parse,			NULL, },
 	};
