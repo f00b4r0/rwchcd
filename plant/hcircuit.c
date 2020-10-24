@@ -615,7 +615,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 					if (circuit->set.am_tambient_tK) {	// only if necessary data is available
 						/* XXX count active time only if approximate output power is > HC_LOGIC_MIN_POWER_TRANS_UP %
 						 (linear) approximate output power is (actual_wtemp - ambient) / (target_wtemp - ambient) */
-						if ((100 * (circuit->run.actual_wtemp - circuit->run.actual_ambient) / (circuit->run.target_wtemp - circuit->run.actual_ambient)) > HC_LOGIC_MIN_POWER_TRANS_UP)
+						if ((circuit->run.target_wtemp > circuit->run.actual_ambient) &&	// XXX REVISIT work around divide by 0
+						    (100 * (circuit->run.actual_wtemp - circuit->run.actual_ambient) / (circuit->run.target_wtemp - circuit->run.actual_ambient)) > HC_LOGIC_MIN_POWER_TRANS_UP)
 							circuit->run.trans_active_elapsed += elapsed_time;
 
 						// tstart + elevation over time: tstart + ((elapsed_time * KPRECISION/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
