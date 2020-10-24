@@ -23,6 +23,9 @@
  #include "log/log_rrd.h"
 #endif
 #include "log/log_statsd.h"
+#ifdef HAS_MQTT
+ #include "log/log_mqtt.h"
+#endif
 
 extern struct s_log Log;
 
@@ -38,6 +41,9 @@ static struct {
 	{ LOG_BKEND_RRD_NAME,		log_rrd_hook,		NULL,				NULL,				false,	},	// rrd has no configuration
 #endif
 	{ LOG_BKEND_STATSD_NAME,	log_statsd_hook,	log_statsd_filecfg_parse,	log_statsd_filecfg_dump,	false,	},
+#ifdef HAS_MQTT
+	{ LOG_BKEND_MQTT_NAME,		log_mqtt_hook,		log_mqtt_filecfg_parse,		log_mqtt_filecfg_dump,		false,	},
+#endif
 };
 
 

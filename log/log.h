@@ -32,6 +32,7 @@ enum e_log_bend {
 	LOG_BKEND_FILE,
 	LOG_BKEND_RRD,
 	LOG_BKEND_STATSD,	///< StatsD backend
+	LOG_BKEND_MQTT,		///< MQTT backend
 };
 
 /** discrete logging schedules */

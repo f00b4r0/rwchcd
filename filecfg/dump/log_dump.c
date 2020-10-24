@@ -20,6 +20,9 @@
  #include "log/log_rrd.h"
 #endif
 #include "log/log_statsd.h"
+#ifdef HAS_MQTT
+ #include "log/log_mqtt.h"
+#endif
 
 extern struct s_log Log;
 
@@ -34,6 +37,10 @@ static const char * log_config_dump_bkend_name(const struct s_log_bendcbs * rest
 #endif
 		case LOG_BKEND_STATSD:
 			return (LOG_BKEND_STATSD_NAME);
+#ifdef HAS_MQTT
+		case LOG_BKEND_MQTT:
+			return (LOG_BKEND_MQTT_NAME);
+#endif
 		default:
 			return ("unknown");
 	}
