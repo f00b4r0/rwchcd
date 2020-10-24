@@ -41,16 +41,10 @@ static const storage_version_t Models_sversion = 5;
 static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const object)
 {
 	const struct s_bmodel * const bmodel = object;
-	static const log_key_t keys[] = {
-		"summer", "frost", "t_out", "t_out_filt", "t_out_mix", "t_out_att",
-	};
-	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
-	};
-	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 
 	assert(ldata);
+	assert(ldata->nkeys >= 6);
 
 	if (!bmodel)
 		return (-EINVALID);
@@ -58,17 +52,13 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 	if (!bmodel->run.online)
 		return (-EOFFLINE);
 
-	values[i++] = bmodel->run.summer;
-	values[i++] = bmodel->run.frost;
-	values[i++] = bmodel->run.t_out;
-	values[i++] = bmodel->run.t_out_filt;
-	values[i++] = bmodel->run.t_out_mix;
-	values[i++] = bmodel->run.t_out_att;
+	ldata->values[i++] = bmodel->run.summer;
+	ldata->values[i++] = bmodel->run.frost;
+	ldata->values[i++] = bmodel->run.t_out;
+	ldata->values[i++] = bmodel->run.t_out_filt;
+	ldata->values[i++] = bmodel->run.t_out_mix;
+	ldata->values[i++] = bmodel->run.t_out_att;
 
-	ldata->keys = keys;
-	ldata->metrics = metrics;
-	ldata->values = values;
-	ldata->nkeys = ARRAY_SIZE(keys);
 	ldata->nvalues = i;
 
 	return (ALL_OK);
@@ -82,6 +72,12 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
  */
 static const struct s_log_source * bmodel_lreg(const struct s_bmodel * const bmodel)
 {
+	static const log_key_t keys[] = {
+		"summer", "frost", "t_out", "t_out_filt", "t_out_mix", "t_out_att",
+	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
 	const log_version_t version = 1;
 	static struct s_log_source Bmodel_lreg;
 
@@ -90,6 +86,9 @@ static const struct s_log_source * bmodel_lreg(const struct s_bmodel * const bmo
 		.basename = MODELS_STORAGE_BMODEL_PREFIX,
 		.identifier = bmodel->name,
 		.version = version,
+		.nkeys = ARRAY_SIZE(keys),
+		.keys = keys,
+		.metrics = metrics,
 		.logdata_cb = bmodel_logdata_cb,
 		.object = bmodel,
 	};

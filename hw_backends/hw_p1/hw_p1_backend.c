@@ -37,17 +37,10 @@
 static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object)
 {
 	const struct s_hw_p1_pdata * const hw = object;
-	static const log_key_t keys[] = {
-		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
-	};
-	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
-	};
-	static log_value_t values[ARRAY_SIZE(keys)];
 	uint_fast8_t i = 0;
 
 	assert(ldata);
-	assert(ARRAY_SIZE(keys) >= RWCHC_NTSENSORS);
+	assert(ldata->nkeys >= RWCHC_NTSENSORS);
 
 	if (!hw->run.online)
 		return (-EOFFLINE);
@@ -56,12 +49,8 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		return (-EINVALID);	// data not ready
 
 	for (i = 0; i < hw->settings.nsensors; i++)
-		values[i] = atomic_load_explicit(&hw->Sensors[i].run.value, memory_order_relaxed) + hw->Sensors[i].set.offset;
+		ldata->values[i] = atomic_load_explicit(&hw->Sensors[i].run.value, memory_order_relaxed) + hw->Sensors[i].set.offset;
 
-	ldata->keys = keys;
-	ldata->metrics = metrics;
-	ldata->values = values;
-	ldata->nkeys = ARRAY_SIZE(keys);
 	ldata->nvalues = i;
 
 	return (ALL_OK);
@@ -76,6 +65,12 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
  */
 static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const hw)
 {
+	static const log_key_t keys[] = {
+		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
+	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
 	static struct s_log_source HW_P1_temps_lsrc;
 
 	HW_P1_temps_lsrc = (struct s_log_source){
@@ -83,6 +78,9 @@ static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const
 		.basename = "hw_p1",
 		.identifier = "temps",
 		.version = 2,
+		.nkeys = ARRAY_SIZE(keys),
+		.keys = keys,
+		.metrics = metrics,
 		.logdata_cb = hw_p1_temps_logdata_cb,
 		.object = hw,
 	};

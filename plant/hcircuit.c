@@ -58,16 +58,10 @@ static const storage_version_t Hcircuit_sversion = 1;
 static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * const object)
 {
 	const struct s_hcircuit * const circuit = object;
-	static const log_key_t keys[] = {
-		"runmode", "request_ambient", "target_ambient", "actual_ambient", "target_wtemp", "actual_wtemp", "heat_request",
-	};
-	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
-	};
-	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
 
 	assert(ldata);
+	assert(ldata->nkeys >= 7);
 
 	if (!circuit)
 		return (-EINVALID);
@@ -75,18 +69,14 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
 	if (!circuit->run.online)
 		return (-EOFFLINE);
 
-	values[i++] = circuit->run.runmode;
-	values[i++] = circuit->run.request_ambient;
-	values[i++] = circuit->run.target_ambient;
-	values[i++] = circuit->run.actual_ambient;
-	values[i++] = circuit->run.target_wtemp;
-	values[i++] = circuit->run.actual_wtemp;
-	values[i++] = circuit->run.heat_request;
+	ldata->values[i++] = circuit->run.runmode;
+	ldata->values[i++] = circuit->run.request_ambient;
+	ldata->values[i++] = circuit->run.target_ambient;
+	ldata->values[i++] = circuit->run.actual_ambient;
+	ldata->values[i++] = circuit->run.target_wtemp;
+	ldata->values[i++] = circuit->run.actual_wtemp;
+	ldata->values[i++] = circuit->run.heat_request;
 
-	ldata->keys = keys;
-	ldata->metrics = metrics;
-	ldata->values = values;
-	ldata->nkeys = ARRAY_SIZE(keys);
 	ldata->nvalues = i;
 
 	return (ALL_OK);
@@ -100,6 +90,12 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
  */
 static const struct s_log_source * hcircuit_lreg(const struct s_hcircuit * const circuit)
 {
+	static const log_key_t keys[] = {
+		"runmode", "request_ambient", "target_ambient", "actual_ambient", "target_wtemp", "actual_wtemp", "heat_request",
+	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
 	const log_version_t version = 1;
 	static struct s_log_source Hcircuit_lreg;
 
@@ -109,6 +105,9 @@ static const struct s_log_source * hcircuit_lreg(const struct s_hcircuit * const
 		.identifier = circuit->name,
 		.version = version,
 		.logdata_cb = hcircuit_logdata_cb,
+		.nkeys = ARRAY_SIZE(keys),
+		.keys = keys,
+		.metrics = metrics,
 		.object = circuit,
 	};
 	return (&Hcircuit_lreg);

@@ -32,6 +32,7 @@
 /** Log sources linked list */
 struct s_log_list {
 	const struct s_log_source * lsource;
+	log_value_t * vbuffer;			///< pointer to values array of size lsource->nkeys
 	struct s_log_list * next;
 };
 
@@ -159,7 +160,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 
 		// register new format
 		logfmt.nkeys = log_data->nkeys;
-		logfmt.nvalues = log_data->nvalues;
+		logfmt.nvalues = log_data->nvalues;	// XXX no need?
 		logfmt.interval = log_data->interval;	// XXX do we need this?
 		logfmt.bend = async ? Log.set.async_bkend.bkid : Log.set.sync_bkend.bkid;	// XXX HACK
 
@@ -207,6 +208,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 {
 	struct s_log_list * lelmt = NULL, ** currlistp = NULL;
 	struct s_log_source * lsrccpy = NULL;
+	log_value_t * vbuffer = NULL;
 	int ret;
 
 	assert(lsource);
@@ -220,6 +222,11 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	if (!lsource->basename || !lsource->identifier) {
 		pr_err(_("Log registration failed: missing basename / identifier"));
+		return (-EINVALID);
+	}
+
+	if (!lsource->nkeys || !lsource->keys || !lsource->metrics) {
+		pr_err(_("Log registration failed: missing keys / metrics"));
 		return (-EINVALID);
 	}
 
@@ -254,8 +261,14 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	memcpy(lsrccpy, lsource, sizeof(*lsrccpy));
 
+	// allocate buffer for values
+	vbuffer = calloc(lsource->nkeys, sizeof(*vbuffer));
+	if (!vbuffer)
+		goto fail;
+
 	// XXX memory fence
 	lelmt->lsource = lsrccpy;
+	lelmt->vbuffer = vbuffer;
 	lelmt->next = *currlistp;
 	*currlistp = lelmt;
 	// end fence
@@ -265,6 +278,7 @@ int log_register(const struct s_log_source * restrict const lsource)
 	return (ALL_OK);
 
 fail:
+	free(vbuffer);
 	free(lsrccpy);
 	free(lelmt);
 	return (ret);
@@ -272,6 +286,7 @@ fail:
 
 static void log_clear_listelmt(struct s_log_list * restrict lelmt)
 {
+	free(lelmt->vbuffer);
 	free((void *)lelmt->lsource);
 	free(lelmt);
 }
@@ -344,7 +359,18 @@ static int log_crawl(const int log_sched_id)
 	for (lelmt = Log_sched[log_sched_id].loglist; lelmt; lelmt = lelmt->next) {
 		lsource = lelmt->lsource;
 
-		lsource->logdata_cb(&ldata, lsource->object);
+		ldata = (struct s_log_data){
+			.nkeys = lsource->nkeys,
+			.keys = lsource->keys,
+			.metrics = lsource->metrics,
+			.values = lelmt->vbuffer,
+		};
+
+		ret = lsource->logdata_cb(&ldata, lsource->object);
+		if (ALL_OK != ret) {
+			dbgerr("logdata_cb failed on %s %s: %d", lsource->basename, lsource->identifier, ret);
+			continue;
+		}
 		ldata.interval = Log_sched[log_sched_id].interval;		// XXX
 
 		ret = _log_dump(false, lsource->basename, lsource->identifier, &lsource->version, &ldata);

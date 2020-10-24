@@ -50,12 +50,13 @@ enum e_log_intvl {
 
 /** Log data structure */
 struct s_log_data {
-	const log_key_t * restrict keys;	///< pointer to array of keys to log
-	const enum e_log_metric * restrict metrics;	///< pointer to array of metric types of each key (must have same number of elements as #keys)
-	const log_value_t * restrict values;	///< pointer to array of values to log (1 per key)
-	unsigned int nkeys;			///< the number of keys/metrics
-	unsigned int nvalues;			///< the number of values (must be <= nkeys)
 	int interval;				///< a positive fixed interval between log requests or negative for random log events
+	unsigned int nkeys;			///< the number of keys/metrics (immutable)
+	const log_key_t * keys;			///< pointer to array of keys to log
+	const enum e_log_metric * metrics;	///< pointer to array of metric types of each key
+
+	unsigned int nvalues;			///< number of values written by the callback (must be <= nkeys)
+	log_value_t * values;			///< pointer to array of values to log (1 per key). Allocated by log_register(), updated by callback
 };
 
 /** log data callback processor type */
@@ -64,11 +65,14 @@ typedef int (*log_data_cb_t)(struct s_log_data * const ldata, const void * const
 /** Log source description. @warning strlen(basename) + strlen(identifier) must be < 240 */
 struct s_log_source {
 	enum e_log_sched log_sched;		///< log schedule, constrained by discrete e_log_sched values, mandatory
-	const char * restrict basename;		///< log basename (e.g. "valve_" or "hcircuit_" to restrict identifier namespace. @note Used as part of filename. mandatory
-	const char * restrict identifier;	///< log identifier within the basename namespace, must be unique in that namespace. @note Used as part of filename. mandatory
+	const char * basename;			///< log basename (e.g. "valve_" or "hcircuit_" to restrict identifier namespace. Must exist until log_exit(). @note Used as part of filename. mandatory
+	const char * identifier;		///< log identifier within the basename namespace, must be unique in that namespace. Must exist until log_exit(). @note Used as part of filename. mandatory
 	log_version_t version;			///< log format version, mandatory
+	unsigned int nkeys;			///< the number of keys/metrics
+	const log_key_t * keys;			///< pointer to array of keys to log. Must exist until log_exit()
+	const enum e_log_metric * metrics;	///< pointer to array of metric types of each key. Must exist until log_exit()
 	log_data_cb_t logdata_cb;		///< callback to process the opaque object into an s_log_data structure ready for logging, mandatory
-	const void * object;			///< opaque object to be handled by the logdata_cb callback, optional
+	const void * object;			///< opaque object to be handled by the logdata_cb callback, optional. If set, must exist until log_exit()
 };
 
 /** Logging backend callbacks */

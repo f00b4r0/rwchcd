@@ -27,12 +27,26 @@ static const storage_version_t Runtime_sversion = 10;
 
 static struct s_runtime Runtime;	///< Runtime private data
 
+static const log_key_t runtime_keys[] = {
+	"systemmode",
+	"runmode",
+	"dhwmode",
+};
+static const enum e_log_metric runtime_metrics[] = {
+	LOG_METRIC_GAUGE,
+	LOG_METRIC_GAUGE,
+	LOG_METRIC_GAUGE,
+};
+
 /** Runtime log source */
 static const struct s_log_source Runtime_lsrc = {
 	.log_sched = LOG_SCHED_15mn,
 	.basename = "runtime",
 	.identifier = "master",
 	.version = 7,
+	.nkeys = ARRAY_SIZE(runtime_keys),
+	.keys = runtime_keys,
+	.metrics = runtime_metrics,
 	.logdata_cb = runtime_logdata_cb,
 	.object = NULL,
 };
@@ -87,31 +101,17 @@ static int runtime_restore(void)
  */
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object __attribute__((unused)))
 {
-	static const log_key_t keys[] = {
-		"systemmode",
-		"runmode",
-		"dhwmode",
-	};
-	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_GAUGE,
-		LOG_METRIC_GAUGE,
-		LOG_METRIC_GAUGE,
-	};
-	static log_value_t values[ARRAY_SIZE(keys)];
 	unsigned int i = 0;
+
+	assert(ldata);
+	assert(ldata->nkeys >= ARRAY_SIZE(runtime_keys));
 	
 	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
-	values[i++] = Runtime.run.systemmode;
-	values[i++] = Runtime.run.runmode;
-	values[i++] = Runtime.run.dhwmode;
+	ldata->values[i++] = Runtime.run.systemmode;
+	ldata->values[i++] = Runtime.run.runmode;
+	ldata->values[i++] = Runtime.run.dhwmode;
 	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
-	
-	assert(ARRAY_SIZE(keys) >= i);
-	
-	ldata->keys = keys;
-	ldata->metrics = metrics;
-	ldata->values = values;
-	ldata->nkeys = ARRAY_SIZE(keys);
+
 	ldata->nvalues = i;
 
 	return (ALL_OK);
