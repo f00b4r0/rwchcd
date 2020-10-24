@@ -83,12 +83,12 @@ struct s_log Log;
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
  * @param log_data the data to log
+ * @return exec status
  * @note uses a #MAX_FILENAMELEN+1 auto heap buffer.
  */
 static int _log_dump(const bool async, const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
-	const bool logging = Log.set.enabled;
 	const char sep = async ? Log.set.async_bkend.separator : Log.set.sync_bkend.separator;
 	const bool unversioned = async ? Log.set.async_bkend.unversioned : Log.set.sync_bkend.unversioned;
 	log_version_t lversion = 0;
@@ -102,14 +102,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 		enum e_log_bend bend;
 	} logfmt;
 
-	if (!logging)
-		return (ALL_OK);
-
-	if (!Log.set.configured)
-		return (-ENOTCONFIGURED);
-
-	if (!basename || !identifier || !version || !log_data)
-		return (-EINVALID);
+	assert(basename && identifier && version && log_data);
 
 	if (log_data->nvalues > log_data->nkeys)
 		return (-EINVALID);
@@ -148,7 +141,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 	// strip LOG_FMT_SUFFIX
 	*p = '\0';
 
-	if (fcreate) {
+	if (unlikely(fcreate)) {
 		// create backend store
 		if (async)
 			ret = Log.set.async_bkend.log_create(async, ident, log_data);
@@ -186,12 +179,23 @@ skip:
 /**
  * Asynchronously log data.
  * @param identifier a unique string identifying the data to log
- * @param version a caller-defined version number
+ * @param version a caller-defined version number >0
  * @param log_data the data to log
+ * @return exec status
  * @warning no collision check on identifier
+ * @deprecated this will go away
  */
 int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
+	if (!Log.set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!Log.set.enabled)
+		return (ALL_OK);
+
+	if (!identifier || !version || !log_data)
+		return (-EINVALID);
+
 	return (_log_dump(true, LOG_ASYNC_DUMP_BASENAME, identifier, version, log_data));
 }
 
@@ -212,6 +216,11 @@ int log_register(const struct s_log_source * restrict const lsource)
 	int ret;
 
 	assert(lsource);
+
+	if (!lsource->version) {
+		pr_err(_("Log registration failed: invalid version number for %s %s: %d"), lsource->basename, lsource->identifier, lsource->version);
+		return (-EINVALID);
+	}
 
 	if (lsource->log_sched >= ARRAY_SIZE(Log_sched)) {
 		pr_err(_("Log registration failed: invalid log schedule for %s %s: %d"), lsource->basename, lsource->identifier, lsource->log_sched);
@@ -355,6 +364,9 @@ static int log_crawl(const int log_sched_id)
 
 	if (!Log.set.configured)	// stop crawling when deconfigured
 		return (-ENOTCONFIGURED);
+
+	if (!Log.set.enabled)
+		return (ALL_OK);
 
 	for (lelmt = Log_sched[log_sched_id].loglist; lelmt; lelmt = lelmt->next) {
 		lsource = lelmt->lsource;
