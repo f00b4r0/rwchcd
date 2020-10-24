@@ -93,7 +93,7 @@ static int log_rrd_create(const bool async __attribute__((unused)), const char *
 			return (-EINVALID);
 	}
 
-	argv = calloc(sizeof(*argv), log_data->nkeys + rrasize);
+	argv = calloc(rrasize + log_data->nkeys, sizeof(*argv));
 	if (!argv)
 		return (-EOOM);
 
@@ -121,7 +121,7 @@ static int log_rrd_create(const bool async __attribute__((unused)), const char *
 			ret = -EOOM;
 			goto cleanup;
 		}
-		argv[i+rrasize] = temp;
+		argv[rrasize+i] = temp;
 		argc++;
 	}
 
@@ -132,7 +132,7 @@ static int log_rrd_create(const bool async __attribute__((unused)), const char *
 
 cleanup:
 	for (i = 0; i < log_data->nkeys; i++)
-		free(argv[i+rrasize]);
+		free(argv[rrasize+i]);	// cleanup the dynamic DS formats
 	free(argv);
 
 	return (ret);
@@ -179,6 +179,8 @@ static int log_rrd_update(const bool async __attribute__((unused)), const char *
 		strncpy(buffer + offset, ":U", buffer_len - offset);
 		offset += strlen(":U");
 	}
+
+	assert(offset < buffer_len);
 
 	rrd_clear_error();
 	ret = rrd_update_r(identifier, NULL, 1, &buffer);
