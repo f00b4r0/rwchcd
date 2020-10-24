@@ -342,7 +342,7 @@ int log_statsd_filecfg_parse(void * restrict const priv __attribute__((unused)),
 		goto fail;
 	}
 
-	return (ret);
+	return (ALL_OK);
 
 fail:
 	if (Log_statsd.set.host)
