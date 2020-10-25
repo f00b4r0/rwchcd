@@ -242,7 +242,7 @@ static int type_parse(void * restrict const priv, const struct s_filecfg_parser_
 int mqtt_filecfg_parse(const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers mqtt_parsers[] = {
-		{ NODESTR,	"type",		true,	type_parse,		NULL, },
+		{ NODESTC,	"type",		true,	type_parse,		NULL, },
 		{ NODELST,	"temperatures",	false,	temperatures_parse,	NULL, },
 		{ NODELST,	"switches",	false,	switchs_parse,		NULL, },
 		{ NODELST,	"relays",	false,	relays_parse,		NULL, },

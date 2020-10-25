@@ -166,7 +166,7 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 		{ NODESTR,		"tid_hot",	false,	fcp_tid_valve_tmix_tid_hot,	NULL, },
 		{ NODESTR,		"tid_cold",	false,	fcp_tid_valve_tmix_tid_cold,	NULL, },
 		{ NODESTR,		"tid_out",	true,	fcp_tid_valve_tmix_tid_out,	NULL, },
-		{ NODESTR,		"algo",		true,	fcp_valve_tmix_algo,		NULL, },
+		{ NODESTR|NODESTC,	"algo",		true,	fcp_valve_tmix_algo,		NULL, },
 	};
 	struct s_valve * restrict const valve = priv;
 	int ret;
@@ -327,8 +327,8 @@ int filecfg_valve_parse(void * restrict const priv, const struct s_filecfg_parse
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT|NODEDUR,	"ete_time",	true,	fcp_tk_s_valve_ete_time,	NULL, },
-		{ NODESTR,		"type",		true,	fcp_valve_type,			NULL, },
-		{ NODESTR,		"motor",	true,	fcp_valve_motor,		NULL, },
+		{ NODESTR|NODESTC,	"type",		true,	fcp_valve_type,			NULL, },
+		{ NODESTC,		"motor",	true,	fcp_valve_motor,		NULL, },
 	};
 	struct s_plant * restrict const plant = priv;
 	struct s_valve * valve;

@@ -36,6 +36,7 @@ enum e_filecfg_nodetype {
 	NODESTR = 0x08,		///< String node
 	NODELST = 0x10,		///< List node
 	NODEDUR = 0x20,		///< Duration node
+	NODESTC = 0x40,		///< String with children node
 };
 
 /** Config node structure */
@@ -100,8 +101,9 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
  * @param nname the expected name for sibling nodes
  * @param parser the parser to apply to each sibling node
  * @return exec status
+ * @todo disambiguate NODESTR and NODESTC
  */
-#define filecfg_parser_parse_namedsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODESTR, parser)
+#define filecfg_parser_parse_namedsiblings(priv, nodelist, nname, parser)	filecfg_parser_parse_siblings(priv, nodelist, nname, NODESTR|NODESTC, parser)
 
 /**
  * Parse a list of "anonymous" sibling nodes (List nodes).

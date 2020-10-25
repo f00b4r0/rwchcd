@@ -174,7 +174,7 @@ int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODESTR,		"tid_return",		false,	fcp_inputs_temperature_s_hcircuit_tid_return,	NULL, },
 		{ NODESTR,		"tid_ambient",		false,	fcp_inputs_temperature_s_hcircuit_tid_ambient,	NULL, },
 		{ NODELST,		"params",		false,	fcp_hcircuit_params,			NULL, },
-		{ NODESTR,		"tlaw",			true,	fcp_hcircuit_tlaw,			NULL, },
+		{ NODESTC,		"tlaw",			true,	fcp_hcircuit_tlaw,			NULL, },
 		{ NODESTR,		"valve_mix",		false,	fcp_valve_s_hcircuit_pvalve_mix,	NULL, },
 		{ NODESTR,		"pump_feed",		false,	fcp_pump_s_hcircuit_ppump_feed,		NULL, },
 		{ NODESTR,		"bmodel",		true,	fcp_bmodel_s_hcircuit_pbmodel,		NULL, },

@@ -50,7 +50,7 @@ node:	IDENTIFIER ';'			{ filecfg_parser_error("missing argument"); YYABORT; }
 	| IDENTIFIER INT ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEINT, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 	| IDENTIFIER FLOAT ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEFLT, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 	| IDENTIFIER STRING ';'		{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODESTR, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
-	| IDENTIFIER STRING '{' node_list '}' ';'	{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODESTR, $1, (u_filecfg_p_nodeval_t)$2, $4); }
+	| IDENTIFIER STRING '{' node_list '}' ';'	{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODESTC, $1, (u_filecfg_p_nodeval_t)$2, $4); }
 	| IDENTIFIER '{' node_list '}' ';'	{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODELST, $1, (u_filecfg_p_nodeval_t)0, $3); }
 	| IDENTIFIER totduration ';'	{ $$ = filecfg_parser_new_node(filecfg_parser_lineno, NODEDUR, $1, (u_filecfg_p_nodeval_t)$2, NULL); }
 ;

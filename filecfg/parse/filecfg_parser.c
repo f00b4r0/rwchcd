@@ -268,7 +268,7 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 
 	for (; nlist; nlist = nlist->prev) {
 		node = nlist->node;
-		if (ntype != node->type) {
+		if (!(ntype & node->type)) {
 			fprintf(stderr, _("CONFIG WARNING! Ignoring node \"%s\" with invalid type closing at line %d\n"), node->name, node->lineno);
 			continue;
 		}
@@ -277,7 +277,7 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 			continue;
 		}
 
-		if (NODESTR == ntype) {
+		if ((NODESTR|NODESTC) & ntype) {
 			sname = node->value.stringval;
 
 			if (strlen(sname) < 1) {
@@ -569,7 +569,7 @@ void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist)
 
 	if (node) {
 		free(node->name);
-		if (NODESTR == node->type)
+		if ((NODESTR|NODESTC) & node->type)
 			free(node->value.stringval);
 		filecfg_parser_free_nodelist(node->children);
 	}

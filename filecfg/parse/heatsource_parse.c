@@ -40,7 +40,7 @@ FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_heatsource, schedid)
 int filecfg_heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,		"type",			true,	heatsource_type_parse,			NULL, },
+		{ NODESTC,		"type",			true,	heatsource_type_parse,			NULL, },
 		{ NODESTR,		"runmode",		true,	fcp_runmode_s_heatsource_runmode,	NULL, },
 		{ NODEINT,		"prio",			false,	fcp_prio_s_heatsource_prio,		NULL, },
 		{ NODEINT|NODEDUR,	"consumer_sdelay",	false,	fcp_tk_s_heatsource_consumer_sdelay,	NULL, },

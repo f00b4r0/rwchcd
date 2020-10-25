@@ -295,7 +295,7 @@ static int relays_parse(void * restrict const priv, const struct s_filecfg_parse
 int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers hw_p1_parsers[] = {
-		{ NODESTR, "type", true, parse_type, NULL, },
+		{ NODESTC, "type", true, parse_type, NULL, },
 		{ NODELST, "temperatures", false, sensors_parse, NULL, },
 		{ NODELST, "relays", false, relays_parse, NULL, },
 	};
@@ -305,8 +305,8 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 	if (!node)
 		return (-EINVALID);
 
-	if ((NODESTR != node->type) || strcmp("backend", node->name) || (!node->children))
-		return (-EINVALID);	// we only accept NODESTR backend node with children
+	if ((NODESTC != node->type) || strcmp("backend", node->name) || (!node->children))
+		return (-EINVALID);	// we only accept NODESTC backend node with children
 
 	// match children
 	ret = filecfg_parser_match_nodechildren(node, hw_p1_parsers, ARRAY_SIZE(hw_p1_parsers));

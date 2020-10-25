@@ -173,7 +173,7 @@ static int scheduler_schedule_parse(void * restrict const priv __attribute__((un
 		return (-EINVALID);
 
 	if (!node->children)
-		return (-EEMPTY);	// we only accept NODESTR backend node with children
+		return (-EEMPTY);	// we only accept NODESTC backend node with children
 
 	if (strlen(node->value.stringval) <= 0)
 		return (-EINVALID);

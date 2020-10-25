@@ -294,8 +294,8 @@ int log_statsd_filecfg_parse(void * restrict const priv __attribute__((unused)),
 	unsigned int i;
 	int ret;
 
-	if ((NODESTR != node->type) || strcmp(LOG_BKEND_STATSD_NAME, node->value.stringval) || (!node->children))
-		return (-EINVALID);	// we only accept NODESTR node with children
+	if ((NODESTC != node->type) || strcmp(LOG_BKEND_STATSD_NAME, node->value.stringval) || (!node->children))
+		return (-EINVALID);	// we only accept NODESTC node with children
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
