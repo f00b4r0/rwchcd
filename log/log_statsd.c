@@ -85,7 +85,7 @@ static int log_statsd_udp_link(void)
 		goto cleanup;
 	}
 
-	memcpy(&Log_statsd.run.ai_addr, &rp->ai_addr, sizeof(Log_statsd.run.ai_addr));
+	memcpy(&Log_statsd.run.ai_addr, rp->ai_addr, sizeof(Log_statsd.run.ai_addr));
 	Log_statsd.run.ai_addrlen = rp->ai_addrlen;
 
 	ret = sockfd;
