@@ -2,7 +2,7 @@
 //  log/log.c
 //  rwchcd
 //
-//  (C) 2018-2019 Thibaut VARENE
+//  (C) 2018-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -22,12 +22,8 @@
 #include "rwchcd.h"
 #include "timer.h"
 
-#include "filecfg/parse/filecfg_parser.h"
-#include "filecfg/dump/filecfg_dump.h"
-
 #define LOG_PREFIX	"log"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names
-#define LOG_ASYNC_DUMP_BASENAME	"async"		///< basename for asynchronous logging (see _log_dump())
 
 /** Log sources linked list */
 struct s_log_list {
@@ -78,7 +74,6 @@ struct s_log Log;
 
 /**
  * Generic log_data log routine.
- * @param async true if called asynchronously
  * @param basename a namespace under which the unique identifier will be registered
  * @param identifier a unique string identifying the data to log
  * @param version a caller-defined version number
@@ -86,11 +81,11 @@ struct s_log Log;
  * @return exec status
  * @note uses a #MAX_FILENAMELEN+1 auto heap buffer.
  */
-static int _log_dump(const bool async, const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
+static int _log_dump(const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
 	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
-	const char sep = async ? Log.set.async_bkend.separator : Log.set.sync_bkend.separator;
-	const bool unversioned = async ? Log.set.async_bkend.unversioned : Log.set.sync_bkend.unversioned;
+	const char sep = Log.bkend->separator;
+	const bool unversioned = Log.bkend->unversioned;
 	log_version_t lversion = 0;
 	bool fcreate = false;
 	char * p;
@@ -134,7 +129,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 			fcreate = true;
 
 		// compare with current backend
-		if (logfmt.bend != async ? Log.set.async_bkend.bkid : Log.set.sync_bkend.bkid)
+		if (logfmt.bend != Log.bkend->bkid)
 			fcreate = true;
 	}
 
@@ -143,10 +138,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 
 	if (unlikely(fcreate)) {
 		// create backend store
-		if (async)
-			ret = Log.set.async_bkend.log_create(async, ident, log_data);
-		else
-			ret = Log.set.sync_bkend.log_create(async, ident, log_data);
+		ret = Log.bkend->log_create(ident, log_data);
 
 		if (ALL_OK != ret)
 			return (ret);
@@ -155,7 +147,7 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 		logfmt.nkeys = log_data->nkeys;
 		logfmt.nvalues = log_data->nvalues;	// XXX no need?
 		logfmt.interval = log_data->interval;	// XXX do we need this?
-		logfmt.bend = async ? Log.set.async_bkend.bkid : Log.set.sync_bkend.bkid;	// XXX HACK
+		logfmt.bend = Log.bkend->bkid;	// XXX HACK
 
 		// XXX reappend LOG_FMT_SUFFIX
 		strcpy(p, LOG_FMT_SUFFIX);
@@ -168,35 +160,9 @@ static int _log_dump(const bool async, const char * restrict const basename, con
 
 skip:
 	// log data
-	if (async)
-		ret = Log.set.async_bkend.log_update(async, ident, log_data);
-	else
-		ret = Log.set.sync_bkend.log_update(async, ident, log_data);
+	ret = Log.bkend->log_update(ident, log_data);
 
 	return (ret);
-}
-
-/**
- * Asynchronously log data.
- * @param identifier a unique string identifying the data to log
- * @param version a caller-defined version number >0
- * @param log_data the data to log
- * @return exec status
- * @warning no collision check on identifier
- * @deprecated this will go away
- */
-int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
-{
-	if (!Log.set.configured)
-		return (-ENOTCONFIGURED);
-
-	if (!Log.set.enabled)
-		return (ALL_OK);
-
-	if (!identifier || !version || !log_data)
-		return (-EINVALID);
-
-	return (_log_dump(true, LOG_ASYNC_DUMP_BASENAME, identifier, version, log_data));
 }
 
 /**
@@ -236,12 +202,6 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	if (!lsource->nkeys || !lsource->keys || !lsource->metrics) {
 		pr_err(_("Log registration failed: missing keys / metrics"));
-		return (-EINVALID);
-	}
-
-	// forbid specific namespace
-	if (!strcmp(LOG_ASYNC_DUMP_BASENAME, lsource->basename)) {
-		pr_err(_("Log registration failed: invalid basename for %s %s: %s"), lsource->basename, lsource->identifier, lsource->basename);
 		return (-EINVALID);
 	}
 
@@ -385,7 +345,7 @@ static int log_crawl(const int log_sched_id)
 		}
 		ldata.interval = Log_sched[log_sched_id].interval;		// XXX
 
-		ret = _log_dump(false, lsource->basename, lsource->identifier, &lsource->version, &ldata);
+		ret = _log_dump(lsource->basename, lsource->identifier, &lsource->version, &ldata);
 		dbgmsg(1, ret, "log_dump failed on %s %s: %d", lsource->basename, lsource->identifier, ret);
 	}
 
@@ -394,7 +354,7 @@ static int log_crawl(const int log_sched_id)
 
 /**
  * Init logging subsystem.
- * This function tries to bring the configured sync and async backends online and will fail on error.
+ * This function tries to bring the configured log backend online and will fail on error.
  * @return exec status
  */
 int log_init(void)
@@ -408,14 +368,8 @@ int log_init(void)
 	}
 
 	// bring the backends online
-	if (Log.set.sync_bkend.log_online) {
-		ret = Log.set.sync_bkend.log_online();
-		if (ALL_OK != ret)
-			return (ret);
-	}
-
-	if (Log.set.async_bkend.log_online) {
-		ret = Log.set.async_bkend.log_online();
+	if (Log.bkend->log_online) {
+		ret = Log.bkend->log_online();
 		if (ALL_OK != ret)
 			return (ret);
 	}
@@ -441,10 +395,8 @@ void log_exit(void)
 
 	Log.set.configured = false;
 
-	if (Log.set.sync_bkend.log_offline)
-		Log.set.sync_bkend.log_offline();
-	if (Log.set.async_bkend.log_offline)
-		Log.set.async_bkend.log_offline();
+	if (Log.bkend->log_offline)
+		Log.bkend->log_offline();
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		for (lelmt = Log_sched[i].loglist; lelmt;) {

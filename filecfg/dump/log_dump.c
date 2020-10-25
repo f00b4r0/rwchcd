@@ -26,29 +26,63 @@
 
 extern struct s_log Log;
 
-static const char * log_config_dump_bkend_name(const struct s_log_bendcbs * restrict const lbkend)
+static void log_config_dump_bkend(const struct s_log_bendcbs * restrict const lbkend)
 {
+	filecfg_iprintf("bkend ");
+
 	switch (lbkend->bkid) {
 		case LOG_BKEND_FILE:
-			return (LOG_BKEND_FILE_NAME);
+			filecfg_printf("\"%s\";\n", LOG_BKEND_FILE_NAME);
+			break;
 #ifdef HAS_RRD
 		case LOG_BKEND_RRD:
-			return (LOG_BKEND_RRD_NAME);
+			filecfg_printf("\"%s\";\n", LOG_BKEND_RRD_NAME);
+			break;
 #endif
 		case LOG_BKEND_STATSD:
-			return (LOG_BKEND_STATSD_NAME);
+			filecfg_printf("\"%s\" {\n", LOG_BKEND_STATSD_NAME);
+			filecfg_ilevel_inc();
+			log_statsd_filecfg_dump();
+			filecfg_ilevel_dec();
+			filecfg_iprintf("};\n");
+			break;
 #ifdef HAS_MQTT
 		case LOG_BKEND_MQTT:
-			return (LOG_BKEND_MQTT_NAME);
+			filecfg_printf("\"%s\" {\n", LOG_BKEND_MQTT_NAME);
+			filecfg_ilevel_inc();
+			log_mqtt_filecfg_dump();
+			filecfg_ilevel_dec();
+			filecfg_iprintf("};\n");
+			break;
 #endif
 		default:
-			return ("unknown");
+			filecfg_printf("\"unknown\";\n");
 	}
 }
 
-void log_config_dump(void)
+static void log_config_dump(void)
 {
 	filecfg_dump_nodebool("enabled", Log.set.enabled);
-	filecfg_dump_nodestr("sync_bkend", log_config_dump_bkend_name(&Log.set.sync_bkend));
-	filecfg_dump_nodestr("async_bkend", log_config_dump_bkend_name(&Log.set.async_bkend));
+	log_config_dump_bkend(Log.bkend);
+}
+
+/**
+* Dump the logging subsystem to config file.
+* @return exec status
+*/
+int filecfg_log_dump(void)
+{
+	filecfg_iprintf("logging {\n");
+	filecfg_ilevel_inc();
+
+	if (!Log.set.configured)
+		goto empty;
+
+	log_config_dump();
+
+empty:
+	filecfg_ilevel_dec();
+	filecfg_iprintf("};\n");
+
+	return (ALL_OK);
 }

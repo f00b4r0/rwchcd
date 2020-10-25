@@ -123,12 +123,11 @@ static void log_mqtt_offline(void)
 
 /**
  * Create the MQTT log database. NOP.
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_mqtt_create(const bool async __attribute__((unused)), const char * restrict const identifier __attribute__((unused)), const struct s_log_data * const log_data __attribute__((unused)))
+static int log_mqtt_create(const char * restrict const identifier __attribute__((unused)), const struct s_log_data * const log_data __attribute__((unused)))
 {
 	if (!Log_mqtt.run.online)
 		return (-EOFFLINE);
@@ -138,12 +137,11 @@ static int log_mqtt_create(const bool async __attribute__((unused)), const char 
 
 /**
  * Update the MQTT log database.
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_mqtt_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_mqtt_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	static char message[16];	// log_value_t is int32, so 10 digits + sign + '\0'. 16 is enough
 	char * topic = NULL, *p;
@@ -190,17 +188,20 @@ cleanup:
 	return (ret);
 }
 
-void log_mqtt_hook(struct s_log_bendcbs * restrict const callbacks)
+static const struct s_log_bendcbs log_mqtt_cbs = {
+	.bkid		= LOG_BKEND_MQTT,
+	.unversioned	= true,
+	.separator	= '/',
+	.log_online	= log_mqtt_online,
+	.log_offline	= log_mqtt_offline,
+	.log_create	= log_mqtt_create,
+	.log_update	= log_mqtt_update,
+};
+
+void log_mqtt_hook(const struct s_log_bendcbs ** restrict const callbacks)
 {
 	assert(callbacks);
-
-	callbacks->bkid = LOG_BKEND_MQTT;
-	callbacks->unversioned = true;
-	callbacks->separator = '/';
-	callbacks->log_online = log_mqtt_online;
-	callbacks->log_offline = log_mqtt_offline;
-	callbacks->log_create = log_mqtt_create;
-	callbacks->log_update = log_mqtt_update;
+	*callbacks = &log_mqtt_cbs;
 }
 
 void log_mqtt_filecfg_dump(void)
@@ -260,7 +261,7 @@ int log_mqtt_filecfg_parse(void * restrict const priv __attribute__((unused)), c
 		ret = -EMISCONFIGURED;
 		goto fail;
 	}
-	else if ('/' == Log_mqtt.set.topic_root[strlen(Log_mqtt.set.topic_root)-1])
+	else if ('/' == Log_mqtt.set.topic_root[strlen(Log_mqtt.set.topic_root)-1]) {
 		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: extraneous ending '/' in topic_root"), node->name, node->lineno);
 		ret = -EMISCONFIGURED;
 		goto fail;

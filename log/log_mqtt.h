@@ -19,7 +19,7 @@
 
 #define LOG_BKEND_MQTT_NAME	"mqtt"
 
-void log_mqtt_hook(struct s_log_bendcbs * restrict const callbacks);
+void log_mqtt_hook(const struct s_log_bendcbs ** restrict const callbacks);
 void log_mqtt_filecfg_dump(void);
 int log_mqtt_filecfg_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 

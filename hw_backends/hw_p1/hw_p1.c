@@ -44,45 +44,6 @@
 static const storage_version_t Hardware_sversion = 3;
 
 /**
- * Log relays change.
- * @param hw HW P1 private data
- * @note This function isn't part of the timer system since it's more efficient
- * and more accurate to run it aperiodically (on relay edge).
- * @bug hardcoded identifier will collide if multiple instances.
- */
-static void hw_p1_relays_log(const struct s_hw_p1_pdata * restrict const hw)
-{
-	const log_version_t version = 1;
-	static const log_key_t keys[] = {
-		"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "R1", "R2",
-	};
-	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
-	};
-	static log_value_t values[ARRAY_SIZE(keys)];
-	unsigned int i = 0;
-
-	assert(ARRAY_SIZE(keys) >= ARRAY_SIZE(hw->Relays));
-	
-	for (i=0; i<ARRAY_SIZE(hw->Relays); i++) {
-		if (hw->Relays[i].set.configured)
-			values[i] = hw->Relays[i].run.is_on ? 1 : 0;
-		else
-			values[i] = -1;
-	}
-	
-	const struct s_log_data data = {
-		.keys = keys,
-		.metrics = metrics,
-		.values = values,
-		.nkeys = ARRAY_SIZE(keys),
-		.nvalues = i,
-		.interval = -1,
-	};
-	log_async_dump("hw_p1_relays", &version, &data);
-}
-
-/**
  * Convert sensor value to actual resistance.
  * voltage on ADC pin is Vsensor * (1+G) - Vdac * G where G is divider gain on AOP.
  * if value < ~10mv: short. If value = max: open.
@@ -576,7 +537,6 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 
 	// save/log relays state if there was a change
 	if (chflags) {
-		hw_p1_relays_log(hw);
 		if (chflags & HW_P1_RCHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
 			// XXX there's no real motive to do this besides lowering storage pressure
 			ret = hw_p1_save_relays(hw);

@@ -21,12 +21,11 @@
 
 /**
  * Create the log file (text file).
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_file_create(const bool async __attribute__((unused)), const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_file_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	FILE * restrict file = NULL;
 	unsigned int i;
@@ -50,12 +49,11 @@ static int log_file_create(const bool async __attribute__((unused)), const char 
 
 /**
  * Update the log file (text file).
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_file_update(const bool async __attribute__((unused)), const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_file_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	FILE * restrict file = NULL;
 	unsigned int i;
@@ -83,15 +81,18 @@ static int log_file_update(const bool async __attribute__((unused)), const char 
 	return (ALL_OK);
 }
 
+static const struct s_log_bendcbs log_file_cbs = {
+	.bkid		= LOG_BKEND_FILE,
+	.unversioned	= false,
+	.separator	= '_',
+	.log_online	= NULL,
+	.log_offline	= NULL,
+	.log_create	= log_file_create,
+	.log_update	= log_file_update,
+};
 
-void log_file_hook(struct s_log_bendcbs * restrict const callbacks)
+void log_file_hook(const struct s_log_bendcbs ** restrict const callbacks)
 {
 	assert(callbacks);
-
-	callbacks->bkid = LOG_BKEND_FILE;
-	callbacks->unversioned = false;
-	callbacks->separator = '_';
-	// no online/offline callbacks
-	callbacks->log_create = log_file_create;
-	callbacks->log_update = log_file_update;
+	*callbacks = &log_file_cbs;
 }

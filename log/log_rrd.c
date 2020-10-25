@@ -59,12 +59,11 @@ static const char *RRAs_15mn[] = {
 
 /**
  * Create the RRD log database.
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_rrd_create(const bool async __attribute__((unused)), const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	int ret = -EGENERIC, argc = 0;
 	unsigned int i;
@@ -140,12 +139,11 @@ cleanup:
 
 /**
  * Update the RRD log database.
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_rrd_update(const bool async __attribute__((unused)), const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_rrd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	char * buffer;
 	size_t buffer_len, offset = 0;
@@ -193,14 +191,18 @@ cleanup:
 	return (ret);
 }
 
-void log_rrd_hook(struct s_log_bendcbs * restrict const callbacks)
+static const struct s_log_bendcbs log_rrd_cbs = {
+	.bkid		= LOG_BKEND_RRD,
+	.unversioned	= false,
+	.separator	= '_',
+	.log_online	= NULL,
+	.log_offline	= NULL,
+	.log_create	= log_rrd_create,
+	.log_update	= log_rrd_update,
+};
+
+void log_rrd_hook(const struct s_log_bendcbs ** restrict const callbacks)
 {
 	assert(callbacks);
-
-	callbacks->bkid = LOG_BKEND_RRD;
-	callbacks->unversioned = false;
-	callbacks->separator = '_';
-	// no online/offline callbacks
-	callbacks->log_create = log_rrd_create;
-	callbacks->log_update = log_rrd_update;
+	*callbacks = &log_rrd_cbs;
 }

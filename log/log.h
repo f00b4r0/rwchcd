@@ -80,30 +80,28 @@ struct s_log_source {
 struct s_log_bendcbs {
 	/** backend unique identifier */
 	enum e_log_bend bkid;
-	bool unversioned;				///< if true, the code will not try to track changes in log format version (speed gain)
+	bool unversioned;			///< if true, the code will not try to track changes in log format version (speed gain)
 	char separator;				///< single character separator used in concatenation of basename, identifier, etc
 	/** optional backend log online callback */
 	int (*log_online)(void);
 	/** optional backend log offline callback */
 	void (*log_offline)(void);
 	/** backend log create callback */
-	int (*log_create)(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data);
+	int (*log_create)(const char * restrict const identifier, const struct s_log_data * const log_data);
 	/** backend log update callback */
-	int (*log_update)(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data);
+	int (*log_update)(const char * restrict const identifier, const struct s_log_data * const log_data);
 };
 
 struct s_log {
 	struct {
 		bool configured;			///< true if properly configured (backends are online)
 		bool enabled;				///< true if data logging should be enabled
-		struct s_log_bendcbs sync_bkend;	///< logging backend for synchronous (periodic) logs. Config expects a user string for backend name.
-		struct s_log_bendcbs async_bkend;	///< logging backend for asynchronous logs. Config expects a user string for backend name.
 	} set;
+	const struct s_log_bendcbs *bkend;		///< logging backend. Config expects a string for backend type, possibly followed by backend-specific config
 };
 
-typedef void (*log_bkend_hook_t)(struct s_log_bendcbs * restrict const callbacks);
+typedef void (*log_bkend_hook_t)(const struct s_log_bendcbs ** restrict const callbacks);
 
-int log_async_dump(const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data);
 int log_register(const struct s_log_source * restrict const lsource);
 int log_deregister(const struct s_log_source * restrict const lsource);
 int log_init(void);

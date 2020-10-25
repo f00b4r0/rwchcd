@@ -18,6 +18,6 @@
 
 #define LOG_BKEND_FILE_NAME	"file"
 
-void log_file_hook(struct s_log_bendcbs * restrict const callbacks);
+void log_file_hook(const struct s_log_bendcbs ** restrict const callbacks);
 
 #endif /* log_file_h */

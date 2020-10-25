@@ -151,12 +151,11 @@ static void log_statsd_offline(void)
 
 /**
  * Create the StatsD log database. NOP.
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  */
-static int log_statsd_create(const bool async __attribute__((unused)), const char * restrict const identifier __attribute__((unused)), const struct s_log_data * const log_data __attribute__((unused)))
+static int log_statsd_create(const char * restrict const identifier __attribute__((unused)), const struct s_log_data * const log_data __attribute__((unused)))
 {
 	if (!Log_statsd.run.online)
 		return (-EOFFLINE);
@@ -166,13 +165,12 @@ static int log_statsd_create(const bool async __attribute__((unused)), const cha
 
 /**
  * Update the StatsD log database.
- * @param async true if called asynchronously
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
  * @todo improve performance by grouping data (look into sendmsg()).
  */
-static int log_statsd_update(const bool async, const char * restrict const identifier, const struct s_log_data * const log_data)
+static int log_statsd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	static char sbuffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
 	char * restrict buffer;
@@ -187,14 +185,7 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 	if (!Log_statsd.run.online)
 		return (-EOFFLINE);
 
-	// don't use the static buffer when called asynchronously
-	if (async) {
-		buffer = malloc(LOG_STATSD_UDP_BUFSIZE);
-		if (!buffer)
-			return (-EOOM);
-	}
-	else
-		buffer = sbuffer;
+	buffer = sbuffer;
 
 	for (i = 0; i < log_data->nvalues; i++) {
 #ifdef DEBUG
@@ -247,23 +238,24 @@ static int log_statsd_update(const bool async, const char * restrict const ident
 	ret = ALL_OK;
 
 cleanup:
-	if (async)
-		free(buffer);
 
 	return (ret);
 }
 
-void log_statsd_hook(struct s_log_bendcbs * restrict const callbacks)
+static const struct s_log_bendcbs log_statsd_cbs = {
+	.bkid		= LOG_BKEND_STATSD,
+	.unversioned	= true,
+	.separator	= '.',
+	.log_online	= log_statsd_online,
+	.log_offline	= log_statsd_offline,
+	.log_create	= log_statsd_create,
+	.log_update	= log_statsd_update,
+};
+
+void log_statsd_hook(const struct s_log_bendcbs ** restrict const callbacks)
 {
 	assert(callbacks);
-
-	callbacks->bkid = LOG_BKEND_STATSD;
-	callbacks->unversioned = true;
-	callbacks->separator = '.';
-	callbacks->log_online = log_statsd_online;
-	callbacks->log_offline = log_statsd_offline;
-	callbacks->log_create = log_statsd_create;
-	callbacks->log_update = log_statsd_update;
+	*callbacks = &log_statsd_cbs;
 }
 
 void log_statsd_filecfg_dump(void)

@@ -18,6 +18,6 @@
 
 #define LOG_BKEND_RRD_NAME	"rrd"
 
-void log_rrd_hook(struct s_log_bendcbs * restrict const callbacks);
+void log_rrd_hook(const struct s_log_bendcbs ** restrict const callbacks);
 
 #endif /* log_rrd_h */
