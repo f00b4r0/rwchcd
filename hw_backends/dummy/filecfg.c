@@ -160,7 +160,7 @@ static int relays_parse(void * restrict const priv, const struct s_filecfg_parse
 int dummy_filecfg_parse(const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODESTR,	"type",		true,	NULL,			NULL, },
+		{ NODESTR|NODESTC, "type",	true,	NULL,			NULL, },
 		{ NODELST,	"temperatures",	false,	temperatures_parse,	NULL, },
 		{ NODELST,	"relays",	false,	relays_parse,		NULL, },
 	};
