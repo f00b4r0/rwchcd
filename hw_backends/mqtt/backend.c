@@ -661,7 +661,7 @@ int mqtt_output_ibn(void * const priv, const enum e_hw_output_type type, const c
 }
 
 /** Hardware callbacks for MQTT backend */
-static struct s_hw_callbacks mqtt_callbacks = {
+static const struct s_hw_callbacks mqtt_callbacks = {
 	.init = mqtt_init,
 	.exit = mqtt_exit,
 	.online = mqtt_online,

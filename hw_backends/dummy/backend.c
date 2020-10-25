@@ -381,7 +381,7 @@ int dummy_output_ibn(void * const priv, const enum e_hw_output_type type, const 
 }
 
 /** Hardware callbacks for dummy backend */
-static struct s_hw_callbacks dummy_callbacks = {
+static const struct s_hw_callbacks dummy_callbacks = {
 	.init = dummy_init,
 	.exit = dummy_exit,
 	.online = dummy_online,

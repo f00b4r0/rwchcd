@@ -705,7 +705,7 @@ static int hw_p1_output_ibn(void * const priv, const enum e_hw_output_type type,
 }
 
 /** Hardware callbacks for Prototype 1 hardware */
-static struct s_hw_callbacks hw_p1_callbacks = {
+static const struct s_hw_callbacks hw_p1_callbacks = {
 	.init = hw_p1_init,
 	.exit = hw_p1_exit,
 	.online = hw_p1_online,
