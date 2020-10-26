@@ -77,7 +77,7 @@ void timekeep_exit()
  */
 static int timekeep_clockupdate(void)
 {
-	struct timespec tsnow;
+	static struct timespec tsnow;	// defined as static to reduce stack pressure since we can only be called from timekeep_thread()
 	timekeep_t retval;
 	time_t secdiff;
 	long nsecdiff;
