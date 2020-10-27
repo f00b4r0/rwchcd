@@ -112,6 +112,31 @@ static volatile bool Sem_master_thread = false;
 
 static const char Version[] = RWCHCD_REV;	///< Build version string
 
+static struct s_finish_cb_l {
+	int (* offline)(void);
+	void (* exit)(void);
+	struct s_finish_cb_l * next;
+} * Finish_head = NULL;				///< LIFO list of offline()/exit() callback to execute on program end.
+
+// not thread safe
+int rwchcd_add_finishcb(int (* offcb)(void), void (* exitcb)(void))
+{
+	struct s_finish_cb_l * new;
+
+	new = malloc(sizeof(*new));
+	if (!new)
+		return (-EOOM);
+
+	new->offline = offcb;
+	new->exit = exitcb;
+
+	// we want LIFO
+	new->next = Finish_head;
+	Finish_head = new;
+
+	return (ALL_OK);
+}
+
 /**
  * Daemon signal handler.
  * - SIGINT, SIGTERM: graceful shutdown.
