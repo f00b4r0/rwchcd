@@ -88,9 +88,20 @@ int filecfg_inputs_parse(void * restrict const priv, const struct s_filecfg_pars
 	if (ALL_OK != ret)
 		return (ret);
 
+	/* init inputs - clears data used by config */
+	ret = inputs_init();
+	if (ret) {
+		pr_err(_("Failed to initialize inputs (%d)"), ret);
+		return (ret);
+	}
+
 	ret = filecfg_parser_run_parsers(inputs, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
+
+	ret = rwchcd_add_finishcb(NULL, inputs_exit);
+	if (ALL_OK != ret)
+		inputs_exit();
 
 	return (ret);
 }
