@@ -87,7 +87,7 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
  * @return (statically allocated) s_log_source pointer
  * @warning must not be called concurrently
  */
-static const struct s_log_source * hcircuit_lreg(const struct s_hcircuit * const circuit)
+static const struct s_log_source * hcircuit_lsrc(const struct s_hcircuit * const circuit)
 {
 	static const log_key_t keys[] = {
 		"runmode", "request_ambient", "target_ambient", "actual_ambient", "target_wtemp", "actual_wtemp", "heat_request",
@@ -127,7 +127,7 @@ static int hcircuit_log_register(const struct s_hcircuit * const circuit)
 	if (!circuit->set.logging)
 		return (ALL_OK);
 
-	return (log_register(hcircuit_lreg(circuit)));
+	return (log_register(hcircuit_lsrc(circuit)));
 }
 
 /**
@@ -145,7 +145,7 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
 	if (!circuit->set.logging)
 		return (ALL_OK);
 
-	return (log_deregister(hcircuit_lreg(circuit)));
+	return (log_deregister(hcircuit_lsrc(circuit)));
 }
 
 /**
