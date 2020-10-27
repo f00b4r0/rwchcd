@@ -62,7 +62,6 @@
 #include "hw_backends/hw_backends.h"
 #include "io/hardware.h"
 #include "runtime.h"
-#include "io/outputs.h"
 #include "timer.h"
 #include "scheduler.h"
 #include "models.h"
@@ -189,13 +188,6 @@ static int init_process(void)
 		return (ret);
 	}
 
-	/* init outputs - clears data used by config */
-	ret = outputs_init();
-	if (ret) {
-		pr_err(_("Failed to initialize outputs (%d)"), ret);
-		return (ret);
-	}
-
 
 	// all _init() calls should be done before this point.
 
@@ -266,7 +258,6 @@ static void exit_process(void)
 	}
 
 	hardware_exit();	// depends on hw_backends
-	outputs_exit();		// depends on hw_backends
 	models_exit();		// depends on nothing
 	runtime_exit();		// depends on nothing
 	hw_backends_exit();	// depends on nothing
