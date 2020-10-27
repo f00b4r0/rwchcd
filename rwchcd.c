@@ -72,7 +72,6 @@
  #include "dbus/dbus.h"
 #endif
 #include "storage.h"
-#include "log/log.h"
 #include "timekeep.h"
 
 #include "filecfg/dump/filecfg_dump.h"
@@ -206,11 +205,6 @@ static int init_process(void)
 		return (ret);
 	}
 
-	ret = log_init();
-	if (ret) {
-		pr_err(_("Failed to initialize log subsystem (%d)"), ret);
-		return (ret);
-	}
 
 	// all _init() calls should be done before this point.
 
@@ -241,12 +235,6 @@ static int init_process(void)
 		return (ret);
 	}
 
-	ret = log_online();
-	if (ret) {
-		pr_err(_("Failed to online log subsystem (%d)"), ret);
-		return (ret);
-	}
-
 	/* test and launch */
 
 	/// bring the hardware online - @todo max retries?
@@ -271,22 +259,33 @@ static int init_process(void)
 // reverse operations from init_process()
 static void exit_process(void)
 {
-	runtime_offline();
-	models_offline();
-	alarms_offline();
-	hardware_offline();
-	log_offline();
+	struct s_finish_cb_l * cbs;
 
-	filecfg_dump();
+	runtime_offline();	// depends on storage && log && io available [io available depends on hardware]
+	models_offline();	// depends on storage && log && io available [io available depends on hardware]
+	alarms_offline();	// depends on nothing
+	hardware_offline();	// depends on storage && hw_backends
 
-	log_exit();
-	storage_deconfig();
-	hardware_exit();
-	outputs_exit();
-	inputs_exit();
-	models_exit();
-	runtime_exit();
-	hw_backends_exit();
+	for (cbs = Finish_head; cbs; cbs = cbs->next) {
+		if (cbs->offline)
+			cbs->offline();
+	}
+
+
+	filecfg_dump();		// [depends on storage]
+
+	for (cbs = Finish_head; cbs; cbs = cbs->next) {
+		if (cbs->exit)
+			cbs->exit();
+	}
+
+	storage_deconfig();	// depends on nothing
+	hardware_exit();	// depends on hw_backends
+	outputs_exit();		// depends on hw_backends
+	inputs_exit();		// depends on nothing
+	models_exit();		// depends on nothing
+	runtime_exit();		// depends on nothing
+	hw_backends_exit();	// depends on nothing
 }
 
 static void * thread_master(void *arg)
