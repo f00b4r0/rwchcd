@@ -16,16 +16,109 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "rwchcd.h"
 #include "inputs/temperature.h"
 #include "inputs.h"
+#include "log/log.h"
+#include "lib.h"
 
 struct s_inputs Inputs;
+static struct s_log_source In_temps_lsrc;
 
 // Workaround to disambiguate 0 itid
 #define inputs_itid_to_id(x)	((typeof(x))(x-1))
 #define inputs_id_to_itid(x)	((typeof(x))(x+1))
+
+/**
+ * Temperatures data log callback.
+ * This function logs known temperature in rounded integer Kelvin.
+ * @param ldata the log data to populate
+ * @param object unused
+ * @return exec status
+ */
+static int temps_logdata_cb(struct s_log_data * const ldata, const void * const object __attribute__((unused)))
+{
+	unsigned int id = 0;
+	temp_t temp;
+	int ret;
+
+	assert(ldata);
+	assert(ldata->nkeys >= Inputs.temps.last);
+
+	for (id = 0; id < Inputs.temps.last; id++) {
+		ret = temperature_get(&Inputs.temps.all[id], &temp);
+		if (ALL_OK == ret)
+			ldata->values[id] = temp_to_ikelvin(temp);
+		else
+			ldata->values[id] = 0;
+	}
+
+	ldata->nvalues = id;
+
+	return (ALL_OK);
+}
+
+/**
+ * Register inputs for logging.
+ * @return exec status
+ */
+static int inputs_log_register(void)
+{
+	const unsigned int nmemb = Inputs.temps.last;
+	log_key_t *keys;
+	enum e_log_metric *metrics;
+	unsigned int id;
+
+	keys = calloc(nmemb, sizeof(*keys));
+	if (!keys)
+		return -EOOM;
+
+	for (id = 0; id < Inputs.temps.last; id++)
+		keys[id] = Inputs.temps.all[id].name;
+
+	metrics = calloc(nmemb, sizeof(*metrics));
+	if (!metrics) {
+		free(keys);
+		return -EOOM;
+	}
+
+	for (id = 0; id < Inputs.temps.last; id++)
+		metrics[id] = LOG_METRIC_GAUGE;
+
+	In_temps_lsrc = (struct s_log_source){
+		.log_sched = LOG_SCHED_1mn,
+		.basename = "inputs",
+		.identifier = "temperatures",
+		.version = 1,
+		.logdata_cb = temps_logdata_cb,
+		.nkeys = nmemb,
+		.keys = keys,
+		.metrics = metrics,
+		.object = NULL,
+	};
+
+	return (log_register(&In_temps_lsrc));
+}
+
+/**
+ * Deregister inputs from logging.
+ * @return exec status
+ */
+static int inputs_log_deregister(void)
+{
+	int ret;
+
+	ret = log_deregister(&In_temps_lsrc);
+	if (ret)
+		dbgerr("log_deregister failed (%d)", ret);
+
+	free((void *)In_temps_lsrc.keys);
+	free((void *)In_temps_lsrc.metrics);
+
+	return (ret);
+}
 
 /**
  * Init inputs system.
