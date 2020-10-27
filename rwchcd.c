@@ -167,13 +167,6 @@ static int init_process(void)
 {
 	int ret;
 
-	/* init hardware backend subsystem - clears data used by config */
-	ret = hw_backends_init();
-	if (ret) {
-		pr_err(_("Failed to initialize hardware backends (%d)"), ret);
-		return (ret);
-	}
-
 	/* init runtime - clears data used by config */
 	ret = runtime_init();
 	if (ret) {
@@ -196,23 +189,12 @@ static int init_process(void)
 	}
 
 	/* init hardware */
-	
-	ret = hardware_init();		// must happen as root (for SPI access)
-	if (ret) {
-		pr_err(_("Failed to initialize hardware (%d)"), ret);
-		return (ret);
-	}
 
 	// priviledges could be dropped here
 
 
 	/* test and launch */
 
-	/// bring the hardware online - @todo max retries?
-	while ((ret = hardware_online()) != ALL_OK) {
-		pr_err(_("Failed to bring hardware online (%d)"), ret);
-		timekeep_sleep(1);	// don't pound on the hardware if it's not coming up: calibration data may not be immediately available
-	}
 
 	alarms_online();
 
@@ -227,7 +209,6 @@ static void exit_process(void)
 
 	runtime_offline();	// depends on storage && log && io available [io available depends on hardware]
 	alarms_offline();	// depends on nothing
-	hardware_offline();	// depends on storage && hw_backends
 
 	for (cbs = Finish_head; cbs; cbs = cbs->next) {
 		if (cbs->offline)
@@ -242,9 +223,7 @@ static void exit_process(void)
 			cbs->exit();
 	}
 
-	hardware_exit();	// depends on hw_backends
 	runtime_exit();		// depends on nothing
-	hw_backends_exit();	// depends on nothing
 }
 
 static void * thread_master(void *arg)

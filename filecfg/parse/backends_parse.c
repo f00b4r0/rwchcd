@@ -26,6 +26,8 @@
 #include "filecfg_parser.h"
 #include "rwchcd.h"
 #include "hw_backends/hw_backends.h"
+#include "io/hardware.h"
+#include "timekeep.h"
 
 typedef int (* const hw_bknd_parser_t)(const struct s_filecfg_parser_node * const);
 
@@ -55,10 +57,14 @@ static int hardware_backend_parse(void * restrict const priv, const struct s_fil
 	return (ret);
 }
 
+/**
+ * Initialize, configure and bring online hardware backends.
+ */
 int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_hw_backends * const b = &HW_backends;
 	unsigned int n;
+	int ret;
 
 	n = filecfg_parser_count_siblings(node->children, "backend");
 
@@ -68,13 +74,59 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 	if (n >= BID_MAX)
 		return (-ETOOBIG);
 
+	/* init hardware backend subsystem - clears data used by config */
+	// depends on nothing
+	ret = hw_backends_init();
+	if (ret) {
+		pr_err(_("Failed to initialize hardware backends (%d)"), ret);
+		return (ret);
+	}
+
+	ret = rwchcd_add_finishcb(NULL, hw_backends_exit);
+	if (ALL_OK != ret)
+		goto cleanup;
+
 	b->all = calloc(n, sizeof(b->all[0]));
 	if (!b->all)
 		return (-EOOM);
 
 	b->n = (bid_t)n;
 
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "backend", hardware_backend_parse));
+	ret = filecfg_parser_parse_namedsiblings(priv, node->children, "backend", hardware_backend_parse);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	// depends on nothing (config)
+	ret = hardware_init();		// must happen as root (for SPI access)
+	if (ret) {
+		pr_err(_("Failed to initialize hardware (%d)"), ret);
+		goto cleanup;
+	}
+
+	// give the hardware time to collect themselves
+	timekeep_sleep(5);
+
+	// bring the hardware online
+	// depends on storage && hw_backends (configured)
+	ret = hardware_online();
+	if (ALL_OK != ret) {
+		pr_err(_("Failed to bring hardware online (%d)"), ret);
+		hardware_exit();
+		goto cleanup;
+	}
+
+	ret = rwchcd_add_finishcb(hardware_offline, hardware_exit);
+	if (ALL_OK != ret)
+		goto hwcleanup;
+
+	return (ret);
+
+hwcleanup:
+	hardware_offline();	// depends on storage && hw_backends
+	hardware_exit();	// depends on hw_backends
+cleanup:
+	hw_backends_exit();
+	return (ret);
 }
 
 
