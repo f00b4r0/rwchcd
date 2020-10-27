@@ -41,6 +41,13 @@ static int bmodel_parse(void * restrict const priv __attribute__((unused)), cons
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
+	/* init models - clears data used by config */
+	ret = models_init();
+	if (ret) {
+		pr_err(_("Failed to initialize models (%d)"), ret);
+		return (ret);
+	}
+
 	bmodel = models_new_bmodel(bmdlname);
 	if (!bmodel)
 		return (-EOOM);
@@ -51,8 +58,23 @@ static int bmodel_parse(void * restrict const priv __attribute__((unused)), cons
 
 	bmodel->set.configured = true;
 
-	dbgmsg(3, 1, "matched \"%s\"", bmdlname);
+	// bring the models online
+	// depends on storage && inputs available (config) [inputs available depends on hardware]
+	ret = models_online();
+	if (ALL_OK != ret) {
+		pr_err(_("Failed to bring models online"));
+		goto cleanup;
+	}
 
+	ret = rwchcd_add_finishcb(models_offline, models_exit);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	return (ret);
+
+cleanup:
+	models_offline();	// depends on storage && log && io available [io available depends on hardware]
+	models_exit();
 	return (ret);
 }
 

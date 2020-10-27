@@ -181,13 +181,6 @@ static int init_process(void)
 		return (ret);
 	}
 
-	/* init models - clears data used by config */
-	ret = models_init();
-	if (ret) {
-		pr_err(_("Failed to initialize models (%d)"), ret);
-		return (ret);
-	}
-
 
 	// all _init() calls should be done before this point.
 
@@ -223,13 +216,6 @@ static int init_process(void)
 
 	alarms_online();
 
-	// bring the models online
-	ret = models_online();
-	if (ALL_OK != ret) {
-		pr_err(_("Failed to bring models online"));
-		return (ret);
-	}
-
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
 }
@@ -240,7 +226,6 @@ static void exit_process(void)
 	struct s_finish_cb_l * cbs;
 
 	runtime_offline();	// depends on storage && log && io available [io available depends on hardware]
-	models_offline();	// depends on storage && log && io available [io available depends on hardware]
 	alarms_offline();	// depends on nothing
 	hardware_offline();	// depends on storage && hw_backends
 
@@ -258,7 +243,6 @@ static void exit_process(void)
 	}
 
 	hardware_exit();	// depends on hw_backends
-	models_exit();		// depends on nothing
 	runtime_exit();		// depends on nothing
 	hw_backends_exit();	// depends on nothing
 }
