@@ -154,8 +154,10 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	// check that mandatory sensors are set
 	ret = inputs_temperature_get(boiler->set.tid_boiler, NULL);
-	if (ret)
-		goto out;
+	if (ret) {
+		pr_err(_("\"%s\": tid_boiler failed! (%d)"), heat->name, ret);
+		ret = - EMISCONFIGURED;
+	}
 
 	// check that mandatory settings are set
 	if (!boiler->set.limit_tmax) {
@@ -212,7 +214,6 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		}
 	}
 
-out:
 	return (ret);
 }
 
