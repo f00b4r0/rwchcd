@@ -30,6 +30,7 @@ enum e_heatsource_type {
 struct s_heatsource {
 	struct {
 		bool configured;		///< true if properly configured
+		bool logging;			///< true if data logging should be enabled for this heatsource
 		schedid_t schedid;		///< schedule id for this heatsource.
 		enum e_runmode runmode;		///< current heatsource set_runmode
 		enum e_heatsource_type type;	///< type of heatsource
@@ -52,6 +53,8 @@ struct s_heatsource {
 	const struct s_pdata * pdata;		///< read-only plant data for this heatsource
 	void * restrict priv;			///< pointer to source private data structure
 	struct {
+		int (*log_reg)(const struct s_heatsource * const);	///< pointer to source private log_register() function
+		int (*log_dereg)(const struct s_heatsource * const);	///< pointer to source private log_deregister() function
 		int (*online)(struct s_heatsource * const);	///< pointer to source private online() function
 		int (*offline)(struct s_heatsource * const);	///< pointer to source private offline() function
 		int (*logic)(struct s_heatsource * const);	///< pointer to source private logic() function. @note guaranteed to be called before .run()

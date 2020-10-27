@@ -56,6 +56,8 @@ int filecfg_heatsource_dump(const struct s_heatsource * restrict const heat)
 	filecfg_iprintf("heatsource \"%s\" {\n", heat->name);
 	filecfg_ilevel_inc();
 
+	if (FCD_Exhaustive || heat->set.logging)
+		filecfg_dump_nodebool("logging", heat->set.logging);
 	if (FCD_Exhaustive || heat->set.schedid)
 		filecfg_dump_nodestr("schedid", scheduler_get_schedname(heat->set.schedid));
 	filecfg_dump_nodestr("runmode", filecfg_runmode_str(heat->set.runmode));	// mandatory

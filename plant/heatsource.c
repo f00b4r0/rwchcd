@@ -65,8 +65,15 @@ int heatsource_online(struct s_heatsource * const heat)
 	if (heat->cb.online)
 		ret = heat->cb.online(heat);
 
-	if (ALL_OK == ret)
+	if (ALL_OK == ret) {
 		heat->run.online = true;
+
+		// log registration shouldn't cause online failure
+		if (heat->cb.log_reg) {
+			if (heat->cb.log_reg(heat))
+				pr_err(_("\"%s\": couldn't register for logging"), heat->name);
+		}
+	}
 
 	return (ret);
 }
@@ -90,6 +97,9 @@ int heatsource_offline(struct s_heatsource * const heat)
 
 	if (heat->cb.offline)
 		ret = heat->cb.offline(heat);
+
+	if (heat->cb.log_dereg)
+		heat->cb.log_dereg(heat);
 
 	// reset runtime data (resets online status)
 	memset(&heat->run, 0x0, sizeof(heat->run));
