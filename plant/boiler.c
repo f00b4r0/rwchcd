@@ -34,6 +34,110 @@
 #include "alarms.h"
 #include "io/inputs.h"
 #include "io/outputs.h"
+#include "log/log.h"
+
+#define BOILER_STORAGE_PREFIX	"hs_boiler"
+
+/**
+ * Boiler data log callback.
+ * @param ldata the log data to populate
+ * @param object the opaque pointer to parent heatsource structure
+ * @return exec status
+ */
+static int boiler_hs_logdata_cb(struct s_log_data * const ldata, const void * const object)
+{
+	const struct s_heatsource * const hs = object;
+	const struct s_boiler_priv * const boiler = hs->priv;
+	unsigned int i = 0;
+
+	assert(ldata);
+	assert(ldata->nkeys >= 6);
+
+	if (!boiler)
+		return (-EINVALID);
+
+	if (!hs->run.online)
+		return (-EOFFLINE);
+
+	ldata->values[i++] = hs->run.runmode;
+	ldata->values[i++] = hs->run.could_sleep;
+	ldata->values[i++] = hs->run.overtemp;
+	ldata->values[i++] = temp_to_ikelvin(hs->run.temp_request);
+
+	ldata->values[i++] = temp_to_ikelvin(boiler->run.target_temp);
+	ldata->values[i++] = temp_to_ikelvin(boiler->run.actual_temp);
+
+	ldata->nvalues = i;
+
+	return (ALL_OK);
+}
+
+/**
+ * Provide a well formatted log source for a given boiler.
+ * @param heat the target parent heatsource
+ * @return (statically allocated) s_log_source pointer
+ * @warning must not be called concurrently
+ */
+static const struct s_log_source * boiler_hs_lsrc(const struct s_heatsource * const heat)
+{
+	static const log_key_t keys[] = {
+		"runmode", "could_sleep", "overtemp", "temp_request", "target_temp", "actual_temp",
+	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
+	const log_version_t version = 1;
+	static struct s_log_source Boiler_lsrc;
+
+	Boiler_lsrc = (struct s_log_source){
+		.log_sched = LOG_SCHED_5mn,
+		.basename = BOILER_STORAGE_PREFIX,
+		.identifier = heat->name,
+		.version = version,
+		.logdata_cb = boiler_hs_logdata_cb,
+		.nkeys = ARRAY_SIZE(keys),
+		.keys = keys,
+		.metrics = metrics,
+		.object = heat,
+	};
+	return (&Boiler_lsrc);
+}
+
+/**
+ * Register a boiler heatsource for logging.
+ * @param heat the target parent heatsource
+ * @return exec status
+ */
+static int boiler_hscb_log_register(const struct s_heatsource * const heat)
+{
+	assert(heat);
+
+	if (!heat->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!heat->set.logging)
+		return (ALL_OK);
+
+	return (log_register(boiler_hs_lsrc(heat)));
+}
+
+/**
+ * Deregister a boiler heatsource from logging.
+ * @param heat the target parent heatsource
+ * @return exec status
+ */
+static int boiler_hscb_log_deregister(const struct s_heatsource * const heat)
+{
+	assert(heat);
+
+	if (!heat->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!heat->set.logging)
+		return (ALL_OK);
+
+	return (log_deregister(boiler_hs_lsrc(heat)));
+}
 
 /**
  * Checklist for safe operation of a boiler.
@@ -657,6 +761,8 @@ int boiler_heatsource(struct s_heatsource * const heat)
 	if (!heat->priv)
 		return (-EOOM);
 
+	heat->cb.log_reg = boiler_hscb_log_register,
+	heat->cb.log_dereg = boiler_hscb_log_deregister,
 	heat->cb.online = boiler_hscb_online;
 	heat->cb.offline = boiler_hscb_offline;
 	heat->cb.logic = boiler_hscb_logic;
