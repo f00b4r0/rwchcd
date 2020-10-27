@@ -50,7 +50,6 @@ static const storage_version_t Hcircuit_sversion = 1;
 
 /**
  * Heating circuit data log callback.
- * @warning uses statically allocated data, must not be called concurrently.
  * @param ldata the log data to populate
  * @param object the opaque pointer to heating circuit structure
  * @return exec status

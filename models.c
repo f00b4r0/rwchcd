@@ -33,7 +33,6 @@ static const storage_version_t Models_sversion = 5;
 
 /**
  * Building model data log callback.
- * @warning uses statically allocated data, must not be called concurrently.
  * @param ldata the log data to populate
  * @param object the opaque pointer to bmodel structure
  * @return exec status
