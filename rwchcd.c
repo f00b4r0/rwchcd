@@ -229,7 +229,7 @@ static int init_process(void)
 
 	// priviledges could be dropped here
 
-	ret = storage_config();
+	ret = storage_online();
 	if (ret) {
 		pr_err(_("Failed to configure storage (%d)"), ret);
 		return (ret);
@@ -279,7 +279,7 @@ static void exit_process(void)
 			cbs->exit();
 	}
 
-	storage_deconfig();	// depends on nothing
+	storage_exit();	// depends on nothing
 	hardware_exit();	// depends on hw_backends
 	outputs_exit();		// depends on hw_backends
 	inputs_exit();		// depends on nothing

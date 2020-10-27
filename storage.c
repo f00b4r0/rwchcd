@@ -188,7 +188,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 }
 
 /** Quick hack. @warning no other chdir should be performed */
-int storage_config(void)
+int storage_online(void)
 {
 	// if we don't have a configured path, fallback to default
 	if (!Storage_path)
@@ -210,7 +210,7 @@ bool storage_isconfigured(void)
 	return (Storage_configured);
 }
 
-void storage_deconfig(void)
+void storage_exit(void)
 {
 	Storage_configured = false;
 	free((void *)Storage_path);

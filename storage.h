@@ -21,8 +21,8 @@ typedef uint32_t	storage_version_t;	///< storage version type
 
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size);
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size);
-int storage_config(void);
+int storage_online(void);
 bool storage_isconfigured(void);
-void storage_deconfig(void);
+void storage_exit(void);
 
 #endif /* rwchcd_storage_h */
