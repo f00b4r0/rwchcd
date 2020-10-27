@@ -114,5 +114,7 @@ void hw_backends_exit(void)
 		HW_backends.all[id].name = NULL;
 	}
 
+	free(HW_backends.all);
+
 	memset(&HW_backends, 0x00, sizeof(HW_backends));
 }
