@@ -12,10 +12,12 @@
  */
 
 #include <string.h>	// strdup
+#include <stdlib.h>	// free
 
 #include "storage_parse.h"
 #include "filecfg_parser.h"
 #include "rwchcd.h"
+#include "storage.h"
 
 extern const char * Storage_path;
 
@@ -56,6 +58,17 @@ int filecfg_storage_parse(void * restrict const priv __attribute__((unused)), co
 		Storage_path = strdup(path);
 	else	// should never happen
 		return (-EEXISTS);
+
+	ret = storage_online();
+	if (ALL_OK != ret) {
+		pr_err(_("Failed to bring storage online (%d)"), ret);
+		storage_exit();
+		return (ret);
+	}
+
+	ret = rwchcd_add_finishcb(NULL, storage_exit);
+	if (ALL_OK != ret)
+		storage_exit();
 
 	return (ret);
 
