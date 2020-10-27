@@ -74,8 +74,10 @@ int dhwt_online(struct s_dhwt * const dhwt)
 	ret = inputs_temperature_get(dhwt->set.tid_bottom, NULL);
 	if (ALL_OK != ret)
 		ret = inputs_temperature_get(dhwt->set.tid_top, NULL);
-	if (ret)
-		goto out;
+	if (ALL_OK != ret) {
+		pr_err(_("\"%s\": both tid_bottom and tid_top failed, need at least one!"), dhwt->name);
+		ret = -EMISCONFIGURED;
+	}
 
 	// limit_tmin must be > 0C
 	temp = SETorDEF(dhwt->set.params.limit_tmin, dhwt->pdata->set.def_dhwt.limit_tmin);
@@ -150,7 +152,6 @@ int dhwt_online(struct s_dhwt * const dhwt)
 	if (ALL_OK == ret)
 		dhwt->run.online = true;
 
-out:
 	return (ret);
 }
 
