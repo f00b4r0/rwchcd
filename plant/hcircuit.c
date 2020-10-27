@@ -296,8 +296,10 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 
 	// check that mandatory sensors are set
 	ret = inputs_temperature_get(circuit->set.tid_outgoing, NULL);
-	if (ret)
-		goto out;
+	if (ret) {
+		pr_err(_("\"%s\": tid_outgoing failed! (%d)"), circuit->name, ret);
+		ret = - EMISCONFIGURED;
+	}
 
 	// limit_wtmax must be > 0C
 	temp = SETorDEF(circuit->set.params.limit_wtmax, circuit->pdata->set.def_hcircuit.limit_wtmax);
@@ -327,17 +329,17 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		circuit->run.rorh_temp_increment = temp_expw_mavg(0, circuit->set.wtemp_rorh, HCIRCUIT_RORH_1HTAU, HCIRCUIT_RORH_DT);
 	}
 
-	// log registration shouldn't cause onlining to fail
-	if (hcircuit_log_register(circuit) != ALL_OK)
-		pr_err(_("\"%s\": couldn't register for logging"), circuit->name);
-
-	if (ALL_OK == ret)
+	if (ALL_OK == ret) {
 		circuit->run.online = true;
 
-	// try to restore circuit
-	hcircuit_restore(circuit);
+		// log registration shouldn't cause onlining to fail
+		if (hcircuit_log_register(circuit) != ALL_OK)
+			pr_err(_("\"%s\": couldn't register for logging"), circuit->name);
 
-out:
+		// try to restore circuit
+		hcircuit_restore(circuit);
+	}
+
 	return (ret);
 }
 
