@@ -65,6 +65,7 @@ struct s_dhwt {
 		bool electric_mode;		///< true if operating on electric heater
 		enum e_runmode runmode;		///< dhwt actual (computed) runmode
 		temp_t target_temp;		///< current target temp for this tank
+		temp_t actual_temp;		///< current temperature as retained by the software (could be top or bottom)
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 		timekeep_t mode_since;		///< starting time of current mode (if charge_on: charge start time, else charge end time)
 		int charge_yday;		///< last day forced charge was triggered in DHWTF_FIRST mode

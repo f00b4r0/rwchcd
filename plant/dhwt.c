@@ -632,6 +632,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			dbgerr("\"%s\": failed to set pump_feed \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_feed->name, ret);
 	}
 
+	dhwt->run.actual_temp = curr_temp;
+
 	return (ret);
 }
 
