@@ -111,6 +111,8 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 	filecfg_iprintf("dhwt \"%s\" {\n", dhwt->name);
 	filecfg_ilevel_inc();
 
+	if (FCD_Exhaustive || dhwt->set.logging)
+		filecfg_dump_nodebool("logging", dhwt->set.logging);
 	if (FCD_Exhaustive || dhwt->set.electric_failover)
 		filecfg_dump_nodebool("electric_failover", dhwt->set.electric_failover);
 	if (FCD_Exhaustive || dhwt->set.anti_legionella)

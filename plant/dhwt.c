@@ -39,6 +39,110 @@
 #include "scheduler.h"
 #include "io/inputs.h"
 #include "io/outputs.h"
+#include "log/log.h"
+
+#define DHWT_STORAGE_PREFIX	"dhwt"
+
+/**
+ * DHWT data log callback.
+ * @param ldata the log data to populate
+ * @param object the opaque pointer to dhwt structure
+ * @return exec status
+ */
+static int dhwt_logdata_cb(struct s_log_data * const ldata, const void * const object)
+{
+	const struct s_dhwt * const dhwt = object;
+	unsigned int i = 0;
+
+	assert(ldata);
+	assert(ldata->nkeys >= 8);
+
+	if (!dhwt)
+		return (-EINVALID);
+
+	if (!dhwt->run.online)
+		return (-EOFFLINE);
+
+	ldata->values[i++] = dhwt->run.runmode;
+	ldata->values[i++] = dhwt->run.charge_on;
+	ldata->values[i++] = dhwt->run.recycle_on;
+	ldata->values[i++] = dhwt->run.force_on;
+	ldata->values[i++] = dhwt->run.legionella_on;
+	ldata->values[i++] = dhwt->run.electric_mode;
+	ldata->values[i++] = temp_to_ikelvin(dhwt->run.target_temp);
+	ldata->values[i++] = temp_to_ikelvin(dhwt->run.actual_temp);
+
+	ldata->nvalues = i;
+
+	return (ALL_OK);
+}
+
+/**
+ * Provide a well formatted log source for a given dhwt.
+ * @param dhwt the target dhwt
+ * @return (statically allocated) s_log_source pointer
+ * @warning must not be called concurrently
+ */
+static const struct s_log_source * dhwt_lsrc(const struct s_dhwt * const dhwt)
+{
+	static const log_key_t keys[] = {
+		"runmode", "charge_on", "recycle_on", "force_on", "legionella_on", "electric_mode", "target_temp", "actual_temp",
+	};
+	static const enum e_log_metric metrics[] = {
+		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+	};
+	const log_version_t version = 1;
+	static struct s_log_source Dhwt_lsrc;
+
+	Dhwt_lsrc = (struct s_log_source){
+		.log_sched = LOG_SCHED_5mn,
+		.basename = DHWT_STORAGE_PREFIX,
+		.identifier = dhwt->name,
+		.version = version,
+		.logdata_cb = dhwt_logdata_cb,
+		.nkeys = ARRAY_SIZE(keys),
+		.keys = keys,
+		.metrics = metrics,
+		.object = dhwt,
+	};
+	return (&Dhwt_lsrc);
+}
+
+/**
+ * Register a dhwt for logging.
+ * @param dhwt the target dhwt
+ * @return exec status
+ */
+static int dhwt_log_register(const struct s_dhwt * const dhwt)
+{
+	assert(dhwt);
+
+	if (!dhwt->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!dhwt->set.logging)
+		return (ALL_OK);
+
+	return (log_register(dhwt_lsrc(dhwt)));
+}
+
+/**
+ * Deregister a dhwt from logging.
+ * @param dhwt the target dhwt
+ * @return exec status
+ */
+static int dhwt_log_deregister(const struct s_dhwt * const dhwt)
+{
+	assert(dhwt);
+
+	if (!dhwt->set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!dhwt->set.logging)
+		return (ALL_OK);
+
+	return (log_deregister(dhwt_lsrc(dhwt)));
+}
 
 /**
  * Create a dhwt
@@ -149,8 +253,13 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		}
 	}
 
-	if (ALL_OK == ret)
+	if (ALL_OK == ret) {
 		dhwt->run.online = true;
+
+		// log registration shouldn't cause onlining to fail
+		if (dhwt_log_register(dhwt) != ALL_OK)
+			pr_err(_("\"%s\": couldn't register for logging"), dhwt->name);
+	}
 
 	return (ret);
 }
@@ -245,6 +354,7 @@ int dhwt_offline(struct s_dhwt * const dhwt)
 		return (-ENOTCONFIGURED);
 
 	dhwt_shutdown(dhwt);
+	dhwt_log_deregister(dhwt);
 
 	outputs_relay_thaw(dhwt->set.rid_selfheater);
 

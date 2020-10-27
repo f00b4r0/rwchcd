@@ -60,6 +60,7 @@ static inline const struct s_plant * __dhwt_to_plant(void * priv)
 	return (pdata_to_plant(((struct s_dhwt *)priv)->pdata));
 }
 
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, logging)
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, electric_failover)
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, anti_legionella)
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_dhwt, legionella_recycle)
@@ -103,6 +104,7 @@ static int fcp_dhwt_params(void * restrict const priv, const struct s_filecfg_pa
 int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL,	"logging",		false,	fcp_bool_s_dhwt_logging,		NULL, },
 		{ NODEBOL,	"electric_failover",	false,	fcp_bool_s_dhwt_electric_failover,	NULL, },
 		{ NODEBOL,	"anti_legionella",	false,	fcp_bool_s_dhwt_anti_legionella,	NULL, },
 		{ NODEBOL,	"legionella_recycle",	false,	fcp_bool_s_dhwt_legionella_recycle,	NULL, },
