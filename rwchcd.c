@@ -181,6 +181,14 @@ static int init_process(void)
 		return (ret);
 	}
 
+	ret = log_init();
+	if (ret) {
+		pr_err(_("Failed to initialize log subsystem (%d)"), ret);
+		return (ret);
+	}
+
+	// all _init() calls should be done before this point.
+
 	// this is where we should call the parser
 	if (!(filecfg_parser_in = fopen(RWCHCD_CONFIG, "r"))) {
 		perror(RWCHCD_CONFIG);
@@ -208,9 +216,9 @@ static int init_process(void)
 		return (ret);
 	}
 
-	ret = log_init();
+	ret = log_online();
 	if (ret) {
-		pr_err(_("Failed to initialize log subsystem (%d)"), ret);
+		pr_err(_("Failed to online log subsystem (%d)"), ret);
 		return (ret);
 	}
 
@@ -242,6 +250,7 @@ static void exit_process(void)
 	models_offline();
 	alarms_offline();
 	hardware_offline();
+	log_offline();
 
 	filecfg_dump();
 

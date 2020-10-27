@@ -183,6 +183,9 @@ int log_register(const struct s_log_source * restrict const lsource)
 
 	assert(lsource);
 
+	if (!Log.set.enabled)
+		return (ALL_OK);	// do nothing
+
 	if (!lsource->version) {
 		pr_err(_("Log registration failed: invalid version number for %s %s: %d"), lsource->basename, lsource->identifier, lsource->version);
 		return (-EINVALID);
@@ -274,6 +277,9 @@ int log_deregister(const struct s_log_source * restrict const lsource)
 
 	assert(lsource);
 
+	if (!Log.set.enabled)
+		return (ALL_OK);	// do nothing
+
 	if (lsource->log_sched >= ARRAY_SIZE(Log_sched))
 		return (-EINVALID);
 
@@ -322,11 +328,10 @@ static int log_crawl(const int log_sched_id)
 	struct s_log_data ldata;
 	int ret = ALL_OK;
 
-	if (!Log.set.configured)	// stop crawling when deconfigured
-		return (-ENOTCONFIGURED);
+	assert(Log.set.enabled);
 
-	if (!Log.set.enabled)
-		return (ALL_OK);
+	if (!Log.run.online)	// stop crawling when deconfigured
+		return (-EOFFLINE);
 
 	for (lelmt = Log_sched[log_sched_id].loglist; lelmt; lelmt = lelmt->next) {
 		lsource = lelmt->lsource;
@@ -354,13 +359,30 @@ static int log_crawl(const int log_sched_id)
 
 /**
  * Init logging subsystem.
- * This function tries to bring the configured log backend online and will fail on error.
  * @return exec status
  */
 int log_init(void)
 {
+	memset(&Log, 0x00, sizeof(Log));
+
+	return (ALL_OK);
+}
+
+/**
+ * Online logging subsystem.
+ * This function tries to bring the configured log backend online and will fail on error.
+ * @return exec status
+ */
+int log_online(void)
+{
 	int ret;
 	unsigned int i;
+
+	if (!Log.set.configured)
+		return (-ENOTCONFIGURED);
+
+	if (!Log.set.enabled)
+		return (ALL_OK);
 
 	if (!storage_isconfigured()) {
 		pr_err("Logging needs a configured storage!");
@@ -374,7 +396,7 @@ int log_init(void)
 			return (ret);
 	}
 
-	Log.set.configured = true;
+	Log.run.online = true;
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		ret = timer_add_cb(Log_sched[i].interval, Log_sched[i].cb, Log_sched[i].name);
@@ -386,7 +408,24 @@ int log_init(void)
 }
 
 /**
- * Exit logging subsystem
+ * Offline logging subsystem
+ */
+int log_offline(void)
+{
+	if (!Log.run.online)
+		return (-EOFFLINE);
+
+	Log.run.online = false;
+
+	if (Log.bkend->log_offline)
+		Log.bkend->log_offline();
+
+	return (ALL_OK);
+}
+
+/**
+ * Exit logging subsystem.
+ * Cleanup all allocated data.
  */
 void log_exit(void)
 {
@@ -394,9 +433,6 @@ void log_exit(void)
 	unsigned int i;
 
 	Log.set.configured = false;
-
-	if (Log.bkend->log_offline)
-		Log.bkend->log_offline();
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		for (lelmt = Log_sched[i].loglist; lelmt;) {

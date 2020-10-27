@@ -94,9 +94,12 @@ struct s_log_bendcbs {
 
 struct s_log {
 	struct {
-		bool configured;			///< true if properly configured (backends are online)
+		bool configured;			///< true if properly configured
 		bool enabled;				///< true if data logging should be enabled
 	} set;
+	struct {
+		bool online;				///< true if online (backend is online)
+	} run;
 	const struct s_log_bendcbs *bkend;		///< logging backend. Config expects a string for backend type, possibly followed by backend-specific config
 };
 
@@ -105,6 +108,8 @@ typedef void (*log_bkend_hook_t)(const struct s_log_bendcbs ** restrict const ca
 int log_register(const struct s_log_source * restrict const lsource);
 int log_deregister(const struct s_log_source * restrict const lsource);
 int log_init(void);
+int log_online(void);
+int log_offline(void);
 void log_exit(void);
 
 #endif /* log_h */

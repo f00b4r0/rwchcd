@@ -97,5 +97,11 @@ int filecfg_log_parse(void * restrict const priv, const struct s_filecfg_parser_
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	return (filecfg_parser_run_parsers(&Log, parsers, ARRAY_SIZE(parsers)));
+	ret = filecfg_parser_run_parsers(&Log, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
+
+	Log.set.configured = true;
+
+	return (ret);
 }
