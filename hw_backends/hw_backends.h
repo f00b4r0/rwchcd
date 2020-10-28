@@ -76,8 +76,7 @@ struct s_hw_callbacks {
 	/**
 	 * Hardware backend init callback.
 	 * This callback is expected to initialize the hardware driver.
-	 * Probing/testing hardware presence/communication can be done at this stage if
-	 * it doesn't require prior configuration.
+	 * This is a setup stage that happens immediately after backend configuration and before online()
 	 * @warning This callback @b MUST be implemented.
 	 * @param priv hardware backend private data
 	 * @return exec status
@@ -128,7 +127,7 @@ struct s_hw_callbacks {
 	/**
 	 * Hardware backend exit callback.
 	 * @warning This callback @b MUST be implemented.
-	 * @note This callback must release all memory allocated in the @b priv area.
+	 * @note This callback must release all memory allocated in the @b priv area and freeup all resources.
 	 * @param priv hardware backend private data
 	 */
 	void (*exit)(void * priv);
