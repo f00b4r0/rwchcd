@@ -17,6 +17,7 @@
 
 #include "timekeep.h"
 #include "hw_p1_setup.h"
+#include "hw_p1_lcd.h"
 
 #define SPICLOCK	1000000		///< SPI clock 1MHz
 #define SPICHAN		0		///< RaspberryPi SPI channel 0
@@ -35,6 +36,8 @@ void * hw_p1_setup_new(void)
 
 	hw->spi.set.chan = SPICHAN;
 	hw->spi.set.clock = SPICLOCK;
+
+	hw_p1_lcd_init(&hw->lcd);
 
 	return (hw);
 }
@@ -232,5 +235,16 @@ int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const ui
  */
 void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw)
 {
+	uint_fast8_t i;
+
+	// cleanup all resources
+	for (i = 0; i < ARRAY_SIZE(hw->Relays); i++)
+		hw_p1_setup_relay_release(hw, i);
+
+	// deconfigure all sensors
+	for (i = 0; i < ARRAY_SIZE(hw->Sensors); i++)
+		hw_p1_setup_sensor_deconfigure(hw, i);
+
+	hw_p1_lcd_exit(&hw->lcd);
 	free(hw);
 }

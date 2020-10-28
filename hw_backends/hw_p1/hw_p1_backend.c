@@ -88,7 +88,7 @@ static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const
 }
 
 /**
- * Initialize hardware and ensure connection is set
+ * Initialize hardware and ensure connection is set (needs root)
  * @param priv private hardware data
  * @return error state
  */
@@ -100,7 +100,7 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	if (!hw)
 		return (-EINVALID);
 
-	if (hw_p1_spi_init(&hw->spi) < 0)
+	if (hw_p1_spi_setup(&hw->spi) < 0)
 		return (-EINIT);
 
 	// fetch firmware version
@@ -116,7 +116,6 @@ __attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
 	pr_log(_("HWP1: Firmware version %d detected"), ret);
 	hw->run.fwversion = ret;
 	hw->run.initialized = true;
-	hw_p1_lcd_init(&hw->lcd);
 
 	return (ALL_OK);
 }
@@ -389,6 +388,11 @@ static int hw_p1_offline(void * priv)
 
 	hw->run.online = false;
 
+	// reset the hardware
+	ret = hw_p1_spi_reset(&hw->spi);
+	if (ret)
+		dbgerr("reset failed (%d)", ret);
+
 	return (ret);
 }
 
@@ -401,8 +405,6 @@ static int hw_p1_offline(void * priv)
 static void hw_p1_exit(void * priv)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	int ret;
-	uint_fast8_t i;
 
 	if (!hw)
 		return;
@@ -414,21 +416,6 @@ static void hw_p1_exit(void * priv)
 
 	if (!hw->run.initialized)
 		return;
-
-	hw_p1_lcd_exit(&hw->lcd);
-
-	// cleanup all resources
-	for (i = 0; i < ARRAY_SIZE(hw->Relays); i++)
-		hw_p1_setup_relay_release(hw, i);
-
-	// deconfigure all sensors
-	for (i = 0; i < ARRAY_SIZE(hw->Sensors); i++)
-		hw_p1_setup_sensor_deconfigure(hw, i);
-
-	// reset the hardware
-	ret = hw_p1_spi_reset(&hw->spi);
-	if (ret)
-		dbgerr("reset failed (%d)", ret);
 
 	hw->run.initialized = false;
 

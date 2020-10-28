@@ -635,11 +635,12 @@ int hw_p1_spi_reset(struct s_hw_p1_spi * const spi)
 }
 
 /**
- * Init spi subsystem
+ * Setup spi subsystem
  * @param spi HW P1 spi private data
  * @return exec status or error code
+ * @note needs root
  */
-int hw_p1_spi_init(struct s_hw_p1_spi * const spi)
+int hw_p1_spi_setup(struct s_hw_p1_spi * const spi)
 {
 	int ret;
 

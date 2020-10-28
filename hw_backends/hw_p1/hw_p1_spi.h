@@ -46,6 +46,6 @@ int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings
 int hw_p1_spi_settings_w(struct s_hw_p1_spi * const spi, const struct rwchc_s_settings * const settings) __attribute__((warn_unused_result));
 int hw_p1_spi_settings_s(struct s_hw_p1_spi * const spi) __attribute__((warn_unused_result));
 int hw_p1_spi_reset(struct s_hw_p1_spi * const spi);
-int hw_p1_spi_init(struct s_hw_p1_spi * const spi) __attribute__((warn_unused_result));
+int hw_p1_spi_setup(struct s_hw_p1_spi * const spi) __attribute__((warn_unused_result));
 
 #endif /* hw_p1_spi_h */
