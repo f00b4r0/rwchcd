@@ -69,12 +69,12 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
 		return (-EOFFLINE);
 
 	ldata->values[i++] = circuit->run.runmode;
-	ldata->values[i++] = circuit->run.request_ambient;
-	ldata->values[i++] = circuit->run.target_ambient;
-	ldata->values[i++] = circuit->run.actual_ambient;
-	ldata->values[i++] = circuit->run.target_wtemp;
-	ldata->values[i++] = circuit->run.actual_wtemp;
-	ldata->values[i++] = circuit->run.heat_request;
+	ldata->values[i++] = temp_to_ikelvin(circuit->run.request_ambient);
+	ldata->values[i++] = temp_to_ikelvin(circuit->run.target_ambient);
+	ldata->values[i++] = temp_to_ikelvin(circuit->run.actual_ambient);
+	ldata->values[i++] = temp_to_ikelvin(circuit->run.target_wtemp);
+	ldata->values[i++] = temp_to_ikelvin(circuit->run.actual_wtemp);
+	ldata->values[i++] = temp_to_ikelvin(circuit->run.heat_request);
 
 	ldata->nvalues = i;
 
@@ -95,7 +95,7 @@ static const struct s_log_source * hcircuit_lsrc(const struct s_hcircuit * const
 	static const enum e_log_metric metrics[] = {
 		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
 	};
-	const log_version_t version = 1;
+	const log_version_t version = 2;
 	static struct s_log_source Hcircuit_lreg;
 
 	Hcircuit_lreg = (struct s_log_source){
