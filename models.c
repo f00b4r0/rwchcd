@@ -53,10 +53,10 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 
 	ldata->values[i++] = bmodel->run.summer;
 	ldata->values[i++] = bmodel->run.frost;
-	ldata->values[i++] = bmodel->run.t_out;
-	ldata->values[i++] = bmodel->run.t_out_filt;
-	ldata->values[i++] = bmodel->run.t_out_mix;
-	ldata->values[i++] = bmodel->run.t_out_att;
+	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out);
+	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out_filt);
+	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out_mix);
+	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out_att);
 
 	ldata->nvalues = i;
 
@@ -77,7 +77,7 @@ static const struct s_log_source * bmodel_lreg(const struct s_bmodel * const bmo
 	static const enum e_log_metric metrics[] = {
 		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
 	};
-	const log_version_t version = 1;
+	const log_version_t version = 2;
 	static struct s_log_source Bmodel_lreg;
 
 	Bmodel_lreg = (struct s_log_source){
