@@ -17,7 +17,7 @@
 #include <stdatomic.h>
 
 #include "rwchcd.h"
-#include "io/hardware.h"
+#include "hw_backends/hardware.h"
 
 
 enum e_temp_op {

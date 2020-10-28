@@ -390,8 +390,6 @@
 		4F4D5C0A252A345B003130BC /* io */ = {
 			isa = PBXGroup;
 			children = (
-				4FC6894F206FAB4D00A3A065 /* hardware.c */,
-				4FC68950206FAB4D00A3A065 /* hardware.h */,
 				4FC1132025235AA2009AA17D /* inputs.h */,
 				4FC1132125235AA2009AA17D /* inputs.c */,
 				4F3EC15F2524CE8400ACE8BA /* outputs.h */,
@@ -498,6 +496,8 @@
 			children = (
 				4FC689522071304900A3A065 /* hw_backends.c */,
 				4FC689532071304900A3A065 /* hw_backends.h */,
+				4FC6894F206FAB4D00A3A065 /* hardware.c */,
+				4FC68950206FAB4D00A3A065 /* hardware.h */,
 				4F43569B23157AE60030EB89 /* hw_lib.c */,
 				4F43569A23157AE60030EB89 /* hw_lib.h */,
 				4F6509FC25261A650071EC45 /* dummy */,

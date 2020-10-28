@@ -20,7 +20,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "io/hardware.h"
+#include "hw_backends/hardware.h"
 #include "relay.h"
 
 /**
