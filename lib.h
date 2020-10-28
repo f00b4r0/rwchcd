@@ -62,7 +62,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
  * Convert temperature from internal format to integer Kelvin (rounded)
  * @param temp temp value as temp_t
  */
-#define temp_to_ikelvin(temp)		((temp + KPRECISION/2)/KPRECISION)
+#define temp_to_ikelvin(temp)		(int)((temp + KPRECISION/2)/KPRECISION)
 
 /**
 * Convert temperature from internal format to integer Kelvin (floored)
