@@ -2,7 +2,7 @@
 //  storage.c
 //  rwchcd
 //
-//  (C) 2016,2018-2019 Thibaut VARENE
+//  (C) 2016,2018-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>	// open/posix_fallocate/fadvise
 #include <stdlib.h>	// mkstemp/malloc
+#include <db.h>
 
 #include "storage.h"
 #include "rwchcd.h"
@@ -34,6 +35,8 @@
 #define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL
 #define STORAGE_TMPLATE		"tmpXXXXXX"
+
+#define STORAGE_DB		"rwchcd.db"
 
 static const char Storage_magic[] = STORAGE_MAGIC;
 static const storage_version_t Storage_version = STORAGE_VERSION;
@@ -56,6 +59,9 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	int fd, dir_fd, ret = -ESTORE;
 	char tmpfile[] = STORAGE_TMPLATE;
 
+	DB *dbp;
+	DBT key, data;
+
 	//assert((size + hdr_size) < SSIZE_MAX);
 
 	if (!Storage_configured)
@@ -64,6 +70,53 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	if (!identifier || !version || !object)
 		return (-EINVALID);
 
+	ret = db_create(&dbp, NULL, 0);
+	if (ret) {
+		dbgerr("db_create: %s", db_strerror(ret));
+		goto skip;
+	}
+
+	ret = dbp->open(dbp, NULL, STORAGE_DB, identifier, DB_BTREE, DB_CREATE|DB_THREAD, 0600);
+	if (ret) {
+		dbgerr("db_open \"%s\": %s", identifier, db_strerror(ret));
+		goto skip;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&data, 0, sizeof(data));
+
+	// store version
+	key.data = "version";
+	key.size = sizeof("version");
+	data.data = version;
+	data.size = sizeof(*version);
+
+	ret = dbp->put(dbp, NULL, &key, &data, 0);
+	if (ret) {
+		dbgerr("db->put version \"%s\": %s", identifier, db_strerror(ret));
+		dbp->close(dbp, 0);
+		goto skip;
+	}
+
+	// store object
+	key.data = "object";
+	key.size = sizeof("object");
+	data.data = object;
+	data.size = size;
+
+	ret = dbp->put(dbp, NULL, &key, &data, 0);
+	if (ret) {
+		dbgerr("db->put object \"%s\": %s", identifier, db_strerror(ret));
+		dbp->close(dbp, 0);
+		goto skip;
+	}
+
+	ret = dbp->close(dbp, 0);
+	if (ret) {
+		dbgerr("db->close \"%s\": %s", identifier, db_strerror(ret));
+	}
+
+skip:
 	dir_fd = open(Storage_path, O_RDONLY);
 	if (dir_fd < 0)
 		return (-ESTORE);
@@ -141,6 +194,10 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	char magic[ARRAY_SIZE(Storage_magic)];
 	storage_version_t sversion = 0;
 
+	DB *dbp;
+	DBT key, data;
+	int ret;
+
 	// assert(size < SSIZE_MAX);
 	
 	if (!Storage_configured)
@@ -149,6 +206,58 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	if (!identifier || !version || !object)
 		return (-EINVALID);
 	
+	ret = db_create(&dbp, NULL, 0);
+	if (ret) {
+		dbgerr("db_create: %s", db_strerror(ret));
+		goto skip;
+	}
+
+	ret = dbp->open(dbp, NULL, STORAGE_DB, identifier, DB_BTREE, DB_THREAD, 0600);
+	if (ret) {
+		dbgerr("db_open \"%s\": %s", identifier, db_strerror(ret));
+		goto skip;
+	}
+
+	memset(&key, 0, sizeof(key));
+	memset(&data, 0, sizeof(data));
+
+	// get version
+	key.data = "version";
+	key.size = sizeof("version");
+	data.data = version;
+	data.ulen = sizeof(*version);
+	data.flags = DB_DBT_USERMEM;
+
+	ret = dbp->get(dbp, NULL, &key, &data, 0);
+	if (ret) {
+		dbgerr("db->get version \"%s\": %s", identifier, db_strerror(ret));
+		dbp->close(dbp, 0);
+		goto skip;
+	}
+	dbgmsg(1, 1, "got version: %d", *(typeof(version))data.data);
+
+	// get object
+	key.data = "object";
+	key.size = sizeof("object");
+	data.data = object;
+	data.ulen = size;
+	data.flags = DB_DBT_USERMEM;
+
+	ret = dbp->get(dbp, NULL, &key, &data, 0);
+	if (ret) {
+		dbgerr("db->get object \"%s\": %s", identifier, db_strerror(ret));
+		dbp->close(dbp, 0);
+		goto skip;
+	}
+	dbgmsg(1, 1, "object expected size: %d, received size: %d", size, data.size);
+
+	ret = dbp->close(dbp, 0);
+	if (ret) {
+		dbgerr("db->close \"%s\": %s", identifier, db_strerror(ret));
+	}
+	goto end;
+
+skip:
 	// open stream
 	fd = open(identifier, O_RDONLY);
 	if (fd < 0) {
@@ -182,6 +291,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 	if (count)
 		return (-ESTORE);
 
+end:
 	dbgmsg(1, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
 
 	return (ALL_OK);
