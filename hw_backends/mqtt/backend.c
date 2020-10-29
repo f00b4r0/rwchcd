@@ -183,11 +183,11 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 
 
 /**
- * Initialize MQTT backend.
+ * Setup MQTT backend.
  * @param priv private backend data
  * @return error state
  */
-__attribute__((warn_unused_result)) static int mqtt_init(void * priv)
+__attribute__((warn_unused_result)) static int mqtt_setup(void * priv)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 	int ret;
@@ -662,7 +662,7 @@ int mqtt_output_ibn(void * const priv, const enum e_hw_output_type type, const c
 
 /** Hardware callbacks for MQTT backend */
 static const struct s_hw_callbacks mqtt_callbacks = {
-	.init = mqtt_init,
+	.setup = mqtt_setup,
 	.exit = mqtt_exit,
 	.online = mqtt_online,
 	.offline = mqtt_offline,

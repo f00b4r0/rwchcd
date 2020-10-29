@@ -19,8 +19,8 @@
 extern struct s_hw_backends HW_backends;
 
 /**
- * Init all registered backends.
- * For all registered backends, this function execute the .init() backend callback
+ * Setup all registered backends.
+ * For all registered backends, this function execute the .setup() backend callback
  * after sanity checks. If the call is successful, the backend is marked as init'd.
  * If the backend has already been init'd, this function does nothing.
  * @return exec status
@@ -31,16 +31,16 @@ int hardware_setup(void)
 	unsigned int id;
 	bool fail = false;
 
-	// init all registered backends
+	// setup all registered backends
 	for (id = 0; id < HW_backends.last; id++) {
 		if (HW_backends.all[id].run.initialized)
 			continue;
 
-		if (HW_backends.all[id].cb->init) {
-			ret = HW_backends.all[id].cb->init(HW_backends.all[id].priv);
+		if (HW_backends.all[id].cb->setup) {
+			ret = HW_backends.all[id].cb->setup(HW_backends.all[id].priv);
 			if (ALL_OK != ret) {
 				fail = true;
-				pr_err(_("Failed to initialize backend \"%s\" (%d)"), HW_backends.all[id].name, ret);
+				pr_err(_("Failed to setup backend \"%s\" (%d)"), HW_backends.all[id].name, ret);
 			}
 			else
 				HW_backends.all[id].run.initialized = true;

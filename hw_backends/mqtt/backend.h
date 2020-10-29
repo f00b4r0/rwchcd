@@ -68,7 +68,7 @@ struct s_mqtt_pdata {
 		enum e_mqtt_tunit temp_unit;	///< temperature unit used in subscribed temperatures (optional, defaults to Celsius)
 	} set;		///< settings
 	struct {
-		bool initialized;	///< hardware is initialized (init() succeeded)
+		bool initialized;	///< hardware is initialized (setup() succeeded)
 		bool online;		///< hardware is online (online() succeeded)
 	} run;		///< private runtime
 	struct {

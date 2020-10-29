@@ -44,7 +44,7 @@ struct s_dummy_pdata {
 	struct {
 	} set;		///< settings
 	struct {
-		bool initialized;	///< hardware is initialized (init() succeeded)
+		bool initialized;	///< hardware is initialized (setup() succeeded)
 		bool online;		///< hardware is online (online() succeeded)
 	} run;		///< private runtime
 	struct {

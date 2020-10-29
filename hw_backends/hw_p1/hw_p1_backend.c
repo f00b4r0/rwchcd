@@ -92,7 +92,7 @@ static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const
  * @param priv private hardware data
  * @return error state
  */
-__attribute__((warn_unused_result)) static int hw_p1_init(void * priv)
+__attribute__((warn_unused_result)) static int hw_p1_setup(void * priv)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	int ret, i = 0;
@@ -693,7 +693,7 @@ static int hw_p1_output_ibn(void * const priv, const enum e_hw_output_type type,
 
 /** Hardware callbacks for Prototype 1 hardware */
 static const struct s_hw_callbacks hw_p1_callbacks = {
-	.init = hw_p1_init,
+	.setup = hw_p1_setup,
 	.exit = hw_p1_exit,
 	.online = hw_p1_online,
 	.offline = hw_p1_offline,

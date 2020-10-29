@@ -70,7 +70,7 @@ int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * c
 	struct s_hw_backend * bkend;
 
 	// sanitize input: check that mandatory callbacks are provided
-	if (!callbacks || !callbacks->init || !callbacks->exit || !callbacks->online || !callbacks->offline || !name)
+	if (!callbacks || !callbacks->setup || !callbacks->exit || !callbacks->online || !callbacks->offline || !name)
 		return (-EINVALID);
 
 	// name must be unique

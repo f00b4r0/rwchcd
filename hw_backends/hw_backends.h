@@ -68,20 +68,22 @@ typedef struct {
  * Backend hardware callbacks.
  * These callbacks provide an implementation-agnostic way to access and operate
  * the hardware backends (initialize, access sensors and toggle relays).
- * @note init()/exit()/online()/offline() calls are mandatory.
+ * @note setup()/exit()/online()/offline() calls are mandatory.
  * Other calls optional depending on underlying hardware capabilities.
  * All calls take an opaque pointer to implementation-dependent data.
  */
 struct s_hw_callbacks {
 	/**
-	 * Hardware backend init callback.
-	 * This callback is expected to initialize the hardware driver.
-	 * This is a setup stage that happens immediately after backend configuration and before online()
+	 * Hardware backend setup callback.
+	 * This callback is expected to setup the hardware driver.
+	 * This is a setup stage that happens immediately after backend configuration and before online().
+	 * A delay is applied between the call to this callback and the call to the online() callback,
+	 * leaving enough time for the underlying hardware to collect itself.
 	 * @warning This callback @b MUST be implemented.
 	 * @param priv hardware backend private data
 	 * @return exec status
 	 */
-	int (*init)(void * priv);
+	int (*setup)(void * priv);
 
 	/**
 	 * Hardware backend online callback.

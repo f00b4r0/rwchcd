@@ -21,11 +21,11 @@
 #include "backend.h"
 
 /**
- * Initialize dummy backend.
+ * Setup dummy backend.
  * @param priv private backend data
  * @return error state
  */
-__attribute__((warn_unused_result)) static int dummy_init(void * priv)
+__attribute__((warn_unused_result)) static int dummy_setup(void * priv)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 
@@ -382,7 +382,7 @@ int dummy_output_ibn(void * const priv, const enum e_hw_output_type type, const 
 
 /** Hardware callbacks for dummy backend */
 static const struct s_hw_callbacks dummy_callbacks = {
-	.init = dummy_init,
+	.setup = dummy_setup,
 	.exit = dummy_exit,
 	.online = dummy_online,
 	.offline = dummy_offline,

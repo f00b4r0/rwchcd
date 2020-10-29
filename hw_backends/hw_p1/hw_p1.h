@@ -73,7 +73,7 @@ struct s_hw_p1_pdata {
 		uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
 	} set;		///< settings (externally set)
 	struct {
-		bool initialized;		///< hardware is initialized (init() succeeded)
+		bool initialized;		///< hardware is initialized (setup() succeeded)
 		bool online;			///< hardware is online (online() succeeded)
 		timekeep_t sensors_ftime;	///< sensors fetch time
 		timekeep_t last_calib;		///< time of last calibration
