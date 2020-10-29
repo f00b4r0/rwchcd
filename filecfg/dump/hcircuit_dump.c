@@ -132,8 +132,8 @@ int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 
 	if (FCD_Exhaustive || circuit->set.fast_cooldown)
 		filecfg_dump_nodebool("fast_cooldown", circuit->set.fast_cooldown);
-	if (FCD_Exhaustive || circuit->set.logging)
-		filecfg_dump_nodebool("logging", circuit->set.logging);
+	if (FCD_Exhaustive || circuit->set.log)
+		filecfg_dump_nodebool("log", circuit->set.log);
 	if (FCD_Exhaustive || circuit->set.schedid)
 		filecfg_dump_nodestr("schedid", scheduler_get_schedname(circuit->set.schedid));
 	filecfg_dump_nodestr("runmode", filecfg_runmode_str(circuit->set.runmode));	// mandatory

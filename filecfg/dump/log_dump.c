@@ -67,12 +67,12 @@ static void log_config_dump(void)
 }
 
 /**
-* Dump the logging subsystem to config file.
+* Dump the log subsystem to config file.
 * @return exec status
 */
 int filecfg_log_dump(void)
 {
-	filecfg_iprintf("logging {\n");
+	filecfg_iprintf("log {\n");
 	filecfg_ilevel_inc();
 
 	if (!Log.set.configured)

@@ -115,7 +115,7 @@ static int boiler_hscb_log_register(const struct s_heatsource * const heat)
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!heat->set.logging)
+	if (!heat->set.log)
 		return (ALL_OK);
 
 	return (log_register(boiler_hs_lsrc(heat)));
@@ -133,7 +133,7 @@ static int boiler_hscb_log_deregister(const struct s_heatsource * const heat)
 	if (!heat->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!heat->set.logging)
+	if (!heat->set.log)
 		return (ALL_OK);
 
 	return (log_deregister(boiler_hs_lsrc(heat)));

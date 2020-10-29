@@ -120,7 +120,7 @@ static int dhwt_log_register(const struct s_dhwt * const dhwt)
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!dhwt->set.logging)
+	if (!dhwt->set.log)
 		return (ALL_OK);
 
 	return (log_register(dhwt_lsrc(dhwt)));
@@ -138,7 +138,7 @@ static int dhwt_log_deregister(const struct s_dhwt * const dhwt)
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!dhwt->set.logging)
+	if (!dhwt->set.log)
 		return (ALL_OK);
 
 	return (log_deregister(dhwt_lsrc(dhwt)));

@@ -30,7 +30,7 @@ enum e_heatsource_type {
 struct s_heatsource {
 	struct {
 		bool configured;		///< true if properly configured
-		bool logging;			///< true if data logging should be enabled for this heatsource
+		bool log;			///< true if data logging should be enabled for this heatsource
 		schedid_t schedid;		///< schedule id for this heatsource.
 		enum e_runmode runmode;		///< current heatsource set_runmode
 		enum e_heatsource_type type;	///< type of heatsource

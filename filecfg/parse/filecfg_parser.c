@@ -503,13 +503,13 @@ int filecfg_parser_process_config(const struct s_filecfg_parser_nodelist * const
 {
 	struct s_filecfg_parser_parsers root_parsers[] = {	// order matters we want to parse backends first and plant last
 		{ NODELST,	"storage",	false,	filecfg_storage_parse,	NULL, },	// storage is needed first
-		{ NODELST,	"logging",	false,	filecfg_log_parse,	NULL, },	// logging depends on storage and several entities need it
-		{ NODELST,	"backends",	false,	filecfg_backends_parse, NULL, },	// backends are needed by hardware and several backend implementations depend on storage/logging
+		{ NODELST,	"log",		false,	filecfg_log_parse,	NULL, },	// log depends on storage and several entities need it
+		{ NODELST,	"backends",	false,	filecfg_backends_parse, NULL, },	// backends are needed by hardware and several backend implementations depend on storage/log
 		{ NODELST,	"inputs",	false,	filecfg_inputs_parse,	NULL, },	// inputs depend on hardware
 		{ NODELST,	"outputs",	false,	filecfg_outputs_parse,	NULL, },	// outputs depend on hardware
 		{ NODELST,	"scheduler",	false,	filecfg_scheduler_parse, NULL, },	// we need schedulers during plant setup
 		{ NODELST,	"defconfig",	false,	runtime_config_parse,	NULL, },	// defconfig depends on nothing
-		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },	// models depend on inputs, storage and logging
+		{ NODELST,	"models",	false,	filecfg_models_parse,	NULL, },	// models depend on inputs, storage and log
 		{ NODELST,	"plant",	true,	filecfg_plant_parse,	NULL, },	// plant depends on everything else
 	};
 	struct s_runtime * const runtime = runtime_get();

@@ -116,7 +116,7 @@ static inline const struct s_plant * __hcircuit_to_plant(void * priv)
 }
 
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, fast_cooldown)
-FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, logging)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, log)
 FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_hcircuit, runmode)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_hcircuit, wtemp_rorh)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, am_tambient_tK)
@@ -162,7 +162,7 @@ int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_pa
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL,		"fast_cooldown",	false,	fcp_bool_s_hcircuit_fast_cooldown,	NULL, },
-		{ NODEBOL,		"logging",		false,	fcp_bool_s_hcircuit_logging,		NULL, },
+		{ NODEBOL,		"log",			false,	fcp_bool_s_hcircuit_log,		NULL, },
 		{ NODESTR,		"runmode",		true,	fcp_runmode_s_hcircuit_runmode,		NULL, },
 		{ NODESTR,		"schedid",		false,	fcp_schedid_s_hcircuit_schedid,		NULL, },
 		{ NODEINT,		"ambient_factor",	false,	fcp_hcircuit_ambient_factor,		NULL, },

@@ -32,7 +32,7 @@ static int heatsource_type_parse(void * restrict const priv, const struct s_file
 	return (ret);
 }
 
-FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_heatsource, logging)
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_heatsource, log)
 FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_heatsource, runmode)
 FILECFG_PARSER_PRIO_PARSE_SET_FUNC(s_heatsource, prio)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_heatsource, consumer_sdelay)
@@ -42,7 +42,7 @@ int filecfg_heatsource_parse(void * restrict const priv, const struct s_filecfg_
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTC,		"type",			true,	heatsource_type_parse,			NULL, },
-		{ NODEBOL,		"logging",		false,	fcp_bool_s_heatsource_logging,		NULL, },
+		{ NODEBOL,		"log",			false,	fcp_bool_s_heatsource_log,		NULL, },
 		{ NODESTR,		"runmode",		true,	fcp_runmode_s_heatsource_runmode,	NULL, },
 		{ NODEINT,		"prio",			false,	fcp_prio_s_heatsource_prio,		NULL, },
 		{ NODEINT|NODEDUR,	"consumer_sdelay",	false,	fcp_tk_s_heatsource_consumer_sdelay,	NULL, },

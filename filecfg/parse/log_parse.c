@@ -10,7 +10,7 @@
  * @file
  * Log subsystem file configuration parsing.
 \verbatim
-  logging {
+  log {
 	  enabled true;
 	  bkend "statsd" {
 		  port "8125";

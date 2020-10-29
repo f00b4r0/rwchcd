@@ -29,8 +29,8 @@ static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
 	filecfg_iprintf("bmodel \"%s\" {\n", bmodel->name);
 	filecfg_ilevel_inc();
 
-	if (FCD_Exhaustive || bmodel->set.logging)
-		filecfg_dump_nodebool("logging", bmodel->set.logging);
+	if (FCD_Exhaustive || bmodel->set.log)
+		filecfg_dump_nodebool("log", bmodel->set.log);
 	if (FCD_Exhaustive || bmodel->set.limit_tsummer)
 		filecfg_dump_celsius("limit_tsummer", bmodel->set.limit_tsummer);
 	if (FCD_Exhaustive || bmodel->set.limit_tfrost)

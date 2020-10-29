@@ -106,7 +106,7 @@ static int bmodel_log_register(const struct s_bmodel * const bmodel)
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!bmodel->set.logging)
+	if (!bmodel->set.log)
 		return (ALL_OK);
 
 	return (log_register(bmodel_lreg(bmodel)));
@@ -124,7 +124,7 @@ static int bmodel_log_deregister(const struct s_bmodel * const bmodel)
 	if (!bmodel->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!bmodel->set.logging)
+	if (!bmodel->set.log)
 		return (ALL_OK);
 
 	return (log_deregister(bmodel_lreg(bmodel)));

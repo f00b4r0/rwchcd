@@ -263,7 +263,7 @@ int filecfg_dump(void)
 	// dump storage
 	filecfg_storage_dump();
 
-	// dump logging
+	// dump log
 	filecfg_log_dump();
 
 	// dump scheduler

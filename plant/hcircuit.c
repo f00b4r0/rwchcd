@@ -124,7 +124,7 @@ static int hcircuit_log_register(const struct s_hcircuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!circuit->set.logging)
+	if (!circuit->set.log)
 		return (ALL_OK);
 
 	return (log_register(hcircuit_lsrc(circuit)));
@@ -142,7 +142,7 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	if (!circuit->set.logging)
+	if (!circuit->set.log)
 		return (ALL_OK);
 
 	return (log_deregister(hcircuit_lsrc(circuit)));
