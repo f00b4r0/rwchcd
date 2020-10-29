@@ -9,60 +9,45 @@
 /**
  * @file
  * Persistent storage implementation.
- * Currently an ugly quick hack based on files.
+ * Currently a quick hack based on Berkeley DB.
  * This implementation is very inefficient: among other issues, 
  * we keep open()ing/close()ing files every time. Open once + frequent flush
  * and close at program end would be better, but the fact is that this subsystem
  * probably shouldn't use flat files at all, hence the lack of effort to improve this.
- * Generally speaking a database with several tables makes more sense.
  * @warning no check is performed for @b identifier collisions in any of the output functions.
- * @todo consider using hashes instead of plaintext for filenames to remove the limitation on e.g. entity names.
+ * @note the backend can handle arbitrarily long identifiers and object sizes, within the Berkeley DB limits.
  */
 
-#include <unistd.h>	// chdir/write/close/unlink
-#include <stdio.h>	// rename/fopen/perror...
-#include <string.h>	// memcmp
-#include <errno.h>	// errno
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>	// open/posix_fallocate/fadvise
-#include <stdlib.h>	// mkstemp/malloc
+#include <stdlib.h>	// free
+#include <unistd.h>	// chdir
+#include <string.h>	// memset/strdup
 #include <db.h>
 
 #include "storage.h"
 #include "rwchcd.h"
 
-#define STORAGE_MAGIC		"rwchcd"
 #define STORAGE_VERSION		1UL
-#define STORAGE_TMPLATE		"tmpXXXXXX"
 
-#define STORAGE_DB		"rwchcd.db"
+#define STORAGE_DB		"rwchcd.db"	///< BDB filename
+#define STORAGE_DB_VKEY		"version"	///< version key
+#define STORAGE_DB_OKEY		"object"	///< object key
 
-static const char Storage_magic[] = STORAGE_MAGIC;
 static const storage_version_t Storage_version = STORAGE_VERSION;
 bool Storage_configured = false;
 const char * Storage_path = NULL;
 
 /**
  * Generic storage backend write call.
- * Uses basic CoW, see https://lwn.net/Articles/457667/
  * @param identifier a unique string identifying the object to backup
  * @param version a caller-defined version number
  * @param object the opaque object to store
  * @param size size of the object argument
- * @todo add CRC
  */
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size)
 {
-	const size_t hdr_size = sizeof(Storage_magic) + sizeof(Storage_version) + sizeof(*version);
-	ssize_t count = (ssize_t)(size + hdr_size);
-	int fd, dir_fd, ret = -ESTORE;
-	char tmpfile[] = STORAGE_TMPLATE;
-
 	DB *dbp;
 	DBT key, data;
-
-	//assert((size + hdr_size) < SSIZE_MAX);
+	int dbret, ret = -ESTORE;
 
 	if (!Storage_configured)
 		return (-ENOTCONFIGURED);
@@ -70,112 +55,52 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 	if (!identifier || !version || !object)
 		return (-EINVALID);
 
-	ret = db_create(&dbp, NULL, 0);
-	if (ret) {
-		dbgerr("db_create: %s", db_strerror(ret));
-		goto skip;
+	dbret = db_create(&dbp, NULL, 0);
+	if (dbret) {
+		dbgerr("db_create: %s", db_strerror(dbret));
+		goto failret;
 	}
 
-	ret = dbp->open(dbp, NULL, STORAGE_DB, identifier, DB_BTREE, DB_CREATE|DB_THREAD, 0600);
-	if (ret) {
-		dbgerr("db_open \"%s\": %s", identifier, db_strerror(ret));
-		goto skip;
+	dbret = dbp->open(dbp, NULL, STORAGE_DB, identifier, DB_BTREE, DB_CREATE, 0);
+	if (dbret) {
+		dbgerr("db->open \"%s\": %s", identifier, db_strerror(dbret));
+		goto faildb;
 	}
 
 	memset(&key, 0, sizeof(key));
 	memset(&data, 0, sizeof(data));
 
 	// store version
-	key.data = "version";
-	key.size = sizeof("version");
+	key.data = STORAGE_DB_VKEY;
+	key.size = sizeof(STORAGE_DB_VKEY);
 	data.data = version;
 	data.size = sizeof(*version);
 
-	ret = dbp->put(dbp, NULL, &key, &data, 0);
-	if (ret) {
-		dbgerr("db->put version \"%s\": %s", identifier, db_strerror(ret));
-		dbp->close(dbp, 0);
-		goto skip;
+	dbret = dbp->put(dbp, NULL, &key, &data, 0);
+	if (dbret) {
+		dbgerr("db->put version \"%s\": %s", identifier, db_strerror(dbret));
+		goto faildb;
 	}
 
 	// store object
-	key.data = "object";
-	key.size = sizeof("object");
+	key.data = STORAGE_DB_OKEY;
+	key.size = sizeof(STORAGE_DB_OKEY);
 	data.data = object;
 	data.size = size;
 
-	ret = dbp->put(dbp, NULL, &key, &data, 0);
-	if (ret) {
-		dbgerr("db->put object \"%s\": %s", identifier, db_strerror(ret));
-		dbp->close(dbp, 0);
-		goto skip;
+	dbret = dbp->put(dbp, NULL, &key, &data, 0);
+	if (dbret) {
+		dbgerr("db->put object \"%s\": %s", identifier, db_strerror(dbret));
+		goto faildb;
 	}
 
-	ret = dbp->close(dbp, 0);
-	if (ret) {
-		dbgerr("db->close \"%s\": %s", identifier, db_strerror(ret));
-	}
-
-skip:
-	dir_fd = open(Storage_path, O_RDONLY);
-	if (dir_fd < 0)
-		return (-ESTORE);
-
-	// create new tmp file
-	fd = mkstemp(tmpfile);
-	if (fd < 0) {
-		dbgerr("failed to create \"%s\" (%s)", tmpfile, identifier);
-		return (-ESTORE);
-	}
-
-	if (posix_fallocate(fd, 0, count)) {
-		dbgerr("couldn't fallocate \"%s\" (%s)", tmpfile, identifier);
-		unlink(tmpfile);
-		return (-ESTORE);
-	}
-
-	// from here, all subsequent writes are guaranteed to not fail due to lack of space
-
-	// write our global magic first
-	count -= write(fd, Storage_magic, sizeof(Storage_magic));
-
-	// then our global version
-	count -= write(fd, &Storage_version, sizeof(Storage_version));
-
-	// then write the caller's version
-	count -= write(fd, version, sizeof(*version));
-
-	// then the caller's object
-	count -= write(fd, object, size);
-
-	// check all writes were complete and sync data
-	if (count || fdatasync(fd)) {
-		dbgerr("incomplete write or failed to sync: \"%s\" (%s)", tmpfile, identifier);
-		unlink(tmpfile);
-		goto out;
-	}
-
-	// finally close the file
-	if (close(fd)) {
-		unlink(tmpfile);
-		goto out;
-	}
-
-	// atomically move the file in place
-	if (rename(tmpfile, identifier)) {
-		dbgerr("failed to rename \"%s\" to \"%s\"", tmpfile, identifier);
-		goto out;
-	}
-
-	dbgmsg(1, 1, "identifier: \"%s\", tmp: \"%s\", v: %d, sz: %zu", identifier, tmpfile, *version, size);
+	dbgmsg(1, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
 
 	ret = ALL_OK;
 
-out:
-	// fsync() the containing directory. Works with O_RDONLY
-	fdatasync(dir_fd);
-	close(dir_fd);
-
+faildb:
+	dbp->close(dbp, 0);
+failret:
 	return (ret);
 }
 
@@ -185,116 +110,68 @@ out:
  * @param version a caller-defined version number
  * @param object the opaque object to restore
  * @param size size of the object argument
- * @todo add CRC check
  */
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size)
 {
-	ssize_t count = (ssize_t)size;
-	int fd;
-	char magic[ARRAY_SIZE(Storage_magic)];
-	storage_version_t sversion = 0;
-
 	DB *dbp;
 	DBT key, data;
-	int ret;
+	int dbret, ret = -ESTORE;
 
-	// assert(size < SSIZE_MAX);
-	
 	if (!Storage_configured)
 		return (-ENOTCONFIGURED);
 
 	if (!identifier || !version || !object)
 		return (-EINVALID);
 	
-	ret = db_create(&dbp, NULL, 0);
-	if (ret) {
-		dbgerr("db_create: %s", db_strerror(ret));
-		goto skip;
+	dbret = db_create(&dbp, NULL, 0);
+	if (dbret) {
+		dbgerr("db_create: %s", db_strerror(dbret));
+		goto failret;
 	}
 
-	ret = dbp->open(dbp, NULL, STORAGE_DB, identifier, DB_BTREE, DB_THREAD, 0600);
-	if (ret) {
-		dbgerr("db_open \"%s\": %s", identifier, db_strerror(ret));
-		goto skip;
+	dbret = dbp->open(dbp, NULL, STORAGE_DB, identifier, DB_BTREE, DB_RDONLY, 0);
+	if (dbret) {
+		dbgerr("db->open \"%s\": %s", identifier, db_strerror(dbret));
+		goto faildb;
 	}
 
 	memset(&key, 0, sizeof(key));
 	memset(&data, 0, sizeof(data));
 
 	// get version
-	key.data = "version";
-	key.size = sizeof("version");
+	key.data = STORAGE_DB_VKEY;
+	key.size = sizeof(STORAGE_DB_VKEY);
 	data.data = version;
 	data.ulen = sizeof(*version);
 	data.flags = DB_DBT_USERMEM;
 
-	ret = dbp->get(dbp, NULL, &key, &data, 0);
-	if (ret) {
-		dbgerr("db->get version \"%s\": %s", identifier, db_strerror(ret));
-		dbp->close(dbp, 0);
-		goto skip;
+	dbret = dbp->get(dbp, NULL, &key, &data, 0);
+	if (dbret) {
+		dbgerr("db->get version \"%s\": %s", identifier, db_strerror(dbret));
+		goto faildb;
 	}
-	dbgmsg(1, 1, "got version: %d", *(typeof(version))data.data);
 
 	// get object
-	key.data = "object";
-	key.size = sizeof("object");
+	key.data = STORAGE_DB_OKEY;
+	key.size = sizeof(STORAGE_DB_OKEY);
 	data.data = object;
 	data.ulen = size;
 	data.flags = DB_DBT_USERMEM;
 
-	ret = dbp->get(dbp, NULL, &key, &data, 0);
-	if (ret) {
-		dbgerr("db->get object \"%s\": %s", identifier, db_strerror(ret));
-		dbp->close(dbp, 0);
-		goto skip;
-	}
-	dbgmsg(1, 1, "object expected size: %d, received size: %d", size, data.size);
-
-	ret = dbp->close(dbp, 0);
-	if (ret) {
-		dbgerr("db->close \"%s\": %s", identifier, db_strerror(ret));
-	}
-	goto end;
-
-skip:
-	// open stream
-	fd = open(identifier, O_RDONLY);
-	if (fd < 0) {
-		dbgmsg(1, 1, "failed to open \"%s\" for reading", identifier);
-		return (-ESTORE);
+	dbret = dbp->get(dbp, NULL, &key, &data, 0);
+	if (dbret) {
+		dbgerr("db->get object \"%s\": %s", identifier, db_strerror(dbret));
+		goto faildb;
 	}
 
-	// read our global magic first
-	read(fd, magic, sizeof(Storage_magic));
-
-	// compare with current global magic
-	if (memcmp(magic, Storage_magic, sizeof(Storage_magic)))
-		return (-ESTORE);
-	
-	// then global version
-	read(fd, &sversion, sizeof(sversion));
-
-	// compare with current global version
-	if (memcmp(&sversion, &Storage_version, sizeof(Storage_version)))
-		return (-ESTORE);
-	
-	// then read the local version
-	read(fd, version, sizeof(*version));
-
-	// then read the object
-	count -= read(fd, object, size);
-
-	// finally close the file
-	close(fd);
-
-	if (count)
-		return (-ESTORE);
-
-end:
 	dbgmsg(1, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
 
-	return (ALL_OK);
+	ret = ALL_OK;
+
+faildb:
+	dbp->close(dbp, 0);
+failret:
+	return (ret);
 }
 
 /** Quick hack. @warning no other chdir should be performed */
