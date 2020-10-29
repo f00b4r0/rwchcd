@@ -162,22 +162,18 @@ static void sig_handler(int signum)
  init() initialize blank data structures etc
  online() performs configuration checks and brings subsystem online
  @note runs as root
+ @warning MUST NOT RUN IN THREADED CONTEXT (not thread safe)
  */
 static int init_process(void)
 {
 	int ret;
 
-	/* init runtime - clears data used by config */
 	ret = runtime_init();
 	if (ret) {
 		pr_err(_("Failed to initialize runtime (%d)"), ret);
 		return (ret);
 	}
 
-
-	// all _init() calls should be done before this point.
-
-	// this is where we should call the parser
 	if (!(filecfg_parser_in = fopen(RWCHCD_CONFIG, "r"))) {
 		perror(RWCHCD_CONFIG);
 		return (-EGENERIC);
@@ -188,19 +184,13 @@ static int init_process(void)
 		return (ret);
 	}
 
-	/* init hardware */
-
 	// priviledges could be dropped here
-
-
-	/* test and launch */
-
 
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
 }
 
-// reverse operations from init_process()
+// reverse operations from init_process(). Not thread safe due to e.g. mosquitto_lib_cleanup()
 static void exit_process(void)
 {
 	struct s_finish_cb_l * cbs;
@@ -211,7 +201,6 @@ static void exit_process(void)
 		if (cbs->offline)
 			cbs->offline();
 	}
-
 
 	filecfg_dump();		// [depends on storage]
 
