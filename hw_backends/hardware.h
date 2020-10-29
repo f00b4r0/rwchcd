@@ -20,7 +20,7 @@
 #include "hw_backends/hw_backends.h"	// for types
 
 // basic ops
-int hardware_init(void) __attribute__((warn_unused_result));
+int hardware_setup(void) __attribute__((warn_unused_result));
 int hardware_online(void) __attribute__((warn_unused_result));
 int hardware_input(void) __attribute__((warn_unused_result));
 int hardware_output(void) __attribute__((warn_unused_result));

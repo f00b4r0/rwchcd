@@ -25,7 +25,7 @@ extern struct s_hw_backends HW_backends;
  * If the backend has already been init'd, this function does nothing.
  * @return exec status
  */
-int hardware_init(void)
+int hardware_setup(void)
 {
 	int ret;
 	unsigned int id;

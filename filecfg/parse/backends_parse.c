@@ -97,9 +97,9 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 		goto cleanup;
 
 	// depends on nothing (config)
-	ret = hardware_init();		// must happen as root (for SPI access)
+	ret = hardware_setup();		// must happen as root (for SPI access)
 	if (ret) {
-		pr_err(_("Failed to initialize hardware (%d)"), ret);
+		pr_err(_("Failed to setup hardware (%d)"), ret);
 		goto cleanup;
 	}
 
