@@ -1,9 +1,9 @@
 #!/usr/bin/rrdcgi
- <RRD::SETVAR rrdb /var/lib/rwchcd/log_models_bmodel_house>
+ <RRD::SETVAR rrdb /var/lib/rwchcd/log_models_bmodel_<RRD::CV::PATH bmodel_name>>
  <RRD::SETVAR width 1000>
  <RRD::SETVAR height 600>
  <RRD::GOODFOR 300>
- <RRD::SETVAR cdeftconv TIME,1550342839,GT,1024,1000,IF,/,273,->
+ <RRD::SETVAR cdeftconv 273,->
  <HTML>
  <HEAD>
  <TITLE>Bmodel</TITLE>

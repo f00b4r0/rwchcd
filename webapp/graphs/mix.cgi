@@ -1,10 +1,11 @@
 #!/usr/bin/rrdcgi
- <RRD::SETVAR rrdbc /var/lib/rwchcd/log_hcircuit_circuit>
- <RRD::SETVAR rrdbbm /var/lib/rwchcd/log_models_bmodel_house>
+ <RRD::SETVAR rrdbc /var/lib/rwchcd/log_hcircuit_<RRD::CV::PATH hcircuit_name>>
+ <RRD::SETVAR rrdbbm /var/lib/rwchcd/log_models_bmodel_<RRD::CV::PATH bmodel_name>>
  <RRD::SETVAR rrdbhw /var/lib/rwchcd/log_hw_p1_temps>
  <RRD::SETVAR width 1200>
  <RRD::SETVAR height 600>
- <RRD::SETVAR cdeftconv TIME,1550342839,GT,1024,1000,IF,/,273,->
+ <RRD::SETVAR cdeftconv 273,->
+ <RRD::SETVAR cdeftconvp1 TIME,1550342839,GT,1024,1000,IF,/,273,->
  <RRD::GOODFOR 300>
  <HTML>
  <HEAD>
@@ -23,7 +24,7 @@
  	DEF:twkelth=<RRD::GETVAR rrdbc>:target_wtemp:LAST
  	DEF:awkelth=<RRD::GETVAR rrdbc>:actual_wtemp:LAST
 	DEF:tomkelth=<RRD::GETVAR rrdbbm>:t_out_mix:LAST
-	CDEF:tbocel=tbokelth,<RRD::GETVAR cdeftconv>
+	CDEF:tbocel=tbokelth,<RRD::GETVAR cdeftconvp1>
 	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>,0,50,LIMIT
 	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>,-20,50,LIMIT
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT

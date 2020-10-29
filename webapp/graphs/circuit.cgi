@@ -1,8 +1,8 @@
 #!/usr/bin/rrdcgi
- <RRD::SETVAR rrdb /var/lib/rwchcd/log_hcircuit_circuit>
+ <RRD::SETVAR rrdb /var/lib/rwchcd/log_hcircuit_<RRD::CV::PATH hcircuit_name>>
  <RRD::SETVAR width 1000>
  <RRD::SETVAR height 400>
- <RRD::SETVAR cdeftconv TIME,1550342839,GT,1024,1000,IF,/,273,->
+ <RRD::SETVAR cdeftconv 273,->
  <RRD::GOODFOR 300>
  <HTML>
  <HEAD>
