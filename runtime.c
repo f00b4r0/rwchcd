@@ -66,7 +66,7 @@ struct s_runtime * runtime_get(void)
  */
 static int runtime_save(void)
 {
-	return (storage_dump("runtime", &Runtime_sversion, &Runtime.run, sizeof(Runtime)));
+	return (storage_dump("runtime", &Runtime_sversion, &Runtime.run, sizeof(Runtime.run)));
 }
 
 /**
