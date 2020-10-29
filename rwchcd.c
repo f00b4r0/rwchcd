@@ -196,8 +196,6 @@ static int init_process(void)
 	/* test and launch */
 
 
-	alarms_online();
-
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
 }
@@ -208,7 +206,6 @@ static void exit_process(void)
 	struct s_finish_cb_l * cbs;
 
 	runtime_offline();	// depends on storage && log && io available [io available depends on hardware]
-	alarms_offline();	// depends on nothing
 
 	for (cbs = Finish_head; cbs; cbs = cbs->next) {
 		if (cbs->offline)

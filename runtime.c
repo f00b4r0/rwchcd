@@ -266,6 +266,8 @@ int runtime_online(void)
 
 	log_register(&Runtime_lsrc);
 
+	alarms_online();
+
 	return (plant_online(Runtime.plant));
 }
 
@@ -297,6 +299,8 @@ int runtime_offline(void)
 
 	if (plant_offline(Runtime.plant) != ALL_OK)
 		pr_err(_("Failed to offline plant"));
+
+	alarms_offline();	// depends on nothing
 
 	return (ALL_OK);
 }
