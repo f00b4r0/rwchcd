@@ -9,6 +9,8 @@
 /**
  * @file
  * Timekeeping implementation.
+ * This file implements a timekeeping thread that monotonically advances a tick counter to be used as a time reference within the program.
+ * It also provides abstracted interfaces to sleeping routines for easy architecture-dependent implementation.
  */
 
 #include <time.h>
@@ -99,8 +101,20 @@ static int timekeep_clockupdate(void)
 }
 
 /**
+ * Sleep for at least N microseconds.
+ * @param usecs time to sleep for (in microseconds).
+ * @note does not require timekeep_thread() to be running
+ * @warning no handling of signals
+ */
+void timekeep_usleep(unsigned int usecs)
+{
+	usleep(usecs);
+}
+
+/**
  * Sleep for at least N seconds.
- * @param seconds time to sleep for.
+ * @param seconds time to sleep for (in seconds).
+ * @note does not require timekeep_thread() to be running
  */
 void timekeep_sleep(unsigned int seconds)
 {

@@ -11,7 +11,6 @@
  * Asynchronous timer operations
  */
 
-#include <unistd.h>	// sleep/usleep/setuid
 #include <stdlib.h>	// calloc
 #include <string.h>	// strdup
 #include <stdatomic.h>
@@ -132,7 +131,7 @@ int timer_add_cb(unsigned int period, int (* cb)(void), const char * const name)
 
 	// critical section begins - spin lock
 	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire))
-		usleep(500);	// yield
+		timekeep_usleep(500);	// yield
 
 	lcb_after = Timer_cb_head;
 	
@@ -183,7 +182,7 @@ void timer_clean_callbacks(void)
 	struct s_timer_cb * lcb, * lcbn;
 
 	while (atomic_flag_test_and_set_explicit(&Timer_cb_flag, memory_order_acquire))
-		usleep(500);	// yield
+		timekeep_usleep(500);	// yield
 
 	lcb = Timer_cb_head;
 	Timer_cb_head = NULL;

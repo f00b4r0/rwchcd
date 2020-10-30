@@ -31,6 +31,7 @@ typedef uint32_t	timekeep_t;
 int timekeep_init(void);
 void timekeep_exit(void);
 timekeep_t timekeep_now(void);
+void timekeep_usleep(unsigned int usecs);
 void timekeep_sleep(unsigned int seconds);
 void * timekeep_thread(void * arg);
 
