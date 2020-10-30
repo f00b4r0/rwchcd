@@ -82,6 +82,9 @@
 		if (target)						\
 			snprintf(target, size, format, __VA_ARGS__);	})
 
+#define aler(objectp)		atomic_load_explicit(objectp, memory_order_relaxed)
+#define aser(objectp, desired)	atomic_store_explicit(objectp, desired, memory_order_relaxed)
+
 /** Valid execution status (used as negative return values) */
 enum e_execs {
 	ALL_OK = 0,	///< no error (must be 0)
