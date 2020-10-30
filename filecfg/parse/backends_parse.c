@@ -82,7 +82,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 		return (ret);
 	}
 
-	ret = rwchcd_add_finishcb("hw backends", NULL, NULL, hw_backends_exit);
+	ret = rwchcd_add_subsyscb("hw backends", NULL, NULL, hw_backends_exit);
 	if (ALL_OK != ret)
 		goto cleanup;
 
@@ -109,7 +109,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 	// bring the hardware online
 	// depends on storage && hw_backends (configured)
 
-	ret = rwchcd_add_finishcb("hardware", hardware_online, hardware_offline, hardware_exit);
+	ret = rwchcd_add_subsyscb("hardware", hardware_online, hardware_offline, hardware_exit);
 	if (ALL_OK != ret)
 		goto hwcleanup;
 

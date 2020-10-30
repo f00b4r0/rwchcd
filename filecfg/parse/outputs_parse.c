@@ -99,7 +99,7 @@ int filecfg_outputs_parse(void * restrict const priv, const struct s_filecfg_par
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = rwchcd_add_finishcb("outputs", NULL, NULL, outputs_exit);
+	ret = rwchcd_add_subsyscb("outputs", NULL, NULL, outputs_exit);
 	if (ALL_OK != ret)
 		outputs_exit();
 

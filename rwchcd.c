@@ -117,8 +117,17 @@ static struct s_subsys_cb_l {
 } * Finish_head = NULL,				///< head of list of subsystem callbacks to execute on program end.
   * Begin_head = NULL;				///< head of list of subsystem callbacks to execute on program start.
 
-// not thread safe
-int rwchcd_add_finishcb(const char * const name, int (* oncb)(void), int (* offcb)(void), void (* exitcb)(void))
+/**
+ * Add subsystem callbacks.
+ * This wrapper adds subsystem-specific online()/offline()/exit() callbacks to be executed during software startup and winddown.
+ * @param name the statically allocated name of the subsystem adding callbacks (can be NULL)
+ * @param oncb pointer to online() callback (can be NULL)
+ * @param offcb pointer to offline() callback (can be NULL)
+ * @param exitcb pointer to exit() callback (can be NULL)
+ * @return exec status
+ * @warning not thread safe
+ */
+int rwchcd_add_subsyscb(const char * const name, int (* oncb)(void), int (* offcb)(void), void (* exitcb)(void))
 {
 	struct s_subsys_cb_l * new;
 

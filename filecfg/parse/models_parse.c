@@ -61,7 +61,7 @@ static int bmodel_parse(void * restrict const priv __attribute__((unused)), cons
 	// bring the models online
 	// depends on storage && log && inputs available (config) [inputs available depends on hardware]
 
-	ret = rwchcd_add_finishcb("models", models_online, models_offline, models_exit);
+	ret = rwchcd_add_subsyscb("models", models_online, models_offline, models_exit);
 	if (ALL_OK != ret)
 		goto cleanup;
 

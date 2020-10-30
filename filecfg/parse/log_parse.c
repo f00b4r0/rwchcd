@@ -111,7 +111,7 @@ int filecfg_log_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 	// depends on storage (config)
 
-	ret = rwchcd_add_finishcb("log", log_online, log_offline, log_exit);
+	ret = rwchcd_add_subsyscb("log", log_online, log_offline, log_exit);
 	if (ALL_OK != ret)
 		goto cleanup;
 

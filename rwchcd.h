@@ -207,6 +207,6 @@ struct s_pdata {
 	} run;
 };
 
-int rwchcd_add_finishcb(const char * const name, int (* oncb)(void), int (* offcb)(void), void (* exitcb)(void));
+int rwchcd_add_subsyscb(const char * const name, int (* oncb)(void), int (* offcb)(void), void (* exitcb)(void));
 
 #endif /* rwchcd_h */
