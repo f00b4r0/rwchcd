@@ -170,16 +170,22 @@ static void sig_handler(int signum)
 	}
 }
 
-/*
- init() initialize blank data structures etc
- online() performs configuration checks and brings subsystem online
- @note runs as root
- @warning MUST NOT RUN IN THREADED CONTEXT (not thread safe)
+/**
+ * Initialize data structures and parse configuration.
+ * online() performs configuration checks and brings subsystem online
+ * @return exec status
+ * @note runs as root (due to requirements from e.g. SPI access)
+ * @warning MUST NOT RUN IN THREADED CONTEXT (not thread safe)
  */
 static int init_process(void)
 {
-	struct s_subsys_cb_l * cbs;
 	int ret;
+
+	ret = timekeep_init();
+	if (ret) {
+		pr_err(_("Failed to setup timekeeping! (%d)"), ret);
+		return (ret);
+	}
 
 	ret = runtime_init();
 	if (ret) {
@@ -196,6 +202,19 @@ static int init_process(void)
 		pr_err(_("Configuration parsing failed"));
 		return (ret);
 	}
+
+	return (ALL_OK);
+}
+
+/**
+ * Performs configuration checks and brings subsystem online
+ * @return exec status
+ * @warning MUST NOT RUN IN THREADED CONTEXT (not thread safe)
+ */
+static int online_subsystems(void)
+{
+	const struct s_subsys_cb_l * cbs;
+	int ret;
 
 	// priviledges could be dropped here
 	for (cbs = Begin_head; cbs; cbs = cbs->next) {
@@ -214,10 +233,13 @@ static int init_process(void)
 	return (runtime_online());
 }
 
-// reverse operations from init_process(). Not thread safe due to e.g. mosquitto_lib_cleanup()
-static void exit_process(void)
+/**
+ * Reverse operations from online_subsystems().
+ * @warning not thread safe.
+ */
+static void offline_subsystems(void)
 {
-	struct s_subsys_cb_l * cbs;
+	const struct s_subsys_cb_l * cbs;
 	int ret;
 
 	runtime_offline();	// depends on storage && log && io available [io available depends on hardware]
@@ -232,6 +254,17 @@ static void exit_process(void)
 	}
 
 	filecfg_dump();		// [depends on storage]
+}
+
+/**
+ * Reverse operations from init_process().
+ * @warning not thread safe (due to e.g. mosquitto_lib_cleanup()).
+ */
+static void exit_process(void)
+{
+	const struct s_subsys_cb_l * cbs;
+
+	timer_clean_callbacks();
 
 	for (cbs = Finish_head; cbs; cbs = cbs->prev) {
 		if (cbs->exit)
@@ -239,6 +272,8 @@ static void exit_process(void)
 	}
 
 	runtime_exit();		// depends on nothing
+
+	timekeep_exit();
 }
 
 static void * thread_master(void *arg)
@@ -363,13 +398,15 @@ int main(void)
 	if (ret)
 		err(ret, "failed to setup pipe!");
 
-	ret = timekeep_init();
-	if (ret)
-		errx(ret, "failed to setup timekeeping!");
-
 	ret = init_process();
 	if (ret != ALL_OK) {
 		pr_err(_("Process initialization failed (%d) - ABORTING!"), ret);
+		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
+	}
+
+	ret = online_subsystems();
+	if (ret != ALL_OK) {
+		pr_err(_("Subsystems onlining failed (%d) - ABORTING!"), ret);
 		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
 
@@ -466,13 +503,12 @@ int main(void)
 	pthread_join(watchdog_thr, NULL);
 	pthread_join(timekeep_thr, NULL);
 	pthread_join(master_thr, NULL);	// wait for cleanup
-	timer_clean_callbacks();
 	close(pipefd[0]);
 	close(pipefd[1]);
 
 	// cleanup
+	offline_subsystems();
 	exit_process();
-	timekeep_exit();
 
 #ifdef DEBUG
 	// cleanup fifo
