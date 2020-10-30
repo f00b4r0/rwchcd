@@ -105,25 +105,19 @@ int filecfg_log_parse(void * restrict const priv, const struct s_filecfg_parser_
 
 	ret = filecfg_parser_run_parsers(&Log, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
-		return (ret);
+		goto cleanup;
 
 	Log.set.configured = true;
 
 	// depends on storage (config)
-	ret = log_online();
-	if (ALL_OK != ret) {
-		pr_err(_("Failed to online log subsystem (%d)"), ret);
-		goto cleanup;
-	}
 
-	ret = rwchcd_add_finishcb(log_offline, log_exit);
+	ret = rwchcd_add_finishcb("log", log_online, log_offline, log_exit);
 	if (ALL_OK != ret)
 		goto cleanup;
 
 	return (ret);
 
 cleanup:
-	log_offline();
 	log_exit();
 	return (ret);
 }

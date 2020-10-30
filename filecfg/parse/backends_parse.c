@@ -82,7 +82,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 		return (ret);
 	}
 
-	ret = rwchcd_add_finishcb(NULL, hw_backends_exit);
+	ret = rwchcd_add_finishcb("hw backends", NULL, NULL, hw_backends_exit);
 	if (ALL_OK != ret)
 		goto cleanup;
 
@@ -104,25 +104,18 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 	}
 
 	// give the hardware time to collect themselves
-	timekeep_sleep(5);
+	timekeep_sleep(2);
 
 	// bring the hardware online
 	// depends on storage && hw_backends (configured)
-	ret = hardware_online();
-	if (ALL_OK != ret) {
-		pr_err(_("Failed to bring hardware online (%d)"), ret);
-		hardware_exit();
-		goto cleanup;
-	}
 
-	ret = rwchcd_add_finishcb(hardware_offline, hardware_exit);
+	ret = rwchcd_add_finishcb("hardware", hardware_online, hardware_offline, hardware_exit);
 	if (ALL_OK != ret)
 		goto hwcleanup;
 
 	return (ret);
 
 hwcleanup:
-	hardware_offline();	// depends on storage && hw_backends
 	hardware_exit();	// depends on hw_backends
 cleanup:
 	hw_backends_exit();

@@ -59,14 +59,7 @@ int filecfg_storage_parse(void * restrict const priv __attribute__((unused)), co
 	else	// should never happen
 		return (-EEXISTS);
 
-	ret = storage_online();
-	if (ALL_OK != ret) {
-		pr_err(_("Failed to bring storage online (%d)"), ret);
-		storage_exit();
-		return (ret);
-	}
-
-	ret = rwchcd_add_finishcb(NULL, storage_exit);
+	ret = rwchcd_add_finishcb("storage", storage_online, NULL, storage_exit);
 	if (ALL_OK != ret)
 		storage_exit();
 

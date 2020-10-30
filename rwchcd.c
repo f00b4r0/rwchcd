@@ -108,27 +108,39 @@ static volatile bool Sem_master_thread = false;
 
 static const char Version[] = RWCHCD_REV;	///< Build version string
 
-static struct s_finish_cb_l {
-	int (* offline)(void);
-	void (* exit)(void);
-	struct s_finish_cb_l * next;
-} * Finish_head = NULL;				///< LIFO list of offline()/exit() callback to execute on program end.
+static struct s_subsys_cb_l {
+	const char * name;		///< optional static name of the subsystem
+	int (* online)(void);		///< optional online() call for subsystem
+	int (* offline)(void);		///< optional offline() call for subsystem
+	void (* exit)(void);		///< optional exit() call for subsystem
+	struct s_subsys_cb_l * next, * prev;
+} * Finish_head = NULL,				///< head of list of subsystem callbacks to execute on program end.
+  * Begin_head = NULL;				///< head of list of subsystem callbacks to execute on program start.
 
 // not thread safe
-int rwchcd_add_finishcb(int (* offcb)(void), void (* exitcb)(void))
+int rwchcd_add_finishcb(const char * const name, int (* oncb)(void), int (* offcb)(void), void (* exitcb)(void))
 {
-	struct s_finish_cb_l * new;
+	struct s_subsys_cb_l * new;
 
 	new = malloc(sizeof(*new));
 	if (!new)
 		return (-EOOM);
 
+	new->name = name;
+	new->online = oncb;
 	new->offline = offcb;
 	new->exit = exitcb;
 
-	// we want LIFO
-	new->next = Finish_head;
+	// LIFO for finish: walk from Finish_head via ->prev
+	new->next = NULL;
+	new->prev = Finish_head;
+	if (Finish_head)
+		Finish_head->next = new;
 	Finish_head = new;
+
+	// FIFO for begin: walk from Begin_head via ->next
+	if (!Begin_head)
+		Begin_head = new;
 
 	return (ALL_OK);
 }
@@ -166,6 +178,7 @@ static void sig_handler(int signum)
  */
 static int init_process(void)
 {
+	struct s_subsys_cb_l * cbs;
 	int ret;
 
 	ret = runtime_init();
@@ -185,6 +198,17 @@ static int init_process(void)
 	}
 
 	// priviledges could be dropped here
+	for (cbs = Begin_head; cbs; cbs = cbs->next) {
+		if (cbs->online) {
+			ret = cbs->online();
+			if (ALL_OK != ret) {
+				if (cbs->name)
+					pr_err(_("Failed to bring subsystem \"%s\" online (%d)"), cbs->name, ret);
+				return (ret);	// fail if any subsystem fails to come online
+			}
+		}
+	}
+
 
 	// finally bring the runtime online (resets actuators)
 	return (runtime_online());
@@ -193,18 +217,23 @@ static int init_process(void)
 // reverse operations from init_process(). Not thread safe due to e.g. mosquitto_lib_cleanup()
 static void exit_process(void)
 {
-	struct s_finish_cb_l * cbs;
+	struct s_subsys_cb_l * cbs;
+	int ret;
 
 	runtime_offline();	// depends on storage && log && io available [io available depends on hardware]
 
-	for (cbs = Finish_head; cbs; cbs = cbs->next) {
-		if (cbs->offline)
-			cbs->offline();
+	for (cbs = Finish_head; cbs; cbs = cbs->prev) {
+		if (cbs->offline) {
+			ret = cbs->offline();
+			if (ret && cbs->name)
+				pr_err(_("Failed to bring subsystem \"%s\" offline (%d)"), cbs->name, ret);
+			// continue offlining subsystems even if failure
+		}
 	}
 
 	filecfg_dump();		// [depends on storage]
 
-	for (cbs = Finish_head; cbs; cbs = cbs->next) {
+	for (cbs = Finish_head; cbs; cbs = cbs->prev) {
 		if (cbs->exit)
 			cbs->exit();
 	}

@@ -75,7 +75,7 @@ typedef struct {
 struct s_hw_callbacks {
 	/**
 	 * Hardware backend setup callback.
-	 * This callback is expected to setup the hardware driver.
+	 * This callback is expected to setup the hardware driver and is executed with @b root privileges.
 	 * This is a setup stage that happens immediately after backend configuration and before online().
 	 * A delay is applied between the call to this callback and the call to the online() callback,
 	 * leaving enough time for the underlying hardware to collect itself.
