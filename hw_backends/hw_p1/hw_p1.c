@@ -167,7 +167,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 	for (i = 0; i < hw->settings.nsensors; i++) {
 		sensor = &hw->Sensors[i];
 		if (!sensor->set.configured) {
-			atomic_store_explicit(&sensor->run.value, TEMPUNSET, memory_order_relaxed);
+			aser(&sensor->run.value, TEMPUNSET);
 			continue;
 		}
 
@@ -176,7 +176,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 		assert(o_to_c);
 
 		current = celsius_to_temp(o_to_c(ohm));
-		previous = atomic_load_explicit(&sensor->run.value, memory_order_relaxed);
+		previous = aler(&sensor->run.value);
 
 		if (current <= RWCHCD_TEMPMIN) {
 			// delay by hardcoded 5 samples
@@ -185,7 +185,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 				dbgmsg(1, 1, "delaying sensor %d short, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
-				atomic_store_explicit(&sensor->run.value, TEMPSHORT, memory_order_relaxed);
+				aser(&sensor->run.value, TEMPSHORT);
 				sensor_alarm(sensor, -ESENSORSHORT);
 			}
 		}
@@ -196,14 +196,14 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 				dbgmsg(1, 1, "delaying sensor %d disconnect, samples ignored: %d", i+1, hw->scount[i]);
 			}
 			else {
-				atomic_store_explicit(&sensor->run.value, TEMPDISCON, memory_order_relaxed);
+				aser(&sensor->run.value, TEMPDISCON);
 				sensor_alarm(sensor, -ESENSORDISCON);
 			}
 		}
 		// init or recovery
 		else if (previous <= TEMPINVALID) {
 			hw->scount[i] = 0;
-			atomic_store_explicit(&sensor->run.value, current, memory_order_relaxed);
+			aser(&sensor->run.value, current);
 		}
 		// normal operation
 		else {
@@ -213,7 +213,7 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 			else {
 				// apply LP filter - ensure we only apply filtering on valid temps
 				// scount[i]+1 will ensure that if we exceed decimation threshold, the new value "weighs in" immediately
-				atomic_store_explicit(&sensor->run.value, temp_expw_mavg(previous, current, hw->set.nsamples, hw->scount[i]+1), memory_order_relaxed);
+				aser(&sensor->run.value, temp_expw_mavg(previous, current, hw->set.nsamples, hw->scount[i]+1));
 				hw->scount[i] = 0;
 			}
 		}

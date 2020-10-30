@@ -147,7 +147,7 @@ int filecfg_temperature_parse(void * restrict const priv, const struct s_filecfg
 		return (-EOOM);
 
 	// force fetch at first run
-	atomic_store_explicit(&t->run.last_update, TIMEKEEP_MAX/2, memory_order_relaxed);
+	aser(&t->run.last_update, TIMEKEEP_MAX/2);
 
 	t->set.configured = true;
 

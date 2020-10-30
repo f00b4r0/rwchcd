@@ -57,7 +57,7 @@ static int temperature_update(struct s_temperature * const t)
 	if (unlikely(!t->set.configured))
 		return (-ENOTCONFIGURED);
 
-	if (now - (atomic_load_explicit(&t->run.last_update, memory_order_relaxed)) < t->set.period)
+	if (now - (aler(&t->run.last_update)) < t->set.period)
 		return (ALL_OK);
 
 	if (atomic_flag_test_and_set_explicit(&t->run.lock, memory_order_acquire))
@@ -125,11 +125,11 @@ static int temperature_update(struct s_temperature * const t)
 end:
 	// temperature is updated if the above loop returns successfully
 	if (likely(ALL_OK == ret)) {
-		atomic_store_explicit(&t->run.value, new, memory_order_relaxed);
-		atomic_store_explicit(&t->run.last_update, now, memory_order_relaxed);
+		aser(&t->run.value, new);
+		aser(&t->run.last_update, now);
 	}
 	else
-		atomic_store_explicit(&t->run.value, TEMPINVALID, memory_order_relaxed);
+		aser(&t->run.value, TEMPINVALID);
 
 	atomic_flag_clear_explicit(&t->run.lock, memory_order_release);
 	return (ret);
@@ -153,7 +153,7 @@ int temperature_get(struct s_temperature * const t, temp_t * const tout)
 	if (ALL_OK != ret)
 		return (ret);
 
-	current = atomic_load_explicit(&t->run.value, memory_order_relaxed);
+	current = aler(&t->run.value);
 
 	if (tout)
 		*tout = current;
@@ -190,7 +190,7 @@ int temperature_time(struct s_temperature * const t, timekeep_t * const tstamp)
 	assert(t);
 
 	if (tstamp)
-		*tstamp = atomic_load_explicit(&t->run.last_update, memory_order_relaxed);
+		*tstamp = aler(&t->run.last_update);
 
 	return (ALL_OK);
 }

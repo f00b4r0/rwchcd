@@ -49,7 +49,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		return (-EINVALID);	// data not ready
 
 	for (i = 0; i < hw->settings.nsensors; i++)
-		ldata->values[i] = atomic_load_explicit(&hw->Sensors[i].run.value, memory_order_relaxed) + hw->Sensors[i].set.offset;
+		ldata->values[i] = aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset;
 
 	ldata->nvalues = i;
 
@@ -575,7 +575,7 @@ int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, co
 			sensor = &hw->Sensors[inid];
 			if (!sensor->set.configured)
 				return (-ENOTCONFIGURED);
-			temp = atomic_load_explicit(&sensor->run.value, memory_order_relaxed);
+			temp = aler(&sensor->run.value);
 			value->temperature = temp + sensor->set.offset;
 
 			switch (temp) {

@@ -88,7 +88,7 @@ static void scheduler_update_schedule(struct s_schedule * const sched)
 	struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	const struct s_schedule_e * schent, * schent_start, * schent_curr;
 
-	schent_curr = atomic_load_explicit(&sched->current, memory_order_relaxed);
+	schent_curr = aler(&sched->current);
 
 	schent_start = likely(schent_curr) ? schent_curr : sched->head;
 
@@ -104,18 +104,18 @@ restart:
 
 	// special case first entry which may be the only one
 	if (scheduler_ent_past_today(schent_start, ltime))
-		atomic_store_explicit(&sched->current, schent_start, memory_order_relaxed);
+		aser(&sched->current, schent_start);
 
 	// loop over other entries, stop if/when back at first entry
 	for (schent = schent_start->next; schent_start != schent; schent = schent->next) {
 		if (unlikely(scheduler_ent_past_today(schent, ltime)))
-			atomic_store_explicit(&sched->current, schent, memory_order_relaxed);
+			aser(&sched->current, schent);
 		else if (likely(schent_curr))
 			break;	// if we already have a valid schedule entry ('synced'), first future entry stops search
 	}
 
 	// if we aren't already synced, try harder
-	if (unlikely(!atomic_load_explicit(&sched->current, memory_order_relaxed))) {
+	if (unlikely(!aler(&sched->current))) {
 		/* we never synced and today's list didn't contain a single past schedule,
 		 we must roll back through the week until we find one.
 		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
@@ -176,7 +176,7 @@ const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t sche
 
 	// return current schedule entry for schedule, if available
 	if (likely(sched)) {
-		schent_curr = atomic_load_explicit(&sched->current, memory_order_relaxed);
+		schent_curr = aler(&sched->current);
 		if (likely(schent_curr))
 			return (&schent_curr->params);
 	}

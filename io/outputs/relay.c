@@ -92,7 +92,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 		return (-ENOTCONFIGURED);
 
 	// we can check here based on the assumption described in the top comment.
-	state = atomic_load_explicit(&r->run.turn_on, memory_order_relaxed);
+	state = aler(&r->run.turn_on);
 	if (turn_on == state)
 		return (ALL_OK);
 
@@ -131,7 +131,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 end:
 	// at least one good relay must be reached for the value to be updated
 	if (likely(ALL_OK == ret))
-		atomic_store_explicit(&r->run.turn_on, turn_on, memory_order_relaxed);
+		aser(&r->run.turn_on, turn_on);
 
 	atomic_flag_clear_explicit(&r->run.lock, memory_order_release);
 	return (ret);
@@ -151,7 +151,7 @@ int relay_state_get(const struct s_relay * const r)
 	if (unlikely(!r->set.configured))
 		return (-ENOTCONFIGURED);
 
-	return (atomic_load_explicit(&r->run.turn_on, memory_order_relaxed));
+	return (aler(&r->run.turn_on));
 }
 
 /**

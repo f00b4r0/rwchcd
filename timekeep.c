@@ -93,9 +93,9 @@ static int timekeep_clockupdate(void)
 	retval = (unsigned)(secdiff + nsecdiff);
 
 	// assert clock only goes forward
-	assert(timekeep_a_ge_b(retval, atomic_load_explicit(&TK_wallclock, memory_order_relaxed)));
+	assert(timekeep_a_ge_b(retval, aler(&TK_wallclock)));
 
-	atomic_store_explicit(&TK_wallclock, retval, memory_order_relaxed);
+	aser(&TK_wallclock, retval);
 
 	return (ALL_OK);
 }
@@ -129,7 +129,7 @@ void timekeep_sleep(unsigned int seconds)
  */
 timekeep_t timekeep_now(void)
 {
-	return (atomic_load_explicit(&TK_wallclock, memory_order_relaxed));
+	return (aler(&TK_wallclock));
 }
 
 /**

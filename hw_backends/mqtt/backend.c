@@ -158,8 +158,8 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 				return;
 			id = (inid_t)ret;
 
-			atomic_store_explicit(&hw->in.temps.all[id].run.value, u.temperature, memory_order_relaxed);
-			atomic_store_explicit(&hw->in.temps.all[id].run.tstamp, timekeep_now(), memory_order_relaxed);
+			aser(&hw->in.temps.all[id].run.value, u.temperature);
+			aser(&hw->in.temps.all[id].run.tstamp, timekeep_now());
 			break;
 		case HW_INPUT_SWITCH:
 			/// For switches we expect a string representing a boolean values compatible with mqtt_str_to_bool()
@@ -173,8 +173,8 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 				return;
 			id = (inid_t)ret;
 
-			atomic_store_explicit(&hw->in.switchs.all[id].run.state, u.inswitch, memory_order_relaxed);
-			atomic_store_explicit(&hw->in.switchs.all[id].run.tstamp, timekeep_now(), memory_order_relaxed);
+			aser(&hw->in.switchs.all[id].run.state, u.inswitch);
+			aser(&hw->in.switchs.all[id].run.tstamp, timekeep_now());
 		case HW_INPUT_NONE:
 		default:
 			return;	// not for us
@@ -519,7 +519,7 @@ int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, con
 			u.t = &hw->in.temps.all[inid];
 			if (unlikely(!u.t->set.configured))
 				return (-ENOTCONFIGURED);
-			value->temperature = atomic_load_explicit(&u.t->run.value, memory_order_relaxed);
+			value->temperature = aler(&u.t->run.value);
 			break;
 		case HW_INPUT_SWITCH:
 			if (unlikely((inid >= hw->in.switchs.l)))
@@ -527,7 +527,7 @@ int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, con
 			u.s = &hw->in.switchs.all[inid];
 			if (unlikely(!u.s->set.configured))
 				return (-ENOTCONFIGURED);
-			value->inswitch = atomic_load_explicit(&u.s->run.state, memory_order_relaxed);
+			value->inswitch = aler(&u.s->run.state);
 			break;
 		case HW_INPUT_NONE:
 		default:
@@ -557,14 +557,14 @@ static int mqtt_input_time_get(void * const priv, const enum e_hw_input_type typ
 				return (-EINVALID);
 			if (unlikely(!hw->in.temps.all[inid].set.configured))
 				return (-ENOTCONFIGURED);
-			*ctime = atomic_load_explicit(&hw->in.temps.all[inid].run.tstamp, memory_order_relaxed);
+			*ctime = aler(&hw->in.temps.all[inid].run.tstamp);
 			break;
 		case HW_INPUT_SWITCH:
 			if (unlikely((inid >= hw->in.switchs.l)))
 				return (-EINVALID);
 			if (unlikely(!hw->in.switchs.all[inid].set.configured))
 				return (-ENOTCONFIGURED);
-			*ctime = atomic_load_explicit(&hw->in.switchs.all[inid].run.tstamp, memory_order_relaxed);
+			*ctime = aler(&hw->in.switchs.all[inid].run.tstamp);
 			break;
 		case HW_INPUT_NONE:
 		default:
