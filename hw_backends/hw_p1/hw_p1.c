@@ -376,7 +376,7 @@ out:
  */
 int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 {
-	uint_fast16_t newcalib_nodac, newcalib_dac;
+	uint_fast16_t newcalib_nodac, newcalib_dac, test;
 	int ret;
 	rwchc_sensor_t ref;
 	const timekeep_t now = timekeep_now();
@@ -395,6 +395,11 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 		newcalib_nodac = sensor_to_ohm(hw, ref, false);	// force uncalibrated read
 		if ((newcalib_nodac < VALID_CALIB_MIN) || (newcalib_nodac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
+		test = abs(hw->run.calib_nodac - newcalib_nodac);
+		if ((test > 20) && hw->run.calib_nodac) {
+			dbgerr("ignoring calib nodac excess! old: %d, new: %d, diff: %d", hw->run.calib_nodac, newcalib_nodac, test);
+			return (ALL_OK);
+		}
 	}
 	else
 		return (-EINVALID);
@@ -408,6 +413,11 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 		newcalib_dac = sensor_to_ohm(hw, ref, false);	// force uncalibrated read
 		if ((newcalib_dac < VALID_CALIB_MIN) || (newcalib_dac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
+		test = abs(hw->run.calib_dac - newcalib_dac);
+		if ((test > 20) && hw->run.calib_dac) {
+			dbgerr("ignoring calib dac excess! old: %d, new: %d, diff: %d", hw->run.calib_dac, newcalib_dac, test);
+			return (ALL_OK);
+		}
 	}
 	else
 		return (-EINVALID);
