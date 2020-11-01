@@ -2,7 +2,7 @@
 //  plant/pump.c
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -12,6 +12,10 @@
  *
  * The pump implementation supports:
  * - Cooldown timeout (to prevent short runs)
+ *
+ * @note the implementation doesn't really care about thread safety on the assumption that
+ * each pump is managed exclusively by a parent entity and thus no concurrent operation is
+ * ever expected to happen to a given pump, with the exception of _get_state() which is thread-safe.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -98,6 +102,7 @@ int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_
  * Get pump state.
  * @param pump target pump
  * @return pump state
+ * @note thread-safe by virtue of only calling outputs_relay_state_get()
  */
 int pump_get_state(const struct s_pump * restrict const pump)
 {
@@ -181,7 +186,6 @@ int pump_run(struct s_pump * restrict const pump)
 			return (ALL_OK);
 	}
 
-	// this will add cooldown everytime the pump is turned off when it was already off but that's irrelevant
 	ret = outputs_relay_state_set(pump->set.rid_pump, pump->run.req_on);
 	if (unlikely(ret < 0))
 		return (ret);
