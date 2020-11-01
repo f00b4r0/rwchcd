@@ -125,7 +125,6 @@ struct s_valve {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
-		bool active;		///< true if valve is in active (in use by the system)
 		bool dwht_use;		///< true if valve is currently used by active DHWT
 		bool true_pos;		///< true if current position is "true": position measured from a full close/open start, or provided by a sensor
 		bool ctrl_ready;	///< false if controller algorithm must be reset

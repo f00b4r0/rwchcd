@@ -30,7 +30,6 @@ struct s_pump {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)
-		bool active;			///< true if pump is active (in use by the system)
 		bool req_on;			///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
 		bool dwht_use;			///< true if pump is currently used by active DHWT

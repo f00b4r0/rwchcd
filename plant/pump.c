@@ -122,9 +122,6 @@ int pump_shutdown(struct s_pump * restrict const pump)
 	if (unlikely(!pump))
 		return (-EINVALID);
 
-	if (!pump->run.active)
-		return (ALL_OK);
-
 	return(pump_set_state(pump, OFF, FORCE));
 }
 
@@ -171,8 +168,6 @@ int pump_run(struct s_pump * restrict const pump)
 
 	if (unlikely(!pump->run.online))	// implies set.configured == true
 		return (-EOFFLINE);
-
-	pump->run.active = true;	// XXX never set false because we don't really need to for now
 
 	state = !!outputs_relay_state_get(pump->set.rid_pump);	// assumed cannot fail
 	if (state == pump->run.req_on)

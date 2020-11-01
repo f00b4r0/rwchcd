@@ -576,16 +576,11 @@ int valve_shutdown(struct s_valve * const valve)
 	if (!valve)
 		return (-EINVALID);
 
-	if (!valve->run.active)
-		return (ALL_OK);
-
 	// close valve
 	valve_reqclose_full(valve);
 
 	// reset the control algorithm
 	valve->run.ctrl_ready = false;
-
-	valve->run.active = false;
 
 	return (ALL_OK);
 }
@@ -705,7 +700,6 @@ int valve_run(struct s_valve * const valve)
 	perth_ptk = 1000 * perthmult / valve->set.ete_time;
 
 	valve->run.last_run_time = now;
-	valve->run.active = true;		// XXX never set false because we don't really need to for now
 
 	assert(dt < valve->set.ete_time);	// approximation of overflow limit
 	course = (int_fast16_t)((dt * perth_ptk + perthmult/2) / perthmult);	// we don't keep track of residual because we're already in ‰.
