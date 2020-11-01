@@ -79,11 +79,11 @@ struct s_log Log;
  * @param version a caller-defined version number
  * @param log_data the data to log
  * @return exec status
- * @note uses a #MAX_FILENAMELEN+1 auto heap buffer.
+ * @note uses a #MAX_FILENAMELEN+1 static buffer. Must not be called concurrently
  */
 static int _log_dump(const char * restrict const basename, const char * restrict const identifier, const log_version_t * restrict const version, const struct s_log_data * restrict const log_data)
 {
-	char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
+	static char ident[MAX_FILENAMELEN+1] = LOG_PREFIX;
 	const char sep = Log.bkend->separator;
 	const bool unversioned = Log.bkend->unversioned;
 	log_version_t lversion = 0;
