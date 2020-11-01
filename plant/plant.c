@@ -893,7 +893,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 		if (!circuitl->circuit->run.online || (ALL_OK != circuitl->status))
 			continue;
 
-		temp = circuitl->circuit->run.heat_request;
+		temp = aler(&circuitl->circuit->run.heat_request);
 		temp_request = (temp > temp_request) ? temp : temp_request;
 		if (RWCHCD_TEMP_NOREQUEST != temp)
 			plant->run.last_creqtime = now;

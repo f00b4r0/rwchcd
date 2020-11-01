@@ -25,6 +25,13 @@
  * - Automatic circuit turn-off based on outdoor temperature evolution
  * - Timed cooldown at turn-off
  * - Min/max limits on circuit water temperature
+ *
+ * @note the implementation doesn't really care about thread safety on the assumption that
+ * no concurrent operation is ever expected to happen to a given hcircuit, with the exception of
+ * logging activity for which only data races are prevented via relaxed operations.
+ * It is worth noting that no data consistency is guaranteed for logging, i.e. the data points logged
+ * during a particular call of hcircuit_logdata_cb() may represent values from different time frames:
+ * the overhead of ensuring consistency seems overkill for the purpose served by the log facility.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -46,7 +53,7 @@
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
 #define HCIRCUIT_STORAGE_PREFIX	"hcircuit"
 
-static const storage_version_t Hcircuit_sversion = 1;
+static const storage_version_t Hcircuit_sversion = 2;
 
 /**
  * Heating circuit data log callback.
@@ -68,13 +75,13 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
 	if (!circuit->run.online)
 		return (-EOFFLINE);
 
-	ldata->values[i++] = circuit->run.runmode;
-	ldata->values[i++] = temp_to_ikelvin(circuit->run.request_ambient);
-	ldata->values[i++] = temp_to_ikelvin(circuit->run.target_ambient);
-	ldata->values[i++] = temp_to_ikelvin(circuit->run.actual_ambient);
-	ldata->values[i++] = temp_to_ikelvin(circuit->run.target_wtemp);
-	ldata->values[i++] = temp_to_ikelvin(circuit->run.actual_wtemp);
-	ldata->values[i++] = temp_to_ikelvin(circuit->run.heat_request);
+	ldata->values[i++] = aler(&circuit->run.runmode);
+	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.request_ambient));
+	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.target_ambient));
+	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.actual_ambient));
+	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.target_wtemp));
+	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.actual_wtemp));
+	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.heat_request));
 
 	ldata->nvalues = i;
 
@@ -176,6 +183,7 @@ static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
  * Restore hcircuit state from permanent storage.
  * @param circuit the circuit to restore, @b MUST be named
  * @return exec status
+ * @deprecated this is probably a bad idea
  */
 static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
 {
@@ -203,7 +211,7 @@ static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
 			return (-EMISMATCH);
 
 		// XXX try to restore last ambient temp (for modeling). Is this a good idea? Not sure.
-		circuit->run.actual_ambient = temp_hcircuit.run.actual_ambient;
+		aser(&circuit->run.actual_ambient, aler(&temp_hcircuit.run.actual_ambient));
 	}
 
 	return (ret);
@@ -256,7 +264,7 @@ static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const te
 	t_output += tld->twaterinfl;
 
 	// shift output based on actual target temperature: (tgt - 20C) * (1 - tld->slope)
-	t_output += (circuit->run.target_ambient - celsius_to_temp(20)) * (slopeden - slopenum) / slopeden;
+	t_output += (aler(&circuit->run.target_ambient) - celsius_to_temp(20)) * (slopeden - slopenum) / slopeden;
 
 	return (t_output);
 }
@@ -364,8 +372,8 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	if (!circuit->run.active)
 		return (ALL_OK);
 
-	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	circuit->run.target_wtemp = 0;
+	aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
+	aser(&circuit->run.target_wtemp, 0);
 	circuit->run.rorh_update_time = 0;
 
 	circuit->run.active = false;
@@ -422,7 +430,7 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 {
 	const struct s_bmodel * restrict const bmodel = circuit->set.p.bmodel;
-	temp_t temp_trigger;
+	temp_t temp_trigger, temp_request;
 
 	// input sanitization performed in logic_hcircuit()
 	assert(circuit->pdata);
@@ -434,7 +442,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 		return;
 	}
 
-	switch (circuit->run.runmode) {
+	switch (aler(&circuit->run.runmode)) {
 		case RM_COMFORT:
 			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, circuit->pdata->set.def_hcircuit.outhoff_comfort);
 			break;
@@ -454,7 +462,8 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 	}
 
 	// min of setting and current ambient request
-	temp_trigger = (circuit->run.request_ambient < temp_trigger) ? circuit->run.request_ambient : temp_trigger;
+	temp_request = aler(&circuit->run.request_ambient);
+	temp_trigger = (temp_request < temp_trigger) ? temp_request : temp_trigger;
 
 	if (!temp_trigger) {	// don't do anything if we have an invalid limit
 		circuit->run.outhoff = false;
@@ -496,9 +505,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	const struct s_runtime * restrict const runtime = runtime_get();
 	const struct s_schedule_eparams * eparams;
 	const struct s_bmodel * restrict bmodel;
-	enum e_runmode prev_runmode;
+	enum e_runmode prev_runmode, new_runmode;
 	temp_t request_temp, diff_temp;
-	temp_t ambient_temp, ambient_delta = 0;
+	temp_t target_ambient, ambient_temp, ambient_delta = 0;
 	timekeep_t elapsed_time, dtmin;
 	const timekeep_t now = timekeep_now();
 	bool can_fastcool;
@@ -514,23 +523,23 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	can_fastcool = (circuit->set.fast_cooldown && !bmodel->run.frost);
 
 	// store current status for transition detection
-	prev_runmode = circuit->run.runmode;
+	prev_runmode = aler(&circuit->run.runmode);
 
 	// handle global/local runmodes
 	if (RM_AUTO == circuit->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(circuit->set.schedid);
-		circuit->run.runmode = ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode;
+		new_runmode = ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode;
 	}
 	else
-		circuit->run.runmode = circuit->set.runmode;
+		new_runmode = circuit->set.runmode;
 
 	// if an absolute priority DHW charge is in progress, switch to dhw-only (will register the transition)
 	if (circuit->pdata->run.dhwc_absolute)
-		circuit->run.runmode = RM_DHWONLY;
+		new_runmode = RM_DHWONLY;
 
 	// depending on circuit run mode, assess circuit target temp
-	switch (circuit->run.runmode) {
+	switch (new_runmode) {
 		case RM_OFF:
 		case RM_TEST:
 			return (ALL_OK);	// No further processing
@@ -550,19 +559,21 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			return (-EINVALIDMODE);
 	}
 
-	// save current ambient request
-	circuit->run.request_ambient = request_temp;
+	// save current ambient request & runmode (needed by hcircuit_outhoff())
+	aser(&circuit->run.request_ambient, request_temp);
+	aser(&circuit->run.runmode, new_runmode);
 
 	// Check if the circuit meets run.outhoff conditions
 	hcircuit_outhoff(circuit);
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
 	if (circuit->run.outhoff && !bmodel->run.frost)
-		circuit->run.runmode = RM_OFF;
+		new_runmode = RM_OFF;
 
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
-	if ((prev_runmode != circuit->run.runmode) && circuit->run.actual_ambient) {
-		circuit->run.transition = (circuit->run.actual_ambient > circuit->run.request_ambient) ? TRANS_DOWN : TRANS_UP;
-		circuit->run.trans_start_temp = circuit->run.actual_ambient;
+	ambient_temp = aler(&circuit->run.actual_ambient);
+	if ((prev_runmode != new_runmode) && ambient_temp) {
+		circuit->run.transition = (ambient_temp > request_temp) ? TRANS_DOWN : TRANS_UP;
+		circuit->run.trans_start_temp = ambient_temp;
 		circuit->run.trans_active_elapsed = 0;
 		circuit->run.ambient_update_time = now;	// reset timer
 	}
@@ -578,23 +589,22 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	// XXX OPTIM if return temp is known
 
-	// apply offset and save calculated target ambient temp to circuit
-	circuit->run.target_ambient = circuit->run.request_ambient + SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
+	// apply offset
+	target_ambient = request_temp + SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
 
 	// Ambient temperature is either read or modelled
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 												// calculate ambient shift based on measured ambient temp influence in percent
-		ambient_delta = (circuit->set.ambient_factor) * (circuit->run.target_ambient - ambient_temp) / 100;
+		ambient_delta = (circuit->set.ambient_factor) * (target_ambient - ambient_temp) / 100;
 	}
 	else {	// no sensor (or faulty), apply ambient model
 		elapsed_time = now - circuit->run.ambient_update_time;
-		ambient_temp = circuit->run.actual_ambient;
 		dtmin = expw_mavg_dtmin(3*bmodel->set.tau);
 
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
-		if ((RM_OFF == circuit->run.runmode) && ambient_temp) {
+		if ((RM_OFF == new_runmode) && ambient_temp) {
 			if (elapsed_time > dtmin) {
-				ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
+				ambient_temp = temp_expw_mavg(ambient_temp, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
 			}
 			dbgmsg(1, 1, "\"%s\": off, ambient: %.1f", circuit->name, temp_to_celsius(ambient_temp));
@@ -606,7 +616,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 					// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
 					// all necessary data is _always_ available, no need to special case here
 					if (elapsed_time > dtmin) {
-						ambient_temp = temp_expw_mavg(circuit->run.actual_ambient, request_temp, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
+						ambient_temp = temp_expw_mavg(ambient_temp, request_temp, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 						circuit->run.ambient_update_time = now;
 						circuit->run.trans_active_elapsed += elapsed_time;
 					}
@@ -616,8 +626,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 					if (circuit->set.am_tambient_tK) {	// only if necessary data is available
 						/* XXX count active time only if approximate output power is > HC_LOGIC_MIN_POWER_TRANS_UP %
 						 (linear) approximate output power is (actual_wtemp - ambient) / (target_wtemp - ambient) */
-						if ((circuit->run.target_wtemp > circuit->run.actual_ambient) &&	// XXX REVISIT work around divide by 0
-						    (100 * (circuit->run.actual_wtemp - circuit->run.actual_ambient) / (circuit->run.target_wtemp - circuit->run.actual_ambient)) > HC_LOGIC_MIN_POWER_TRANS_UP)
+						if ((aler(&circuit->run.target_wtemp) > ambient_temp) &&	/// @bug XXX REVISIT work around divide by 0
+						    (100 * (aler(&circuit->run.actual_wtemp) - ambient_temp) / (aler(&circuit->run.target_wtemp) - ambient_temp)) > HC_LOGIC_MIN_POWER_TRANS_UP)
 							circuit->run.trans_active_elapsed += elapsed_time;
 
 						// tstart + elevation over time: tstart + ((elapsed_time * KPRECISION/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
@@ -631,7 +641,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 						 temperature differential (request - actual) is < KPRECISION (1K) otherwise the
 						 term that tends toward 0 introduces a huge residual error when boost is enabled.
 						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
-						diff_temp = request_temp - circuit->run.actual_ambient;
+						diff_temp = request_temp - ambient_temp;
 						if (diff_temp >= KPRECISION) {
 							// assert casts operate on representable values
 							ambient_temp = circuit->run.trans_start_temp + (signed)(((KPRECISION*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
@@ -658,20 +668,20 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	}
 
 	// store current ambient temp
-	circuit->run.actual_ambient = ambient_temp;
+	aser(&circuit->run.actual_ambient, ambient_temp);
 
 	// handle transitions
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
-			if (ambient_temp > (circuit->run.request_ambient + deltaK_to_temp(0.5F))) {
+			if (ambient_temp > (request_temp + deltaK_to_temp(0.5F))) {
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
-					circuit->run.runmode = RM_OFF;
+					new_runmode = RM_OFF;
 			}
 			else
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_UP:
-			if (ambient_temp < (circuit->run.request_ambient - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
+			if (ambient_temp < (request_temp - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
 													// boost is max of set boost (if any) and measured delta (if any)
 				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
 					ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;
@@ -685,7 +695,10 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	}
 
 	// apply ambient shift
-	circuit->run.target_ambient += ambient_delta;
+	target_ambient += ambient_delta;
+
+	aser(&circuit->run.runmode, new_runmode);
+	aser(&circuit->run.target_ambient, target_ambient);
 
 	return (ALL_OK);
 }
@@ -705,7 +718,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
 {
 	assert(circuit);
-	circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+	aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
 	valve_reqclose_full(circuit->set.p.valve_mix);
 	if (circuit->set.p.pump_feed)
 		(void)!pump_set_state(circuit->set.p.pump_feed, ON, FORCE);
@@ -738,7 +751,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	}
 
 	// we're good to go - keep updating actual_wtemp when circuit is off
-	circuit->run.actual_wtemp = curr_temp;
+	aser(&circuit->run.actual_wtemp, curr_temp);
 
 	ret = hcircuit_logic(circuit);
 	if (unlikely(ALL_OK != ret))
@@ -746,14 +759,14 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// force circuit ON during hs_overtemp condition
 	if (unlikely(circuit->pdata->run.hs_overtemp))
-		circuit->run.runmode = RM_COMFORT;
+		aser(&circuit->run.runmode, RM_COMFORT);
 
 	// handle special runmode cases
-	switch (circuit->run.runmode) {
+	switch (aler(&circuit->run.runmode)) {
 		case RM_OFF:
-			if (circuit->run.target_wtemp && (circuit->pdata->run.consumer_sdelay > 0)) {
+			if (aler(&circuit->run.target_wtemp) && (circuit->pdata->run.consumer_sdelay > 0)) {
 				// disable heat request from this circuit
-				circuit->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+				aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
 				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->run.consumer_sdelay));
 				return (ALL_OK);	// stop processing: maintain current output
 			}
@@ -818,10 +831,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		water_temp = lwtmax;
 
 	// save "non-interfered" target water temp, i.e. the real target (within enforced limits)
-	circuit->run.target_wtemp = water_temp;
+	aser(&circuit->run.target_wtemp, water_temp);
 
 	// heat request is always computed based on non-interfered water_temp value
-	circuit->run.heat_request = circuit->run.target_wtemp + SETorDEF(circuit->set.params.temp_inoffset, circuit->pdata->set.def_hcircuit.temp_inoffset);
+	aser(&circuit->run.heat_request, water_temp + SETorDEF(circuit->set.params.temp_inoffset, circuit->pdata->set.def_hcircuit.temp_inoffset));
 
 	// alterations to the computed value only make sense if a mixing valve is available
 	if (circuit->set.p.valve_mix) {
@@ -897,8 +910,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 #ifdef DEBUG
 	(void)!inputs_temperature_get(circuit->set.tid_return, &ret_temp);
 	dbgmsg(1, 1, "\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
-	       temp_to_celsius(circuit->run.request_ambient), temp_to_celsius(circuit->run.target_ambient),
-	       temp_to_celsius(circuit->run.target_wtemp), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));
+	       temp_to_celsius(aler(&circuit->run.request_ambient)), temp_to_celsius(aler(&circuit->run.target_ambient)),
+	       temp_to_celsius(aler(&circuit->run.target_wtemp)), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));
 #endif
 
 	return (ALL_OK);

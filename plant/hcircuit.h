@@ -14,6 +14,8 @@
 #ifndef hcircuit_h
 #define hcircuit_h
 
+#include <stdatomic.h>
+
 #include "rwchcd.h"
 #include "timekeep.h"
 #include "io/inputs.h"
@@ -64,20 +66,20 @@ struct s_hcircuit {
 		bool active;			///< true if circuit is active
 		bool outhoff;			///< true if no heating conditions are met
 		bool floor_output;		///< true if the current output should not be reduced
-		enum e_runmode runmode;		///< circuit actual (computed) runmode
-		temp_t rorh_temp_increment;	///< temperature increment for the rorh limiter. Computed once in hcircuit_online()
-		temp_t rorh_last_target;	///< previous set point target for rorh control
-		timekeep_t rorh_update_time;	///< last time output was updated with respect to rorh
-		temp_t request_ambient;		///< current requested ambient target temp
-		temp_t target_ambient;		///< current calculated ambient target temp (includes offset and computed shifts)
+		_Atomic enum e_runmode runmode;	///< circuit actual (computed) runmode
 		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current transition underwent by the circuit
+		timekeep_t rorh_update_time;	///< last time output was updated with respect to rorh
 		timekeep_t ambient_update_time;	///< ambient model last update time
 		timekeep_t trans_active_elapsed;///< time elapsed in active transitioning (when power output meats request)
+		_Atomic temp_t request_ambient;	///< current requested ambient target temp
+		_Atomic temp_t target_ambient;	///< current calculated ambient target temp (includes offset and computed shifts)
+		_Atomic temp_t actual_ambient;	///< actual ambient temperature (either from sensor, or modelled)
+		_Atomic temp_t target_wtemp;	///< current target water temp
+		_Atomic temp_t actual_wtemp;	///< actual water temperature
+		_Atomic temp_t heat_request;	///< current temp request from heat source for this circuit
+		temp_t rorh_temp_increment;	///< temperature increment for the rorh limiter. Computed once in hcircuit_online()
+		temp_t rorh_last_target;	///< previous set point target for rorh control
 		temp_t trans_start_temp;	///< temperature at transition start
-		temp_t actual_ambient;		///< actual ambient temperature (either from sensor, or modelled)
-		temp_t target_wtemp;		///< current target water temp
-		temp_t actual_wtemp;		///< actual water temperature
-		temp_t heat_request;		///< current temp request from heat source for this circuit
 	} run;		///< private runtime (internally handled)
 	void * restrict tlaw_priv;		///< Reference data for templaw
 	const struct s_pdata * pdata;		///< read-only plant data for this circuit
