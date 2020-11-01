@@ -283,10 +283,10 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	temp_t temp;
 	int ret;
 
-	assert(circuit->pdata);
-
 	if (!circuit)
 		return (-EINVALID);
+
+	assert(circuit->pdata);
 
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);

@@ -166,10 +166,10 @@ int dhwt_online(struct s_dhwt * const dhwt)
 	temp_t temp;
 	int ret = -EGENERIC;
 
-	assert(dhwt->pdata);
-
 	if (!dhwt)
 		return (-EINVALID);
+
+	assert(dhwt->pdata);
 
 	if (!dhwt->set.configured)
 		return (-ENOTCONFIGURED);
@@ -526,10 +526,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	timekeep_t limit;
 	int ret;
 
-	assert(dhwt->pdata);
-
 	if (unlikely(!dhwt))
 		return (-EINVALID);
+
+	assert(dhwt->pdata);
 
 	if (unlikely(!dhwt->run.online))	// implies set.configured == true
 		return (-EOFFLINE);

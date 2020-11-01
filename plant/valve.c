@@ -179,8 +179,6 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	int ret;
 	timekeep_t Ti;
 
-	assert(vpriv);	// checked in online()
-
 	// sample window
 	if (dt < vpriv->set.sample_intvl)
 		return (ALL_OK);
