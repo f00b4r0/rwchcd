@@ -16,6 +16,10 @@
  * - Multiple types of mixing valve control algorithms: bang-bang, successive approximations, PI controller
  * - Temperature deadzone in all algorithms
  * - Actuator deadband in all algorithms
+ *
+ * @note the implementation doesn't really care about thread safety on the assumption that
+ * each valve is managed exclusively by a parent entity and thus no concurrent operation is
+ * ever expected to happen to a given valve.
  */
 
 #include <stdlib.h>	// calloc/free
