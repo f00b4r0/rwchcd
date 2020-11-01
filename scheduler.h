@@ -16,6 +16,8 @@
 
 #include "rwchcd.h"
 
+#define SCHEDID_MAX	UINT_FAST16_MAX
+
 /** Schedule entry time. */
 struct s_schedule_etime {
 	int wday;		///< day of the week for this schedule entry (`0` - `6`, Sunday = `0`)
@@ -46,16 +48,16 @@ struct s_schedule_e {
  * The #current pointer, when set, points to the last valid schedule entry for the day.
  */
 struct s_schedule {
-	struct s_schedule * next;
 	const struct s_schedule_e * _Atomic current;	///< current (valid) schedule entry (will be set once schedule has been parsed and sync'd to current day).
 	struct s_schedule_e * head;		///< 'head' of sorted schedule entries loop (i.e. earliest schedule entry)
 	const char * name;			///< schedule name (user-set unique identifier)
-	schedid_t schedid;			///< >0 schedule id (internal unique identifier)
 };
 
+/** Schdules internal data */
 struct s_schedules {
-	struct s_schedule * schead;
-	schedid_t lastid;
+	struct s_schedule * all;	///< all registered schedules in the system
+	schedid_t lastid;		///< id of last free schedule
+	schedid_t n;			///< number of allocated schedules
 };
 
 void * scheduler_thread(void * arg);
@@ -63,7 +65,8 @@ const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t sche
 const char * scheduler_get_schedname(const schedid_t schedule_id);
 int scheduler_schedid_by_name(const char * const restrict sched_name);
 
-int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_e * const se);
-int scheduler_add_schedule(const char * const restrict name);
+int scheduler_add_entry(struct s_schedule * const sched, const struct s_schedule_e * const se);
+
+void scheduler_exit(void);
 
 #endif /* rwchcd_scheduler_h */

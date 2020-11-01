@@ -12,10 +12,13 @@
  */
 
 #include <string.h>	// strcmp/memcpy
+#include <stdlib.h>	// calloc
 
 #include "scheduler_parse.h"
 #include "scheduler.h"
 #include "filecfg_parser.h"
+
+extern struct s_schedules Schedules;
 
 static int scheduler_fcp_entry_time_wday(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -139,7 +142,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODELST,	"time",		true,	scheduler_entry_time_parse,	NULL, },
 		{ NODELST,	"params",	true,	scheduler_entry_params_parse,	NULL, },
 	};
-	const schedid_t schedid = *(schedid_t *)priv;
+	struct s_schedule * const sched = priv;
 	struct s_schedule_e schent;
 	int ret;
 
@@ -153,7 +156,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = scheduler_add_entry(schedid, &schent);
+	ret = scheduler_add_entry(sched, &schent);
 	switch (ret) {
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a schedule entry with the same time is already configured"), node->lineno);
@@ -165,12 +168,12 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	return (ret);
 }
 
-static int scheduler_schedule_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
+static int scheduler_schedule_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	int schedid;
-
-	if (!node)
-		return (-EINVALID);
+	struct s_schedules * const scheds = priv;
+	struct s_schedule * s;
+	char * name;
+	int ret;
 
 	if (!node->children)
 		return (-EEMPTY);	// we only accept NODESTC backend node with children
@@ -178,19 +181,32 @@ static int scheduler_schedule_parse(void * restrict const priv __attribute__((un
 	if (strlen(node->value.stringval) <= 0)
 		return (-EINVALID);
 
-	schedid = scheduler_add_schedule(node->value.stringval);
-	if (schedid <= 0) {
-		switch (schedid) {
-			case -EEXISTS:
-				filecfg_parser_pr_err(_("Line %d: a schedule with the same name (\'%s\') is already configured"), node->lineno, node->value.stringval);
-				break;
-			default:
-				break;
-		}
-		return (schedid);
+	if (scheds->lastid >= scheds->n)
+		return (-EOOM);
+
+	if (-ENOTFOUND != scheduler_schedid_by_name(node->value.stringval)) {
+		filecfg_parser_pr_err(_("Line %d: a schedule with the same name (\'%s\') is already configured"), node->lineno, node->value.stringval);
+		return (-EEXISTS);
 	}
 
-	return (filecfg_parser_parse_listsiblings(&schedid, node->children, "entry", scheduler_entry_parse));
+	name = strdup(node->value.stringval);
+	if (!name)
+		return (-EOOM);
+
+	s = &scheds->all[scheds->lastid];
+
+	ret = filecfg_parser_parse_listsiblings(s, node->children, "entry", scheduler_entry_parse);
+	if (ALL_OK != ret)
+		goto fail;
+
+	s->name = name;
+	scheds->lastid++;
+
+	return (ALL_OK);
+
+fail:
+	free (name);
+	return (ret);
 }
 
 /**
@@ -201,6 +217,39 @@ static int scheduler_schedule_parse(void * restrict const priv __attribute__((un
  */
 int filecfg_scheduler_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "schedule", scheduler_schedule_parse));
+	struct s_schedules * schedules = &Schedules;
+	unsigned int n;
+	int ret;
+
+	n = filecfg_parser_count_siblings(node->children, "schedule");
+
+	if (!n)
+		return (-EEMPTY);
+
+	if (n >= SCHEDID_MAX)
+		return (-ETOOBIG);
+
+	schedules->all = calloc(n, sizeof(schedules->all[0]));
+	if (!schedules->all)
+		return (-EOOM);
+
+	schedules->n = (schedid_t)n;
+	schedules->lastid = 0;
+
+	ret = filecfg_parser_parse_namedsiblings(schedules, node->children, "schedule", scheduler_schedule_parse);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	// depends on nothing
+
+	ret = rwchcd_add_subsyscb("scheduler", NULL, NULL, scheduler_exit);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	return (ALL_OK);
+
+cleanup:
+	scheduler_exit();
+	return (ret);
 }
 

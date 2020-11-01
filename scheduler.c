@@ -2,7 +2,7 @@
 //  scheduler.c
 //  rwchcd
 //
-//  (C) 2016-2019 Thibaut VARENE
+//  (C) 2016-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -17,7 +17,7 @@
  * `time` node (content from struct s_schedule_etime) and a `params` node (content from struct s_schedule_eparams).
  * The name of the `schedule` node(s) can then be used to assign various plant entities to the given schedule.
  * @todo adapt to add "intelligence" and anticipation from e.g. circuit transitions
- * @note Operation is lockless as it is assumed that the schedules will only be updated at config time
+ * @note Operation is lockless as it is assumed that the schedules will only be created at config time
  * (during startup in single-thread context) and that from that point on only read operations will be performed,
  * until shutdown (also in single-threaded context). Should that change, adequate mutex constructs must be used.
  */
@@ -33,8 +33,13 @@
 #include "scheduler.h"
 #include "timekeep.h"
 
+// Workaround to disambiguate 0 schedit_t (i.e. unconfigured)
+#define scheduler_schedid_to_id(x)	((typeof(x))(x-1))
+#define scheduler_id_to_schedid(x)	((typeof(x))(x+1))
+
 struct s_schedules Schedules = {
 	NULL,
+	0,
 	0,
 };
 
@@ -133,33 +138,12 @@ restart:
  */
 static int scheduler_now(void)
 {
-	struct s_schedule * sched;
+	schedid_t id;
 
-	for (sched = Schedules.schead; sched; sched = sched->next)
-		scheduler_update_schedule(sched);
+	for (id = 0; id < Schedules.lastid; id++)
+		scheduler_update_schedule(&Schedules.all[id]);
 
 	return (ALL_OK);
-}
-
-/**
- * Find a schedule by identifier.
- * @param schedule_id the target id
- * @return schedule id if found, error otherwise.
- */
-static struct s_schedule * scheduler_schedule_fbi(const schedid_t schedule_id)
-{
-	struct s_schedule * sched;
-
-	if (unlikely((schedule_id <= 0) || (schedule_id > Schedules.lastid)))
-		return (NULL);
-
-	// find correct schedule
-	for (sched = Schedules.schead; sched; sched = sched->next) {
-		if (schedule_id == sched->schedid)
-			break;
-	}
-
-	return (sched);
 }
 
 /**
@@ -169,10 +153,14 @@ static struct s_schedule * scheduler_schedule_fbi(const schedid_t schedule_id)
  */
 const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t schedule_id)
 {
+	const schedid_t id = scheduler_schedid_to_id(schedule_id);
 	const struct s_schedule * sched;
 	const struct s_schedule_e * schent_curr;
 
-	sched = scheduler_schedule_fbi(schedule_id);
+	if (unlikely(id >= Schedules.lastid))
+		return (NULL);
+
+	sched = &Schedules.all[id];
 
 	// return current schedule entry for schedule, if available
 	if (likely(sched)) {
@@ -192,9 +180,13 @@ const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t sche
  */
 const char * scheduler_get_schedname(const schedid_t schedule_id)
 {
+	const schedid_t id = scheduler_schedid_to_id(schedule_id);
 	const struct s_schedule * sched;
 
-	sched = scheduler_schedule_fbi(schedule_id);
+	if (unlikely(id >= Schedules.lastid))
+		return (NULL);
+
+	sched = &Schedules.all[id];
 
 	if (sched)
 		return (sched->name);
@@ -209,16 +201,15 @@ const char * scheduler_get_schedname(const schedid_t schedule_id)
  */
 int scheduler_schedid_by_name(const char * const restrict sched_name)
 {
-	const struct s_schedule * sched;
+	schedid_t id;
 	int ret = -ENOTFOUND;
 
-	if (!sched_name)
+	if (!sched_name || !strlen(sched_name))
 		return (-EINVALID);
 
-	for (sched = Schedules.schead; sched; sched = sched->next) {
-		if (!strcmp(sched_name, sched->name)) {
-			assert(sched->schedid < INT_MAX);
-			ret = (int)sched->schedid;
+	for (id = 0; id < Schedules.lastid; id++) {
+		if (!strcmp(sched_name, Schedules.all[id].name)) {
+			ret = (int)scheduler_id_to_schedid(id);
 			break;
 		}
 	}
@@ -246,60 +237,15 @@ void * scheduler_thread(void * arg __attribute__((unused)))
 }
 
 /**
- * Add a new schedule.
- * @param name the new schedule name (must be unique).
- * @return new schedule id or negative error.
- * @warning not thread safe
- */
-int scheduler_add_schedule(const char * const restrict name)
-{
-	struct s_schedule * sched;
-	char * str = NULL;
-
-	// sanitize input: check that mandatory callbacks are provided
-	if (!name)
-		return (-EINVALID);
-
-	// name must be unique
-	if (scheduler_schedid_by_name(name) > 0)
-		return (-EEXISTS);
-
-	// clone name
-	str = strdup(name);
-	if (!str)
-		return(-EOOM);
-
-	// allocate new backend
-	sched = calloc(1, sizeof(*sched));
-	if (!sched) {
-		free(str);
-		return (-EOOM);
-	}
-
-	// populate schedule
-	sched->name = str;
-	sched->schedid = ++Schedules.lastid;
-
-	// insert schedule into list - XXX MEMORY FENCE
-	sched->next = Schedules.schead;
-	Schedules.schead = sched;
-
-	// return schedule id
-	assert(sched->schedid < INT_MAX);
-	return ((int)sched->schedid);
-}
-
-/**
  * Add a schedule entry.
  * Added entries are inserted at a sorted position.
- * @param schedid id of the schedule to add entry to.
+ * @param sched the schedule to add entry to.
  * @param se template for the new schedule entry
  * @return exec status, -EEXISTS if entry is a time duplicate of another one
- * @warning not thread safe
+ * @note not thread safe
  */
-int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_e * const se)
+int scheduler_add_entry(struct s_schedule * const sched, const struct s_schedule_e * const se)
 {
-	struct s_schedule * sched;
 	struct s_schedule_e * schent = NULL, * schent_before, * schent_after, * schent_last;
 	
 	// sanity checks on params
@@ -318,10 +264,6 @@ int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_e * con
 	if (se->params.dhwmode > RM_UNKNOWN)
 		return (-EINVALID);
 
-	sched = scheduler_schedule_fbi(schedid);
-	if (!sched)
-		return (-ENOTFOUND);
-	
 	schent = calloc(1, sizeof(*schent));
 	if (!schent)
 		return (-EOOM);
@@ -377,4 +319,35 @@ int scheduler_add_entry(const schedid_t schedid, const struct s_schedule_e * con
 duplicate:
 	free(schent);
 	return (-EEXISTS);
+}
+
+static void scheduler_cleanup_schedule(struct s_schedule * sched)
+{
+	struct s_schedule_e * schent, * next, * head;
+
+	if (!sched)
+		return;
+
+	head = schent = sched->head;
+	while (schent) {
+		next = schent->next;
+		free(schent);
+		schent = next;
+
+		// entries are a loop, we must break when the loop is complete
+		if (head == schent)
+			break;
+	}
+
+	free((void *)sched->name);
+}
+
+void scheduler_exit(void)
+{
+	schedid_t id;
+
+	for (id = 0; id < Schedules.lastid; id++)
+		scheduler_cleanup_schedule(&Schedules.all[id]);
+
+	free(Schedules.all);
 }

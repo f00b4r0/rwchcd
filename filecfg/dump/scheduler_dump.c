@@ -59,14 +59,16 @@ int filecfg_scheduler_dump(void)
 {
 	const struct s_schedule_e * schent, * schent_start;
 	const struct s_schedule * sched;
+	schedid_t id;
 
 	filecfg_iprintf("scheduler {\n");
 	filecfg_ilevel_inc();
 
-	if (!Schedules.schead)
+	if (!Schedules.all)
 		goto emptysched;
 
-	for (sched = Schedules.schead; sched; sched = sched->next) {
+	for (id = 0; id < Schedules.lastid; id++) {
+		sched = &Schedules.all[id];
 		filecfg_iprintf("schedule \"%s\" {\n", sched->name);
 		filecfg_ilevel_inc();
 
