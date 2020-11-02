@@ -916,7 +916,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 		temp_req_dhw = (temp > temp_req_dhw) ? temp : temp_req_dhw;
 
 		// handle DHW charge priority (only in non-electric mode)
-		if (dhwtl->dhwt->run.charge_on && !dhwtl->dhwt->run.electric_mode) {
+		if (aler(&dhwtl->dhwt->run.charge_on) && !aler(&dhwtl->dhwt->run.electric_mode)) {
 			dhwt_charge = true;
 			switch (dhwtl->dhwt->set.dhwt_cprio) {
 				case DHWTP_SLIDDHW:

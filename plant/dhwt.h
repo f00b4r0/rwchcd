@@ -14,6 +14,8 @@
 #ifndef dhwt_h
 #define dhwt_h
 
+#include <stdatomic.h>
+
 #include "rwchcd.h"
 #include "timekeep.h"
 #include "io/inputs.h"
@@ -58,15 +60,15 @@ struct s_dhwt {
 	struct {
 		bool online;			///< true if tank is available for use (under software management)
 		bool active;			///< true if tank is active
-		bool charge_on;			///< true if charge ongoing
-		bool recycle_on;		///< true if recycle pump should be running.
-		bool force_on;			///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
-		bool legionella_on;		///< true if anti-legionella charge is required
+		atomic_bool charge_on;		///< true if charge ongoing
+		atomic_bool recycle_on;		///< true if recycle pump should be running.
+		atomic_bool force_on;		///< true if charge should be forced even if current temp is above the charge threshold (but below the target)
+		atomic_bool legionella_on;	///< true if anti-legionella charge is required
 		bool charge_overtime;		///< true if charge went overtime
-		bool electric_mode;		///< true if operating on electric heater
-		enum e_runmode runmode;		///< dhwt actual (computed) runmode
-		temp_t target_temp;		///< current target temp for this tank
-		temp_t actual_temp;		///< current temperature as retained by the software (could be top or bottom)
+		atomic_bool electric_mode;	///< true if operating on electric heater
+		_Atomic enum e_runmode runmode;	///< dhwt actual (computed) runmode
+		_Atomic temp_t target_temp;	///< current target temp for this tank
+		_Atomic temp_t actual_temp;	///< current temperature as retained by the software (could be top or bottom)
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 		timekeep_t mode_since;		///< starting time of current mode (if charge_on: charge start time, else charge end time)
 		int charge_yday;		///< last day forced charge was triggered in DHWTF_FIRST mode

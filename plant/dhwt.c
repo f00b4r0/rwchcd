@@ -2,7 +2,7 @@
 //  plant/dhwt.c
 //  rwchcd
 //
-//  (C) 2017-2019 Thibaut VARENE
+//  (C) 2017-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -24,6 +24,13 @@
  * - maximum intake temperature limit.
  * - periodic anti-legionella high heat charge.
  * - isolation valve.
+ *
+ * @note the implementation doesn't really care about thread safety on the assumption that
+ * no concurrent operation is ever expected to happen to a given dhwt, with the exception of
+ * logging activity for which only data races are prevented via relaxed operations.
+ * It is worth noting that no data consistency is guaranteed for logging, i.e. the data points logged
+ * during a particular call of dhwt_logdata_cb() may represent values from different time frames:
+ * the overhead of ensuring consistency seems overkill for the purpose served by the log facility.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -63,14 +70,14 @@ static int dhwt_logdata_cb(struct s_log_data * const ldata, const void * const o
 	if (!dhwt->run.online)
 		return (-EOFFLINE);
 
-	ldata->values[i++] = dhwt->run.runmode;
-	ldata->values[i++] = dhwt->run.charge_on;
-	ldata->values[i++] = dhwt->run.recycle_on;
-	ldata->values[i++] = dhwt->run.force_on;
-	ldata->values[i++] = dhwt->run.legionella_on;
-	ldata->values[i++] = dhwt->run.electric_mode;
-	ldata->values[i++] = temp_to_ikelvin(dhwt->run.target_temp);
-	ldata->values[i++] = temp_to_ikelvin(dhwt->run.actual_temp);
+	ldata->values[i++] = aler(&dhwt->run.runmode);
+	ldata->values[i++] = aler(&dhwt->run.charge_on);
+	ldata->values[i++] = aler(&dhwt->run.recycle_on);
+	ldata->values[i++] = aler(&dhwt->run.force_on);
+	ldata->values[i++] = aler(&dhwt->run.legionella_on);
+	ldata->values[i++] = aler(&dhwt->run.electric_mode);
+	ldata->values[i++] = temp_to_ikelvin(aler(&dhwt->run.target_temp));
+	ldata->values[i++] = temp_to_ikelvin(aler(&dhwt->run.actual_temp));
 
 	ldata->nvalues = i;
 
@@ -313,17 +320,17 @@ int dhwt_shutdown(struct s_dhwt * const dhwt)
 		return (ALL_OK);
 
 	// clear runtime data while preserving online state
-	dhwt->run.charge_on = false;
-	dhwt->run.recycle_on = false;
-	dhwt->run.force_on = false;
-	dhwt->run.legionella_on = false;
+	aser(&dhwt->run.charge_on, false);
+	aser(&dhwt->run.recycle_on, false);
+	aser(&dhwt->run.force_on, false);
+	aser(&dhwt->run.legionella_on, false);
 	dhwt->run.charge_overtime = false;
-	dhwt->run.electric_mode = false;
+	aser(&dhwt->run.electric_mode, false);
 	dhwt->run.mode_since = 0;	// XXX
 	dhwt->run.charge_yday = 0;	// XXX
 
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	dhwt->run.target_temp = 0;
+	aser(&dhwt->run.target_temp, 0);
 
 	dhwt_actuator_use(dhwt, false);
 
@@ -378,7 +385,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	const struct s_schedule_eparams * eparams;
 	const time_t tnow = time(NULL);
 	const struct tm * const ltime = localtime(&tnow);	// localtime handles DST and TZ for us
-	enum e_runmode prev_runmode;
+	enum e_runmode prev_runmode, new_runmode;
 	temp_t target_temp, ltmin, ltmax;
 
 	assert(runtime);
@@ -386,34 +393,34 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	assert(dhwt);
 
 	// store current status for transition detection
-	prev_runmode = dhwt->run.runmode;
+	prev_runmode = aler(&dhwt->run.runmode);
 
 	// handle global/local runmodes
 	if (RM_AUTO == dhwt->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(dhwt->set.schedid);
 		if ((SYS_AUTO == runtime->run.systemmode) && eparams) {
-			dhwt->run.runmode = eparams->dhwmode;
-			dhwt->run.legionella_on = eparams->legionella;
-			dhwt->run.recycle_on = (dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
+			new_runmode = eparams->dhwmode;
+			aser(&dhwt->run.legionella_on, eparams->legionella);
+			aser(&dhwt->run.recycle_on, aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle);
 		}
 		else	// don't touch legionella/recycle
-			dhwt->run.runmode = runtime->run.dhwmode;
+			new_runmode = runtime->run.dhwmode;
 	}
 	else
-		dhwt->run.runmode = dhwt->set.runmode;
+		new_runmode = dhwt->set.runmode;
 
 	// force DHWT ON during hs_overtemp condition
 	if (unlikely(dhwt->pdata->run.hs_overtemp))
-		dhwt->run.runmode = RM_COMFORT;
+		new_runmode = RM_COMFORT;
 
 	// depending on dhwt run mode, assess dhwt target temp
-	switch (dhwt->run.runmode) {
+	switch (new_runmode) {
 		case RM_OFF:
 		case RM_TEST:
 			return (ALL_OK);	// No further processing
 		case RM_ECO:
-			if (!dhwt->run.electric_mode) {
+			if (!aler(&dhwt->run.electric_mode)) {
 				target_temp = SETorDEF(dhwt->set.params.t_eco, dhwt->pdata->set.def_dhwt.t_eco);
 				break;
 			}
@@ -432,21 +439,21 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	}
 
 	// if anti-legionella charge is requested, enforce temp and bypass logic
-	if (unlikely(dhwt->run.legionella_on)) {
+	if (unlikely(aler(&dhwt->run.legionella_on))) {
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
-		dhwt->run.force_on = true;
-		dhwt->run.recycle_on = dhwt->set.legionella_recycle;
+		aser(&dhwt->run.force_on, true);
+		aser(&dhwt->run.recycle_on, dhwt->set.legionella_recycle);
 		goto settarget;
 	}
 
 	// transition detection
-	if (unlikely(prev_runmode != dhwt->run.runmode)) {
+	if (unlikely(prev_runmode != new_runmode)) {
 		// handle programmed forced charges at COMFORT switch on
-		if (RM_COMFORT == dhwt->run.runmode) {
+		if (RM_COMFORT == new_runmode) {
 			if (DHWTF_ALWAYS == dhwt->set.force_mode)
-				dhwt->run.force_on = true;
+				aser(&dhwt->run.force_on, true);
 			else if ((DHWTF_FIRST == dhwt->set.force_mode) && (ltime->tm_yday != dhwt->run.charge_yday)) {
-				dhwt->run.force_on = true;
+				aser(&dhwt->run.force_on, true);
 				dhwt->run.charge_yday = ltime->tm_yday;
 			}
 		}
@@ -463,12 +470,13 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	// force maximum temp during hs_overtemp condition
 	if (unlikely(dhwt->pdata->run.hs_overtemp)) {
 		target_temp = ltmax;
-		dhwt->run.force_on = true;
+		aser(&dhwt->run.force_on, true);
 	}
 
 settarget:
 	// save current target dhw temp
-	dhwt->run.target_temp = target_temp;
+	aser(&dhwt->run.target_temp, target_temp);
+	aser(&dhwt->run.runmode, new_runmode);
 
 	return (ALL_OK);
 }
@@ -495,7 +503,7 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 
 	ret = outputs_relay_state_set(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF);
 	if (ALL_OK == ret)
-		dhwt->run.electric_mode = dhwt->set.electric_failover;
+		aser(&dhwt->run.electric_mode, dhwt->set.electric_failover);
 }
 
 /**
@@ -520,8 +528,8 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
  */
 int dhwt_run(struct s_dhwt * const dhwt)
 {
-	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp;
-	bool valid_ttop = false, valid_tbottom = false, test;
+	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp, target_temp;
+	bool valid_ttop = false, valid_tbottom = false, charge_on, electric_mode, test;
 	const timekeep_t now = timekeep_now();
 	timekeep_t limit;
 	int ret;
@@ -538,7 +546,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	if (unlikely(ALL_OK != ret))
 		return (ret);
 
-	switch (dhwt->run.runmode) {
+	switch (aler(&dhwt->run.runmode)) {
 		case RM_OFF:
 			return (dhwt_shutdown(dhwt));
 		case RM_COMFORT:
@@ -568,8 +576,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	// if we reached this point then the dhwt is active
 	dhwt->run.active = true;
 
+	electric_mode = aler(&dhwt->run.electric_mode);
+
 	// de-isolate the DHWT if necessary (when not on electric)
-	if (dhwt->set.p.valve_hwisol && !dhwt->run.electric_mode) {
+	if (dhwt->set.p.valve_hwisol && !electric_mode) {
 		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
 		if (ALL_OK != ret)
 			dbgerr("\%s\": cannot operate isolation valve!", dhwt->name);
@@ -591,12 +601,9 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	// We're good to go
 
-	dbgmsg(1, 1, "\"%s\": on: %d, mode_since: %ld, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
-	       dhwt->name, dhwt->run.charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), temp_to_celsius(dhwt->run.target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
-
 	// handle recycle loop
 	if (dhwt->set.p.pump_recycle) {
-		if (dhwt->run.recycle_on)
+		if (aler(&dhwt->run.recycle_on))
 			ret = pump_set_state(dhwt->set.p.pump_recycle, ON, NOFORCE);
 		else
 			ret = pump_set_state(dhwt->set.p.pump_recycle, OFF, NOFORCE);
@@ -605,12 +612,18 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			dbgerr("\"%s\": failed to set pump_recycle \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_recycle->name, ret);
 	}
 
+	charge_on = aler(&dhwt->run.charge_on);
+	target_temp = aler(&dhwt->run.target_temp);
+
+	dbgmsg(1, 1, "\"%s\": on: %d, mode_since: %ld, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
+	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
+
 	/* handle heat charge - NOTE we enforce sensor position, it SEEMS desirable
 	 apply hysteresis on logic: trip at target - hysteresis (preferably on bottom sensor),
 	 untrip at target (preferably on top sensor). */
-	if (!dhwt->run.charge_on) {	// no charge in progress
-					// in non-electric mode: prevent charge "pumping", enforce delay between charges
-		if (!dhwt->run.electric_mode) {
+	if (!charge_on) {	// no charge in progress
+				// in non-electric mode: prevent charge "pumping", enforce delay between charges
+		if (!electric_mode) {
 			limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
 			if (dhwt->run.charge_overtime) {
 				if (limit && ((now - dhwt->run.mode_since) <= limit))
@@ -626,28 +639,28 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			curr_temp = top_temp;
 
 		// set trip point to (target temp - hysteresis)
-		if (dhwt->run.force_on)
-			trip_temp = dhwt->run.target_temp - deltaK_to_temp(1);	// if forced charge, force hysteresis at 1K
+		if (aler(&dhwt->run.force_on))
+			trip_temp = target_temp - deltaK_to_temp(1);	// if forced charge, force hysteresis at 1K
 		else
-			trip_temp = dhwt->run.target_temp - SETorDEF(dhwt->set.params.hysteresis, dhwt->pdata->set.def_dhwt.hysteresis);
+			trip_temp = target_temp - SETorDEF(dhwt->set.params.hysteresis, dhwt->pdata->set.def_dhwt.hysteresis);
 
 		// trip condition
 		if (curr_temp < trip_temp) {
 			if (dhwt->pdata->run.plant_could_sleep && (ALL_OK == outputs_relay_state_set(dhwt->set.rid_selfheater, ON))) {
 				// the plant is sleeping and we have a configured self heater: use it
-				dhwt->run.electric_mode = true;
+				electric_mode = true;
 				// isolate the DHWT if possible when operating from electric
 				if (dhwt->set.p.valve_hwisol)
 					(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
 
 				// mark heating in progress
-				dhwt->run.charge_on = true;
+				charge_on = true;
 				dhwt->run.mode_since = now;
 			}
 			else if (dhwt->pdata->run.dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
-				dhwt->run.electric_mode = false;
+				electric_mode = false;
 				// calculate necessary water feed temp: target tank temp + offset
-				water_temp = dhwt->run.target_temp + SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset);
+				water_temp = target_temp + SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset);
 
 				// enforce limits
 				wintmax = SETorDEF(dhwt->set.params.limit_wintmax, dhwt->pdata->set.def_dhwt.limit_wintmax);
@@ -658,7 +671,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 				dhwt->run.heat_request = water_temp;
 
 				// mark heating in progress
-				dhwt->run.charge_on = true;
+				charge_on = true;
 				dhwt->run.mode_since = now;
 			}
 		}
@@ -673,7 +686,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		test = false;
 
 		// in non-electric mode and no anti-legionella charge (never interrupt an anti-legionella charge):
-		if (!dhwt->run.electric_mode && !dhwt->run.legionella_on) {
+		if (!electric_mode && !aler(&dhwt->run.legionella_on)) {
 			// if heating gone overtime, untrip
 			limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
 			if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
@@ -686,7 +699,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		}
 
 		// if heating in progress, untrip at target temp (if we're running electric this is the only untrip condition that applies)
-		if (curr_temp >= dhwt->run.target_temp)
+		if (curr_temp >= target_temp)
 			test = true;
 
 		// stop all heat input (ensures they're all off at switchover)
@@ -698,11 +711,11 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 
 			// untrip force charge: force can run only once
-			dhwt->run.force_on = false;
+			aser(&dhwt->run.force_on, false);
 
 			// mark heating as done
-			dhwt->run.legionella_on = false;
-			dhwt->run.charge_on = false;
+			aser(&dhwt->run.legionella_on, false);
+			charge_on = false;
 			dhwt->run.mode_since = now;
 		}
 	}
@@ -711,8 +724,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	// handle pump_feed - outside of the trigger since we need to manage inlet temp
 	if (dhwt->set.p.pump_feed) {
-		if (dhwt->run.charge_on && !dhwt->run.electric_mode) {	// on heatsource charge
-									// if available, test for inlet water temp
+		if (charge_on && !electric_mode) {		// on heatsource charge
+								// if available, test for inlet water temp
 			ret = inputs_temperature_get(dhwt->set.tid_win, &water_temp);	// Note: this sensor must not rely on pump running for accurate read, otherwise this can be a problem
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
@@ -743,7 +756,9 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			dbgerr("\"%s\": failed to set pump_feed \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_feed->name, ret);
 	}
 
-	dhwt->run.actual_temp = curr_temp;
+	aser(&dhwt->run.actual_temp, curr_temp);
+	aser(&dhwt->run.charge_on, charge_on);
+	aser(&dhwt->run.electric_mode, electric_mode);
 
 	return (ret);
 }
