@@ -105,7 +105,7 @@ int alarms_count(void)
 
 /**
  * Returns error message for last occuring alarm.
- * @param msglcd if true, short message will be returned.
+ * @param msglcd if true, short message will be returned if available.
  * @return alarm message (if any)
  */
 const char * alarms_last_msg(const bool msglcd)
@@ -118,7 +118,7 @@ const char * alarms_last_msg(const bool msglcd)
 	if (!Alarms.alarm_head)
 		return (NULL);
 
-	msg = msglcd ? Alarms.alarm_head->msglcd : Alarms.alarm_head->msg;
+	msg = (msglcd && Alarms.alarm_head->msglcd) ? Alarms.alarm_head->msglcd : Alarms.alarm_head->msg;
 
 	return (msg);
 }
@@ -127,8 +127,8 @@ const char * alarms_last_msg(const bool msglcd)
  * Raise an alarm in the system.
  * Alarm is added at the beginning of the list: last alarm is always first in the list.
  * @param type alarm error code
- * @param msg optional message string; a local copy is made
- * @param msglcd optional short message string, for LCD display; a local copy is made. No check on length, will be truncated on display if too long.
+ * @param msg mandatory message string; a local copy is made
+ * @param msglcd optional short message string, for LCD display; a local copy is made. If not provided, #msg will be used. No check on length, will be truncated on display if too long.
  * @return exec status
  */
 int alarms_raise(const enum e_execs type, const char * const msg, const char * const msglcd)
@@ -137,6 +137,9 @@ int alarms_raise(const enum e_execs type, const char * const msg, const char * c
 
 	if (!Alarms.online)
 		return (-EOFFLINE);
+
+	if (!msg)
+		return (-EINVALID);
 
 	// create alarm
 	alarm = calloc(1, sizeof(*alarm));
