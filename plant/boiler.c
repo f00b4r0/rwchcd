@@ -21,6 +21,13 @@
  * - Return water minimum temperature (with or without return mixing valve)
  * - Consummer delay after burner run (to prevent overheating)
  * - Burner turn-on anticipation
+ *
+ * @note the implementation doesn't really care about thread safety on the assumption that
+ * no concurrent operation is ever expected to happen to a given boiler, with the exception of
+ * logging activity for which only data races are prevented via relaxed operations.
+ * It is worth noting that no data consistency is guaranteed for logging, i.e. the data points logged
+ * during a particular call of boiler_hs_logdata_cb() may represent values from different time frames:
+ * the overhead of ensuring consistency seems overkill for the purpose served by the log facility.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -59,13 +66,13 @@ static int boiler_hs_logdata_cb(struct s_log_data * const ldata, const void * co
 	if (!hs->run.online)
 		return (-EOFFLINE);
 
-	ldata->values[i++] = hs->run.runmode;
-	ldata->values[i++] = hs->run.could_sleep;
-	ldata->values[i++] = hs->run.overtemp;
-	ldata->values[i++] = temp_to_ikelvin(hs->run.temp_request);
+	ldata->values[i++] = aler(&hs->run.runmode);
+	ldata->values[i++] = aler(&hs->run.could_sleep);
+	ldata->values[i++] = aler(&hs->run.overtemp);
+	ldata->values[i++] = temp_to_ikelvin(aler(&hs->run.temp_request));
 
-	ldata->values[i++] = temp_to_ikelvin(boiler->run.target_temp);
-	ldata->values[i++] = temp_to_ikelvin(boiler->run.actual_temp);
+	ldata->values[i++] = temp_to_ikelvin(aler(&boiler->run.target_temp));
+	ldata->values[i++] = temp_to_ikelvin(aler(&boiler->run.actual_temp));
 
 	ldata->nvalues = i;
 
@@ -409,7 +416,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 {
 	timekeep_t deriv_tau;
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t temp_intgrl, ret_temp = 0, target_temp = RWCHCD_TEMP_NOREQUEST;
+	temp_t actual_temp, temp_intgrl, ret_temp = 0, target_temp = RWCHCD_TEMP_NOREQUEST;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
 	timekeep_t boiler_ttime, ttime;
 	int ret;
@@ -427,14 +434,14 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	// Check if we need antifreeze
 	boiler_antifreeze(boiler);
 
-	switch (heat->run.runmode) {
+	switch (aler(&heat->run.runmode)) {
 		case RM_OFF:
 			break;
 		case RM_COMFORT:
 		case RM_ECO:
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
-			target_temp = heat->run.temp_request;
+			target_temp = aler(&heat->run.temp_request);
 			break;
 		case RM_TEST:
 			target_temp = boiler->set.limit_tmax;	// set max temp to (safely) trigger burner operation
@@ -461,25 +468,27 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 		if (IDLE_NEVER == boiler->set.idle_mode)
 			target_temp = boiler->set.limit_tmin;
 		// if IDLE_FROSTONLY, boiler runs at min temp unless RM_FROSTFREE
-		else if ((IDLE_FROSTONLY == boiler->set.idle_mode) && (RM_FROSTFREE != heat->run.runmode))
+		else if ((IDLE_FROSTONLY == boiler->set.idle_mode) && (RM_FROSTFREE != aler(&heat->run.runmode)))
 			target_temp = boiler->set.limit_tmin;
 		// in all other cases the boiler will not be issued a heat request and will be stopped if run.could_sleep is set
-		else if (!heat->run.could_sleep)
+		else if (!aler(&heat->run.could_sleep))
 			target_temp = boiler->set.limit_tmin;
 		else
-			heat->run.runmode = RM_OFF;
+			aser(&heat->run.runmode, RM_OFF);
 	}
 
-	boiler->run.target_temp = target_temp;
+	aser(&boiler->run.target_temp, target_temp);
 
-	ret = inputs_temperature_get(boiler->set.tid_boiler, &boiler->run.actual_temp);
+	ret = inputs_temperature_get(boiler->set.tid_boiler, &actual_temp);
 	inputs_temperature_time(boiler->set.tid_boiler, &boiler_ttime);
 
+	aser(&boiler->run.actual_temp, actual_temp);
+
 	// ensure boiler is within safety limits
-	if (unlikely((ALL_OK != ret) || (boiler->run.actual_temp > boiler->set.limit_thardmax))) {
+	if (unlikely((ALL_OK != ret) || (actual_temp > boiler->set.limit_thardmax))) {
 		boiler_failsafe(boiler);
 		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
-		heat->run.overtemp = true;
+		aser(&heat->run.overtemp, true);
 		return (-ESAFETY);
 	}
 
@@ -488,14 +497,14 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	 * difference between two arbitrary values computed with the same lag, it doesn't matter. */
 	/// @todo variable tau
 	deriv_tau = outputs_relay_state_get(boiler->set.rid_burner_1) ? timekeep_sec_to_tk(20) : timekeep_sec_to_tk(120);
-	temp_lin_deriv(&boiler->run.temp_drv, boiler->run.actual_temp, boiler_ttime, deriv_tau);
+	temp_lin_deriv(&boiler->run.temp_drv, actual_temp, boiler_ttime, deriv_tau);
 
 	/// @todo review integral jacketing - maybe use a PI(D) instead?
 	// handle boiler minimum temp if set
 	if (boiler->set.limit_tmin) {
 		// calculate boiler integral
 		// jacket integral between 0 and -100Ks - XXX hardcoded
-		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, boiler->run.actual_temp, boiler_ttime, (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
+		temp_intgrl = temp_thrs_intg(&boiler->run.boil_itg, boiler->set.limit_tmin, actual_temp, boiler_ttime, (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -2% shift - XXX hardcoded
 		cshift_boil = timekeep_tk_to_sec(temp_to_ikelvind(2 * temp_intgrl));
 
@@ -558,14 +567,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 {
 	const uint32_t fpdec = 0x8000;	// good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t trip_temp, untrip_temp, temp_deriv, temp, ret_temp;
+	temp_t trip_temp, untrip_temp, temp_deriv, temp, ret_temp, target_temp, actual_temp;
 	timekeep_t elapsed, now;
 	int ret;
 
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	switch (heat->run.runmode) {
+	switch (aler(&heat->run.runmode)) {
 		case RM_OFF:
 			if (!boiler->run.antifreeze)
 				return (boiler_hscb_offline(heat));	// Only if no antifreeze (see above)
@@ -606,11 +615,14 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// we're good to go
 
+	actual_temp = aler(&boiler->run.actual_temp);
+	target_temp = aler(&boiler->run.target_temp);
+
 	temp_deriv = temp_expw_deriv_val(&boiler->run.temp_drv);
 
 	// overtemp turn off at 2K hardcoded histeresis
-	if (unlikely(heat->run.overtemp) && (boiler->run.actual_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
-		heat->run.overtemp = false;
+	if (unlikely(aler(&heat->run.overtemp)) && (actual_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
+		aser(&heat->run.overtemp, false);
 
 	// turn pump on if any
 	if (boiler->set.p.pump_load) {
@@ -624,8 +636,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	/* un/trip points */
 	// apply trip_temp only if we have a heat request
-	if (likely(RWCHCD_TEMP_NOREQUEST != boiler->run.target_temp)) {
-		trip_temp = (boiler->run.target_temp - boiler->set.hysteresis/2);
+	if (likely(RWCHCD_TEMP_NOREQUEST != target_temp)) {
+		trip_temp = (target_temp - boiler->set.hysteresis/2);
 
 		if (trip_temp < boiler->set.limit_tmin)
 			trip_temp = boiler->set.limit_tmin;
@@ -644,7 +656,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			temp = (temp_t)temp64;
 
 			dbgmsg(2, 1, "\%s\": orig trip_temp: %.1f, adj: %.1f, new: %.1f", heat->name, temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
-			dbgmsg(2, unlikely(temp > boiler->set.hysteresis/2), "adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(boiler->run.actual_temp), temp_deriv, boiler->run.turnon_curr_adj);
+			dbgmsg(2, unlikely(temp > boiler->set.hysteresis/2), "adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(actual_temp), temp_deriv, boiler->run.turnon_curr_adj);
 
 			trip_temp += (temp > boiler->set.hysteresis/2) ? boiler->set.hysteresis/2 : temp;	// XXX cap adjustment at hyst/2 to work around overflow
 		}
@@ -658,13 +670,13 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		trip_temp = 0;
 
 	// always apply untrip temp (stop condition must always exist): untrip = target + hyst/2
-	untrip_temp = (boiler->run.target_temp + boiler->set.hysteresis/2);
+	untrip_temp = (target_temp + boiler->set.hysteresis/2);
 
 	// operate at constant hysteresis on the low end: when trip_temp is flored, shift untrip; i.e. when limit_tmin < target < (limit_tmin + hyst/2), trip == tmin and untrip == tmin + hyst
 	untrip_temp += (boiler->set.hysteresis - (untrip_temp - trip_temp));
 
 	// allow shifting down untrip temp if actual heat request goes below trip_temp (e.g. when trip_temp = limit_tmin)...
-	temp = trip_temp - heat->run.temp_request;
+	temp = trip_temp - aler(&heat->run.temp_request);
 	untrip_temp -= (temp > 0) ? temp : 0;
 
 	// in any case untrip_temp should always be at least trip_temp + hysteresis/2. (if untrip < (trip + hyst/2) => untrip = trip + hyst/2)
@@ -682,13 +694,13 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	now = timekeep_now();
 	elapsed = now - boiler->run.burner_1_last_switch;
 	// cooldown is applied to both turn-on and turn-off to avoid pumping effect that could damage the burner - state_get() is assumed not to fail
-	if ((boiler->run.actual_temp < trip_temp) && !outputs_relay_state_get(boiler->set.rid_burner_1)) {		// trip condition
+	if ((actual_temp < trip_temp) && !outputs_relay_state_get(boiler->set.rid_burner_1)) {		// trip condition
 		if (elapsed >= boiler->set.burner_min_time) {	// cooldown start
 			ret = outputs_relay_state_set(boiler->set.rid_burner_1, ON);
 			boiler->run.burner_1_last_switch = now;
 		}
 	}
-	else if ((boiler->run.actual_temp > untrip_temp) && outputs_relay_state_get(boiler->set.rid_burner_1)) {	// untrip condition
+	else if ((actual_temp > untrip_temp) && outputs_relay_state_get(boiler->set.rid_burner_1)) {	// untrip condition
 		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
 			ret = outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 			boiler->run.burner_1_last_switch = now;
@@ -698,7 +710,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// computations performed while burner is on
 	if (outputs_relay_state_get(boiler->set.rid_burner_1) > 0) {
 		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
-		if (boiler->set.limit_tmin < boiler->run.actual_temp)
+		if (boiler->set.limit_tmin < actual_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 		// otherwise if boiler doesn't heat up after 6h we very likely have a problem
 		else if (unlikely((now - boiler->run.burner_1_last_switch) > timekeep_sec_to_tk(3600*6)))
@@ -737,8 +749,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 #ifdef DEBUG
 	(void)!inputs_temperature_get(boiler->set.tid_boiler_return, &ret_temp);
 	dbgmsg(1, 1, "\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
-	       heat->name, outputs_relay_state_get(boiler->set.rid_burner_1), temp_to_celsius(heat->run.temp_request), temp_to_celsius(boiler->run.target_temp),
-	       temp_to_celsius(boiler->run.actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
+	       heat->name, outputs_relay_state_get(boiler->set.rid_burner_1), temp_to_celsius(aler(&heat->run.temp_request)), temp_to_celsius(target_temp),
+	       temp_to_celsius(actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
 #endif
 	return (ret);
 }

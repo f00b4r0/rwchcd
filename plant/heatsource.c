@@ -14,6 +14,10 @@
  * - Overtemp signaling (to trigger maximum dissipation via connected consumers)
  * - Consumer shift (e.g. to accelerate warmup after a cold start or to evacuate excess heat)
  * - Consumer reduction delay signal (signal consumers to delay heat request reduction)
+ *
+ * @note the implementation doesn't really care about thread safety on the assumption that
+ * no concurrent operation is ever expected to happen to a given heatsource, with the exception of
+ * logging activity for which thread-safety is left to implementations.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -129,18 +133,18 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	if (RM_AUTO == heat->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(heat->set.schedid);
-		heat->run.runmode = ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode;
+		aser(&heat->run.runmode, ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode);
 	}
 	else
-		heat->run.runmode = heat->set.runmode;
+		aser(&heat->run.runmode, heat->set.runmode);
 
-	heat->run.could_sleep = heat->pdata->run.plant_could_sleep;	// XXX
+	aser(&heat->run.could_sleep, heat->pdata->run.plant_could_sleep);	// XXX
 
 	// compute sliding integral in DHW sliding prio
 	// XXX TODO: this logic should move at a higher level in the context of a pool of heatsources (some of which may or may not be connected to the DHWTs)
 	if (heat->pdata->run.dhwc_sliding) {
 		// jacket integral between -100Ks and 0
-		temp = temp_thrs_intg(&heat->run.sld_itg, heat->run.temp_request, heat->cb.temp(heat), heat->cb.time(heat), (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
+		temp = temp_thrs_intg(&heat->run.sld_itg, aler(&heat->run.temp_request), heat->cb.temp(heat), heat->cb.time(heat), (signed)timekeep_sec_to_tk(deltaK_to_temp(-100)), 0);
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
 		heat->run.cshift_noncrit = timekeep_tk_to_sec(temp_to_ikelvind(temp));
 	}

@@ -14,6 +14,8 @@
 #ifndef boiler_h
 #define boiler_h
 
+#include <stdatomic.h>
+
 #include "rwchcd.h"
 #include "lib.h"	// for s_temp_intgrl
 #include "heatsource.h"
@@ -47,8 +49,8 @@ struct s_boiler_priv {
 	} set;		///< settings (externally set)
 	struct {
 		bool antifreeze;		///< true if anti freeze tripped
-		temp_t target_temp;		///< current target temp
-		temp_t actual_temp;		///< actual boiler temperature
+		_Atomic temp_t target_temp;	///< current target temp
+		_Atomic temp_t actual_temp;	///< actual boiler temperature
 		temp_t turnon_negderiv;		///< value of negative derivative value at last turn on
 		timekeep_t negderiv_starttime;	///< time at which a negative boiler temp derivative was first measured during burner on condition
 		timekeep_t burner_1_last_switch;///< last time rid_burner_1 was toggled
