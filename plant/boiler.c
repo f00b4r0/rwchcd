@@ -701,7 +701,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		if (boiler->set.limit_tmin < boiler->run.actual_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 		// otherwise if boiler doesn't heat up after 6h we very likely have a problem
-		else if (unlikely(elapsed > timekeep_sec_to_tk(3600*6)))
+		else if (unlikely((now - boiler->run.burner_1_last_switch) > timekeep_sec_to_tk(3600*6)))
 			alarms_raise(-EGENERIC, "Burner failure", NULL);
 
 		// compute turn-on anticipation for next run
