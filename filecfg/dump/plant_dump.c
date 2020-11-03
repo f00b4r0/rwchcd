@@ -25,7 +25,6 @@
 int filecfg_plant_dump(const struct s_plant * restrict const plant)
 {
 	struct s_heatsource_l * heatsl;
-	struct s_dhw_tank_l * dhwtl;
 	plid_t id;
 
 	if (!plant)
@@ -88,11 +87,11 @@ int filecfg_plant_dump(const struct s_plant * restrict const plant)
 		filecfg_iprintf("};\n");	// heating_circuits
 	}
 
-	if (FCD_Exhaustive || plant->dhwt_head) {
+	if (FCD_Exhaustive || plant->dhwts.last) {
 		filecfg_iprintf("dhwts {\n");
 		filecfg_ilevel_inc();
-		for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next)
-			filecfg_dhwt_dump(dhwtl->dhwt);
+		for (id = 0; id < plant->dhwts.last; id++)
+			filecfg_dhwt_dump(&plant->dhwts.all[id]);
 		filecfg_ilevel_dec();
 		filecfg_iprintf("};\n");	// dhwts
 	}

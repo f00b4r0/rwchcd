@@ -119,78 +119,20 @@ struct s_hcircuit * plant_fbn_hcircuit(const struct s_plant * restrict const pla
  */
 struct s_dhwt * plant_fbn_dhwt(const struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_dhw_tank_l * restrict dhwtl;
 	struct s_dhwt * restrict dhwt = NULL;
+	plid_t id;
 
 	if (!plant || !name)
 		return (NULL);
 
-	for (dhwtl = plant->dhwt_head; dhwtl; dhwtl = dhwtl->next) {
-		if (!strcmp(dhwtl->dhwt->name, name)) {
-			dhwt = dhwtl->dhwt;
+	for (id = 0; id < plant->dhwts.last; id++) {
+		if (!strcmp(plant->dhwts.all[id].name, name)) {
+			dhwt = &plant->dhwts.all[id];
 			break;
 		}
 	}
 
 	return (dhwt);
-}
-
-/**
- * Create a new dhw tank and attach it to the plant.
- * @param plant the plant to attach the tank to
- * @param name @b UNIQUE dhwt name. A local copy is created
- * @return pointer to the created tank
- */
-struct s_dhwt * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name)
-{
-	struct s_dhwt * restrict dhwt = NULL;
-	struct s_dhw_tank_l * restrict dhwtelement = NULL;
-	char * restrict str = NULL;
-
-	if (!plant || !name)
-		goto fail;
-
-	// deal with name
-	// ensure unique name
-	if (plant_fbn_dhwt(plant, name))
-		goto fail;
-
-	str = strdup(name);
-	if (!str)
-		goto fail;
-
-	// create a new tank
-	dhwt = dhwt_new();
-	if (!dhwt)
-		goto fail;
-
-	// set name
-	dhwt->name = str;
-
-	// set plant data
-	dhwt->pdata = &plant->pdata;
-
-	// create a new tank element
-	dhwtelement = calloc(1, sizeof(*dhwtelement));
-	if (!dhwtelement)
-		goto fail;
-
-	// attach the created tank to the element
-	dhwtelement->dhwt = dhwt;
-
-	// attach it to the plant
-	dhwtelement->id = plant->dhwt_n;
-	dhwtelement->next = plant->dhwt_head;
-	plant->dhwt_head = dhwtelement;
-	plant->dhwt_n++;
-
-	return (dhwt);
-
-fail:
-	free(str);
-	free(dhwt);
-	free(dhwtelement);
-	return (NULL);
 }
 
 /**
@@ -295,7 +237,6 @@ struct s_plant * plant_new(void)
  */
 void plant_del(struct s_plant * plant)
 {
-	struct s_dhw_tank_l * dhwtelement, * dhwtlnext;
 	struct s_heatsource_l * sourceelement, * sourcenext;
 	plid_t id;
 	
@@ -324,14 +265,11 @@ void plant_del(struct s_plant * plant)
 	free(plant->hcircuits.all);
 
 	// clear all registered dhwt
-	dhwtelement = plant->dhwt_head;
-	while (dhwtelement) {
-		dhwtlnext = dhwtelement->next;
-		dhwt_del(dhwtelement->dhwt);
-		free(dhwtelement);
-		plant->dhwt_n--;
-		dhwtelement = dhwtlnext;
-	}
+	for (id = 0; id < plant->dhwts.last; id++)
+		dhwt_cleanup(&plant->dhwts.all[id]);
+	plant->dhwts.last = 0;
+	plant->dhwts.n = 0;
+	free(plant->dhwts.all);
 
 	// clear all registered heatsources
 	sourceelement = plant->heats_head;
@@ -427,7 +365,7 @@ int plant_online(struct s_plant * restrict const plant)
 	struct s_pump * pump;
 	struct s_valve * valve;
 	struct s_hcircuit * hcircuit;
-	struct s_dhw_tank_l * dhwtl;
+	struct s_dhwt * dhwt;
 	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
 	plid_t id;
@@ -483,19 +421,20 @@ int plant_online(struct s_plant * restrict const plant)
 	}
 
 	// then dhwt
-	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		ret = dhwt_online(dhwtl->dhwt);
-		dhwtl->status = ret;
+	for (id = 0; id < plant->dhwts.last; id++) {
+		dhwt = &plant->dhwts.all[id];
+		ret = dhwt_online(dhwt);
+		dhwt->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT, true);
-			dhwt_offline(dhwtl->dhwt);
+			plant_onfline_printerr(ret, id, dhwt->name, PDEV_DHWT, true);
+			dhwt_offline(dhwt);
 			suberror = true;
 		}
 		else {
 			// find largest DHWT prio value
-			if (dhwtl->dhwt->set.prio > plant->run.dhwt_maxprio)
-				plant->run.dhwt_maxprio = dhwtl->dhwt->set.prio;
+			if (dhwt->set.prio > plant->run.dhwt_maxprio)
+				plant->run.dhwt_maxprio = dhwt->set.prio;
 		}
 	}
 
@@ -530,7 +469,7 @@ int plant_offline(struct s_plant * restrict const plant)
 	struct s_pump * pump;
 	struct s_valve * valve;
 	struct s_hcircuit * hcircuit;
-	struct s_dhw_tank_l * dhwtl;
+	struct s_dhwt * dhwt;
 	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
 	plid_t id;
@@ -558,12 +497,13 @@ int plant_offline(struct s_plant * restrict const plant)
 	}
 	
 	// then dhwt
-	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		ret = dhwt_offline(dhwtl->dhwt);
-		dhwtl->status = ret;
+	for (id = 0; id < plant->dhwts.last; id++) {
+		dhwt = &plant->dhwts.all[id];
+		ret = dhwt_offline(dhwt);
+		dhwt->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT, false);
+			plant_onfline_printerr(ret, id, dhwt->name, PDEV_DHWT, false);
 			suberror = true;
 		}
 	}
@@ -709,7 +649,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
 	const struct s_hcircuit * hcircuit;
-	const struct s_dhw_tank_l * restrict dhwtl;
+	const struct s_dhwt * restrict dhwt;
 	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
 	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false, dhwt_charge = false;
 	plid_t id;
@@ -739,17 +679,18 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	/// XXX @todo should update PCS if any DHWT is active and cannot do electric?
 
 	// then dhwt
-	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		if (!dhwtl->dhwt->run.online || (ALL_OK != dhwtl->status))
+	for (id = 0; id < plant->dhwts.last; id++) {
+		dhwt = &plant->dhwts.all[id];
+		if (!dhwt->run.online || (ALL_OK != dhwt->status))
 			continue;
 
-		temp = dhwtl->dhwt->run.heat_request;
+		temp = dhwt->run.heat_request;
 		temp_req_dhw = (temp > temp_req_dhw) ? temp : temp_req_dhw;
 
 		// handle DHW charge priority (only in non-electric mode)
-		if (aler(&dhwtl->dhwt->run.charge_on) && !aler(&dhwtl->dhwt->run.electric_mode)) {
+		if (aler(&dhwt->run.charge_on) && !aler(&dhwt->run.electric_mode)) {
 			dhwt_charge = true;
-			switch (dhwtl->dhwt->set.dhwt_cprio) {
+			switch (dhwt->set.dhwt_cprio) {
 				case DHWTP_SLIDDHW:
 					dhwt_reqdhw = true;
 					// fallthrough
@@ -768,8 +709,8 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 			}
 
 			// make sure that plant-wide DHWT priority is always set to the current highest bidder
-			if (dhwtl->dhwt->set.prio < plant->pdata.run.dhwt_currprio)
-				plant->pdata.run.dhwt_currprio = dhwtl->dhwt->set.prio;
+			if (dhwt->set.prio < plant->pdata.run.dhwt_currprio)
+				plant->pdata.run.dhwt_currprio = dhwt->set.prio;
 		}
 	}
 
@@ -935,7 +876,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 int plant_run(struct s_plant * restrict const plant)
 {
 	struct s_hcircuit * hcircuit;
-	struct s_dhw_tank_l * dhwtl;
+	struct s_dhwt * dhwt;
 	struct s_heatsource_l * heatsourcel;
 	struct s_valve * valve;
 	struct s_pump * pump;
@@ -951,17 +892,18 @@ int plant_run(struct s_plant * restrict const plant)
 
 	// run the consummers first so they can set their requested heat input
 	// dhwt first
-	for (dhwtl = plant->dhwt_head; dhwtl != NULL; dhwtl = dhwtl->next) {
-		dhwtl->status = dhwt_run(dhwtl->dhwt);
+	for (id = 0; id < plant->dhwts.last; id++) {
+		dhwt = &plant->dhwts.all[id];
+		dhwt->status = dhwt_run(dhwt);
 
-		switch (-dhwtl->status) {
+		switch (-dhwt->status) {
 			case ALL_OK:
 				break;
 			default:
-				dhwt_offline(dhwtl->dhwt);			// something really bad happened
+				dhwt_offline(dhwt);			// something really bad happened
 				// fallthrough
 			case EINVALIDMODE:
-				dhwtl->dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+				dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
 				// fallthrough
 			case ESENSORINVAL:
 			case ESENSORSHORT:
@@ -969,7 +911,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case ENOTCONFIGURED:
 			case EOFFLINE:
 				suberror = true;
-				plant_alarm(dhwtl->status, dhwtl->id, dhwtl->dhwt->name, PDEV_DHWT);
+				plant_alarm(dhwt->status, id, dhwt->name, PDEV_DHWT);
 				continue;
 		}
 	}

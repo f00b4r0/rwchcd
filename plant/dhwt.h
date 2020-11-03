@@ -75,12 +75,12 @@ struct s_dhwt {
 	} run;		///< private runtime (internally handled)
 	const struct s_pdata * pdata;		///< read-only plant data for this tank
 	const char * restrict name;		///< unique name for this tank
+	enum e_execs status;			///< last known status
 };
 
-struct s_dhwt * dhwt_new(void) __attribute__((warn_unused_result));
 int dhwt_online(struct s_dhwt * const dhwt) __attribute__((warn_unused_result));
 int dhwt_offline(struct s_dhwt * const dhwt);
 int dhwt_run(struct s_dhwt * const dhwt) __attribute__((warn_unused_result));
-void dhwt_del(struct s_dhwt * restrict dhwt);
+void dhwt_cleanup(struct s_dhwt * restrict dhwt);
 
 #endif /* dhwt_h */

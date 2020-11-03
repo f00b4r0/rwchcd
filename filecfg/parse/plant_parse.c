@@ -240,9 +240,61 @@ cleanup:
 	return (ret);
 }
 
-static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int plant_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "dhwt", filecfg_dhwt_parse));
+	struct s_plant * restrict const plant = priv;
+	struct s_dhwt * dhwt;
+	int ret;
+
+	if (plant->dhwts.last >= plant->dhwts.n)
+		return (-EOOM);
+
+	if (plant_fbn_dhwt(plant, node->value.stringval))
+		return (-EEXISTS);
+
+	dhwt = &plant->dhwts.all[plant->dhwts.last];
+
+	// set plant data
+	dhwt->pdata = &plant->pdata;
+
+	ret = filecfg_dhwt_parse(dhwt, node);
+	if (ALL_OK == ret)
+		plant->dhwts.last++;
+
+	return (ret);
+}
+
+static int plant_dhwts_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_plant * const plant = priv;
+	unsigned int n;
+	int ret;
+
+	n = filecfg_parser_count_siblings(node->children, "dhwt");
+
+	if (!n)
+		return (-EEMPTY);
+
+	if (n >= PLID_MAX)
+		return (-ETOOBIG);
+
+	plant->dhwts.all = calloc(n, sizeof(plant->dhwts.all[0]));
+	if (!plant->dhwts.all)
+		return (-EOOM);
+
+	plant->dhwts.n = (plid_t)n;
+	plant->dhwts.last = 0;
+
+	ret = filecfg_parser_parse_namedsiblings(plant, node->children, "dhwt", plant_dhwt_parse);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	return (ALL_OK);
+
+cleanup:
+	// todo: cleanup all dhwts (names)
+	free(plant->dhwts.all);
+	return (ret);
 }
 
 static int heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -256,7 +308,7 @@ int filecfg_plant_parse(void * restrict const priv, const struct s_filecfg_parse
 		{ NODELST,	"config",	false,	plant_config_parse,	NULL, },
 		{ NODELST,	"pumps",	false,	plant_pumps_parse,	NULL, },
 		{ NODELST,	"valves",	false,	plant_valves_parse,	NULL, },
-		{ NODELST,	"dhwts",	false,	dhwts_parse,		NULL, },
+		{ NODELST,	"dhwts",	false,	plant_dhwts_parse,	NULL, },
 		{ NODELST,	"hcircuits",	false,	plant_hcircuits_parse,	NULL, },
 		{ NODELST,	"heatsources",	false,	heatsources_parse,	NULL, },
 	};

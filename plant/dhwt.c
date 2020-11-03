@@ -152,16 +152,6 @@ static int dhwt_log_deregister(const struct s_dhwt * const dhwt)
 }
 
 /**
- * Create a dhwt
- * @return the newly created dhwt or NULL
- */
-struct s_dhwt * dhwt_new(void)
-{
-	struct s_dhwt * const dhwt = calloc(1, sizeof(*dhwt));
-	return (dhwt);
-}
-
-/**
  * Put dhwt online.
  * Perform all necessary actions to prepare the dhwt for service and
  * mark it as online if all checks pass.
@@ -765,13 +755,11 @@ int dhwt_run(struct s_dhwt * const dhwt)
  * Frees all dhwt-local resources
  * @param dhwt the dhwt to delete
  */
-void dhwt_del(struct s_dhwt * restrict dhwt)
+void dhwt_cleanup(struct s_dhwt * restrict dhwt)
 {
 	if (!dhwt)
 		return;
 
 	free((void *)dhwt->name);
 	dhwt->name = NULL;
-
-	free(dhwt);
 }

@@ -124,24 +124,24 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODESTR,	"pump_recycle",		false,	fcp_pump_s_dhwt_ppump_recycle,		NULL, },
 		{ NODESTR,	"valve_hwisol",		false,	fcp_valve_s_dhwt_pvalve_hwisol,		NULL, },
 	};
-	struct s_plant * restrict const plant = priv;
-	struct s_dhwt * dhwt;
+	struct s_dhwt * restrict const dhwt = priv;
 	int ret;
 
 	// we receive a 'dhwt' node with a valid string attribute which is the dhwt name
+	if (NODESTC != node->type)
+		return (-EINVALID);
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	// create the dhwt
-	dhwt = plant_new_dhwt(plant, node->value.stringval);
-	if (!dhwt)
-		return (-EOOM);
-
 	ret = filecfg_parser_run_parsers(dhwt, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
+
+	dhwt->name = strdup(node->value.stringval);
+	if (!dhwt->name)
+		return (-EOOM);
 
 	dhwt->set.configured = true;
 

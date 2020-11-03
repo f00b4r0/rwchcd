@@ -20,19 +20,12 @@
 #include "pump.h"
 #include "valve.h"
 #include "hcircuit.h"
+#include "dhwt.h"
 
 typedef uint_fast8_t	plid_t;
 #define PLID_MAX	UINT_FAST8_MAX
 
 // https://www.lysator.liu.se/c/restrict.html#linked-lists
-
-/** List of DHWT */
-struct s_dhw_tank_l {
-	uint_fast8_t id;
-	enum e_execs status;		///< dhwt actual status (this flag will signal the last run error)
-	struct s_dhwt * restrict dhwt;
-	struct s_dhw_tank_l * next;
-};
 
 /** List of heat sources */
 struct s_heatsource_l {
@@ -78,10 +71,13 @@ struct s_plant {
 		plid_t n;		///< number of allocated hcircuits
 		plid_t last;		///< id of last free slot
 	} hcircuits;		///< plant hcircuits
+	struct {
+		struct s_dhwt * all;	///< pointer to dynamically allocated array of dhwts, size n
+		plid_t n;		///< number of allocated dhwts
+		plid_t last;		///< id of last free slot
+	} dhwts;		///< plant dhwts
 	uint_fast8_t heats_n;	///< number of heat sources in the plant
-	uint_fast8_t dhwt_n;	///< number of dhw tanks in the plant
 	struct s_heatsource_l * restrict heats_head;	///< list of heatsources in the plant
-	struct s_dhw_tank_l * restrict dhwt_head;	///< list of DHWT in the plant
 };
 
 int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
@@ -91,7 +87,6 @@ struct s_pump * plant_fbn_pump(const struct s_plant * restrict const plant, cons
 struct s_valve * plant_fbn_valve(const struct s_plant * restrict const plant, const char * restrict const name);
 struct s_hcircuit * plant_fbn_hcircuit(const struct s_plant * restrict const plant, const char * restrict const name);
 struct s_dhwt * plant_fbn_dhwt(const struct s_plant * restrict const plant, const char * restrict const name);
-struct s_dhwt * plant_new_dhwt(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_heatsource * plant_fbn_heatsource(const struct s_plant * restrict const plant, const char * restrict const name);
 struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_plant * plant_new(void);
