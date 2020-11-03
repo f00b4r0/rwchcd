@@ -291,7 +291,7 @@ static void * thread_master(void *arg)
 	struct s_runtime * restrict const runtime = runtime_get();
 	int ret;
 
-	if (SYS_NONE == runtime->run.systemmode) {	// runtime was not restored
+	if (SYS_NONE == runtime_systemmode()) {	// runtime was not restored
 						// set sysmode/runmode from startup config
 		ret = runtime_set_systemmode(runtime->set.startup_sysmode);
 		if (ALL_OK != ret)

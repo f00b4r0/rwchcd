@@ -83,9 +83,9 @@ static int runtime_restore(void)
 		if (Runtime_sversion != sversion)
 			return (-EMISMATCH);
 		
-		Runtime.run.systemmode = temp_runtime.run.systemmode;
-		Runtime.run.runmode = temp_runtime.run.runmode;
-		Runtime.run.dhwmode = temp_runtime.run.dhwmode;
+		aser(&Runtime.run.systemmode, aler(&temp_runtime.run.systemmode));
+		aser(&Runtime.run.runmode, aler(&temp_runtime.run.runmode));
+		aser(&Runtime.run.dhwmode, aler(&temp_runtime.run.dhwmode));
 		pr_log(_("Runtime state restored"));
 	}
 	
@@ -106,11 +106,9 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 	assert(ldata);
 	assert(ldata->nkeys >= ARRAY_SIZE(runtime_keys));
 	
-	pthread_rwlock_rdlock(&Runtime.runtime_rwlock);
-	ldata->values[i++] = Runtime.run.systemmode;
-	ldata->values[i++] = Runtime.run.runmode;
-	ldata->values[i++] = Runtime.run.dhwmode;
-	pthread_rwlock_unlock(&Runtime.runtime_rwlock);
+	ldata->values[i++] = aler(&Runtime.run.systemmode);
+	ldata->values[i++] = aler(&Runtime.run.runmode);
+	ldata->values[i++] = aler(&Runtime.run.dhwmode);
 
 	ldata->nvalues = i;
 
@@ -136,42 +134,49 @@ int runtime_init(void)
  */
 int runtime_set_systemmode(const enum e_systemmode sysmode)
 {
+	enum e_runmode runmode, dhwmode;
+
 	switch (sysmode) {
 		case SYS_OFF:
-			Runtime.run.runmode = RM_OFF;
-			Runtime.run.dhwmode = RM_OFF;
+			runmode = RM_OFF;
+			dhwmode = RM_OFF;
 			break;
 		case SYS_COMFORT:
-			Runtime.run.runmode = RM_COMFORT;
-			Runtime.run.dhwmode = RM_COMFORT;
+			runmode = RM_COMFORT;
+			dhwmode = RM_COMFORT;
 			break;
 		case SYS_ECO:
-			Runtime.run.runmode = RM_ECO;
-			Runtime.run.dhwmode = RM_ECO;
+			runmode = RM_ECO;
+			dhwmode = RM_ECO;
 			break;
 		case SYS_AUTO:		// NOTE by default AUTO does not change the current run/dhwmodes
 		case SYS_MANUAL:
-			break;
+			goto out;
 		case SYS_FROSTFREE:
-			Runtime.run.runmode = RM_FROSTFREE;
-			Runtime.run.dhwmode = RM_FROSTFREE;
+			runmode = RM_FROSTFREE;
+			dhwmode = RM_FROSTFREE;
 			break;
 		case SYS_TEST:
-			Runtime.run.runmode = RM_TEST;
-			Runtime.run.dhwmode = RM_TEST;
+			runmode = RM_TEST;
+			dhwmode = RM_TEST;
 			break;
 		case SYS_DHWONLY:
-			Runtime.run.runmode = RM_DHWONLY;
-			Runtime.run.dhwmode = RM_COMFORT;	// NOTE by default in comfort mode until further settings
+			runmode = RM_DHWONLY;
+			dhwmode = RM_COMFORT;	// NOTE by default in comfort mode until further settings
 			break;
 		case SYS_NONE:
 		case SYS_UNKNOWN:
 		default:
 			return (-EINVALID);
 	}
-	
-	dbgmsg(1, 1, "sysmode: %d, runmode: %d, dhwmode: %d", sysmode, Runtime.run.runmode, Runtime.run.dhwmode);
-	Runtime.run.systemmode = sysmode;
+
+	aser(&Runtime.run.runmode, runmode);
+	aser(&Runtime.run.dhwmode, dhwmode);
+
+	dbgmsg(1, 1, "sysmode: %d, runmode: %d, dhwmode: %d", sysmode, runmode, dhwmode);
+
+out:
+	aser(&Runtime.run.systemmode, sysmode);
 	
 	runtime_save();
 
@@ -182,14 +187,16 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 
 /**
  * Set the global running mode.
- * @note This function is only valid to call when the global system mode is SYS_AUTO.
+ * @note This function is only valid to call when the global system mode is SYS_MANUAL or SYS_AUTO.
  * @param runmode desired operation mode, cannot be RM_AUTO.
  * @return error status
  */
 int runtime_set_runmode(const enum e_runmode runmode)
 {
+	const enum e_systemmode sysmode = aler(&Runtime.run.systemmode);
+
 	// runmode can only be directly modified in SYS_AUTO or SYS_MANUAL
-	if (!((SYS_MANUAL == Runtime.run.systemmode) || (SYS_AUTO == Runtime.run.systemmode)))
+	if (!((SYS_MANUAL == sysmode) || (SYS_AUTO == sysmode)))
 		return (-EINVALID);
 
 	// if set, runmode cannot be RM_AUTO
@@ -207,7 +214,7 @@ int runtime_set_runmode(const enum e_runmode runmode)
 			return (-EINVALIDMODE);
 	}
 
-	Runtime.run.runmode = runmode;
+	aser(&Runtime.run.runmode, runmode);
 
 	runtime_save();
 
@@ -218,14 +225,16 @@ int runtime_set_runmode(const enum e_runmode runmode)
 
 /**
  * Set the global dhw mode.
- * @note This function is only valid to call when the global system mode is SYS_AUTO or SYS_DHWONLY.
+ * @note This function is only valid to call when the global system mode is SYS_MANUAL, SYS_AUTO or SYS_DHWONLY.
  * @param dhwmode desired operation mode, cannot be RM_AUTO or RM_DHWONLY.
  * @return error status
  */
 int runtime_set_dhwmode(const enum e_runmode dhwmode)
 {
+	const enum e_systemmode sysmode = aler(&Runtime.run.systemmode);
+
 	// dhwmode can only be directly modified in SYS_AUTO, SYS_MANUAL or SYS_DHWONLY
-	if (!((SYS_MANUAL == Runtime.run.systemmode) || (SYS_AUTO == Runtime.run.systemmode) || (SYS_DHWONLY == Runtime.run.systemmode)))
+	if (!((SYS_MANUAL == sysmode) || (SYS_AUTO == sysmode) || (SYS_DHWONLY == sysmode)))
 		return (-EINVALID);
 
 	// if set, dhwmode cannot be RM_AUTO or RM_DHWONLY
@@ -243,7 +252,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 			return (-EINVALIDMODE);
 	}
 
-	Runtime.run.dhwmode = dhwmode;
+	aser(&Runtime.run.dhwmode, dhwmode);
 
 	runtime_save();
 
@@ -312,4 +321,31 @@ void runtime_exit(void)
 {
 	plant_del(Runtime.plant);
 	runtime_init();		// clear runtime
+}
+
+/**
+ * Get the global system mode.
+ * @return current systemmode
+ */
+enum e_systemmode runtime_systemmode(void)
+{
+	return (aler(&Runtime.run.systemmode));
+}
+
+/**
+ * Get the global running mode.
+ * @return current runmode
+ */
+enum e_runmode runtime_runmode(void)
+{
+	return (aler(&Runtime.run.runmode));
+}
+
+/**
+ * Get the global dhw mode.
+ * @return current dhwmode
+ */
+enum e_runmode runtime_dhwmode(void)
+{
+	return (aler(&Runtime.run.dhwmode));
 }

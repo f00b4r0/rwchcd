@@ -120,20 +120,17 @@ int heatsource_offline(struct s_heatsource * const heat)
 __attribute__((warn_unused_result))
 static int heatsource_logic(struct s_heatsource * restrict const heat)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
 	const struct s_schedule_eparams * eparams;
 	const timekeep_t now = timekeep_now();
 	const timekeep_t dt = now - heat->run.last_run_time;
 	temp_t temp;
 	int ret = -ENOTIMPLEMENTED;
 
-	assert(runtime);
-
 	// handle global/local runmodes
 	if (RM_AUTO == heat->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(heat->set.schedid);
-		aser(&heat->run.runmode, ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode);
+		aser(&heat->run.runmode, ((SYS_AUTO == runtime_systemmode()) && eparams) ? eparams->runmode : runtime_runmode());
 	}
 	else
 		aser(&heat->run.runmode, heat->set.runmode);

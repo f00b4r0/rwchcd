@@ -54,13 +54,8 @@ static gboolean on_handle_sysmode_get(dbusRwchcdControl *object,
 				      GDBusMethodInvocation *invocation,
 				      __attribute__((unused)) gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = runtime_get();
-	enum e_systemmode cursys;
-	
-	pthread_rwlock_rdlock(&runtime->runtime_rwlock);
-	cursys = runtime->run.systemmode;
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
-	
+	enum e_systemmode cursys = runtime_systemmode();
+
 	dbus_rwchcd_control_complete_sysmode_get(object, invocation, (guchar)cursys);
 	
 	return TRUE;
@@ -76,7 +71,6 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 				      guchar Sysmode,
 				      __attribute__((unused)) gpointer user_data)
 {
-	struct s_runtime * restrict const runtime = runtime_get();
 	enum e_systemmode newsysmode;
 	
 	if ((Sysmode > SYS_NONE) && (Sysmode < SYS_UNKNOWN))
@@ -84,9 +78,7 @@ static gboolean on_handle_sysmode_set(dbusRwchcdControl *object,
 	else
 		return FALSE;
 
-	pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 	runtime_set_systemmode(newsysmode);
-	pthread_rwlock_unlock(&runtime->runtime_rwlock);
 	
 	dbus_rwchcd_control_complete_sysmode_set(object, invocation);
 	

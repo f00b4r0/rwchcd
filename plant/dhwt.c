@@ -381,14 +381,11 @@ int dhwt_offline(struct s_dhwt * const dhwt)
 __attribute__((warn_unused_result))
 static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
 	const struct s_schedule_eparams * eparams;
 	const time_t tnow = time(NULL);
 	const struct tm * const ltime = localtime(&tnow);	// localtime handles DST and TZ for us
 	enum e_runmode prev_runmode, new_runmode;
 	temp_t target_temp, ltmin, ltmax;
-
-	assert(runtime);
 
 	assert(dhwt);
 
@@ -399,13 +396,13 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	if (RM_AUTO == dhwt->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(dhwt->set.schedid);
-		if ((SYS_AUTO == runtime->run.systemmode) && eparams) {
+		if ((SYS_AUTO == runtime_systemmode()) && eparams) {
 			new_runmode = eparams->dhwmode;
 			aser(&dhwt->run.legionella_on, eparams->legionella);
 			aser(&dhwt->run.recycle_on, aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle);
 		}
 		else	// don't touch legionella/recycle
-			new_runmode = runtime->run.dhwmode;
+			new_runmode = runtime_dhwmode();
 	}
 	else
 		new_runmode = dhwt->set.runmode;

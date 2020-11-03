@@ -192,7 +192,6 @@ fail:
 static int hw_p1_input(void * priv)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	struct s_runtime * restrict const runtime = runtime_get();
 	static unsigned int count = 0, systout = 0;
 	static uint_fast8_t tempid = 0;
 	static enum e_systemmode cursysmode = SYS_UNKNOWN;
@@ -247,16 +246,14 @@ static int hw_p1_input(void * priv)
 	}
 
 	if (!systout) {
-		if (syschg && (cursysmode != runtime->run.systemmode)) {
+		if (syschg && (cursysmode != runtime_systemmode())) {
 			// change system mode
-			pthread_rwlock_wrlock(&runtime->runtime_rwlock);
 			runtime_set_systemmode(cursysmode);
-			pthread_rwlock_unlock(&runtime->runtime_rwlock);
 			// hw_p1_beep()
 			hw->peripherals.o_buzz = 1;
 		}
 		syschg = false;
-		cursysmode = runtime->run.systemmode;
+		cursysmode = runtime_systemmode();
 	}
 	else
 		systout--;

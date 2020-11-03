@@ -18,6 +18,7 @@
 #include "timekeep.h"
 
 #include <pthread.h>	// rwlocks
+#include <stdatomic.h>
 
 /** Runtime environment structure */
 struct s_runtime {
@@ -28,9 +29,9 @@ struct s_runtime {
 		enum e_runmode startup_dhwmode;		///< if sysmode is SYS_MANUAL, this runtime dhwmode will be applied
 	} set;
 	struct {
-		enum e_systemmode systemmode;	///< current operation mode
-		enum e_runmode runmode;		///< CANNOT BE #RM_AUTO
-		enum e_runmode dhwmode;		///< CANNOT BE #RM_AUTO or #RM_DHWONLY
+		_Atomic enum e_systemmode systemmode;	///< current operation mode
+		_Atomic enum e_runmode runmode;		///< CANNOT BE #RM_AUTO
+		_Atomic enum e_runmode dhwmode;		///< CANNOT BE #RM_AUTO or #RM_DHWONLY
 	} run;
 	struct s_plant * restrict plant;	///< running plant
 	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible
@@ -45,5 +46,9 @@ int runtime_online(void);
 int runtime_run(void);
 int runtime_offline(void);
 void runtime_exit(void);
+
+enum e_systemmode runtime_systemmode(void);
+enum e_runmode runtime_runmode(void);
+enum e_runmode runtime_dhwmode(void);
 
 #endif /* rwchcd_runtime_h */

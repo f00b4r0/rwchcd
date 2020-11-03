@@ -505,7 +505,6 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 __attribute__((warn_unused_result))
 int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 {
-	const struct s_runtime * restrict const runtime = runtime_get();
 	const struct s_schedule_eparams * eparams;
 	const struct s_bmodel * restrict bmodel;
 	enum e_runmode prev_runmode, new_runmode;
@@ -514,8 +513,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	timekeep_t elapsed_time, dtmin;
 	const timekeep_t now = timekeep_now();
 	bool can_fastcool;
-
-	assert(runtime);
 
 	assert(circuit);
 
@@ -532,7 +529,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	if (RM_AUTO == circuit->set.runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(circuit->set.schedid);
-		new_runmode = ((SYS_AUTO == runtime->run.systemmode) && eparams) ? eparams->runmode : runtime->run.runmode;
+		new_runmode = ((SYS_AUTO == runtime_systemmode()) && eparams) ? eparams->runmode : runtime_runmode();
 	}
 	else
 		new_runmode = circuit->set.runmode;
