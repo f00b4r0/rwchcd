@@ -36,10 +36,10 @@ struct s_pump {
 		timekeep_t last_switch;		///< last time the pump state was toggled
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< unique name for this pump
+	enum e_execs status;		///< last known status
 };
 
-struct s_pump * pump_new(void) __attribute__((warn_unused_result));
-void pump_del(struct s_pump * restrict pump);
+void pump_cleanup(struct s_pump * restrict pump);
 int pump_online(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state) __attribute__((warn_unused_result));
 int pump_get_state(const struct s_pump * restrict const pump);

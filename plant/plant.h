@@ -17,15 +17,12 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
-// https://www.lysator.liu.se/c/restrict.html#linked-lists
+#include "pump.h"
 
-/** List of pumps */
-struct s_pump_l {
-	uint_fast8_t id;
-	enum e_execs status;		///< pump actual status (this flag will signal the last run error).
-	struct s_pump * restrict pump;
-	struct s_pump_l * next;
-};
+typedef uint_fast8_t	plid_t;
+#define PLID_MAX	UINT_FAST8_MAX
+
+// https://www.lysator.liu.se/c/restrict.html#linked-lists
 
 /** List of valves */
 struct s_valve_l {
@@ -80,12 +77,15 @@ struct s_plant {
 		uint_fast8_t dhwt_maxprio;	///< largest online value for DHWT prio
 	} run;
 	struct s_pdata pdata;
-	uint_fast8_t pump_n;	///< number of pumps in the plant
+	struct {
+		struct s_pump * all;	///< pointer to dynamically allocated array of pumps, size n
+		plid_t n;		///< number of allocated pumps
+		plid_t last;		///< id of last free slot
+	} pumps;		///< plant pumps
 	uint_fast8_t valve_n;	///< number of valves in the plant
 	uint_fast8_t heats_n;	///< number of heat sources in the plant
 	uint_fast8_t circuit_n;	///< number of heating circuits in the plant
 	uint_fast8_t dhwt_n;	///< number of dhw tanks in the plant
-	struct s_pump_l * restrict pump_head;	///< list of pumps in the plant
 	struct s_valve_l * restrict valve_head;	///< list of valves in the plant
 	struct s_heatsource_l * restrict heats_head;	///< list of heatsources in the plant
 	struct s_heating_circuit_l * restrict circuit_head;	///< list of heating circuits in the plant
@@ -96,7 +96,6 @@ int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unu
 int plant_offline(struct s_plant * restrict const plant);
 int plant_run(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
 struct s_pump * plant_fbn_pump(const struct s_plant * restrict const plant, const char * restrict const name);
-struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_valve * plant_fbn_valve(const struct s_plant * restrict const plant, const char * restrict const name);
 struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_hcircuit * plant_fbn_circuit(const struct s_plant * restrict const plant, const char * restrict const name);

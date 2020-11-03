@@ -11,6 +11,8 @@
  * Pump subsystem file configuration parsing.
  */
 
+#include <string.h>
+
 #include "pump_parse.h"
 #include "plant/pump.h"
 #include "plant/plant.h"
@@ -26,24 +28,24 @@ int filecfg_pump_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODEINT|NODEDUR,	"cooldown_time",	false,	fcp_tk_s_pump_cooldown_time,		NULL, },
 		{ NODESTR,		"rid_pump",		true,	fcp_outputs_relay_s_pump_rid_pump,	NULL, },
 	};
-	struct s_plant * restrict const plant = priv;
-	struct s_pump * pump;
+	struct s_pump * restrict const pump = priv;
 	int ret;
 
 	// we receive a 'pump' node with a valid string attribute which is the pump name
+	if (NODESTC != node->type)
+		return (-EINVALID);
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	// create the pump
-	pump = plant_new_pump(plant, node->value.stringval);
-	if (!pump)
-		return (-EOOM);
-
 	ret = filecfg_parser_run_parsers(pump, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
+
+	pump->name = strdup(node->value.stringval);
+	if (!pump->name)
+		return (-EOOM);
 
 	pump->set.configured = true;
 

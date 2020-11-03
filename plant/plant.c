@@ -47,75 +47,20 @@
  */
 struct s_pump * plant_fbn_pump(const struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_pump_l * restrict pumpl;
 	struct s_pump * restrict pump = NULL;
+	plid_t id;
 
 	if (!plant || !name)
 		return (NULL);
 
-	for (pumpl = plant->pump_head; pumpl; pumpl = pumpl->next) {
-		if (!strcmp(pumpl->pump->name, name)) {
-			pump = pumpl->pump;
+	for (id = 0; id < plant->pumps.last; id++) {
+		if (!strcmp(plant->pumps.all[id].name, name)) {
+			pump = &plant->pumps.all[id];
 			break;
 		}
 	}
 
 	return (pump);
-}
-
-/**
- * Create a new pump and attach it to the plant.
- * @param plant the plant to attach the pump to
- * @param name @b UNIQUE pump name. A local copy is created
- * @return pointer to the created pump
- */
-struct s_pump * plant_new_pump(struct s_plant * restrict const plant, const char * restrict const name)
-{
-	struct s_pump * restrict pump = NULL;
-	struct s_pump_l * restrict pumpelmt = NULL;
-	char * restrict str = NULL;
-
-	if (!plant || !name)
-		goto fail;
-
-	// deal with name
-	// ensure unique name
-	if (plant_fbn_pump(plant, name))
-		goto fail;
-
-	str = strdup(name);
-	if (!str)
-		goto fail;
-
-	// create a new pump
-	pump = pump_new();
-	if (!pump)
-		goto fail;
-
-	// set name
-	pump->name = str;
-
-	// create pump element
-	pumpelmt = calloc(1, sizeof(*pumpelmt));
-	if (!pumpelmt)
-		goto fail;
-	
-	// attach created pump to element
-	pumpelmt->pump = pump;
-	
-	// attach it to the plant
-	pumpelmt->id = plant->pump_n;
-	pumpelmt->next = plant->pump_head;
-	plant->pump_head = pumpelmt;
-	plant->pump_n++;
-	
-	return (pump);
-	
-fail:
-	free(str);
-	free(pump);
-	free(pumpelmt);
-	return (NULL);
 }
 
 /**
@@ -463,25 +408,22 @@ struct s_plant * plant_new(void)
  */
 void plant_del(struct s_plant * plant)
 {
-	struct s_pump_l * pumpelmt, * pumpnext;
 	struct s_valve_l * valveelmt, * valvenext;
 	struct s_heating_circuit_l * circuitelement, * circuitlnext;
 	struct s_dhw_tank_l * dhwtelement, * dhwtlnext;
 	struct s_heatsource_l * sourceelement, * sourcenext;
+	plid_t id;
 	
 	if (!plant)
 		return;
 
 	// clear all registered pumps
-	pumpelmt = plant->pump_head;
-	while (pumpelmt) {
-		pumpnext = pumpelmt->next;
-		pump_del(pumpelmt->pump);
-		free(pumpelmt);
-		plant->pump_n--;
-		pumpelmt = pumpnext;
-	}
-	
+	for (id = 0; id < plant->pumps.last; id++)
+		pump_cleanup(&plant->pumps.all[id]);
+	plant->pumps.last = 0;
+	plant->pumps.n = 0;
+	free(plant->pumps.all);
+
 	// clear all registered valves
 	valveelmt = plant->valve_head;
 	while (valveelmt) {
@@ -603,12 +545,13 @@ static void plant_onfline_printerr(const enum e_execs errorn, const int devid, c
  */
 int plant_online(struct s_plant * restrict const plant)
 {
-	struct s_pump_l * pumpl;
+	struct s_pump * pump;
 	struct s_valve_l * valvel;
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
+	plid_t id;
 	int ret;
 
 	if (!plant)
@@ -621,13 +564,14 @@ int plant_online(struct s_plant * restrict const plant)
 
 	// online the actuators first
 	// pumps
-	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
-		ret = pump_online(pumpl->pump);
-		pumpl->status = ret;
+	for (id = 0; id < plant->pumps.last; id++) {
+		pump = &plant->pumps.all[id];
+		ret = pump_online(pump);
+		pump->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, pumpl->id, pumpl->pump->name, PDEV_PUMP, true);
-			pump_offline(pumpl->pump);
+			plant_onfline_printerr(ret, id, pump->name, PDEV_PUMP, true);
+			pump_offline(pump);
 			suberror = true;
 		}
 	}
@@ -702,12 +646,13 @@ int plant_online(struct s_plant * restrict const plant)
  */
 int plant_offline(struct s_plant * restrict const plant)
 {
-	struct s_pump_l * pumpl;
+	struct s_pump * pump;
 	struct s_valve_l * valvel;
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
+	plid_t id;
 	int ret;
 	
 	if (!plant)
@@ -765,12 +710,13 @@ int plant_offline(struct s_plant * restrict const plant)
 	}
 	
 	// pumps
-	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
-		ret = pump_offline(pumpl->pump);
-		pumpl->status = ret;
+	for (id = 0; id < plant->pumps.last; id++) {
+		pump = &plant->pumps.all[id];
+		ret = pump_offline(pump);
+		pump->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, pumpl->id, pumpl->pump->name, PDEV_PUMP, false);
+			plant_onfline_printerr(ret, id, pump->name, PDEV_PUMP, false);
 			suberror = true;
 		}
 	}
@@ -1028,8 +974,9 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
-	struct s_pump_l * pumpl;
+	struct s_pump * pump;
 	struct s_valve_l * valvel;
+	plid_t id;
 	int ret;
 
 	assert(plant);
@@ -1074,17 +1021,18 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	}
 
 	// set all pumps ON
-	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
-		if (!pumpl->pump->run.online)
+	for (id = 0; id < plant->pumps.last; id++) {
+		pump = &plant->pumps.all[id];
+		if (!pump->run.online)
 			continue;
 
-		if (pumpl->pump->run.dwht_use)
+		if (pump->run.dwht_use)
 			continue;	// don't touch DHWT pumps when in use
 
-		ret = pump_set_state(pumpl->pump, ON, NOFORCE);
+		ret = pump_set_state(pump, ON, NOFORCE);
 
 		if (ALL_OK != ret)
-			dbgerr("pump_set_state failed on %d (%d)", pumpl->id, ret);
+			dbgerr("pump_set_state failed on %d (%d)", id, ret);
 	}
 
 	return (ALL_OK);
@@ -1102,9 +1050,10 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
 	struct s_valve_l * valvel;
-	struct s_pump_l * pumpl;
+	struct s_pump * pump;
 	bool overtemp = false, suberror = false;
 	timekeep_t stop_delay = 0;
+	plid_t id;
 
 	if (unlikely(!plant))
 		return (-EINVALID);
@@ -1226,19 +1175,20 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 	
 	// run the pumps
-	for (pumpl = plant->pump_head; pumpl != NULL; pumpl = pumpl->next) {
-		pumpl->status = pump_run(pumpl->pump);
+	for (id = 0; id < plant->pumps.last; id++) {
+		pump = &plant->pumps.all[id];
+		pump->status = pump_run(pump);
 
-		switch (-pumpl->status) {
+		switch (-pump->status) {
 			case ALL_OK:
 				break;
 			default:	// offline the pump if anything happens
-				pump_offline(pumpl->pump);	// something really bad happened
+				pump_offline(pump);	// something really bad happened
 				// fallthrough
 			case ENOTCONFIGURED:
 			case EOFFLINE:
 				suberror = true;
-				plant_alarm(pumpl->status, pumpl->id, pumpl->pump->name, PDEV_PUMP);
+				plant_alarm(pump->status, id, pump->name, PDEV_PUMP);
 				continue;	// no further processing for this pump
 		}
 	}

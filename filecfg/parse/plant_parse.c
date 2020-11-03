@@ -11,6 +11,8 @@
  * Plant file configuration parsing.
  */
 
+#include <stdlib.h>
+
 #include "plant_parse.h"
 #include "filecfg_parser.h"
 #include "plant/plant.h"
@@ -75,9 +77,57 @@ static int plant_config_parse(void * restrict const priv, const struct s_filecfg
 	return (ALL_OK);
 }
 
-static int pumps_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int plant_pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "pump", filecfg_pump_parse));
+	struct s_plant * restrict const plant = priv;
+	struct s_pump * pump;
+	int ret;
+
+	if (plant->pumps.last >= plant->pumps.n)
+		return (-EOOM);
+
+	if (plant_fbn_pump(plant, node->value.stringval))
+		return (-EEXISTS);
+
+	pump = &plant->pumps.all[plant->pumps.last];
+	ret = filecfg_pump_parse(pump, node);
+	if (ALL_OK == ret)
+		plant->pumps.last++;
+
+	return (ret);
+}
+
+static int plant_pumps_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_plant * const plant = priv;
+	unsigned int n;
+	int ret;
+
+	n = filecfg_parser_count_siblings(node->children, "pump");
+
+	if (!n)
+		return (-EEMPTY);
+
+	if (n >= PLID_MAX)
+		return (-ETOOBIG);
+
+	plant->pumps.all = calloc(n, sizeof(plant->pumps.all[0]));
+	if (!plant->pumps.all)
+		return (-EOOM);
+
+	plant->pumps.n = (plid_t)n;
+	plant->pumps.last = 0;
+
+	ret = filecfg_parser_parse_namedsiblings(plant, node->children, "pump", plant_pump_parse);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	return (ALL_OK);
+
+cleanup:
+	// todo: cleanup all pumps (names)
+	free(plant->pumps.all);
+	return (ret);
 }
 
 static int valves_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -104,7 +154,7 @@ int filecfg_plant_parse(void * restrict const priv, const struct s_filecfg_parse
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODELST,	"config",	false,	plant_config_parse,	NULL, },
-		{ NODELST,	"pumps",	false,	pumps_parse,		NULL, },
+		{ NODELST,	"pumps",	false,	plant_pumps_parse,	NULL, },
 		{ NODELST,	"valves",	false,	valves_parse,		NULL, },
 		{ NODELST,	"dhwts",	false,	dhwts_parse,		NULL, },
 		{ NODELST,	"hcircuits",	false,	hcircuits_parse,	NULL, },

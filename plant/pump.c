@@ -25,28 +25,17 @@
 #include "io/outputs.h"
 
 /**
- * Create a pump.
- * @return the newly created pump or NULL
- */
-struct s_pump * pump_new(void)
-{
-	struct s_pump * const pump = calloc(1, sizeof(*pump));
-	return (pump);
-}
-
-/**
- * Delete a pump.
+ * Cleanup a pump.
  * Frees all pump-local resources
  * @param pump the pump to delete
  */
-void pump_del(struct s_pump * restrict pump)
+void pump_cleanup(struct s_pump * restrict pump)
 {
 	if (!pump)
 		return;
 
 	free((void *)pump->name);
 	pump->name = NULL;
-	free(pump);
 }
 
 /**
