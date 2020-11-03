@@ -18,6 +18,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "scheduler.h"
 #include "io/inputs.h"
 
 /** private data for templaw_bilinear (for 20C ambient target) */

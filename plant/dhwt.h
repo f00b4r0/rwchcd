@@ -18,6 +18,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "scheduler.h"
 #include "io/inputs.h"
 #include "io/outputs.h"
 

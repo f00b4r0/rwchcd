@@ -16,7 +16,8 @@
 
 #include "rwchcd.h"
 
-#define SCHEDID_MAX	UINT_FAST16_MAX
+typedef uint_fast8_t	schedid_t;	///< schedule id type
+#define SCHEDID_MAX	UINT_FAST8_MAX
 
 /** Schedule entry time. */
 struct s_schedule_etime {

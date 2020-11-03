@@ -135,7 +135,6 @@ enum {
 };
 
 typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
-typedef uint_fast16_t	schedid_t;	///< schedule id type
 
 /** Valid run modes */
 enum e_runmode {

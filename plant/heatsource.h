@@ -18,6 +18,7 @@
 
 #include "rwchcd.h"
 #include "timekeep.h"
+#include "scheduler.h"
 #include "lib.h"	// for s_temp_intgrl
 
 /** heatsource type identifiers */
