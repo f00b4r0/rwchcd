@@ -65,12 +65,12 @@ struct s_heatsource {
 		timekeep_t (*time)(struct s_heatsource * const);///< pointer to source private time() function (returns time of last temperature update) @todo XXX only used in logic_heatsource()
 		void (*del_priv)(void * priv);			///< pointer to source private del() function
 	} cb;		///< heatsource callbacks
+	enum e_execs status;			///< last known status
 };
 
-struct s_heatsource * heatsource_new(void) __attribute__((warn_unused_result));
 int heatsource_online(struct s_heatsource * const heat) __attribute__((warn_unused_result));
 int heatsource_offline(struct s_heatsource * const heat);
 int heatsource_run(struct s_heatsource * const heat) __attribute__((warn_unused_result));
-void heatsource_del(struct s_heatsource * heat);
+void heatsource_cleanup(struct s_heatsource * heat);
 
 #endif /* heatsource_h */

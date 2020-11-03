@@ -29,16 +29,6 @@
 #include "scheduler.h"
 
 /**
- * Create a heatsource
- * @return the newly created heatsource or NULL
- */
-struct s_heatsource * heatsource_new(void)
-{
-	struct s_heatsource * const heatsource = calloc(1, sizeof(*heatsource));
-	return (heatsource);
-}
-
-/**
  * Put heatsource online.
  * Perform all necessary actions to prepare the heatsource for service and
  * mark it as online.
@@ -192,7 +182,7 @@ int heatsource_run(struct s_heatsource * const heat)
  * Delete a heatsource.
  * @param heat the source to delete
  */
-void heatsource_del(struct s_heatsource * heat)
+void heatsource_cleanup(struct s_heatsource * heat)
 {
 	if (!heat)
 		return;
@@ -203,6 +193,4 @@ void heatsource_del(struct s_heatsource * heat)
 
 	free((void *)heat->name);
 	heat->name = NULL;
-
-	free(heat);
 }

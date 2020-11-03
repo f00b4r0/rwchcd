@@ -297,9 +297,61 @@ cleanup:
 	return (ret);
 }
 
-static int heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int plant_heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "heatsource", filecfg_heatsource_parse));
+	struct s_plant * restrict const plant = priv;
+	struct s_heatsource * heatsource;
+	int ret;
+
+	if (plant->heatsources.last >= plant->heatsources.n)
+		return (-EOOM);
+
+	if (plant_fbn_heatsource(plant, node->value.stringval))
+		return (-EEXISTS);
+
+	heatsource = &plant->heatsources.all[plant->heatsources.last];
+
+	// set plant data
+	heatsource->pdata = &plant->pdata;
+
+	ret = filecfg_heatsource_parse(heatsource, node);
+	if (ALL_OK == ret)
+		plant->heatsources.last++;
+
+	return (ret);
+}
+
+static int plant_heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_plant * const plant = priv;
+	unsigned int n;
+	int ret;
+
+	n = filecfg_parser_count_siblings(node->children, "heatsource");
+
+	if (!n)
+		return (-EEMPTY);
+
+	if (n >= PLID_MAX)
+		return (-ETOOBIG);
+
+	plant->heatsources.all = calloc(n, sizeof(plant->heatsources.all[0]));
+	if (!plant->heatsources.all)
+		return (-EOOM);
+
+	plant->heatsources.n = (plid_t)n;
+	plant->heatsources.last = 0;
+
+	ret = filecfg_parser_parse_namedsiblings(plant, node->children, "heatsource", plant_heatsource_parse);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	return (ALL_OK);
+
+cleanup:
+	// todo: cleanup all heatsources (names)
+	free(plant->heatsources.all);
+	return (ret);
 }
 
 int filecfg_plant_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -310,7 +362,7 @@ int filecfg_plant_parse(void * restrict const priv, const struct s_filecfg_parse
 		{ NODELST,	"valves",	false,	plant_valves_parse,	NULL, },
 		{ NODELST,	"dhwts",	false,	plant_dhwts_parse,	NULL, },
 		{ NODELST,	"hcircuits",	false,	plant_hcircuits_parse,	NULL, },
-		{ NODELST,	"heatsources",	false,	heatsources_parse,	NULL, },
+		{ NODELST,	"heatsources",	false,	plant_heatsources_parse,NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	struct s_plant * plant;

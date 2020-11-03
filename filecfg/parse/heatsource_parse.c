@@ -11,6 +11,8 @@
  * Heatsource file configuration parsing.
  */
 
+#include <string.h>
+
 #include "heatsource_parse.h"
 #include "filecfg_parser.h"
 #include "boiler_parse.h"
@@ -48,24 +50,24 @@ int filecfg_heatsource_parse(void * restrict const priv, const struct s_filecfg_
 		{ NODEINT|NODEDUR,	"consumer_sdelay",	false,	fcp_tk_s_heatsource_consumer_sdelay,	NULL, },
 		{ NODESTR,		"schedid",		false,	fcp_schedid_s_heatsource_schedid,	NULL, },
 	};
-	struct s_plant * restrict const plant = priv;
-	struct s_heatsource * heatsource;
+	struct s_heatsource * restrict const heatsource = priv;
 	int ret;
 
-	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
+	// we receive a 'heatsource' node with a valid string attribute which is the heatsource name
+	if (NODESTC != node->type)
+		return (-EINVALID);
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	// create the heatsource
-	heatsource = plant_new_heatsource(plant, node->value.stringval);
-	if (!heatsource)
-		return (-EOOM);
-
 	ret = filecfg_parser_run_parsers(heatsource, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
+
+	heatsource->name = strdup(node->value.stringval);
+	if (!heatsource->name)
+		return (-EOOM);
 
 	heatsource->set.configured = true;
 

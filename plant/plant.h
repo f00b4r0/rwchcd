@@ -2,7 +2,7 @@
 //  plant/plant.h
 //  rwchcd
 //
-//  (C) 2016-2017 Thibaut VARENE
+//  (C) 2016-2017,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -21,19 +21,10 @@
 #include "valve.h"
 #include "hcircuit.h"
 #include "dhwt.h"
+#include "heatsource.h"
 
 typedef uint_fast8_t	plid_t;
 #define PLID_MAX	UINT_FAST8_MAX
-
-// https://www.lysator.liu.se/c/restrict.html#linked-lists
-
-/** List of heat sources */
-struct s_heatsource_l {
-	uint_fast8_t id;
-	enum e_execs status;		///< heatsource actual status (this flag will signal the last run error)
-	struct s_heatsource * restrict heats;
-	struct s_heatsource_l * next;
-};
 
 /**
  * Plant structure.
@@ -76,8 +67,11 @@ struct s_plant {
 		plid_t n;		///< number of allocated dhwts
 		plid_t last;		///< id of last free slot
 	} dhwts;		///< plant dhwts
-	uint_fast8_t heats_n;	///< number of heat sources in the plant
-	struct s_heatsource_l * restrict heats_head;	///< list of heatsources in the plant
+	struct {
+		struct s_heatsource * all;///< pointer to dynamically allocated array of heatsources, size n
+		plid_t n;		///< number of allocated heatsources
+		plid_t last;		///< id of last free slot
+	} heatsources;		///< plant heats
 };
 
 int plant_online(struct s_plant * restrict const plant)  __attribute__((warn_unused_result));
@@ -88,7 +82,6 @@ struct s_valve * plant_fbn_valve(const struct s_plant * restrict const plant, co
 struct s_hcircuit * plant_fbn_hcircuit(const struct s_plant * restrict const plant, const char * restrict const name);
 struct s_dhwt * plant_fbn_dhwt(const struct s_plant * restrict const plant, const char * restrict const name);
 struct s_heatsource * plant_fbn_heatsource(const struct s_plant * restrict const plant, const char * restrict const name);
-struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name);
 struct s_plant * plant_new(void);
 void plant_del(struct s_plant * plant);
 

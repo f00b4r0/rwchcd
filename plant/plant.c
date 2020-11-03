@@ -2,7 +2,7 @@
 //  plant/plant.c
 //  rwchcd
 //
-//  (C) 2016-2019 Thibaut VARENE
+//  (C) 2016-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -143,80 +143,20 @@ struct s_dhwt * plant_fbn_dhwt(const struct s_plant * restrict const plant, cons
  */
 struct s_heatsource * plant_fbn_heatsource(const struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_heatsource_l * restrict sourcel;
 	struct s_heatsource * restrict source = NULL;
+	plid_t id;
 
 	if (!plant || !name)
 		return (NULL);
 
-	for (sourcel = plant->heats_head; sourcel; sourcel = sourcel->next) {
-		if (!strcmp(sourcel->heats->name, name)) {
-			source = sourcel->heats;
+	for (id = 0; id < plant->heatsources.last; id++) {
+		if (!strcmp(plant->heatsources.all[id].name, name)) {
+			source = &plant->heatsources.all[id];
 			break;
 		}
 	}
 
 	return (source);
-}
-
-/**
- * Create a new heatsource in the plant.
- * @param plant the target plant
- * @param name @b UNIQUE heatsource name. A local copy is created
- * @return pointer to the created source
- */
-struct s_heatsource * plant_new_heatsource(struct s_plant * restrict const plant, const char * restrict const name)
-{
-	struct s_heatsource * restrict source = NULL;
-	struct s_heatsource_l * restrict sourceelement = NULL;
-	char * restrict str = NULL;
-
-	if (!plant || !name)
-		goto fail;
-
-	// deal with name
-	// ensure unique name
-	if (plant_fbn_heatsource(plant, name))
-		goto fail;
-
-	str = strdup(name);
-	if (!str)
-		goto fail;
-
-	// create a new source
-	source = heatsource_new();
-	if (!source)
-		goto fail;
-
-	// set name
-	source->name = str;
-
-	// set plant data
-	source->pdata = &plant->pdata;
-
-	// create a new source element
-	sourceelement = calloc(1, sizeof(*sourceelement));
-	if (!sourceelement)
-		goto fail;
-
-	// attach the created source to the element
-	sourceelement->heats = source;
-
-	// attach it to the plant
-	sourceelement->id = plant->heats_n;
-	sourceelement->next = plant->heats_head;
-	plant->heats_head = sourceelement;
-	plant->heats_n++;
-
-	return (source);
-
-fail:
-	free(str);
-	if (source && source->cb.del_priv)
-		source->cb.del_priv(source->priv);
-	free(source);
-	free(sourceelement);
-	return (NULL);
 }
 
 /**
@@ -237,7 +177,6 @@ struct s_plant * plant_new(void)
  */
 void plant_del(struct s_plant * plant)
 {
-	struct s_heatsource_l * sourceelement, * sourcenext;
 	plid_t id;
 	
 	if (!plant)
@@ -272,14 +211,11 @@ void plant_del(struct s_plant * plant)
 	free(plant->dhwts.all);
 
 	// clear all registered heatsources
-	sourceelement = plant->heats_head;
-	while (sourceelement) {
-		sourcenext = sourceelement->next;
-		heatsource_del(sourceelement->heats);
-		free(sourceelement);
-		plant->heats_n--;
-		sourceelement = sourcenext;
-	}
+	for (id = 0; id < plant->heatsources.last; id++)
+		heatsource_cleanup(&plant->heatsources.all[id]);
+	plant->heatsources.last = 0;
+	plant->heatsources.n = 0;
+	free(plant->heatsources.all);
 
 	free(plant);
 }
@@ -366,7 +302,7 @@ int plant_online(struct s_plant * restrict const plant)
 	struct s_valve * valve;
 	struct s_hcircuit * hcircuit;
 	struct s_dhwt * dhwt;
-	struct s_heatsource_l * heatsourcel;
+	struct s_heatsource * heatsource;
 	bool suberror = false;
 	plid_t id;
 	int ret;
@@ -439,13 +375,14 @@ int plant_online(struct s_plant * restrict const plant)
 	}
 
 	// finally online the heat sources
-	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
-		ret = heatsource_online(heatsourcel->heats);
-		heatsourcel->status = ret;
+	for (id = 0; id < plant->heatsources.last; id++) {
+		heatsource = &plant->heatsources.all[id];
+		ret = heatsource_online(heatsource);
+		heatsource->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS, true);
-			heatsource_offline(heatsourcel->heats);
+			plant_onfline_printerr(ret, id, heatsource->name, PDEV_HEATS, true);
+			heatsource_offline(heatsource);
 			suberror = true;
 		}
 	}
@@ -470,7 +407,7 @@ int plant_offline(struct s_plant * restrict const plant)
 	struct s_valve * valve;
 	struct s_hcircuit * hcircuit;
 	struct s_dhwt * dhwt;
-	struct s_heatsource_l * heatsourcel;
+	struct s_heatsource * heatsource;
 	bool suberror = false;
 	plid_t id;
 	int ret;
@@ -509,12 +446,13 @@ int plant_offline(struct s_plant * restrict const plant)
 	}
 	
 	// next deal with the heat sources
-	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
-		ret = heatsource_offline(heatsourcel->heats);
-		heatsourcel->status = ret;
+	for (id = 0; id < plant->heatsources.last; id++) {
+		heatsource = &plant->heatsources.all[id];
+		ret = heatsource_offline(heatsource);
+		heatsource->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS, false);
+			plant_onfline_printerr(ret, id, heatsource->name, PDEV_HEATS, false);
 			suberror = true;
 		}
 	}
@@ -742,19 +680,21 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
  */
 static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 {
-	struct s_heatsource_l * heatsourcel;
+	struct s_heatsource * heatsource;
 	bool serviced = false;
+	plid_t id;
 
 	assert(plant);
 	assert(plant->run.online);
 
-	assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment
-	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
-		if (!heatsourcel->heats->run.online)
+	assert(plant->heatsources.last <= 1);	// XXX TODO: only one source supported at the moment
+	for (id = 0; id < plant->heatsources.last; id++) {
+		heatsource = &plant->heatsources.all[id];
+		if (!heatsource->run.online)
 			continue;
 
 		// XXX function call?
-		heatsourcel->heats->run.temp_request = plant->run.plant_hrequest;
+		heatsource->run.temp_request = plant->run.plant_hrequest;
 		serviced = true;
 	}
 
@@ -877,7 +817,7 @@ int plant_run(struct s_plant * restrict const plant)
 {
 	struct s_hcircuit * hcircuit;
 	struct s_dhwt * dhwt;
-	struct s_heatsource_l * heatsourcel;
+	struct s_heatsource * heatsource;
 	struct s_valve * valve;
 	struct s_pump * pump;
 	bool overtemp = false, suberror = false;
@@ -946,24 +886,25 @@ int plant_run(struct s_plant * restrict const plant)
 	plant_dispatch_hrequests(plant);
 
 	// now run the heat sources
-	for (heatsourcel = plant->heats_head; heatsourcel != NULL; heatsourcel = heatsourcel->next) {
-		heatsourcel->status = heatsource_run(heatsourcel->heats);
-		if (ALL_OK == heatsourcel->status) {
+	for (id = 0; id < plant->heatsources.last; id++) {
+		heatsource = &plant->heatsources.all[id];
+		heatsource->status = heatsource_run(heatsource);
+		if (ALL_OK == heatsource->status) {
 			// max stop delay
-			stop_delay = (heatsourcel->heats->run.target_consumer_sdelay > stop_delay) ? heatsourcel->heats->run.target_consumer_sdelay : stop_delay;
+			stop_delay = (heatsource->run.target_consumer_sdelay > stop_delay) ? heatsource->run.target_consumer_sdelay : stop_delay;
 
 			// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
-			assert(plant->heats_n <= 1);	// XXX TODO: only one source supported at the moment for consummer_shift
-			plant->pdata.run.consumer_shift = heatsourcel->heats->run.cshift_crit ? heatsourcel->heats->run.cshift_crit : heatsourcel->heats->run.cshift_noncrit;
+			assert(plant->heatsources.last <= 1);	// XXX TODO: only one source supported at the moment for consummer_shift
+			plant->pdata.run.consumer_shift = heatsource->run.cshift_crit ? heatsource->run.cshift_crit : heatsource->run.cshift_noncrit;
 		}
 		// always update overtemp (which can be triggered with -ESAFETY)
-		overtemp = heatsourcel->heats->run.overtemp ? heatsourcel->heats->run.overtemp : overtemp;
+		overtemp = heatsource->run.overtemp ? heatsource->run.overtemp : overtemp;
 		
-		switch (-heatsourcel->status) {
+		switch (-heatsource->status) {
 			case ALL_OK:
 				break;
 			default:	// offline the source if anything happens
-				heatsource_offline(heatsourcel->heats);	// something really bad happened
+				heatsource_offline(heatsource);	// something really bad happened
 				// fallthrough
 			case ESENSORINVAL:
 			case ESENSORSHORT:
@@ -972,7 +913,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case ENOTCONFIGURED:
 			case EOFFLINE:
 				suberror = true;
-				plant_alarm(heatsourcel->status, heatsourcel->id, heatsourcel->heats->name, PDEV_HEATS);
+				plant_alarm(heatsource->status, id, heatsource->name, PDEV_HEATS);
 				continue;	// no further processing for this source
 		}
 	}

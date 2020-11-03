@@ -24,7 +24,6 @@
 
 int filecfg_plant_dump(const struct s_plant * restrict const plant)
 {
-	struct s_heatsource_l * heatsl;
 	plid_t id;
 
 	if (!plant)
@@ -69,11 +68,11 @@ int filecfg_plant_dump(const struct s_plant * restrict const plant)
 		filecfg_iprintf("};\n");	// valves
 	}
 
-	if (FCD_Exhaustive || plant->heats_head) {
+	if (FCD_Exhaustive || plant->heatsources.last) {
 		filecfg_iprintf("heatsources {\n");
 		filecfg_ilevel_inc();
-		for (heatsl = plant->heats_head; heatsl != NULL; heatsl = heatsl->next)
-			filecfg_heatsource_dump(heatsl->heats);
+		for (id = 0; id < plant->heatsources.last; id++)
+			filecfg_heatsource_dump(&plant->heatsources.all[id]);
 		filecfg_ilevel_dec();
 		filecfg_iprintf("};\n");	// heatsources
 	}
