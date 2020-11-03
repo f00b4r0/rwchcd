@@ -1009,7 +1009,7 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
 		if (!circuitl->circuit->run.online)
 			continue;
-		summer &= circuitl->circuit->set.p.bmodel->run.summer;
+		summer &= aler(&circuitl->circuit->set.p.bmodel->run.summer);
 	}
 
 	return (summer);

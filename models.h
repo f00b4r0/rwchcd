@@ -14,6 +14,8 @@
 #ifndef rwchcd_models_h
 #define rwchcd_models_h
 
+#include <stdatomic.h>
+
 #include "rwchcd.h"
 #include "timekeep.h"
 #include "io/inputs.h"
@@ -43,15 +45,15 @@ struct s_bmodel {
 		itid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
 	} set;
 	struct {
-		bool online;		///< true if bmodel is online
-		bool summer;		///< true if summer mode conditions are met
-		bool frost;		///< true if frost conditions are met
+		atomic_bool online;	///< true if bmodel is online
+		atomic_bool summer;	///< true if summer mode conditions are met
+		atomic_bool frost;	///< true if frost conditions are met
 		timekeep_t t_out_ltime;	///< last update time for t_out
 		timekeep_t t_out_faltime;///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
-		temp_t t_out;		///< current outdoor temperature (smoothed over 60s)
-		temp_t t_out_filt;	///< t_outdoor filtered by bmodel time constant (moving average of t_outdoor with tau)
-		temp_t t_out_mix;	///< mixed outdoor temperature (average of t_outdoor and t_filtered)
-		temp_t t_out_att;	///< attenuated outdoor temperature (moving average of t_filtered with tau: double filter on t_outdoor)
+		_Atomic temp_t t_out;	///< current outdoor temperature (smoothed over 60s)
+		_Atomic temp_t t_out_filt;///< t_outdoor filtered by bmodel time constant (moving average of t_outdoor with tau)
+		_Atomic temp_t t_out_mix;///< mixed outdoor temperature (average of t_outdoor and t_filtered)
+		_Atomic temp_t t_out_att;///< attenuated outdoor temperature (moving average of t_filtered with tau: double filter on t_outdoor)
 	} run;
 	const char * restrict name;	///< unique name for this bmodel
 };

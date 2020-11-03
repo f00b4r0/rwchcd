@@ -2,7 +2,7 @@
 //  models.c
 //  rwchcd
 //
-//  (C) 2017-2018 Thibaut VARENE
+//  (C) 2017-2018,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -10,6 +10,16 @@
  * @file
  * Models implementation.
  * This file currently implements basic building models based on time constant.
+ *
+ * @note the implementation is thread-safe: it ensures no data race can happen via relaxed operations
+ * on the variables that can be accessed concurrently.
+ * It is worth noting that no data consistency is guaranteed, i.e. the data from the various variables
+ * may represent values from different time frames: the overhead of ensuring consistency seems
+ * unnecessary for the proper operation of this modelling subsystem.
+ * @warning the operations on the run.online member of s_bmodel are relaxed on the assumption that:
+ * - the subsystems that rely on bmodel are started up after and torn down before the model subsystem;
+ * - onlining/offlining cannot happen outside of the startup/teardown of the subsystem;
+ * - for the remaining contention cases (logging), sequencing within this thread will ensure that the logger will be taken down before the bmodel data is invalidated.
  */
 
 #include <stdlib.h>
@@ -48,15 +58,15 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 	if (!bmodel)
 		return (-EINVALID);
 
-	if (!bmodel->run.online)
+	if (!aler(&bmodel->run.online))
 		return (-EOFFLINE);
 
-	ldata->values[i++] = bmodel->run.summer;
-	ldata->values[i++] = bmodel->run.frost;
-	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out);
-	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out_filt);
-	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out_mix);
-	ldata->values[i++] = temp_to_ikelvin(bmodel->run.t_out_att);
+	ldata->values[i++] = aler(&bmodel->run.summer);
+	ldata->values[i++] = aler(&bmodel->run.frost);
+	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out));
+	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out_filt));
+	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out_mix));
+	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out_att));
 
 	ldata->nvalues = i;
 
@@ -134,6 +144,8 @@ static int bmodel_log_deregister(const struct s_bmodel * const bmodel)
  * Save building model state to permanent storage.
  * @param bmodel the building model to save, @b MUST be named
  * @return exec status
+ * @note reads atomic memory without atomic constructs: NOTABUG since when this read occurs, no write can happen,
+ * since all writes to the bmodel.run struct only happen within the calling thread.
  */
 static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 {
@@ -184,11 +196,11 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 		if (Models_sversion != sversion)
 			return (-EMISMATCH);
 
-		bmodel->run.summer = temp_bmodel.run.summer;
-		bmodel->run.frost = temp_bmodel.run.frost;
-		bmodel->run.t_out_filt = temp_bmodel.run.t_out_filt;
-		bmodel->run.t_out_mix = temp_bmodel.run.t_out_mix;
-		bmodel->run.t_out_att = temp_bmodel.run.t_out_att;
+		aser(&bmodel->run.summer, aler(&temp_bmodel.run.summer));
+		aser(&bmodel->run.frost, aler(&temp_bmodel.run.frost));
+		aser(&bmodel->run.t_out_filt, aler(&temp_bmodel.run.t_out_filt));
+		aser(&bmodel->run.t_out_mix, aler(&temp_bmodel.run.t_out_mix));
+		aser(&bmodel->run.t_out_att, aler(&temp_bmodel.run.t_out_att));
 	}
 
 	return (ret);
@@ -251,12 +263,13 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 		return (ret);
 	}
 
-	bmodel->run.t_out = tout;
+	aser(&bmodel->run.t_out, tout);
 	inputs_temperature_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
 
 	// set sane values if necessary
-	if (!bmodel->run.t_out_att || !bmodel->run.t_out_filt) {
-		bmodel->run.t_out_att = bmodel->run.t_out_filt = tout;
+	if (!aler(&bmodel->run.t_out_att) || !aler(&bmodel->run.t_out_filt)) {
+		aser(&bmodel->run.t_out_filt, tout);
+		aser(&bmodel->run.t_out_att, tout);
 	}
 	// force set t_out_faltime since we can't restore it
 	inputs_temperature_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_faltime);
@@ -284,7 +297,7 @@ static int bmodel_offline(struct s_bmodel * restrict const bmodel)
 
 	bmodel_log_deregister(bmodel);
 
-	bmodel->run.online = false;
+	aser(&bmodel->run.online, false);
 
 	return (ALL_OK);
 }
@@ -320,11 +333,11 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 	if (likely(ALL_OK == ret)) {
 		inputs_temperature_time(bmodel->set.tid_outdoor, &bmodel->run.t_out_ltime);
 		dt = bmodel->run.t_out_ltime - last;
-		bmodel->run.t_out = temp_expw_mavg(bmodel->run.t_out, toutdoor, OUTDOOR_SMOOTH_TIME, dt);
+		aser(&bmodel->run.t_out, temp_expw_mavg(aler(&bmodel->run.t_out), toutdoor, OUTDOOR_SMOOTH_TIME, dt));
 	}
 	else {
 		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
-		bmodel->run.t_out = bmodel->set.limit_tfrost-1;
+		aser(&bmodel->run.t_out, bmodel->set.limit_tfrost-1);
 		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
 	}
 }
@@ -346,14 +359,9 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
  * @note must run at (ideally) fixed intervals
  * @todo implement variable building tau based on e.g. occupancy/time of day: lower when window/doors can be opened
  */
-static int bmodel_outdoor(struct s_bmodel * const bmodel)
+static void bmodel_outdoor(struct s_bmodel * const bmodel)
 {
 	timekeep_t now, dt;
-
-	assert(bmodel);	// guaranteed to be called with bmodel configured
-
-	if (unlikely(!bmodel->run.online))	// but not necessarily online
-		return (-EOFFLINE);
 
 	bmodel_outdoor_temp(bmodel);
 
@@ -363,22 +371,20 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
 	if (dt >= OUTDOOR_AVG_UPDATE_DT) {
 		bmodel->run.t_out_faltime = now;
 
-		bmodel->run.t_out_filt = temp_expw_mavg(bmodel->run.t_out_filt, bmodel->run.t_out, bmodel->set.tau, dt);
-		bmodel->run.t_out_att = temp_expw_mavg(bmodel->run.t_out_att, bmodel->run.t_out_filt, bmodel->set.tau, dt);
+		aser(&bmodel->run.t_out_filt, temp_expw_mavg(aler(&bmodel->run.t_out_filt), aler(&bmodel->run.t_out), bmodel->set.tau, dt));
+		aser(&bmodel->run.t_out_att, temp_expw_mavg(aler(&bmodel->run.t_out_att), aler(&bmodel->run.t_out_filt), bmodel->set.tau, dt));
 
 		bmodel_save(bmodel);
 	}
 
 	// calculate mixed temp last: makes it work at init
-	bmodel->run.t_out_mix = (bmodel->run.t_out + bmodel->run.t_out_filt)/2;	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
+	aser(&bmodel->run.t_out_mix, (aler(&bmodel->run.t_out) + aler(&bmodel->run.t_out_filt))/2);	// XXX other possible calculation: X% of t_outdoor + 1-X% of t_filtered. Current setup is 50%
 
 	dbgmsg(1, 1, "\"%s\": t_out: %.1f, t_filt: %.1f, t_mix: %.1f, t_att: %.1f", bmodel->name,
-	       temp_to_celsius(bmodel->run.t_out),
-	       temp_to_celsius(bmodel->run.t_out_filt),
-	       temp_to_celsius(bmodel->run.t_out_mix),
-	       temp_to_celsius(bmodel->run.t_out_att));
-
-	return (ALL_OK);
+	       temp_to_celsius(aler(&bmodel->run.t_out)),
+	       temp_to_celsius(aler(&bmodel->run.t_out_filt)),
+	       temp_to_celsius(aler(&bmodel->run.t_out_mix)),
+	       temp_to_celsius(aler(&bmodel->run.t_out_att)));
 }
 
 /**
@@ -400,26 +406,27 @@ static int bmodel_outdoor(struct s_bmodel * const bmodel)
  */
 static int bmodel_summer(struct s_bmodel * const bmodel)
 {
-	assert(bmodel);	// guaranteed to be called with bmodel configured
-
-	if (unlikely(!bmodel->run.online))	// but not necessarily online
-		return (-EOFFLINE);
+	temp_t t_out, t_out_mix, t_out_att;
 
 	if (unlikely(!bmodel->set.limit_tsummer)) {
-		bmodel->run.summer = false;
+		aser(&bmodel->run.summer, false);
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((bmodel->run.t_out > bmodel->set.limit_tsummer)	&&
-	    (bmodel->run.t_out_mix > bmodel->set.limit_tsummer)	&&
-	    (bmodel->run.t_out_att > bmodel->set.limit_tsummer)) {
-		bmodel->run.summer = true;
+	t_out = aler(&bmodel->run.t_out);
+	t_out_mix = aler(&bmodel->run.t_out_mix);
+	t_out_att = aler(&bmodel->run.t_out_att);
+
+	if ((t_out > bmodel->set.limit_tsummer)	&&
+	    (t_out_mix > bmodel->set.limit_tsummer)	&&
+	    (t_out_att > bmodel->set.limit_tsummer)) {
+		aser(&bmodel->run.summer, true);
 	}
 	else {
-		if ((bmodel->run.t_out < bmodel->set.limit_tsummer)	&&
-		    (bmodel->run.t_out_mix < bmodel->set.limit_tsummer)	&&
-		    (bmodel->run.t_out_att < bmodel->set.limit_tsummer))
-			bmodel->run.summer = false;
+		if ((t_out < bmodel->set.limit_tsummer)	&&
+		    (t_out_mix < bmodel->set.limit_tsummer)	&&
+		    (t_out_att < bmodel->set.limit_tsummer))
+			aser(&bmodel->run.summer, false);
 	}
 
 	return (ALL_OK);
@@ -435,24 +442,42 @@ static int bmodel_summer(struct s_bmodel * const bmodel)
  */
 static int bmodel_frost(struct s_bmodel * restrict const bmodel)
 {
-	assert(bmodel);	// guaranteed to be called with bmodel configured
-
-	if (unlikely(!bmodel->run.online))	// but not necessarily online
-		return (-EOFFLINE);
+	temp_t t_out;
 
 	if (unlikely(!bmodel->set.limit_tfrost)) {
-		bmodel->run.frost = false;
+		aser(&bmodel->run.frost, false);
 		return (-EMISCONFIGURED);	// invalid limit, stop here
 	}
 
-	if ((bmodel->run.t_out < bmodel->set.limit_tfrost)) {
-		bmodel->run.frost = true;
-		bmodel->run.summer = false;	// override summer
+	t_out = aler(&bmodel->run.t_out);
+
+	if ((t_out < bmodel->set.limit_tfrost)) {
+		aser(&bmodel->run.frost, true);
+		aser(&bmodel->run.summer, false);	// override summer
 	}
-	else if ((bmodel->run.t_out > (bmodel->set.limit_tfrost + deltaK_to_temp(1))))
-		bmodel->run.frost = false;
+	else if ((t_out > (bmodel->set.limit_tfrost + deltaK_to_temp(1))))
+		aser(&bmodel->run.frost, false);
 
 	return (ALL_OK);
+}
+
+static int bmodel_run(struct s_bmodel * restrict const bmodel)
+{
+	int ret;
+
+	assert(bmodel);
+
+	if (unlikely(!aler(&bmodel->run.online)))
+		return (-EOFFLINE);
+
+	bmodel_outdoor(bmodel);
+
+	ret = bmodel_summer(bmodel);
+	if (ret)
+		return (ret);
+
+	ret = bmodel_frost(bmodel);
+	return (ret);
 }
 
 /**
@@ -641,9 +666,7 @@ int models_run(void)
 	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
 		if (unlikely(!bmodelelmt->bmodel->set.configured))
 			continue;
-		bmodel_outdoor(bmodelelmt->bmodel);
-		bmodel_summer(bmodelelmt->bmodel);
-		bmodel_frost(bmodelelmt->bmodel);
+		bmodel_run(bmodelelmt->bmodel);
 	}
 
 	return (ALL_OK);
@@ -660,7 +683,7 @@ temp_t models_outtemp(void)
 		return (-EOFFLINE);
 
 	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
-		temp += bmodelelmt->bmodel->run.t_out;
+		temp += aler(&bmodelelmt->bmodel->run.t_out);
 
 	temp /= Models.bmodels_n;	// average
 

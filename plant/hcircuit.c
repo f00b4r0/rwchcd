@@ -430,14 +430,14 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 {
 	const struct s_bmodel * restrict const bmodel = circuit->set.p.bmodel;
-	temp_t temp_trigger, temp_request;
+	temp_t temp_trigger, temp_request, t_out, t_out_mix;
 
 	// input sanitization performed in logic_hcircuit()
 	assert(circuit->pdata);
 	assert(bmodel);
 
 	// check for summer switch off first
-	if (bmodel->run.summer) {
+	if (aler(&bmodel->run.summer)) {
 		circuit->run.outhoff = true;
 		return;
 	}
@@ -470,14 +470,17 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 		return;
 	}
 
-	if ((bmodel->run.t_out > temp_trigger) ||
-	    (bmodel->run.t_out_mix > temp_trigger)) {
+	t_out = aler(&bmodel->run.t_out);
+	t_out_mix = aler(&bmodel->run.t_out_mix);
+
+	if ((t_out > temp_trigger) ||
+	    (t_out_mix > temp_trigger)) {
 		circuit->run.outhoff = true;
 	}
 	else {
 		temp_trigger -= SETorDEF(circuit->set.params.outhoff_hysteresis, circuit->pdata->set.def_hcircuit.outhoff_hysteresis);
-		if ((bmodel->run.t_out < temp_trigger) &&
-		    (bmodel->run.t_out_mix < temp_trigger))
+		if ((t_out < temp_trigger) &&
+		    (t_out_mix < temp_trigger))
 			circuit->run.outhoff = false;
 	}
 }
@@ -520,7 +523,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	assert(bmodel);
 
 	// fast cooldown can only be applied if set AND not in frost condition
-	can_fastcool = (circuit->set.fast_cooldown && !bmodel->run.frost);
+	can_fastcool = (circuit->set.fast_cooldown && !aler(&bmodel->run.frost));
 
 	// store current status for transition detection
 	prev_runmode = aler(&circuit->run.runmode);
@@ -566,7 +569,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// Check if the circuit meets run.outhoff conditions
 	hcircuit_outhoff(circuit);
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
-	if (circuit->run.outhoff && !bmodel->run.frost)
+	if (circuit->run.outhoff && !aler(&bmodel->run.frost))
 		new_runmode = RM_OFF;
 
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
@@ -604,7 +607,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
 		if ((RM_OFF == new_runmode) && ambient_temp) {
 			if (elapsed_time > dtmin) {
-				ambient_temp = temp_expw_mavg(ambient_temp, bmodel->run.t_out_mix, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
+				ambient_temp = temp_expw_mavg(ambient_temp, aler(&bmodel->run.t_out_mix), 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
 			}
 			dbgmsg(1, 1, "\"%s\": off, ambient: %.1f", circuit->name, temp_to_celsius(ambient_temp));
@@ -793,7 +796,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	circuit->run.active = true;
 
 	// if building model isn't online, failsafe
-	if (unlikely(!circuit->set.p.bmodel->run.online)) {
+	if (unlikely(!aler(&circuit->set.p.bmodel->run.online))) {
 		hcircuit_failsafe(circuit);
 		return (-ESAFETY);
 	}
@@ -815,7 +818,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// calculate water pipe temp
 	switch (circuit->set.tlaw) {
 		case HCL_BILINEAR:
-			water_temp = templaw_bilinear(circuit, circuit->set.p.bmodel->run.t_out_mix);
+			water_temp = templaw_bilinear(circuit, aler(&circuit->set.p.bmodel->run.t_out_mix));
 			break;
 		case HCL_NONE:
 		default:
