@@ -998,4 +998,6 @@ void hcircuit_cleanup(struct s_hcircuit * circuit)
 
 	free((void *)circuit->name);
 	circuit->name = NULL;
+	free(circuit->tlaw_priv);
+	circuit->tlaw_priv = NULL;
 }
