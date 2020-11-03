@@ -84,13 +84,13 @@ struct s_hcircuit {
 	void * restrict tlaw_priv;		///< Reference data for templaw
 	const struct s_pdata * pdata;		///< read-only plant data for this circuit
 	const char * restrict name;		///< unique name for this circuit
+	enum e_execs status;			///< last known status
 };
 
-struct s_hcircuit * hcircuit_new(void) __attribute__((warn_unused_result));
 int hcircuit_online(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
 int hcircuit_offline(struct s_hcircuit * const circuit);
 int hcircuit_run(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
-void hcircuit_del(struct s_hcircuit * circuit);
+void hcircuit_cleanup(struct s_hcircuit * circuit);
 
 int hcircuit_make_bilinear(struct s_hcircuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
 

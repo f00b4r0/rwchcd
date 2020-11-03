@@ -88,85 +88,27 @@ struct s_valve * plant_fbn_valve(const struct s_plant * restrict const plant, co
 }
 
 /**
- * Find a circuit by name in a plant.
- * @param plant the plant to find the circuit from
+ * Find an hcircuit by name in a plant.
+ * @param plant the plant to find the hcircuit from
  * @param name target name to find
- * @return circuit if found, NULL otherwise
+ * @return hcircuit if found, NULL otherwise
  */
-struct s_hcircuit * plant_fbn_circuit(const struct s_plant * restrict const plant, const char * restrict const name)
+struct s_hcircuit * plant_fbn_hcircuit(const struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_heating_circuit_l * restrict circuitl;
-	struct s_hcircuit * restrict circuit = NULL;
+	struct s_hcircuit * restrict hcircuit = NULL;
+	plid_t id;
 
 	if (!plant || !name)
 		return (NULL);
 
-	for (circuitl = plant->circuit_head; circuitl; circuitl = circuitl->next) {
-		if (!strcmp(circuitl->circuit->name, name)) {
-			circuit = circuitl->circuit;
+	for (id = 0; id < plant->hcircuits.last; id++) {
+		if (!strcmp(plant->hcircuits.all[id].name, name)) {
+			hcircuit = &plant->hcircuits.all[id];
 			break;
 		}
 	}
 
-	return (circuit);
-}
-
-/**
- * Create a new heating circuit and attach it to the plant.
- * @param plant the plant to attach the circuit to
- * @param name @b UNIQUE circuit name. A local copy is created
- * @return pointer to the created heating circuit
- */
-struct s_hcircuit * plant_new_circuit(struct s_plant * restrict const plant, const char * restrict const name)
-{
-	struct s_hcircuit * restrict circuit = NULL;
-	struct s_heating_circuit_l * restrict circuitelement = NULL;
-	char * restrict str = NULL;
-
-	if (!plant || !name)
-		goto fail;
-
-	// deal with name
-	// ensure unique name
-	if (plant_fbn_circuit(plant, name))
-		goto fail;
-
-	str = strdup(name);
-	if (!str)
-		goto fail;
-
-	// create a new circuit
-	circuit = hcircuit_new();
-	if (!circuit)
-		goto fail;
-
-	// set name
-	circuit->name = str;
-
-	// set plant data
-	circuit->pdata = &plant->pdata;
-
-	// create a new circuit element
-	circuitelement = calloc(1, sizeof(*circuitelement));
-	if (!circuitelement)
-		goto fail;
-
-	// attach the created circuit to the element
-	circuitelement->circuit = circuit;
-
-	// attach it to the plant
-	circuitelement->id = plant->circuit_n;
-	circuitelement->next = plant->circuit_head;
-	plant->circuit_head = circuitelement;
-	plant->circuit_n++;
-
-	return (circuit);
-
-fail:
-	free(str);
-	free(circuit);
-	free(circuitelement);
-	return (NULL);
+	return (hcircuit);
 }
 
 /**
@@ -353,7 +295,6 @@ struct s_plant * plant_new(void)
  */
 void plant_del(struct s_plant * plant)
 {
-	struct s_heating_circuit_l * circuitelement, * circuitlnext;
 	struct s_dhw_tank_l * dhwtelement, * dhwtlnext;
 	struct s_heatsource_l * sourceelement, * sourcenext;
 	plid_t id;
@@ -376,14 +317,11 @@ void plant_del(struct s_plant * plant)
 	free(plant->valves.all);
 
 	// clear all registered circuits
-	circuitelement = plant->circuit_head;
-	while (circuitelement) {
-		circuitlnext = circuitelement->next;
-		hcircuit_del(circuitelement->circuit);
-		free(circuitelement);
-		plant->circuit_n--;
-		circuitelement = circuitlnext;
-	}
+	for (id = 0; id < plant->hcircuits.last; id++)
+		hcircuit_cleanup(&plant->hcircuits.all[id]);
+	plant->hcircuits.last = 0;
+	plant->hcircuits.n = 0;
+	free(plant->hcircuits.all);
 
 	// clear all registered dhwt
 	dhwtelement = plant->dhwt_head;
@@ -488,7 +426,7 @@ int plant_online(struct s_plant * restrict const plant)
 {
 	struct s_pump * pump;
 	struct s_valve * valve;
-	struct s_heating_circuit_l * circuitl;
+	struct s_hcircuit * hcircuit;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
@@ -531,14 +469,15 @@ int plant_online(struct s_plant * restrict const plant)
 	}
 	
 	// next deal with the consummers
-	// circuits first
-	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		ret = hcircuit_online(circuitl->circuit);
-		circuitl->status = ret;
+	// hcircuits first
+	for (id = 0; id < plant->hcircuits.last; id++) {
+		hcircuit = &plant->hcircuits.all[id];
+		ret = hcircuit_online(hcircuit);
+		hcircuit->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, circuitl->id, circuitl->circuit->name, PDEV_HCIRC, true);
-			hcircuit_offline(circuitl->circuit);
+			plant_onfline_printerr(ret, id, hcircuit->name, PDEV_HCIRC, true);
+			hcircuit_offline(hcircuit);
 			suberror = true;
 		}
 	}
@@ -590,7 +529,7 @@ int plant_offline(struct s_plant * restrict const plant)
 {
 	struct s_pump * pump;
 	struct s_valve * valve;
-	struct s_heating_circuit_l * circuitl;
+	struct s_hcircuit * hcircuit;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
 	bool suberror = false;
@@ -607,12 +546,13 @@ int plant_offline(struct s_plant * restrict const plant)
 	
 	// offline the consummers first
 	// circuits first
-	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		ret = hcircuit_offline(circuitl->circuit);
-		circuitl->status = ret;
+	for (id = 0; id < plant->hcircuits.last; id++) {
+		hcircuit = &plant->hcircuits.all[id];
+		ret = hcircuit_offline(hcircuit);
+		hcircuit->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, circuitl->id, circuitl->circuit->name, PDEV_HCIRC, false);
+			plant_onfline_printerr(ret, id, hcircuit->name, PDEV_HCIRC, false);
 			suberror = true;
 		}
 	}
@@ -768,21 +708,23 @@ msgset:
 static void plant_collect_hrequests(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
-	const struct s_heating_circuit_l * restrict circuitl;
+	const struct s_hcircuit * hcircuit;
 	const struct s_dhw_tank_l * restrict dhwtl;
 	temp_t temp, temp_request = RWCHCD_TEMP_NOREQUEST, temp_req_dhw = RWCHCD_TEMP_NOREQUEST;
 	bool dhwt_absolute = false, dhwt_sliding = false, dhwt_reqdhw = false, dhwt_charge = false;
+	plid_t id;
 
 	assert(plant);
 	assert(plant->run.online);
 
 	// for consummers in runtime scheme, collect heat requests and max them
 	// circuits first
-	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		if (!circuitl->circuit->run.online || (ALL_OK != circuitl->status))
+	for (id = 0; id < plant->hcircuits.last; id++) {
+		hcircuit = &plant->hcircuits.all[id];
+		if (!hcircuit->run.online || (ALL_OK != hcircuit->status))
 			continue;
 
-		temp = aler(&circuitl->circuit->run.heat_request);
+		temp = aler(&hcircuit->run.heat_request);
 		temp_request = (temp > temp_request) ? temp : temp_request;
 		if (RWCHCD_TEMP_NOREQUEST != temp)
 			plant->run.last_creqtime = now;
@@ -889,16 +831,18 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
  */
 static bool plant_summer_ok(const struct s_plant * restrict const plant)
 {
-	const struct s_heating_circuit_l * restrict circuitl;
+	const struct s_hcircuit * restrict hcircuit;
 	bool summer = true;
+	plid_t id;
 
 	assert(plant);
 	assert(plant->run.online);
 
-	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		if (!circuitl->circuit->run.online)
+	for (id = 0; id < plant->hcircuits.last; id++) {
+		hcircuit = &plant->hcircuits.all[id];
+		if (!hcircuit->run.online)
 			continue;
-		summer &= aler(&circuitl->circuit->set.p.bmodel->run.summer);
+		summer &= aler(&hcircuit->set.p.bmodel->run.summer);
 	}
 
 	return (summer);
@@ -990,7 +934,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
  */
 int plant_run(struct s_plant * restrict const plant)
 {
-	struct s_heating_circuit_l * circuitl;
+	struct s_hcircuit * hcircuit;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
 	struct s_valve * valve;
@@ -1031,17 +975,18 @@ int plant_run(struct s_plant * restrict const plant)
 	}
 
 	// then circuits
-	for (circuitl = plant->circuit_head; circuitl != NULL; circuitl = circuitl->next) {
-		circuitl->status = hcircuit_run(circuitl->circuit);
+	for (id = 0; id < plant->hcircuits.last; id++) {
+		hcircuit = &plant->hcircuits.all[id];
+		hcircuit->status = hcircuit_run(hcircuit);
 
-		switch (-circuitl->status) {
+		switch (-hcircuit->status) {
 			case ALL_OK:
 				break;
 			default:
-				hcircuit_offline(circuitl->circuit);		// something really bad happened
+				hcircuit_offline(hcircuit);		// something really bad happened
 				// fallthrough
 			case EINVALIDMODE:
-				circuitl->circuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
+				hcircuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
 				// fallthrough
 			case ESENSORINVAL:
 			case ESENSORSHORT:
@@ -1049,7 +994,7 @@ int plant_run(struct s_plant * restrict const plant)
 			case ENOTCONFIGURED:
 			case EOFFLINE:
 				suberror = true;
-				plant_alarm(circuitl->status, circuitl->id, circuitl->circuit->name, PDEV_HCIRC);
+				plant_alarm(hcircuit->status, id, hcircuit->name, PDEV_HCIRC);
 				continue;
 		}
 	}

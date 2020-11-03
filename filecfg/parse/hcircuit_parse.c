@@ -179,24 +179,24 @@ int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODESTR,		"pump_feed",		false,	fcp_pump_s_hcircuit_ppump_feed,		NULL, },
 		{ NODESTR,		"bmodel",		true,	fcp_bmodel_s_hcircuit_pbmodel,		NULL, },
 	};
-	struct s_plant * restrict const plant = priv;
-	struct s_hcircuit * hcircuit;
+	struct s_hcircuit * restrict const hcircuit = priv;
 	int ret;
 
 	// we receive a 'hcircuit' node with a valid string attribute which is the hcircuit name
+	if (NODESTC != node->type)
+		return (-EINVALID);
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	// create the hcircuit
-	hcircuit = plant_new_circuit(plant, node->value.stringval);
-	if (!hcircuit)
-		return (-EOOM);
-
 	ret = filecfg_parser_run_parsers(hcircuit, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
+
+	hcircuit->name = strdup(node->value.stringval);
+	if (!hcircuit->name)
+		return (-EOOM);
 
 	hcircuit->set.configured = true;
 

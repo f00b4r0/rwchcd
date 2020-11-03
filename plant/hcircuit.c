@@ -270,16 +270,6 @@ static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const te
 }
 
 /**
- * Create a circuit
- * @return the newly created circuit or NULL
- */
-struct s_hcircuit * hcircuit_new(void)
-{
-	struct s_hcircuit * const circuit = calloc(1, sizeof(*circuit));
-	return (circuit);
-}
-
-/**
  * Put circuit online.
  * Perform all necessary actions to prepare the circuit for service and
  * mark it as online.
@@ -1001,13 +991,11 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
  * Frees all circuit-local resources
  * @param circuit the circuit to delete
  */
-void hcircuit_del(struct s_hcircuit * circuit)
+void hcircuit_cleanup(struct s_hcircuit * circuit)
 {
 	if (!circuit)
 		return;
 
 	free((void *)circuit->name);
 	circuit->name = NULL;
-
-	free(circuit);
 }

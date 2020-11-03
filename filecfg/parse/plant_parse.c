@@ -183,14 +183,66 @@ cleanup:
 	return (ret);
 }
 
+static int plant_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_plant * restrict const plant = priv;
+	struct s_hcircuit * hcircuit;
+	int ret;
+
+	if (plant->hcircuits.last >= plant->hcircuits.n)
+		return (-EOOM);
+
+	if (plant_fbn_hcircuit(plant, node->value.stringval))
+		return (-EEXISTS);
+
+	hcircuit = &plant->hcircuits.all[plant->hcircuits.last];
+
+	// set plant data
+	hcircuit->pdata = &plant->pdata;
+
+	ret = filecfg_hcircuit_parse(hcircuit, node);
+	if (ALL_OK == ret)
+		plant->hcircuits.last++;
+
+	return (ret);
+}
+
+static int plant_hcircuits_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_plant * const plant = priv;
+	unsigned int n;
+	int ret;
+
+	n = filecfg_parser_count_siblings(node->children, "hcircuit");
+
+	if (!n)
+		return (-EEMPTY);
+
+	if (n >= PLID_MAX)
+		return (-ETOOBIG);
+
+	plant->hcircuits.all = calloc(n, sizeof(plant->hcircuits.all[0]));
+	if (!plant->hcircuits.all)
+		return (-EOOM);
+
+	plant->hcircuits.n = (plid_t)n;
+	plant->hcircuits.last = 0;
+
+	ret = filecfg_parser_parse_namedsiblings(plant, node->children, "hcircuit", plant_hcircuit_parse);
+	if (ALL_OK != ret)
+		goto cleanup;
+
+	return (ALL_OK);
+
+cleanup:
+	// todo: cleanup all hcircuits (names)
+	free(plant->hcircuits.all);
+	return (ret);
+}
+
 static int dhwts_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "dhwt", filecfg_dhwt_parse));
-}
-
-static int hcircuits_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "hcircuit", filecfg_hcircuit_parse));
 }
 
 static int heatsources_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -205,7 +257,7 @@ int filecfg_plant_parse(void * restrict const priv, const struct s_filecfg_parse
 		{ NODELST,	"pumps",	false,	plant_pumps_parse,	NULL, },
 		{ NODELST,	"valves",	false,	plant_valves_parse,	NULL, },
 		{ NODELST,	"dhwts",	false,	dhwts_parse,		NULL, },
-		{ NODELST,	"hcircuits",	false,	hcircuits_parse,	NULL, },
+		{ NODELST,	"hcircuits",	false,	plant_hcircuits_parse,	NULL, },
 		{ NODELST,	"heatsources",	false,	heatsources_parse,	NULL, },
 	};
 	struct s_runtime * const runtime = priv;
