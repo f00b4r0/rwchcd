@@ -330,24 +330,24 @@ int filecfg_valve_parse(void * restrict const priv, const struct s_filecfg_parse
 		{ NODESTR|NODESTC,	"type",		true,	fcp_valve_type,			NULL, },
 		{ NODESTC,		"motor",	true,	fcp_valve_motor,		NULL, },
 	};
-	struct s_plant * restrict const plant = priv;
-	struct s_valve * valve;
+	struct s_valve * restrict const valve = priv;
 	int ret;
 
 	// we receive a 'valve' node with a valid string attribute which is the valve name
+	if (NODESTC != node->type)
+		return (-EINVALID);
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	// create the valve
-	valve = plant_new_valve(plant, node->value.stringval);
-	if (!valve)
-		return (-EOOM);
-
 	ret = filecfg_parser_run_parsers(valve, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
+
+	valve->name = strdup(node->value.stringval);
+	if (!valve->name)
+		return (-EOOM);
 
 	valve->set.configured = true;
 

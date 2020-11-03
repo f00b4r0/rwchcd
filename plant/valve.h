@@ -138,10 +138,10 @@ struct s_valve {
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< unique valve name
 	void * restrict priv;		///< private data
+	enum e_execs status;		///< last known status
 };
 
-struct s_valve * valve_new(void) __attribute__((warn_unused_result));
-void valve_del(struct s_valve * valve);
+void valve_cleanup(struct s_valve * valve);
 int valve_online(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_shutdown(struct s_valve * const valve);
 int valve_offline(struct s_valve * const valve);

@@ -71,75 +71,20 @@ struct s_pump * plant_fbn_pump(const struct s_plant * restrict const plant, cons
  */
 struct s_valve * plant_fbn_valve(const struct s_plant * restrict const plant, const char * restrict const name)
 {
-	const struct s_valve_l * restrict valvel;
 	struct s_valve * restrict valve = NULL;
+	plid_t id;
 
 	if (!plant || !name)
 		return (NULL);
 
-	for (valvel = plant->valve_head; valvel; valvel = valvel->next) {
-		if (!strcmp(valvel->valve->name, name)) {
-			valve = valvel->valve;
+	for (id = 0; id < plant->valves.last; id++) {
+		if (!strcmp(plant->valves.all[id].name, name)) {
+			valve = &plant->valves.all[id];
 			break;
 		}
 	}
 
 	return (valve);
-}
-
-/**
- * Create a new valve and attach it to the plant.
- * @param plant the plant to attach the valve to
- * @param name @b UNIQUE valve name. A local copy is created
- * @return pointer to the created valve
- */
-struct s_valve * plant_new_valve(struct s_plant * restrict const plant, const char * restrict const name)
-{
-	struct s_valve * restrict valve = NULL;
-	struct s_valve_l * restrict valveelmt = NULL;
-	char * restrict str = NULL;
-
-	if (!plant || !name)
-		goto fail;
-
-	// deal with name
-	// ensure unique name
-	if (plant_fbn_valve(plant, name))
-		goto fail;
-
-	str = strdup(name);
-	if (!str)
-		goto fail;
-
-	// create a new valve
-	valve = valve_new();
-	if (!valve)
-		goto fail;
-
-	// set name
-	valve->name = str;
-	
-	// create valve element
-	valveelmt = calloc(1, sizeof(*valveelmt));
-	if (!valveelmt)
-		goto fail;
-	
-	// attach created valve to element
-	valveelmt->valve = valve;
-	
-	// attach it to the plant
-	valveelmt->id = plant->valve_n;
-	valveelmt->next = plant->valve_head;
-	plant->valve_head = valveelmt;
-	plant->valve_n++;
-	
-	return (valve);
-	
-fail:
-	free(str);
-	free(valve);
-	free(valveelmt);
-	return (NULL);
 }
 
 /**
@@ -408,7 +353,6 @@ struct s_plant * plant_new(void)
  */
 void plant_del(struct s_plant * plant)
 {
-	struct s_valve_l * valveelmt, * valvenext;
 	struct s_heating_circuit_l * circuitelement, * circuitlnext;
 	struct s_dhw_tank_l * dhwtelement, * dhwtlnext;
 	struct s_heatsource_l * sourceelement, * sourcenext;
@@ -425,15 +369,12 @@ void plant_del(struct s_plant * plant)
 	free(plant->pumps.all);
 
 	// clear all registered valves
-	valveelmt = plant->valve_head;
-	while (valveelmt) {
-		valvenext = valveelmt->next;
-		valve_del(valveelmt->valve);
-		free(valveelmt);
-		plant->valve_n--;
-		valveelmt = valvenext;
-	}
-	
+	for (id = 0; id < plant->valves.last; id++)
+		valve_cleanup(&plant->valves.all[id]);
+	plant->valves.last = 0;
+	plant->valves.n = 0;
+	free(plant->valves.all);
+
 	// clear all registered circuits
 	circuitelement = plant->circuit_head;
 	while (circuitelement) {
@@ -546,7 +487,7 @@ static void plant_onfline_printerr(const enum e_execs errorn, const int devid, c
 int plant_online(struct s_plant * restrict const plant)
 {
 	struct s_pump * pump;
-	struct s_valve_l * valvel;
+	struct s_valve * valve;
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
@@ -577,13 +518,14 @@ int plant_online(struct s_plant * restrict const plant)
 	}
 
 	// valves
-	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
-		ret = valve_online(valvel->valve);
-		valvel->status = ret;
+	for (id = 0; id < plant->valves.last; id++) {
+		valve = &plant->valves.all[id];
+		ret = valve_online(valve);
+		valve->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, valvel->id, valvel->valve->name, PDEV_VALVE, true);
-			valve_offline(valvel->valve);
+			plant_onfline_printerr(ret, id, valve->name, PDEV_VALVE, true);
+			valve_offline(valve);
 			suberror = true;
 		}
 	}
@@ -647,7 +589,7 @@ int plant_online(struct s_plant * restrict const plant)
 int plant_offline(struct s_plant * restrict const plant)
 {
 	struct s_pump * pump;
-	struct s_valve_l * valvel;
+	struct s_valve * valve;
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
@@ -699,12 +641,13 @@ int plant_offline(struct s_plant * restrict const plant)
 	
 	// finally offline the actuators
 	// valves
-	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
-		ret = valve_offline(valvel->valve);
-		valvel->status = ret;
+	for (id = 0; id < plant->valves.last; id++) {
+		valve = &plant->valves.all[id];
+		ret = valve_offline(valve);
+		valve->status = ret;
 		
 		if (ALL_OK != ret) {
-			plant_onfline_printerr(ret, valvel->id, valvel->valve->name, PDEV_VALVE, false);
+			plant_onfline_printerr(ret, id, valve->name, PDEV_VALVE, false);
 			suberror = true;
 		}
 	}
@@ -975,7 +918,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
 	struct s_pump * pump;
-	struct s_valve_l * valvel;
+	struct s_valve * valve;
 	plid_t id;
 	int ret;
 
@@ -1004,20 +947,21 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	dbgmsg(1, 1, "summer maintenance active");
 
 	// open all valves
-	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
-		if (!valvel->valve->run.online)
+	for (id = 0; id < plant->valves.last; id++) {
+		valve = &plant->valves.all[id];
+		if (!valve->run.online)
 			continue;
 
-		if (VA_TYPE_ISOL == valvel->valve->set.type)
+		if (VA_TYPE_ISOL == valve->set.type)
 			continue;	// don't touch isolation valves
 
-		if (valvel->valve->run.dwht_use)
+		if (valve->run.dwht_use)
 			continue;	// don't touch DHWT valves when in use
 
-		ret = valve_reqopen_full(valvel->valve);
+		ret = valve_reqopen_full(valve);
 
 		if (ALL_OK != ret)
-			dbgerr("valve_reqopen_full failed on %d (%d)", valvel->id, ret);
+			dbgerr("valve_reqopen_full failed on %d (%d)", id, ret);
 	}
 
 	// set all pumps ON
@@ -1049,7 +993,7 @@ int plant_run(struct s_plant * restrict const plant)
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
 	struct s_heatsource_l * heatsourcel;
-	struct s_valve_l * valvel;
+	struct s_valve * valve;
 	struct s_pump * pump;
 	bool overtemp = false, suberror = false;
 	timekeep_t stop_delay = 0;
@@ -1155,21 +1099,23 @@ int plant_run(struct s_plant * restrict const plant)
 	if (plant->set.summer_maintenance)
 		plant_summer_maintenance(plant);
 
+	// finally run the actuators
 	// run the valves
-	for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next) {
-		valvel->status = valve_run(valvel->valve);
+	for (id = 0; id < plant->valves.last; id++) {
+		valve = &plant->valves.all[id];
+		valve->status = valve_run(valve);
 
-		switch (-valvel->status) {
+		switch (-valve->status) {
 			case ALL_OK:
 			case EDEADBAND:	// not an error
 				break;
 			default:	// offline the valve if anything happens
-				valve_offline(valvel->valve);	// something really bad happened
+				valve_offline(valve);	// something really bad happened
 				// fallthrough
 			case ENOTCONFIGURED:
 			case EOFFLINE:
 				suberror = true;
-				plant_alarm(valvel->status, valvel->id, valvel->valve->name, PDEV_VALVE);
+				plant_alarm(valve->status, id, valve->name, PDEV_VALVE);
 				continue;	// no further processing for this valve
 		}
 	}

@@ -24,7 +24,6 @@
 
 int filecfg_plant_dump(const struct s_plant * restrict const plant)
 {
-	struct s_valve_l * valvel;
 	struct s_heatsource_l * heatsl;
 	struct s_heating_circuit_l * circuitl;
 	struct s_dhw_tank_l * dhwtl;
@@ -63,11 +62,11 @@ int filecfg_plant_dump(const struct s_plant * restrict const plant)
 		filecfg_iprintf("};\n");	// pumps
 	}
 
-	if (FCD_Exhaustive || plant->valve_head) {
+	if (FCD_Exhaustive || plant->valves.last) {
 		filecfg_iprintf("valves {\n");
 		filecfg_ilevel_inc();
-		for (valvel = plant->valve_head; valvel != NULL; valvel = valvel->next)
-			filecfg_valve_dump(valvel->valve);
+		for (id = 0; id < plant->valves.last; id++)
+			filecfg_valve_dump(&plant->valves.all[id]);
 		filecfg_ilevel_dec();
 		filecfg_iprintf("};\n");	// valves
 	}

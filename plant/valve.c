@@ -33,21 +33,11 @@
 
 
 /**
- * Create a valve
- * @return the newly created valve or NULL
- */
-struct s_valve * valve_new(void)
-{
-	struct s_valve * const valve = calloc(1, sizeof(*valve));
-	return (valve);
-}
-
-/**
- * Delete a valve.
+ * Cleanup a valve.
  * Frees all valve-local resources
  * @param valve the valve to delete
  */
-void valve_del(struct s_valve * valve)
+void valve_cleanup(struct s_valve * valve)
 {
 	if (!valve)
 		return;
@@ -56,8 +46,6 @@ void valve_del(struct s_valve * valve)
 	valve->priv = NULL;
 	free((void *)valve->name);
 	valve->name = NULL;
-
-	free(valve);
 }
 
 /**
