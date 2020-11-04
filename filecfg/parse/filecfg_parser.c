@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hw_backends/hw_backends.h"
 #include "lib.h"
 #include "filecfg_parser.h"
 
@@ -557,13 +556,14 @@ fail:
 void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist)
 {
 	struct s_filecfg_parser_node *node;
-	struct s_filecfg_parser_nodelist *next;
+	struct s_filecfg_parser_nodelist *next, *children;
 
 	if (!nodelist)
 		return;
 
 	node = nodelist->node;
 	next = nodelist->next;
+	children = node->children;
 
 	free(nodelist);
 
@@ -571,7 +571,8 @@ void filecfg_parser_free_nodelist(struct s_filecfg_parser_nodelist *nodelist)
 		free(node->name);
 		if ((NODESTR|NODESTC) & node->type)
 			free(node->value.stringval);
-		filecfg_parser_free_nodelist(node->children);
+		free(node);
+		filecfg_parser_free_nodelist(children);
 	}
 
 	filecfg_parser_free_nodelist(next);
