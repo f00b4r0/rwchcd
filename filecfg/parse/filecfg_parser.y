@@ -11,6 +11,8 @@
 	#include "filecfg_parser.h"
 	extern int filecfg_parser_lineno;
 	int filecfg_parser_lex();
+	int filecfg_parser_lex_destroy();
+	extern FILE *filecfg_parser_in;
 	void filecfg_parser_error(const char *);
 %}
 
@@ -39,7 +41,7 @@
 
 %%
 
-start: node_list			{ if (filecfg_parser_process_config($1)) YYABORT; filecfg_parser_free_nodelist($1); }
+start: node_list			{ if (filecfg_parser_process_config($1)) YYABORT; fclose(filecfg_parser_in); filecfg_parser_lex_destroy(); filecfg_parser_free_nodelist($1); }
 
 node_list: /* empty */			{ $$ = NULL; }
 	| node_list node		{ $$ = filecfg_parser_new_nodelistelmt($1, $2); }
