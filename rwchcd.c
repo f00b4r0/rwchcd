@@ -74,7 +74,7 @@
 #include "filecfg/dump/filecfg_dump.h"
 
 #include "filecfg/parse/filecfg_parser.tab.h"
-extern FILE *filecfg_parser_in;	///< provided and used by the Bison parser
+extern FILE *filecfg_parser_in;	///< provided, used and closed by the Bison parser
 
 #ifndef RWCHCD_PRIO
  #define RWCHCD_PRIO	20	///< Desired run priority.
@@ -126,6 +126,7 @@ static struct s_subsys_cb_l {
  * @param exitcb pointer to exit() callback (can be NULL)
  * @return exec status
  * @warning not thread safe
+ * @note allocated memory is never freed (until program exit)
  */
 int rwchcd_add_subsyscb(const char * const name, int (* oncb)(void), int (* offcb)(void), void (* exitcb)(void))
 {
