@@ -81,15 +81,15 @@ struct s_hw_p1_pdata {
 		uint_fast16_t calib_dac;	///< sensor calibration value with dac offset (as on ohm value read)
 		int fwversion;			///< firmware version
 	} run;		///< private runtime (internally handled)
-	struct s_hw_p1_spi spi;			///< spi runtime
-	struct s_hw_p1_lcd lcd;			///< lcd subsystem private data
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data
 	union rwchc_u_relays relays;		///< local copy of hardware relays data
 	union rwchc_u_periphs peripherals;	///< local copy of hardware peripheral data
+	struct s_hw_p1_spi spi;			///< spi runtime
+	struct s_hw_p1_lcd lcd;			///< lcd subsystem private data
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
 	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
-	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 	uint_fast8_t scount[RWCHC_NTSENSORS];	///< counter for decimation
+	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
 
 typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
