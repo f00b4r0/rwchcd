@@ -212,16 +212,16 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
  * @param name target name to find
  * @return bmodel if found, NULL otherwise
  */
-static const struct s_bmodel * bmodels_fbn(const struct s_bmodel_l * const bmodels, const char * const name)
+static const struct s_bmodel * bmodels_fbn(const struct s_models * const models, const char * const name)
 {
-	const struct s_bmodel_l * bml;
 	struct s_bmodel * bmodel = NULL;
+	modid_t id;
 
 	assert(name);
 
-	for (bml = bmodels; bml; bml = bml->next) {
-		if (!strcmp(bml->bmodel->name, name)) {
-			bmodel = bml->bmodel;
+	for (id = 0; id < models->bmodels.last; id++) {
+		if (!strcmp(models->bmodels.all[id].name, name)) {
+			bmodel = &models->bmodels.all[id];
 			break;
 		}
 	}
@@ -303,17 +303,16 @@ static int bmodel_offline(struct s_bmodel * restrict const bmodel)
 }
 
 /**
- * Delete a building model.
+ * Cleanup a building model.
  * @param bmodel target model
  */
-static void bmodel_del(struct s_bmodel * restrict bmodel)
+static void bmodel_cleanup(struct s_bmodel * restrict bmodel)
 {
 	if (!bmodel)
 		return;
 
 	free((void *)bmodel->name);
 	bmodel->name = NULL;
-	free(bmodel);
 }
 
 /**
@@ -486,12 +485,12 @@ static int bmodel_run(struct s_bmodel * restrict const bmodel)
  */
 static void models_restore(struct s_models * restrict const models)
 {
-	struct s_bmodel_l * restrict bmodelelmt;
+	modid_t id;
 
 	assert(models);
 
-	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
-		bmodel_restore(bmodelelmt->bmodel);
+	for (id = 0; id < Models.bmodels.last; id++)
+		bmodel_restore(&Models.bmodels.all[id]);
 }
 
 /**
@@ -500,72 +499,12 @@ static void models_restore(struct s_models * restrict const models)
  */
 static void models_save(const struct s_models * restrict const models)
 {
-	struct s_bmodel_l * restrict bmodelelmt;
+	modid_t id;
 
 	assert(models);
 
-	for (bmodelelmt = models->bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
-		bmodel_save(bmodelelmt->bmodel);
-}
-
-/**
- * Create a new building model and attach it to the list of models.
- * @note a name length can work in this function but be too long for logging due to prefix/suffix.
- * @param name the model name, @b MUST be unique. A local copy is created
- * @return an allocated building model structure or NULL if failed.
- */
-struct s_bmodel * models_new_bmodel(const char * restrict const name)
-{
-	struct s_bmodel * restrict bmodel = NULL;
-	struct s_bmodel_l * restrict bmodelelmt = NULL;
-	char * restrict str = NULL;
-
-	if (!name)
-		goto fail;
-
-	// ensure name is short enough
-	if ((strlen(MODELS_STORAGE_BMODEL_PREFIX) + 1 + strlen(name) + 1) >= MAX_FILENAMELEN) {
-		pr_err(_("Name too long: \"%s\" (max: %d chars)"), name, (MAX_FILENAMELEN - 1 - 1 - strlen(MODELS_STORAGE_BMODEL_PREFIX)));
-		goto fail;
-	}
-
-	// ensure unique name
-	if (bmodels_fbn(Models.bmodels, name))
-		goto fail;
-
-	str = strdup(name);
-	if (!str)
-		goto fail;
-
-	// create a new bmodel
-	bmodel = calloc(1, sizeof(*bmodel));
-	if (!bmodel)
-		goto fail;
-
-	// set name
-	bmodel->name = str;
-
-	// create a bmodel list element
-	bmodelelmt = calloc(1, sizeof(*bmodelelmt));
-	if (!bmodelelmt)
-		goto fail;
-
-	// attach created bmodel to element
-	bmodelelmt->bmodel = bmodel;
-
-	// insert the element in the models list
-	bmodelelmt->id = Models.bmodels_n;
-	bmodelelmt->next = Models.bmodels;
-	Models.bmodels = bmodelelmt;
-	Models.bmodels_n++;
-
-	return (bmodel);
-
-fail:
-	free(str);
-	free(bmodel);
-	free(bmodelelmt);
-	return (NULL);
+	for (id = 0; id < Models.bmodels.last; id++)
+		bmodel_save(&Models.bmodels.all[id]);
 }
 
 /**
@@ -578,7 +517,7 @@ const struct s_bmodel * models_fbn_bmodel(const char * restrict const name)
 	if (!name)
 		return (NULL);
 
-	return (bmodels_fbn(Models.bmodels, name));
+	return (bmodels_fbn(&Models, name));
 }
 
 /**
@@ -597,17 +536,14 @@ int models_init(void)
  */
 void models_exit(void)
 {
-	struct s_bmodel_l * bmodelelmt, * bmodelnext;
+	modid_t id;
 
 	// clear all bmodels
-	bmodelelmt = Models.bmodels;
-	while (bmodelelmt) {
-		bmodelnext = bmodelelmt->next;
-		bmodel_del(bmodelelmt->bmodel);
-		free(bmodelelmt);
-		Models.bmodels_n--;
-		bmodelelmt = bmodelnext;
-	}
+	for (id = 0; id < Models.bmodels.last; id++)
+		bmodel_cleanup(&Models.bmodels.all[id]);
+	free(Models.bmodels.all);
+	Models.bmodels.last = 0;
+	Models.bmodels.n = 0;
 }
 
 /**
@@ -616,14 +552,14 @@ void models_exit(void)
  */
 int models_online(void)
 {
-	struct s_bmodel_l * restrict bmodelelmt;
+	modid_t id;
 	int ret;
 
 	models_restore(&Models);
 
 	// bring building models online
-	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
-		ret = bmodel_online(bmodelelmt->bmodel);
+	for (id = 0; id < Models.bmodels.last; id++) {
+		ret = bmodel_online(&Models.bmodels.all[id]);
 		if (ALL_OK != ret)
 			return (ret);
 	}
@@ -639,13 +575,13 @@ int models_online(void)
  */
 int models_offline(void)
 {
-	struct s_bmodel_l * restrict bmodelelmt;
+	modid_t id;
 
 	models_save(&Models);
 
 	// take building models offline
-	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
-		bmodel_offline(bmodelelmt->bmodel);
+	for (id = 0; id < Models.bmodels.last; id++)
+		bmodel_offline(&Models.bmodels.all[id]);
 
 	Models.online = false;
 
@@ -658,15 +594,17 @@ int models_offline(void)
  */
 int models_run(void)
 {
-	struct s_bmodel_l * restrict bmodelelmt;
+	modid_t id;
+	struct s_bmodel * bmodel;
 
 	if (unlikely(!Models.online))
 		return (-EOFFLINE);
 
-	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
-		if (unlikely(!bmodelelmt->bmodel->set.configured))
+	for (id = 0; id < Models.bmodels.last; id++) {
+		bmodel = &Models.bmodels.all[id];
+		if (unlikely(!bmodel->set.configured))
 			continue;
-		bmodel_run(bmodelelmt->bmodel);
+		bmodel_run(bmodel);
 	}
 
 	return (ALL_OK);
@@ -675,17 +613,17 @@ int models_run(void)
 /** @deprecated quick temporary hack for backward compatibility */
 temp_t models_outtemp(void)
 {
-	struct s_bmodel_l * bmodelelmt;
+	modid_t id;
 	temp_t temp = 0;
 
 	// if something isn't quite right, return error by default
 	if (!Models.online)
 		return (-EOFFLINE);
 
-	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next)
-		temp += aler(&bmodelelmt->bmodel->run.t_out);
+	for (id = 0; id < Models.bmodels.last; id++)
+		temp += aler(&Models.bmodels.all[id].run.t_out);
 
-	temp /= Models.bmodels_n;	// average
+	temp /= Models.bmodels.last;	// average
 
 	return (temp);
 }

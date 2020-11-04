@@ -2,7 +2,7 @@
 //  models.h
 //  rwchcd
 //
-//  (C) 2017 Thibaut VARENE
+//  (C) 2017,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -20,19 +20,8 @@
 #include "timekeep.h"
 #include "io/inputs.h"
 
-/** Models */
-struct s_models {
-	bool online;			///< true if the models can be run
-	uint_fast8_t bmodels_n;		///< number of building models
-	struct s_bmodel_l * restrict bmodels;	///< building models
-};
-
-/** List of building models */
-struct s_bmodel_l {
-	uint_fast8_t id;		///< unique incremental numeric id of the current bmodel (0 <= id < bmodels_n)
-	struct s_bmodel * restrict bmodel;
-	struct s_bmodel_l * next;
-};
+typedef uint_fast8_t 	modid_t;
+#define MODID_MAX	UINT_FAST8_MAX
 
 /** building model */
 struct s_bmodel {
@@ -58,7 +47,16 @@ struct s_bmodel {
 	const char * restrict name;	///< unique name for this bmodel
 };
 
-struct s_bmodel * models_new_bmodel(const char * restrict const name);
+/** Models */
+struct s_models {
+	struct {
+		struct s_bmodel * all;
+		modid_t last;
+		modid_t n;
+	} bmodels;
+	bool online;			///< true if the models can be run
+};
+
 const struct s_bmodel * models_fbn_bmodel(const char * restrict const name);
 int models_init(void);
 void models_exit(void);

@@ -46,14 +46,16 @@ static int filecfg_bmodel_dump(const struct s_bmodel * restrict const bmodel)
 
 int filecfg_models_dump(void)
 {
-	struct s_bmodel_l * restrict bmodelelmt;
+	modid_t id;
+	const struct s_bmodel * bmodel;
 
 	filecfg_iprintf("models {\n");
 	filecfg_ilevel_inc();
-	for (bmodelelmt = Models.bmodels; bmodelelmt; bmodelelmt = bmodelelmt->next) {
-		if (!bmodelelmt->bmodel->set.configured)
+	for (id = 0; id < Models.bmodels.last; id++) {
+		bmodel = &Models.bmodels.all[id];
+		if (!bmodel->set.configured)
 			continue;
-		filecfg_bmodel_dump(bmodelelmt->bmodel);
+		filecfg_bmodel_dump(bmodel);
 	}
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
