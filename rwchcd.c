@@ -511,7 +511,9 @@ int main(void)
 	pthread_join(timer_thr, NULL);
 	pthread_join(watchdog_thr, NULL);
 	pthread_join(timekeep_thr, NULL);
+#ifdef HAS_DBUS
 	pthread_join(master_thr, NULL);	// wait for cleanup
+#endif
 	close(pipefd[0]);
 	close(pipefd[1]);
 
