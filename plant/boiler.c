@@ -720,7 +720,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		if (temp_deriv < 0) {
 			if (!boiler->run.negderiv_starttime) {
 				boiler->run.turnon_negderiv = temp_deriv;
-				boiler->run.negderiv_starttime = timekeep_now();
+				boiler->run.negderiv_starttime = now;
 			}
 		}
 		else {
@@ -731,7 +731,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				/* NB: in the case of a 2-stage or variable output burner, this computation result would be physically linked to the power output of the burner itself.
 				   in the context of a single-stage constant output burner the approximation works but if we wanted to be more refined we would have to factor that output
 				   level in the stored data. XXX TODO */
-				boiler->run.turnon_next_adj = (timekeep_now() - boiler->run.negderiv_starttime) * fpdec;
+				boiler->run.turnon_next_adj = (now - boiler->run.negderiv_starttime) * fpdec;
 				boiler->run.turnon_next_adj /= (unsigned)-boiler->run.turnon_negderiv;
 				boiler->run.turnon_curr_adj = 0;	// reset current value
 			}
