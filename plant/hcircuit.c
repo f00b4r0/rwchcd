@@ -899,8 +899,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 #ifdef DEBUG
 	(void)!inputs_temperature_get(circuit->set.tid_return, &ret_temp);
-	dbgmsg(1, 1, "\"%s\": rq_amb: %.1f, tg_amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
-	       temp_to_celsius(aler(&circuit->run.request_ambient)), temp_to_celsius(aler(&circuit->run.target_ambient)),
+	dbgmsg(1, 1, "\"%s\": rq_amb: %.1f, tg_amb: %.1f, amb: %.1f, tg_wt: %.1f, tg_wt_mod: %.1f, cr_wt: %.1f, cr_rwt: %.1f", circuit->name,
+	       temp_to_celsius(aler(&circuit->run.request_ambient)), temp_to_celsius(aler(&circuit->run.target_ambient)), temp_to_celsius(aler(&circuit->run.actual_ambient)),
 	       temp_to_celsius(aler(&circuit->run.target_wtemp)), temp_to_celsius(water_temp), temp_to_celsius(curr_temp), temp_to_celsius(ret_temp));
 #endif
 
