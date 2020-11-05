@@ -125,6 +125,10 @@ void timekeep_sleep(unsigned int seconds)
  * Get the current timestamp.
  * This function atomically reads the internal wall clock.
  * @return a monotonically growing timestamp value, with 0 being init time.
+ * @warning this function uses a relaxed memory model, meaning that two concurrent calls may return different values.
+ * This usually bears no consequence as long as minimal care is taken. For instance, known safe options are:
+ * - this function is called only _once_ within a routine that sets and compares a value it has exclusive control over; or
+ * - any time comparison between timestamps coming from different threads _also_ ensures that "time moved forward", by using e.g. timekeep_a_ge_b()
  * @note wraparound is not handled (should happen after a few centuries uptime).
  */
 timekeep_t timekeep_now(void)
