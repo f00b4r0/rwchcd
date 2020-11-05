@@ -119,7 +119,7 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 
 	// skip root and slash
 	str = message->topic + strlen(hw->set.topic_root) + 1;
-	for (type = 0; type < ARRAY_SIZE(mqtt_intype_subtopics); type++) {
+	for (type = ARRAY_SIZE(mqtt_intype_subtopics)-1; type; type--) {
 		if (!strncmp(str, mqtt_intype_subtopics[type], strlen(mqtt_intype_subtopics[type]))) {
 			// match: skip subtopic and break
 			str += strlen(mqtt_intype_subtopics[type]);
