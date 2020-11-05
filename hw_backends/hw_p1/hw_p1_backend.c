@@ -566,9 +566,6 @@ int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, co
 		case HW_INPUT_TEMP:
 			if (unlikely((inid >= hw->settings.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors))))
 				return (-EINVALID);
-			// make sure available data is valid - XXX HW_P1_TIMEOUT_TK timeout hardcoded
-			if (unlikely((timekeep_now() - hw->run.sensors_ftime) > HW_P1_TIMEOUT_TK))
-				return (-EHARDWARE);
 			sensor = &hw->Sensors[inid];
 			if (!sensor->set.configured)
 				return (-ENOTCONFIGURED);
