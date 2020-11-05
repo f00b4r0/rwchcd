@@ -33,14 +33,14 @@
 /** Subtopics for outputs. @note Strings should not have common radicals */
 static const char * mqtt_outtype_subtopics[] = {
 	[HW_OUTPUT_NONE]	= "",	// should never happen
-	[HW_OUTPUT_RELAY]	= "relay",
+	[HW_OUTPUT_RELAY]	= "relays",
 };
 
 /** Subtopics for inputs. @note Strings should not have common radicals */
 static const char * mqtt_intype_subtopics[] = {
 	[HW_INPUT_NONE]		= "",	// should never happen
-	[HW_INPUT_TEMP]		= "temperature",
-	[HW_INPUT_SWITCH]	= "switch",
+	[HW_INPUT_TEMP]		= "temperatures",
+	[HW_INPUT_SWITCH]	= "switchs",
 };
 
 /**
