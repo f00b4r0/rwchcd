@@ -84,8 +84,9 @@ static int temperature_update(struct s_temperature * const t)
 
 		ret = hardware_sensor_clone_temp(t->tlist[i], &stemp);
 		if (likely(ALL_OK == ret))
-			// always weed out sensors for which the backend reports last update too far in the past (>4 periods)
-			if (unlikely((now - tsens) > (4 * t->set.period)))
+			// always weed out sensors for which the backend reports last update too far in the past (>4 periods).
+			// while the loop executes, "now" can already be in the past => check for that
+			if (unlikely((now - tsens) > (4 * t->set.period)) && timekeep_a_ge_b(now, tsens))
 				ret = -ERSTALE;
 
 		if (unlikely(ALL_OK != ret)) {
