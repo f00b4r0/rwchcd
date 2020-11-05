@@ -105,7 +105,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 	for (i = 0; i < r->rlast; i++) {
 		ret = hardware_relay_set_state(r->rlist[i], turn_on);
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("hw relay set state %d/%d returned (%d)", r->rlist[i].bid, r->rlist[i].outid, ret);
+			dbgerr("\"%s\": hw relay set state %d/%d returned (%d)", r->name, r->rlist[i].bid, r->rlist[i].outid, ret);
 			switch (r->set.missing) {
 				case R_MISS_IGN:
 					continue;
@@ -117,7 +117,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 
 		switch (r->set.op) {
 			default:
-				dbgerr("invalid operation");
+				dbgerr("\"%s\": invalid operation", r->name);
 				ret = -EINVALID;
 				// fallthrough
 			case R_OP_FIRST:
