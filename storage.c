@@ -262,6 +262,16 @@ int storage_online(void)
 
 end:
 	dbp->close(dbp, 0);
+
+	/// @todo until we can move this after privileges dropping in main(), we have to chown here otherwise we'll be locked out later.#ifndef RWCHCD_UID
+#ifndef RWCHCD_UID
+#define RWCHCD_UID	65534
+#endif
+#ifndef RWCHCD_GID
+#define RWCHCD_GID	65534
+#endif
+	chown(STORAGE_DB, RWCHCD_UID, RWCHCD_GID);
+
 	Storage_configured = true;
 	return (ALL_OK);
 
