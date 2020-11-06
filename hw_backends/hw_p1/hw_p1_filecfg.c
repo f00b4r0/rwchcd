@@ -214,7 +214,7 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	else
 		sensor_offset = 0;
 
-	sensor.set.offset = deltaK_to_temp(sensor_offset);
+	sensor.set.offset = deltaK_to_tempdiff(sensor_offset);
 
 	// match stype
 	for (i = 0; i < ARRAY_SIZE(sensor_type_str); i++) {

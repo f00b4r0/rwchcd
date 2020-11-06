@@ -76,6 +76,7 @@ tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrs
  * @param delta the delta value to be converted
  */
 #define deltaK_to_temp(delta)		(temp_t)((delta) * KPRECISION)
+#define deltaK_to_tempdiff(delta)	(tempdiff_t)((delta) * KPRECISION)
 
 /**
  * Calculate the minimum time interval to use with temp_expw_mavg() for a given
