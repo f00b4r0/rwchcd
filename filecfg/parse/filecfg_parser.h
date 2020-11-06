@@ -158,6 +158,22 @@ static int fcp_int_##_struct##_##_member(void * restrict const priv, const struc
 #define FILECFG_PARSER_INT_PARSE_SET_FUNC(_positiveonly, _struct, _setmember)	\
 FILECFG_PARSER_INT_PARSE_NEST_FUNC(_positiveonly, _struct, set., _setmember)
 
+#define FILECFG_PARSER_INTPOSMAX_PARSE_NEST_FUNC(_max, _struct, _nest, _member)	\
+static int fcp_int_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	int iv = n->value.intval;						\
+	assert(NODEINT == n->type);						\
+	if (n->children) return(-ENOTWANTED);					\
+	if ((iv < 0) || (iv > _max))						\
+		return (-EINVALID);						\
+	s->_nest _member = (typeof(s->_nest _member))iv;			\
+	return (ALL_OK);							\
+}
+
+#define FILECFG_PARSER_INTPOSMAX_PARSE_SET_FUNC(_max, _struct, _setmember)	\
+FILECFG_PARSER_INTPOSMAX_PARSE_NEST_FUNC(_max, _struct, set., _setmember)
+
 #define FILECFG_PARSER_STR_PARSE_SET_FUNC(_nonempty, _dup, _struct, _setmember)	\
 static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\

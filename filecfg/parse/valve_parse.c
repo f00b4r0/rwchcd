@@ -22,7 +22,7 @@
 
 
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_sapprox_priv, sample_intvl)
-FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_valve_sapprox_priv, amount)
+FILECFG_PARSER_INTPOSMAX_PARSE_SET_FUNC(1000, s_valve_sapprox_priv, amount)
 
 static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -42,12 +42,6 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 	if (ALL_OK != ret)
 		return (ret);
 
-	// XXX
-	if ((sapriv.set.amount < 0) || (sapriv.set.amount > UINT_FAST8_MAX)) {
-		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: amount is out of range"), node->name, node->lineno);
-		return -EINVALID;
-	}
-
 	ret = valve_make_sapprox(valve, sapriv.set.amount, sapriv.set.sample_intvl);
 	switch (ret) {
 		case ALL_OK:
@@ -66,8 +60,8 @@ static int valve_algo_sapprox_parser(void * restrict const priv, const struct s_
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_pi_priv, sample_intvl)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_pi_priv, Tu)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_valve_pi_priv, Td)
-FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_valve_pi_priv, tune_f)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, true, s_valve_pi_priv, Ksmax)
+FILECFG_PARSER_INTPOSMAX_PARSE_SET_FUNC(UINT_FAST8_MAX, s_valve_pi_priv, tune_f)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_valve_pi_priv, Ksmax)
 
 static int valve_algo_PI_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
@@ -89,12 +83,6 @@ static int valve_algo_PI_parser(void * restrict const priv, const struct s_filec
 	ret = filecfg_parser_run_parsers(&pipriv, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
-
-	// XXX
-	if ((pipriv.set.tune_f < 0) || (pipriv.set.tune_f > UINT_FAST8_MAX)) {
-		filecfg_parser_pr_err(_("In node \"%s\" closing at line %d: tune_f is out of rnage"), node->name, node->lineno);
-		return -EINVALID;
-	}
 
 	ret = valve_make_pi(valve, pipriv.set.sample_intvl, pipriv.set.Td, pipriv.set.Tu, pipriv.set.Ksmax, pipriv.set.tune_f);
 	switch (ret) {
@@ -217,7 +205,7 @@ out:
 	return (ret);
 }
 
-FILECFG_PARSER_INT_PARSE_NEST_FUNC(true, s_valve, set.mset.m3way., deadband)
+FILECFG_PARSER_INTPOSMAX_PARSE_NEST_FUNC(1000, s_valve, set.mset.m3way., deadband)
 
 static int fcp_rid_valve_m3way_rid_open(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
