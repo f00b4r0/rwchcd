@@ -939,6 +939,9 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 	if ((tout1 >= tout2) || (twater1 <= twater2))
 		return (-EINVALID);
 
+	if (tout1 >= celsius_to_temp(20))
+		return (-EINVALID);
+
 	// create priv element if it doesn't already exist
 	if (!circuit->tlaw_priv) {
 		priv = calloc(1, sizeof(*priv));
@@ -976,6 +979,12 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 		tfl = (float)priv->toutinfl * slope;
 		tlin = (temp_t)tfl + offset;
 		priv->twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (priv->nH100 - 100) / 100);
+	}
+
+	if ((priv->toutinfl <= tout1) || (priv->toutinfl >= tout2) || (priv->twaterinfl > twater1) || (priv->twaterinfl < twater2)) {
+		dbgerr("\"%s\": bilinear inflexion point computation failed!", circuit->name);
+		free(priv);
+		return (-EINVALID);
 	}
 
 	// attach priv structure
