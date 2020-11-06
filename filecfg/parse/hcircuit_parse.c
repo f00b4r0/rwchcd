@@ -72,7 +72,7 @@ FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout1)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater1)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout2)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater2)
-FILECFG_PARSER_INT_PARSE_SET_FUNC(false, s_fcp_tlbilin_params, nH100)
+FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_fcp_tlbilin_params, nH100)
 
 static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
