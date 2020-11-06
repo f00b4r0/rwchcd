@@ -165,8 +165,8 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const timekeep_t now = timekeep_now();
 	int_fast16_t perth;
-	temp_t tempin_h, tempin_l, tempout, error;
-	int_fast32_t iterm, pterm, output, pthfl, Kp;
+	temp_t tempin_h, tempin_l, tempout;
+	tempdiff_t error, iterm, pterm, output, pthfl, Kp;
 	const timekeep_t dt = now - vpriv->run.last_time;
 	int ret;
 	timekeep_t Ti;
@@ -225,7 +225,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	}
 
 	// stop PI operation if inputs are (temporarily) inverted or too close (would make K==0)
-	if (tempin_h - tempin_l <= 1000) {
+	if ((tempin_l >= tempin_h) || (tempin_h - tempin_l <= 1000)) {
 		valve->run.ctrl_ready = false;
 		dbgerr("\"%s\": inputs inverted or input range too narrow", valve->name);
 		return (-EDEADZONE);
@@ -239,8 +239,6 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 		return (ALL_OK);	// skip until next iteration
 	}
 
-	assert((tempin_h - tempin_l) > 0);
-
 	/*
 	 (tempin_h - tempin_l)/1000 is the process gain K:
 	 maximum output delta (Ksmax) / maximum control delta (1000‰).
@@ -252,18 +250,18 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
 	// Kp is UNSIGNED (positive) by construction, assert result is < INT32_MAX
-	Kp = (signed)(vpriv->run.Kp_t * 1000 / (unsigned)(tempin_h - tempin_l));	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
+	Kp = (tempdiff_t)(vpriv->run.Kp_t * 1000 / (tempin_h - tempin_l));	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
 	// Ti is UNSIGNED
 	Ti = vpriv->set.Tu;			// Ti is unscaled
 
 	// calculate error E: (target - actual) - SIGNED
-	error = target_tout - tempout;		// error is unscaled
+	error = (tempdiff_t)(target_tout - tempout);		// error is unscaled
 
 	// Integral term I: (Ki * error) * sample interval - SIGNED
-	iterm = (Kp * error / (signed)Ti) * (signed)dt;		// iterm is scaled by VPI_FDEC
+	iterm = (Kp * error / (signed)Ti) * dt;		// iterm is scaled by VPI_FDEC
 
 	// Proportional term P applied to output: Kp * (previous - actual) - SIGNED
-	pterm = Kp * (vpriv->run.prev_out - tempout);		// pterm is scaled by VPI_FDEC
+	pterm = Kp * (tempdiff_t)(vpriv->run.prev_out - tempout);		// pterm is scaled by VPI_FDEC
 
 	/*
 	 Applying the proportional term to the output O avoids kicks when

@@ -51,7 +51,7 @@ struct s_boiler_priv {
 		bool antifreeze;		///< true if anti freeze tripped
 		_Atomic temp_t target_temp;	///< current target temp
 		_Atomic temp_t actual_temp;	///< actual boiler temperature
-		temp_t turnon_negderiv;		///< value of negative derivative value at last turn on
+		tempdiff_t turnon_negderiv;	///< value of negative derivative value at last turn on
 		timekeep_t negderiv_starttime;	///< time at which a negative boiler temp derivative was first measured during burner on condition
 		timekeep_t burner_1_last_switch;///< last time rid_burner_1 was toggled
 		uint_fast32_t turnon_curr_adj;	///< computed value for current turn-on anticipation offset time

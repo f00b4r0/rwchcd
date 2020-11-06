@@ -113,7 +113,7 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	const struct s_schedule_eparams * eparams;
 	const timekeep_t now = timekeep_now();
 	const timekeep_t dt = now - heat->run.last_run_time;
-	temp_t temp;
+	tempdiff_t temp;
 	int ret = -ENOTIMPLEMENTED;
 
 	// handle global/local runmodes

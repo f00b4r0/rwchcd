@@ -134,7 +134,8 @@ enum {
 	TEMPINVALID,	///< values below this are all invalid
 };
 
-typedef int_fast32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors). Must be signed for maths
+typedef uint32_t	temp_t;		///< all temps are internally stored in Kelvin * KPRECISION (32bit avoids overflow with disconnected sensors).
+typedef int32_t 	tempdiff_t;	///< signed temp type, used for some maths where the resulting value must be considered signed in mults/divs
 
 /** Valid run modes */
 enum e_runmode {

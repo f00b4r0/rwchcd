@@ -416,8 +416,9 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 {
 	timekeep_t deriv_tau;
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t actual_temp, temp_intgrl, ret_temp = 0, target_temp = RWCHCD_TEMP_NOREQUEST;
 	int_fast16_t cshift_boil = 0, cshift_ret = 0;
+	temp_t actual_temp, ret_temp = 0, target_temp = RWCHCD_TEMP_NOREQUEST;
+	tempdiff_t temp_intgrl;
 	timekeep_t boiler_ttime, ttime;
 	int ret;
 
@@ -567,7 +568,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 {
 	const uint32_t fpdec = 0x8000;	// good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	temp_t trip_temp, untrip_temp, temp_deriv, temp, ret_temp, target_temp, actual_temp;
+	temp_t trip_temp, untrip_temp, temp, ret_temp, target_temp, actual_temp;
+	tempdiff_t temp_deriv;
 	timekeep_t elapsed, now;
 	int ret;
 
@@ -677,11 +679,11 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 	// allow shifting down untrip temp if actual heat request goes below trip_temp (e.g. when trip_temp = limit_tmin)...
 	temp = trip_temp - aler(&heat->run.temp_request);
-	untrip_temp -= (temp > 0) ? temp : 0;
+	untrip_temp -= ((tempdiff_t)temp > 0) ? temp : 0;
 
 	// in any case untrip_temp should always be at least trip_temp + hysteresis/2. (if untrip < (trip + hyst/2) => untrip = trip + hyst/2)
 	temp = (boiler->set.hysteresis/2) - (untrip_temp - trip_temp);
-	untrip_temp += (temp > 0) ? temp : 0;
+	untrip_temp += ((tempdiff_t)temp > 0) ? temp : 0;
 
 	// cap untrip temp at limit_tmax
 	if (untrip_temp > boiler->set.limit_tmax)

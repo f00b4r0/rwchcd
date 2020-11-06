@@ -23,7 +23,7 @@
 /** Temperature integral data */
 struct s_temp_intgrl {
 	bool inuse;			///< true if integral is in use
-	temp_t integral;		///< integral value in temp_t * seconds
+	tempdiff_t integral;		///< integral value in temp_t * seconds
 	temp_t last_thrsh;		///< temperature threshold for integral calculation
 	temp_t last_temp;		///< last recorded temperature value
 	timekeep_t last_time;		///< last recorded temperature time
@@ -31,7 +31,7 @@ struct s_temp_intgrl {
 
 /** Temperature derivative data */
 struct s_temp_deriv {
-	temp_t derivative;		///< derivative value in temp_t / timekeep_t
+	tempdiff_t derivative;		///< derivative value in temp_t / timekeep_t
 	temp_t last_temp;		///< last recorded temperature value
 	timekeep_t last_time;		///< last recorded temperature time
 };
@@ -40,9 +40,9 @@ float temp_to_celsius(const temp_t temp);
 float temp_to_deltaK(const temp_t temp);
 
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt);
-temp_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau);
-temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
-		      const temp_t tlow_jacket, const temp_t thigh_jacket);
+tempdiff_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau);
+tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
+		      const tempdiff_t tlow_jacket, const tempdiff_t thigh_jacket);
 
 /**
  * Convert kelvin value to internal temp_t format (Kelvin * KPRECISION).

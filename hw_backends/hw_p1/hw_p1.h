@@ -38,7 +38,7 @@ struct s_hw_p1_sensor {
 		bool configured;	///< sensor is configured
 		uint_fast8_t channel;	///< sensor channel, numbered from 1 to 15
 		enum e_hw_p1_stype type;///< sensor type
-		temp_t offset;		///< sensor value offset
+		tempdiff_t offset;	///< sensor value offset
 	} set;		///< settings (externally set)
 	struct {
 		_Atomic temp_t value;	///< sensor current temperature value

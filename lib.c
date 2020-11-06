@@ -63,7 +63,7 @@ __attribute__((const)) float temp_to_deltaK(const temp_t temp)
  */
 __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt)
 {
-	const temp_t tdiff = (filtered - new_sample);
+	const tempdiff_t tdiff = (tempdiff_t)(filtered - new_sample);
 	const timekeep_t tdt = (tau + dt);
 
 	assert(tdt);
@@ -71,7 +71,7 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
 	dbgmsg(3, (unlikely(dt < 1)), "WARNING: possible rounding error. tau: %d, dt: %d", tau, dt);
 
 	// assert (dt << TEMPT_MAX), assert (tdt << TEMPT_MAX)
-	return (filtered - (((signed)dt * tdiff + sign(tdiff)*(signed)(tdt)/2) / (signed)(tdt)));
+	return (filtered - ((signed)(dt * tdiff + sign(tdiff)*((tdt)/2)) / (signed)(tdt)));
 	//                                 ^-- this rounds
 }
 
@@ -87,10 +87,10 @@ __attribute__((const)) temp_t temp_expw_mavg(const temp_t filtered, const temp_t
  *
  * @warning the output is scaled. Multiplication and division should use the correct accessors.
  */
-temp_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau)
+tempdiff_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau)
 {
 	timekeep_t timediff;
-	temp_t tempdiff, drv;
+	tempdiff_t tempdiff, drv;
 
 	assert(deriv);
 	assert(tau < INT32_MAX);
@@ -112,7 +112,7 @@ temp_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, 
 		if (timediff < tau)
 			goto out;
 
-		tempdiff = new_temp - deriv->last_temp;
+		tempdiff = (tempdiff_t)(new_temp - deriv->last_temp);
 		tempdiff *= LIB_DERIV_FPDEC;
 
 		drv = tempdiff / (signed)timediff;
@@ -147,10 +147,10 @@ out:
  * @param thigh_jacket high boundary for integral jacket
  * @return the integral value in temp_t units * timekeep_t units
  */
-temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
-		      const temp_t tlow_jacket, const temp_t thigh_jacket)
+tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
+		      const tempdiff_t tlow_jacket, const tempdiff_t thigh_jacket)
 {
-	temp_t intg;
+	tempdiff_t intg;
 
 	assert(intgrl);
 	assert(timekeep_a_ge_b(new_time, intgrl->last_time));
@@ -162,7 +162,7 @@ temp_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, c
 	if (unlikely(!intgrl->last_time || !new_time))	// only compute integral over a finite domain
 		intg = 0;
 	else
-		intg += (((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * (new_time - intgrl->last_time);
+		intg += (tempdiff_t)((((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * (new_time - intgrl->last_time));
 
 	// apply jackets
 	if (intg < tlow_jacket)

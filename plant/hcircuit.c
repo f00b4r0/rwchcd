@@ -237,36 +237,40 @@ static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
 static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const temp_t source_temp)
 {
 	const struct s_tlaw_bilin20C_priv * const tld = circuit->tlaw_priv;
-	temp_t t_output;
-	temp_t diffnum, diffden;
-	temp_t slopenum, slopeden;
+	tempdiff_t t_output;
+	tempdiff_t diffnum, diffden;
+	tempdiff_t slopenum, slopeden;
 
 	assert(tld);
 
-	slopenum = tld->twater2 - tld->twater1;
-	slopeden = tld->tout2 - tld->tout1;
+	// hcircuit_make_bilinear() ensure tout1 > tout2 and twater1 < twater2 and (toufinfl < tout1) and (toutinfl > tout2)
+
+	slopenum = (tempdiff_t)(tld->twater2 - tld->twater1);
+	slopeden = (tempdiff_t)(tld->tout2 - tld->tout1);
 
 	// calculate new parameters based on current outdoor temperature (select adequate segment)
 	if (source_temp < tld->toutinfl) {
-		diffnum = tld->twaterinfl - tld->twater1;
-		diffden = tld->toutinfl - tld->tout1;
+		diffnum = (tempdiff_t)(tld->twaterinfl - tld->twater1);
+		diffden = (tempdiff_t)(tld->toutinfl - tld->tout1);
 	}
 	else {
-		diffnum = tld->twater2 - tld->twaterinfl;
-		diffden = tld->tout2 - tld->toutinfl;
+		diffnum = (tempdiff_t)(tld->twater2 - tld->twaterinfl);
+		diffden = (tempdiff_t)(tld->tout2 - tld->toutinfl);
 	}
 
 	// calculate output at nominal 20C: Y = input*slope + offset
 
 	// XXX under "normal" conditions, the following operations should not overflow
-	t_output = (source_temp - tld->toutinfl) * diffnum;
+	t_output = (tempdiff_t)(source_temp - tld->toutinfl) * diffnum;
 	t_output /= diffden;		// no rounding: will slightly over estimate output, which is desirable
 	t_output += tld->twaterinfl;
 
-	// shift output based on actual target temperature: (tgt - 20C) * (1 - tld->slope)
-	t_output += (aler(&circuit->run.target_ambient) - celsius_to_temp(20)) * (slopeden - slopenum) / slopeden;
+	// shift output based on actual target temperature: (tgt - 20C) * (1 - slope)
+	t_output += (tempdiff_t)(aler(&circuit->run.target_ambient) - celsius_to_temp(20)) * (slopeden - slopenum) / slopeden;
 
-	return (t_output);
+	assert(!validate_temp((temp_t)t_output));
+
+	return ((temp_t)t_output);
 }
 
 /**
@@ -498,8 +502,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	const struct s_schedule_eparams * eparams;
 	const struct s_bmodel * restrict bmodel;
 	enum e_runmode prev_runmode, new_runmode;
-	temp_t request_temp, diff_temp;
-	temp_t target_ambient, ambient_temp, ambient_delta = 0;
+	tempdiff_t ambient_delta = 0;
+	temp_t diff_temp, request_temp, target_ambient, ambient_temp;
 	timekeep_t elapsed_time, dtmin;
 	const timekeep_t now = timekeep_now();
 	bool can_fastcool;
@@ -585,7 +589,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// Ambient temperature is either read or modelled
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 												// calculate ambient shift based on measured ambient temp influence in percent
-		ambient_delta = (circuit->set.ambient_factor) * (target_ambient - ambient_temp) / 100;
+		ambient_delta = (circuit->set.ambient_factor) * (tempdiff_t)(target_ambient - ambient_temp) / 100;
 	}
 	else {	// no sensor (or faulty), apply ambient model
 		elapsed_time = now - circuit->run.ambient_update_time;
@@ -631,11 +635,11 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 						 temperature differential (request - actual) is < KPRECISION (1K) otherwise the
 						 term that tends toward 0 introduces a huge residual error when boost is enabled.
 						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
-						diff_temp = request_temp - ambient_temp;
+						diff_temp = (request_temp - ambient_temp);
 						if (diff_temp >= KPRECISION) {
 							// assert casts operate on representable values
-							ambient_temp = circuit->run.trans_start_temp + (signed)(((KPRECISION*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
-													 (unsigned)(KPRECISION + (KPRECISION*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISION);	// works even if boostdelta is not set
+							ambient_temp = circuit->run.trans_start_temp + (((KPRECISION*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
+													 (KPRECISION + (KPRECISION*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISION);	// works even if boostdelta is not set
 						}
 						else
 							ambient_temp = request_temp;
@@ -674,7 +678,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			if (ambient_temp < (request_temp - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
 													// boost is max of set boost (if any) and measured delta (if any)
 				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
-					ambient_delta = (circuit->set.tambient_boostdelta > ambient_delta) ? circuit->set.tambient_boostdelta : ambient_delta;
+					ambient_delta = ((tempdiff_t)circuit->set.tambient_boostdelta > ambient_delta) ? (tempdiff_t)circuit->set.tambient_boostdelta : ambient_delta;
 			}
 			else
 				circuit->run.transition = TRANS_NONE;	// transition completed
@@ -878,7 +882,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 				ret_temp = celsius_to_temp(0);
 
 			// X% shift is (current + X*(current - ref)/100). ref is return temp
-			water_temp += circuit->pdata->run.consumer_shift * (water_temp - ret_temp) / 100;
+			water_temp += circuit->pdata->run.consumer_shift * (tempdiff_t)(water_temp - ret_temp) / 100;
 		}
 
 		// enforce maximum temp during overtemp condition
@@ -929,7 +933,8 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 			  temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100)
 {
 	struct s_tlaw_bilin20C_priv * priv = NULL;
-	temp_t toutw20C, offset, tlin;
+	temp_t toutw20C, tlin, offset;
+	tempdiff_t diffnum, diffden;
 	float slope, tfl;
 
 	if (!circuit)
@@ -960,15 +965,18 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 	priv->nH100 = nH100;
 
 	// calculate the linear slope = (Y2 - Y1)/(X2 - X1)
-	slope = (float)(priv->twater2 - priv->twater1) / (float)(priv->tout2 - priv->tout1);
+	diffnum = (tempdiff_t)(twater2 - twater1);
+	diffden = (tempdiff_t)(tout2 - tout1);
+	slope = (float)diffnum / (float)diffden;
 	// offset: reduce through a known point
 	tfl = (float)priv->tout2 * slope;
 	// XXX assert tfl can be represented as temp_t, which it should, by definition
-	offset = priv->twater2 - (temp_t)(tfl);
+	offset = (priv->twater2 - (tempdiff_t)(tfl));
 
 	if (!priv->toutinfl) {
 		// calculate outdoor temp for 20C water temp
-		tfl = (float)(celsius_to_temp(20) - offset) / slope;
+		diffnum = (tempdiff_t)(celsius_to_temp(20) - offset);
+		tfl = (float)diffnum / slope;
 		// XXX assert result can be represented as temp_t, which it should by definition
 		toutw20C = (temp_t)tfl;
 
@@ -977,7 +985,7 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 
 		// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
 		tfl = (float)priv->toutinfl * slope;
-		tlin = (temp_t)tfl + offset;
+		tlin = (tempdiff_t)tfl + offset;
 		priv->twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (priv->nH100 - 100) / 100);
 	}
 
