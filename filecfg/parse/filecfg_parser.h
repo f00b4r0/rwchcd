@@ -191,7 +191,7 @@ static int fcp_str_##_struct##_##_setmember(void * restrict const priv, const st
 static int fcp_temp_##_struct##_##_member(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
-	int ret; temp_t temp = 0;						\
+	int ret; typeof(s->_nest _member) temp = 0;				\
 	ret = filecfg_parser_get_node_temp(_positiveonly, _delta, n, &temp);	\
 	s->_nest _member = temp;	/* Note: always set */			\
 	return (ret);								\
@@ -286,7 +286,7 @@ static int fcp_schedid_##_struct##_##_setmember(void * restrict const priv, cons
 	iv = scheduler_schedid_by_name(n->value.stringval);			\
 	if (iv <= 0)								\
 		return (-EINVALID);						\
-	s->set._setmember = (unsigned)iv;					\
+	s->set._setmember = (typeof(s->set._setmember))iv;			\
 	return (ALL_OK);							\
 }
 
