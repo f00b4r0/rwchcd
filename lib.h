@@ -79,6 +79,13 @@ tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrs
 #define deltaK_to_tempdiff(delta)	(tempdiff_t)((delta) * KPRECISION)
 
 /**
+ * Convert delta from internal to Kelvin value.
+ * @note Ensure this is only used in non-fast code path (dbgmsg, config handling...).
+ * @param dtemp the internal delta value to be converted
+ */
+#define temp_to_deltaK(dtemp)		((float)((float)dtemp/KPRECISION))
+
+/**
  * Calculate the minimum time interval to use with temp_expw_mavg() for a given
  * tau.
  * This function 'ceils' the return value.

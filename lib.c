@@ -32,17 +32,6 @@ __attribute__((const)) float temp_to_celsius(const temp_t temp)
 }
 
 /**
- * Convert delta from internal to Kelvin value.
- * @note Ensure this function is only used in non-fast code path (dbgmsg, config handling...).
- * @param temp the internal delta value to be converted
- * @return the value converted to Kelvin
- */
-__attribute__((const)) float temp_to_deltaK(const temp_t temp)
-{
-	return ((float)((float)temp/KPRECISION));
-}
-
-/**
  * Exponentially weighted moving average implementing a trivial LP filter.
  * - http://www.rowetel.com/?p=1245
  * - https://kiritchatterjee.wordpress.com/2014/11/10/a-simple-digital-low-pass-filter-in-c/
