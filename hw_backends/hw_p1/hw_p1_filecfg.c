@@ -79,7 +79,7 @@ static void sensor_dump(const struct s_hw_p1_sensor * const sensor)
 
 static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw)
 {
-	int_fast8_t id;
+	uint_fast8_t id;
 
 	assert(hw);
 
