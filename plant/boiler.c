@@ -416,9 +416,9 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 {
 	timekeep_t deriv_tau;
 	struct s_boiler_priv * restrict const boiler = heat->priv;
-	int_fast16_t cshift_boil = 0, cshift_ret = 0;
 	temp_t actual_temp, ret_temp = 0, target_temp = RWCHCD_TEMP_NOREQUEST;
 	tempdiff_t temp_intgrl;
+	int_least16_t cshift_boil = 0, cshift_ret = 0;
 	timekeep_t boiler_ttime, ttime;
 	int ret;
 

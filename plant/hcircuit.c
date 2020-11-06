@@ -930,7 +930,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
  * @return error status
  */
 int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
-			  temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100)
+			  temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, uint_least16_t nH100)
 {
 	struct s_tlaw_bilin20C_priv * priv = NULL;
 	temp_t toutw20C, tlin, offset;

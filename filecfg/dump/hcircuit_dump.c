@@ -138,7 +138,7 @@ int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 		filecfg_dump_nodestr("schedid", scheduler_get_schedname(circuit->set.schedid));
 	filecfg_dump_nodestr("runmode", filecfg_runmode_str(circuit->set.runmode));	// mandatory
 	if (FCD_Exhaustive || circuit->set.ambient_factor)
-		filecfg_iprintf("ambient_factor %" PRIdFAST16 ";\n", circuit->set.ambient_factor);
+		filecfg_iprintf("ambient_factor %" PRIdLEAST16 ";\n", circuit->set.ambient_factor);
 	if (FCD_Exhaustive || circuit->set.wtemp_rorh)
 		filecfg_dump_deltaK("wtemp_rorh", circuit->set.wtemp_rorh);
 	if (FCD_Exhaustive || circuit->set.am_tambient_tK)

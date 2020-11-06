@@ -27,7 +27,7 @@ struct s_tlaw_bilin20C_priv {
 	temp_t twater1;		///< corresponding target water temp1 (highest water temp)
 	temp_t tout2;		///< outside temp2 (highest outdoor temp)
 	temp_t twater2;		///< corresponding target water temp2 (lowest water temp)
-	int_fast16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130)
+	uint_least16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130)
 	temp_t toutinfl;	///< outdoor temperature at inflexion point (if 0 will be calculated from nH100)
 	temp_t twaterinfl;	///< water temperature at inflexion point (if 0 will be calculated from nH100)
 };
@@ -46,7 +46,7 @@ struct s_hcircuit {
 		bool log;			///< true if data logging should be enabled for this circuit
 		schedid_t schedid;		///< schedule id for this hcircuit.
 		enum e_runmode runmode;		///< current circuit set_runmode
-		int_fast16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
+		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (0 to disable)
 		timekeep_t am_tambient_tK;	///< ambient model: time necessary for 1 Kelvin temperature rise (0 to disable)
 		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (0 to disable)
@@ -93,6 +93,6 @@ int hcircuit_offline(struct s_hcircuit * const circuit);
 int hcircuit_run(struct s_hcircuit * const circuit) __attribute__((warn_unused_result));
 void hcircuit_cleanup(struct s_hcircuit * circuit);
 
-int hcircuit_make_bilinear(struct s_hcircuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, int_fast16_t nH100);
+int hcircuit_make_bilinear(struct s_hcircuit * const circuit, temp_t tout1, temp_t twater1, temp_t tout2, temp_t twater2, uint_least16_t nH100);
 
 #endif /* circuit_h */

@@ -70,14 +70,14 @@ int valve_reqstop(struct s_valve * const valve)
  * @param perth ‰ amount to open (positive) or close (negative) the valve
  * @return exec status. If requested amount is < valve deadband no action is performed, -EDEADBAND is returned.
  */
-int valve_request_pth(struct s_valve * const valve, int_fast16_t perth)
+int valve_request_pth(struct s_valve * const valve, int_least16_t perth)
 {
-	uint_fast16_t tcourse;
+	uint_least16_t tcourse;
 
 	if (!valve)
 		return (-EINVALID);
 
-	tcourse = (uint_fast16_t)abs(perth);
+	tcourse = (uint_least16_t)abs(perth);
 
 	// 2way motor only allows for full swing
 	if ((VA_M_2WAY == valve->set.motor) && (VALVE_REQMAXPTH != tcourse))
@@ -164,7 +164,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 #define VPI_FPDEC	0x200000	///< v_pi precision multiplier. 10-bit significand, which should never be > 1000pth: good
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const timekeep_t now = timekeep_now();
-	int_fast16_t perth;
+	int_least16_t perth;
 	temp_t tempin_h, tempin_l, tempout;
 	tempdiff_t error, iterm, pterm, output, pthfl, Kp;
 	const timekeep_t dt = now - vpriv->run.last_time;
@@ -280,7 +280,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 No need to keep track of the residual since the requested value is
 	 an instantaneous calculation at the time of the algorithm run.
 	 */
-	perth = pthfl / VPI_FPDEC;	// unscale
+	perth = (int_least16_t)(pthfl / VPI_FPDEC);	// unscale
 
 	dbgmsg(2, 1, "\"%s\": Kp: %x, E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
 	       valve->name, Kp, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
@@ -420,11 +420,11 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
 	if (tempout < target_tout - valve->set.tset.tmix.tdeadzone/2) {
-		valve_request_pth(valve, (signed)vpriv->set.amount);
+		valve_request_pth(valve, (int_least16_t)vpriv->set.amount);
 	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
 	else if (tempout > target_tout + valve->set.tset.tmix.tdeadzone/2) {
-		valve_request_pth(valve, (signed)-vpriv->set.amount);
+		valve_request_pth(valve, (int_least16_t)-vpriv->set.amount);
 	}
 	// else we're in deadzone: stop valve
 	else {
@@ -668,11 +668,11 @@ static int valve_logic(struct s_valve * const valve)
  */
 int valve_run(struct s_valve * const valve)
 {
-	const uint_fast32_t perthmult = 0x200000;	// fixed point multiplier
+	const uint32_t perthmult = 0x200000;	// fixed point multiplier
 	const timekeep_t now = timekeep_now();
 	timekeep_t dt;
-	uint_fast32_t perth_ptk;	// ‰ position change per tick
-	int_fast16_t course;
+	uint32_t perth_ptk;	// ‰ position change per tick
+	int_least16_t course;
 	int ret = ALL_OK;
 	bool m2wtopens;
 
@@ -692,7 +692,7 @@ int valve_run(struct s_valve * const valve)
 	valve->run.last_run_time = now;
 
 	assert(dt < valve->set.ete_time);	// approximation of overflow limit
-	course = (int_fast16_t)((dt * perth_ptk + perthmult/2) / perthmult);	// we don't keep track of residual because we're already in ‰.
+	course = (int_least16_t)((dt * perth_ptk + perthmult/2) / perthmult);	// we don't keep track of residual because we're already in ‰.
 
 	// update counters
 	switch (valve->run.actual_action) {
@@ -827,7 +827,7 @@ int valve_make_bangbang(struct s_valve * const valve)
  * @return exec status
  * @warning should ensure that the sample interval allows full amount movement
  */
-int valve_make_sapprox(struct s_valve * const valve, uint_fast16_t amount, timekeep_t intvl)
+int valve_make_sapprox(struct s_valve * const valve, uint_least16_t amount, timekeep_t intvl)
 {
 	struct s_valve_sapprox_priv * priv = NULL;
 
@@ -870,7 +870,7 @@ int valve_make_sapprox(struct s_valve * const valve, uint_fast16_t amount, timek
  * @note refer to v_pi_tcontrol() for calculation details
  */
 int valve_make_pi(struct s_valve * const valve,
-		  timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor)
+		  timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_least8_t t_factor)
 {
 	struct s_valve_pi_priv * priv = NULL;
 
@@ -948,7 +948,7 @@ int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout)
  */
 int valve_isol_trigger(struct s_valve * const valve, bool isolate)
 {
-	int_fast16_t reqisol = -VALVE_REQMAXPTH;	// full close by default
+	int_least16_t reqisol = -VALVE_REQMAXPTH;	// full close by default
 	int ret;
 
 	if (unlikely(!valve || (VA_TYPE_ISOL != valve->set.type)))

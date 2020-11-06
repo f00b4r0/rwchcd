@@ -22,7 +22,7 @@
 /** private structure for sapprox valve tcontrol */
 struct s_valve_sapprox_priv {
 	struct {
-		uint_fast16_t amount;		///< amount to move in ‰ (max 1000)
+		uint_least16_t amount;		///< amount to move in ‰ (max 1000)
 		timekeep_t sample_intvl;	///< sample interval
 	} set;		///< settings (externally set)
 	struct {
@@ -37,7 +37,7 @@ struct s_valve_pi_priv {
 		timekeep_t Tu;		///< unit response time
 		timekeep_t Td;		///< deadtime
 		temp_t Ksmax;		///< maximum valve output delta. Used if it cannot be measured.
-		uint_fast8_t tune_f;	///< tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
+		uint_least8_t tune_f;	///< tuning factor: aggressive: 1 / moderate: 10 / conservative: 100
 	} set;		///< settings (externally set)
 	struct {
 		timekeep_t last_time;	///< last time the PI controller algorithm was run
@@ -75,7 +75,7 @@ enum e_valve_type {
 
 /** Private structure for 3way motorisation settings */
 struct s_valve_motor_3way_set {
-	uint_fast16_t deadband;	///< deadband for valve operation in ‰: no operation if requested move is less than that
+	uint_least16_t deadband;///< deadband for valve operation in ‰: no operation if requested move is less than that
 	orid_t rid_open;	///< relay for opening the valve
 	orid_t rid_close;	///< relay for closing the valve
 };
@@ -128,8 +128,8 @@ struct s_valve {
 		bool dwht_use;		///< true if valve is currently used by active DHWT
 		bool true_pos;		///< true if current position is "true": position measured from a full close/open start, or provided by a sensor
 		bool ctrl_ready;	///< false if controller algorithm must be reset
-		int_fast16_t actual_position;	///< current position in ‰
-		int_fast16_t target_course;	///< current target course in ‰ of set.ete_time
+		int_least16_t actual_position;	///< current position in ‰
+		int_least16_t target_course;	///< current target course in ‰ of set.ete_time
 		timekeep_t acc_open_time;	///< accumulated open time since last close
 		timekeep_t acc_close_time;	///< accumulated close time since last open
 		timekeep_t last_run_time;	///< last time valve_run() was invoked
@@ -147,10 +147,10 @@ int valve_shutdown(struct s_valve * const valve);
 int valve_offline(struct s_valve * const valve);
 int valve_run(struct s_valve * const valve) __attribute__((warn_unused_result));
 int valve_reqstop(struct s_valve * const valve);
-int valve_request_pth(struct s_valve * const valve, int_fast16_t perth);
+int valve_request_pth(struct s_valve * const valve, int_least16_t perth);
 int valve_make_bangbang(struct s_valve * const valve) __attribute__((warn_unused_result));
-int valve_make_sapprox(struct s_valve * const valve, uint_fast16_t amount, timekeep_t intvl) __attribute__((warn_unused_result));
-int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_fast8_t t_factor) __attribute__((warn_unused_result));
+int valve_make_sapprox(struct s_valve * const valve, uint_least16_t amount, timekeep_t intvl) __attribute__((warn_unused_result));
+int valve_make_pi(struct s_valve * const valve, timekeep_t intvl, timekeep_t Td, timekeep_t Tu, temp_t Ksmax, uint_least8_t t_factor) __attribute__((warn_unused_result));
 int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout) __attribute__((warn_unused_result));
 int valve_isol_trigger(struct s_valve * const valve, bool isolate) __attribute__((warn_unused_result));
 

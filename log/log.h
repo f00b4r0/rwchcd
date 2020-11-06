@@ -51,7 +51,7 @@ enum e_log_intvl {
 
 /** Log data structure */
 struct s_log_data {
-	int interval;				///< a positive fixed interval between log requests or negative for random log events
+	unsigned int interval;			///< a positive fixed interval between log requests or negative for random log events
 	unsigned int nkeys;			///< the number of keys/metrics (immutable)
 	const log_key_t * keys;			///< pointer to array of keys to log
 	const enum e_log_metric * metrics;	///< pointer to array of metric types of each key

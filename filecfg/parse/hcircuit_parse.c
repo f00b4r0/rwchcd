@@ -64,7 +64,7 @@ struct s_fcp_tlbilin_params {
 		temp_t twater1;
 		temp_t tout2;
 		temp_t twater2;
-		int nH100;
+		uint_least16_t nH100;
 	} set;
 };
 

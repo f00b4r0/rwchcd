@@ -37,7 +37,7 @@
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((const)) static float quadratic_cvd(const float R0, const float A, const float B, const uint_fast16_t ohm)
+__attribute__((const)) static float quadratic_cvd(const float R0, const float A, const float B, const uint_least16_t ohm)
 {
 	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
 	return ((-R0*A + sqrtf(R0*R0*A*A - 4.0F*R0*B*(R0 - (float)ohm))) / (2.0F*R0*B));
@@ -49,7 +49,7 @@ __attribute__((const)) static float quadratic_cvd(const float R0, const float A,
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((const)) float hw_lib_pt1000_ohm_to_celsius(const uint_fast16_t ohm)
+__attribute__((const)) float hw_lib_pt1000_ohm_to_celsius(const uint_least16_t ohm)
 {
 	const float R0 = 1000.0F;
 	const float alpha = 0.003850F;
@@ -69,7 +69,7 @@ __attribute__((const)) float hw_lib_pt1000_ohm_to_celsius(const uint_fast16_t oh
  * @param ohm the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((const)) float hw_lib_ni1000_ohm_to_celsius(const uint_fast16_t ohm)
+__attribute__((const)) float hw_lib_ni1000_ohm_to_celsius(const uint_least16_t ohm)
 {
 	const float R0 = 1000.0F;
 	const float A = 5.485e-3F;
