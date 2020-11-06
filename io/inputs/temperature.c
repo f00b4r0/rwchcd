@@ -57,11 +57,12 @@ static int temperature_update(struct s_temperature * const t)
 	if (unlikely(!t->set.configured))
 		return (-ENOTCONFIGURED);
 
-	if (now - (aler(&t->run.last_update)) < t->set.period)
+	// only skip run if we're under update period and we have a value (this handles init)
+	if ((now - (aler(&t->run.last_update)) < t->set.period) && aler(&t->run.value))
 		return (ALL_OK);
 
 	if (atomic_flag_test_and_set_explicit(&t->run.lock, memory_order_acquire))
-		return (ALL_OK);	// someone else is already updating
+		return (ALL_OK);	// someone else is already updating - NB: contention is NOT expected during init: assert(run.value is set) when it happens
 
 	new = 0;
 	ret = -EGENERIC;
@@ -83,11 +84,15 @@ static int temperature_update(struct s_temperature * const t)
 
 
 		ret = hardware_sensor_clone_temp(t->tlist[i], &stemp);
-		if (likely(ALL_OK == ret))
+		if (likely(ALL_OK == ret)) {
 			// always weed out sensors for which the backend reports last update too far in the past (>4 periods).
 			// while the loop executes, "now" can already be in the past => check for that
 			if (unlikely((now - tsens) > (4 * t->set.period)) && timekeep_a_ge_b(now, tsens))
 				ret = -ERSTALE;
+			// treat unset value as invalid even if the backend doesn't say so
+			if (unlikely(!stemp))
+				ret = -EINVALID;
+		}
 
 		if (unlikely(ALL_OK != ret)) {
 			dbgerr("\"%s\": hw clone temp %d/%d returned (%d)", t->name, t->tlist[i].bid, t->tlist[i].inid, ret);
@@ -159,25 +164,10 @@ int temperature_get(struct s_temperature * const t, temp_t * const tout)
 	if (tout)
 		*tout = current;
 
-	switch (current) {
-		case TEMPUNSET:
-			ret = -ESENSORINVAL;
-			break;
-		case TEMPSHORT:
-			ret = -ESENSORSHORT;
-			break;
-		case TEMPDISCON:
-			ret = -ESENSORDISCON;
-			break;
-		case TEMPINVALID:
-			ret = -EINVALID;
-			break;
-		default:
-			ret = ALL_OK;
-			break;
-	}
+	if (!current)
+		return (-EINVALID);
 
-	return (ret);
+	return (ALL_OK);
 }
 
 /**
