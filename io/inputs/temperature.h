@@ -36,7 +36,7 @@ enum e_temp_miss {
 struct s_temperature {
 	struct {
 		bool configured;	///< sensor is configured
-		timekeep_t period;	///< update period for the reported value. MANDATORY
+		timekeep_t period;	///< update period for the reported value. MANDATORY. Also defines the time after which the value will be considered stale (4*period).
 		temp_t igntemp;		///< temperature used for unavailable sensors. OPTIONAL
 		enum e_temp_op op;	///< operation performed on underlying sensors, see #e_temp_op. OPTIONAL, defaults to #T_OP_FIRST
 		enum e_temp_miss missing;	///< missing/error source behavior see #e_temp_miss. OPTIONAL, defaults to #T_MISS_FAIL
