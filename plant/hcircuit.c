@@ -676,9 +676,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 		case TRANS_UP:
 			if (ambient_temp < (request_temp - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
-													// boost is max of set boost (if any) and measured delta (if any)
 				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
-					ambient_delta = ((tempdiff_t)circuit->set.tambient_boostdelta > ambient_delta) ? (tempdiff_t)circuit->set.tambient_boostdelta : ambient_delta;
+					ambient_delta = (tempdiff_t)circuit->set.tambient_boostdelta;	// override delta during boost
 			}
 			else
 				circuit->run.transition = TRANS_NONE;	// transition completed
