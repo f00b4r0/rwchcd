@@ -175,12 +175,12 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	if (dt < vpriv->set.sample_intvl)
 		return (ALL_OK);
 
-	vpriv->run.last_time = now;
-
 	// get current outpout
 	ret = inputs_temperature_get(valve->set.tset.tmix.tid_out, &tempout);
 	if (ALL_OK != ret)
 		return (ret);
+
+	vpriv->run.last_time = now;
 
 	// apply deadzone
 	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2))) {
