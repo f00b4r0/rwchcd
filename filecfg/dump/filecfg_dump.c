@@ -136,11 +136,6 @@ int filecfg_dump_celsius(const char *name, temp_t value)
 	return (filecfg_iprintf("%s %.1f;\n", name, temp_to_celsius(value)));
 }
 
-int filecfg_dump_deltaK(const char *name, temp_t value)
-{
-	return (filecfg_iprintf("%s %.1f;\n", name, temp_to_deltaK(value)));
-}
-
 int filecfg_dump_tk(const char *name, timekeep_t value)
 {
 	return (filecfg_iprintf("%s %ld;\n", name, timekeep_tk_to_sec(value)));

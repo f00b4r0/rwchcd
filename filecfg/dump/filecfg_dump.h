@@ -31,9 +31,10 @@ const char * filecfg_runmode_str(const enum e_runmode runmode);
 int filecfg_dump_nodebool(const char *name, bool value);
 int filecfg_dump_nodestr(const char *name, const char *value);
 int filecfg_dump_celsius(const char *name, temp_t value);
-int filecfg_dump_deltaK(const char *name, temp_t value);
 int filecfg_dump_tk(const char *name, timekeep_t value);
 
 int filecfg_dump(void);
+
+#define filecfg_dump_deltaK(_namep, _val)	filecfg_iprintf("%s %.1f;\n", _namep, temp_to_deltaK(_val))
 
 #endif /* filecfg_dump_h */
