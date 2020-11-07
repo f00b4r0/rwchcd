@@ -361,12 +361,12 @@ static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, 
  #error Non representable minimum temperature
 #endif
 
-	snprintf(snpbuf, 4, "%2d:", hw->Sensors[tempid].set.channel);	// print in human readable
+	snprintf(snpbuf, 4, "%2u:", hw->Sensors[tempid].set.channel);	// print in human readable
 
 	if (-ESENSORDISCON == ret)
-		strncpy(snpbuf+3, _("DISCON"), 6);
+		memcpy(snpbuf+3, _("DISCON"), 6);
 	else if (-ESENSORSHORT == ret)
-		strncpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
+		memcpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
 	else {
 		celsius = temp_to_celsius(temp);
 		snprintf(snpbuf+3, 7, "%3.0f C ", celsius);	// handles rounding
@@ -395,7 +395,7 @@ static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata 
 			lcd->sysmchg = false;
 	}
 	else
-		memcpy(buf+6, hw_p1_temp_to_str(hw, lcd->sensor), 9);
+		memcpy(buf+6, hw_p1_temp_to_str(hw, lcd->sensor), 10);
 
 	return (hw_p1_lcd_wline(lcd, buf, LCD_LINELEN, 0, 0));
 }
