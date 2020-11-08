@@ -656,7 +656,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 					break;
 			}
 			// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
-			dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %ld",
+			dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %u",
 			       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
 		}
 	}
@@ -760,7 +760,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			if (aler(&circuit->run.target_wtemp) && (circuit->pdata->run.consumer_sdelay > 0)) {
 				// disable heat request from this circuit
 				aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
-				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %ld", circuit->name, timekeep_tk_to_sec(circuit->pdata->run.consumer_sdelay));
+				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %u", circuit->name, timekeep_tk_to_sec(circuit->pdata->run.consumer_sdelay));
 				return (ALL_OK);	// stop processing: maintain current output
 			}
 			else

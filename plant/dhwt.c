@@ -602,7 +602,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	charge_on = aler(&dhwt->run.charge_on);
 	target_temp = aler(&dhwt->run.target_temp);
 
-	dbgmsg(1, 1, "\"%s\": on: %d, mode_since: %ld, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
+	dbgmsg(1, 1, "\"%s\": on: %d, mode_since: %u, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
 	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
 	/* handle heat charge - NOTE we enforce sensor position, it SEEMS desirable

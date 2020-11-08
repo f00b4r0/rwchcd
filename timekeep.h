@@ -16,7 +16,7 @@
 
 #include <inttypes.h>
 
-#define TIMEKEEP_SMULT	10L				///< second multiplier: 10 -> 0.1s precision
+#define TIMEKEEP_SMULT	10		///< second multiplier: 10 -> 0.1s precision
 
 /**
  * Timestamp 'tick' type.
@@ -48,7 +48,7 @@ void * timekeep_thread(void * arg);
  * @param tk value to convert.
  * @return the value expressed in seconds.
  */
-#define timekeep_tk_to_sec(tk)		(long)(tk / TIMEKEEP_SMULT)		// by definition, result is < LONG_MAX
+#define timekeep_tk_to_sec(tk)		(tk / TIMEKEEP_SMULT)
 
 /**
  * Tests if timestamp a is after or at timestamp b.

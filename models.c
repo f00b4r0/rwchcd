@@ -252,7 +252,7 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 		return (-EMISCONFIGURED);
 
 	if (bmodel->set.tau <= 0) {
-		pr_err(_("Building model \"%s\": invalid value for tau: '%ld'"), bmodel->name, timekeep_tk_to_sec(bmodel->set.tau));
+		pr_err(_("Building model \"%s\": invalid value for tau: '%u'"), bmodel->name, timekeep_tk_to_sec(bmodel->set.tau));
 		return (-EMISCONFIGURED);
 	}
 
