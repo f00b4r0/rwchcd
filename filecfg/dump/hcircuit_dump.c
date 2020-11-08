@@ -35,11 +35,11 @@ static int filecfg_hc_tlbilin_dump(const struct s_hcircuit * restrict const circ
 	priv = circuit->tlaw_priv;
 
 	// all params mandatory
-	filecfg_dump_celsius("tout1", priv->tout1);
-	filecfg_dump_celsius("twater1", priv->twater1);
-	filecfg_dump_celsius("tout2", priv->tout2);
-	filecfg_dump_celsius("twater2", priv->twater2);
-	filecfg_iprintf("nH100 %" PRIdFAST16 ";\n", priv->nH100);
+	filecfg_dump_celsius("tout1", priv->set.tout1);
+	filecfg_dump_celsius("twater1", priv->set.twater1);
+	filecfg_dump_celsius("tout2", priv->set.tout2);
+	filecfg_dump_celsius("twater2", priv->set.twater2);
+	filecfg_iprintf("nH100 %" PRIdFAST16 ";\n", priv->set.nH100);
 
 #if 0	// do not print these 'internal' parameters as for now they are not meant to be set externally
 	filecfg_iprintf("toutinfl %.1f;\n", temp_to_celsius(priv->toutinfl));

@@ -245,25 +245,25 @@ static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const te
 
 	// hcircuit_make_bilinear() ensure tout1 > tout2 and twater1 < twater2 and (toufinfl < tout1) and (toutinfl > tout2)
 
-	slopenum = (tempdiff_t)(tld->twater2 - tld->twater1);
-	slopeden = (tempdiff_t)(tld->tout2 - tld->tout1);
+	slopenum = (tempdiff_t)(tld->set.twater2 - tld->set.twater1);
+	slopeden = (tempdiff_t)(tld->set.tout2 - tld->set.tout1);
 
 	// calculate new parameters based on current outdoor temperature (select adequate segment)
-	if (source_temp < tld->toutinfl) {
-		diffnum = (tempdiff_t)(tld->twaterinfl - tld->twater1);
-		diffden = (tempdiff_t)(tld->toutinfl - tld->tout1);
+	if (source_temp < tld->run.toutinfl) {
+		diffnum = (tempdiff_t)(tld->run.twaterinfl - tld->set.twater1);
+		diffden = (tempdiff_t)(tld->run.toutinfl - tld->set.tout1);
 	}
 	else {
-		diffnum = (tempdiff_t)(tld->twater2 - tld->twaterinfl);
-		diffden = (tempdiff_t)(tld->tout2 - tld->toutinfl);
+		diffnum = (tempdiff_t)(tld->set.twater2 - tld->run.twaterinfl);
+		diffden = (tempdiff_t)(tld->set.tout2 - tld->run.toutinfl);
 	}
 
 	// calculate output at nominal 20C: Y = input*slope + offset
 
 	// XXX under "normal" conditions, the following operations should not overflow
-	t_output = (tempdiff_t)(source_temp - tld->toutinfl) * diffnum;
+	t_output = (tempdiff_t)(source_temp - tld->run.toutinfl) * diffnum;
 	t_output /= diffden;		// no rounding: will slightly over estimate output, which is desirable
-	t_output += tld->twaterinfl;
+	t_output += tld->run.twaterinfl;
 
 	// shift output based on actual target temperature: (tgt - 20C) * (1 - slope)
 	t_output += (tempdiff_t)(aler(&circuit->run.target_ambient) - celsius_to_temp(20)) * (slopeden - slopenum) / slopeden;
@@ -957,38 +957,36 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 	else
 		return (-EINVALID);
 
-	priv->tout1 = tout1;
-	priv->twater1 = twater1;
-	priv->tout2 = tout2;
-	priv->twater2 = twater2;
-	priv->nH100 = nH100;
+	priv->set.tout1 = tout1;
+	priv->set.twater1 = twater1;
+	priv->set.tout2 = tout2;
+	priv->set.twater2 = twater2;
+	priv->set.nH100 = nH100;
 
 	// calculate the linear slope = (Y2 - Y1)/(X2 - X1)
 	diffnum = (tempdiff_t)(twater2 - twater1);
 	diffden = (tempdiff_t)(tout2 - tout1);
 	slope = (float)diffnum / (float)diffden;
 	// offset: reduce through a known point
-	tfl = (float)priv->tout2 * slope;
-	// XXX assert tfl can be represented as temp_t, which it should, by definition
-	offset = (priv->twater2 - (tempdiff_t)(tfl));
+	tfl = (float)tout2 * slope;
+	// XXX assert tfl can be represented as tempdiff_t, which it should, by definition
+	offset = (twater2 - (tempdiff_t)(tfl));
 
-	if (!priv->toutinfl) {
-		// calculate outdoor temp for 20C water temp
-		diffnum = (tempdiff_t)(celsius_to_temp(20) - offset);
-		tfl = (float)diffnum / slope;
-		// XXX assert result can be represented as temp_t, which it should by definition
-		toutw20C = (temp_t)tfl;
+	// calculate outdoor temp for 20C water temp
+	diffnum = (tempdiff_t)(celsius_to_temp(20) - offset);
+	tfl = (float)diffnum / slope;
+	// XXX assert result can be represented as temp_t, which it should by definition
+	toutw20C = (temp_t)tfl;
 
-		// calculate outdoor temp for inflexion point (toutw20C - (30% of toutw20C - tout1))
-		priv->toutinfl = toutw20C - ((toutw20C - priv->tout1) * 30 / 100);
+	// calculate outdoor temp for inflexion point (toutw20C - (30% of toutw20C - tout1))
+	priv->run.toutinfl = toutw20C - ((toutw20C - tout1) * 30 / 100);
 
-		// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
-		tfl = (float)priv->toutinfl * slope;
-		tlin = (tempdiff_t)tfl + offset;
-		priv->twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (priv->nH100 - 100) / 100);
-	}
+	// calculate corrected water temp at inflexion point (tlinear[nH=1] - 20C) * (nH - 1)
+	tfl = (float)priv->run.toutinfl * slope;
+	tlin = (tempdiff_t)tfl + offset;
+	priv->run.twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (nH100 - 100) / 100);
 
-	if ((priv->toutinfl <= tout1) || (priv->toutinfl >= tout2) || (priv->twaterinfl > twater1) || (priv->twaterinfl < twater2)) {
+	if ((priv->run.toutinfl <= tout1) || (priv->run.toutinfl >= tout2) || (priv->run.twaterinfl > twater1) || (priv->run.twaterinfl < twater2)) {
 		dbgerr("\"%s\": bilinear inflexion point computation failed!", circuit->name);
 		free(priv);
 		return (-EINVALID);

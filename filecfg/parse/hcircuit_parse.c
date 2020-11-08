@@ -58,33 +58,23 @@ int filecfg_hcircuit_params_parse(void * restrict const priv, const struct s_fil
 }
 
 
-struct s_fcp_tlbilin_params {
-	struct {
-		temp_t tout1;
-		temp_t twater1;
-		temp_t tout2;
-		temp_t twater2;
-		uint_least16_t nH100;
-	} set;
-};
-
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout1)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater1)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, tout2)
-FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_fcp_tlbilin_params, twater2)
-FILECFG_PARSER_INTPOSMAX_PARSE_SET_FUNC(200, s_fcp_tlbilin_params, nH100)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_tlaw_bilin20C_priv, tout1)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_tlaw_bilin20C_priv, twater1)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_tlaw_bilin20C_priv, tout2)
+FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(false, false, s_tlaw_bilin20C_priv, twater2)
+FILECFG_PARSER_INTPOSMAX_PARSE_SET_FUNC(200, s_tlaw_bilin20C_priv, nH100)
 
 static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEFLT|NODEINT,	"tout1",	true,	fcp_temp_s_fcp_tlbilin_params_tout1,	NULL, },
-		{ NODEFLT|NODEINT,	"twater1",	true,	fcp_temp_s_fcp_tlbilin_params_twater1,	NULL, },
-		{ NODEFLT|NODEINT,	"tout2",	true,	fcp_temp_s_fcp_tlbilin_params_tout2,	NULL, },
-		{ NODEFLT|NODEINT,	"twater2",	true,	fcp_temp_s_fcp_tlbilin_params_twater2,	NULL, },
-		{ NODEINT,		"nH100",	true,	fcp_int_s_fcp_tlbilin_params_nH100,	NULL, },
+		{ NODEFLT|NODEINT,	"tout1",	true,	fcp_temp_s_tlaw_bilin20C_priv_tout1,	NULL, },
+		{ NODEFLT|NODEINT,	"twater1",	true,	fcp_temp_s_tlaw_bilin20C_priv_twater1,	NULL, },
+		{ NODEFLT|NODEINT,	"tout2",	true,	fcp_temp_s_tlaw_bilin20C_priv_tout2,	NULL, },
+		{ NODEFLT|NODEINT,	"twater2",	true,	fcp_temp_s_tlaw_bilin20C_priv_twater2,	NULL, },
+		{ NODEINT,		"nH100",	true,	fcp_int_s_tlaw_bilin20C_priv_nH100,	NULL, },
 	};
 	struct s_hcircuit * restrict const hcircuit = priv;
-	struct s_fcp_tlbilin_params p;
+	struct s_tlaw_bilin20C_priv p;
 	int ret;
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
@@ -154,7 +144,7 @@ static int fcp_hcircuit_ambient_factor(void * restrict const priv, const struct 
 
 	if (abs(iv) > 100)
 		return (-EINVALID);
-	hcircuit->set.ambient_factor = iv;
+	hcircuit->set.ambient_factor = (typeof(hcircuit->set.ambient_factor))iv;
 	return (ALL_OK);
 }
 

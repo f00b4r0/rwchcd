@@ -23,13 +23,17 @@
 
 /** private data for templaw_bilinear (for 20C ambient target) */
 struct s_tlaw_bilin20C_priv {
-	temp_t tout1;		///< outside temp1 (lowest outdoor temp)
-	temp_t twater1;		///< corresponding target water temp1 (highest water temp)
-	temp_t tout2;		///< outside temp2 (highest outdoor temp)
-	temp_t twater2;		///< corresponding target water temp2 (lowest water temp)
-	uint_least16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130)
-	temp_t toutinfl;	///< outdoor temperature at inflexion point (if 0 will be calculated from nH100)
-	temp_t twaterinfl;	///< water temperature at inflexion point (if 0 will be calculated from nH100)
+	struct {
+		temp_t tout1;		///< outside temp1 (lowest outdoor temp)
+		temp_t twater1;		///< corresponding target water temp1 (highest water temp)
+		temp_t tout2;		///< outside temp2 (highest outdoor temp)
+		temp_t twater2;		///< corresponding target water temp2 (lowest water temp)
+		uint_least16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130)
+	} set;
+	struct {
+		temp_t toutinfl;	///< outdoor temperature at inflexion point (calculated once from nH100 in hcircuit_make_bilinear())
+		temp_t twaterinfl;	///< water temperature at inflexion point (calculated once from nH100 in hcircuit_make_bilinear())
+	} run;
 };
 
 /** Heating circuit temperature law identifiers */
