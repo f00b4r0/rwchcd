@@ -137,6 +137,22 @@ __attribute__((always_inline)) static inline uint32_t lib_fpmul_u32(const uint32
 	return ((uint32_t)temp);
 }
 
+__attribute__((always_inline)) static inline int32_t lib_fpdiv_s32(const int32_t n, const int32_t d, const uint32_t scale)
+{
+	int64_t temp = n;
+	temp *= scale;
+	temp /= d;
+	return ((int32_t)temp);
+}
+
+__attribute__((always_inline)) static inline uint32_t lib_fpdiv_u32(const uint32_t n, const uint32_t d, const uint32_t scale)
+{
+	uint64_t temp = n;
+	temp *= scale;
+	temp /= d;
+	return ((uint32_t)temp);
+}
+
 #define LIB_DERIV_FPDEC		0x8000
 
 #define temp_expw_deriv_mul(_a, _b)	lib_fpmul_s32(_a, _b, LIB_DERIV_FPDEC)
