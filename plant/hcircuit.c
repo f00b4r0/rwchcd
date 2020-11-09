@@ -636,10 +636,10 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 						 term that tends toward 0 introduces a huge residual error when boost is enabled.
 						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
 						diff_temp = (request_temp - ambient_temp);
-						if (diff_temp >= KPRECISION) {
+						if (diff_temp > KPRECISION) {
 							// assert casts operate on representable values
-							ambient_temp = circuit->run.trans_start_temp + (((KPRECISION*circuit->run.trans_active_elapsed / circuit->set.am_tambient_tK) *
-													 (KPRECISION + (KPRECISION*circuit->set.tambient_boostdelta) / diff_temp)) / KPRECISION);	// works even if boostdelta is not set
+							ambient_temp = circuit->run.trans_start_temp + lib_fpmul_u32((deltaK_to_temp(1*circuit->run.trans_active_elapsed) / circuit->set.am_tambient_tK),
+													 (1 + lib_fpdiv_u32(circuit->set.tambient_boostdelta, diff_temp, KPRECISION)), KPRECISION);	// works even if boostdelta is not set
 						}
 						else
 							ambient_temp = request_temp;
