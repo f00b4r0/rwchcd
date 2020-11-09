@@ -28,10 +28,10 @@ struct s_bmodel {
 	struct {
 		bool configured;	///< true if configured
 		bool log;		///< true if logging must be enabled for this bmodel
+		itid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
 		temp_t limit_tsummer;	///< outdoor temp for summer switch over
 		temp_t limit_tfrost;	///< outdoor temp for frost protection
 		timekeep_t tau;		///< bmodel time constant
-		itid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
 	} set;
 	struct {
 		atomic_bool online;	///< true if bmodel is online

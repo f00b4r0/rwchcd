@@ -50,15 +50,15 @@ struct s_hcircuit {
 		bool log;			///< true if data logging should be enabled for this circuit
 		schedid_t schedid;		///< schedule id for this hcircuit.
 		enum e_runmode runmode;		///< current circuit set_runmode
-		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (0 to disable)
 		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (0 to disable)
 		timekeep_t boost_maxtime;	///< maximum duration of transition boost
+		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 		itid_t tid_outgoing;		///< outgoing temp sensor id for this circuit
 		itid_t tid_return;		///< return temp sensor id for this circuit
 		itid_t tid_ambient;		///< ambient temp sensor id related to this circuit
-		struct s_hcircuit_params params;///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 		enum e_hcircuit_laws tlaw;	///< temperature law identifier
+		struct s_hcircuit_params params;///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
 		struct {
 			struct s_valve * restrict valve_mix;	///< optional valve for circuit (if unavailable -> direct heating)
 			struct s_pump * restrict pump_feed;	///< optional pump for this circuit
