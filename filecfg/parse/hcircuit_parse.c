@@ -109,7 +109,6 @@ FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, fast_cooldown)
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, log)
 FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_hcircuit, runmode)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_hcircuit, wtemp_rorh)
-FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, am_tambient_tK)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_hcircuit, tambient_boostdelta)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_hcircuit, boost_maxtime)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_hcircuit, tid_outgoing)
@@ -157,7 +156,6 @@ int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_pa
 		{ NODESTR,		"schedid",		false,	fcp_schedid_s_hcircuit_schedid,		NULL, },
 		{ NODEINT,		"ambient_factor",	false,	fcp_hcircuit_ambient_factor,		NULL, },
 		{ NODEFLT|NODEINT,	"wtemp_rorh",		false,	fcp_temp_s_hcircuit_wtemp_rorh,		NULL, },
-		{ NODEINT|NODEDUR,	"am_tambient_tK",	false,	fcp_tk_s_hcircuit_am_tambient_tK,	NULL, },
 		{ NODEFLT|NODEINT,	"tambient_boostdelta",	false,	fcp_temp_s_hcircuit_tambient_boostdelta, NULL, },
 		{ NODEINT|NODEDUR,	"boost_maxtime",	false,	fcp_tk_s_hcircuit_boost_maxtime,	NULL, },
 		{ NODESTR,		"tid_outgoing",		true,	fcp_inputs_temperature_s_hcircuit_tid_outgoing,	NULL, },

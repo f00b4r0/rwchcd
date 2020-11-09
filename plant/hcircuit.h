@@ -52,7 +52,6 @@ struct s_hcircuit {
 		enum e_runmode runmode;		///< current circuit set_runmode
 		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (0 to disable)
-		timekeep_t am_tambient_tK;	///< ambient model: time necessary for 1 Kelvin temperature rise (0 to disable)
 		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (0 to disable)
 		timekeep_t boost_maxtime;	///< maximum duration of transition boost
 		itid_t tid_outgoing;		///< outgoing temp sensor id for this circuit

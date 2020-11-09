@@ -479,7 +479,6 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 	}
 }
 
-#define HC_LOGIC_MIN_POWER_TRANS_UP	85	///< minimum estimate (linear) output power percentage for transition up modelling
 /**
  * Heating circuit logic.
  * Sets the target ambient temperature for a circuit based on selected run mode.
@@ -488,10 +487,8 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
  * @param circuit target circuit
  * @return exec status
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
- * (including rate of rise limitation). REVIEW
  * @note during TRANS_UP the boost transition timer will be reset when a runmode change results in
  * TRANS_UP remaining active, i.e. the boost can be applied for a total time longer than the set time.
- * @todo cleanup
  * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient...)
  * @todo XXX TODO: ambient max delta shutdown; optim based on return temp
  * @todo XXX TODO: optimization with return temperature
@@ -503,7 +500,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	const struct s_bmodel * restrict bmodel;
 	enum e_runmode prev_runmode, new_runmode;
 	tempdiff_t ambient_delta = 0;
-	temp_t diff_temp, request_temp, target_ambient, ambient_temp;
+	temp_t request_temp, target_ambient, ambient_temp;
 	timekeep_t elapsed_time, dtmin;
 	const timekeep_t now = timekeep_now();
 	bool can_fastcool;
@@ -607,46 +604,27 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
 			switch (circuit->run.transition) {
 				case TRANS_DOWN:
-					// transition down, apply logarithmic cooldown model - XXX geared toward fast cooldown, will underestimate temp in ALL other cases REVIEW
-					// all necessary data is _always_ available, no need to special case here
+					// transition down, apply logarithmic cooldown model - will underestimate temp
 					if (elapsed_time > dtmin) {
-						ambient_temp = temp_expw_mavg(ambient_temp, request_temp, 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 						circuit->run.ambient_update_time = now;
 						circuit->run.trans_active_elapsed += elapsed_time;
+						// converge over 3* bmodel tau
+						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient, 3*bmodel->set.tau, elapsed_time);
 					}
 					break;
 				case TRANS_UP:
-					// transition up, apply semi-exponential model
-					if (circuit->set.am_tambient_tK) {	// only if necessary data is available
-						/* XXX count active time only if approximate output power is > HC_LOGIC_MIN_POWER_TRANS_UP %
-						 (linear) approximate output power is (actual_wtemp - ambient) / (target_wtemp - ambient) */
-						if ((aler(&circuit->run.target_wtemp) > ambient_temp) &&	/// @bug XXX REVISIT work around divide by 0
-						    (100 * (aler(&circuit->run.actual_wtemp) - ambient_temp) / (aler(&circuit->run.target_wtemp) - ambient_temp)) > HC_LOGIC_MIN_POWER_TRANS_UP)
-							circuit->run.trans_active_elapsed += elapsed_time;
-
-						// tstart + elevation over time: tstart + ((elapsed_time * KPRECISION/tperK) * ((treq - tcurrent + tboost) / (treq - tcurrent)))
-						/* note: the impact of the boost should be considered as a percentage of the total
-						 requested temperature increase over _current_ temp, hence (treq - tcurrent).
-						 Furthermore, by simply adjusting a few factors in equal proportion (KPRECISION),
-						 we don't need to deal with floats and we can keep a good precision.
-						 Also note that am_tambient_tK must be considered /KPRECISION to match the internal
-						 temp type which is K*KPRECISION.
-						 IMPORTANT: it is essential that this computation be stopped when the
-						 temperature differential (request - actual) is < KPRECISION (1K) otherwise the
-						 term that tends toward 0 introduces a huge residual error when boost is enabled.
-						 If TRANS_UP is run when request == actual, the computation would trigger a divide by 0 (SIGFPE) */
-						diff_temp = (request_temp - ambient_temp);
-						if (diff_temp > KPRECISION) {
-							// assert casts operate on representable values
-							ambient_temp = circuit->run.trans_start_temp + lib_fpmul_u32((deltaK_to_temp(1*circuit->run.trans_active_elapsed) / circuit->set.am_tambient_tK),
-													 (1 + lib_fpdiv_u32(circuit->set.tambient_boostdelta, diff_temp, KPRECISION)), KPRECISION);	// works even if boostdelta is not set
-						}
-						else
-							ambient_temp = request_temp;
+					//  model up temp only if hcircuit wtempt is at least within 5K of target
+					if (aler(&circuit->run.actual_wtemp) <= (aler(&circuit->run.target_wtemp) - deltaK_to_temp(5)))
 						circuit->run.ambient_update_time = now;
-						break;
+					else if (elapsed_time > dtmin) {
+						circuit->run.ambient_update_time = now;
+						circuit->run.trans_active_elapsed += elapsed_time;
+						// converge over bmodel tau, include boost if any (XXX as applied in "handle transitions" below)
+						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient
+									      + ((circuit->run.trans_active_elapsed < circuit->set.boost_maxtime) ? circuit->set.tambient_boostdelta : 0),
+									      bmodel->set.tau, elapsed_time);
 					}
-					// fallthrough - if settings are insufficient, model can't run, fallthrough to no transition
+					break;
 				case TRANS_NONE:
 					// no transition, ambient temp assumed to be request temp
 					ambient_temp = circuit->run.request_ambient;
@@ -667,7 +645,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// handle transitions
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
-			if (ambient_temp > (request_temp + deltaK_to_temp(0.5F))) {
+			if (ambient_temp > (target_ambient + deltaK_to_temp(0.5F))) {
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					new_runmode = RM_OFF;
 			}
@@ -675,7 +653,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_UP:
-			if (ambient_temp < (request_temp - deltaK_to_temp(1.0F))) {	// boost if ambient temp < (target - 1K) - Note see 'IMPORTANT' above
+			if (ambient_temp < (target_ambient - deltaK_to_temp(0.5F))) {
 				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
 					ambient_delta = (tempdiff_t)circuit->set.tambient_boostdelta;	// override delta during boost
 			}

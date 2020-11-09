@@ -141,8 +141,6 @@ int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 		filecfg_iprintf("ambient_factor %" PRIdLEAST16 ";\n", circuit->set.ambient_factor);
 	if (FCD_Exhaustive || circuit->set.wtemp_rorh)
 		filecfg_dump_deltaK("wtemp_rorh", circuit->set.wtemp_rorh);
-	if (FCD_Exhaustive || circuit->set.am_tambient_tK)
-		filecfg_dump_tk("am_tambient_tK", circuit->set.am_tambient_tK);
 	if (FCD_Exhaustive || circuit->set.tambient_boostdelta)
 		filecfg_dump_deltaK("tambient_boostdelta", circuit->set.tambient_boostdelta);
 	if (FCD_Exhaustive || circuit->set.boost_maxtime)
