@@ -292,6 +292,10 @@ static void * thread_master(void *arg)
 	struct s_runtime * restrict const runtime = runtime_get();
 	int ret;
 
+#ifdef _GNU_SOURCE
+	pthread_setname_np(pthread_self(), "master");	// failure ignored
+#endif
+
 	if (SYS_NONE == runtime_systemmode()) {	// runtime was not restored
 						// set sysmode/runmode from startup config
 		ret = runtime_set_systemmode(runtime->set.startup_sysmode);
@@ -367,6 +371,10 @@ static void * thread_watchdog(void * arg)
 	fd_set set;
 	int ret, dummy;
 	
+#ifdef _GNU_SOURCE
+	pthread_setname_np(pthread_self(), "watchdog");
+#endif
+
 	FD_ZERO(&set);
 	FD_SET(piperfd, &set);
 	
@@ -437,6 +445,17 @@ int main(void)
 	if (ret)
 		errx(ret, "failed to create master thread!");
 
+	// XXX Dropping priviledges here because we need root to set
+	// SCHED_FIFO during pthread_create().
+	// The thread will run with root credentials for "a little while". REVISIT
+	// note: setuid() sends SIG_RT1 to thread due to NPTL implementation
+	ret = setgid(RWCHCD_GID);
+	if (ret)
+		err(ret, "failed to setgid()");
+	ret = setuid(RWCHCD_UID);
+	if (ret)
+		err(ret, "failed to setuid()");
+
 	ret = pthread_create(&watchdog_thr, NULL, thread_watchdog, &pipefd[0]);
 	if (ret)
 		errx(ret, "failed to create watchdog thread!");
@@ -448,25 +467,6 @@ int main(void)
 	ret = pthread_create(&scheduler_thr, NULL, scheduler_thread, NULL);
 	if (ret)
 		errx(ret, "failed to create scheduler thread!");
-	
-#ifdef _GNU_SOURCE
-	pthread_setname_np(master_thr, "master");	// failure ignored
-	pthread_setname_np(timer_thr, "timer");
-	pthread_setname_np(scheduler_thr, "scheduler");
-	pthread_setname_np(watchdog_thr, "watchdog");
-	pthread_setname_np(timekeep_thr, "timekeep");
-#endif
-
-	// XXX Dropping priviledges here because we need root to set
-	// SCHED_FIFO during pthread_create(), and for setname().
-	// The thread will run with root credentials for "a little while". REVISIT
-	// note: setuid() sends SIG_RT1 to thread due to NPTL implementation
-	ret = setgid(RWCHCD_GID);
-	if (ret)
-		err(ret, "failed to setgid()");
-	ret = setuid(RWCHCD_UID);
-	if (ret)
-		err(ret, "failed to setuid()");
 
 #ifdef DEBUG
 	// create the stdout fifo for debugging

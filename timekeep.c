@@ -17,6 +17,7 @@
 #include <unistd.h>	// (u)sleep()
 #include <stdatomic.h>
 #include <assert.h>
+#include <pthread.h>	// only for pthread_setname_np()
 
 #include "rwchcd.h"
 #include "timekeep.h"
@@ -143,6 +144,10 @@ timekeep_t timekeep_now(void)
  */
 void * timekeep_thread(void * arg __attribute__((unused)))
 {
+#ifdef _GNU_SOURCE
+	pthread_setname_np(pthread_self(), "timekeep");
+#endif
+
 	// start logging
 	while (1) {
 		timekeep_clockupdate();

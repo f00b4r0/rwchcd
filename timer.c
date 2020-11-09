@@ -14,6 +14,7 @@
 #include <stdlib.h>	// calloc
 #include <string.h>	// strdup
 #include <stdatomic.h>
+#include <pthread.h>	// only for pthread_setname_np()
 
 #include "rwchcd.h"
 #include "timer.h"
@@ -44,6 +45,10 @@ void * timer_thread(void * arg __attribute__((unused)))
 	unsigned int tperiod;
 	timekeep_t now;
 	int ret;
+
+#ifdef _GNU_SOURCE
+	pthread_setname_np(pthread_self(), "timer");
+#endif
 
 	// note: must NOT sleep while holding the flag
 	while (1) {

@@ -29,6 +29,7 @@
 #include <stdatomic.h>
 #include <limits.h>
 #include <assert.h>
+#include <pthread.h>	// only for pthread_setname_np()
 
 #include "scheduler.h"
 #include "timekeep.h"
@@ -224,6 +225,10 @@ int scheduler_schedid_by_name(const char * const restrict sched_name)
  */
 void * scheduler_thread(void * arg __attribute__((unused)))
 {
+#ifdef _GNU_SOURCE
+	pthread_setname_np(pthread_self(), "scheduler");
+#endif
+
 	// start logging
 	while (1) {
 		scheduler_now();
