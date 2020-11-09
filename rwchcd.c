@@ -48,6 +48,7 @@
 #include <stdlib.h>	// exit
 #include <signal.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include <err.h>
 #include <sys/select.h>
 #include <errno.h>
@@ -104,7 +105,7 @@ extern FILE *filecfg_parser_in;	///< provided, used and closed by the Bison pars
  #define RWCHCD_REV	"UNDEFINED"		///< Normally defined in Makefile
 #endif
 
-static volatile bool Sem_master_thread = false;
+static atomic_bool Sem_master_thread = false;
 
 static const char Version[] = RWCHCD_REV;	///< Build version string
 
@@ -169,7 +170,7 @@ static void sig_handler(int signum)
 #ifdef HAS_DBUS
 			dbus_quit();
 #else
-			Sem_master_thread = false;
+			aser(&Sem_master_thread, false);
 #endif
 			break;
 		case SIGUSR1:
@@ -296,6 +297,13 @@ static void * thread_master(void *arg)
 	pthread_setname_np(pthread_self(), "master");	// failure ignored
 #endif
 
+	// synchronize with main(): wait until privileges have been dropped and init()/online() is done before doing anything
+	// we use atomic_load() as we want strong ordering here, we relax it during runtime
+	while (!atomic_load(&Sem_master_thread))
+		usleep(500);
+
+	// unleash the dogs
+
 	if (SYS_NONE == runtime_systemmode()) {	// runtime was not restored
 						// set sysmode/runmode from startup config
 		ret = runtime_set_systemmode(runtime->set.startup_sysmode);
@@ -307,7 +315,7 @@ static void * thread_master(void *arg)
 		}
 	}
 
-	while (Sem_master_thread) {
+	while (aler(&Sem_master_thread)) {
 #ifdef DEBUG
 		printf("%ld\n", time(NULL));
 #endif
@@ -416,38 +424,26 @@ int main(void)
 	if (ret)
 		err(ret, "failed to setup pipe!");
 
+	// run init_process() as root (necessary for some hardware access, e.g. SPI)
 	ret = init_process();
 	if (ret != ALL_OK) {
 		pr_err(_("Process initialization failed (%d) - ABORTING!"), ret);
 		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
 	}
 
-	ret = online_subsystems();
-	if (ret != ALL_OK) {
-		pr_err(_("Subsystems onlining failed (%d) - ABORTING!"), ret);
-		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
-	}
-
-	// setup threads
+	// setup SCHED_FIFO master thread
 	pthread_attr_init(&attr);
 	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
 	pthread_attr_setschedparam(&attr, &sparam);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-	Sem_master_thread = true;
-
-	ret = pthread_create(&timekeep_thr, NULL, timekeep_thread, NULL);
-	if (ret)
-		errx(ret, "failed to create timekeep thread!");
-
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
 		errx(ret, "failed to create master thread!");
 
-	// XXX Dropping priviledges here because we need root to set
-	// SCHED_FIFO during pthread_create().
-	// The thread will run with root credentials for "a little while". REVISIT
+	// XXX Dropping privileges here because we need root to set SCHED_FIFO during pthread_create().
+	// We block the master thread via Sem_master_thread
 	// note: setuid() sends SIG_RT1 to thread due to NPTL implementation
 	ret = setgid(RWCHCD_GID);
 	if (ret)
@@ -455,6 +451,19 @@ int main(void)
 	ret = setuid(RWCHCD_UID);
 	if (ret)
 		err(ret, "failed to setuid()");
+
+	ret = online_subsystems();
+	if (ret != ALL_OK) {
+		pr_err(_("Subsystems onlining failed (%d) - ABORTING!"), ret);
+		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
+	}
+
+	ret = pthread_create(&timekeep_thr, NULL, timekeep_thread, NULL);
+	if (ret)
+		errx(ret, "failed to create timekeep thread!");
+
+	// launch master thread here, before we kick off the watchdog - strong ordering
+	atomic_store(&Sem_master_thread, true);
 
 	ret = pthread_create(&watchdog_thr, NULL, thread_watchdog, &pipefd[0]);
 	if (ret)
@@ -503,7 +512,7 @@ int main(void)
 	pthread_join(master_thr, NULL);	// wait for master end of execution
 #endif
 
-	Sem_master_thread = false;	// signal end of work
+	aser(&Sem_master_thread, false);	// signal end of work
 	pthread_cancel(scheduler_thr);
 	pthread_cancel(timer_thr);
 	pthread_cancel(watchdog_thr);
