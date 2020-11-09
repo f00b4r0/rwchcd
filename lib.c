@@ -144,8 +144,6 @@ tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrs
 	assert(intgrl);
 	assert(timekeep_a_ge_b(new_time, intgrl->last_time));
 
-	intgrl->inuse = true;
-
 	intg = intgrl->integral;
 
 	if (unlikely(!intgrl->last_time || !new_time))	// only compute integral over a finite domain

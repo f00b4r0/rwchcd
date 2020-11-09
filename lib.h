@@ -14,7 +14,6 @@
 #ifndef rwchcd_lib_h
 #define rwchcd_lib_h
 
-#include <string.h>	// memset
 #include <assert.h>
 
 #include "rwchcd.h"
@@ -22,7 +21,6 @@
 
 /** Temperature integral data */
 struct s_temp_intgrl {
-	bool inuse;			///< true if integral is in use
 	tempdiff_t integral;		///< integral value in temp_t * seconds
 	temp_t last_thrsh;		///< temperature threshold for integral calculation
 	temp_t last_temp;		///< last recorded temperature value
@@ -117,8 +115,10 @@ __attribute__((const, always_inline)) static inline int validate_temp(const temp
 __attribute__((always_inline)) static inline void reset_intg(struct s_temp_intgrl * const intgrl)
 {
 	assert(intgrl);
-	if (intgrl->inuse)
-		memset(intgrl, 0x00, sizeof(*intgrl));
+	intgrl->integral = 0;
+	intgrl->last_thrsh = 0;
+	intgrl->last_temp = 0;
+	intgrl->last_time = 0;
 }
 
 __attribute__((always_inline)) static inline int32_t lib_fpmul_s32(const int32_t a, const int32_t b, const uint32_t scale)
