@@ -921,8 +921,10 @@ int plant_run(struct s_plant * restrict const plant)
 	// reflect global stop delay and overtemp
 	plant->pdata.run.consumer_sdelay = stop_delay;
 	plant->pdata.run.hs_overtemp = overtemp;
-	if (overtemp)
+	if (overtemp) {
 		plant->pdata.run.plant_could_sleep = false;	// disable during overtemp
+		plant->pdata.run.consumer_shift = RWCHCD_CSHIFT_MAX;
+	}
 
 	if (plant->set.summer_maintenance)
 		plant_summer_maintenance(plant);
