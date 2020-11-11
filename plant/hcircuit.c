@@ -642,10 +642,10 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// store current ambient temp
 	aser(&circuit->run.actual_ambient, ambient_temp);
 
-	// handle transitions
+	// handle transitions - transition is over when we are 1K from target
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
-			if (ambient_temp > (target_ambient + deltaK_to_temp(0.5F))) {
+			if (ambient_temp > (target_ambient + deltaK_to_temp(1))) {
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					new_runmode = RM_OFF;
 			}
@@ -653,7 +653,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_UP:
-			if (ambient_temp < (target_ambient - deltaK_to_temp(0.5F))) {
+			if (ambient_temp < (target_ambient - deltaK_to_temp(1))) {
 				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
 					ambient_delta = (tempdiff_t)circuit->set.tambient_boostdelta;	// override delta during boost
 			}
