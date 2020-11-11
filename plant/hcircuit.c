@@ -540,14 +540,16 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		case RM_ECO:
 			request_temp = SETorDEF(circuit->set.params.t_eco, circuit->pdata->set.def_hcircuit.t_eco);
 			break;
+		case RM_AUTO:
+		case RM_UNKNOWN:
+		default:
+			dbgerr("\"%s\": invalid runmode (%d), falling back to RM_FROSTREE", circuit->name, new_runmode);
+			new_runmode = RM_FROSTFREE;
+			// fallthrough
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
 			request_temp = SETorDEF(circuit->set.params.t_frostfree, circuit->pdata->set.def_hcircuit.t_frostfree);
 			break;
-		case RM_AUTO:
-		case RM_UNKNOWN:
-		default:
-			return (-EINVALIDMODE);
 	}
 
 	// save current ambient request & runmode (needed by hcircuit_outhoff())
