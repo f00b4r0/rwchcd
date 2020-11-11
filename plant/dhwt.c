@@ -514,6 +514,7 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
  * @note Since anti-legionella can only be unset _after_ a complete charge (or a DHWT shutdown),
  * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
  * although not necessarily at the planned time if there is delay in servicing the target DHWT priority.
+ * @note this function ensures that in the event of an error, the dhwt is put in a failsafe state as defined in dhwt_failsafe().
  */
 int dhwt_run(struct s_dhwt * const dhwt)
 {
@@ -533,7 +534,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	ret = dhwt_logic(dhwt);
 	if (unlikely(ALL_OK != ret))
-		return (ret);
+		goto fail;
 
 	switch (aler(&dhwt->run.runmode)) {
 		case RM_OFF:
@@ -559,7 +560,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		case RM_DHWONLY:
 		case RM_UNKNOWN:
 		default:
-			return (-EINVALIDMODE);
+			ret = -EINVALIDMODE;	// this can never happen due to fallback in _logic()
+			goto fail;
 	}
 
 	// if we reached this point then the dhwt is active
@@ -570,8 +572,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	// de-isolate the DHWT if necessary (when not on electric)
 	if (dhwt->set.p.valve_hwisol && !electric_mode) {
 		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
-		if (ALL_OK != ret)
-			dbgerr("\%s\": cannot operate isolation valve!", dhwt->name);
+		if (ALL_OK != ret) {
+			dbgerr("\%s\": cannot operate isolation valve \"%s\"!", dhwt->name, dhwt->set.p.valve_hwisol->name);
+			goto fail;
+		}
 	}
 
 	// check which sensors are available
@@ -584,8 +588,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	// no sensor available, give up
 	if (unlikely(!valid_tbottom && !valid_ttop)) {
-		dhwt_failsafe(dhwt);
-		return (ret);	// return last error
+		dbgerr("\"%s\": no valid temperature available", dhwt->name);
+		goto fail;
 	}
 
 	// We're good to go
@@ -709,13 +713,13 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		}
 	}
 
-	ret = ALL_OK;
-
 	// handle pump_feed - outside of the trigger since we need to manage inlet temp
 	if (dhwt->set.p.pump_feed) {
+		// if available, test for inlet water temp
+		/// @warning Note: this sensor must not rely on pump running for accurate read, otherwise this can be a problem
+		ret = inputs_temperature_get(dhwt->set.tid_win, &water_temp);
+
 		if (charge_on && !electric_mode) {		// on heatsource charge
-								// if available, test for inlet water temp
-			ret = inputs_temperature_get(dhwt->set.tid_win, &water_temp);	// Note: this sensor must not rely on pump running for accurate read, otherwise this can be a problem
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
@@ -723,19 +727,20 @@ int dhwt_run(struct s_dhwt * const dhwt)
 				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K hysteresis
 					ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);
 			}
-			else
+			else {
+				dbgerr("\"%s\": can't get tid_win (%d)", dhwt->name, ret);
 				ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
+			}
 		}
 		else {				// no charge or electric charge
 			test = FORCE;	// by default, force pump_feed immediate turn off
-
-			// if available, test for inlet water temp
-			ret = inputs_temperature_get(dhwt->set.tid_win, &water_temp);
 			if (ALL_OK == ret) {
 				// discharge protection: if water feed temp is > dhwt current temp, we can apply cooldown
 				if (water_temp > curr_temp)
 					test = NOFORCE;
 			}
+			else
+				dbgerr("\"%s\": can't get tid_win (%d)", dhwt->name, ret);
 
 			// turn off pump with conditional cooldown
 			ret = pump_set_state(dhwt->set.p.pump_feed, OFF, test);
@@ -749,6 +754,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	aser(&dhwt->run.charge_on, charge_on);
 	aser(&dhwt->run.electric_mode, electric_mode);
 
+	return (ALL_OK);
+
+fail:
+	dhwt_failsafe(dhwt);
 	return (ret);
 }
 

@@ -836,23 +836,10 @@ int plant_run(struct s_plant * restrict const plant)
 		dhwt = &plant->dhwts.all[id];
 		dhwt->status = dhwt_run(dhwt);
 
-		switch (-dhwt->status) {
-			case ALL_OK:
-				break;
-			default:
-				dhwt_offline(dhwt);			// something really bad happened
-				// fallthrough
-			case EINVALIDMODE:
-				dhwt->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
-				// fallthrough
-			case ESENSORINVAL:
-			case ESENSORSHORT:
-			case ESENSORDISCON:	// sensor issues are handled by dhwt_run()
-			case ENOTCONFIGURED:
-			case EOFFLINE:
-				suberror = true;
-				plant_alarm(dhwt->status, id, dhwt->name, PDEV_DHWT);
-				continue;
+		if (unlikely(ALL_OK != dhwt->status)) {
+			suberror = true;
+			plant_alarm(dhwt->status, id, dhwt->name, PDEV_DHWT);
+			continue;
 		}
 	}
 
