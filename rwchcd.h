@@ -91,7 +91,6 @@ enum e_execs {
 	ENOTCONFIGURED,	///< element is not configured
 	EMISCONFIGURED,	///< invalid configuration settings
 	ESAFETY,	///< safety error
-	EDEADZONE,	///< target is in deadzone
 	EDEADBAND,	///< valve is in deadband
 	ENOTIMPLEMENTED,///< argument/request/whatever is not implemented
 	EOFFLINE,	///< element is offline: a critical operational prerequisite failed

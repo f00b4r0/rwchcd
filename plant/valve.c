@@ -186,7 +186,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2))) {
 		valve->run.ctrl_ready = false;
 		valve_reqstop(valve);
-		return (-EDEADZONE);
+		return (ALL_OK);
 	}
 
 	// get current high input
@@ -228,7 +228,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	if ((tempin_l >= tempin_h) || (tempin_h - tempin_l <= 1000)) {
 		valve->run.ctrl_ready = false;
 		dbgerr("\"%s\": inputs inverted or input range too narrow", valve->name);
-		return (-EDEADZONE);
+		return (ALL_OK);
 	}
 
 	// handle algorithm reset
@@ -345,7 +345,7 @@ static int v_bangbang_tcontrol(struct s_valve * const valve, const temp_t target
 	// apply deadzone
 	if (((tempout - valve->set.tset.tmix.tdeadzone/2) < target_tout) && (target_tout < (tempout + valve->set.tset.tmix.tdeadzone/2))) {
 		valve_reqstop(valve);
-		return (-EDEADZONE);	// do nothing
+		return (ALL_OK);	// do nothing
 	}
 
 	if (target_tout > tempout)
@@ -419,20 +419,16 @@ static int v_sapprox_tcontrol(struct s_valve * const valve, const temp_t target_
 
 	// every sample window time, check if temp is < or > target
 	// if temp is < target - deadzone/2, open valve for fixed amount
-	if (tempout < target_tout - valve->set.tset.tmix.tdeadzone/2) {
+	if (tempout < target_tout - valve->set.tset.tmix.tdeadzone/2)
 		valve_request_pth(valve, (int_least16_t)vpriv->set.amount);
-	}
 	// if temp is > target + deadzone/2, close valve for fixed amount
-	else if (tempout > target_tout + valve->set.tset.tmix.tdeadzone/2) {
+	else if (tempout > target_tout + valve->set.tset.tmix.tdeadzone/2)
 		valve_request_pth(valve, (int_least16_t)-vpriv->set.amount);
-	}
 	// else we're in deadzone: stop valve
-	else {
+	else
 		valve_reqstop(valve);
-		ret = -EDEADZONE;
-	}
 
-	return (ret);
+	return (ALL_OK);
 }
 
 /**

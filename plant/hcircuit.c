@@ -873,7 +873,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 		// adjust valve position if necessary
 		ret = valve_mix_tcontrol(circuit->set.p.valve_mix, water_temp);
-		if (unlikely(ret && (ret != -EDEADZONE)))	// return error code if it's not EDEADZONE
+		if (unlikely(ret))	// return error code if it's not EDEADZONE
 			return (ret);
 		// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))
 	}
