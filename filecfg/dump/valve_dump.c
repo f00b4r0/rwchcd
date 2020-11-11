@@ -114,8 +114,6 @@ static int filecfg_valve_tmix_dump(const struct s_valve * restrict const valve)
 
 static int filecfg_valve_tisol_dump(const struct s_valve * restrict const valve)
 {
-	filecfg_dump_nodebool("reverse", valve->set.tset.tisol.reverse);	// mandatory
-
 	return (ALL_OK);
 }
 

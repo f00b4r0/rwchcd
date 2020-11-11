@@ -170,39 +170,13 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 	return (ret);
 }
 
-static int fcp_bool_valve_tisol_reverse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_valve * restrict const valve = priv;
-	valve->set.tset.tisol.reverse = node->value.boolval;
-	return (ALL_OK);
-}
-
 static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL,	"reverse",	false,	fcp_bool_valve_tisol_reverse,	NULL, },
-	};
 	struct s_valve * restrict const valve = priv;
-	int ret;
 
-	// empty config
-	if (!node->children) {
-		ret = ALL_OK;
-		goto out;
-	}
-
-	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);	// break if invalid config
-
-	ret = filecfg_parser_run_parsers(valve, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
-out:
 	valve->set.type = VA_TYPE_ISOL;
 
-	return (ret);
+	return (ALL_OK);
 }
 
 FILECFG_PARSER_INTPOSMAX_PARSE_NEST_FUNC(1000, s_valve, set.mset.m3way., deadband)

@@ -69,7 +69,7 @@ enum e_valve_motor {
 enum e_valve_type {
 	VA_TYPE_NONE = 0,	///< no type, misconfiguration
 	VA_TYPE_MIX,		///< mixing type. Config `mix`
-	VA_TYPE_ISOL,		///< isolation type. Config `isol`
+	VA_TYPE_ISOL,		///< isolation type. Config `isol`. Isolation valve isolates target by closing itself.
 	VA_TYPE_UNKNOWN,	///< invalid past this value
 };
 
@@ -101,15 +101,9 @@ struct s_valve_type_mix_set {
 	enum e_valve_talgos algo;///< valve tcontrol algorithm identifier
 };
 
-/** Private structure for isolation type valve */
-struct s_valve_type_isol_set {
-	bool reverse;		///< true if opening the valve isolates the target
-};
-
 /** Union for valve type settings */
 union u_valve_type_set {
 	struct s_valve_type_mix_set tmix;	///< mixing valve settings
-	struct s_valve_type_isol_set tisol;	///< isolation valve settings
 };
 
 // http://wiki.diyfaq.org.uk/index.php?title=Motorised_Valves

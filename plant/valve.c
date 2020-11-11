@@ -965,12 +965,11 @@ int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 /**
  * Trigger isolation valve.
  * @param valve target valve
- * @param isolate true if the valve must isolate its output
+ * @param isolate true if the valve must isolate (close) its output
  * @return exec status
  */
 int valve_isol_trigger(struct s_valve * const valve, bool isolate)
 {
-	int_least16_t reqisol = -VALVE_REQMAXPTH;	// full close by default
 	int ret;
 
 	if (unlikely(!valve || (VA_TYPE_ISOL != valve->set.type)))
@@ -979,13 +978,10 @@ int valve_isol_trigger(struct s_valve * const valve, bool isolate)
 	if (unlikely(!valve->run.online))
 		return (-EOFFLINE);
 
-	if (valve->set.tset.tisol.reverse)
-		reqisol = -reqisol;
-
 	if (isolate)
-		ret = valve_request_pth(valve, reqisol);
+		ret = valve_reqclose_full(valve);
 	else
-		ret = valve_request_pth(valve, -reqisol);
+		ret = valve_reqopen_full(valve);
 
 	return (ret);
 }
