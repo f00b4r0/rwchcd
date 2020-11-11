@@ -442,6 +442,12 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	switch (aler(&heat->run.runmode)) {
 		case RM_OFF:
 			break;
+		case RM_AUTO:
+		case RM_UNKNOWN:
+		default:
+			dbgerr("\"%s\": invalid runmode (%d), falling back to RM_FROSTREE", heat->name, aler(&heat->run.runmode));
+			aser(&heat->run.runmode, RM_FROSTFREE);
+			// fallthrough
 		case RM_COMFORT:
 		case RM_ECO:
 		case RM_DHWONLY:
@@ -451,10 +457,6 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 		case RM_TEST:
 			target_temp = boiler->set.limit_tmax;	// set max temp to (safely) trigger burner operation
 			break;
-		case RM_AUTO:
-		case RM_UNKNOWN:
-		default:
-			return (-EINVALIDMODE);
 	}
 
 	// bypass target_temp if antifreeze is active
