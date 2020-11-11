@@ -861,23 +861,10 @@ int plant_run(struct s_plant * restrict const plant)
 		hcircuit = &plant->hcircuits.all[id];
 		hcircuit->status = hcircuit_run(hcircuit);
 
-		switch (-hcircuit->status) {
-			case ALL_OK:
-				break;
-			default:
-				hcircuit_offline(hcircuit);		// something really bad happened
-				// fallthrough
-			case EINVALIDMODE:
-				hcircuit->set.runmode = RM_FROSTFREE;	// XXX force mode to frost protection (this should be part of an error handler)
-				// fallthrough
-			case ESENSORINVAL:
-			case ESENSORSHORT:
-			case ESENSORDISCON:	// sensor issues are handled by hcircuit_run()
-			case ENOTCONFIGURED:
-			case EOFFLINE:
-				suberror = true;
-				plant_alarm(hcircuit->status, id, hcircuit->name, PDEV_HCIRC);
-				continue;
+		if (unlikely(ALL_OK != hcircuit->status)) {
+			suberror = true;
+			plant_alarm(hcircuit->status, id, hcircuit->name, PDEV_HCIRC);
+			continue;	// no further processing for this hcircuit
 		}
 	}
 

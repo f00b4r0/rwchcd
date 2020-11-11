@@ -703,6 +703,7 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  * @param circuit target circuit
  * @return exec status
  * @warning circuit->run.target_ambient must be properly set before this runs
+ * @note this function ensures that in the event of an error, the hcircuit is put in a failsafe state as defined in hcircuit_failsafe().
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
@@ -718,17 +719,15 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// safety checks
 	ret = inputs_temperature_get(circuit->set.tid_outgoing, &curr_temp);
-	if (unlikely(ALL_OK != ret)) {
-		hcircuit_failsafe(circuit);
-		return (ret);
-	}
+	if (unlikely(ALL_OK != ret))
+		goto fail;
 
 	// we're good to go - keep updating actual_wtemp when circuit is off
 	aser(&circuit->run.actual_wtemp, curr_temp);
 
 	ret = hcircuit_logic(circuit);
 	if (unlikely(ALL_OK != ret))
-		return (ret);
+		goto fail;
 
 	// force circuit ON during hs_overtemp condition
 	if (unlikely(circuit->pdata->run.hs_overtemp))
@@ -759,7 +758,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		case RM_AUTO:
 		case RM_UNKNOWN:
 		default:
-			return (-EINVALIDMODE);
+			ret = -EINVALIDMODE;	// this can never happen due to fallback in _logic()
+			goto fail;
 	}
 
 	// if we reached this point then the circuit is active
@@ -767,8 +767,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// if building model isn't online, failsafe
 	if (unlikely(!aler(&circuit->set.p.bmodel->run.online))) {
-		hcircuit_failsafe(circuit);
-		return (-ESAFETY);
+		ret = -ESAFETY;
+		goto fail;
 	}
 
 	// circuit is active, ensure pump is running
@@ -776,8 +776,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		ret = pump_set_state(circuit->set.p.pump_feed, ON, 0);
 		if (unlikely(ALL_OK != ret)) {
 			dbgerr("\"%s\": failed to set pump_feed \"%s\" ON (%d)", circuit->name, circuit->set.p.pump_feed->name, ret);
-			hcircuit_failsafe(circuit);
-			return (ret);	// critical error: stop there
+			goto fail;
 		}
 	}
 
@@ -875,9 +874,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 		// adjust valve position if necessary
 		ret = valve_mix_tcontrol(circuit->set.p.valve_mix, water_temp);
-		if (unlikely(ret))	// return error code if it's not EDEADZONE
-			return (ret);
-		// if we want to add a check for nominal power reached: if ((-EDEADZONE == ret) || (get_temp(circuit->set.tid_outgoing) > circuit->run.target_ambient))
+		if (unlikely(ret)) {
+			dbgerr("\"%s\": failed to control valve \"%s\" (%d)", circuit->name, circuit->set.p.valve_mix->name, ret);
+			goto fail;
+		}
 	}
 
 #ifdef DEBUG
@@ -888,6 +888,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 #endif
 
 	return (ALL_OK);
+
+fail:
+	hcircuit_failsafe(circuit);
+	return (ret);
 }
 
 /**
