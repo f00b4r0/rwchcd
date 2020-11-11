@@ -415,14 +415,16 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		case RM_COMFORT:
 			target_temp = SETorDEF(dhwt->set.params.t_comfort, dhwt->pdata->set.def_dhwt.t_comfort);
 			break;
-		case RM_FROSTFREE:
-			target_temp = SETorDEF(dhwt->set.params.t_frostfree, dhwt->pdata->set.def_dhwt.t_frostfree);
-			break;
 		case RM_AUTO:
 		case RM_DHWONLY:
 		case RM_UNKNOWN:
 		default:
-			return (-EINVALIDMODE);
+			dbgerr("\"%s\": invalid runmode (%d), falling back to RM_FROSTREE", dhwt->name, new_runmode);
+			new_runmode = RM_FROSTFREE;
+			// fallthrough
+		case RM_FROSTFREE:
+			target_temp = SETorDEF(dhwt->set.params.t_frostfree, dhwt->pdata->set.def_dhwt.t_frostfree);
+			break;
 	}
 
 	// if anti-legionella charge is requested, enforce temp and bypass logic
