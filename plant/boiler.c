@@ -361,6 +361,7 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
  * Safety routine to apply to boiler in case of emergency.
  * - The burner is disabled
  * - The load pump is forced on
+ * - The return valve is open in full
  * @param boiler target boiler
  */
 static void boiler_failsafe(struct s_boiler_priv * const boiler)
@@ -377,6 +378,9 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 
 	if (boiler->set.p.pump_load)
 		(void)!pump_set_state(boiler->set.p.pump_load, ON, FORCE);
+
+	if (boiler->set.p.valve_ret)
+		(void)!valve_reqopen_full(boiler->set.p.valve_ret);
 }
 
 /**
