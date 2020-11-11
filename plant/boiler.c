@@ -431,10 +431,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 	// safe operation check
 	ret = boiler_runchecklist(boiler);
-	if (unlikely(ALL_OK != ret)) {
-		boiler_failsafe(boiler);
-		return (ret);
-	}
+	if (unlikely(ALL_OK != ret))
+		goto fail;
 
 	// Check if we need antifreeze
 	boiler_antifreeze(boiler);
@@ -493,10 +491,10 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 	// ensure boiler is within safety limits
 	if (unlikely((ALL_OK != ret) || (actual_temp > boiler->set.limit_thardmax))) {
-		boiler_failsafe(boiler);
 		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
 		aser(&heat->run.overtemp, true);
-		return (-ESAFETY);
+		ret = -ESAFETY;
+		goto fail;
 	}
 
 	/* Always compute boiler temp derivative over the past 2mn
@@ -549,6 +547,10 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	dbgmsg(1, (heat->run.cshift_crit), "\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
 
 	return (ALL_OK);
+
+fail:
+	boiler_failsafe(boiler);
+	return (ret);
 }
 
 /**
@@ -569,6 +571,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage
  * @note will trigger an alarm if burner stays on for >6h without heat output
+ * @note this function ensures that in the event of an error, the boiler is put in a failsafe state as defined in boiler_failsafe().
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
@@ -594,7 +597,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		case RM_AUTO:
 		case RM_UNKNOWN:
 		default:
-			return (-EINVALIDMODE);
+			ret = -EINVALIDMODE;	// this can never happen due to fallback in _logic()
+			goto fail;
 	}
 
 	// if we reached this point then the boiler is active (online or antifreeze)
@@ -636,8 +640,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		ret = pump_set_state(boiler->set.p.pump_load, ON, 0);
 		if (unlikely(ALL_OK != ret)) {
 			dbgerr("\"%s\": failed to set pump_load \"%s\" ON (%d)", heat->name, boiler->set.p.pump_load->name, ret);
-			boiler_failsafe(boiler);
-			return (ret);	// critical error: stop there
+			goto fail;	// critical error: stop there
 		}
 	}
 
@@ -714,6 +717,11 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		}
 	}
 
+	if (unlikely(ALL_OK != ret)) {
+		dbgerr("\"%s\": burner control failed (%d)", heat->name, ret);
+		goto fail;
+	}
+
 	// computations performed while burner is on
 	if (outputs_relay_state_get(boiler->set.rid_burner_1) > 0) {
 		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
@@ -759,6 +767,11 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	       heat->name, outputs_relay_state_get(boiler->set.rid_burner_1), temp_to_celsius(aler(&heat->run.temp_request)), temp_to_celsius(target_temp),
 	       temp_to_celsius(actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(ret_temp), temp_deriv, boiler->run.turnon_curr_adj);
 #endif
+
+	return (ALL_OK);
+
+fail:
+	boiler_failsafe(boiler);
 	return (ret);
 }
 

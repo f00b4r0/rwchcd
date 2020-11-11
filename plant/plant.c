@@ -889,33 +889,22 @@ int plant_run(struct s_plant * restrict const plant)
 	for (id = 0; id < plant->heatsources.last; id++) {
 		heatsource = &plant->heatsources.all[id];
 		heatsource->status = heatsource_run(heatsource);
-		if (ALL_OK == heatsource->status) {
-			// max stop delay
-			stop_delay = (heatsource->run.target_consumer_sdelay > stop_delay) ? heatsource->run.target_consumer_sdelay : stop_delay;
 
-			// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
-			assert(plant->heatsources.last <= 1);	// XXX TODO: only one source supported at the moment for consummer_shift
-			plant->pdata.run.consumer_shift = heatsource->run.cshift_crit ? heatsource->run.cshift_crit : heatsource->run.cshift_noncrit;
-		}
 		// always update overtemp (which can be triggered with -ESAFETY)
 		overtemp |= aler(&heatsource->run.overtemp);
-		
-		switch (-heatsource->status) {
-			case ALL_OK:
-				break;
-			default:	// offline the source if anything happens
-				heatsource_offline(heatsource);	// something really bad happened
-				// fallthrough
-			case ESENSORINVAL:
-			case ESENSORSHORT:
-			case ESENSORDISCON:
-			case ESAFETY:	// don't do anything, SAFETY procedure handled by logic()/run()
-			case ENOTCONFIGURED:
-			case EOFFLINE:
-				suberror = true;
-				plant_alarm(heatsource->status, id, heatsource->name, PDEV_HEATS);
-				continue;	// no further processing for this source
+
+		if (unlikely(ALL_OK != heatsource->status)) {
+			suberror = true;
+			plant_alarm(heatsource->status, id, heatsource->name, PDEV_HEATS);
+			continue;	// no further processing for this source
 		}
+
+		// max stop delay
+		stop_delay = (heatsource->run.target_consumer_sdelay > stop_delay) ? heatsource->run.target_consumer_sdelay : stop_delay;
+
+		// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
+		assert(plant->heatsources.last <= 1);	// XXX TODO: only one source supported at the moment for consummer_shift
+		plant->pdata.run.consumer_shift = heatsource->run.cshift_crit ? heatsource->run.cshift_crit : heatsource->run.cshift_noncrit;
 	}
 
 	// reflect global stop delay and overtemp
