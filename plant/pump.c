@@ -145,10 +145,14 @@ int pump_offline(struct s_pump * restrict const pump)
 	return(ALL_OK);
 }
 
+#define pump_failsafe(_pump)	(void)pump_shutdown(_pump)
+
 /**
  * Run pump.
  * @param pump target pump
  * @return exec status
+ * @note this function ensures that in the event of an error, the pump is put in a
+ * failsafe state as defined in pump_failsafe().
  */
 int pump_run(struct s_pump * restrict const pump)
 {
@@ -177,10 +181,14 @@ int pump_run(struct s_pump * restrict const pump)
 
 	ret = outputs_relay_state_set(pump->set.rid_pump, pump->run.req_on);
 	if (unlikely(ret < 0))
-		return (ret);
+		goto fail;
 
 	pump->run.last_switch = now;
 
 	return (ALL_OK);
+
+fail:
+	pump_failsafe(pump);
+	return (ret);
 }
 

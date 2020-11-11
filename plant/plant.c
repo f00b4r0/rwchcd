@@ -953,17 +953,10 @@ int plant_run(struct s_plant * restrict const plant)
 		pump = &plant->pumps.all[id];
 		pump->status = pump_run(pump);
 
-		switch (-pump->status) {
-			case ALL_OK:
-				break;
-			default:	// offline the pump if anything happens
-				pump_offline(pump);	// something really bad happened
-				// fallthrough
-			case ENOTCONFIGURED:
-			case EOFFLINE:
-				suberror = true;
-				plant_alarm(pump->status, id, pump->name, PDEV_PUMP);
-				continue;	// no further processing for this pump
+		if (unlikely(ALL_OK != pump->status)) {
+			suberror = true;
+			plant_alarm(pump->status, id, pump->name, PDEV_PUMP);
+			continue;	// no further processing for this pump
 		}
 	}
 
