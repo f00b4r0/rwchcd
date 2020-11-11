@@ -775,8 +775,8 @@ int boiler_heatsource(struct s_heatsource * const heat)
 	if (!heat->priv)
 		return (-EOOM);
 
-	heat->cb.log_reg = boiler_hscb_log_register,
-	heat->cb.log_dereg = boiler_hscb_log_deregister,
+	heat->cb.log_reg = boiler_hscb_log_register;
+	heat->cb.log_dereg = boiler_hscb_log_deregister;
 	heat->cb.online = boiler_hscb_online;
 	heat->cb.offline = boiler_hscb_offline;
 	heat->cb.logic = boiler_hscb_logic;
