@@ -16,6 +16,7 @@
 
 #include <stdbool.h>
 #include <assert.h>
+#include <string.h>
 
 /** Union for node value */
 union u_filecfg_parser_nodeval {
