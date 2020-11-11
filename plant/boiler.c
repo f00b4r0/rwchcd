@@ -514,8 +514,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 	// handler boiler return temp if set - @todo Consider handling of pump_load. Consider adjusting target temp
 	if (boiler->set.limit_treturnmin) {
-		// if we have a configured valve, use it
-		if (boiler->set.p.valve_ret) {
+		// if we have a configured mixing return valve, use it
+		if (boiler->set.p.valve_ret && (VA_TYPE_MIX == boiler->set.p.valve_ret->set.type)) {
 			// set valve for target limit. If return is higher valve will be full closed.
 			ret = valve_mix_tcontrol(boiler->set.p.valve_ret, boiler->set.limit_treturnmin);
 			if (unlikely((ALL_OK != ret)))	// something bad happened. XXX further action?
