@@ -566,7 +566,6 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
  */
 static int boiler_hscb_run(struct s_heatsource * const heat)
 {
-	const uint32_t fpdec = 0x8000;	// good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
 	struct s_boiler_priv * restrict const boiler = heat->priv;
 	temp_t trip_temp, untrip_temp, temp, ret_temp, target_temp, actual_temp;
 	tempdiff_t temp_deriv;
@@ -651,16 +650,16 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			// The above two lines are the only construct that yields the expected assembly result (rsb/umull)
 			temp64 /= LIB_DERIV_FPDEC;
 			temp64 *= boiler->run.turnon_curr_adj;
-			temp64 /= fpdec;
+			temp64 /= LIB_DERIV_FPDEC;
 
-			assert(temp64 <= INT32_MAX);
+			assert(temp64 < INT32_MAX);
 
 			temp = (temp_t)temp64;
 
 			dbgmsg(2, 1, "\%s\": orig trip_temp: %.1f, adj: %.1f, new: %.1f", heat->name, temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
 			dbgmsg(2, unlikely(temp > boiler->set.hysteresis/2), "adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(actual_temp), temp_deriv, boiler->run.turnon_curr_adj);
 
-			trip_temp += (temp > boiler->set.hysteresis/2) ? boiler->set.hysteresis/2 : temp;	// XXX cap adjustment at hyst/2 to work around overflow
+			trip_temp += (temp > boiler->set.hysteresis/2) ? boiler->set.hysteresis/2 : temp;	// XXX cap adjustment at hyst/2
 		}
 
 		// cap trip_temp at limit_tmax - hysteresis/2
@@ -733,8 +732,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 				/* NB: in the case of a 2-stage or variable output burner, this computation result would be physically linked to the power output of the burner itself.
 				   in the context of a single-stage constant output burner the approximation works but if we wanted to be more refined we would have to factor that output
 				   level in the stored data. XXX TODO */
-				boiler->run.turnon_next_adj = (now - boiler->run.negderiv_starttime) * fpdec;
-				boiler->run.turnon_next_adj /= (unsigned)-boiler->run.turnon_negderiv;
+				// LIB_DERIV_FPDEC==0x8000 is good for up to 3,5h burner run time if TIMEKEEP_SMULT==10
+				boiler->run.turnon_next_adj = lib_fpdiv_u32((now - boiler->run.negderiv_starttime), (unsigned)-boiler->run.turnon_negderiv, LIB_DERIV_FPDEC);
 				boiler->run.turnon_curr_adj = 0;	// reset current value
 			}
 		}
