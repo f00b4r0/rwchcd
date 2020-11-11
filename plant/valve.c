@@ -576,19 +576,13 @@ int valve_shutdown(struct s_valve * const valve)
 }
 
 /**
- * Put valve offline.
- * Perform all necessary actions to completely shut down the valve
- * and mark it offline.
- * @param valve target valve
- * @return exec status
+ * Valve failsafe routine.
+ * This routine performs the "safest thing to do" which is to release all relays.
+ * @param valve target valve (configured)
  */
-int valve_offline(struct s_valve * const valve)
+static void valve_failsafe(struct s_valve * const valve)
 {
-	if (!valve)
-		return (-EINVALID);
-
-	if (!valve->set.configured)
-		return (-ENOTCONFIGURED);
+	assert(valve);
 
 	// stop the valve uncondiditonally
 	switch (valve->set.motor) {
@@ -606,6 +600,30 @@ int valve_offline(struct s_valve * const valve)
 		default:
 			break;
 	}
+
+	// mark valve as "stopped"
+	valve_reqstop(valve);
+	valve->run.actual_action = STOP;
+	valve->run.ctrl_ready = false;
+}
+
+/**
+ * Put valve offline.
+ * Perform all necessary actions to completely shut down the valve
+ * and mark it offline.
+ * @param valve target valve
+ * @return exec status
+ */
+int valve_offline(struct s_valve * const valve)
+{
+	if (!valve)
+		return (-EINVALID);
+
+	if (!valve->set.configured)
+		return (-ENOTCONFIGURED);
+
+	// stop the valve uncondiditonally
+	valve_failsafe(valve);
 
 	memset(&valve->run, 0x00, sizeof(valve->run));
 	//valve->run.ctrl_ready = false;	// handled by memset
@@ -647,7 +665,7 @@ static int valve_logic(struct s_valve * const valve)
 			break;
 		case VA_M_NONE:
 		default:
-			return (-EMISCONFIGURED);	// cannot happen
+			return (-ENOTIMPLEMENTED);	// cannot happen
 	}
 
 	return (ALL_OK);
@@ -663,9 +681,9 @@ static int valve_logic(struct s_valve * const valve)
  * @return error status
  * @warning first invocation must be with valve stopped (run.actual_action == STOP),
  * otherwise dt will be out of whack (this is normally ensured by valve_online()).
- * @note the function assumes that the sanity of the valve argument will be checked before invocation.
  * @warning beware of the resolution limit on valve end-to-end time
- * @warning REVIEW: overshoots
+ * @note this function ensures that in the event of an error, the valve is put in a
+ * failsafe state as defined in valve_failsafe().
  */
 int valve_run(struct s_valve * const valve)
 {
@@ -685,7 +703,7 @@ int valve_run(struct s_valve * const valve)
 
 	ret = valve_logic(valve);
 	if (unlikely(ALL_OK != ret))
-		return (ret);
+		goto fail;
 
 	dt = now - valve->run.last_run_time;
 	perth_ptk = 1000 * perthmult / valve->set.ete_time;
@@ -794,7 +812,10 @@ int valve_run(struct s_valve * const valve)
 	       valve->name, valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
 	       (float)valve->run.target_course/10.0F);
 
+	return (ALL_OK);
+
 fail:
+	valve_failsafe(valve);
 	return (ret);
 }
 

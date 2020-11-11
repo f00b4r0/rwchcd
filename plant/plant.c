@@ -933,18 +933,10 @@ int plant_run(struct s_plant * restrict const plant)
 		valve = &plant->valves.all[id];
 		valve->status = valve_run(valve);
 
-		switch (-valve->status) {
-			case ALL_OK:
-			case EDEADBAND:	// not an error
-				break;
-			default:	// offline the valve if anything happens
-				valve_offline(valve);	// something really bad happened
-				// fallthrough
-			case ENOTCONFIGURED:
-			case EOFFLINE:
-				suberror = true;
-				plant_alarm(valve->status, id, valve->name, PDEV_VALVE);
-				continue;	// no further processing for this valve
+		if (unlikely(ALL_OK != valve->status)) {
+			suberror = true;
+			plant_alarm(valve->status, id, valve->name, PDEV_VALVE);
+			continue;	// no further processing for this valve
 		}
 	}
 	
