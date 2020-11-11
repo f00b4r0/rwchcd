@@ -898,7 +898,7 @@ int plant_run(struct s_plant * restrict const plant)
 			plant->pdata.run.consumer_shift = heatsource->run.cshift_crit ? heatsource->run.cshift_crit : heatsource->run.cshift_noncrit;
 		}
 		// always update overtemp (which can be triggered with -ESAFETY)
-		overtemp = heatsource->run.overtemp ? heatsource->run.overtemp : overtemp;
+		overtemp |= aler(&heatsource->run.overtemp);
 		
 		switch (-heatsource->status) {
 			case ALL_OK:
