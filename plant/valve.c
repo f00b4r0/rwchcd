@@ -599,6 +599,7 @@ int valve_offline(struct s_valve * const valve)
 			outputs_relay_thaw(valve->set.mset.m3way.rid_close);
 			break;
 		case VA_M_2WAY:
+			(void)!outputs_relay_state_set(valve->set.mset.m2way.rid_trigger, OFF);
 			outputs_relay_thaw(valve->set.mset.m2way.rid_trigger);
 			break;
 		case VA_M_NONE:
