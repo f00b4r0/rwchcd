@@ -56,13 +56,14 @@
 
 #ifdef DEBUG	// debug output will be sent via stdout to nonblocking FIFO, normal logging information will go to stderr
  #define dbgmsg(level, cond, format, ...)	do { if ((DEBUG >= level) && (cond)) printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__); } while(0)
+ #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
  #define pr_log(format, ...)	fprintf(stderr, format "\n", ## __VA_ARGS__)
 #else		// debug output is disabled, normal logging goes to stdout
  #define dbgmsg(level, cond, format, ...)	/* nothing */
+ #define dbgerr(format, ...)	/* nothing */
  #define pr_log(format, ...)	printf(format "\n", ## __VA_ARGS__)
 #endif
 
-#define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
 #define pr_err(format, ...)	fprintf(stderr, "ERROR! " format "\n", ## __VA_ARGS__)
 
 /** computes the required malloc size for the formatted string */
