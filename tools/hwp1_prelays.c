@@ -9,7 +9,7 @@ int main(void)
 
 	memset(&Hardware, 0x0, sizeof(Hardware));
 
-	storage_config();
+	storage_online();
 	hw_p1_restore_relays(&Hardware);
 
 	for (i=0; i<ARRAY_SIZE(Hardware.Relays); i++) {
