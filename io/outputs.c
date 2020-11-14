@@ -48,7 +48,7 @@ int outputs_relay_fbn(const char * name)
 	orid_t id;
 	int ret = -ENOTFOUND;
 
-	if (!name || !strlen(name))
+	if (!name)
 		return (-EINVALID);
 
 	for (id = 0; id < Outputs.relays.last; id++) {

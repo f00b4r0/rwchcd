@@ -141,7 +141,7 @@ int inputs_temperature_fbn(const char * name)
 	itid_t id;
 	int ret = -ENOTFOUND;
 
-	if (!name || !strlen(name))
+	if (!name)
 		return (-EINVALID);
 
 	for (id = 0; id < Inputs.temps.last; id++) {

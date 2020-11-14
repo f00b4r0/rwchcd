@@ -205,7 +205,7 @@ int scheduler_schedid_by_name(const char * const restrict sched_name)
 	schedid_t id;
 	int ret = -ENOTFOUND;
 
-	if (!sched_name || !strlen(sched_name))
+	if (!sched_name)
 		return (-EINVALID);
 
 	for (id = 0; id < Schedules.lastid; id++) {
