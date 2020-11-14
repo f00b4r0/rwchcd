@@ -46,7 +46,7 @@ struct s_plant {
 		temp_t plant_hrequest;		///< plant heat request
 		uint_fast8_t dhwt_maxprio;	///< largest online value for DHWT prio
 	} run;
-	struct s_pdata pdata;
+	struct s_pdata pdata;		///< plant-wide data shared with plant entities. No atomic/locking since this data is written/read within a single thread of execution (master)
 	struct {
 		struct s_pump * all;	///< pointer to dynamically allocated array of pumps, size n
 		plid_t n;		///< number of allocated pumps

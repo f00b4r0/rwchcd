@@ -1,5 +1,5 @@
 //
-//  io/hardware.c
+//  hw_backends/hardware.c
 //  rwchcd
 //
 //  (C) 2018,2020 Thibaut VARENE
@@ -10,7 +10,12 @@
  * @file
  * Global hardware interface implementation.
  * This implementation provides a unified API to operate hardware backends.
+ *
  * @todo implement exclusive relay use (should be a good idea esp for config validation).
+ * @note The plant runtime code "expects" that the outputs will be coalesced by the hardware backend,
+ * so that a given output may be flipped multiple times within a single execution of a particular _run() function
+ * and the hardware controller will still output the last state when hardware_output() is run.
+ * This is particularly useful in the error path, where after setting an output to some state the _run() code may eventually fall back to a failsafe state before exit.
  */
 
 #include "hw_backends/hw_backends.h"

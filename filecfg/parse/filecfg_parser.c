@@ -36,6 +36,8 @@
  * - All `valves_`, `pump_` and `bmodel` settings expect a quoted string referencing the name of the related item.
  * - All `schedid_t` settings expect a quoted string referencing the name of the target schedule.
  * - All `itid_t` and `orid_t` settings expect a quoted string referencing the name of the target input or output matching the expected type (temperature, relay).
+ *
+ * @note several parser do not include a graceful cleanup path as it is assumed that parsing failure will result in the program being aborted.
  */
 
 #include <stdlib.h>

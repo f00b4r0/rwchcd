@@ -13,7 +13,7 @@
  * For the time being the backend publishes and subscribes under a single topic root, set in config.
  * It will publish messages for its outputs, and will subscribe to messages for its inputs.
  * Outputs are published when toggled, inputs are updated as received.
- * @warning This backend is a convenience-only implementation.
+ * @warning This backend is a convenience-only implementation. It doesn't implement output coaslescing (i.e. there is no _output() call).
  * For safety reasons discernment shall be applied when using it to interface with inputs, let alone outputs connected to appliances.
  */
 

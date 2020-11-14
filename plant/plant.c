@@ -19,7 +19,6 @@
  * - DHWT priority management
  * - Summer switchover for DHWT equipped with electric heating
  *
- * @bug no check on name lengths which can cause problems with storage/logging. See models for a fix.
  * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
  * switch to fuel when wood dies out) and cascade mode (for large systems).
  */
@@ -294,7 +293,6 @@ static void plant_onfline_printerr(const enum e_execs errorn, const int devid, c
  * @param plant target plant
  * @return exec status (-EGENERIC if any sub call returned an error)
  * @note REQUIRES valid sensor values before being called
- * @todo error handling
  */
 int plant_online(struct s_plant * restrict const plant)
 {
@@ -312,8 +310,6 @@ int plant_online(struct s_plant * restrict const plant)
 
 	if (!plant->set.configured)
 		return (-ENOTCONFIGURED);
-
-	//plant_restore(plant);
 
 	// online the actuators first
 	// pumps
@@ -388,7 +384,7 @@ int plant_online(struct s_plant * restrict const plant)
 	}
 
 	if (suberror)
-		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
+		return (-EGENERIC);
 	else {
 		plant->run.online = true;
 		return (ALL_OK);
@@ -399,7 +395,6 @@ int plant_online(struct s_plant * restrict const plant)
  * Take plant offline.
  * @param plant target plant
  * @return exec status (-EGENERIC if any sub call returned an error)
- * @todo error handling
  */
 int plant_offline(struct s_plant * restrict const plant)
 {
@@ -418,8 +413,6 @@ int plant_offline(struct s_plant * restrict const plant)
 	if (!plant->set.configured)
 		return (-ENOTCONFIGURED);
 
-	//plant_save(plant);
-	
 	// offline the consummers first
 	// circuits first
 	for (id = 0; id < plant->hcircuits.last; id++) {
@@ -486,7 +479,7 @@ int plant_offline(struct s_plant * restrict const plant)
 	memset(&plant->pdata.run, 0x0, sizeof(plant->pdata.run));
 	
 	if (suberror)
-		return (-EGENERIC);	// further processing required to figure where the error(s) is/are.
+		return (-EGENERIC);
 	else
 		return (ALL_OK);
 }
