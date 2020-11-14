@@ -13,13 +13,19 @@ CFLAGS := -I$(CURDIR) -std=gnu11 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"' -DRWCHCD
 LDLIBS := -lm -ldb
 
 ifeq ($(HOST_OS),Linux)
-CONFIG := -DHAS_DBUS -DHAS_HWP1 -DHAS_RRD -DDEBUG=2
-CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
+ CONFIG := -DHAS_HWP1 -DDEBUG=2
+ CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
+ ifeq ($(shell pkg-config --exists gio-unix-2.0 && echo 1),1)
+  CONFIG += -DHAS_DBUS
+ endif
+ ifeq ($(shell pkg-config --exists librrd && echo 1),1)
+  CONFIG += -DHAS_RRD
+ endif
  ifeq ($(shell pkg-config --exists libmosquitto && echo 1),1)
- CONFIG += -DHAS_MQTT
+  CONFIG += -DHAS_MQTT
  endif
 else
-CONFIG :=
+ CONFIG :=
 endif
 
 CFLAGS += $(CONFIG)
@@ -38,22 +44,22 @@ SUBDIRS += $(HWBACKENDS_DIR)/ $(HWBACKENDS_DIR)/dummy/
 
 SUBDIRS += log/
 ifneq (,$(findstring HAS_RRD,$(CONFIG)))
-LDLIBS += -lrrd
+ LDLIBS += $(shell pkg-config --libs librrd)
 endif
 
 ifneq (,$(findstring HAS_HWP1,$(CONFIG)))
-LDLIBS += -lwiringPi
-SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
+ LDLIBS += -lwiringPi
+ SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
 endif
 
 ifneq (,$(findstring HAS_MQTT,$(CONFIG)))
-LDLIBS += $(shell pkg-config --libs libmosquitto)
-SUBDIRS += $(HWBACKENDS_DIR)/mqtt/
+ LDLIBS += $(shell pkg-config --libs libmosquitto)
+ SUBDIRS += $(HWBACKENDS_DIR)/mqtt/
 endif
 
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
-LDLIBS += $(shell pkg-config --libs gio-unix-2.0)
-SUBDIRS += dbus/
+ LDLIBS += $(shell pkg-config --libs gio-unix-2.0)
+ SUBDIRS += dbus/
 endif
 
 TOPTARGETS := all clean distclean install uninstall doc
