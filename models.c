@@ -149,7 +149,9 @@ static int bmodel_log_deregister(const struct s_bmodel * const bmodel)
  */
 static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 {
-	char buf[MAX_FILENAMELEN+1] = MODELS_STORAGE_BMODEL_PREFIX;
+	char * buf;
+	size_t size;
+	int ret;
 
 	assert(bmodel);
 
@@ -160,10 +162,15 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	strcat(buf, "_");
-	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
+	snprintf_automalloc(buf, size, MODELS_STORAGE_BMODEL_PREFIX " %s.state", bmodel->name);
+	if (!buf)
+		return (-EOOM);
 
-	return (storage_dump(buf, &Models_sversion, &bmodel->run, sizeof(bmodel->run)));
+	ret = storage_dump(buf, &Models_sversion, &bmodel->run, sizeof(bmodel->run));
+
+	free(buf);
+
+	return (ret);
 }
 
 /**
@@ -173,9 +180,10 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
  */
 static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 {
-	char buf[MAX_FILENAMELEN+1] = MODELS_STORAGE_BMODEL_PREFIX;
+	char * buf;
 	struct s_bmodel temp_bmodel;
 	storage_version_t sversion;
+	size_t size;
 	int ret;
 
 	assert(bmodel);
@@ -187,11 +195,15 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	strcat(buf, "_");
-	strncat(buf, bmodel->name, MAX_FILENAMELEN-strlen(buf)-1);
+	snprintf_automalloc(buf, size, MODELS_STORAGE_BMODEL_PREFIX " %s.state", bmodel->name);
+	if (!buf)
+		return (-EOOM);
 
 	// try to restore key elements
 	ret = storage_fetch(buf, &sversion, &temp_bmodel.run, sizeof(temp_bmodel.run));
+
+	free(buf);
+
 	if (ALL_OK == ret) {
 		if (Models_sversion != sversion)
 			return (-EMISMATCH);
