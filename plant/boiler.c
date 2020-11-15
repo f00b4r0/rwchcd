@@ -162,7 +162,7 @@ static int boiler_runchecklist(const struct s_boiler_priv * const boiler)
 	// check that mandatory sensors are working
 	ret = inputs_temperature_get(boiler->set.tid_boiler, NULL);
 	if (ALL_OK != ret)
-		alarms_raise(ret, _("Boiler sensor failure"), _("Boiler sens fail"));
+		alarms_raise(ret, _("Boiler sensor failure"));
 
 	return (ret);
 }
@@ -729,7 +729,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 		// otherwise if boiler doesn't heat up after 6h we very likely have a problem
 		else if (unlikely((now - boiler->run.burner_1_last_switch) > timekeep_sec_to_tk(3600*6)))
-			alarms_raise(-EGENERIC, "Burner failure", NULL);
+			alarms_raise(-EGENERIC, "Burner failure");
 
 		// compute turn-on anticipation for next run
 		if (temp_deriv < 0) {

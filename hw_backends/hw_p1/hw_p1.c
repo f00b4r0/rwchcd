@@ -110,10 +110,9 @@ __attribute__ ((pure)) ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw
 static int sensor_alarm(const struct s_hw_p1_sensor * const sensor, const int error)
 {
 	const char * restrict const msgf = _("sensor fail: \"%s\" (%d) %s");
-	const char * restrict const msglcdf = _("sensor fail: %d");
 	const char * restrict fail, * restrict name = NULL;
 	const uint_fast8_t channel = sensor->set.channel;
-	char * restrict msg, * restrict msglcd;
+	char * restrict msg;
 	size_t size;
 	int ret;
 
@@ -135,12 +134,10 @@ static int sensor_alarm(const struct s_hw_p1_sensor * const sensor, const int er
 	}
 
 	snprintf_automalloc(msg, size, msgf, name, channel, fail);
-	snprintf_automalloc(msglcd, size, msglcdf, channel);
 
-	ret = alarms_raise(error, msg, msglcd);
+	ret = alarms_raise(error, msg);
 
 	free(msg);
-	free(msglcd);
 
 	return (ret);
 }

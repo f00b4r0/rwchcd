@@ -2,7 +2,7 @@
 //  alarms.c
 //  rwchcd
 //
-//  (C) 2017-2018 Thibaut VARENE
+//  (C) 2017-2018,2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -19,7 +19,7 @@
  * The advantage is that there's no need to track the alarms to avoid duplication,
  * the system can remain lightweight. The inconvenient is there's a single point
  * in time where all the alarms are fully collected before being deleted. This
- * happens in alarms_run(). alarms_count() and alarms_last_msg() are provided
+ * happens in alarms_run(). alarms_count() is provided
  * for convenience but should only be used immediately before alarms_run().
  * The other inconvenient is that spurious alarms (that happen once and go away)
  * will be reported. Then again, those /should not/ happen in the first place.
@@ -39,7 +39,6 @@ struct s_alarm {
 	//int level;
 	enum e_execs type;	///< error code
 	char * restrict msg;	///< associated message (optional)
-	char * restrict msglcd;	///< associated message (optional), @note @b LCD_LINELEN chars MAX
 	struct s_alarm * next;	///< pointer to next entry
 };
 
@@ -54,25 +53,6 @@ static struct s_alarms {
 	.alarm_head = NULL,
 }; ///< Alarms subsystem private data
 
-#if 0
-/**
- * Find an alarm entry by identifier.
- * @param identifier the target identifier
- * @return the matching alarm entry if any (or NULL)
- */
-static struct s_alarm * alarm_find(const uintptr_t identifier)
-{
-	struct s_alarm * restrict alarm;
-
-	for (alarm = Alarms.alarm_head; alarm; alarm = alarm->next) {
-		if (identifier == alarm->identifier)
-			break;
-	}
-
-	return (alarm);
-}
-#endif
-
 /**
  * Clear all alarms.
  */
@@ -85,7 +65,6 @@ static void alarms_clear(void)
 	while (alarm) {
 		next = alarm->next;
 		free(alarm->msg);
-		free(alarm->msglcd);
 		free(alarm);
 		alarm = next;
 	}
@@ -104,34 +83,13 @@ int alarms_count(void)
 }
 
 /**
- * Returns error message for last occuring alarm.
- * @param msglcd if true, short message will be returned if available.
- * @return alarm message (if any)
- */
-const char * alarms_last_msg(const bool msglcd)
-{
-	const char * msg;
-
-	if (!Alarms.online)
-		return (NULL);
-
-	if (!Alarms.alarm_head)
-		return (NULL);
-
-	msg = (msglcd && Alarms.alarm_head->msglcd) ? Alarms.alarm_head->msglcd : Alarms.alarm_head->msg;
-
-	return (msg);
-}
-
-/**
  * Raise an alarm in the system.
  * Alarm is added at the beginning of the list: last alarm is always first in the list.
  * @param type alarm error code
  * @param msg mandatory message string; a local copy is made
- * @param msglcd optional short message string, for LCD display; a local copy is made. If not provided, #msg will be used. No check on length, will be truncated on display if too long.
  * @return exec status
  */
-int alarms_raise(const enum e_execs type, const char * const msg, const char * const msglcd)
+int alarms_raise(const enum e_execs type, const char * const msg)
 {
 	struct s_alarm * restrict alarm = NULL;
 
@@ -150,8 +108,6 @@ int alarms_raise(const enum e_execs type, const char * const msg, const char * c
 	alarm->type = type;
 	if (msg)
 		alarm->msg = strdup(msg);
-	if (msglcd)
-		alarm->msglcd = strdup(msglcd);
 
 	// insert alarm at beginning of list
 	alarm->next = Alarms.alarm_head;

@@ -456,9 +456,7 @@ int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi
 {
 	static char alarml1[LCD_LINELEN];
 	struct s_hw_p1_pdata * restrict const hw = hwpriv;
-	const char * alarm_msg16;
 	int alcnt;
-	size_t len;
 
 	if (!lcd->online)
 		return (-EOFFLINE);
@@ -468,11 +466,6 @@ int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi
 		snprintf(alarml1, sizeof(alarml1), _("ALARMS: %d"), alcnt);
 		hw_p1_lcd_buflclear(lcd, 0);
 		hw_p1_lcd_wline(lcd, (const uint8_t *)alarml1, strlen(alarml1), 0, 0);
-		alarm_msg16 = alarms_last_msg(true);
-		len = strlen(alarm_msg16);
-		hw_p1_lcd_handle2ndline(lcd, true);
-		hw_p1_lcd_buflclear(lcd, 1);
-		hw_p1_lcd_wline(lcd, (const uint8_t *)alarm_msg16, (len > LCD_LINELEN) ? LCD_LINELEN : len, 1, 0);
 	}
 	else {
 		hw_p1_lcd_handle2ndline(lcd, false);

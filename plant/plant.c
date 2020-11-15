@@ -496,7 +496,6 @@ int plant_offline(struct s_plant * restrict const plant)
 static int plant_alarm(const enum e_execs errorn, const int devid, const char * restrict devname, const enum e_plant_devtype pdev)
 {
 	const char * restrict const devdesigf = "%s #%d (\"%s\")";
-	const char * restrict const msglcd = _("Plant alarm!");
 	const char * restrict msgf = NULL, * restrict devtype;
 	char * restrict devdesig = NULL, * restrict msg = NULL;
 	size_t size;
@@ -560,7 +559,7 @@ static int plant_alarm(const enum e_execs errorn, const int devid, const char * 
 		snprintf_automalloc(msg, size, msgf, devdesig);
 
 msgset:
-	ret = alarms_raise(errorn, msg, msglcd);
+	ret = alarms_raise(errorn, msg);
 
 	free(msg);
 	free(devdesig);
@@ -693,7 +692,7 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 	}
 
 	if (!serviced)
-		alarms_raise(-EEMPTY, _("No heatsource available!"), _("NO HEATSRC AVAIL"));
+		alarms_raise(-EEMPTY, _("No heatsource available!"));
 }
 
 /**

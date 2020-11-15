@@ -349,7 +349,7 @@ static void bmodel_outdoor_temp(struct s_bmodel * restrict const bmodel)
 	else {
 		// in case of outdoor sensor failure, assume outdoor temp is tfrost-1: ensures frost protection
 		aser(&bmodel->run.t_out, bmodel->set.limit_tfrost-1);
-		alarms_raise(ret, _("Outdoor sensor failure"), _("Outdr sens fail"));
+		alarms_raise(ret, _("Outdoor sensor failure"));
 	}
 }
 

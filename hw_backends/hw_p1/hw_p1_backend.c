@@ -304,7 +304,7 @@ skip_periphs:
 fail:
 	if ((timekeep_now() - hw->run.sensors_ftime) >= HW_P1_TIMEOUT_TK) {
 		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
-		alarms_raise(ret, _("Couldn't read sensors: timeout exceeded!"), _("Sensor rd fail!"));
+		alarms_raise(ret, _("Couldn't read sensors: timeout exceeded!"));
 	}
 
 	return (ret);
