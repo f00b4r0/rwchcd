@@ -611,12 +611,11 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	dbgmsg(1, 1, "\"%s\": on: %d, mode_since: %u, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
 	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), temp_to_celsius(target_temp), temp_to_celsius(bottom_temp), temp_to_celsius(top_temp));
 
-	/* handle heat charge - NOTE we enforce sensor position, it SEEMS desirable
-	 apply hysteresis on logic: trip at target - hysteresis (preferably on bottom sensor),
-	 untrip at target (preferably on top sensor). */
+	// handle heat charge
+	/* NOTE we enforce sensor position, it SEEMS desirable, so that the full tank capacity is used before triggering a charge.
+	   apply hysteresis on logic: trip at target - hysteresis (preferably on top sensor), untrip at target (preferably on bottom sensor). */
 	if (!charge_on) {	// no charge in progress
-				// in non-electric mode: prevent charge "pumping", enforce delay between charges
-		if (!electric_mode) {
+		if (!electric_mode) {	// in non-electric mode: prevent charge "pumping", enforce delay between charges
 			limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
 			if (dhwt->run.charge_overtime) {
 				if (limit && ((now - dhwt->run.mode_since) <= limit))
@@ -626,10 +625,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			}
 		}
 
-		if (valid_tbottom)	// prefer bottom temp if available (trip charge when bottom is cold)
-			curr_temp = bottom_temp;
-		else
-			curr_temp = top_temp;
+		// prefer top temp if available (trip charge when top is cold)
+		curr_temp = valid_ttop ? top_temp : bottom_temp;
 
 		// set trip point to (target temp - hysteresis)
 		if (aler(&dhwt->run.force_on))
@@ -670,10 +667,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		}
 	}
 	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
-		if (valid_ttop)	// prefer top temp if available (untrip charge when top is hot)
-			curr_temp = top_temp;
-		else
-			curr_temp = bottom_temp;
+		// prefer bottom temp if available (untrip charge when bottom is hot)
+		curr_temp = valid_tbottom ? bottom_temp : top_temp;
 
 		// untrip conditions
 		test = false;
