@@ -290,7 +290,7 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 	if (bmodel_log_register(bmodel) != ALL_OK)
 		pr_err(_("Building model \"%s\": couldn't register for logging"), bmodel->name);
 
-	bmodel->run.online = true;
+	aser(&bmodel->run.online, true);
 
 	return (ALL_OK);
 }

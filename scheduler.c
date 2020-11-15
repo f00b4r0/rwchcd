@@ -316,7 +316,7 @@ int scheduler_add_entry(struct s_schedule * const sched, const struct s_schedule
 	else
 		schent_before->next = schent;
 
-	sched->current = NULL;	// desync
+	sched->current = NULL;	// desync - XXX defaults to atomic_store()
 	/* End fence section */
 
 	return (ALL_OK);

@@ -629,7 +629,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 					break;
 				case TRANS_NONE:
 					// no transition, ambient temp assumed to be request temp
-					ambient_temp = circuit->run.request_ambient;
+					ambient_temp = request_temp;
 					circuit->run.ambient_update_time = now;
 					break;
 				default:
