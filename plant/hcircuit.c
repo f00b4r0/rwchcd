@@ -677,6 +677,55 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 }
 
 /**
+ * Rate-of-rise limiter.
+ * @param circuit the target circuit
+ * @param curr_temp the current circuit output water temperature
+ * @param target_temp the current circuit target water temperature
+ * @return the RoR-limited value for target temperature
+ */
+static temp_t hcircuit_ror_limiter(struct s_hcircuit * restrict const circuit, const temp_t curr_temp, temp_t target_temp)
+{
+	const timekeep_t now = timekeep_now();
+	temp_t temp;
+
+	dbgmsg(2, 1, "\"%s\": ror last_tg: %.1f", circuit->name, temp_to_celsius(circuit->run.rorh_last_target));
+	// first sample: init target to current temp and set water_temp to current
+	if (!circuit->run.rorh_update_time) {
+		target_temp = curr_temp;
+		circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
+		circuit->run.rorh_update_time = now + timekeep_sec_to_tk(60);	// send update_time 60s ahead for low point settling (see below). XXX hardcoded
+	}
+	// at circuit startup (pump was previously off) let the water settle to lowest point, which we'll use as reference once it's reached.
+	else if (timekeep_a_ge_b(circuit->run.rorh_update_time, now)) {
+		target_temp = curr_temp;
+		if (curr_temp < circuit->run.rorh_last_target)
+			circuit->run.rorh_last_target = curr_temp;
+		// if the heat source has not yet reached optimal output, wait before resuming normal algorithm operation
+		if (circuit->pdata->run.consumer_shift < 0)
+			circuit->run.rorh_update_time = now + timekeep_sec_to_tk(30);
+	}
+	// startup is done.
+	// Request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
+	else if (target_temp <= curr_temp) {
+		circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
+		circuit->run.rorh_update_time = now;
+	}
+	// else: request for higher temp: apply rate limiter: target_temp is updated every minute
+	else {
+		if ((now - circuit->run.rorh_update_time) >= HCIRCUIT_RORH_DT) {
+			// compute next target step
+			temp = circuit->run.rorh_last_target + circuit->run.rorh_temp_increment;
+			// new request is min of next target step and actual request
+			circuit->run.rorh_last_target = (temp < target_temp) ? temp : target_temp;
+			circuit->run.rorh_update_time = now;
+		}
+		target_temp = circuit->run.rorh_last_target;	// apply current step
+	}
+
+	return (target_temp);
+}
+
+/**
  * Circuit failsafe routine.
  * By default we shutdown the circuit:
  * - remove heat request
@@ -707,8 +756,7 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
-	const timekeep_t now = timekeep_now();
-	temp_t water_temp, curr_temp, ret_temp, lwtmin, lwtmax, temp;
+	temp_t water_temp, curr_temp, ret_temp, lwtmin, lwtmax;
 	int ret;
 
 	if (unlikely(!circuit))
@@ -810,43 +858,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// alterations to the computed value only make sense if a mixing valve is available
 	if (circuit->set.p.valve_mix) {
-		// interference: apply rate of rise limitation if any: update temp every minute
+		// interference: apply rate of rise limitation if any
 		// applied first so it's not impacted by the next interferences (in particular power shift). XXX REVIEW: might be needed to move after if ror control is desired on cshift rising edges
-		if (circuit->set.wtemp_rorh) {
-			dbgmsg(2, 1, "\"%s\": ror last_tg: %.1f", circuit->name, temp_to_celsius(circuit->run.rorh_last_target));
-			// first sample: init target to current temp and set water_temp to current
-			if (!circuit->run.rorh_update_time) {
-				water_temp = curr_temp;
-				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
-				circuit->run.rorh_update_time = now + timekeep_sec_to_tk(60);	// send update_time 60s ahead for low point settling (see below). XXX hardcoded
-			}
-			// at circuit startup (pump was previously off) let the water settle to lowest point, which we'll use as reference once it's reached.
-			else if (timekeep_a_ge_b(circuit->run.rorh_update_time, now)) {
-				water_temp = curr_temp;
-				if (curr_temp < circuit->run.rorh_last_target)
-					circuit->run.rorh_last_target = curr_temp;
-				// if the heat source has not yet reached optimal output, wait before resuming normal algorithm operation
-				if (circuit->pdata->run.consumer_shift < 0)
-					circuit->run.rorh_update_time = now + timekeep_sec_to_tk(30);
-			}
-			// startup is done.
-			// Request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
-			else if (water_temp <= curr_temp) {
-				circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
-				circuit->run.rorh_update_time = now;
-			}
-			// else: request for higher temp: apply rate limiter
-			else {
-				if ((now - circuit->run.rorh_update_time) >= HCIRCUIT_RORH_DT) {
-					// compute next target step
-					temp = circuit->run.rorh_last_target + circuit->run.rorh_temp_increment;
-					// new request is min of next target step and actual request
-					circuit->run.rorh_last_target = (temp < water_temp) ? temp : water_temp;
-					circuit->run.rorh_update_time = now;
-				}
-				water_temp = circuit->run.rorh_last_target;	// apply current step
-			}
-		}
+		if (circuit->set.wtemp_rorh)
+			water_temp = hcircuit_ror_limiter(circuit, curr_temp, water_temp);
 
 		// interference: handle output flooring requests: maintain current or higher wtemp
 		if (circuit->run.floor_output)
