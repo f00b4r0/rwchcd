@@ -519,7 +519,7 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 int dhwt_run(struct s_dhwt * const dhwt)
 {
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp, target_temp;
-	bool valid_ttop = false, valid_tbottom = false, charge_on, electric_mode, test;
+	bool valid_ttop, valid_tbottom, charge_on, electric_mode, test;
 	const timekeep_t now = timekeep_now();
 	timekeep_t limit;
 	int ret;
@@ -580,11 +580,9 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	// check which sensors are available
 	ret = inputs_temperature_get(dhwt->set.tid_bottom, &bottom_temp);
-	if (ALL_OK == ret)
-		valid_tbottom = true;
+	valid_tbottom = (ALL_OK == ret) ? true : false;
 	ret = inputs_temperature_get(dhwt->set.tid_top, &top_temp);
-	if (ALL_OK == ret)
-		valid_ttop = true;
+	valid_ttop = (ALL_OK == ret) ? true : false;
 
 	// no sensor available, give up
 	if (unlikely(!valid_tbottom && !valid_ttop)) {
