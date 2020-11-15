@@ -497,7 +497,7 @@ static int plant_alarm(const enum e_execs errorn, const int devid, const char * 
 {
 	const char * restrict const devdesigf = "%s #%d (\"%s\")";
 	const char * restrict msgf = NULL, * restrict devtype;
-	char * restrict devdesig = NULL, * restrict msg = NULL;
+	char * restrict devdesig = NULL;
 	size_t size;
 	int ret;
 
@@ -531,8 +531,8 @@ static int plant_alarm(const enum e_execs errorn, const int devid, const char * 
 			break;
 		default:
 			msgf = _("Unknown error (%d) on %s");
-			snprintf_automalloc(msg, size, msgf, errorn, devdesig);
-			goto msgset;
+			ret = alarms_raise(errorn, msgf, errorn, devdesig);
+			goto out;
 		case ESAFETY:
 			msgf = _("SAFETY CRITICAL ERROR ON %s!");
 			break;
@@ -555,13 +555,9 @@ static int plant_alarm(const enum e_execs errorn, const int devid, const char * 
 			break;
 	}
 
-	if (!msg)	// handle common switch cases once
-		snprintf_automalloc(msg, size, msgf, devdesig);
+	ret = alarms_raise(errorn, msgf, devdesig);	// handle common switch cases once
 
-msgset:
-	ret = alarms_raise(errorn, msg);
-
-	free(msg);
+out:
 	free(devdesig);
 
 	return (ret);
