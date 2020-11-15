@@ -18,7 +18,7 @@
 
 int alarms_online(void);
 int alarms_count(void);
-int alarms_raise(const enum e_execs type, const char * const msg);
+int alarms_raise(const enum e_execs type, const char * restrict format, ...);
 int alarms_run(void);
 void alarms_offline(void);
 

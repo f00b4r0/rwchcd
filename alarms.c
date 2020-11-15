@@ -29,16 +29,17 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 #include "alarms.h"
 #include "timekeep.h"
 
 /** alarm entry */
 struct s_alarm {
-	//uintptr_t identifier;	///< optional unique identifier
-	//int level;
 	enum e_execs type;	///< error code
-	char * restrict msg;	///< associated message (optional)
+	char * restrict msg;	///< associated message
+	int len;		///< #msg len
 	struct s_alarm * next;	///< pointer to next entry
 };
 
@@ -86,28 +87,40 @@ int alarms_count(void)
  * Raise an alarm in the system.
  * Alarm is added at the beginning of the list: last alarm is always first in the list.
  * @param type alarm error code
- * @param msg mandatory message string; a local copy is made
+ * @param format the printf-style format style
  * @return exec status
  */
-int alarms_raise(const enum e_execs type, const char * const msg)
+int alarms_raise(const enum e_execs type, const char * restrict format, ...)
 {
-	struct s_alarm * restrict alarm = NULL;
+	struct s_alarm * restrict alarm;
+	char * msg;
+	va_list args;
+	int ret;
 
 	if (!Alarms.online)
 		return (-EOFFLINE);
 
-	if (!msg)
+	if (!format)
 		return (-EINVALID);
+
+	va_start(args, format);
+	ret = vasprintf(&msg, format, args);
+	va_end(args);
+
+	if (ret < 0)
+		return (-EOOM);
 
 	// create alarm
 	alarm = calloc(1, sizeof(*alarm));
-	if (!alarm)
+	if (!alarm) {
+		free(msg);
 		return (-EOOM);
+	}
 
 	// populate structure
 	alarm->type = type;
-	if (msg)
-		alarm->msg = strdup(msg);
+	alarm->len = ret;
+	alarm->msg = msg;
 
 	// insert alarm at beginning of list
 	alarm->next = Alarms.alarm_head;
