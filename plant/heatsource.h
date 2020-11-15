@@ -71,6 +71,7 @@ struct s_heatsource {
 
 int heatsource_online(struct s_heatsource * const heat) __attribute__((warn_unused_result));
 int heatsource_offline(struct s_heatsource * const heat);
+int heatsource_request_temp(struct s_heatsource * const heat, const temp_t req);
 int heatsource_run(struct s_heatsource * const heat) __attribute__((warn_unused_result));
 void heatsource_cleanup(struct s_heatsource * heat);
 

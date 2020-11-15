@@ -153,6 +153,25 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 }
 
 /**
+ * Set the heat request for a heatsource.
+ * @param heat the target heatsource
+ * @param req the requested temperature for this heatsource
+ * @return exec status
+ */
+int heatsource_request_temp(struct s_heatsource * const heat, const temp_t req)
+{
+	if (unlikely(!heat))
+		return (-EINVALID);
+
+	if (unlikely(!heat->run.online))
+		return (-EOFFLINE);
+
+	aser(&heat->run.temp_request, req);
+
+	return (ALL_OK);
+}
+
+/**
  * Run heatsource.
  * @note Honoring runmode is left to private routines
  * @param heat target heatsource

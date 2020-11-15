@@ -676,6 +676,7 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 	struct s_heatsource * heatsource;
 	bool serviced = false;
 	plid_t id;
+	int ret;
 
 	assert(plant);
 	assert(plant->run.online);
@@ -686,9 +687,9 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 		if (!heatsource->run.online)
 			continue;
 
-		// XXX function call?
-		heatsource->run.temp_request = plant->run.plant_hrequest;
-		serviced = true;
+		ret = heatsource_request_temp(heatsource, plant->run.plant_hrequest);
+		if (ALL_OK == ret)
+			serviced = true;
 	}
 
 	if (!serviced)
