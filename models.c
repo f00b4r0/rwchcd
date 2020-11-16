@@ -59,7 +59,7 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 	if (!bmodel)
 		return (-EINVALID);
 
-	if (!aler(&bmodel->run.online))
+	if (!bmodel->run.online)
 		return (-EOFFLINE);
 
 	ldata->values[i++] = aler(&bmodel->run.summer);
@@ -289,7 +289,7 @@ static int bmodel_online(struct s_bmodel * restrict const bmodel)
 	if (bmodel_log_register(bmodel) != ALL_OK)
 		pr_err(_("Building model \"%s\": couldn't register for logging"), bmodel->name);
 
-	aser(&bmodel->run.online, true);
+	bmodel->run.online = true;
 
 	return (ALL_OK);
 }
@@ -308,7 +308,7 @@ static int bmodel_offline(struct s_bmodel * restrict const bmodel)
 
 	bmodel_log_deregister(bmodel);
 
-	aser(&bmodel->run.online, false);
+	bmodel->run.online = false;
 
 	return (ALL_OK);
 }
@@ -477,7 +477,7 @@ static int bmodel_run(struct s_bmodel * restrict const bmodel)
 
 	assert(bmodel);
 
-	if (unlikely(!aler(&bmodel->run.online)))
+	if (unlikely(!bmodel->run.online))
 		return (-EOFFLINE);
 
 	bmodel_outdoor(bmodel);

@@ -813,12 +813,6 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// if we reached this point then the circuit is active
 	circuit->run.active = true;
 
-	// if building model isn't online, failsafe
-	if (unlikely(!aler(&circuit->set.p.bmodel->run.online))) {
-		ret = -ESAFETY;
-		goto fail;
-	}
-
 	// circuit is active, ensure pump is running
 	if (circuit->set.p.pump_feed) {
 		ret = pump_set_state(circuit->set.p.pump_feed, ON, 0);

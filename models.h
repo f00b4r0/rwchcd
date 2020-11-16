@@ -34,7 +34,7 @@ struct s_bmodel {
 		timekeep_t tau;		///< bmodel time constant
 	} set;
 	struct {
-		atomic_bool online;	///< true if bmodel is online
+		bool online;		///< true if bmodel is online
 		atomic_bool summer;	///< true if summer mode conditions are met
 		atomic_bool frost;	///< true if frost conditions are met
 		timekeep_t t_out_ltime;	///< last update time for t_out
