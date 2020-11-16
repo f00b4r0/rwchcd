@@ -552,6 +552,9 @@ static int plant_alarm(const enum e_execs errorn, const int devid, const char * 
 		case EOFFLINE:		// this really should not happen
 			msgf = _("%s is offline!");
 			break;
+		case ERSTALE:
+			msgf = _("Stale data on %s");
+			break;
 	}
 
 	ret = alarms_raise(errorn, msgf, devdesig);	// handle common switch cases once
