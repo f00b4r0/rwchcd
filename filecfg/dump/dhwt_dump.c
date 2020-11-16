@@ -135,8 +135,6 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 		filecfg_dump_nodestr("tid_top", inputs_temperature_name(dhwt->set.tid_top));
 	if (FCD_Exhaustive || inputs_temperature_name(dhwt->set.tid_win))
 		filecfg_dump_nodestr("tid_win", inputs_temperature_name(dhwt->set.tid_win));
-	if (FCD_Exhaustive || inputs_temperature_name(dhwt->set.tid_wout))
-		filecfg_dump_nodestr("tid_wout", inputs_temperature_name(dhwt->set.tid_wout));
 	if (FCD_Exhaustive || outputs_relay_name(dhwt->set.rid_selfheater))
 		filecfg_dump_nodestr("rid_selfheater", outputs_relay_name(dhwt->set.rid_selfheater));
 
