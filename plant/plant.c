@@ -596,7 +596,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	}
 
 	// check if last request exceeds timeout, or if last_creqtime is unset (happens at startup)
-	if (!plant->run.last_creqtime || ((now - plant->run.last_creqtime) > plant->set.sleeping_delay))
+	if (plant->set.sleeping_delay && (!plant->run.last_creqtime || ((now - plant->run.last_creqtime) > plant->set.sleeping_delay)))
 		plant->pdata.run.plant_could_sleep = true;
 	else
 		plant->pdata.run.plant_could_sleep = false;
