@@ -18,6 +18,7 @@
  * This is particularly useful in the error path, where after setting an output to some state the _run() code may eventually fall back to a failsafe state before exit.
  */
 
+#include "alarms.h"
 #include "hw_backends/hw_backends.h"
 #include "hardware.h"
 
@@ -127,7 +128,7 @@ int hardware_input(void)
 			ret = HW_backends.all[id].cb->input(HW_backends.all[id].priv);
 			if (unlikely(ALL_OK != ret)) {
 				fail = true;
-				dbgerr("input() failed for \"%s\" (%d)", HW_backends.all[id].name, ret);
+				alarms_raise(ret, _("Backend \"%s\": input() failed"), HW_backends.all[id].name);
 			}
 		}
 	}
@@ -164,7 +165,7 @@ int hardware_output(void)
 			ret = HW_backends.all[id].cb->output(HW_backends.all[id].priv);
 			if (unlikely(ALL_OK != ret)) {
 				fail = true;
-				dbgerr("output() failed for \"%s\" (%d)", HW_backends.all[id].name, ret);
+				alarms_raise(ret, _("Backend \"%s\": output() failed"), HW_backends.all[id].name);
 			}
 		}
 	}
