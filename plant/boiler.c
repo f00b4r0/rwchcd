@@ -269,6 +269,11 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	}
 
 	// check that mandatory settings are set
+	if (!boiler->set.hysteresis) {
+		pr_err(_("\"%s\": hysteresis must be set and > 0°K"), heat->name);
+		ret = -EMISCONFIGURED;
+	}
+
 	if (!boiler->set.limit_tmax) {
 		pr_err(_("\"%s\": limit_tmax must be set"), heat->name);
 		ret = -EMISCONFIGURED;
@@ -283,6 +288,12 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	// check that tmax > tmin
 	if (boiler->set.limit_tmax < boiler->set.limit_tmin) {
 		pr_err(_("\"%s\": limit_tmax must be > limit_tmin"), heat->name);
+		ret = -EMISCONFIGURED;
+	}
+
+	// check that tfreeze is positive
+	if (boiler->set.t_freeze <= celsius_to_temp(0)) {
+		pr_err(_("\"%s\": tfreeze must be set and above 0°C"), heat->name);
 		ret = -EMISCONFIGURED;
 	}
 
