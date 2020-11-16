@@ -23,6 +23,7 @@
 
 #include "pump.h"
 #include "io/outputs.h"
+#include "alarms.h"
 
 /**
  * Cleanup a pump.
@@ -188,6 +189,7 @@ int pump_run(struct s_pump * restrict const pump)
 	return (ALL_OK);
 
 fail:
+	alarms_raise(ret, _("Pump \"%s\": failed to operate!"), pump->name);
 	pump_failsafe(pump);
 	return (ret);
 }
