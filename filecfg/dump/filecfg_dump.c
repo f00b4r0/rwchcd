@@ -23,6 +23,7 @@
 #include "hw_backends/hw_backends.h"
 #include "hw_backends/hardware.h"
 #include "runtime.h"
+#include "storage.h"
 
 #include "filecfg_dump.h"
 #include "scheduler_dump.h"
@@ -229,6 +230,8 @@ int filecfg_dump(void)
 	const struct s_runtime * restrict const runtime = runtime_get();
 
 	// XXX the storage subsystem ensures we're in target wd
+	if (!storage_haspath())
+		return (-ESTORE);
 
 	// open stream
 	FCD_File = fopen(FILECONFIG_NAME, "w");

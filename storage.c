@@ -181,12 +181,13 @@ failret:
 	return (ret);
 }
 
-/** Quick hack. @warning no other chdir should be performed */
+/**
+ * Online storage. Quick hack.
+ * @warning no other chdir should be performed
+ * @note if #HAS_BDB is undefined, the function will only try to chdir (useful for config dump)
+ */
 int storage_online(void)
 {
-#ifndef HAS_BDB
-	return (ALL_OK);
-#else
 	DB *dbp;
 	DBT key, data;
 	storage_version_t sv;
@@ -199,9 +200,13 @@ int storage_online(void)
 	// make sure we're in target wd. XXX This updates wd for all threads
 	if (chdir(Storage_path)) {
 		perror(Storage_path);
+		free((void *)Storage_path);
+		Storage_path = NULL;
 		return (-ESTORE);
 	}
-
+#ifndef HAS_BDB
+	return (ALL_OK);	//	we're done - NB in this configuration Storage_path will be freed by program termination (not in storage_exit())
+#else
 	dbret = db_env_create(&dbenvp, 0);
 	if (dbret) {
 		dbgerr("db_env_create: %s", db_strerror(dbret));
@@ -287,6 +292,11 @@ failret:
 bool storage_isconfigured(void)
 {
 	return (Storage_configured);
+}
+
+bool storage_haspath(void)
+{
+	return (!!Storage_path);
 }
 
 void storage_exit(void)

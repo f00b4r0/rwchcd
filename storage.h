@@ -23,6 +23,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size);
 int storage_online(void);
 bool storage_isconfigured(void);
+bool storage_haspath(void);
 void storage_exit(void);
 
 #endif /* rwchcd_storage_h */
