@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "lib.h"
 #include "timekeep.h"
 #include "hw_backends/hardware.h"
 #include "temperature.h"
@@ -89,8 +90,8 @@ static int temperature_update(struct s_temperature * const t)
 			// while the loop executes, "now" can already be in the past => check for that
 			if (unlikely((now - tsens) > (4 * t->set.period)) && timekeep_a_ge_b(now, tsens))
 				ret = -ERSTALE;
-			// treat unset value as invalid even if the backend doesn't say so
-			if (unlikely(!stemp))
+			// treat invalid value as invalid even if the backend doesn't say so
+			if (unlikely(validate_temp(stemp)))
 				ret = -EINVALID;
 		}
 
