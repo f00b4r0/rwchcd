@@ -72,10 +72,11 @@
 #endif
 #include "timekeep.h"
 
-#include "filecfg/dump/filecfg_dump.h"
-
-#include "filecfg/parse/filecfg_parser.tab.h"
-extern FILE *filecfg_parser_in;	///< provided, used and closed by the Bison parser
+#ifdef HAS_FILECFG
+ #include "filecfg/dump/filecfg_dump.h"
+ #include "filecfg/parse/filecfg_parser.tab.h"
+ extern FILE *filecfg_parser_in;	///< provided, used and closed by the Bison parser
+#endif
 
 #ifndef RWCHCD_PRIO
  #define RWCHCD_PRIO	20	///< Desired run priority.
@@ -174,7 +175,9 @@ static void sig_handler(int signum)
 #endif
 			break;
 		case SIGUSR1:
+#ifdef HAS_FILECFG
 			filecfg_dump();
+#endif
 			break;
 		default:
 			break;
@@ -204,6 +207,7 @@ static int init_process(void)
 		return (ret);
 	}
 
+#ifdef HAS_FILECFG
 	if (!(filecfg_parser_in = fopen(RWCHCD_CONFIG, "r"))) {
 		perror(RWCHCD_CONFIG);
 		return (-EGENERIC);
@@ -213,6 +217,7 @@ static int init_process(void)
 		pr_err(_("Configuration parsing failed"));
 		return (ret);
 	}
+#endif
 
 	return (ALL_OK);
 }
@@ -264,7 +269,9 @@ static void offline_subsystems(void)
 		}
 	}
 
+#ifdef HAS_FILECFG
 	filecfg_dump();		// [depends on storage]
+#endif
 }
 
 /**

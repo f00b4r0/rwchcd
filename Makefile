@@ -13,7 +13,7 @@ CFLAGS := -I$(CURDIR) -std=gnu11 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"' -DRWCHCD
 LDLIBS := -lm -ldb
 
 ifeq ($(HOST_OS),Linux)
- CONFIG := -DHAS_HWP1 -DDEBUG=2
+ CONFIG := -DHAS_FILECFG -DHAS_HWP1 -DDEBUG=2
  CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
  ifeq ($(shell pkg-config --exists gio-unix-2.0 && echo 1),1)
   CONFIG += -DHAS_DBUS
@@ -39,8 +39,12 @@ MAINOBJS := $(OBJS)
 
 HWBACKENDS_DIR := hw_backends
 
-SUBDIRS := plant/ io/ io/inputs/ io/outputs/ filecfg/parse/ filecfg/dump/
+SUBDIRS := plant/ io/ io/inputs/ io/outputs/
 SUBDIRS += $(HWBACKENDS_DIR)/ $(HWBACKENDS_DIR)/dummy/
+
+ifneq (,$(findstring HAS_FILECFG,$(CONFIG)))
+ SUBDIRS += filecfg/parse/ filecfg/dump/
+endif
 
 SUBDIRS += log/
 ifneq (,$(findstring HAS_RRD,$(CONFIG)))

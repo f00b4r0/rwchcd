@@ -701,7 +701,9 @@ static const struct s_hw_callbacks hw_p1_callbacks = {
 	.output_ibn = hw_p1_output_ibn,
 	.input_name = hw_p1_input_name,
 	.output_name = hw_p1_output_name,
+#ifdef HAS_FILECFG
 	.filecfg_dump = hw_p1_filecfg_dump,
+#endif
 };
 
 /**

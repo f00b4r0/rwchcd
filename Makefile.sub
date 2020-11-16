@@ -1,4 +1,8 @@
-SRCS ?= $(wildcard *.c)
+ifneq (,$(findstring HAS_FILECFG,$(CONFIG)))
+ SRCS ?= $(wildcard *.c)
+else
+ SRCS ?= $(filter-out $(wildcard *filecfg*), $(wildcard *.c))
+endif
 
 OBJS := $(SRCS:.c=.o)
 DEPS := $(SRCS:.c=.d)

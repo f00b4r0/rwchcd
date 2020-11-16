@@ -258,6 +258,7 @@ void log_statsd_hook(const struct s_log_bendcbs ** restrict const callbacks)
 	*callbacks = &log_statsd_cbs;
 }
 
+#ifdef HAS_FILECFG
 void log_statsd_filecfg_dump(void)
 {
 	if (!Log_statsd.run.online)
@@ -346,4 +347,4 @@ fail:
 
 	return (ret);
 }
-
+#endif	/* HAS_FILECFG */
