@@ -48,6 +48,7 @@
 #include "log/log.h"
 #include "scheduler.h"
 #include "storage.h"
+#include "alarms.h"
 
 #define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)	///< 1h tau expressed in internal time representation
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
@@ -773,8 +774,10 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 
 	// safety checks
 	ret = inputs_temperature_get(circuit->set.tid_outgoing, &curr_temp);
-	if (unlikely(ALL_OK != ret))
+	if (unlikely(ALL_OK != ret)) {
+		alarms_raise(ret, _("HCircuit \"%s\": failed to get outgoing temp!"), circuit->name);
 		goto fail;
+	}
 
 	// we're good to go - keep updating actual_wtemp when circuit is off
 	aser(&circuit->run.actual_wtemp, curr_temp);
@@ -823,7 +826,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	if (circuit->set.p.pump_feed) {
 		ret = pump_set_state(circuit->set.p.pump_feed, ON, 0);
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("\"%s\": failed to set pump_feed \"%s\" ON (%d)", circuit->name, circuit->set.p.pump_feed->name, ret);
+			alarms_raise(ret, _("HCircuit \"%s\": failed to request feed pump \"%s\" ON"), circuit->name, circuit->set.p.pump_feed->name);
 			goto fail;
 		}
 	}
@@ -890,7 +893,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		// adjust valve position if necessary
 		ret = valve_mix_tcontrol(circuit->set.p.valve_mix, water_temp);
 		if (unlikely(ret)) {
-			dbgerr("\"%s\": failed to control valve \"%s\" (%d)", circuit->name, circuit->set.p.valve_mix->name, ret);
+			alarms_raise(ret, _("HCircuit \"%s\": failed to control mixing valve \"%s\""), circuit->name, circuit->set.p.valve_mix->name);
 			goto fail;
 		}
 	}
