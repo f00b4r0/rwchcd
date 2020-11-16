@@ -436,7 +436,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	// safe operation check
 	ret = boiler_runchecklist(boiler);
 	if (unlikely(ALL_OK != ret)) {
-		alarms_raise(ret, _("Boiler \"%s\": sensor failure"), heat->name);
+		alarms_raise(ret, _("Boiler \"%s\": failed to get temp!"), heat->name);
+		ret = -ESAFETY;
 		goto fail;
 	}
 
@@ -490,7 +491,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 
 	aser(&boiler->run.target_temp, target_temp);
 
-	ret = inputs_temperature_get(boiler->set.tid_boiler, &actual_temp);
+	ret = inputs_temperature_get(boiler->set.tid_boiler, &actual_temp);	// shouldn't fail: already tested in _runchecklist()
 	inputs_temperature_time(boiler->set.tid_boiler, &boiler_ttime);
 
 	aser(&boiler->run.actual_temp, actual_temp);
@@ -500,6 +501,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 		heat->run.cshift_crit = RWCHCD_CSHIFT_MAX;
 		aser(&heat->run.overtemp, true);
 		ret = -ESAFETY;
+		alarms_raise(ret, _("Boiler \"%s\": overheating!"), heat->name);	// assume we get here if overheating
 		goto fail;
 	}
 
@@ -528,8 +530,8 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 		if (boiler->set.p.valve_ret && (VA_TYPE_MIX == boiler->set.p.valve_ret->set.type)) {
 			// set valve for target limit. If return is higher valve will be full closed.
 			ret = valve_mix_tcontrol(boiler->set.p.valve_ret, boiler->set.limit_treturnmin);
-			if (unlikely((ALL_OK != ret)))	// something bad happened. XXX further action?
-				dbgerr("\"%s\": failed to control return valve \"%s\" (%d)", heat->name, boiler->set.p.valve_ret->name, ret);
+			if (unlikely((ALL_OK != ret)))	// something bad happened. XXX REVIEW further action?
+				alarms_raise(ret, _("Boiler \"%s\": failed to control return valve \"%s\""), heat->name, boiler->set.p.valve_ret->name);
 		}
 		else {
 			// calculate return integral
@@ -645,7 +647,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (boiler->set.p.pump_load) {
 		ret = pump_set_state(boiler->set.p.pump_load, ON, 0);
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("\"%s\": failed to set pump_load \"%s\" ON (%d)", heat->name, boiler->set.p.pump_load->name, ret);
+			alarms_raise(ret, _("Boiler \"%s\": failed to request load pump \"%s\" ON"), heat->name, boiler->set.p.pump_load->name);
 			goto fail;	// critical error: stop there
 		}
 	}
@@ -724,7 +726,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	}
 
 	if (unlikely(ALL_OK != ret)) {
-		dbgerr("\"%s\": burner control failed (%d)", heat->name, ret);
+		alarms_raise(ret, _("Boiler \"%s\": burner control failed!"), heat->name);
 		goto fail;
 	}
 
