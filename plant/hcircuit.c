@@ -321,6 +321,12 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		ret = -EMISCONFIGURED;
 	}
 
+	// if mix valve exists check it's correctly configured
+	if (circuit->set.p.valve_mix && !circuit->set.p.valve_mix->set.configured) {
+		pr_err(_("\"%s\": valve_mix \"%s\" is set but not configured"), circuit->name, circuit->set.p.valve_mix->name);
+		ret = -EMISCONFIGURED;
+	}
+
 	if (circuit->set.wtemp_rorh) {
 		// if ror is requested and valve is not available report misconfiguration
 		if (!circuit->set.p.valve_mix) {
