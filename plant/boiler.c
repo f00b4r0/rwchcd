@@ -292,6 +292,12 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		ret = -EMISCONFIGURED;
 	}
 
+	// if return valve exists check it's correctly configured
+	if (boiler->set.p.valve_ret && !boiler->set.p.valve_ret->set.configured) {
+		pr_err(_("\"%s\": valve_ret \"%s\" is set but not configured"), heat->name, boiler->set.p.valve_ret->name);
+		ret = -EMISCONFIGURED;
+	}
+
 	if (boiler->set.limit_treturnmin) {
 		// if return min is set make sure the associated sensor is configured.
 		ret = inputs_temperature_get(boiler->set.tid_boiler_return, NULL);
