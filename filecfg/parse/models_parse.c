@@ -31,8 +31,8 @@ static int bmodel_parse(void * restrict const priv __attribute__((unused)), cons
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL,		"log",			false,	fcp_bool_s_bmodel_log,			NULL, },
-		{ NODEFLT|NODEINT,	"limit_tsummer",	false,	fcp_temp_s_bmodel_limit_tsummer,	NULL, },
-		{ NODEFLT|NODEINT,	"limit_tfrost",		false,	fcp_temp_s_bmodel_limit_tfrost,		NULL, },
+		{ NODEFLT|NODEINT,	"limit_tsummer",	true,	fcp_temp_s_bmodel_limit_tsummer,	NULL, },
+		{ NODEFLT|NODEINT,	"limit_tfrost",		true,	fcp_temp_s_bmodel_limit_tfrost,		NULL, },
 		{ NODEINT|NODEDUR,	"tau",			true,	fcp_tk_s_bmodel_tau,			NULL, },
 		{ NODESTR,		"tid_outdoor",		true,	fcp_inputs_temperature_s_bmodel_tid_outdoor,	NULL, },
 	};
