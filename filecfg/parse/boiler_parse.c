@@ -9,6 +9,21 @@
 /**
  * @file
  * Boiler heatsource file configuration parsing.
+ *
+\verbatim
+ type "boiler" {
+	 idle_mode "frostonly";
+	 hysteresis 8.0;
+	 limit_thardmax 100.0;
+	 limit_tmax 90.0;
+	 limit_tmin 50.0;
+	 limit_treturnmin 35.0;
+	 t_freeze 5.0;
+	 burner_min_time 120;
+	 tid_boiler "boiler";
+	 rid_burner_1 "burner";
+ };
+\endverbatim
  */
 
 #include "boiler_parse.h"

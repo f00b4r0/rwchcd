@@ -184,7 +184,7 @@ failret:
 /**
  * Online storage. Quick hack.
  * @warning no other chdir should be performed
- * @note if #HAS_BDB is undefined, the function will only try to chdir (useful for config dump)
+ * @note if HAS_BDB is undefined, the function will only try to chdir (useful for config dump)
  */
 int storage_online(void)
 {

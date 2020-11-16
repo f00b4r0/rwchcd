@@ -12,6 +12,20 @@
  *
  * This subsystem abstracts temperature inputs,
  * It allows for "meta-sensors" to be created: a single temperature value can be the result of the processing of multiple sources, transparently for the end consumer.
+ *
+ * The temperature implementation supports:
+ * - Virtually unlimited number of underlying backend sources per temperature
+ * - Assigning an individual update period per temperature
+ * - Basic management of underlying sources possible error state:
+ *   - Report failure if any source is in error state
+ *   - Ignore all source errors
+ *   - Assign default value to error sources
+ * - Basic arithmetic operations on underlying sources to compute the temperature final value:
+ *   - Use first source value
+ *   - Min/Max of all available source values
+ * If "ignore all source errors" is set together with "use first source value", a simple failover mechanism is achieved
+ * (the implementation will always return an error if no valid source is available).
+ *
  * @note the implementation is thread-safe.
  */
 

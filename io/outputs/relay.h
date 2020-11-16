@@ -20,22 +20,24 @@
 #include "hw_backends/hardware.h"
 
 
+/** Processing applied to multiple targets */
 enum e_relay_op {
-	R_OP_FIRST = 0,	///< Control first relay. Config `first`
+	R_OP_FIRST = 0,	///< Control first relay. Config `first`. *Default*
 	R_OP_ALL,	///< Control all relays. Config `all`
 };
 
+/** Missing target behavior */
 enum e_relay_miss {
-	R_MISS_FAIL = 0,///< fail if any underlying target cannot be reached. Config `fail`
+	R_MISS_FAIL = 0,///< fail if any underlying target cannot be reached. Config `fail`. *Default*
 	R_MISS_IGN,	///< ignore targets that cannot be reached. If all sources cannot be read the relay will return an error. Config `ignore`. @note if #R_OP_FIRST is set, a basic failover system is created (where the first @b working relay is controlled).
 };
 
-/** software representation of a relay */
+/** Software representation of a relay */
 struct s_relay {
 	struct {
 		bool configured;	///< sensor is configured
-		enum e_relay_op op;	///< operation performed on underlying relays, see #e_relay_op. OPTIONAL, defaults to R_OP_FIRST
-		enum e_relay_miss missing;	///< missing relay behavior see #e_relay_miss. OPTIONAL, defaults to R_MISS_FAIL
+		enum e_relay_op op;	///< operation performed on underlying relays, see #e_relay_op. *Optional*, defaults to R_OP_FIRST
+		enum e_relay_miss missing;	///< missing relay behavior see #e_relay_miss. *Optional*, defaults to R_MISS_FAIL
 	} set;		///< settings (externally set)
 	struct {
 		atomic_flag grabbed;	///< relay has been claimed by an active user (that will set its state)

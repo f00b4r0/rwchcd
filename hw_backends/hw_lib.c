@@ -9,7 +9,7 @@
 /**
  * @file
  * Hardware-related functions library.
- * @todo convert to fixed-point arithmetic.
+ * @note Uses floating point arithmetic. Lookup tables can be implemented instead if fp is not available.
  */
 
 #include <stdint.h>

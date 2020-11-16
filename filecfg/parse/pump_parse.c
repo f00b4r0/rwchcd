@@ -9,6 +9,13 @@
 /**
  * @file
  * Pump subsystem file configuration parsing.
+ *
+\verbatim
+ pump "pump name" {
+	 cooldown_time 2mn;
+	 rid_pump "rid name";
+ };
+\endverbatim
  */
 
 #include <string.h>

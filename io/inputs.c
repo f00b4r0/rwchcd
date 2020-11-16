@@ -11,7 +11,11 @@
  * Global inputs interface implementation.
  *
  * This subsystem interfaces between the hardware backends and the data consumers. No consumer should ever directly address the backends,
- * instead they should use this interface,.
+ * instead they should use this interface.
+ *
+ * The inputs implementation supports:
+ * - Virtually unlimited number of inputs, of various types:
+ *   - Temperatures
  */
 
 #include <stdlib.h>

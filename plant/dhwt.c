@@ -24,6 +24,8 @@
  * - maximum intake temperature limit.
  * - periodic anti-legionella high heat charge.
  * - isolation valve.
+ * - individual scheduling.
+ * - logging of state and temperatures.
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given dhwt, with the exception of

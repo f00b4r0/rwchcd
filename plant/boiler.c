@@ -21,6 +21,8 @@
  * - Return water minimum temperature (with or without return mixing valve)
  * - Consummer delay after burner run (to prevent overheating)
  * - Burner turn-on anticipation
+ * - Burner failure detection
+ * - Logging of state and temperatures
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given boiler, with the exception of

@@ -16,7 +16,7 @@
 
 #include "rwchcd.h"
 
-typedef uint_fast8_t itid_t;	///< input temperature id
+typedef uint_fast8_t itid_t;	///< input id
 
 #define ITID_MAX	UINT_FAST8_MAX
 

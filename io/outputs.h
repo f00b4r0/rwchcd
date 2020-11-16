@@ -16,7 +16,7 @@
 
 #include "rwchcd.h"
 
-typedef uint_fast8_t orid_t;	///< output relay id
+typedef uint_fast8_t orid_t;	///< output id
 
 #define ORID_MAX	UINT_FAST8_MAX
 

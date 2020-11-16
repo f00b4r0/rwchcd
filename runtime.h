@@ -24,9 +24,9 @@
 struct s_runtime {
 	struct {
 		bool configured;
-		enum e_systemmode startup_sysmode;	///< sysmode applied at startup
-		enum e_runmode startup_runmode;		///< if sysmode is SYS_MANUAL, this runtime runmode will be applied
-		enum e_runmode startup_dhwmode;		///< if sysmode is SYS_MANUAL, this runtime dhwmode will be applied
+		enum e_systemmode startup_sysmode;	///< sysmode applied at startup. *REQUIRED*
+		enum e_runmode startup_runmode;		///< if #startup_sysmode is #SYS_MANUAL, this runtime runmode will be applied and is *REQUIRED*.
+		enum e_runmode startup_dhwmode;		///< if #startup_sysmode is #SYS_MANUAL, this runtime dhwmode will be applied and is *REQUIRED*
 	} set;
 	struct {
 		_Atomic enum e_systemmode systemmode;	///< current operation mode

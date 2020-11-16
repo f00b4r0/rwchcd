@@ -9,6 +9,17 @@
 /**
  * @file
  * Heatsource file configuration parsing.
+ *
+\verbatim
+ heatsources {
+	 heatsource "chaudière" {
+		 runmode "auto";
+		 schedid "default";
+		 type "type name" { ... };
+		 consumer_sdelay 360;
+	 };
+ };
+\endverbatim
  */
 
 #include <string.h>

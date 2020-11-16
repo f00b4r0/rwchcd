@@ -18,6 +18,7 @@
  * - A single heatsource (but provision has been made in the code to support multiple heatsources)
  * - DHWT priority management
  * - Summer switchover for DHWT equipped with electric heating
+ * - Automatic maintenance of actuators (valves, pumps) during summer
  *
  * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
  * switch to fuel when wood dies out) and cascade mode (for large systems).
@@ -604,7 +605,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	else
 		plant->pdata.run.plant_could_sleep = false;
 
-	/// XXX @todo should update PCS if any DHWT is active and cannot do electric?
+	/// @todo should update PCS if any DHWT is active and cannot do electric?
 
 	// then dhwt
 	for (id = 0; id < plant->dhwts.last; id++) {

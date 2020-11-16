@@ -307,7 +307,7 @@ fail:
  * @param hw private backend data (for config access)
  * @param type the type of output to publish
  * @param name the name of the output (used in final topic)
- * @param state a string representing the output state
+ * @param message a string representing the output state
  * @return exec status
  */
 static int mqtt_pub_state(const struct s_mqtt_pdata * const hw, enum e_hw_output_type type, const char * restrict const name, const char * restrict const message)

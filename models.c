@@ -219,7 +219,7 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 
 /**
  * Find a building model by name.
- * @param bmodels list of bmodels to search
+ * @param models pointer to models
  * @param name target name to find
  * @return bmodel if found, NULL otherwise
  */

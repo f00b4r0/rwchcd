@@ -9,6 +9,40 @@
 /**
  * @file
  * Pump subsystem file configuration parsing.
+ *
+\verbatim
+ valve "valve mix name" {
+	 ete_time 120;
+	 type "mix" {
+		 tdeadzone 1.0;
+		 tid_hot "boiler";
+		 tid_cold "circuit return";
+		 tid_out "circuit out";
+		 algo "PI" {
+			 sample_intvl 1;
+			 Tu 18;
+			 Td 5;
+			 Ksmax 30.0;
+			 tune_f 10;
+		 };
+	 };
+	 motor "3way" {
+		 deadband 20;
+		 rid_open "mix open";
+		 rid_close "mix close";
+	 };
+ };
+ valve "valve isol name" {
+	 ete_time 15s;
+	 type "isol" {
+		 reverse yes;
+	 };
+	 motor "2way" {
+		 rid_trigger "dhw switch";
+		 trigger_opens true;
+	 };
+ };
+\endverbatim
  */
 
 #include <string.h>

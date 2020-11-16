@@ -23,9 +23,11 @@
 			backend "titi";
 			name "pump2";
 		};
+ 		...
 	};
  };
 \endverbatim
+ *
  * `target` are name of backend and name of relay within that backend
  */
 

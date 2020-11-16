@@ -17,6 +17,7 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
+/** Output state for the supported output types */
 union u_hw_out_state {
 	bool relay;	///< accessor for #HW_OUTPUT_RELAY state
 };
@@ -24,6 +25,7 @@ union u_hw_out_state {
 /** Type for hardware output states */
 typedef union u_hw_out_state u_hw_out_state_t;
 
+/** Input value for the supported input types */
 union u_hw_in_value {
 	temp_t temperature;	///< accessor for HW_INPUT_TEMP value
 	bool inswitch;		///< accessor for HW_INPUT_SWITCH value

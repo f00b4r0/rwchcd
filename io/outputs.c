@@ -12,6 +12,10 @@
  *
  * This subsystem interfaces between the hardware backends and the actuators requests. No request should ever directly address the backends,
  * instead they should use this interface,.
+ *
+ * The outputs implementation supports:
+ * - Virtually unlimited number of outputs, of various types:
+ *   - Relays
  */
 
 #include <stdlib.h>

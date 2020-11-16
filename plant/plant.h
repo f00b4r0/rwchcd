@@ -34,10 +34,10 @@ typedef uint_fast8_t	plid_t;
 struct s_plant {
 	struct {
 		bool configured;			///< true if properly configured
-		bool summer_maintenance;		///< true if pumps/valves should be run periodically in summer. See #summer_run_interval and #summer_run_duration
-		timekeep_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep (will trigger electric switchover when available)
-		timekeep_t summer_run_interval;		///< interval between summer maintenance runs (suggested: 1 week). @note if #summer_maintenance is true then this MUST be set
-		timekeep_t summer_run_duration;		///< duration of summer maintenance operation (suggested: 10mn). @note if #summer_maintenance is true then this MUST be set
+		bool summer_maintenance;		///< true if pumps/valves should be run periodically in summer. *Defaults to false*. See summer_run_interval and #summer_run_duration
+		timekeep_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep (will trigger electric switchover when available). (*default*: 0 disables). *Optional*
+		timekeep_t summer_run_interval;		///< interval between summer maintenance runs (suggested: 1 week). *Required* if #summer_maintenance is true
+		timekeep_t summer_run_duration;		///< duration of summer maintenance operation (suggested: 10mn). *Required* if #summer_maintenance is true.
 	} set;
 	struct {
 		bool online;			///< true if plant is online

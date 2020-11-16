@@ -9,6 +9,44 @@
 /**
  * @file
  * Plant file configuration parsing.
+ *
+\verbatim
+ plant {
+	 config {
+		 summer_maintenance yes;
+		 sleeping_delay 1d;
+		 summer_run_interval 1w;
+		 summer_run_duration 5m;
+		 def_hcircuit {
+			 t_comfort 20.0;
+			 t_eco 17.0;
+			 t_frostfree 11.5;
+			 outhoff_comfort 18.5;
+			 outhoff_eco 16.0;
+			 outhoff_frostfree 7.5;
+			 outhoff_hysteresis 1.0;
+			 limit_wtmin 20.0;
+			 limit_wtmax 80.0;
+			 temp_inoffset 7.0;
+		 };
+		 def_dhwt {
+			 limit_wintmax 90.0;
+			 limit_tmin 5.0;
+			 limit_tmax 60.0;
+			 t_comfort 55.0;
+			 t_eco 40.0;
+			 t_frostfree 10.0;
+			 hysteresis 10.0;
+			 temp_inoffset 10.0;
+		 };
+	 };
+	 pumps { ... };
+	 valves { ... };
+	 heatsources { ... };
+	 hcircuits { ... };
+	 dhwts { ... };
+ };
+\endverbatim
  */
 
 #include <stdlib.h>

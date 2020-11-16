@@ -83,7 +83,7 @@ __attribute__((pure)) static uint_fast16_t sensor_to_ohm(const struct s_hw_p1_pd
 
 /**
  * Return a sensor ohm to celsius converter callback based on sensor type.
- * @param stype the sensor type identifier
+ * @param sensor the target sensor
  * @return correct function pointer for sensor type or NULL if invalid type
  */
 __attribute__ ((pure)) ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw_p1_sensor * restrict const sensor)

@@ -9,6 +9,7 @@
 /**
  * @file
  * Log subsystem file configuration parsing.
+ *
 \verbatim
   log {
 	  enabled true;

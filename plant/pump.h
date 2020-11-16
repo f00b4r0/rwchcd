@@ -25,8 +25,8 @@
 struct s_pump {
 	struct {
 		bool configured;		///< true if properly configured
-		orid_t rid_pump;		///< relay controlling that pump
-		timekeep_t cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off - useful to prevent short runs that might clog the pump
+		orid_t rid_pump;		///< relay controlling that pump. *REQUIRED*
+		timekeep_t cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off. *Optional*, useful to prevent short runs that might clog the pump
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if pump is operational (under software management)

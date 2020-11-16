@@ -9,6 +9,18 @@
 /**
  * @file
  * Scheduler subsystem file configuration parsing.
+ *
+\verbatim
+ scheduler {
+	 schedule "default" {
+		 entry {
+			 time { wday 0; hour 7; min 0; };
+			 params { runmode "comfort"; dhwmode "comfort"; };
+		 };
+		 ...
+ 	 };
+ };
+\endverbatim
  */
 
 #include <string.h>	// strcmp/memcpy

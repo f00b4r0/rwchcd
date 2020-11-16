@@ -25,6 +25,7 @@
 			backend "titi";
 			name "outdoor south";
 		};
+ 		...
 	};
  };
 \endverbatim

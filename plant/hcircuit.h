@@ -24,11 +24,11 @@
 /** private data for templaw_bilinear (for 20C ambient target) */
 struct s_tlaw_bilin20C_priv {
 	struct {
-		temp_t tout1;		///< outside temp1 (lowest outdoor temp)
-		temp_t twater1;		///< corresponding target water temp1 (highest water temp)
-		temp_t tout2;		///< outside temp2 (highest outdoor temp)
-		temp_t twater2;		///< corresponding target water temp2 (lowest water temp)
-		uint_least16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130)
+		temp_t tout1;		///< outside temp1 (lowest outdoor temp). *REQUIRED*
+		temp_t twater1;		///< corresponding target water temp1 (highest water temp). *REQUIRED*
+		temp_t tout2;		///< outside temp2 (highest outdoor temp). *REQUIRED*
+		temp_t twater2;		///< corresponding target water temp2 (lowest water temp). *REQUIRED*
+		uint_least16_t nH100;	///< thermal non-linearity coef *100 (e.g. if nH is 1.3, nH100 is 130). *REQUIRED*
 	} set;
 	struct {
 		temp_t toutinfl;	///< outdoor temperature at inflexion point (calculated once from nH100 in hcircuit_make_bilinear())
@@ -39,30 +39,30 @@ struct s_tlaw_bilin20C_priv {
 /** Heating circuit temperature law identifiers */
 enum e_hcircuit_laws {
 	HCL_NONE = 0,	///< none, misconfiguration
-	HCL_BILINEAR,	///< bilinear temperature law. Config `bilinear`
+	HCL_BILINEAR,	///< bilinear temperature law. Config `bilinear`. *Requires extra parameters, see #s_tlaw_bilin20C_priv)
 };
 
 /** Heating circuit element structure */
 struct s_hcircuit {
 	struct {
 		bool configured;		///< true if circuit is configured
-		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target)
-		bool log;			///< true if data logging should be enabled for this circuit
-		schedid_t schedid;		///< schedule id for this hcircuit.
-		enum e_runmode runmode;		///< current circuit set_runmode
-		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (0 to disable)
-		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (0 to disable)
-		timekeep_t boost_maxtime;	///< maximum duration of transition boost
-		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent
-		itid_t tid_outgoing;		///< outgoing temp sensor id for this circuit
-		itid_t tid_return;		///< return temp sensor id for this circuit
-		itid_t tid_ambient;		///< ambient temp sensor id related to this circuit
-		enum e_hcircuit_laws tlaw;	///< temperature law identifier
-		struct s_hcircuit_params params;///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max.
+		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target). *Defaults to false*
+		bool log;			///< true if data logging should be enabled for this circuit. *Defaults to false*
+		schedid_t schedid;		///< schedule id for this hcircuit. *Optional*
+		enum e_runmode runmode;		///< current circuit set_runmode. *REQUIRED*
+		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (*default*: 0 disables). *Optional*, requires #p.valve_mix
+		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (*default*: 0 disables). *Optional*
+		timekeep_t boost_maxtime;	///< maximum duration of transition boost. *Optional*
+		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent (*default*: 0 disables). *Optional*
+		itid_t tid_outgoing;		///< outgoing temp sensor id for this circuit. *REQUIRED*
+		itid_t tid_return;		///< return temp sensor id for this circuit. *Optional*
+		itid_t tid_ambient;		///< ambient temp sensor id related to this circuit. *Optional*
+		enum e_hcircuit_laws tlaw;	///< temperature law identifier. *REQUIRED*
+		struct s_hcircuit_params params;///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max. Some settings must be set either globally or locally.
 		struct {
-			struct s_valve * restrict valve_mix;	///< optional valve for circuit (if unavailable -> direct heating)
-			struct s_pump * restrict pump_feed;	///< optional pump for this circuit
-			const struct s_bmodel * restrict bmodel;///< mandatory read-only bmodel corresponding to this circuit
+			struct s_valve * restrict valve_mix;	///< mixing valve for circuit (if unavailable -> direct heating). *Optional*
+			struct s_pump * restrict pump_feed;	///< feed pump for this circuit. *Optional*
+			const struct s_bmodel * restrict bmodel;///< Building model assigned to this circuit. *REQUIRED*
 		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {

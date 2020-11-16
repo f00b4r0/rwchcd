@@ -9,6 +9,29 @@
 /**
  * @file
  * Heating circuit file configuration parsing.
+ *
+\verbatim
+ hcircuit "name" {
+	 log yes;
+	 runmode "auto";
+	 schedid "default";
+	 wtemp_rorh 25.0;
+	 tambient_boostdelta 2.0;
+	 boost_maxtime 4h;
+	 tid_outgoing "circuit out";
+	 tid_return "circuit return";
+	 tlaw "bilinear" {
+		 tout1 -5.0;
+		 twater1 42.0;
+		 tout2 15.0;
+		 twater2 23.5;
+		 nH100 110;
+	 };
+	 valve_mix "circuit mix";
+	 pump_feed "circuit pump";
+	 bmodel "house";
+ };
+\endverbatim
  */
 
 #include <stdlib.h>	// abs

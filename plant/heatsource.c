@@ -14,6 +14,7 @@
  * - Overtemp signaling (to trigger maximum dissipation via connected consumers)
  * - Consumer shift (e.g. to accelerate warmup after a cold start or to evacuate excess heat)
  * - Consumer reduction delay signal (signal consumers to delay heat request reduction)
+ * - Individual scheduling
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given heatsource, with the exception of

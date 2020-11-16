@@ -27,22 +27,22 @@ typedef uint_fast8_t 	modid_t;
 struct s_bmodel {
 	struct {
 		bool configured;	///< true if configured
-		bool log;		///< true if logging must be enabled for this bmodel
-		itid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s
-		temp_t limit_tsummer;	///< outdoor temp for summer switch over
-		temp_t limit_tfrost;	///< outdoor temp for frost protection
-		timekeep_t tau;		///< bmodel time constant
+		bool log;		///< true if logging must be enabled for this bmodel. *Defaults to false*
+		itid_t tid_outdoor;	///< outdoor sensor id for this bmodel. @note value will be smoothed over 60s. *REQUIRED*
+		temp_t limit_tsummer;	///< outdoor temp for summer switch over. *REQUIRED*
+		temp_t limit_tfrost;	///< outdoor temp for frost protection. *REQUIRED*
+		timekeep_t tau;		///< bmodel time constant. *REQUIRED*
 	} set;
 	struct {
 		bool online;		///< true if bmodel is online
 		atomic_bool summer;	///< true if summer mode conditions are met
 		atomic_bool frost;	///< true if frost conditions are met
-		timekeep_t t_out_ltime;	///< last update time for t_out
-		timekeep_t t_out_faltime;///< time at which t_outdoor_filtered and t_outdoor_attenuated were last updated
+		timekeep_t t_out_ltime;	///< last update time for #t_out
+		timekeep_t t_out_faltime;///< time at which #t_out_filt and #t_out_att were last updated
 		_Atomic temp_t t_out;	///< current outdoor temperature (smoothed over 60s)
-		_Atomic temp_t t_out_filt;///< t_outdoor filtered by bmodel time constant (moving average of t_outdoor with tau)
-		_Atomic temp_t t_out_mix;///< mixed outdoor temperature (average of t_outdoor and t_filtered)
-		_Atomic temp_t t_out_att;///< attenuated outdoor temperature (moving average of t_filtered with tau: double filter on t_outdoor)
+		_Atomic temp_t t_out_filt;///< #t_out filtered by bmodel time constant (moving average of #t_out with #set.tau)
+		_Atomic temp_t t_out_mix;///< mixed outdoor temperature (average of #t_out and #t_out_filt)
+		_Atomic temp_t t_out_att;///< attenuated outdoor temperature (moving average of #t_out_filt with #set.tau: double filter on #t_out)
 	} run;
 	const char * restrict name;	///< unique name for this bmodel
 };

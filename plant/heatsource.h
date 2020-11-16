@@ -33,12 +33,12 @@ enum e_heatsource_type {
 struct s_heatsource {
 	struct {
 		bool configured;		///< true if properly configured
-		bool log;			///< true if data logging should be enabled for this heatsource
-		schedid_t schedid;		///< schedule id for this heatsource.
-		enum e_runmode runmode;		///< current heatsource set_runmode
-		enum e_heatsource_type type;	///< type of heatsource
-		unsigned short prio;		///< priority: 0 is highest prio, next positive. For cascading -- XXX NOT IMPLEMENTED
-		timekeep_t consumer_sdelay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run)
+		bool log;			///< true if data logging should be enabled for this heatsource. *Optional*
+		schedid_t schedid;		///< schedule id for this heatsource. *Optional*
+		enum e_runmode runmode;		///< current heatsource set_runmode. *REQUIRED*
+		enum e_heatsource_type type;	///< type of heatsource. *REQUIRED*
+		unsigned short prio;		///< priority: 0 (*default*) is highest prio, next positive, for cascading. *Optional* -- XXX NOT IMPLEMENTED
+		timekeep_t consumer_sdelay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run). *Optional*
 	} set;		///< settings (externally set)
 	struct {
 		bool online;			///< true if source is available for use (under software management)

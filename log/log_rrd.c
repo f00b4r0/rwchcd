@@ -28,15 +28,12 @@
 /** 1mn hardcoded RRAs */
 static const char *RRAs_1mn[] = {
 	"RRA:LAST:0.5:1:2d",		// record 1-step samples for 2d
-	"RRA:AVERAGE:0.5:15m:2M",
+	"RRA:AVERAGE:0.5:15m:2M",	// record 15mn samples for 2M
 	"RRA:MIN:0.5:15m:2M",
 	"RRA:MAX:0.5:15m:2M",
-	"RRA:AVERAGE:0.5:1h:1y",
+	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y
 	"RRA:MIN:0.5:1h:1y",
 	"RRA:MAX:0.5:1h:1y",
-	/*"RRA:AVERAGE:0.5:1d:10y",	// we really only want 10y for outdoor data
-	"RRA:MIN:0.5:1d:10y",
-	"RRA:MAX:0.5:1d:10y",*/
 };
 
 /** 5mn hardcoded RRAs */

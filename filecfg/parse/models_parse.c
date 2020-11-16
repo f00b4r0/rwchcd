@@ -9,6 +9,18 @@
 /**
  * @file
  * Models subsystem file configuration parsing.
+ *
+\verbatim
+ models {
+	 bmodel "name" {
+		 log yes;
+		 limit_tsummer 18.0;
+		 limit_tfrost 3.0;
+		 tau 20h;
+		 tid_outdoor "outdoor";
+	 };
+ };
+\endverbatim
  */
 
 #include <stdlib.h>

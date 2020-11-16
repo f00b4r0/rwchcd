@@ -293,7 +293,7 @@ int hardware_input_time_get(const binid_t binid, const enum e_hw_input_type type
  * Get hardware output state.
  * @param boutid id of the hardware input to query
  * @param type the type of requested input
- * @param value pointer to target to store the input value
+ * @param state pointer to target to store the input value
  * @return exec status
  * @deprecated this function probably doesn't make much sense in the current code, it isn't used anywhere and might be removed in the future
  */
@@ -321,9 +321,9 @@ int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type
  * Set hardware output state.
  * @param boutid id of the hardware input to query
  * @param type the type of requested input
- * @param value pointer to requested output value
+ * @param state pointer to requested output value
  * @return exec status
- * @note actual (hardware) relay state will only be updated by a call to hardware_output()
+ * @note actual (hardware) output state will only be updated by a call to hardware_output()
  */
 int hardware_output_state_set(const boutid_t boutid, const enum e_hw_output_type type, const u_hw_out_state_t * const state)
 {

@@ -12,10 +12,7 @@
  *
 \verbatim
  inputs {
- * 	temperatures {
-		temperature "outdoor" { };
- *		temperature "toto" {};
- *	};
+  	temperatures { ... };
  };
 \endverbatim
  */

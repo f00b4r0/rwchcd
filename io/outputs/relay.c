@@ -12,6 +12,18 @@
  *
  * This subsystem abstracts relay outputs,
  * It allows for "meta-relays" to be created: a software relay can be control multiple backend targets, transparently for the end consumer.
+ *
+ * The relay implementation supports:
+ * - Virtually unlimited number of underlying backend targets per relay
+ * - Basic management of underlying targets possible error states:
+ *   - Report failure if any target is in error state
+ *   - Ignore all target errors
+ * - Basic logic operations on underlying targets:
+ *   - Stop at first non-error target
+ *   - Effect all targets
+ * If "stop at first non-error target" is set together with "ignore all target errors", a simple failover mechanism is achieved
+ * (the first working target is controlled, the implementation will always report an error if no working target is available).
+ *
  * @note the implementation is thread-safe.
  */
 
@@ -75,6 +87,7 @@ static inline int hardware_relay_set_state(const boutid_t relid, const bool turn
  * The new state will only be stored if target request completes without error.
  * Depending on the value of #r->set.missing, "without error" can have different meanings.
  * @param r the output relay to act on
+ * @param turn_on the requested state for the relay
  * @return exec status
  * @note this function spinlocks
  * @warning this function assumes that a given software relay has only @b one user that can set its state (as enforced by relay_grab()), and that this user cannot send concurrent requests.

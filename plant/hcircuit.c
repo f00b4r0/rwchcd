@@ -2,7 +2,7 @@
 //  plant/hcircuit.c
 //  rwchcd
 //
-//  (C) 2017-2019 Thibaut VARENE
+//  (C) 2017-2020 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -25,6 +25,7 @@
  * - Automatic circuit turn-off based on outdoor temperature evolution
  * - Timed cooldown at turn-off
  * - Min/max limits on circuit water temperature
+ * - Logging of state and temperatures
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given hcircuit, with the exception of
@@ -434,9 +435,9 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
  * @note during TRANS_UP the boost transition timer will be reset when a runmode change results in
  * TRANS_UP remaining active, i.e. the boost can be applied for a total time longer than the set time.
- * @todo XXX TODO: ADD optimizations (anticipated turn on/off, max ambient...)
- * @todo XXX TODO: ambient max delta shutdown; optim based on return temp
- * @todo XXX TODO: optimization with return temperature
+ * @note this function performs some checks to work around uninitialized data at startup, maybe this should be handled in online() instead.
+ * @todo add optimizations (anticipated turn on/off, max ambient...)
+ * @todo ambient max delta shutdown; optim based on return temp
  */
 __attribute__((warn_unused_result))
 int hcircuit_logic(struct s_hcircuit * restrict const circuit)

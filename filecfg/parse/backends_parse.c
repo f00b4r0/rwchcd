@@ -9,6 +9,14 @@
 /**
  * @file
  * Backends subsystem file configuration parsing.
+ *
+\verbatim
+ backend "name" {
+	 type "type" { ... };
+	 relays { ... };
+	 temperatures { ... };
+ };
+\endverbatim
  */
 
 #include <stdlib.h>
@@ -126,11 +134,12 @@ cleanup:
 
 /**
  * Find a registered backend input by name.
- * This function finds the sensor named sensor_name in backend named bkend_name
+ * This function finds the input named #input_name in backend named #bkend_name
  * and populates tempid with these elements.
+ * @param type the type of input to look for
  * @param tempid target binid_t to populate
  * @param bkend_name name of the backend to look into
- * @param sensor_name name of the sensor to look for in that backend
+ * @param input_name name of the input to look for in that backend
  * @return execution status
  */
 static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * tempid, const char * const bkend_name, const char * const input_name)
@@ -169,11 +178,12 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * temp
 
 /**
  * Find a registered backend output by name.
- * This function finds the relay named relay_name in backend named bkend_name
+ * This function finds the output named #output_name in backend named #bkend_name
  * and populates relid with these elements.
+ * @param type the type of output to look for
  * @param relid target boutid_t to populate
  * @param bkend_name name of the backend to look into
- * @param relay_name name of the relay to look for in that backend
+ * @param output_name name of the output to look for in that backend
  * @return execution status
  */
 static int hw_backends_output_fbn(const enum e_hw_output_type type, boutid_t * relid, const char * const bkend_name, const char * const output_name)
@@ -222,7 +232,8 @@ FILECFG_PARSER_STR_PARSE_SET_FUNC(true, false, s_fcp_hwbkend, backend)
 FILECFG_PARSER_STR_PARSE_SET_FUNC(true, false, s_fcp_hwbkend, name)
 
 /**
- * Parse a temperature sensor configuration reference.
+ * Parse an inid configuration reference.
+ * @param type the type of input to alias
  * @param priv a pointer to a binid_t structure which will be populated
  * @param node the configuration node to populate from
  * @return exec status
@@ -272,7 +283,8 @@ int filecfg_backends_parser_inid_parse(const enum e_hw_input_type type, void * r
 }
 
 /**
- * Parse a relay configuration reference.
+ * Parse an outid configuration reference.
+ * @param type the type of output to alias
  * @param priv a pointer to a boutid_t structure which will be populated
  * @param node the configuration node to populate from
  * @return exec status

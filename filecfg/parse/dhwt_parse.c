@@ -9,6 +9,17 @@
 /**
  * @file
  * DHWT file configuration parsing.
+ *
+\verbatim
+ dhwt "dhwt name" {
+	 runmode "auto";
+	 schedid "default";
+	 dhwt_cprio "paralmax";
+	 force_mode "never";
+	 tid_bottom "boiler";
+	 params { ... };
+ };
+\endverbatim
  */
 
 #include <string.h>	// strlen/strcmp

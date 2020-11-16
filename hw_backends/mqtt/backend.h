@@ -53,19 +53,19 @@ struct s_mqtt_relay {
 
 /** Known temperature units */
 enum e_mqtt_tunit {
-	MQTT_TEMP_CELSIUS = 0,	///< Subscribed temperatures are expressed in Celsius (default). Config `celsius`
+	MQTT_TEMP_CELSIUS = 0,	///< Subscribed temperatures are expressed in Celsius (*default*). Config `celsius`
 	MQTT_TEMP_KELVIN,	///< Subscribed temperatures are expressed in Kelvin. Config `kelvin`
 };
 
 /** MQTT backend private data */
 struct s_mqtt_pdata {
 	struct {
-		const char * topic_root;///< MQTT topic root for this backend (used in published and subscribed messages)
-		const char * username;	///< MQTT broker username (optional)
-		const char * password;	///< MQTT broker password (opional)
-		const char * host;	///< MQTT broker host
-		int port;		///< MQTT broker port (optional, defaults to 1883)
-		enum e_mqtt_tunit temp_unit;	///< temperature unit used in subscribed temperatures (optional, defaults to Celsius)
+		const char * topic_root;///< MQTT topic root for this backend (used in published and subscribed messages). *REQUIRED*. @note No trailing '/'
+		const char * username;	///< MQTT broker username. *Optional*
+		const char * password;	///< MQTT broker password. *Optional*
+		const char * host;	///< MQTT broker host. *REQUIRED*
+		int port;		///< MQTT broker port. *Optional, defaults to 1883*
+		enum e_mqtt_tunit temp_unit;	///< temperature unit used in subscribed temperatures. *Optional, defaults to Celsius*
 	} set;		///< settings
 	struct {
 		bool initialized;	///< hardware is initialized (setup() succeeded)

@@ -12,10 +12,7 @@
  *
 \verbatim
  outputs {
-	relays {
-		relay "pumps" { };
-		relay "toto" {};
-	};
+	relays { ... };
  };
 \endverbatim
  */

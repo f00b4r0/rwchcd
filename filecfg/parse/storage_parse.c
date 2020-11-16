@@ -9,6 +9,12 @@
 /**
  * @file
  * Storage subsystem file configuration parsing.
+ *
+\verbatim
+ storage {
+	 path "/var/lib/rwchcd";
+ };
+\endverbatim
  */
 
 #include <string.h>	// strdup

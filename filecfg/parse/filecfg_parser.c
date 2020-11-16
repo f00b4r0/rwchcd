@@ -20,13 +20,13 @@
  * 	- `true`
  * 	- `on`
  * 	- `yes`
- *	- `false`
+ * 	- `false`
  * 	- `off`
- *	- `no`
+ * 	- `no`
  * - All user strings @b MUST be quoted (single and double quotes accepted) and are case-sensitive.
  * - Comments: to comment the configuration, one can use:
  *	- C++-style `//` single-line comment (all text following will be treated as comment until next line).
- * 	- Perl-style `#` single-line comment (all text following will be treated as comment until next line).
+ *	- Perl-style `#` single-line comment (all text following will be treated as comment until next line).
  *	- C-style `/ * ... * /` (without space between slash and star) multi-line comments (all text enclosed between opening slash-star and closing star-slash will be ignored, even if it spans multiple lines).
  *
  * Type specific rules:
@@ -38,6 +38,19 @@
  * - All `itid_t` and `orid_t` settings expect a quoted string referencing the name of the target input or output matching the expected type (temperature, relay).
  *
  * @note several parser do not include a graceful cleanup path as it is assumed that parsing failure will result in the program being aborted.
+ * @note the order of the various entities generally does not matter, except for e.g. inputs and outputs where order does matter with respect to the "use first" option.
+ *
+\verbatim
+ backends { ... };
+ inputs { ... };
+ outputs { ... };
+ defconfig { ... };
+ models { ... };
+ plant { ... };
+ storage { ... };
+ log { ... };
+ scheduler { ... };
+\endverbatim
  */
 
 #include <stdlib.h>
