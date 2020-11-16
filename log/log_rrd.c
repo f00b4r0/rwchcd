@@ -17,6 +17,7 @@
 #include <errno.h>	// errno
 #include <string.h>	// strlen
 #include <assert.h>
+#include <stdio.h>	// asprintf
 
 #include <rrd.h>
 
@@ -68,8 +69,8 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 	int ret = -EGENERIC, argc = 0;
 	unsigned int i;
 	const char **argv, **rras, * restrict mtype;
-	char * restrict temp = NULL;
-	size_t size, rrasize;
+	char * temp = NULL;
+	size_t rrasize;
 	static const char * restrict const DSfmt = "DS:%s:%s:%d:U:U";
 
 	assert(identifier && log_data);
@@ -115,8 +116,8 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 				ret = -EINVALID;
 				goto cleanup;
 		}
-		snprintf_automalloc(temp, size, DSfmt, log_data->keys[i], mtype, log_data->interval * 4);	// hardcoded: heartbeat: max 4 missed inputs
-		if (!temp) {
+		ret = asprintf(&temp, DSfmt, log_data->keys[i], mtype, log_data->interval * 4);	// hardcoded: heartbeat: max 4 missed inputs
+		if (ret < 0) {
 			ret = -EOOM;
 			goto cleanup;
 		}

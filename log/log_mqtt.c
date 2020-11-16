@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdatomic.h>
 #include <stdlib.h>
+#include <stdio.h>	// asprintf
 #include <mosquitto.h>
 
 #include "log_mqtt.h"
@@ -154,8 +155,8 @@ static int log_mqtt_update(const char * restrict const identifier, const struct 
 	if (!Log_mqtt.run.online)
 		return (-EOFFLINE);
 
-	snprintf_automalloc(topic, basesize, "%s/%s/", Log_mqtt.set.topic_root, identifier);
-	if (!topic)
+	ret = asprintf(&topic, "%s/%s/", Log_mqtt.set.topic_root, identifier);
+	if (ret < 0)
 		return (-EOOM);
 
 	// basesize accounts for terminating '\0'

@@ -67,23 +67,6 @@
 #define pr_err(format, ...)	fprintf(stderr, "ERROR! " format "\n", ## __VA_ARGS__)
 #define pr_warn(format, ...)	fprintf(stderr, "WARNING! " format "\n", ## __VA_ARGS__)
 
-/** computes the required malloc size for the formatted string */
-#define snprintf_needed(format, ...)	((size_t)(1+snprintf(NULL, 0, format, __VA_ARGS__)))
-/**
- * Auto-malloc snprintf() wrapper.
- * Automatically malloc() the exact required size for the formatted string and apply snprintf() to it.
- * Essentially implements asprintf() without requiring _GNU_SOURCE
- * @param target a non-allocated pointer to malloc() memory to
- * @param size a ssize_t temporary variable used for internal computations
- * @param format the format string (and its associated varargs)
- * @return NULL if malloc() failed or a properly allocated, formatted string
- */
-#define snprintf_automalloc(target, size, format, ...)			({\
-		size = snprintf_needed(format, __VA_ARGS__);		\
-		target = malloc(size);					\
-		if (target)						\
-			snprintf(target, size, format, __VA_ARGS__);	})
-
 #define aler(objectp)		atomic_load_explicit(objectp, memory_order_relaxed)
 #define aser(objectp, desired)	atomic_store_explicit(objectp, desired, memory_order_relaxed)
 

@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>	// asprintf
 
 #include "lib.h"
 #include "storage.h"
@@ -150,7 +151,6 @@ static int bmodel_log_deregister(const struct s_bmodel * const bmodel)
 static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 {
 	char * buf;
-	size_t size;
 	int ret;
 
 	assert(bmodel);
@@ -162,8 +162,8 @@ static int bmodel_save(const struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	snprintf_automalloc(buf, size, MODELS_STORAGE_BMODEL_PREFIX " %s.state", bmodel->name);
-	if (!buf)
+	ret = asprintf(&buf, MODELS_STORAGE_BMODEL_PREFIX " %s.state", bmodel->name);
+	if (ret < 0)
 		return (-EOOM);
 
 	ret = storage_dump(buf, &Models_sversion, &bmodel->run, sizeof(bmodel->run));
@@ -183,7 +183,6 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	char * buf;
 	struct s_bmodel temp_bmodel;
 	storage_version_t sversion;
-	size_t size;
 	int ret;
 
 	assert(bmodel);
@@ -195,8 +194,8 @@ static int bmodel_restore(struct s_bmodel * restrict const bmodel)
 	if (!bmodel->name)
 		return (-EINVALID);
 
-	snprintf_automalloc(buf, size, MODELS_STORAGE_BMODEL_PREFIX " %s.state", bmodel->name);
-	if (!buf)
+	ret = asprintf(&buf, MODELS_STORAGE_BMODEL_PREFIX " %s.state", bmodel->name);
+	if (ret < 0)
 		return (-EOOM);
 
 	// try to restore key elements

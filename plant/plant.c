@@ -27,6 +27,7 @@
 #include <unistd.h>	// sleep
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>	// asprintf
 
 #include "lib.h"
 #include "pump.h"
@@ -495,10 +496,8 @@ int plant_offline(struct s_plant * restrict const plant)
  */
 static int plant_alarm(const enum e_execs errorn, const int devid, const char * restrict devname, const enum e_plant_devtype pdev)
 {
-	const char * restrict const devdesigf = "%s #%d (\"%s\")";
 	const char * restrict msgf = NULL, * restrict devtype;
-	char * restrict devdesig = NULL;
-	size_t size;
+	char * devdesig = NULL;
 	int ret;
 
 	switch (pdev) {
@@ -522,8 +521,8 @@ static int plant_alarm(const enum e_execs errorn, const int devid, const char * 
 			break;
 	}
 
-	snprintf_automalloc(devdesig, size, devdesigf, devtype, devid, devname);
-	if (!devdesig)
+	ret = asprintf(&devdesig, "%s #%d (\"%s\")", devtype, devid, devname);
+	if (ret < 0)
 		return (-EOOM);
 
 	switch (-errorn) {

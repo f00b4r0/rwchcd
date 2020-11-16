@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdatomic.h>
 #include <stdlib.h>
+#include <stdio.h>	// asprintf
 #include <mosquitto.h>
 
 #include "hw_backends/hw_backends.h"
@@ -239,7 +240,6 @@ static int mqtt_online(void * priv)
 	struct s_mqtt_pdata * restrict const hw = priv;
 	unsigned int type;
 	char * str;
-	size_t size;
 	int ret;
 
 	if (!hw)
@@ -269,8 +269,8 @@ static int mqtt_online(void * priv)
 				continue;
 		}
 
-		snprintf_automalloc(str, size, "%s/%s/#", hw->set.topic_root, mqtt_intype_subtopics[type]);
-		if (!str) {
+		ret = asprintf(&str, "%s/%s/#", hw->set.topic_root, mqtt_intype_subtopics[type]);
+		if (ret < 0) {
 			ret = -EOOM;
 			goto fail;
 		}
@@ -313,13 +313,12 @@ fail:
 static int mqtt_pub_state(const struct s_mqtt_pdata * const hw, enum e_hw_output_type type, const char * restrict const name, const char * restrict const message)
 {
 	char * restrict topic;
-	size_t size;
 	int ret;
 
 	assert(type < ARRAY_SIZE(mqtt_outtype_subtopics));
 
-	snprintf_automalloc(topic, size, "%s/%s/%s", hw->set.topic_root, mqtt_outtype_subtopics[type], name);
-	if (!topic)
+	ret = asprintf(&topic, "%s/%s/%s", hw->set.topic_root, mqtt_outtype_subtopics[type], name);
+	if (ret < 0)
 		return (-EOOM);
 	ret = mosquitto_publish(hw->mosq, NULL, topic, strlen(message), message, MQTT_BKND_QOS, false);
 	free(topic);
