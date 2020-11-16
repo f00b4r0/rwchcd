@@ -170,7 +170,7 @@ int alarms_run(void)
 
 		while (alarm) {
 			msg = alarm->msg;
-			pr_log(_("\tALARM #%d: %s"), count--, msg);
+			pr_log(_("\tALARM #%d: %s (%d)"), count--, msg, alarm->type);
 			alarm = alarm->next;
 			last = now;
 		}
