@@ -47,6 +47,7 @@
 #include "io/inputs.h"
 #include "io/outputs.h"
 #include "log/log.h"
+#include "alarms.h"
 
 #define DHWT_STORAGE_PREFIX	"dhwt"
 
@@ -573,7 +574,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	if (dhwt->set.p.valve_hwisol && !electric_mode) {
 		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
 		if (ALL_OK != ret) {
-			dbgerr("\%s\": cannot operate isolation valve \"%s\"!", dhwt->name, dhwt->set.p.valve_hwisol->name);
+			alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, dhwt->set.p.valve_hwisol->name);
 			goto fail;
 		}
 	}
@@ -586,7 +587,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	// no sensor available, give up
 	if (unlikely(!valid_tbottom && !valid_ttop)) {
-		dbgerr("\"%s\": no valid temperature available", dhwt->name);
+		alarms_raise(ret, _("DHWT \"%s\": no valid temperature available!"), dhwt->name);
 		goto fail;
 	}
 
@@ -600,7 +601,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			ret = pump_set_state(dhwt->set.p.pump_recycle, OFF, NOFORCE);
 
 		if (ALL_OK != ret)	// this is a non-critical error, keep going
-			dbgerr("\"%s\": failed to set pump_recycle \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_recycle->name, ret);
+			alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, dhwt->set.p.pump_recycle->name);
 	}
 
 	charge_on = aler(&dhwt->run.charge_on);
@@ -709,38 +710,38 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	// handle pump_feed - outside of the trigger since we need to manage inlet temp
 	if (dhwt->set.p.pump_feed) {
 		// if available, test for inlet water temp
-		/// @warning Note: this sensor must not rely on pump running for accurate read, otherwise this can be a problem
+		/// @warning Note: tid_win sensor must not rely on pump running for accurate read, otherwise this can be a problem
 		ret = inputs_temperature_get(dhwt->set.tid_win, &water_temp);
+		if (unlikely(ALL_OK != ret))
+			alarms_raise(ret, _("DHWT \"%s\": failed to get inlet temperature!"), dhwt->name);
 
-		if (charge_on && !electric_mode) {		// on heatsource charge
-			if (ALL_OK == ret) {
+		// on heatsource charge
+		if (charge_on && !electric_mode) {
+			if (ALL_OK == ret) {	// inputs_temperature_get result
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
 					ret = pump_set_state(dhwt->set.p.pump_feed, OFF, FORCE);
 				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K hysteresis
 					ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);
 			}
-			else {
-				dbgerr("\"%s\": can't get tid_win (%d)", dhwt->name, ret);
+			else
 				ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
-			}
 		}
-		else {				// no charge or electric charge
+		// no charge or electric charge
+		else {
 			test = FORCE;	// by default, force pump_feed immediate turn off
-			if (ALL_OK == ret) {
+			if (ALL_OK == ret) {	// inputs_temperature_get result
 				// discharge protection: if water feed temp is > dhwt current temp, we can apply cooldown
 				if (water_temp > curr_temp)
 					test = NOFORCE;
 			}
-			else
-				dbgerr("\"%s\": can't get tid_win (%d)", dhwt->name, ret);
 
 			// turn off pump with conditional cooldown
 			ret = pump_set_state(dhwt->set.p.pump_feed, OFF, test);
 		}
 
-		if (unlikely(ALL_OK != ret))
-			dbgerr("\"%s\": failed to set pump_feed \"%s\" state (%d)", dhwt->name, dhwt->set.p.pump_feed->name, ret);
+		if (unlikely(ALL_OK != ret))	// pump_set_state result
+			alarms_raise(ret, _("DHWT \"%s\": failed to request feed pump \"%s\" state"), dhwt->name, dhwt->set.p.pump_feed->name);
 	}
 
 	aser(&dhwt->run.actual_temp, curr_temp);
