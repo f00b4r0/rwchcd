@@ -34,7 +34,10 @@
 static const storage_version_t Storage_version = STORAGE_VERSION;
 bool Storage_configured = false;
 const char * Storage_path = NULL;
+
+#ifdef HAS_BDB
 static DB_ENV *dbenvp;
+#endif
 
 /**
  * Generic storage backend write call.
@@ -45,9 +48,10 @@ static DB_ENV *dbenvp;
  */
 int storage_dump(const char * restrict const identifier, const storage_version_t * restrict const version, const void * restrict const object, const size_t size)
 {
+	int dbret, ret = -ESTORE;
+#ifdef HAS_BDB
 	DB *dbp;
 	DBT key, data;
-	int dbret, ret = -ESTORE;
 
 	if (!Storage_configured)
 		return (-ENOTCONFIGURED);
@@ -101,6 +105,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 faildb:
 	dbp->close(dbp, 0);
 failret:
+#endif	/* HAS_BDB */
 	return (ret);
 }
 
@@ -113,9 +118,10 @@ failret:
  */
 int storage_fetch(const char * restrict const identifier, storage_version_t * restrict const version, void * restrict const object, const size_t size)
 {
+	int dbret, ret = -ESTORE;
+#ifdef HAS_BDB
 	DB *dbp;
 	DBT key, data;
-	int dbret, ret = -ESTORE;
 
 	if (!Storage_configured)
 		return (-ENOTCONFIGURED);
@@ -171,12 +177,16 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 faildb:
 	dbp->close(dbp, 0);
 failret:
+#endif	/* HAS BDB */
 	return (ret);
 }
 
 /** Quick hack. @warning no other chdir should be performed */
 int storage_online(void)
 {
+#ifndef HAS_BDB
+	return (ALL_OK);
+#else
 	DB *dbp;
 	DBT key, data;
 	storage_version_t sv;
@@ -271,6 +281,7 @@ failenv:
 	dbenvp->close(dbenvp, 0);
 failret:
 	return (-ESTORE);
+#endif	/* HAS_BDB */
 }
 
 bool storage_isconfigured(void)
@@ -285,7 +296,9 @@ void storage_exit(void)
 
 	Storage_configured = false;
 
+#ifdef HAS_BDB
 	dbenvp->close(dbenvp, 0);
+#endif
 
 	free((void *)Storage_path);
 	Storage_path = NULL;
