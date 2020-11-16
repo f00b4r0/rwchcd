@@ -19,13 +19,6 @@
 
 #include "plant/plant.h"
 
-#define hspriv_to_heatsource(_priv)	container_of(_priv, const struct s_heatsource, priv)
-
-static inline const struct s_plant * __hspriv_to_plant(void * priv)
-{
-	return (pdata_to_plant(hspriv_to_heatsource(priv)->pdata));
-}
-
 int filecfg_heatsource_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
 #endif /* heatsource_parse_h */

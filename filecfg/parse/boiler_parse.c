@@ -40,8 +40,15 @@ const char * idle_mode_str[] = {
 
 FILECFG_PARSER_ENUM_PARSE_SET_FUNC(idle_mode_str, s_boiler_priv, idle_mode)
 
-FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, pump_load)
-FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__hspriv_to_plant, s_boiler_priv, valve_ret)
+// XXX REVIEW quick hack
+#include "runtime.h"
+static inline const struct s_plant * __boiler_to_plant(void * priv)
+{
+	return (runtime_get()->plant);
+}
+
+FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__boiler_to_plant, s_boiler_priv, pump_load)
+FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__boiler_to_plant, s_boiler_priv, valve_ret)
 
 int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
 {

@@ -377,12 +377,13 @@ int filecfg_plant_parse(void * restrict const priv, const struct s_filecfg_parse
 	if (!plant)
 		return (-EOOM);
 
+	runtime->plant = plant;
+
 	ret = filecfg_parser_run_parsers(plant, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
 	plant->set.configured = true;
-	runtime->plant = plant;
 
 	return (ret);
 }
