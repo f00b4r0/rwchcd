@@ -65,6 +65,7 @@
 #endif
 
 #define pr_err(format, ...)	fprintf(stderr, "ERROR! " format "\n", ## __VA_ARGS__)
+#define pr_warn(format, ...)	fprintf(stderr, "WARNING! " format "\n", ## __VA_ARGS__)
 
 /** computes the required malloc size for the formatted string */
 #define snprintf_needed(format, ...)	((size_t)(1+snprintf(NULL, 0, format, __VA_ARGS__)))

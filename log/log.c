@@ -384,10 +384,8 @@ int log_online(void)
 	if (!Log.set.enabled)
 		return (ALL_OK);
 
-	if (!storage_isconfigured()) {
-		pr_err("Logging needs a configured storage!");
-		return (-ENOTCONFIGURED);
-	}
+	if (!storage_isconfigured())
+		pr_warn("Storage not available, logging may not operate correctly.");
 
 	// bring the backends online
 	if (Log.bkend->log_online) {
