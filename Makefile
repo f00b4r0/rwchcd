@@ -10,6 +10,7 @@ BISON := bison
 WFLAGS := -Wall -Wextra -Winline -Wdeclaration-after-statement -Wno-unused-function -Wno-double-promotion -Winit-self -Wswitch-default -Wswitch-enum -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wjump-misses-init -Wlogical-op -Wvla -Wconversion
 OPTIMS := -Og -g -ggdb3 -march=native -mcpu=native -mtune=native -fstack-protector -Wstack-protector -fstrict-aliasing -Wstrict-aliasing
 CFLAGS := -I$(CURDIR) -std=gnu11 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"' -DRWCHCD_STORAGE_PATH='"$(VARLIBDIR)"'
+# -lm is only necessary for sqrtf() used in hw_lib.c
 LDLIBS := -lm
 
 ifeq ($(HOST_OS),Linux)
@@ -37,10 +38,9 @@ DEPS := $(SRCS:.c=.d)
 MAIN := rwchcd
 MAINOBJS := $(OBJS)
 
-HWBACKENDS_DIR := hw_backends
-
 SUBDIRS := plant/ io/ io/inputs/ io/outputs/
-SUBDIRS += $(HWBACKENDS_DIR)/ $(HWBACKENDS_DIR)/dummy/
+
+HWBACKENDS_DIRS := dummy/
 
 ifneq (,$(findstring HAS_FILECFG,$(CONFIG)))
  SUBDIRS += filecfg/parse/ filecfg/dump/
@@ -57,18 +57,20 @@ endif
 
 ifneq (,$(findstring HAS_HWP1,$(CONFIG)))
  LDLIBS += -lwiringPi
- SUBDIRS += $(HWBACKENDS_DIR)/hw_p1/
+ HWBACKENDS_DIRS += hw_p1/
 endif
 
 ifneq (,$(findstring HAS_MQTT,$(CONFIG)))
  LDLIBS += $(shell pkg-config --libs libmosquitto)
- SUBDIRS += $(HWBACKENDS_DIR)/mqtt/
+ HWBACKENDS_DIRS += mqtt/
 endif
 
 ifneq (,$(findstring HAS_DBUS,$(CONFIG)))
  LDLIBS += $(shell pkg-config --libs gio-unix-2.0)
  SUBDIRS += dbus/
 endif
+
+SUBDIRS += hw_backends/ $(patsubst %,hw_backends/%,$(HWBACKENDS_DIRS))
 
 TOPTARGETS := all clean distclean install uninstall doc
 
