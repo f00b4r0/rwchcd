@@ -30,6 +30,7 @@
 #include "lib.h"
 #include "io/inputs.h"
 #include "io/outputs.h"
+#include "alarms.h"
 
 
 /**
@@ -811,6 +812,7 @@ int valve_run(struct s_valve * const valve)
 	return (ALL_OK);
 
 fail:
+	alarms_raise(ret, _("Valve \"%s\": failed to operate!"), valve->name);
 	valve_failsafe(valve);
 	return (ret);
 }
