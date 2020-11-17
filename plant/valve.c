@@ -586,12 +586,9 @@ static void valve_failsafe(struct s_valve * const valve)
 		case VA_M_3WAY:
 			(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_open, OFF);
 			(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_close, OFF);
-			outputs_relay_thaw(valve->set.mset.m3way.rid_open);
-			outputs_relay_thaw(valve->set.mset.m3way.rid_close);
 			break;
 		case VA_M_2WAY:
 			(void)!outputs_relay_state_set(valve->set.mset.m2way.rid_trigger, OFF);
-			outputs_relay_thaw(valve->set.mset.m2way.rid_trigger);
 			break;
 		case VA_M_NONE:
 		default:
@@ -619,8 +616,22 @@ int valve_offline(struct s_valve * const valve)
 	if (!valve->set.configured)
 		return (-ENOTCONFIGURED);
 
-	// stop the valve uncondiditonally
-	valve_failsafe(valve);
+	// stop the valve uncondiditonally and thaw relays
+	switch (valve->set.motor) {
+		case VA_M_3WAY:
+			(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_open, OFF);
+			(void)!outputs_relay_state_set(valve->set.mset.m3way.rid_close, OFF);
+			outputs_relay_thaw(valve->set.mset.m3way.rid_open);
+			outputs_relay_thaw(valve->set.mset.m3way.rid_close);
+			break;
+		case VA_M_2WAY:
+			(void)!outputs_relay_state_set(valve->set.mset.m2way.rid_trigger, OFF);
+			outputs_relay_thaw(valve->set.mset.m2way.rid_trigger);
+			break;
+		case VA_M_NONE:
+		default:
+			break;
+	}
 
 	memset(&valve->run, 0x00, sizeof(valve->run));
 	//valve->run.ctrl_ready = false;	// handled by memset
