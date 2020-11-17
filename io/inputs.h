@@ -31,10 +31,12 @@ struct s_inputs {
 };
 
 int inputs_init(void);
+int inputs_online(void);
 int inputs_temperature_fbn(const char * name);
 const char * inputs_temperature_name(const itid_t tid);
 int inputs_temperature_get(const itid_t tid, temp_t * const tout) __attribute__((warn_unused_result));
 int inputs_temperature_time(const itid_t tid, timekeep_t * const stamp);
+int inputs_offline(void);
 void inputs_exit(void);
 
 #endif /* inputs_h */

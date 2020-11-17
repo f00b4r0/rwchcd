@@ -14,6 +14,7 @@
  * instead they should use this interface.
  *
  * The inputs implementation supports:
+ * - Logging of all input values
  * - Virtually unlimited number of inputs, of various types:
  *   - Temperatures
  */
@@ -75,9 +76,12 @@ static int inputs_log_register(void)
 	enum e_log_metric *metrics;
 	unsigned int id;
 
+	if (!nmemb)
+		return (ALL_OK);
+
 	keys = calloc(nmemb, sizeof(*keys));
 	if (!keys)
-		return -EOOM;
+		return (-EOOM);
 
 	for (id = 0; id < Inputs.temps.last; id++)
 		keys[id] = Inputs.temps.all[id].name;
@@ -85,7 +89,7 @@ static int inputs_log_register(void)
 	metrics = calloc(nmemb, sizeof(*metrics));
 	if (!metrics) {
 		free(keys);
-		return -EOOM;
+		return (-EOOM);
 	}
 
 	for (id = 0; id < Inputs.temps.last; id++)
@@ -131,6 +135,22 @@ static int inputs_log_deregister(void)
 int inputs_init(void)
 {
 	memset(&Inputs, 0x00, sizeof(Inputs));
+
+	return (ALL_OK);
+}
+
+/**
+ * Online inputs.
+ * Registers log.
+ * @return exec status
+ */
+int inputs_online(void)
+{
+	int ret;
+
+	ret = inputs_log_register();
+	if (ret)
+		dbgerr("inputs_log_register failed (%d)", ret);
 
 	return (ALL_OK);
 }
@@ -202,6 +222,17 @@ int inputs_temperature_time(const itid_t tid, timekeep_t * const stamp)
 		return (-EINVALID);
 
 	return (temperature_time(&Inputs.temps.all[id], stamp));
+}
+
+/**
+ * Offline inputs.
+ * Deregister log.
+ * @return exec status
+ */
+int inputs_offline(void)
+{
+	inputs_log_deregister();
+	return (ALL_OK);
 }
 
 /**

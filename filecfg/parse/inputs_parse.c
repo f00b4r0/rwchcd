@@ -96,7 +96,7 @@ int filecfg_inputs_parse(void * restrict const priv, const struct s_filecfg_pars
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = rwchcd_add_subsyscb("inputs", NULL, NULL, inputs_exit);
+	ret = rwchcd_add_subsyscb("inputs", inputs_online, inputs_offline, inputs_exit);
 	if (ALL_OK != ret)
 		inputs_exit();
 
