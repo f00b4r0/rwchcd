@@ -54,8 +54,6 @@
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s
 #define HCIRCUIT_STORAGE_PREFIX	"hcircuit"
 
-static const storage_version_t Hcircuit_sversion = 2;
-
 /**
  * Heating circuit data log callback.
  * @param ldata the log data to populate
@@ -154,68 +152,6 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
 		return (ALL_OK);
 
 	return (log_deregister(hcircuit_lsrc(circuit)));
-}
-
-/**
- * Save hcircuit state to permanent storage.
- * @param circuit the circuit to save, @b MUST be named
- * @return exec status
- */
-static int hcircuit_save(const struct s_hcircuit * restrict const circuit)
-{
-	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_PREFIX;
-
-	assert(circuit);
-
-	if (!circuit->set.configured)
-		return (-ENOTCONFIGURED);
-
-	// can't store if no name
-	if (!circuit->name)
-		return (-EINVALID);
-
-	strcat(buf, "_");
-	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
-
-	return (storage_dump(buf, &Hcircuit_sversion, &circuit->run, sizeof(circuit->run)));
-}
-
-/**
- * Restore hcircuit state from permanent storage.
- * @param circuit the circuit to restore, @b MUST be named
- * @return exec status
- * @deprecated this is probably a bad idea
- */
-static int hcircuit_restore(struct s_hcircuit * restrict const circuit)
-{
-	char buf[MAX_FILENAMELEN+1] = HCIRCUIT_STORAGE_PREFIX;
-	struct s_hcircuit temp_hcircuit;
-	storage_version_t sversion;
-	int ret;
-
-	assert(circuit);
-
-	if (!circuit->set.configured)
-		return (-ENOTCONFIGURED);
-
-	// can't restore if no name
-	if (!circuit->name)
-		return (-EINVALID);
-
-	strcat(buf, "_");
-	strncat(buf, circuit->name, MAX_FILENAMELEN-strlen(buf)-1);
-
-	// try to restore key elements
-	ret = storage_fetch(buf, &sversion, &temp_hcircuit.run, sizeof(temp_hcircuit.run));
-	if (ALL_OK == ret) {
-		if (Hcircuit_sversion != sversion)
-			return (-EMISMATCH);
-
-		// XXX try to restore last ambient temp (for modeling). Is this a good idea? Not sure.
-		aser(&circuit->run.actual_ambient, aler(&temp_hcircuit.run.actual_ambient));
-	}
-
-	return (ret);
 }
 
 /**
@@ -344,9 +280,6 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		// log registration shouldn't cause onlining to fail
 		if (hcircuit_log_register(circuit) != ALL_OK)
 			pr_err(_("\"%s\": couldn't register for logging"), circuit->name);
-
-		// try to restore circuit
-		hcircuit_restore(circuit);
 	}
 
 	return (ret);
@@ -398,7 +331,6 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 	if (!circuit->set.configured)
 		return (-ENOTCONFIGURED);
 
-	hcircuit_save(circuit);
 	hcircuit_shutdown(circuit);
 	hcircuit_log_deregister(circuit);
 
