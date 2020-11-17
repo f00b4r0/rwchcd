@@ -64,9 +64,9 @@ static const char *RRAs_15mn[] = {
 static int log_rrd_create(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	int ret = -EGENERIC, argc = 0;
-	unsigned int i;
-	const char **argv, **rras, * restrict mtype;
-	char * temp = NULL;
+	unsigned int i, j;
+	const char **argv, **rras, * restrict mtype, * str;
+	char * temp, dsname[20];
 	size_t rrasize;
 	static const char * restrict const DSfmt = "DS:%s:%s:%d:U:U";
 
@@ -113,7 +113,15 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 				ret = -EINVALID;
 				goto cleanup;
 		}
-		ret = asprintf(&temp, DSfmt, log_data->keys[i], mtype, log_data->interval * 4);	// hardcoded: heartbeat: max 4 missed inputs
+
+		// replace spaces with '_'. That's the maximum extent of the work we'll do on DS names
+		// we also silently truncate to 19 chars which is the maximum allowed length for DS names
+		str = log_data->keys[i];
+		for (j = 0; ('\0' != str[j]) && (j < ARRAY_SIZE(dsname)-1); j++)
+			dsname[j] = (' ' == str[j]) ? '_' : str[j];
+		dsname[j] = '\0';
+
+		ret = asprintf(&temp, DSfmt, dsname, mtype, log_data->interval * 4);	// hardcoded: heartbeat: max 4 missed inputs
 		if (ret < 0) {
 			ret = -EOOM;
 			goto cleanup;
@@ -125,7 +133,7 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 	rrd_clear_error();
 	ret = rrd_create_r(identifier, (unsigned)log_data->interval, time(NULL)-10, argc, argv);
 	if (ret)
-		dbgerr("%s", rrd_get_error());
+		pr_err("Failed to create RRD data base for \"%s\". Reason: \"%s\"", identifier, rrd_get_error());
 
 cleanup:
 	for (i = 0; i < log_data->nkeys; i++)
