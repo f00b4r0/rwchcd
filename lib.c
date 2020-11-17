@@ -149,7 +149,7 @@ tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrs
 	if (unlikely(!intgrl->last_time || !new_time))	// only compute integral over a finite domain
 		intg = 0;
 	else
-		intg += (tempdiff_t)((((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * (new_time - intgrl->last_time));
+		intg += (((tempdiff_t)((new_temp - thrsh) + (intgrl->last_temp - intgrl->last_thrsh))/2) * (signed)(new_time - intgrl->last_time));
 
 	// apply jackets
 	if (intg < tlow_jacket)
