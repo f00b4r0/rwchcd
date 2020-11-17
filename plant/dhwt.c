@@ -237,9 +237,15 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		ret = -EMISCONFIGURED;
 	}
 
-	if (dhwt->set.p.valve_hwisol && !dhwt->set.p.valve_hwisol->set.configured) {
-		pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.valve_hwisol->name);
-		ret = -EMISCONFIGURED;
+	if (dhwt->set.p.valve_hwisol) {
+		if (!dhwt->set.p.valve_hwisol->set.configured) {
+			pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.valve_hwisol->name);
+			ret = -EMISCONFIGURED;
+		}
+		else if (VA_TYPE_ISOL != dhwt->set.p.valve_hwisol->set.type) {
+			pr_err(_("\"%s\": Invalid type for valve_hwisol \"%s\" (isolation valve expected)"), dhwt->name, dhwt->set.p.valve_hwisol->name);
+			ret = -EMISCONFIGURED;
+		}
 	}
 
 	// grab relay as needed
