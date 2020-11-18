@@ -71,10 +71,10 @@ static int boiler_hs_logdata_cb(struct s_log_data * const ldata, const void * co
 	ldata->values[i++] = aler(&hs->run.runmode);
 	ldata->values[i++] = aler(&hs->run.could_sleep);
 	ldata->values[i++] = aler(&hs->run.overtemp);
-	ldata->values[i++] = temp_to_ikelvin(aler(&hs->run.temp_request));
+	ldata->values[i++] = temp_to_int4log(aler(&hs->run.temp_request));
 
-	ldata->values[i++] = temp_to_ikelvin(aler(&boiler->run.target_temp));
-	ldata->values[i++] = temp_to_ikelvin(aler(&boiler->run.actual_temp));
+	ldata->values[i++] = temp_to_int4log(aler(&boiler->run.target_temp));
+	ldata->values[i++] = temp_to_int4log(aler(&boiler->run.actual_temp));
 
 	ldata->nvalues = i;
 

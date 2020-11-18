@@ -35,7 +35,6 @@ struct s_temp_deriv {
 };
 
 float temp_to_celsius(const temp_t temp);
-float temp_to_deltaK(const temp_t temp);
 
 temp_t temp_expw_mavg(const temp_t filtered, const temp_t new_sample, const timekeep_t tau, const timekeep_t dt);
 tempdiff_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_temp, const timekeep_t new_time, const timekeep_t tau);
@@ -63,10 +62,17 @@ tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrs
 #define temp_to_ikelvin(temp)		(int)((temp + KPRECISION/2)/KPRECISION)
 
 /**
-* Convert temperature from internal format to integer Kelvin (floored)
-* @param temp temp value as temp_t
-*/
+ * Convert temperature from internal format to integer Kelvin (floored)
+ * @param temp temp value as temp_t
+ */
 #define temp_to_ikelvind(temp)		((temp)/KPRECISION)
+
+/**
+ * Convert temperature from internal format to an integer value for logging.
+ * This converts to 10*Kelvin (floored). A Celsius value can be obtained from this value via (result/10 - 273).
+ * @param temp temp value as temp_t
+ */
+#define temp_to_int4log(temp)		(int)temp_to_ikelvind(temp*10)
 
 /**
  * Convert a temperature delta (in Kelvin) to internal type.

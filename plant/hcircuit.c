@@ -76,12 +76,12 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
 		return (-EOFFLINE);
 
 	ldata->values[i++] = aler(&circuit->run.runmode);
-	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.request_ambient));
-	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.target_ambient));
-	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.actual_ambient));
-	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.target_wtemp));
-	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.actual_wtemp));
-	ldata->values[i++] = temp_to_ikelvin(aler(&circuit->run.heat_request));
+	ldata->values[i++] = temp_to_int4log(aler(&circuit->run.request_ambient));
+	ldata->values[i++] = temp_to_int4log(aler(&circuit->run.target_ambient));
+	ldata->values[i++] = temp_to_int4log(aler(&circuit->run.actual_ambient));
+	ldata->values[i++] = temp_to_int4log(aler(&circuit->run.target_wtemp));
+	ldata->values[i++] = temp_to_int4log(aler(&circuit->run.actual_wtemp));
+	ldata->values[i++] = temp_to_int4log(aler(&circuit->run.heat_request));
 
 	ldata->nvalues = i;
 

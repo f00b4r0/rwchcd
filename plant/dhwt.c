@@ -79,8 +79,8 @@ static int dhwt_logdata_cb(struct s_log_data * const ldata, const void * const o
 	ldata->values[i++] = aler(&dhwt->run.force_on);
 	ldata->values[i++] = aler(&dhwt->run.legionella_on);
 	ldata->values[i++] = aler(&dhwt->run.electric_mode);
-	ldata->values[i++] = temp_to_ikelvin(aler(&dhwt->run.target_temp));
-	ldata->values[i++] = temp_to_ikelvin(aler(&dhwt->run.actual_temp));
+	ldata->values[i++] = temp_to_int4log(aler(&dhwt->run.target_temp));
+	ldata->values[i++] = temp_to_int4log(aler(&dhwt->run.actual_temp));
 
 	ldata->nvalues = i;
 

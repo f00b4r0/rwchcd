@@ -55,7 +55,7 @@ static int temps_logdata_cb(struct s_log_data * const ldata, const void * const 
 	for (id = 0; id < Inputs.temps.last; id++) {
 		ret = temperature_get(&Inputs.temps.all[id], &temp);
 		if (ALL_OK == ret)
-			ldata->values[id] = temp_to_ikelvin(temp);
+			ldata->values[id] = temp_to_int4log(temp);
 		else
 			ldata->values[id] = 0;
 	}

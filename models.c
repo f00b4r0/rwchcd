@@ -64,10 +64,10 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 
 	ldata->values[i++] = aler(&bmodel->run.summer);
 	ldata->values[i++] = aler(&bmodel->run.frost);
-	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out));
-	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out_filt));
-	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out_mix));
-	ldata->values[i++] = temp_to_ikelvin(aler(&bmodel->run.t_out_att));
+	ldata->values[i++] = temp_to_int4log(aler(&bmodel->run.t_out));
+	ldata->values[i++] = temp_to_int4log(aler(&bmodel->run.t_out_filt));
+	ldata->values[i++] = temp_to_int4log(aler(&bmodel->run.t_out_mix));
+	ldata->values[i++] = temp_to_int4log(aler(&bmodel->run.t_out_att));
 
 	ldata->nvalues = i;
 
