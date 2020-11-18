@@ -3,7 +3,7 @@
  <RRD::SETVAR width 1000>
  <RRD::SETVAR height 600>
  <RRD::GOODFOR 300>
- <RRD::SETVAR cdeftconv 273,->
+ <RRD::SETVAR cdeftconv 10,/,273,->
  <HTML>
  <HEAD>
  <TITLE>Bmodel</TITLE>

@@ -4,7 +4,7 @@
  <RRD::SETVAR rrdbhw /var/lib/rwchcd/log_hw_p1_temps>
  <RRD::SETVAR width 1200>
  <RRD::SETVAR height 600>
- <RRD::SETVAR cdeftconv 273,->
+ <RRD::SETVAR cdeftconv 10,/,273,->
  <RRD::SETVAR cdeftconvp1 TIME,1550342839,GT,1024,1000,IF,/,273,->
  <RRD::GOODFOR 300>
  <HTML>

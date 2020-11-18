@@ -2,7 +2,7 @@
  <RRD::SETVAR rrdb /var/lib/rwchcd/log_hcircuit_<RRD::CV::PATH hcircuit_name>>
  <RRD::SETVAR width 1000>
  <RRD::SETVAR height 400>
- <RRD::SETVAR cdeftconv 273,->
+ <RRD::SETVAR cdeftconv 10,/,273,->
  <RRD::GOODFOR 300>
  <HTML>
  <HEAD>
