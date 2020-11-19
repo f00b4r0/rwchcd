@@ -688,14 +688,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			temp64 *= boiler->run.turnon_curr_adj;
 			temp64 /= LIB_DERIV_FPDEC;
 
-			assert(temp64 < INT32_MAX);
-
 			temp = (temp_t)temp64;
-
-			dbgmsg(2, 1, "\%s\": orig trip_temp: %.1f, adj: %.1f, new: %.1f", heat->name, temp_to_celsius(trip_temp), temp_to_deltaK(temp), temp_to_celsius(trip_temp + temp));
-			dbgmsg(2, unlikely(temp > boiler->set.hysteresis/2), "adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(actual_temp), temp_deriv, boiler->run.turnon_curr_adj);
-
 			trip_temp += (temp > boiler->set.hysteresis/2) ? boiler->set.hysteresis/2 : temp;	// XXX cap adjustment at hyst/2
+			dbgmsg(2, unlikely(temp > boiler->set.hysteresis/2), "adj overflow: %.1f, curr temp: %.1f, deriv: %d, curradj: %d", temp_to_deltaK(temp), temp_to_celsius(actual_temp), temp_deriv, boiler->run.turnon_curr_adj);
 		}
 
 		// cap trip_temp at limit_tmax - hysteresis/2
