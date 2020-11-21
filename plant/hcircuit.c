@@ -583,9 +583,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				default:
 					break;
 			}
-			// elapsed_time can be uninitialized once in this dbgmsg(). We don't care
-			dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %u",
-			       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
 		}
 	}
 
@@ -614,6 +611,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		default:
 			break;
 	}
+
+	dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %u",
+	       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
 
 	// apply ambient shift
 	target_ambient += ambient_delta;
