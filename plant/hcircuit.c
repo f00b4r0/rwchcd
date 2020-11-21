@@ -500,7 +500,11 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 	}
 
-	// save current ambient request & runmode (needed by hcircuit_outhoff())
+	// apply offset
+	request_temp += SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
+	target_ambient = request_temp;
+
+	// save current ambient request (needed by hcircuit_outhoff())
 	aser(&circuit->run.request_ambient, request_temp);
 
 	// Check if the circuit meets run.outhoff conditions
@@ -529,8 +533,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	// XXX OPTIM if return temp is known
 
-	// apply offset
-	target_ambient = request_temp + SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
 
 	elapsed_time = now - circuit->run.ambient_update_time;
 

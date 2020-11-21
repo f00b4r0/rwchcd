@@ -152,7 +152,7 @@ struct s_hcircuit_params {
 	temp_t t_comfort;		///< target ambient temp in comfort mode
 	temp_t t_eco;			///< target ambient temp in eco mode
 	temp_t t_frostfree;		///< target ambient temp in frost-free mode
-	temp_t t_offset;		///< global offset adjustment for ambient targets
+	temp_t t_offset;		///< global offset adjustment for ambient targets (useful on a per-circuit basis to offset e.g. all default targets)
 	temp_t outhoff_comfort;		///< outdoor temp for no heating in comfort mode
 	temp_t outhoff_eco;		///< outdoor temp for no heating in eco mode
 	temp_t outhoff_frostfree;	///< outdoor temp for no heating in frostfree mode
