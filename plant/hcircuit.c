@@ -533,6 +533,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	// XXX OPTIM if return temp is known
 
+	if ((TRANS_UP == circuit->run.transition) && (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime))
+		target_ambient += circuit->set.tambient_boostdelta;	// apply boost target
 
 	elapsed_time = now - circuit->run.ambient_update_time;
 
@@ -572,10 +574,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 						circuit->run.ambient_update_time = now;
 					else if (elapsed_time > dtmin) {
 						circuit->run.ambient_update_time = now;
-						// converge over bmodel tau, include boost if any (XXX as applied in "handle transitions" below)
-						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient
-									      + ((circuit->run.trans_active_elapsed < circuit->set.boost_maxtime) ? circuit->set.tambient_boostdelta : 0),
-									      bmodel->set.tau, elapsed_time);
+						// converge over bmodel tau
+						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient, bmodel->set.tau, elapsed_time);
 					}
 					break;
 				case TRANS_NONE:
@@ -605,11 +605,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 		case TRANS_UP:
 			circuit->run.trans_active_elapsed += elapsed_time;
-			if (ambient_temp < (target_ambient - deltaK_to_temp(1))) {
-				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
-					ambient_delta = (tempdiff_t)circuit->set.tambient_boostdelta;	// override delta during boost
-			}
-			else
+			if (ambient_temp >= (target_ambient - deltaK_to_temp(1)))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_NONE:
