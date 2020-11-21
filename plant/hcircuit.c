@@ -596,7 +596,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
 			circuit->run.trans_active_elapsed += elapsed_time;
-			if (ambient_temp > (target_ambient + deltaK_to_temp(1))) {
+			if (ambient_temp > (request_temp + deltaK_to_temp(1))) {
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					new_runmode = RM_OFF;
 			}
@@ -605,7 +605,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 		case TRANS_UP:
 			circuit->run.trans_active_elapsed += elapsed_time;
-			if (ambient_temp >= (target_ambient - deltaK_to_temp(1)))
+			if (ambient_temp >= (request_temp - deltaK_to_temp(1)))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_NONE:
