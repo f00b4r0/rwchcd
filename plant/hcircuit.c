@@ -560,30 +560,26 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		else {
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
 			switch (circuit->run.transition) {
+				case TRANS_UP:
+					//  model up temp only if hcircuit wtempt is at least within 5K of target
+					if (aler(&circuit->run.actual_wtemp) <= (aler(&circuit->run.target_wtemp) - deltaK_to_temp(5))) {
+						circuit->run.ambient_update_time = now;
+						break;
+					}
+					// fallthrough - same computation applied on up and down
 				case TRANS_DOWN:
-					// transition down, apply logarithmic cooldown model
+					// apply logarithmic model
 					if (elapsed_time > dtmin) {
 						circuit->run.ambient_update_time = now;
 						// converge over bmodel tau
 						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient, bmodel->set.tau, elapsed_time);
 					}
 					break;
-				case TRANS_UP:
-					//  model up temp only if hcircuit wtempt is at least within 5K of target
-					if (aler(&circuit->run.actual_wtemp) <= (aler(&circuit->run.target_wtemp) - deltaK_to_temp(5)))
-						circuit->run.ambient_update_time = now;
-					else if (elapsed_time > dtmin) {
-						circuit->run.ambient_update_time = now;
-						// converge over bmodel tau
-						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient, bmodel->set.tau, elapsed_time);
-					}
-					break;
+				default:
 				case TRANS_NONE:
 					// no transition, ambient temp assumed to be request temp
 					ambient_temp = request_temp;
 					circuit->run.ambient_update_time = now;
-					break;
-				default:
 					break;
 			}
 		}
