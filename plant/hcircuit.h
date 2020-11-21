@@ -75,8 +75,8 @@ struct s_hcircuit {
 		timekeep_t rorh_update_time;	///< last time output was updated with respect to rorh
 		timekeep_t ambient_update_time;	///< ambient model last update time
 		timekeep_t trans_active_elapsed;///< time elapsed in active transitioning (when power output meats request)
-		_Atomic temp_t request_ambient;	///< current requested ambient target temp
-		_Atomic temp_t target_ambient;	///< current calculated ambient target temp (includes offset and computed shifts)
+		_Atomic temp_t request_ambient;	///< current requested ambient target temp (including set offset)
+		_Atomic temp_t target_ambient;	///< current calculated ambient target temp (includes computed shift based on actual ambient)
 		_Atomic temp_t actual_ambient;	///< actual ambient temperature (either from sensor, or modelled)
 		_Atomic temp_t target_wtemp;	///< current target water temp
 		_Atomic temp_t actual_wtemp;	///< actual water temperature

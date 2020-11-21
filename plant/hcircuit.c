@@ -521,9 +521,12 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		circuit->run.ambient_update_time = now;	// reset timer
 	}
 
+	elapsed_time = now - circuit->run.ambient_update_time;
+
 	// handle extra transition logic
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
+			circuit->run.trans_active_elapsed += elapsed_time;
 			// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
 			if (circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute)
 				circuit->run.floor_output = true;
@@ -532,6 +535,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				new_runmode = RM_OFF;
 			break;
 		case TRANS_UP:
+			circuit->run.trans_active_elapsed += elapsed_time;
 			// apply boost target
 			if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
 				target_ambient += circuit->set.tambient_boostdelta;
@@ -541,13 +545,13 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 	}
 
+	aser(&circuit->run.runmode, new_runmode);
+
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
 	if (!circuit->pdata->run.consumer_sdelay)
 		circuit->run.floor_output = false;
 
 	// XXX OPTIM if return temp is known
-
-	elapsed_time = now - circuit->run.ambient_update_time;
 
 	// Ambient temperature is either read or modelled
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
@@ -596,18 +600,17 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		}
 	}
 
-	// store current ambient temp
+	// store current ambient & target temp
 	aser(&circuit->run.actual_ambient, ambient_temp);
+	aser(&circuit->run.target_ambient, target_ambient);
 
 	// handle transitions - transition is over when we are 1K from target
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
-			circuit->run.trans_active_elapsed += elapsed_time;
 			if (ambient_temp <= (request_temp + deltaK_to_temp(1)))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_UP:
-			circuit->run.trans_active_elapsed += elapsed_time;
 			if (ambient_temp >= (request_temp - deltaK_to_temp(1)))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
@@ -618,9 +621,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %u",
 	       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
-
-	aser(&circuit->run.runmode, new_runmode);
-	aser(&circuit->run.target_ambient, target_ambient);
 
 	return (ALL_OK);
 }
