@@ -554,12 +554,12 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			// otherwise apply transition models. Circuit cannot be RM_OFF here
 			switch (circuit->run.transition) {
 				case TRANS_DOWN:
-					// transition down, apply logarithmic cooldown model - will underestimate temp
+					// transition down, apply logarithmic cooldown model
 					if (elapsed_time > dtmin) {
 						circuit->run.ambient_update_time = now;
 						circuit->run.trans_active_elapsed += elapsed_time;
-						// converge over 3* bmodel tau
-						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient, 3*bmodel->set.tau, elapsed_time);
+						// converge over bmodel tau
+						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient, bmodel->set.tau, elapsed_time);
 					}
 					break;
 				case TRANS_UP:
