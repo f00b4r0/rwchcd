@@ -219,7 +219,6 @@ __attribute__((warn_unused_result)) static int mqtt_setup(void * priv)
 
 	mosquitto_message_callback_set(hw->mosq, mqtt_message_callback);
 
-	pr_log(_("MQTT backend init"));
 	hw->run.initialized = true;
 
 	return (ALL_OK);

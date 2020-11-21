@@ -32,7 +32,6 @@ __attribute__((warn_unused_result)) static int dummy_setup(void * priv)
 	if (!hw)
 		return (-EINVALID);
 
-	pr_log(_("Dummy backend init"));
 	hw->run.initialized = true;
 
 	return (ALL_OK);
