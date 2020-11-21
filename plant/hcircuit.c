@@ -527,8 +527,13 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		circuit->run.floor_output = true;
 
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
-	if (!circuit->pdata->run.consumer_sdelay)
+	if (!circuit->pdata->run.consumer_sdelay) {
 		circuit->run.floor_output = false;
+
+		// if fast cooldown is possible, turn off circuit
+		if (can_fastcool)
+			new_runmode = RM_OFF;
+	}
 
 	// XXX OPTIM if return temp is known
 
@@ -591,11 +596,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
 			circuit->run.trans_active_elapsed += elapsed_time;
-			if (ambient_temp > (request_temp + deltaK_to_temp(1))) {
-				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
-					new_runmode = RM_OFF;
-			}
-			else
+			if (ambient_temp <= (request_temp + deltaK_to_temp(1)))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_UP:
