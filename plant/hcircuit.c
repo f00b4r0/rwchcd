@@ -365,9 +365,11 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
  * State is preserved in all other cases.
  * Using t_out_mix instead of raw t_out_filt will make it possible to "weigh" the
  * influence of the building time constant per circuit (assuming a different t_out_mix ratio).
+ * @param circuit the target circuit
+ * @param runmode the target runmode for this circuit
  * @note This function needs run.request_ambient to be set prior calling for optimal operation
  */
-static void hcircuit_outhoff(struct s_hcircuit * const circuit)
+static void hcircuit_outhoff(struct s_hcircuit * const circuit, const enum e_runmode runmode)
 {
 	const struct s_bmodel * restrict const bmodel = circuit->set.p.bmodel;
 	temp_t temp_trigger, temp_request, t_out, t_out_mix;
@@ -382,7 +384,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit)
 		return;
 	}
 
-	switch (aler(&circuit->run.runmode)) {
+	switch (runmode) {
 		case RM_COMFORT:
 			temp_trigger = SETorDEF(circuit->set.params.outhoff_comfort, circuit->pdata->set.def_hcircuit.outhoff_comfort);
 			break;
@@ -500,10 +502,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	// save current ambient request & runmode (needed by hcircuit_outhoff())
 	aser(&circuit->run.request_ambient, request_temp);
-	aser(&circuit->run.runmode, new_runmode);
 
 	// Check if the circuit meets run.outhoff conditions
-	hcircuit_outhoff(circuit);
+	hcircuit_outhoff(circuit, new_runmode);
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
 	if (circuit->run.outhoff && !aler(&bmodel->run.frost))
 		new_runmode = RM_OFF;
