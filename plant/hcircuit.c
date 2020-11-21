@@ -521,24 +521,31 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		circuit->run.ambient_update_time = now;	// reset timer
 	}
 
-	// handle extra logic
-	// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
-	if ((TRANS_DOWN == circuit->run.transition) && circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute)
-		circuit->run.floor_output = true;
-
-	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
-	if (!circuit->pdata->run.consumer_sdelay) {
-		circuit->run.floor_output = false;
-
-		// if fast cooldown is possible, turn off circuit
-		if (can_fastcool)
-			new_runmode = RM_OFF;
+	// handle extra transition logic
+	switch (circuit->run.transition) {
+		case TRANS_DOWN:
+			// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
+			if (circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute)
+				circuit->run.floor_output = true;
+			// if fast cooldown is possible, turn off circuit
+			if (!circuit->run.floor_output && can_fastcool)
+				new_runmode = RM_OFF;
+			break;
+		case TRANS_UP:
+			// apply boost target
+			if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
+				target_ambient += circuit->set.tambient_boostdelta;
+			break;
+		case TRANS_NONE:
+		default:
+			break;
 	}
 
-	// XXX OPTIM if return temp is known
+	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
+	if (!circuit->pdata->run.consumer_sdelay)
+		circuit->run.floor_output = false;
 
-	if ((TRANS_UP == circuit->run.transition) && (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime))
-		target_ambient += circuit->set.tambient_boostdelta;	// apply boost target
+	// XXX OPTIM if return temp is known
 
 	elapsed_time = now - circuit->run.ambient_update_time;
 
