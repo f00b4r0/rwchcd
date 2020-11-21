@@ -531,13 +531,15 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// apply offset
 	target_ambient = request_temp + SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
 
+	elapsed_time = now - circuit->run.ambient_update_time;
+
 	// Ambient temperature is either read or modelled
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 												// calculate ambient shift based on measured ambient temp influence in percent
 		ambient_delta = (circuit->set.ambient_factor) * (tempdiff_t)(target_ambient - ambient_temp) / 100;
+		circuit->run.ambient_update_time = now;
 	}
 	else {	// no sensor (or faulty), apply ambient model
-		elapsed_time = now - circuit->run.ambient_update_time;
 		dtmin = expw_mavg_dtmin(3*bmodel->set.tau);
 
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
@@ -557,7 +559,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 					// transition down, apply logarithmic cooldown model
 					if (elapsed_time > dtmin) {
 						circuit->run.ambient_update_time = now;
-						circuit->run.trans_active_elapsed += elapsed_time;
 						// converge over bmodel tau
 						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient, bmodel->set.tau, elapsed_time);
 					}
@@ -568,7 +569,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 						circuit->run.ambient_update_time = now;
 					else if (elapsed_time > dtmin) {
 						circuit->run.ambient_update_time = now;
-						circuit->run.trans_active_elapsed += elapsed_time;
 						// converge over bmodel tau, include boost if any (XXX as applied in "handle transitions" below)
 						ambient_temp = temp_expw_mavg(ambient_temp, target_ambient
 									      + ((circuit->run.trans_active_elapsed < circuit->set.boost_maxtime) ? circuit->set.tambient_boostdelta : 0),
@@ -592,6 +592,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// handle transitions - transition is over when we are 1K from target
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
+			circuit->run.trans_active_elapsed += elapsed_time;
 			if (ambient_temp > (target_ambient + deltaK_to_temp(1))) {
 				if (can_fastcool)	// if fast cooldown is possible, turn off circuit
 					new_runmode = RM_OFF;
@@ -600,6 +601,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_UP:
+			circuit->run.trans_active_elapsed += elapsed_time;
 			if (ambient_temp < (target_ambient - deltaK_to_temp(1))) {
 				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
 					ambient_delta = (tempdiff_t)circuit->set.tambient_boostdelta;	// override delta during boost
