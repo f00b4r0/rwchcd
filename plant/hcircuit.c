@@ -447,7 +447,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	const struct s_schedule_eparams * eparams;
 	const struct s_bmodel * restrict bmodel;
 	enum e_runmode prev_runmode, new_runmode;
-	tempdiff_t ambient_delta = 0;
 	temp_t request_temp, target_ambient, ambient_temp;
 	timekeep_t elapsed_time, dtmin;
 	const timekeep_t now = timekeep_now();
@@ -541,7 +540,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// Ambient temperature is either read or modelled
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 												// calculate ambient shift based on measured ambient temp influence in percent
-		ambient_delta = (circuit->set.ambient_factor) * (tempdiff_t)(target_ambient - ambient_temp) / 100;
+		target_ambient += (circuit->set.ambient_factor) * (tempdiff_t)(target_ambient - ambient_temp) / 100;
 		circuit->run.ambient_update_time = now;
 	}
 	else {	// no sensor (or faulty), apply ambient model
@@ -611,9 +610,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %u",
 	       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
-
-	// apply ambient shift
-	target_ambient += ambient_delta;
 
 	aser(&circuit->run.runmode, new_runmode);
 	aser(&circuit->run.target_ambient, target_ambient);
