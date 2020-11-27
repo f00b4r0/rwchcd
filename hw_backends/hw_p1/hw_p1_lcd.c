@@ -395,7 +395,7 @@ static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata 
 			lcd->sysmchg = false;
 	}
 	else
-		memcpy(buf+6, hw_p1_temp_to_str(hw, lcd->sensor), 10);
+		memcpy(buf+6, hw_p1_temp_to_str(hw, lcd->sensor), 9);	// do not memcpy the terminating NULL char
 
 	return (hw_p1_lcd_wline(lcd, buf, LCD_LINELEN, 0, 0));
 }
