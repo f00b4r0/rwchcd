@@ -25,6 +25,10 @@
 #include "storage.h"
 #include "rwchcd.h"
 
+#ifndef RWCHCD_STORAGE_PATH
+ #define RWCHCD_STORAGE_PATH	"/var/lib/rwchcd/"	///< default filesystem path to permanent storage area. Can be overriden in Makefile or in configuration
+#endif
+
 #define STORAGE_VERSION		1UL
 
 #define STORAGE_DB		"rwchcd.db"	///< BDB filename

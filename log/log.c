@@ -24,6 +24,7 @@
 
 #define LOG_PREFIX	"log"			///< prefix for log names
 #define LOG_FMT_SUFFIX	".fmt"			///< suffix for log format names
+#define MAX_FILENAMELEN	255			///< maximum filename length
 
 /** Log sources linked list */
 struct s_log_list {
