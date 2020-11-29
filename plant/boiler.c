@@ -681,6 +681,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 		// compute anticipation-corrected trip_temp - only on decreasing temperature
 		if (temp_deriv < 0) {
+			// curr_adj = time necessary for deriv to cross 0 divided by deriv at burner turn on: dt / (dT/dt) == dt^2 / dT
+			// adjust = temp_deriv^2 * curr_adj: (dT^2/dt^2) * (dt^2/dT) == dT
 			uint64_t temp64 = (unsigned)-temp_deriv;
 			temp64 *= (unsigned)-temp_deriv;
 			// The above two lines are the only construct that yields the expected assembly result (rsb/umull)
