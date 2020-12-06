@@ -205,6 +205,7 @@ void log_mqtt_hook(const struct s_log_bendcbs ** restrict const callbacks)
 	*callbacks = &log_mqtt_cbs;
 }
 
+#ifdef HAS_FILECFG
 void log_mqtt_filecfg_dump(void)
 {
 	if (!Log_mqtt.run.online)
@@ -282,4 +283,4 @@ fail:
 
 	return (ret);
 }
-
+#endif /* HAS_FILECFG */
