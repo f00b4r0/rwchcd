@@ -719,7 +719,8 @@ int valve_run(struct s_valve * const valve)
 
 	valve->run.last_run_time = now;
 
-	assert(dt < valve->set.ete_time);	// approximation of overflow limit
+	if (unlikely(dt > valve->set.ete_time))
+		dt = valve->set.ete_time;	// approximation of overflow limit
 	course = (int_least16_t)((dt * perth_ptk + perthmult/2) / perthmult);	// we don't keep track of residual because we're already in ‰.
 
 	// update counters
