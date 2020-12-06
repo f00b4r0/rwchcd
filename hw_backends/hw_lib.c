@@ -34,22 +34,24 @@
  * @param R0 nominal resistance at 0C
  * @param A precomputed A parameter
  * @param B precomputed B parameter
- * @param ohm the resistance value to convert
+ * @param res the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((const)) static float quadratic_cvd(const float R0, const float A, const float B, const uint_least16_t ohm)
+__attribute__((const)) static float quadratic_cvd(const float R0, const float A, const float B, const res_t res)
 {
+	const float ohm = (float)res/RES_OHMMULT;
+
 	// quadratic fit: we're going to ignore the cubic term given the temperature range we're looking at
-	return ((-R0*A + sqrtf(R0*R0*A*A - 4.0F*R0*B*(R0 - (float)ohm))) / (2.0F*R0*B));
+	return ((-R0*A + sqrtf(R0*R0*A*A - 4.0F*R0*B*(R0 - ohm))) / (2.0F*R0*B));
 }
 
 /**
  * Convert Pt1000 resistance value to actual temperature.
  * Use European Standard values.
- * @param ohm the resistance value to convert
+ * @param res the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((const)) float hw_lib_pt1000_ohm_to_celsius(const uint_least16_t ohm)
+__attribute__((const)) float hw_lib_pt1000_res_to_celsius(const res_t res)
 {
 	const float R0 = 1000.0F;
 	const float alpha = 0.003850F;
@@ -60,20 +62,20 @@ __attribute__((const)) float hw_lib_pt1000_ohm_to_celsius(const uint_least16_t o
 	const float B = (-alpha * delta) / (100 * 100);
 	//C = (-alpha * beta) / (100 * 100 * 100 * 100);	// only for t < 0
 
-	return (quadratic_cvd(R0, A, B, ohm));
+	return (quadratic_cvd(R0, A, B, res));
 }
 
 /**
  * Convert Ni1000 resistance value to actual temperature.
  * Use DIN 43760 with temp coef of 6178ppm/K.
- * @param ohm the resistance value to convert
+ * @param res the resistance value to convert
  * @return temperature in Celsius
  */
-__attribute__((const)) float hw_lib_ni1000_ohm_to_celsius(const uint_least16_t ohm)
+__attribute__((const)) float hw_lib_ni1000_res_to_celsius(const res_t res)
 {
 	const float R0 = 1000.0F;
 	const float A = 5.485e-3F;
 	const float B = 6.650e-6F;
 
-	return (quadratic_cvd(R0, A, B, ohm));
+	return (quadratic_cvd(R0, A, B, res));
 }

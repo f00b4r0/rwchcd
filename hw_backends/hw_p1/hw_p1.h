@@ -77,8 +77,8 @@ struct s_hw_p1_pdata {
 		bool online;			///< hardware is online (online() succeeded)
 		timekeep_t sensors_ftime;	///< sensors fetch time
 		timekeep_t last_calib;		///< time of last calibration
-		uint_fast16_t calib_nodac;	///< sensor calibration value without dac offset (as an ohm value read)
-		uint_fast16_t calib_dac;	///< sensor calibration value with dac offset (as on ohm value read)
+		res_t calib_nodac;		///< sensor calibration value without dac offset
+		res_t calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version
 	} run;		///< private runtime (internally handled)
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data
@@ -92,7 +92,7 @@ struct s_hw_p1_pdata {
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
 
-typedef float ohm_to_celsius_ft(const uint_fast16_t);	///< ohm-to-celsius function prototype
+typedef float ohm_to_celsius_ft(const res_t);	///< res-to-celsius function prototype
 
 ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw_p1_sensor * restrict const sensor);
 

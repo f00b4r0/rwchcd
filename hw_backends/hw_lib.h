@@ -18,7 +18,10 @@
 #include "timekeep.h"
 #include "filecfg/parse/filecfg_parser.h"
 
-float hw_lib_pt1000_ohm_to_celsius(const uint_least16_t ohm);
-float hw_lib_ni1000_ohm_to_celsius(const uint_least16_t ohm);
+typedef	uint32_t	res_t;	///< resistance value
+#define RES_OHMMULT	16	///< resistor value precision: 16 -> better than 0.1 ohm precision
+
+float hw_lib_pt1000_res_to_celsius(const res_t res);
+float hw_lib_ni1000_res_to_celsius(const res_t res);
 
 #endif /* hw_lib_h */
