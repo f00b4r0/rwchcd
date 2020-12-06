@@ -23,21 +23,12 @@
 
 #define RELAY_MAX_ID		14	///< maximum valid relay id
 
-/** valid types of temperature sensors */
-enum e_hw_p1_stype {
-	HW_P1_ST_NONE = 0,	///< No type, misconfiguration
-	HW_P1_ST_PT1000,	///< PT1000 sensor. Config `PT1000`
-	HW_P1_ST_NI1000,	///< NI1000 sensor. Config `NI1000`
-	/*	ST_PT100,
-	 ST_LGNI1000, */
-};
-
 /** software representation of a hardware sensor. */
 struct s_hw_p1_sensor {
 	struct {
 		bool configured;	///< sensor is configured
 		uint_fast8_t channel;	///< sensor channel, numbered from 1 to 15
-		enum e_hw_p1_stype type;///< sensor type
+		enum e_hw_lib_rtdt type;///< sensor type
 		tempdiff_t offset;	///< sensor value offset
 	} set;		///< settings (externally set)
 	struct {
@@ -91,10 +82,6 @@ struct s_hw_p1_pdata {
 	uint_fast8_t scount[RWCHC_NTSENSORS];	///< counter for decimation
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
-
-typedef float ohm_to_celsius_ft(const res_t);	///< res-to-celsius function prototype
-
-ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw_p1_sensor * restrict const sensor);
 
 int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw);

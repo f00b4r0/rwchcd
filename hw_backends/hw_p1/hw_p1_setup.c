@@ -125,8 +125,8 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 		return (-EEXISTS);
 
 	// ensure valid type
-	if (!hw_p1_sensor_o_to_c(sensor))
-		return (-EUNKNOWN);
+	if (!sensor->set.type)
+		return (-EINVALID);
 
 	str = strdup(sensor->name);
 	if (!str)

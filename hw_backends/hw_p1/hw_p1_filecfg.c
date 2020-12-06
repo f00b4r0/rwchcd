@@ -24,12 +24,6 @@
 #include "hw_p1_filecfg.h"
 
 
-static const char * const sensor_type_str[] = {
-	[HW_P1_ST_NONE] = "",
-	[HW_P1_ST_PT1000] = "PT1000",
-	[HW_P1_ST_NI1000] = "NI1000",
-};
-
 static void config_dump(const struct s_hw_p1_pdata * restrict const hw)
 {
 	assert(hw);
@@ -51,26 +45,13 @@ static void config_dump(const struct s_hw_p1_pdata * restrict const hw)
  */
 static void sensor_dump(const struct s_hw_p1_sensor * const sensor)
 {
-	const char * type;
-
 	if (!sensor->set.configured)
 		return;
-
-	switch (sensor->set.type) {
-		case HW_P1_ST_PT1000:
-		case HW_P1_ST_NI1000:
-			type = sensor_type_str[sensor->set.type];
-			break;
-		case HW_P1_ST_NONE:
-		default:
-			type = sensor_type_str[HW_P1_ST_NONE];
-			break;
-	}
 
 	filecfg_iprintf("sensor \"%s\" {\n", sensor->name);
 	filecfg_ilevel_inc();
 	filecfg_iprintf("channel %d;\n", sensor->set.channel);
-	filecfg_dump_nodestr("type", type);
+	filecfg_dump_nodestr("type", hw_lib_print_rtdtype(sensor->set.type));
 	if (FCD_Exhaustive || sensor->set.offset)
 		filecfg_dump_deltaK("offset", sensor->set.offset);
 	filecfg_ilevel_dec();
@@ -199,7 +180,6 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	struct s_hw_p1_sensor sensor;
 	const char * sensor_stype;
 	float sensor_offset;
-	unsigned int i;
 	int ret;
 
 	// match children
@@ -217,12 +197,11 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 	sensor.set.offset = deltaK_to_tempdiff(sensor_offset);
 
 	// match stype
-	for (i = 0; i < ARRAY_SIZE(sensor_type_str); i++) {
-		if (!strcmp(sensor_type_str[i], sensor_stype)) {
-			sensor.set.type = i;
-			break;
-		}
-	}
+	ret = hw_lib_match_rtdtype(sensor_stype);
+	if (ret < 0)
+		return (ret);
+	else
+		sensor.set.type = ret;
 
 	sensor.name = node->value.stringval;	// will be copied in sensor_configure()
 
@@ -233,9 +212,6 @@ static int sensor_parse(void * restrict const priv, const struct s_filecfg_parse
 			break;
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a sensor with the same name or id is already configured"), node->lineno);
-			break;
-		case -EUNKNOWN:
-			filecfg_parser_pr_err(_("Line %d: unknown sensor type \"%s\""), parsers[1].node->lineno, sensor_stype);
 			break;
 		default:
 			break;

@@ -83,25 +83,6 @@ __attribute__((pure)) static res_t sensor_to_res(const struct s_hw_p1_pdata * re
 }
 
 /**
- * Return a sensor ohm to celsius converter callback based on sensor type.
- * @param sensor the target sensor
- * @return correct function pointer for sensor type or NULL if invalid type
- */
-__attribute__ ((pure)) ohm_to_celsius_ft * hw_p1_sensor_o_to_c(const struct s_hw_p1_sensor * restrict const sensor)
-{
-	assert(sensor);
-	switch (sensor->set.type) {
-		case HW_P1_ST_PT1000:
-			return (hw_lib_pt1000_res_to_celsius);
-		case HW_P1_ST_NI1000:
-			return (hw_lib_ni1000_res_to_celsius);
-		case HW_P1_ST_NONE:
-		default:
-			return (NULL);
-	}
-}
-
-/**
  * Raise an alarm for a specific sensor.
  * This function raises an alarm if the sensor's temperature is invalid.
  * @param sensor target sensor
@@ -148,7 +129,6 @@ static int sensor_alarm(const struct s_hw_p1_sensor * const sensor, const int er
 static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 {
 	struct s_hw_p1_sensor * sensor;
-	ohm_to_celsius_ft * o_to_c;
 	res_t res;
 	uint_fast8_t i;
 	temp_t previous, current;
@@ -163,10 +143,8 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 		}
 
 		res = sensor_to_res(hw, hw->sensors[i], true);
-		o_to_c = hw_p1_sensor_o_to_c(sensor);
-		assert(o_to_c);
-
-		current = celsius_to_temp(o_to_c(res));
+		// R0 hardcoded: HWP1 only supports R0 = 1000 ohms
+		current = celsius_to_temp(hw_lib_rtd_res_to_celsius(sensor->set.type, hw_lib_ohm_to_res(1000), res));
 		previous = aler(&sensor->run.value);
 
 		if (current <= RWCHCD_TEMPMIN) {
@@ -387,7 +365,7 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 		if ((newcalib_nodac < VALID_CALIB_MIN) || (newcalib_nodac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
 		test = hw->run.calib_nodac - newcalib_nodac;
-		if ((abs((signed)test) > 5*RES_OHMMULT) && hw->run.calib_nodac) {
+		if ((abs((signed)test) > hw_lib_ohm_to_res(5)) && hw->run.calib_nodac) {
 			dbgerr("ignoring calib nodac excess! old: %d, new: %d, diff: %d", hw->run.calib_nodac, newcalib_nodac, test);
 			return (ALL_OK);
 		}
@@ -405,7 +383,7 @@ int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw)
 		if ((newcalib_dac < VALID_CALIB_MIN) || (newcalib_dac > VALID_CALIB_MAX))	// don't store invalid values
 			return (-EINVALID);	// should not happen
 		test = hw->run.calib_dac - newcalib_dac;
-		if ((abs((signed)test) > 5*RES_OHMMULT) && hw->run.calib_dac) {
+		if ((abs((signed)test) > hw_lib_ohm_to_res(5)) && hw->run.calib_dac) {
 			dbgerr("ignoring calib dac excess! old: %d, new: %d, diff: %d", hw->run.calib_dac, newcalib_dac, test);
 			return (ALL_OK);
 		}
