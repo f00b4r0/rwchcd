@@ -41,7 +41,7 @@ static const char * mqtt_outtype_subtopics[] = {
 static const char * mqtt_intype_subtopics[] = {
 	[HW_INPUT_NONE]		= "",	// should never happen
 	[HW_INPUT_TEMP]		= "temperatures",
-	[HW_INPUT_SWITCH]	= "switchs",
+	[HW_INPUT_SWITCH]	= "switches",
 };
 
 /**
@@ -174,8 +174,8 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 				return;
 			id = (inid_t)ret;
 
-			aser(&hw->in.switchs.all[id].run.state, u.inswitch);
-			aser(&hw->in.switchs.all[id].run.tstamp, timekeep_now());
+			aser(&hw->in.switches.all[id].run.state, u.inswitch);
+			aser(&hw->in.switches.all[id].run.tstamp, timekeep_now());
 		case HW_INPUT_NONE:
 		default:
 			return;	// not for us
@@ -260,7 +260,7 @@ static int mqtt_online(void * priv)
 					continue;
 				break;
 			case HW_INPUT_SWITCH:
-				if (!hw->in.switchs.l)
+				if (!hw->in.switches.l)
 					continue;
 				break;
 			case HW_INPUT_NONE:
@@ -386,14 +386,14 @@ static void mqtt_exit(void * priv)
 	for (id = 0; (id < hw->in.temps.l); id++)
 		free((void *)hw->in.temps.all[id].name);
 
-	for (id = 0; (id < hw->in.switchs.l); id++)
-		free((void *)hw->in.switchs.all[id].name);
+	for (id = 0; (id < hw->in.switches.l); id++)
+		free((void *)hw->in.switches.all[id].name);
 
 	for (id = 0; (id < hw->out.rels.l); id++)
 		free((void *)hw->out.rels.all[id].name);
 
 	free(hw->in.temps.all);
-	free(hw->in.switchs.all);
+	free(hw->in.switches.all);
 	free(hw->out.rels.all);
 
 	free(hw);
@@ -481,7 +481,7 @@ static const char * mqtt_input_name(void * const priv, const enum e_hw_input_typ
 			str = (inid >= hw->in.temps.l) ? NULL : hw->in.temps.all[inid].name;
 			break;
 		case HW_INPUT_SWITCH:
-			str = (inid >= hw->in.switchs.l) ? NULL : hw->in.switchs.all[inid].name;
+			str = (inid >= hw->in.switches.l) ? NULL : hw->in.switches.all[inid].name;
 			break;
 		case HW_OUTPUT_NONE:
 		default:
@@ -520,9 +520,9 @@ int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, con
 			value->temperature = aler(&u.t->run.value);
 			break;
 		case HW_INPUT_SWITCH:
-			if (unlikely((inid >= hw->in.switchs.l)))
+			if (unlikely((inid >= hw->in.switches.l)))
 				return (-EINVALID);
-			u.s = &hw->in.switchs.all[inid];
+			u.s = &hw->in.switches.all[inid];
 			if (unlikely(!u.s->set.configured))
 				return (-ENOTCONFIGURED);
 			value->inswitch = aler(&u.s->run.state);
@@ -558,11 +558,11 @@ static int mqtt_input_time_get(void * const priv, const enum e_hw_input_type typ
 			*ctime = aler(&hw->in.temps.all[inid].run.tstamp);
 			break;
 		case HW_INPUT_SWITCH:
-			if (unlikely((inid >= hw->in.switchs.l)))
+			if (unlikely((inid >= hw->in.switches.l)))
 				return (-EINVALID);
-			if (unlikely(!hw->in.switchs.all[inid].set.configured))
+			if (unlikely(!hw->in.switches.all[inid].set.configured))
 				return (-ENOTCONFIGURED);
-			*ctime = aler(&hw->in.switchs.all[inid].run.tstamp);
+			*ctime = aler(&hw->in.switches.all[inid].run.tstamp);
 			break;
 		case HW_INPUT_NONE:
 		default:
@@ -602,10 +602,10 @@ int mqtt_input_ibn(void * const priv, const enum e_hw_input_type type, const cha
 			}
 			break;
 		case HW_INPUT_SWITCH:
-			for (id = 0; (id < hw->in.switchs.l); id++) {
-				if (!hw->in.switchs.all[id].set.configured)
+			for (id = 0; (id < hw->in.switches.l); id++) {
+				if (!hw->in.switches.all[id].set.configured)
 					continue;
-				if (!strcmp(hw->in.switchs.all[id].name, name)) {
+				if (!strcmp(hw->in.switches.all[id].name, name)) {
 					ret = (int)id;
 					break;
 				}

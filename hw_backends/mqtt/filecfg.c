@@ -23,7 +23,7 @@ backend "toto" {
  		temperature "test1";
  		...
  	};
-	switchs {
+	switches {
 		switch "in";
 		...
 	};
@@ -98,25 +98,25 @@ static int switch_parse(void * restrict const priv, const struct s_filecfg_parse
 	if (node->children)
 		return(-ENOTWANTED);
 
-	if (hw->in.switchs.l >= hw->in.switchs.n)
+	if (hw->in.switches.l >= hw->in.switches.n)
 		return (-EOOM);
 
 	if (-ENOTFOUND != mqtt_input_ibn(hw, HW_INPUT_SWITCH, node->value.stringval))
 		return (-EEXISTS);
 
-	s = &hw->in.switchs.all[hw->in.switchs.l];
+	s = &hw->in.switches.all[hw->in.switches.l];
 
 	s->name = strdup(node->value.stringval);
 	if (!s->name)
 		return (-EOOM);
 
 	s->set.configured = true;
-	hw->in.switchs.l++;
+	hw->in.switches.l++;
 
 	return (ALL_OK);
 }
 
-static int switchs_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int switches_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_mqtt_pdata * const hw = priv;
 	unsigned int n;
@@ -129,11 +129,11 @@ static int switchs_parse(void * restrict const priv, const struct s_filecfg_pars
 	if (n >= INID_MAX)
 		return (-ETOOBIG);
 
-	hw->in.switchs.all = calloc(n, sizeof(hw->in.switchs.all[0]));
-	if (!hw->in.switchs.all)
+	hw->in.switches.all = calloc(n, sizeof(hw->in.switches.all[0]));
+	if (!hw->in.switches.all)
 		return (-EOOM);
 
-	hw->in.switchs.n = (inid_t)n;
+	hw->in.switches.n = (inid_t)n;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "switch", switch_parse));
 }
@@ -244,7 +244,7 @@ int mqtt_filecfg_parse(const struct s_filecfg_parser_node * const node)
 	struct s_filecfg_parser_parsers mqtt_parsers[] = {
 		{ NODESTC,	"type",		true,	type_parse,		NULL, },
 		{ NODELST,	"temperatures",	false,	temperatures_parse,	NULL, },
-		{ NODELST,	"switches",	false,	switchs_parse,		NULL, },
+		{ NODELST,	"switches",	false,	switches_parse,		NULL, },
 		{ NODELST,	"relays",	false,	relays_parse,		NULL, },
 	};
 	struct s_mqtt_pdata * hw;

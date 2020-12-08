@@ -80,8 +80,8 @@ struct s_mqtt_pdata {
 		struct {
 			inid_t n;///< number of allocated switches
 			inid_t l;///< last free switch slot
-			struct s_mqtt_switch * all;	///< pointer to array of input switchs size #n
-		} switchs;
+			struct s_mqtt_switch * all;	///< pointer to array of input switches size #n
+		} switches;
 	} in;
 	struct {
 		struct {
