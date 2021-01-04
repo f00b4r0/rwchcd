@@ -171,7 +171,7 @@ static int log_mqtt_update(const char * restrict const identifier, const struct 
 		}
 		strcpy(topic + (basesize - 1), log_data->keys[i]);	// append leaf topic
 
-		msize = snprintf(message, 16, "%d", log_data->values[i]);
+		msize = snprintf(message, 16, "%d", log_data->values[i].i);
 		assert(msize < 16);
 
 		ret = mosquitto_publish(Log_mqtt.mosq, NULL, topic, msize, message, Log_mqtt.set.qos, false);

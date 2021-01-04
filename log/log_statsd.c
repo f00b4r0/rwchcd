@@ -199,12 +199,12 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 		zerofirst = false;
 
 		switch (log_data->metrics[i]) {
-			case LOG_METRIC_GAUGE:
+			case LOG_METRIC_IGAUGE:
 				mtype = 'g';
-				if (log_data->values[i] < 0)
+				if (log_data->values[i].i < 0)
 					zerofirst = true;
 				break;
-			case LOG_METRIC_COUNTER:
+			case LOG_METRIC_ICOUNTER:
 				mtype = 'c';
 				break;
 			default:
@@ -220,7 +220,7 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 				goto cleanup;
 			}
 		}
-		ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - (size_t)ret, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i], mtype);
+		ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - (size_t)ret, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
 		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
 			ret = -ESTORE;
 			goto cleanup;

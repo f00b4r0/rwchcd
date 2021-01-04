@@ -49,7 +49,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 		return (-EINVALID);	// data not ready
 
 	for (i = 0; i < hw->settings.nsensors; i++)
-		ldata->values[i] = aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset;
+		ldata->values[i].i = aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset;
 
 	ldata->nvalues = i;
 
@@ -69,7 +69,7 @@ static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const
 		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
 	};
 	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE,
 	};
 	static struct s_log_source HW_P1_temps_lsrc;
 

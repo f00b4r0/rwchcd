@@ -69,8 +69,14 @@ static int log_file_update(const char * restrict const identifier, const struct 
 
 	// write csv data
 	fprintf(file, "%ld;", time(NULL));
-	for (i = 0; i < log_data->nvalues; i++)
-		fprintf(file, "%d;", log_data->values[i]);
+	for (i = 0; i < log_data->nvalues; i++) {
+		switch (log_data->metrics[i]) {
+			case LOG_METRIC_IGAUGE:
+			case LOG_METRIC_ICOUNTER:
+				fprintf(file, "%d;", log_data->values[i].i);
+				break;
+		}
+	}
 	for (i = (log_data->nkeys - log_data->nvalues); i; i--)
 		fprintf(file, ";");
 	fprintf(file, "\n");

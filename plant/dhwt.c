@@ -73,14 +73,14 @@ static int dhwt_logdata_cb(struct s_log_data * const ldata, const void * const o
 	if (!dhwt->run.online)
 		return (-EOFFLINE);
 
-	ldata->values[i++] = aler(&dhwt->run.runmode);
-	ldata->values[i++] = aler(&dhwt->run.charge_on);
-	ldata->values[i++] = aler(&dhwt->run.recycle_on);
-	ldata->values[i++] = aler(&dhwt->run.force_on);
-	ldata->values[i++] = aler(&dhwt->run.legionella_on);
-	ldata->values[i++] = aler(&dhwt->run.electric_mode);
-	ldata->values[i++] = temp_to_int4log(aler(&dhwt->run.target_temp));
-	ldata->values[i++] = temp_to_int4log(aler(&dhwt->run.actual_temp));
+	ldata->values[i++].i = aler(&dhwt->run.runmode);
+	ldata->values[i++].i = aler(&dhwt->run.charge_on);
+	ldata->values[i++].i = aler(&dhwt->run.recycle_on);
+	ldata->values[i++].i = aler(&dhwt->run.force_on);
+	ldata->values[i++].i = aler(&dhwt->run.legionella_on);
+	ldata->values[i++].i = aler(&dhwt->run.electric_mode);
+	ldata->values[i++].i = temp_to_int4log(aler(&dhwt->run.target_temp));
+	ldata->values[i++].i = temp_to_int4log(aler(&dhwt->run.actual_temp));
 
 	ldata->nvalues = i;
 
@@ -99,7 +99,7 @@ static const struct s_log_source * dhwt_lsrc(const struct s_dhwt * const dhwt)
 		"runmode", "charge_on", "recycle_on", "force_on", "legionella_on", "electric_mode", "target_temp", "actual_temp",
 	};
 	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE, LOG_METRIC_GAUGE,
+		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE,
 	};
 	const log_version_t version = 1;
 	static struct s_log_source Dhwt_lsrc;

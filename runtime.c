@@ -33,9 +33,9 @@ static const log_key_t runtime_keys[] = {
 	"dhwmode",
 };
 static const enum e_log_metric runtime_metrics[] = {
-	LOG_METRIC_GAUGE,
-	LOG_METRIC_GAUGE,
-	LOG_METRIC_GAUGE,
+	LOG_METRIC_IGAUGE,
+	LOG_METRIC_IGAUGE,
+	LOG_METRIC_IGAUGE,
 };
 
 /** Runtime log source */
@@ -106,9 +106,9 @@ static int runtime_logdata_cb(struct s_log_data * const ldata, const void * cons
 	assert(ldata);
 	assert(ldata->nkeys >= ARRAY_SIZE(runtime_keys));
 	
-	ldata->values[i++] = aler(&Runtime.run.systemmode);
-	ldata->values[i++] = aler(&Runtime.run.runmode);
-	ldata->values[i++] = aler(&Runtime.run.dhwmode);
+	ldata->values[i++].i = aler(&Runtime.run.systemmode);
+	ldata->values[i++].i = aler(&Runtime.run.runmode);
+	ldata->values[i++].i = aler(&Runtime.run.dhwmode);
 
 	ldata->nvalues = i;
 

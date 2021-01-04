@@ -103,10 +103,10 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 	// create the DSs
 	for (i = 0; i < log_data->nkeys; i++) {
 		switch (log_data->metrics[i]) {
-			case LOG_METRIC_GAUGE:
+			case LOG_METRIC_IGAUGE:
 				mtype = "GAUGE";
 				break;
-			case LOG_METRIC_COUNTER:
+			case LOG_METRIC_ICOUNTER:
 				mtype = "COUNTER";
 				break;
 			default:
@@ -167,7 +167,13 @@ static int log_rrd_update(const char * restrict const identifier, const struct s
 	offset += (size_t)ret;
 
 	for (i = 0; i < log_data->nvalues; i++) {
-		ret = snprintf(buffer + offset, buffer_len - offset, ":%d", log_data->values[i]);
+		switch (log_data->metrics[i]) {
+			case LOG_METRIC_ICOUNTER:
+			case LOG_METRIC_IGAUGE:
+				ret = snprintf(buffer + offset, buffer_len - offset, ":%d", log_data->values[i].i);
+				break;
+		}
+
 		if ((ret < 0) || ((size_t)ret >= (buffer_len - offset))) {
 			ret = -ESTORE;
 			goto cleanup;
