@@ -104,9 +104,11 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 	for (i = 0; i < log_data->nkeys; i++) {
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
+			case LOG_METRIC_FGAUGE:
 				mtype = "GAUGE";
 				break;
 			case LOG_METRIC_ICOUNTER:
+			case LOG_METRIC_FCOUNTER:
 				mtype = "COUNTER";
 				break;
 			default:
@@ -158,7 +160,7 @@ static int log_rrd_update(const char * restrict const identifier, const struct s
 
 	assert(identifier && log_data);
 
-	buffer_len = (10+1) * log_data->nkeys + 1;	// INT_MAX is 10 chars, so is time, plus ':' separator, plus '\0'
+	buffer_len = (24+1) * log_data->nkeys + 1;	// time is 10 chars max, allow 24 (FLT_MANT_DIG) chars per float, plus ':' separator per field, plus '\0'
 	buffer = malloc(buffer_len);
 	if (!buffer)
 		return (-EOOM);
@@ -171,6 +173,13 @@ static int log_rrd_update(const char * restrict const identifier, const struct s
 			case LOG_METRIC_ICOUNTER:
 			case LOG_METRIC_IGAUGE:
 				ret = snprintf(buffer + offset, buffer_len - offset, ":%d", log_data->values[i].i);
+				break;
+			case LOG_METRIC_FCOUNTER:
+			case LOG_METRIC_FGAUGE:
+				ret = snprintf(buffer + offset, buffer_len - offset, ":%f", log_data->values[i].f);
+				break;
+			default:
+				ret = snprintf(buffer + offset, buffer_len - offset, ":U");
 				break;
 		}
 

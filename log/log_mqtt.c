@@ -136,6 +136,7 @@ static int log_mqtt_create(const char * restrict const identifier __attribute__(
 	return (ALL_OK);
 }
 
+#define MESSAGE_BUFLEN	32	///< log_value_t is int32 or float + sign + '\0'. 32 is enough
 /**
  * Update the MQTT log database.
  * @param identifier the database identifier
@@ -144,7 +145,7 @@ static int log_mqtt_create(const char * restrict const identifier __attribute__(
  */
 static int log_mqtt_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
-	static char message[16];	// log_value_t is int32, so 10 digits + sign + '\0'. 16 is enough
+	static char message[MESSAGE_BUFLEN];
 	char * topic = NULL, *p;
 	size_t basesize;
 	int msize, ret;
@@ -171,8 +172,19 @@ static int log_mqtt_update(const char * restrict const identifier, const struct 
 		}
 		strcpy(topic + (basesize - 1), log_data->keys[i]);	// append leaf topic
 
-		msize = snprintf(message, 16, "%d", log_data->values[i].i);
-		assert(msize < 16);
+		switch (log_data->metrics[i]) {
+			case LOG_METRIC_IGAUGE:
+			case LOG_METRIC_ICOUNTER:
+				msize = snprintf(message, MESSAGE_BUFLEN, "%d", log_data->values[i].i);
+				break;
+			case LOG_METRIC_FGAUGE:
+			case LOG_METRIC_FCOUNTER:
+				msize = snprintf(message, MESSAGE_BUFLEN, "%f", log_data->values[i].i);
+			default:
+				break;
+		}
+		if (unlikely(msize >= MESSAGE_BUFLEN))
+			dbgerr("value for '%s/%d' too large: truncated", identifier, i);
 
 		ret = mosquitto_publish(Log_mqtt.mosq, NULL, topic, msize, message, Log_mqtt.set.qos, false);
 		if (ret) {

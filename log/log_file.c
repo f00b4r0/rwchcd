@@ -75,6 +75,12 @@ static int log_file_update(const char * restrict const identifier, const struct 
 			case LOG_METRIC_ICOUNTER:
 				fprintf(file, "%d;", log_data->values[i].i);
 				break;
+			case LOG_METRIC_FGAUGE:
+			case LOG_METRIC_FCOUNTER:
+				fprintf(file, "%f;", log_data->values[i].f);
+				break;
+			default:
+				break;
 		}
 	}
 	for (i = (log_data->nkeys - log_data->nvalues); i; i--)

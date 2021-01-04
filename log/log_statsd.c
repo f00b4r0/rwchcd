@@ -173,6 +173,7 @@ static int log_statsd_create(const char * restrict const identifier __attribute_
 static int log_statsd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
 	static char sbuffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
+	const char * restrict format;
 	char * restrict buffer;
 	bool zerofirst;
 	char mtype;
@@ -200,11 +201,13 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
+			case LOG_METRIC_FGAUGE:
 				mtype = 'g';
 				if (log_data->values[i].i < 0)
 					zerofirst = true;
 				break;
 			case LOG_METRIC_ICOUNTER:
+			case LOG_METRIC_FCOUNTER:
 				mtype = 'c';
 				break;
 			default:
@@ -220,7 +223,20 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 				goto cleanup;
 			}
 		}
-		ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - (size_t)ret, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
+		switch (log_data->metrics[i]) {
+			case LOG_METRIC_IGAUGE:
+			case LOG_METRIC_ICOUNTER:
+				format = "%s%s.%s:%d|%c\n";
+				break;
+			case LOG_METRIC_FGAUGE:
+			case LOG_METRIC_FCOUNTER:
+				format = "%s%s.%s:%f|%c\n";
+				break;
+			default:
+				break;	// cannot happen thanks to previous switch()
+		}
+
+		ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - (size_t)ret, format, Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
 		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
 			ret = -ESTORE;
 			goto cleanup;
