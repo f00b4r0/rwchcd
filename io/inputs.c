@@ -55,9 +55,9 @@ static int temps_logdata_cb(struct s_log_data * const ldata, const void * const 
 	for (id = 0; id < Inputs.temps.last; id++) {
 		ret = temperature_get(&Inputs.temps.all[id], &temp);
 		if (ALL_OK == ret)
-			ldata->values[id].i = temp_to_int4log(temp);
+			ldata->values[id].f = temp_to_celsius(temp);
 		else
-			ldata->values[id].i = 0;
+			ldata->values[id].f = 0;
 	}
 
 	ldata->nvalues = id;
@@ -93,7 +93,7 @@ static int inputs_log_register(void)
 	}
 
 	for (id = 0; id < Inputs.temps.last; id++)
-		metrics[id] = LOG_METRIC_IGAUGE;
+		metrics[id] = LOG_METRIC_FGAUGE;
 
 	In_temps_lsrc = (struct s_log_source){
 		.log_sched = LOG_SCHED_1mn,

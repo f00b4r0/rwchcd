@@ -71,10 +71,10 @@ static int boiler_hs_logdata_cb(struct s_log_data * const ldata, const void * co
 	ldata->values[i++].i = aler(&hs->run.runmode);
 	ldata->values[i++].i = aler(&hs->run.could_sleep);
 	ldata->values[i++].i = aler(&hs->run.overtemp);
-	ldata->values[i++].i = temp_to_int4log(aler(&hs->run.temp_request));
+	ldata->values[i++].f = temp_to_celsius(aler(&hs->run.temp_request));
 
-	ldata->values[i++].i = temp_to_int4log(aler(&boiler->run.target_temp));
-	ldata->values[i++].i = temp_to_int4log(aler(&boiler->run.actual_temp));
+	ldata->values[i++].f = temp_to_celsius(aler(&boiler->run.target_temp));
+	ldata->values[i++].f = temp_to_celsius(aler(&boiler->run.actual_temp));
 
 	ldata->nvalues = i;
 
@@ -93,7 +93,7 @@ static const struct s_log_source * boiler_hs_lsrc(const struct s_heatsource * co
 		"runmode", "could_sleep", "overtemp", "temp_request", "target_temp", "actual_temp",
 	};
 	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE,
+		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE,
 	};
 	const log_version_t version = 1;
 	static struct s_log_source Boiler_lsrc;

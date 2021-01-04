@@ -68,13 +68,6 @@ tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrs
 #define temp_to_ikelvind(temp)		((temp)/KPRECISION)
 
 /**
- * Convert temperature from internal format to an integer value for logging.
- * This converts to 10*Kelvin (floored). A Celsius value can be obtained from this value via (result/10 - 273).
- * @param temp temp value as temp_t
- */
-#define temp_to_int4log(temp)		(int)temp_to_ikelvind(temp*10)
-
-/**
  * Convert a temperature delta (in Kelvin) to internal type.
  * @note The preprocessor will do the right thing whether delta is a float or a native integer type.
  * @param delta the delta value to be converted

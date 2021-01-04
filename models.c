@@ -64,10 +64,10 @@ static int bmodel_logdata_cb(struct s_log_data * const ldata, const void * const
 
 	ldata->values[i++].i = aler(&bmodel->run.summer);
 	ldata->values[i++].i = aler(&bmodel->run.frost);
-	ldata->values[i++].i = temp_to_int4log(aler(&bmodel->run.t_out));
-	ldata->values[i++].i = temp_to_int4log(aler(&bmodel->run.t_out_filt));
-	ldata->values[i++].i = temp_to_int4log(aler(&bmodel->run.t_out_mix));
-	ldata->values[i++].i = temp_to_int4log(aler(&bmodel->run.t_out_att));
+	ldata->values[i++].f = temp_to_celsius(aler(&bmodel->run.t_out));
+	ldata->values[i++].f = temp_to_celsius(aler(&bmodel->run.t_out_filt));
+	ldata->values[i++].f = temp_to_celsius(aler(&bmodel->run.t_out_mix));
+	ldata->values[i++].f = temp_to_celsius(aler(&bmodel->run.t_out_att));
 
 	ldata->nvalues = i;
 
@@ -86,7 +86,7 @@ static const struct s_log_source * bmodel_lreg(const struct s_bmodel * const bmo
 		"summer", "frost", "t_out", "t_out_filt", "t_out_mix", "t_out_att",
 	};
 	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE,
+		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE,
 	};
 	const log_version_t version = 2;
 	static struct s_log_source Bmodel_lreg;

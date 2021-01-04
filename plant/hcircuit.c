@@ -76,12 +76,12 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
 		return (-EOFFLINE);
 
 	ldata->values[i++].i = aler(&circuit->run.runmode);
-	ldata->values[i++].i = temp_to_int4log(aler(&circuit->run.request_ambient));
-	ldata->values[i++].i = temp_to_int4log(aler(&circuit->run.target_ambient));
-	ldata->values[i++].i = temp_to_int4log(aler(&circuit->run.actual_ambient));
-	ldata->values[i++].i = temp_to_int4log(aler(&circuit->run.target_wtemp));
-	ldata->values[i++].i = temp_to_int4log(aler(&circuit->run.actual_wtemp));
-	ldata->values[i++].i = temp_to_int4log(aler(&circuit->run.heat_request));
+	ldata->values[i++].f = temp_to_celsius(aler(&circuit->run.request_ambient));
+	ldata->values[i++].f = temp_to_celsius(aler(&circuit->run.target_ambient));
+	ldata->values[i++].f = temp_to_celsius(aler(&circuit->run.actual_ambient));
+	ldata->values[i++].f = temp_to_celsius(aler(&circuit->run.target_wtemp));
+	ldata->values[i++].f = temp_to_celsius(aler(&circuit->run.actual_wtemp));
+	ldata->values[i++].f = temp_to_celsius(aler(&circuit->run.heat_request));
 
 	ldata->nvalues = i;
 
@@ -100,7 +100,7 @@ static const struct s_log_source * hcircuit_lsrc(const struct s_hcircuit * const
 		"runmode", "request_ambient", "target_ambient", "actual_ambient", "target_wtemp", "actual_wtemp", "heat_request",
 	};
 	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE,
+		LOG_METRIC_IGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE, LOG_METRIC_FGAUGE,
 	};
 	const log_version_t version = 2;
 	static struct s_log_source Hcircuit_lreg;
