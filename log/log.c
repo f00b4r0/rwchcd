@@ -411,6 +411,9 @@ int log_online(void)
  */
 int log_offline(void)
 {
+	if (!Log.set.enabled)
+		return (ALL_OK);
+
 	if (!Log.run.online)
 		return (-EOFFLINE);
 
