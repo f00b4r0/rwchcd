@@ -77,7 +77,6 @@ struct s_hw_p1_pdata {
 	struct s_hw_p1_lcd lcd;			///< lcd subsystem private data
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
 	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
-	uint_fast8_t scount[RWCHC_NTSENSORS];	///< counter for decimation
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 };
 

@@ -99,8 +99,8 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 {
 	struct s_hw_p1_sensor * sensor;
 	uint_fast8_t i;
+	temp_t current;
 	res_t res;
-	temp_t previous, current;
 
 	assert(hw->run.initialized);
 
@@ -115,47 +115,17 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 
 		// R0 hardcoded: HWP1 only supports R0 = 1000 ohms
 		current = celsius_to_temp(hw_lib_rtd_res_to_celsius(sensor->set.type, hw_lib_ohm_to_res(1000), res));
-		previous = aler(&sensor->run.value);
 
-		if (current <= RWCHCD_TEMPMIN) {
-			// delay by hardcoded 5 samples
-			if (hw->scount[i] < 5) {
-				hw->scount[i]++;
-				dbgmsg(1, 1, "delaying sensor %d short, samples ignored: %d", i+1, hw->scount[i]);
-			}
-			else {
-				aser(&sensor->run.value, TEMPSHORT);
-				sensor_alarm(sensor, -ESENSORSHORT);
-			}
+		if (unlikely(current <= RWCHCD_TEMPMIN)) {
+			aser(&sensor->run.value, TEMPSHORT);
+			sensor_alarm(sensor, -ESENSORSHORT);
 		}
-		else if (current >= RWCHCD_TEMPMAX) {
-			// delay by hardcoded 5 samples
-			if (hw->scount[i] < 5) {
-				hw->scount[i]++;
-				dbgmsg(1, 1, "delaying sensor %d disconnect, samples ignored: %d", i+1, hw->scount[i]);
-			}
-			else {
-				aser(&sensor->run.value, TEMPDISCON);
-				sensor_alarm(sensor, -ESENSORDISCON);
-			}
+		else if (unlikely(current >= RWCHCD_TEMPMAX)) {
+			aser(&sensor->run.value, TEMPDISCON);
+			sensor_alarm(sensor, -ESENSORDISCON);
 		}
-		// init or recovery
-		else if (previous <= TEMPINVALID) {
-			hw->scount[i] = 0;
+		else
 			aser(&sensor->run.value, current);
-		}
-		// normal operation
-		else {
-			// decimate large changes to work around measurement instability. Hardcoded 4C / 5 samples (i.e. ~5 seconds) max
-			if (((current < (previous - deltaK_to_temp(4))) || (current > (previous + deltaK_to_temp(4)))) && hw->scount[i]++ < 5)
-				dbgmsg(1, 1, "decimating sensor %d value, samples ignored: %d", i+1, hw->scount[i]);
-			else {
-				// apply LP filter - ensure we only apply filtering on valid temps
-				// scount[i]+1 will ensure that if we exceed decimation threshold, the new value "weighs in" immediately
-				aser(&sensor->run.value, temp_expw_mavg(previous, current, hw->set.nsamples, hw->scount[i]+1));
-				hw->scount[i] = 0;
-			}
-		}
 	}
 }
 
