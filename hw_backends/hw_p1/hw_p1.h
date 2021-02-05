@@ -27,7 +27,7 @@
 struct s_hw_p1_sensor {
 	struct {
 		bool configured;	///< sensor is configured
-		uint_fast8_t channel;	///< sensor channel, numbered from 1 to 15
+		uint_fast8_t channel;	///< sensor channel, numbered from 1 to 14
 		enum e_hw_lib_rtdt type;///< sensor type
 		tempdiff_t offset;	///< sensor value offset
 	} set;		///< settings (externally set)
@@ -61,9 +61,6 @@ struct s_hw_p1_relay {
 /** driver runtime data */
 struct s_hw_p1_pdata {
 	struct {
-		uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
-	} set;		///< settings (externally set)
-	struct {
 		bool initialized;		///< hardware is initialized (setup() succeeded)
 		bool online;			///< hardware is online (online() succeeded)
 		timekeep_t sensors_ftime;	///< sensors fetch time
@@ -71,6 +68,7 @@ struct s_hw_p1_pdata {
 		res_t calib_nodac;		///< sensor calibration value without dac offset
 		res_t calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version
+		unsigned int nsensors;		///< number of configured sensors
 	} run;		///< private runtime (internally handled)
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data
 	union rwchc_u_relays relays;		///< local copy of hardware relays data

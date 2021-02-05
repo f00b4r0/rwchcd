@@ -31,8 +31,6 @@ static void config_dump(const struct s_hw_p1_pdata * restrict const hw)
 	filecfg_iprintf("type \"hw_p1\" {\n");
 	filecfg_ilevel_inc();
 
-	filecfg_iprintf("nsamples %" PRIdFAST8 ";\n", hw->set.nsamples);
-	filecfg_iprintf("nsensors %d;\n", hw->settings.nsensors);
 	filecfg_iprintf("lcdbl %d;\n", hw->settings.lcdblpct);
 
 	filecfg_ilevel_dec();
@@ -64,13 +62,13 @@ static void sensors_dump(const struct s_hw_p1_pdata * restrict const hw)
 
 	assert(hw);
 
-	if (!FCD_Exhaustive && !hw->settings.nsensors)
+	if (!FCD_Exhaustive && !hw->run.nsensors)
 		return;
 
 	filecfg_iprintf("temperatures {\n");
 	filecfg_ilevel_inc();
 
-	for (id = 0; id < hw->settings.nsensors; id++)
+	for (id = 0; id < hw->run.nsensors; id++)
 		sensor_dump(&hw->Sensors[id]);
 
 	filecfg_ilevel_dec();
@@ -129,16 +127,6 @@ int hw_p1_filecfg_dump(void * priv)
 	return (ALL_OK);
 }
 
-static int parse_type_nsamples(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (hw_p1_setup_setnsamples((struct s_hw_p1_pdata *)priv, node->value.intval));
-}
-
-static int parse_type_nsensors(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	return (hw_p1_setup_setnsensors((struct s_hw_p1_pdata *)priv, node->value.intval));
-}
-
 static int parse_type_lcdbl(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	return (hw_p1_setup_setbl((struct s_hw_p1_pdata *)priv, node->value.intval));
@@ -147,8 +135,6 @@ static int parse_type_lcdbl(void * restrict const priv, const struct s_filecfg_p
 static int parse_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT, "nsamples", true, parse_type_nsamples, NULL, },
-		{ NODEINT, "nsensors", true, parse_type_nsensors, NULL, },
 		{ NODEINT, "lcdbl", false, parse_type_lcdbl, NULL, },
 	};
 	int ret = ALL_OK;

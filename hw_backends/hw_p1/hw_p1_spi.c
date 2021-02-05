@@ -461,10 +461,7 @@ int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[]
 	ret = ALL_OK;
 
 	low = SPI_rw8bit(spi, (uint8_t)~sensor);	// we get LSB first, sent byte must be ~sensor
-	if (spi->run.FWversion <= 8)
-		high = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);	// then MSB, sent byte is next command
-	else	// v9
-		high = SPI_rw8bit(spi, low);		// then MSB, sent byte is received LSB
+	high = SPI_rw8bit(spi, low);		// then MSB, sent byte is received LSB
 
 	if (RWCHC_SPIC_INVALID == high)		// MSB indicates an error
 		ret = -ESPI;
@@ -477,57 +474,6 @@ int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[]
 
 	if (ALL_OK == ret)
 		tsensors[sensor] = tsval;
-
-	return ret;
-}
-
-/**
- * Read a single reference value.
- * Delay: none
- * @param spi HW P1 spi private data
- * @param refval pointer to target reference whose value will be updated if no error occurs
- * @param refn target reference number to be read (0 or 1)
- * @return error code
- */
-int hw_p1_spi_ref_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refval, const uint8_t refn)
-{
-	int ret;
-	uint8_t cmd;
-	uint16_t value;
-
-	assert(refval);
-	
-	switch (refn) {
-		case 0:
-			cmd = RWCHC_SPIC_REF0;
-			break;
-		case 1:
-			cmd = RWCHC_SPIC_REF1;
-			break;
-		default:
-			return (-EINVALID);
-	}
-
-	SPI_RESYNC(spi, cmd);
-
-	if (!spi->run.spitout)
-		return (-ESPI);
-
-	/* same logic as hw_p1_spi_sensor_r() */
-	ret = ALL_OK;
-
-	value = 0;
-	value |= (uint16_t)SPI_rw8bit(spi, (uint8_t)~cmd);	// we get LSB first, sent byte is ~cmd
-	value |= (uint16_t)(SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
-
-	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
-		ret = -ESPI;
-
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, cmd))
-		ret = -ESPI;
-
-	if (ALL_OK == ret)
-		*refval = value;
 
 	return ret;
 }

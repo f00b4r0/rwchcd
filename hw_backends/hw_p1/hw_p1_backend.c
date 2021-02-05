@@ -2,7 +2,7 @@
 //  hw_backends/hw_p1/hw_p1_backend.c
 //  rwchcd
 //
-//  (C) 2018 Thibaut VARENE
+//  (C) 2018,2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -24,6 +24,7 @@
 #include "runtime.h"
 #include "alarms.h"
 #include "log/log.h"
+#include "timekeep.h"
 
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
 #define HW_P1_TIMEOUT_TK	(30 * TIMEKEEP_SMULT)	///< hardcoded hardware timeout delay: 30s
@@ -37,7 +38,7 @@
 static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object)
 {
 	const struct s_hw_p1_pdata * const hw = object;
-	uint_fast8_t i = 0;
+	uint_fast8_t channel, i = 0;
 
 	assert(ldata);
 	assert(ldata->nkeys >= RWCHC_NTSENSORS);
@@ -48,10 +49,12 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	if (!hw->run.sensors_ftime)
 		return (-EINVALID);	// data not ready
 
-	for (i = 0; i < hw->settings.nsensors; i++)
-		ldata->values[i].i = aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset;
+	for (i = 0; i < hw->run.nsensors; i++) {
+		channel = hw->Sensors[i].set.channel;
+		ldata->values[channel].i = aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset;
+	}
 
-	ldata->nvalues = i;
+	ldata->nvalues = ldata->nkeys;
 
 	return (ALL_OK);
 }
@@ -66,7 +69,7 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const hw)
 {
 	static const log_key_t keys[] = {
-		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15",
+		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14",
 	};
 	static const enum e_log_metric metrics[] = {
 		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE,
@@ -123,9 +126,6 @@ __attribute__((warn_unused_result)) static int hw_p1_setup(void * priv)
 /**
  * Get the hardware ready for run loop.
  * Calibrate, restore hardware state from permanent storage.
- * @note this function currently checks that nsamples and nsensors
- * are set, thus making it currently impossible to run the prototype
- * hardware without sensors.
  * @param priv private hardware data
  * @return exec status
  */
@@ -140,23 +140,12 @@ static int hw_p1_online(void * priv)
 	if (!hw->run.initialized)
 		return (-EINIT);
 
-	if (!hw->set.nsamples)
-		return (-EMISCONFIGURED);
-
-	if (!hw->settings.nsensors)
-		return (-EMISCONFIGURED);
-
-	// save settings - for deffail
+	// save settings - for deffail and active sensors
 	ret = hw_p1_hwconfig_commit(hw);
 	if (ret)
 		goto fail;
 
-	// calibrate
-	ret = hw_p1_calibrate(hw);
-	if (ALL_OK != ret) {
-		pr_err(_("HWP1: could not calibrate (%d)"), ret);
-		goto fail;
-	}
+	timekeep_sleep(1);	// wait for all sensors to be parsed by the hardware
 
 	// read sensors once
 	ret = hw_p1_sensors_read(hw);
@@ -187,7 +176,6 @@ fail:
  * @note Will panic if sensors cannot be read for more than HW_P1_TIMEOUT_TK (hardcoded).
  * @param priv private hardware data
  * @return exec status
- * @todo review logic
  */
 static int hw_p1_input(void * priv)
 {
@@ -265,7 +253,7 @@ static int hw_p1_input(void * priv)
 		hw->peripherals.i_SW2 = 0;
 		count = 5;
 
-		if (tempid >= hw->settings.nsensors)
+		if (tempid >= hw->run.nsensors)
 			tempid = 0;
 
 		hw_p1_lcd_set_tempid(&hw->lcd, tempid);	// update sensor
@@ -281,16 +269,6 @@ static int hw_p1_input(void * priv)
 		hw->peripherals.o_LCDbl = 0;
 
 skip_periphs:
-	// calibrate
-	ret = hw_p1_calibrate(hw);
-	if (ALL_OK != ret) {
-		dbgerr("hw_p1_calibrate failed (%d)", ret);
-		goto fail;
-		/* repeated calibration failure might signal a sensor acquisition circuit
-		 that's broken. Temperature readings may no longer be reliable and
-		 the system should eventually trigger failsafe */
-	}
-
 	// read sensors
 	ret = hw_p1_sensors_read(hw);
 	if (ALL_OK != ret) {
@@ -528,7 +506,7 @@ static const char * hw_p1_input_name(void * const priv, const enum e_hw_input_ty
 
 	switch (type) {
 		case HW_INPUT_TEMP:
-			str = ((inid >= hw->settings.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors))) ? NULL : hw->Sensors[inid].name;
+			str = ((inid >= hw->run.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors))) ? NULL : hw->Sensors[inid].name;
 			break;
 		case HW_INPUT_SWITCH:
 		case HW_OUTPUT_NONE:
@@ -551,7 +529,6 @@ static const char * hw_p1_input_name(void * const priv, const enum e_hw_input_ty
  * @param inid id of the internal output to modify
  * @param value location to copy the current value of the input
  * @return exec status
- * @todo review hardcoded timeout.
  */
 int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value)
 {
@@ -564,7 +541,7 @@ int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, co
 
 	switch (type) {
 		case HW_INPUT_TEMP:
-			if (unlikely((inid >= hw->settings.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors))))
+			if (unlikely((inid >= hw->run.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors))))
 				return (-EINVALID);
 			sensor = &hw->Sensors[inid];
 			if (!sensor->set.configured)
@@ -618,7 +595,7 @@ static int hw_p1_input_time_get(void * const priv, const enum e_hw_input_type ty
 
 	switch (type) {
 		case HW_INPUT_TEMP:
-			if ((inid >= hw->settings.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors)))
+			if ((inid >= hw->run.nsensors) || (inid >= ARRAY_SIZE(hw->Sensors)))
 				return (-EINVALID);
 			if (!hw->Sensors[inid].set.configured)
 				return (-ENOTCONFIGURED);
