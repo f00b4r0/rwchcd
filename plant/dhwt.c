@@ -414,6 +414,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	switch (new_runmode) {
 		case RM_OFF:
 		case RM_TEST:
+			aser(&dhwt->run.runmode, new_runmode);
 			return (ALL_OK);	// No further processing
 		case RM_ECO:
 			if (!aler(&dhwt->run.electric_mode)) {

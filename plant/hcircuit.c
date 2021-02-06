@@ -480,6 +480,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	switch (new_runmode) {
 		case RM_OFF:
 		case RM_TEST:
+			aser(&circuit->run.runmode, new_runmode);
 			return (ALL_OK);	// No further processing
 		case RM_COMFORT:
 			request_temp = SETorDEF(circuit->set.params.t_comfort, circuit->pdata->set.def_hcircuit.t_comfort);
