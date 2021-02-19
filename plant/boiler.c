@@ -619,7 +619,9 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		case RM_ECO:
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
+			break;
 		case RM_TEST:
+			boiler->run.burner_1_last_switch -= boiler->set.burner_min_time;	// ensure it starts immediately
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
