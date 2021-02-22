@@ -2,7 +2,7 @@
 //  hw_backends/hw_p1/hw_p1_lcd.c
 //  rwchcd
 //
-//  (C) 2016-2018 Thibaut VARENE
+//  (C) 2016-2018,2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -347,39 +347,17 @@ static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 }
 
 int hw_p1_input_value_get(void * const priv, const int type, const uint_fast8_t inid, void * const value);
-//* XXX quick hack for LCD
-static const char * hw_p1_temp_to_str(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t tempid)
-{
-	static char snpbuf[10];	// xXX.XC, null-terminated (first x negative sign or positive hundreds)
-	temp_t temp;
-	float celsius;
-	int ret;
-
-	ret = hw_p1_input_value_get(hw, 1, tempid, &temp);
 
 #if (RWCHCD_TEMPMIN < ((-99 + 273) * KPRECISION))
  #error Non representable minimum temperature
 #endif
 
-	snprintf(snpbuf, 4, "%2u:", hw->Sensors[tempid].set.channel);	// print in human readable
-
-	if (-ESENSORDISCON == ret)
-		memcpy(snpbuf+3, _("DISCON"), 6);
-	else if (-ESENSORSHORT == ret)
-		memcpy(snpbuf+3, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
-	else {
-		celsius = temp_to_celsius(temp);
-		snprintf(snpbuf+3, 7, "%3.0f C ", celsius);	// handles rounding
-	}
-
-	return (snpbuf);
-}
-
 // XXX quick hack
-static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata * restrict const hw)
+static void hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata * restrict const hw)
 {
 	const enum e_systemmode systemmode = runtime_systemmode();
-	static uint8_t buf[LCD_LINELEN];
+	uint8_t * buf = lcd->Line1Buf;
+	int alcnt;
 
 	memset(buf, ' ', LCD_LINELEN);
 
@@ -394,10 +372,31 @@ static int hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata 
 		else
 			lcd->sysmchg = false;
 	}
-	else
-		memcpy(buf+6, hw_p1_temp_to_str(hw, lcd->sensor), 9);	// do not memcpy the terminating NULL char
+	else if ((alcnt = alarms_count()))
+		snprintf((char *)buf, LCD_LINELEN, _("ALARMS: %d"), alcnt);
+	else {
+		uint_fast8_t tempid = lcd->sensor;
+		temp_t temp;
+		float celsius;
+		int ret;
 
-	return (hw_p1_lcd_wline(lcd, buf, LCD_LINELEN, 0, 0));
+		buf += 6;
+
+		ret = hw_p1_input_value_get(hw, 1, tempid, &temp);
+
+		snprintf((char *)buf, 4, "%2u:", hw->Sensors[tempid].set.channel);	// print in human readable
+
+		buf += 3;
+
+		if (-ESENSORDISCON == ret)
+			memcpy(buf, _("DISCON"), 6);
+		else if (-ESENSORSHORT == ret)
+			memcpy(buf, _("SHORT "), 6);	// must be 6 otherwith buf[6] might be garbage
+		else {
+			celsius = temp_to_celsius(temp);
+			snprintf((char *)buf, 6, "%3.0f C", celsius);	// handles rounding
+		}
+	}
 }
 
 /**
@@ -454,23 +453,12 @@ int hw_p1_lcd_sysmode_change(struct s_hw_p1_lcd * const lcd, enum e_systemmode n
  */
 int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi, void * restrict const hwpriv)
 {
-	static char alarml1[LCD_LINELEN];
 	struct s_hw_p1_pdata * restrict const hw = hwpriv;
-	int alcnt;
 
 	if (!lcd->online)
 		return (-EOFFLINE);
 
-	alcnt = alarms_count();
-	if (alcnt) {
-		snprintf(alarml1, sizeof(alarml1), _("ALARMS: %d"), alcnt);
-		hw_p1_lcd_buflclear(lcd, 0);
-		hw_p1_lcd_wline(lcd, (const uint8_t *)alarml1, strlen(alarml1), 0, 0);
-	}
-	else {
-		hw_p1_lcd_handle2ndline(lcd, false);
-		hw_p1_lcd_line1(lcd, hw);
-	}
+	hw_p1_lcd_line1(lcd, hw);
 
 	hw_p1_lcd_update(lcd, spi, lcd->reset);
 
