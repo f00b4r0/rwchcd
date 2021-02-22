@@ -453,12 +453,9 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 
 	// save/log relays state if there was a change
 	if (chflags) {
-		if (chflags & HW_P1_RCHTURNOFF) {	// only update permanent storage on full cycles (at turn off)
-			// XXX there's no real motive to do this besides lowering storage pressure
-			ret = hw_p1_save_relays(hw);
-			if (ret)
-				dbgerr("hw_p1_save failed (%d)", ret);
-		}
+		ret = hw_p1_save_relays(hw);
+		if (ret)
+			dbgerr("hw_p1_save failed (%d)", ret);
 	}
 	
 	// send new state to hardware
