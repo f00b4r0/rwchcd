@@ -83,7 +83,7 @@ static int inputs_log_register(void)
 	if (!keys)
 		return (-EOOM);
 
-	for (id = 0; id < Inputs.temps.last; id++)
+	for (id = 0; id < nmemb; id++)
 		keys[id] = Inputs.temps.all[id].name;
 
 	metrics = calloc(nmemb, sizeof(*metrics));
@@ -92,7 +92,7 @@ static int inputs_log_register(void)
 		return (-EOOM);
 	}
 
-	for (id = 0; id < Inputs.temps.last; id++)
+	for (id = 0; id < nmemb; id++)
 		metrics[id] = LOG_METRIC_FGAUGE;
 
 	In_temps_lsrc = (struct s_log_source){
