@@ -182,10 +182,13 @@ int log_register(const struct s_log_source * restrict const lsource)
 	log_value_t * vbuffer = NULL;
 	int ret;
 
-	assert(lsource);
-
 	if (!Log.set.enabled)
 		return (ALL_OK);	// do nothing
+
+	if (!lsource) {
+		pr_err(_("Log registration failed: NULL parameter"));
+		return (-EINVALID);
+	}
 
 	if (!lsource->version) {
 		pr_err(_("Log registration failed: invalid version number for %s %s: %d"), lsource->basename, lsource->identifier, lsource->version);
@@ -276,11 +279,12 @@ int log_deregister(const struct s_log_source * restrict const lsource)
 {
 	struct s_log_list * lelmt, * prev = NULL, ** currlistp = NULL;
 
-	assert(lsource);
-
 	if (!Log.set.enabled)
 		return (ALL_OK);	// do nothing
 
+	if (!lsource)
+		return (-EINVALID);
+	
 	if (lsource->log_sched >= ARRAY_SIZE(Log_sched))
 		return (-EINVALID);
 
