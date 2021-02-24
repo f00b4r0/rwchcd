@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 
 #include "hw_backends/hw_backends.h"
 #include "hw_p1.h"
@@ -25,9 +26,12 @@
 #include "alarms.h"
 #include "log/log.h"
 #include "timekeep.h"
+#include "lib.h"
 
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
 #define HW_P1_TIMEOUT_TK	(30 * TIMEKEEP_SMULT)	///< hardcoded hardware timeout delay: 30s
+
+static struct s_log_source HW_P1_temps_lsrc;
 
 /**
  * HW P1 temperatures log callback.
@@ -38,10 +42,10 @@
 static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object)
 {
 	const struct s_hw_p1_pdata * const hw = object;
-	uint_fast8_t channel, i = 0;
+	uint_fast8_t i;
 
 	assert(ldata);
-	assert(ldata->nkeys >= RWCHC_NTSENSORS);
+	assert(ldata->nkeys >= hw->run.nsensors);
 
 	if (!hw->run.online)
 		return (-EOFFLINE);
@@ -49,45 +53,84 @@ static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * 
 	if (!hw->run.sensors_ftime)
 		return (-EINVALID);	// data not ready
 
-	for (i = 0; i < hw->run.nsensors; i++) {
-		channel = hw->Sensors[i].set.channel;
-		ldata->values[channel].i = aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset;
-	}
+	for (i = 0; i < hw->run.nsensors; i++)
+		ldata->values[i].f = temp_to_celsius(aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset);
 
-	ldata->nvalues = ldata->nkeys;
+	ldata->nvalues = i;
 
 	return (ALL_OK);
 }
 
 /**
- * Provide a well formatted log source for HW P1 temps.
+ * Register HW P1 temps for logging.
  * @param hw HW P1 private data
- * @return (statically allocated) s_log_source pointer
+ * @return exec status
  * @warning must not be called concurrently
  * @bug hardcoded basename/identifier will collide if multiple instances.
+ * @deprecated logging should only be done in the inputs/outputs abstraction layer
  */
-static const struct s_log_source * hw_p1_lreg(const struct s_hw_p1_pdata * const hw)
+static int hw_p1_lreg(const struct s_hw_p1_pdata * const hw)
 {
-	static const log_key_t keys[] = {
-		"s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14",
-	};
-	static const enum e_log_metric metrics[] = {
-		LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE, LOG_METRIC_IGAUGE,
-	};
-	static struct s_log_source HW_P1_temps_lsrc;
+	log_key_t * keys;
+	const unsigned int nmemb = hw->run.nsensors;
+	enum e_log_metric * metrics;
+	unsigned int id;
+	int ret;
+
+	keys = calloc(nmemb, sizeof(*keys));
+	if (!keys)
+		return (-EOOM);
+
+	for (id = 0; id < nmemb; id++) {
+		ret = asprintf(&keys[id], "s%02d", hw->Sensors[id].set.channel);
+		if (ret < 0) {
+			for (; (id >= 0 && id < nmemb); id--)
+				free((void *)keys[id]);
+			free ((void *)keys);
+			return (-EOOM);
+		}
+	}
+
+	metrics = calloc(nmemb, sizeof(*metrics));
+	if (!metrics)
+		return (-EOOM);
+
+	for (id = 0; id < nmemb; id++)
+		metrics[id] = LOG_METRIC_FGAUGE;
 
 	HW_P1_temps_lsrc = (struct s_log_source){
 		.log_sched = LOG_SCHED_1mn,
 		.basename = "hw_p1",
 		.identifier = "temps",
-		.version = 2,
-		.nkeys = ARRAY_SIZE(keys),
+		.version = 3,
+		.nkeys = nmemb,
 		.keys = keys,
 		.metrics = metrics,
 		.logdata_cb = hw_p1_temps_logdata_cb,
 		.object = hw,
 	};
-	return (&HW_P1_temps_lsrc);
+	return (log_register(&HW_P1_temps_lsrc));
+}
+
+/**
+ * Deregister HW P1 temps from logging.
+ * @return exec status
+ */
+static int hw_p1_lunreg(const struct s_hw_p1_pdata * const hw)
+{
+	unsigned int id;
+	int ret;
+
+	ret = log_deregister(&HW_P1_temps_lsrc);
+	if (ret)
+		dbgerr("log_deregister failed (%d)", ret);
+
+	for (id = 0; id < HW_P1_temps_lsrc.nkeys; id++)
+		free((void *)HW_P1_temps_lsrc.keys[id]);
+	free((void *)HW_P1_temps_lsrc.keys);
+	free((void *)HW_P1_temps_lsrc.metrics);
+
+	return (ret);
 }
 
 /**
@@ -161,7 +204,7 @@ static int hw_p1_online(void * priv)
 
 	hw_p1_lcd_online(&hw->lcd);
 
-	log_register(hw_p1_lreg(hw));
+	hw_p1_lreg(hw);
 
 	hw->run.online = true;
 	ret = ALL_OK;
@@ -342,7 +385,7 @@ static int hw_p1_offline(void * priv)
 	if (!hw->run.online)
 		return (-EOFFLINE);
 
-	log_deregister(hw_p1_lreg(hw));
+	hw_p1_lunreg(hw);
 
 	hw_p1_lcd_offline(&hw->lcd);
 
