@@ -90,6 +90,12 @@ static int hw_p1_online(void * priv)
 		goto fail;
 	}
 
+	ret = hw_p1_refs_read(hw);
+	if (ALL_OK != ret) {
+		pr_err(_("HWP1 \"%s\": failed to read calibration data (%d)"), hw->name, ret);
+		goto fail;
+	}
+
 	timekeep_sleep(1);	// wait for all sensors to be parsed by the hardware
 
 	// read sensors once

@@ -379,6 +379,22 @@ out:
 }
 
 /**
+ * Read all temperature calibration references.
+ * @param hw HW P1 private data
+ * @return exec status
+ */
+int hw_p1_refs_read(struct s_hw_p1_pdata * restrict const hw)
+{
+	int ret = ALL_OK;
+
+	assert(hw->run.initialized);
+
+	ret = hw_p1_spi_refs_r(&hw->spi, hw->refs);
+
+	return (ret);
+}
+
+/**
  * Read all temperature sensors.
  * This function will read all sensors into hw->sensors and if no error occurs:
  * - hw->run.sensors_ftime will be updated

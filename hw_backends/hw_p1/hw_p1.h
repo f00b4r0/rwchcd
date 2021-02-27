@@ -81,6 +81,7 @@ struct s_hw_p1_pdata {
 	struct s_hw_p1_spi spi;			///< spi runtime
 	struct s_hw_p1_lcd lcd;			///< lcd subsystem private data
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
+	rwchc_sensor_t refs[RWCHC_NTREFS];	///< local copy of hardware sensors calibration reference data
 	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
 	const char * name;			///< user-set name for this backend
@@ -90,6 +91,7 @@ int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_refs_read(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_sensors_read(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_rwchcrelays_write(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_rwchcperiphs_write(struct s_hw_p1_pdata * restrict const hw);

@@ -463,7 +463,7 @@ int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const s
 		return (-ESPI);
 
 	crc = 0;
-	for (i=0; i<RWCHC_SARRAYELMTS*sizeof(*sensors); i++) {
+	for (i=0; i<RWCHC_NTSENSORS*sizeof(*sensors); i++) {
 		byte = SPI_rw8bit(spi, (uint8_t)i);
 		crc = crc1w(byte, crc);
 		*((uint8_t *)sensors+i) = byte;
@@ -476,50 +476,34 @@ int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const s
 }
 
 /**
- * Read a single sensor value.
+ * Read all calibration references.
  * Delay: none
  * @param spi HW P1 spi private data
- * @param tsensors pointer to target sensor array whose value will be updated if no error occurs
- * @param sensor target sensor number to be read
+ * @param refs pointer to array whose values will be populated to match current refs values
  * @return error code
- * @warning no check is performed on the size of the provided tsensors array
  */
-int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[], const uint8_t sensor)
+int hw_p1_spi_refs_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refs)
 {
-	int ret;
-	uint16_t tsval;
-	uint8_t low, high;
-	
-	assert(tsensors);
+	unsigned int i;
+	int ret = ALL_OK;
+	uint8_t byte, crc;
 
-	if (sensor >= RWCHC_NTSENSORS)
-		return (-EINVALID);
-	
-	SPI_RESYNC(spi, sensor);
+	assert(refs);
+
+	SPI_RESYNC(spi, RWCHC_SPIC_REFSR);
 
 	if (!spi->run.spitout)
 		return (-ESPI);
-	
-	/* From here we invert the expectancy logic: we expect things to go well
-	 * and we'll flag if they don't. The point is that we must not interrupt
-	 * the loop even if there is a mistransfer, since the firmware expects
-	 * a full transfer regardless of errors. */
-	ret = ALL_OK;
 
-	low = SPI_rw8bit(spi, (uint8_t)~sensor);	// we get LSB first, sent byte must be ~sensor
-	high = SPI_rw8bit(spi, low);		// then MSB, sent byte is received LSB
+	crc = 0;
+	for (i=0; i<RWCHC_NTREFS*sizeof(*refs); i++) {
+		byte = SPI_rw8bit(spi, (uint8_t)i);
+		crc = crc1w(byte, crc);
+		*((uint8_t *)refs+i) = byte;
+	}
 
-	if (RWCHC_SPIC_INVALID == high)		// MSB indicates an error
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
 		ret = -ESPI;
-	
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, sensor))
-		ret = -ESPI;
-
-	tsval = low;
-	tsval |= (uint16_t)(high << 8);
-
-	if (ALL_OK == ret)
-		tsensors[sensor] = tsval;
 
 	return ret;
 }
