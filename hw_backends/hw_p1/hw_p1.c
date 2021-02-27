@@ -50,7 +50,6 @@ static inline res_t sensor_to_res(const rwchc_sensor_t raw)
 
 	value = raw * RWCHC_CALIB_OHM / RWCHC_ADC_GAIN;
 	value *= RES_OHMMULT;
-	value >>= RWCHC_ADC_FSBITS-1;
 
 	return (value);
 }
@@ -98,7 +97,7 @@ static int sensor_alarm(const struct s_hw_p1_sensor * const sensor, const int er
 static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 {
 	struct s_hw_p1_sensor * sensor;
-	uint_fast8_t i;
+	uint_fast8_t i, refid;
 	temp_t current;
 	res_t res;
 
@@ -112,9 +111,13 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 		}
 
 		res = sensor_to_res(hw->sensors[sensor->set.channel-1]);
+		refid = sensor->set.channel <= 7 ? 0 : 1;
+		res /= hw->refs[refid] * 4U;
 
 		// R0 hardcoded: HWP1 only supports R0 = 1000 ohms
 		current = celsius_to_temp(hw_lib_rtd_res_to_celsius(sensor->set.type, hw_lib_ohm_to_res(1000), res));
+
+		dbgmsg(2, 1, "s%d, raw: %x, res: %d, temp: %.2f", sensor->set.channel, hw->sensors[sensor->set.channel-1], res, temp_to_celsius(current));
 
 		if (unlikely(current <= RWCHCD_TEMPMIN)) {
 			aser(&sensor->run.value, TEMPSHORT);
@@ -390,6 +393,9 @@ int hw_p1_refs_read(struct s_hw_p1_pdata * restrict const hw)
 	assert(hw->run.initialized);
 
 	ret = hw_p1_spi_refs_r(&hw->spi, hw->refs);
+
+	dbgmsg(2, 1, "\"%s\" ref0 raw: %x", hw->name, hw->refs[0]);
+	dbgmsg(2, 1, "\"%s\" ref1 raw: %x", hw->name, hw->refs[1]);
 
 	return (ret);
 }
