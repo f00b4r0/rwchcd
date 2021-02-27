@@ -454,13 +454,16 @@ int hw_p1_lcd_sysmode_change(struct s_hw_p1_lcd * const lcd, enum e_systemmode n
 int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi, void * restrict const hwpriv)
 {
 	struct s_hw_p1_pdata * restrict const hw = hwpriv;
+	int ret;
 
 	if (!lcd->online)
 		return (-EOFFLINE);
 
 	hw_p1_lcd_line1(lcd, hw);
 
-	hw_p1_lcd_update(lcd, spi, lcd->reset);
+	ret = hw_p1_lcd_update(lcd, spi, lcd->reset);
+	if (ret)
+		dbgerr("LCD update failed (%d)", ret);
 
 	lcd->reset = false;
 
