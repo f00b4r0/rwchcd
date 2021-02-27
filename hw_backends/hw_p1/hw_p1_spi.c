@@ -537,7 +537,7 @@ int hw_p1_spi_settings_w(struct s_hw_p1_spi * const spi, const struct rwchc_s_se
 
 /**
  * Save current ram settings to eeprom.
- * Delay: none (eeprom write is faster than a SPI cycle)
+ * Delay: 100ms
  * @param spi HW P1 spi private data
  * @return error code
  */
@@ -549,6 +549,8 @@ int hw_p1_spi_settings_s(struct s_hw_p1_spi * const spi)
 	
 	if (!spi->run.spitout)
 		return (-ESPI);
+
+	usleep(100000);	// give time to write the flash
 	
 	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
 		ret = -ESPI;

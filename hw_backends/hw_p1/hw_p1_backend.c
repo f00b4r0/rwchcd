@@ -185,8 +185,10 @@ static int hw_p1_online(void * priv)
 
 	// save settings - for deffail and active sensors
 	ret = hw_p1_hwconfig_commit(hw);
-	if (ret)
+	if (ALL_OK != ret) {
+		pr_err(_("HWP1: failed to update hardware config (%d)"), ret);
 		goto fail;
+	}
 
 	timekeep_sleep(1);	// wait for all sensors to be parsed by the hardware
 
