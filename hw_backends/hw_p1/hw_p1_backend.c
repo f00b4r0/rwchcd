@@ -31,108 +31,6 @@
 #define INIT_MAX_TRIES		10	///< how many times hardware init should be retried
 #define HW_P1_TIMEOUT_TK	(30 * TIMEKEEP_SMULT)	///< hardcoded hardware timeout delay: 30s
 
-static struct s_log_source HW_P1_temps_lsrc;
-
-/**
- * HW P1 temperatures log callback.
- * @param ldata the log data to populate
- * @param object hw_p1 Hardware object
- * @return exec status
- */
-static int hw_p1_temps_logdata_cb(struct s_log_data * const ldata, const void * const object)
-{
-	const struct s_hw_p1_pdata * const hw = object;
-	uint_fast8_t i;
-
-	assert(ldata);
-	assert(ldata->nkeys >= hw->run.nsensors);
-
-	if (!hw->run.online)
-		return (-EOFFLINE);
-
-	if (!hw->run.sensors_ftime)
-		return (-EINVALID);	// data not ready
-
-	for (i = 0; i < hw->run.nsensors; i++)
-		ldata->values[i].f = temp_to_celsius(aler(&hw->Sensors[i].run.value) + hw->Sensors[i].set.offset);
-
-	ldata->nvalues = i;
-
-	return (ALL_OK);
-}
-
-/**
- * Register HW P1 temps for logging.
- * @param hw HW P1 private data
- * @return exec status
- * @warning must not be called concurrently
- * @bug hardcoded basename/identifier will collide if multiple instances.
- * @deprecated logging should only be done in the inputs/outputs abstraction layer
- */
-static int hw_p1_lreg(const struct s_hw_p1_pdata * const hw)
-{
-	log_key_t * keys;
-	const unsigned int nmemb = hw->run.nsensors;
-	enum e_log_metric * metrics;
-	unsigned int id;
-	int ret;
-
-	keys = calloc(nmemb, sizeof(*keys));
-	if (!keys)
-		return (-EOOM);
-
-	for (id = 0; id < nmemb; id++) {
-		ret = asprintf(&keys[id], "s%02d", hw->Sensors[id].set.channel);
-		if (ret < 0) {
-			for (; (id >= 0 && id < nmemb); id--)
-				free((void *)keys[id]);
-			free ((void *)keys);
-			return (-EOOM);
-		}
-	}
-
-	metrics = calloc(nmemb, sizeof(*metrics));
-	if (!metrics)
-		return (-EOOM);
-
-	for (id = 0; id < nmemb; id++)
-		metrics[id] = LOG_METRIC_FGAUGE;
-
-	HW_P1_temps_lsrc = (struct s_log_source){
-		.log_sched = LOG_SCHED_1mn,
-		.basename = "hw_p1",
-		.identifier = "temps",
-		.version = 3,
-		.nkeys = nmemb,
-		.keys = keys,
-		.metrics = metrics,
-		.logdata_cb = hw_p1_temps_logdata_cb,
-		.object = hw,
-	};
-	return (log_register(&HW_P1_temps_lsrc));
-}
-
-/**
- * Deregister HW P1 temps from logging.
- * @return exec status
- */
-static int hw_p1_lunreg(const struct s_hw_p1_pdata * const hw)
-{
-	unsigned int id;
-	int ret;
-
-	ret = log_deregister(&HW_P1_temps_lsrc);
-	if (ret)
-		dbgerr("log_deregister failed (%d)", ret);
-
-	for (id = 0; id < HW_P1_temps_lsrc.nkeys; id++)
-		free((void *)HW_P1_temps_lsrc.keys[id]);
-	free((void *)HW_P1_temps_lsrc.keys);
-	free((void *)HW_P1_temps_lsrc.metrics);
-
-	return (ret);
-}
-
 /**
  * Initialize hardware and ensure connection is set (needs root)
  * @param priv private hardware data
@@ -205,8 +103,6 @@ static int hw_p1_online(void * priv)
 		pr_log(_("HWP1: Hardware state restored"));
 
 	hw_p1_lcd_online(&hw->lcd);
-
-	hw_p1_lreg(hw);
 
 	hw->run.online = true;
 	ret = ALL_OK;
@@ -386,8 +282,6 @@ static int hw_p1_offline(void * priv)
 
 	if (!hw->run.online)
 		return (-EOFFLINE);
-
-	hw_p1_lunreg(hw);
 
 	hw_p1_lcd_offline(&hw->lcd);
 
