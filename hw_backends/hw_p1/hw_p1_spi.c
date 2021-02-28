@@ -2,7 +2,7 @@
 //  hw_backends/hw_p1/hw_p1_spi.c
 //  rwchcd
 //
-//  (C) 2016-2018 Thibaut VARENE
+//  (C) 2016-2018,2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -427,6 +427,54 @@ int hw_p1_spi_relays_w(struct s_hw_p1_spi * const spi, const union rwchc_u_relay
 		ret = -ESPI;
 
 	return (ret);
+}
+
+/**
+ * 1-wire style CRC function.
+ * This uses the 1-wire polynomial (0x8C), and matches the firmware CRC
+ */
+static uint8_t crc1w(uint8_t byte, uint8_t crc)
+{
+	uint8_t b;
+
+	crc ^= byte;
+	for (b = 8; b > 0; b--)
+		crc = (crc & 0x01) ? (crc >> 1U) ^ 0x8C : (crc >> 1U);
+
+	return crc;
+}
+
+/**
+ * Read all sensors.
+ * Delay: none
+ * @param spi HW P1 spi private data
+ * @param sensors pointer to array whose values will be populated to match current sensors values
+ * @return error code
+ */
+int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const sensors)
+{
+	unsigned int i;
+	int ret = ALL_OK;
+	uint8_t byte, crc;
+
+	assert(sensors);
+
+	SPI_RESYNC(spi, RWCHC_SPIC_SENSORSR);
+
+	if (!spi->run.spitout)
+		return (-ESPI);
+
+	crc = 0;
+	for (i=0; i<RWCHC_SARRAYELMTS*sizeof(*sensors); i++) {
+		byte = SPI_rw8bit(spi, (uint8_t)i);
+		crc = crc1w(byte, crc);
+		*((uint8_t *)sensors+i) = byte;
+	}
+
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
+		ret = -ESPI;
+
+	return ret;
 }
 
 /**

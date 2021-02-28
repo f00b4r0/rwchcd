@@ -355,16 +355,13 @@ out:
  */
 int hw_p1_sensors_read(struct s_hw_p1_pdata * restrict const hw)
 {
-	uint_fast8_t sensor;
 	int ret = ALL_OK;
 	
 	assert(hw->run.initialized);
 
-	for (sensor = 0; sensor < ARRAY_SIZE(hw->sensors); sensor++) {
-		ret = hw_p1_spi_sensor_r(&hw->spi, hw->sensors, sensor);
-		if (ret)
-			goto out;
-	}
+	ret = hw_p1_spi_sensors_r(&hw->spi, hw->sensors);
+	if (ret)
+		goto out;
 
 	hw_p1_parse_temps(hw);
 

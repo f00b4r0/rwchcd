@@ -40,6 +40,7 @@ int hw_p1_spi_peripherals_r(struct s_hw_p1_spi * const spi, union rwchc_u_periph
 int hw_p1_spi_peripherals_w(struct s_hw_p1_spi * const spi, const union rwchc_u_periphs * const periphs) __attribute__((warn_unused_result));
 int hw_p1_spi_relays_r(struct s_hw_p1_spi * const spi, union rwchc_u_relays * const relays) __attribute__((warn_unused_result));
 int hw_p1_spi_relays_w(struct s_hw_p1_spi * const spi, const union rwchc_u_relays * const relays) __attribute__((warn_unused_result));
+int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const sensors) __attribute__((warn_unused_result));
 int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[], const uint8_t sensor) __attribute__((warn_unused_result));
 int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings * const settings) __attribute__((warn_unused_result));
 int hw_p1_spi_settings_w(struct s_hw_p1_spi * const spi, const struct rwchc_s_settings * const settings) __attribute__((warn_unused_result));
