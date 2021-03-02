@@ -92,7 +92,7 @@ static void dummy_exit(void * priv)
 		return;
 
 	if (hw->run.online) {
-		dbgerr("backend is still online!");
+		dbgerr("dummy backend \"%s\" is still online!", hw->name);
 		return;
 	}
 
@@ -165,7 +165,7 @@ static int dummy_output_state_set(void * const priv, const enum e_hw_output_type
 			if (unlikely(!u.r->set.configured))
 				return (-ENOTCONFIGURED);
 			u.r->run.state = state->relay;
-			dbgmsg(1, 1, "relay \"%s\" new state: %d", u.r->name, u.r->run.state);
+			dbgmsg(1, 1, "dummy \"%s\": relay \"%s\" new state: %d", hw->name, u.r->name, u.r->run.state);
 			break;
 		case HW_OUTPUT_NONE:
 		default:

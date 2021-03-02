@@ -54,11 +54,11 @@ __attribute__((warn_unused_result)) static int hw_p1_setup(void * priv, const ch
 	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
 
 	if (ret <= 0) {
-		pr_err(_("HWP1: could not connect"));
+		pr_err(_("HWP1 \"%s\": could not connect"), name);
 		return (-ESPI);
 	}
 
-	pr_log(_("HWP1: Firmware version %d detected"), ret);
+	pr_log(_("HWP1 \"%s\": Firmware version %d detected"), name, ret);
 	hw->run.fwversion = ret;
 	hw->name = name;
 	hw->run.initialized = true;
@@ -86,7 +86,7 @@ static int hw_p1_online(void * priv)
 	// save settings - for deffail and active sensors
 	ret = hw_p1_hwconfig_commit(hw);
 	if (ALL_OK != ret) {
-		pr_err(_("HWP1: failed to update hardware config (%d)"), ret);
+		pr_err(_("HWP1 \"%s\": failed to update hardware config (%d)"), hw->name, ret);
 		goto fail;
 	}
 
@@ -95,14 +95,14 @@ static int hw_p1_online(void * priv)
 	// read sensors once
 	ret = hw_p1_sensors_read(hw);
 	if (ALL_OK != ret) {
-		pr_err(_("HWP1: could not read sensors (%d)"), ret);
+		pr_err(_("HWP1 \"%s\": could not read sensors (%d)"), hw->name, ret);
 		goto fail;
 	}
 
 	// restore previous state - failure is ignored
 	ret = hw_p1_restore_relays(hw);
 	if (ALL_OK == ret)
-		pr_log(_("HWP1: Hardware state restored"));
+		pr_log(_("HWP1 \"%s\": Hardware state restored"), hw->name);
 
 	hw_p1_lcd_online(&hw->lcd);
 
@@ -133,13 +133,13 @@ static int hw_p1_input(void * priv)
 	// read peripherals
 	ret = hw_p1_rwchcperiphs_read(hw);
 	if (ALL_OK != ret) {
-		dbgerr("hw_p1_rwchcperiphs_read failed (%d)", ret);
+		dbgerr("\"%s\" hw_p1_rwchcperiphs_read failed (%d)", hw->name, ret);
 		goto skip_periphs;
 	}
 
 	// detect hardware alarm condition
 	if (hw->peripherals.i_alarm) {
-		pr_log(_("Hardware in alarm"));
+		pr_log(_("HWP1 \"%s\": Hardware in alarm"), hw->name);
 		// clear alarm
 		hw->peripherals.i_alarm = 0;
 		hw_p1_lcd_reset(&hw->lcd);
@@ -212,7 +212,7 @@ skip_periphs:
 	ret = hw_p1_sensors_read(hw);
 	if (ALL_OK != ret) {
 		// flag the error but do NOT stop processing here
-		dbgerr("hw_p1_sensors_read failed (%d)", ret);
+		dbgerr("\"%s\" hw_p1_sensors_read failed (%d)", hw->name, ret);
 		goto fail;
 	}
 
@@ -221,7 +221,7 @@ skip_periphs:
 fail:
 	if ((timekeep_now() - hw->run.sensors_ftime) >= HW_P1_TIMEOUT_TK) {
 		// if we failed to read the sensor for too long, time to panic - XXX hardcoded
-		alarms_raise(ret, _("HWP1: Couldn't read sensors: timeout exceeded!"));
+		alarms_raise(ret, _("HWP1 \"%s\": Couldn't read sensors: timeout exceeded!"), hw->name);
 	}
 
 	return (ret);
@@ -245,19 +245,19 @@ static int hw_p1_output(void * priv)
 	// update LCD
 	ret = hw_p1_lcd_run(&hw->lcd, &hw->spi, hw);
 	if (ALL_OK != ret)
-		dbgerr("hw_p1_lcd_run failed (%d)", ret);
+		dbgerr("\"%s\" hw_p1_lcd_run failed (%d)", hw->name, ret);
 
 	// write relays
 	ret = hw_p1_rwchcrelays_write(hw);
 	if (ALL_OK != ret) {
-		dbgerr("hw_p1_rwchcrelays_write failed (%d)", ret);
+		dbgerr("\"%s\" hw_p1_rwchcrelays_write failed (%d)", hw->name, ret);
 		goto out;
 	}
 
 	// write peripherals
 	ret = hw_p1_rwchcperiphs_write(hw);
 	if (ALL_OK != ret)
-		dbgerr("hw_p1_rwchcperiphs_write failed (%d)", ret);
+		dbgerr("\"%s\" hw_p1_rwchcperiphs_write failed (%d)", hw->name, ret);
 
 out:
 	return (ret);
@@ -293,7 +293,7 @@ static int hw_p1_offline(void * priv)
 	// update the hardware
 	ret = hw_p1_rwchcrelays_write(hw);
 	if (ret)
-		dbgerr("hw_p1_rwchcrelays_write failed (%d)", ret);
+		dbgerr("\"%s\" hw_p1_rwchcrelays_write failed (%d)", hw->name, ret);
 
 	// update permanent storage with final count
 	hw_p1_save_relays(hw);
@@ -303,7 +303,7 @@ static int hw_p1_offline(void * priv)
 	// reset the hardware
 	ret = hw_p1_spi_reset(&hw->spi);
 	if (ret)
-		dbgerr("reset failed (%d)", ret);
+		dbgerr("\"%s\" reset failed (%d)", hw->name, ret);
 
 	return (ret);
 }
@@ -322,7 +322,7 @@ static void hw_p1_exit(void * priv)
 		return;
 
 	if (hw->run.online) {
-		dbgerr("hardware is still online!");
+		dbgerr("\"%s\" hardware is still online!", hw->name);
 		return;
 	}
 

@@ -463,7 +463,7 @@ int hw_p1_lcd_run(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_spi * const spi
 
 	ret = hw_p1_lcd_update(lcd, spi, lcd->reset);
 	if (ret)
-		dbgerr("LCD update failed (%d)", ret);
+		dbgerr("\"%s\" LCD update failed (%d)", hw->name, ret);
 
 	lcd->reset = false;
 

@@ -22,6 +22,7 @@
 #include <string.h>	// memset/strdup
 #include <assert.h>
 #include <stdatomic.h>
+#include <stdio.h>	// asprintf
 
 #include "lib.h"
 #include "storage.h"
@@ -136,8 +137,18 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
  */
 int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw)
 {
+	char * storename;
+	int ret;
+
 	assert(hw->run.online);
-	return (storage_dump("hw_p1_relays", &Hardware_sversion, hw->Relays, sizeof(hw->Relays)));
+
+	ret = asprintf(&storename, "hwp1_%s_relays", hw->name);
+	if (ret < 0)
+		return (-EOOM);
+
+	ret = storage_dump(storename, &Hardware_sversion, hw->Relays, sizeof(hw->Relays));
+	free(storename);
+	return (ret);
 }
 
 /**
@@ -155,11 +166,17 @@ int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 	static typeof (hw->Relays) blob;
 	storage_version_t sversion;
 	typeof(&hw->Relays[0]) blobptr = (typeof(blobptr))&blob;
+	char * storename;
 	unsigned int i;
 	int ret;
-	
+
+	ret = asprintf(&storename, "hwp1_%s_relays", hw->name);
+	if (ret < 0)
+		return (-EOOM);
+
 	// try to restore key elements of hardware
-	ret = storage_fetch("hw_p1_relays", &sversion, blob, sizeof(blob));
+	ret = storage_fetch(storename, &sversion, blob, sizeof(blob));
+	free(storename);
 	if (ALL_OK == ret) {
 		if (Hardware_sversion != sversion)
 			return (-EMISMATCH);
@@ -176,7 +193,7 @@ int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 			hw->Relays[i].run.cycles += blobptr->run.cycles;
 			blobptr++;
 		}
-		dbgmsg(1, 1, "Hardware relay state restored");
+		dbgmsg(1, 1, "\"%s\" Hardware relay state restored", hw->name);
 	}
 
 	return (ret);
@@ -243,7 +260,7 @@ static void hw_p1_rwchcsettings_deffail(struct s_hw_p1_pdata * restrict const hw
 				hw->settings.deffail.T12 = hw->Relays[i].set.failstate;
 				break;
 			default:
-				dbgerr("Invalid relay channel: %d", hw->Sensors[i].set.channel);
+				dbgerr("\"%s\" Invalid relay channel: %d", hw->name, hw->Sensors[i].set.channel);
 				break;
 		}
 	}
@@ -306,7 +323,7 @@ static void hw_p1_rwchcsettings_actsens(struct s_hw_p1_pdata * restrict const hw
 				hw->settings.actsens.S14 = 1;
 				break;
 			default:
-				dbgerr("Invalid sensor channel: %d", hw->Sensors[i].set.channel);
+				dbgerr("\"%s\" Invalid sensor channel: %d", hw->name, hw->Sensors[i].set.channel);
 				break;
 		}
 	}
@@ -355,7 +372,7 @@ int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw)
 	// save hardware config
 	ret = hw_p1_spi_settings_s(&hw->spi);
 
-	dbgmsg(1, 1, "HW Config saved.");
+	dbgmsg(1, 1, "\"%s\" HW Config saved.", hw->name);
 	
 out:
 	return (ret);
@@ -498,7 +515,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 	if (chflags) {
 		ret = hw_p1_save_relays(hw);
 		if (ret)
-			dbgerr("hw_p1_save failed (%d)", ret);
+			dbgerr("\"%s\" hw_p1_save failed (%d)", hw->name, ret);
 	}
 	
 	// send new state to hardware
