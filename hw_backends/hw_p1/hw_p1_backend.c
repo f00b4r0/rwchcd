@@ -121,10 +121,6 @@ fail:
 static int hw_p1_input(void * priv)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	static unsigned int count = 0, systout = 0;
-	static uint_fast8_t tempid = 0;
-	static enum e_systemmode cursysmode = SYS_UNKNOWN;
-	static bool syschg = false;
 	int ret;
 
 	assert(hw);
@@ -152,7 +148,7 @@ static int hw_p1_input(void * priv)
 	if (alarms_count()) {
 		hw->peripherals.o_LED2 = 1;
 		hw->peripherals.o_buzz = !hw->peripherals.o_buzz;
-		count = 2;
+		hw->run.count = 2;
 	}
 	else {
 		hw->peripherals.o_LED2 = 0;
@@ -162,48 +158,48 @@ static int hw_p1_input(void * priv)
 	// handle switch 1
 	if (hw->peripherals.i_SW1) {
 		hw->peripherals.i_SW1 = 0;
-		count = 5;
-		systout = 3;
-		syschg = true;
+		hw->run.count = 5;
+		hw->run.systout = 3;
+		hw->run.syschg = true;
 
-		cursysmode++;
+		hw->run.cursysmode++;
 
-		if (cursysmode >= SYS_UNKNOWN)	// last valid mode
-			cursysmode = SYS_NONE + 1;	// first valid mode
+		if (hw->run.cursysmode >= SYS_UNKNOWN)	// last valid mode
+			hw->run.cursysmode = SYS_NONE + 1;	// first valid mode
 
-		hw_p1_lcd_sysmode_change(&hw->lcd, cursysmode);	// update LCD
+		hw_p1_lcd_sysmode_change(&hw->lcd, hw->run.cursysmode);	// update LCD
 	}
 
-	if (!systout) {
-		if (syschg && (cursysmode != runtime_systemmode())) {
+	if (!hw->run.systout) {
+		if (hw->run.syschg && (hw->run.cursysmode != runtime_systemmode())) {
 			// change system mode
-			runtime_set_systemmode(cursysmode);
+			runtime_set_systemmode(hw->run.cursysmode);
 			// hw_p1_beep()
 			hw->peripherals.o_buzz = 1;
 		}
-		syschg = false;
-		cursysmode = runtime_systemmode();
+		hw->run.syschg = false;
+		hw->run.cursysmode = runtime_systemmode();
 	}
 	else
-		systout--;
+		hw->run.systout--;
 
 	// handle switch 2
 	if (hw->peripherals.i_SW2) {
 		// increase displayed tempid
-		tempid++;
+		hw->run.tempid++;
 		hw->peripherals.i_SW2 = 0;
-		count = 5;
+		hw->run.count = 5;
 
-		if (tempid >= hw->run.nsensors)
-			tempid = 0;
+		if (hw->run.tempid >= hw->run.nsensors)
+			hw->run.tempid = 0;
 
-		hw_p1_lcd_set_tempid(&hw->lcd, tempid);	// update sensor
+		hw_p1_lcd_set_tempid(&hw->lcd, hw->run.tempid);	// update sensor
 	}
 
 	// trigger timed backlight
-	if (count) {
+	if (hw->run.count) {
 		hw->peripherals.o_LCDbl = 1;
-		if (!--count)
+		if (!--hw->run.count)
 			hw_p1_lcd_fade(&hw->spi);	// apply fadeout
 	}
 	else

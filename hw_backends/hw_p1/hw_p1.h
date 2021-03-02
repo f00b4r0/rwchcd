@@ -69,6 +69,11 @@ struct s_hw_p1_pdata {
 		res_t calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version
 		unsigned int nsensors;		///< number of configured sensors
+		// private data for input()
+		int count, systout;
+		bool syschg;
+		enum e_systemmode cursysmode;
+		uint_fast8_t tempid;
 	} run;		///< private runtime (internally handled)
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data
 	union rwchc_u_relays relays;		///< local copy of hardware relays data
