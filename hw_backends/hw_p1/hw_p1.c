@@ -183,30 +183,6 @@ int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw)
 }
 
 /**
- * Update internal relay system based on target state.
- * This function takes an incremental physical relay id and adjusts
- * the internal hardware data structure based on the desired relay
- * state.
- * @param rWCHC_relays target internal relay system
- * @param id target relay id (from 0)
- * @param state target state
- */
-__attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const uint_fast8_t id, const bool state)
-{
-	uint_fast8_t rid = id;
-
-	// adapt relay id XXX REVISIT
-	if (rid > 6)
-		rid++;	// skip the hole
-
-	// set state for triac control
-	if (state)
-		setbit(rWCHC_relays->ALL, rid);
-	else
-		clrbit(rWCHC_relays->ALL, rid);
-}
-
-/**
  * Prepare hardware settings 'deffail' data based on Relays configuration.
  * @param hw HW P1 private data
  */
@@ -223,7 +199,53 @@ static void hw_p1_rwchcsettings_deffail(struct s_hw_p1_pdata * restrict const hw
 			continue;
 
 		// update internal structure
-		rwchc_relay_set(&hw->settings.deffail, i, hw->Relays[i].set.failstate);
+		switch (hw->Relays[i].set.channel) {
+			case 1:
+				hw->settings.deffail.RL1 = hw->Relays[i].set.failstate;
+				break;
+			case 2:
+				hw->settings.deffail.RL2 = hw->Relays[i].set.failstate;
+				break;
+			case 3:
+				hw->settings.deffail.T1 = hw->Relays[i].set.failstate;
+				break;
+			case 4:
+				hw->settings.deffail.T2 = hw->Relays[i].set.failstate;
+				break;
+			case 5:
+				hw->settings.deffail.T3 = hw->Relays[i].set.failstate;
+				break;
+			case 6:
+				hw->settings.deffail.T4 = hw->Relays[i].set.failstate;
+				break;
+			case 7:
+				hw->settings.deffail.T5 = hw->Relays[i].set.failstate;
+				break;
+			case 8:
+				hw->settings.deffail.T6 = hw->Relays[i].set.failstate;
+				break;
+			case 9:
+				hw->settings.deffail.T7 = hw->Relays[i].set.failstate;
+				break;
+			case 10:
+				hw->settings.deffail.T8 = hw->Relays[i].set.failstate;
+				break;
+			case 11:
+				hw->settings.deffail.T9 = hw->Relays[i].set.failstate;
+				break;
+			case 12:
+				hw->settings.deffail.T10 = hw->Relays[i].set.failstate;
+				break;
+			case 13:
+				hw->settings.deffail.T11 = hw->Relays[i].set.failstate;
+				break;
+			case 14:
+				hw->settings.deffail.T12 = hw->Relays[i].set.failstate;
+				break;
+			default:
+				dbgerr("Invalid relay channel: %d", hw->Sensors[i].set.channel);
+				break;
+		}
 	}
 }
 
@@ -412,6 +434,31 @@ static int hw_p1_relay_update(struct s_hw_p1_relay * const relay, const timekeep
 }
 
 /**
+ * Update internal relay system based on target state.
+ * This function takes a physical relay channel and adjusts the internal
+ * hardware data structure based on the desired relay state.
+ * @param rWCHC_relays target internal relay system
+ * @param channel target relay channel (from 1)
+ * @param state target state
+ */
+__attribute__((always_inline)) static inline void rwchc_relay_set(union rwchc_u_relays * const rWCHC_relays, const uint_fast8_t channel, const bool state)
+{
+	uint_fast8_t rid = channel;
+
+	rid--;	// indexing starts at 0
+	
+	// adapt relay id - XXX WARNING this assumes relays are consecutive in the structure with a hole at bit 7.
+	if (rid > 6)
+		rid++;	// skip the hole
+
+	// set state
+	if (state)
+		setbit(rWCHC_relays->ALL, rid);
+	else
+		clrbit(rWCHC_relays->ALL, rid);
+}
+
+/**
  * Write all relays
  * This function updates all known hardware relays according to their desired turn_on
  * state. This function also does time and cycle accounting for the relays.
@@ -444,7 +491,7 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 			chflags |= ret;
 
 		// update internal structure
-		rwchc_relay_set(&rWCHC_relays, i, (bool)relay->run.is_on);
+		rwchc_relay_set(&rWCHC_relays, relay->set.channel, (bool)relay->run.is_on);
 	}
 
 	// save/log relays state if there was a change
