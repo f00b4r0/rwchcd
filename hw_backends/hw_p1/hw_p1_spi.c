@@ -431,7 +431,6 @@ int hw_p1_spi_relays_w(struct s_hw_p1_spi * const spi, const union rwchc_u_relay
 
 /**
  * 1-wire style CRC function.
- * This uses the 1-wire polynomial (0x8C), and matches the firmware CRC
  */
 static uint8_t crc1w(uint8_t byte, uint8_t crc)
 {
@@ -439,7 +438,7 @@ static uint8_t crc1w(uint8_t byte, uint8_t crc)
 
 	crc ^= byte;
 	for (b = 8; b > 0; b--)
-		crc = (crc & 0x01) ? (crc >> 1U) ^ 0x8C : (crc >> 1U);
+		crc = (crc & 0x01) ? (crc >> 1U) ^ RWCHC_CRC_POLY : (crc >> 1U);
 
 	return crc;
 }
