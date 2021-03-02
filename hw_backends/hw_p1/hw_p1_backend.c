@@ -34,9 +34,10 @@
 /**
  * Initialize hardware and ensure connection is set (needs root)
  * @param priv private hardware data
+ * @param name user-set name for this backend
  * @return error state
  */
-__attribute__((warn_unused_result)) static int hw_p1_setup(void * priv)
+__attribute__((warn_unused_result)) static int hw_p1_setup(void * priv, const char * name)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	int ret, i = 0;
@@ -59,6 +60,7 @@ __attribute__((warn_unused_result)) static int hw_p1_setup(void * priv)
 
 	pr_log(_("HWP1: Firmware version %d detected"), ret);
 	hw->run.fwversion = ret;
+	hw->name = name;
 	hw->run.initialized = true;
 
 	return (ALL_OK);

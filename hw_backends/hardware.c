@@ -43,7 +43,7 @@ int hardware_setup(void)
 			continue;
 
 		if (HW_backends.all[id].cb->setup) {
-			ret = HW_backends.all[id].cb->setup(HW_backends.all[id].priv);
+			ret = HW_backends.all[id].cb->setup(HW_backends.all[id].priv, HW_backends.all[id].name);
 			if (ALL_OK != ret) {
 				fail = true;
 				pr_err(_("Failed to setup backend \"%s\" (%d)"), HW_backends.all[id].name, ret);

@@ -186,9 +186,10 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 /**
  * Setup MQTT backend.
  * @param priv private backend data
+ * @param name user-set name for this backend
  * @return error state
  */
-__attribute__((warn_unused_result)) static int mqtt_setup(void * priv)
+__attribute__((warn_unused_result)) static int mqtt_setup(void * priv, const char * name)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 	int ret;
@@ -219,6 +220,7 @@ __attribute__((warn_unused_result)) static int mqtt_setup(void * priv)
 
 	mosquitto_message_callback_set(hw->mosq, mqtt_message_callback);
 
+	hw->name = name;
 	hw->run.initialized = true;
 
 	return (ALL_OK);

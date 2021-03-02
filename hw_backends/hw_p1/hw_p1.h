@@ -83,6 +83,7 @@ struct s_hw_p1_pdata {
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
 	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
+	const char * name;			///< user-set name for this backend
 };
 
 int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
