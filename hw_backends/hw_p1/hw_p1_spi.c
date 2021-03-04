@@ -81,8 +81,7 @@
  */
 static uint8_t SPI_rw8bit(const struct s_hw_p1_spi * const spi, const uint8_t data)
 {
-	static uint8_t exch;
-	exch = data;
+	uint8_t exch = data;
 	wiringPiSPIDataRW(spi->set.chan, &exch, 1);
 	usleep(SPIDELAYUS);
 	return exch;
