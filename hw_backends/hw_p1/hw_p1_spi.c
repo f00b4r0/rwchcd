@@ -535,7 +535,8 @@ int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings
 {
 	unsigned int i;
 	int ret = ALL_OK;
-	
+	uint8_t byte, crc;
+
 	assert(settings);
 
 	SPI_RESYNC(spi, RWCHC_SPIC_SETTINGSR);
@@ -543,10 +544,14 @@ int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings
 	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	for (i=0; i<sizeof(*settings); i++)
-		*((uint8_t *)settings+i) = SPI_rw8bit(spi, (uint8_t)i);
-	
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSR))
+	crc = 0;
+	for (i=0; i<sizeof(*settings); i++) {
+		byte = SPI_rw8bit(spi, (uint8_t)i);
+		crc = crc1w(byte, crc);
+		*((uint8_t *)settings+i) = byte;
+	}
+
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
 		ret = -ESPI;
 
 	return ret;
