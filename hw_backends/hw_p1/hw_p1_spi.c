@@ -431,7 +431,7 @@ int hw_p1_spi_relays_w(struct s_hw_p1_spi * const spi, const union rwchc_u_relay
 /**
  * 1-wire style CRC function.
  */
-static uint8_t crc1w(uint8_t byte, uint8_t crc)
+static inline uint8_t crc1w(uint8_t byte, uint8_t crc)
 {
 	uint8_t b;
 
@@ -443,6 +443,29 @@ static uint8_t crc1w(uint8_t byte, uint8_t crc)
 }
 
 /**
+ * Receive a block of CRC'd data over SPI.
+ * @param spi HW P1 spi private data
+ * @param dst pointer to target for data
+ * @param len length of data to receive
+ * @return exec status
+ */
+static int _spi_crc_recv(const struct s_hw_p1_spi * const spi, uint8_t * const dst, int len)
+{
+	uint8_t byte, crc, i;
+
+	for (crc = 0, i = 0; i < len; i++) {
+		byte = SPI_rw8bit(spi, i);
+		crc = crc1w(byte, crc);
+		dst[i] = byte;
+	}
+
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
+		return -ESPI;
+	else
+		return ALL_OK;
+}
+
+/**
  * Read all sensors.
  * Delay: none
  * @param spi HW P1 spi private data
@@ -451,10 +474,6 @@ static uint8_t crc1w(uint8_t byte, uint8_t crc)
  */
 int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const sensors)
 {
-	unsigned int i;
-	int ret = ALL_OK;
-	uint8_t byte, crc;
-
 	assert(sensors);
 
 	SPI_RESYNC(spi, RWCHC_SPIC_SENSORSR);
@@ -462,17 +481,7 @@ int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const s
 	if (!spi->run.spitout)
 		return (-ESPI);
 
-	crc = 0;
-	for (i=0; i<RWCHC_NTSENSORS*sizeof(*sensors); i++) {
-		byte = SPI_rw8bit(spi, (uint8_t)i);
-		crc = crc1w(byte, crc);
-		*((uint8_t *)sensors+i) = byte;
-	}
-
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
-		ret = -ESPI;
-
-	return ret;
+	return _spi_crc_recv(spi, (uint8_t *)sensors, RWCHC_NTSENSORS*sizeof(*sensors));
 }
 
 /**
@@ -484,10 +493,6 @@ int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const s
  */
 int hw_p1_spi_refs_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refs)
 {
-	unsigned int i;
-	int ret = ALL_OK;
-	uint8_t byte, crc;
-
 	assert(refs);
 
 	SPI_RESYNC(spi, RWCHC_SPIC_REFSR);
@@ -495,17 +500,7 @@ int hw_p1_spi_refs_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refs
 	if (!spi->run.spitout)
 		return (-ESPI);
 
-	crc = 0;
-	for (i=0; i<RWCHC_NTREFS*sizeof(*refs); i++) {
-		byte = SPI_rw8bit(spi, (uint8_t)i);
-		crc = crc1w(byte, crc);
-		*((uint8_t *)refs+i) = byte;
-	}
-
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
-		ret = -ESPI;
-
-	return ret;
+	return _spi_crc_recv(spi, (uint8_t *)refs, RWCHC_NTREFS*sizeof(*refs));
 }
 
 /**
@@ -517,10 +512,6 @@ int hw_p1_spi_refs_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refs
  */
 int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings * const settings)
 {
-	unsigned int i;
-	int ret = ALL_OK;
-	uint8_t byte, crc;
-
 	assert(settings);
 
 	SPI_RESYNC(spi, RWCHC_SPIC_SETTINGSR);
@@ -528,17 +519,7 @@ int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings
 	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	crc = 0;
-	for (i=0; i<sizeof(*settings); i++) {
-		byte = SPI_rw8bit(spi, (uint8_t)i);
-		crc = crc1w(byte, crc);
-		*((uint8_t *)settings+i) = byte;
-	}
-
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
-		ret = -ESPI;
-
-	return ret;
+	return _spi_crc_recv(spi, (uint8_t *)settings, sizeof(*settings));
 }
 
 /**
