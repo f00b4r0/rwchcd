@@ -87,7 +87,7 @@ int filecfg_log_parse(void * restrict const priv, const struct s_filecfg_parser_
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL,		"enabled",	true, fcp_bool_s_log_enabled,	NULL, },
-		{ NODESTR|NODESTC,	"bkend",	true, log_parse_bkend,		NULL, },
+		{ NODESTR|NODESTC,	"backend",	true, log_parse_bkend,		NULL, },
 	};
 	int ret;
 
