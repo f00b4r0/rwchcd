@@ -28,7 +28,7 @@ extern struct s_log Log;
 
 static void log_config_dump_bkend(const struct s_log_bendcbs * restrict const lbkend)
 {
-	filecfg_iprintf("bkend ");
+	filecfg_iprintf("backend ");
 
 	switch (lbkend->bkid) {
 		case LOG_BKEND_FILE:

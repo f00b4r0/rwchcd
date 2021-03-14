@@ -1,13 +1,17 @@
 #include "../hw_backends/hw_p1/hw_p1.c"
 
-int main(void)
+int main(int argc, char **argv)
 {
 	int i;
 	time_t rtime;
 	int y, d, h, m, s;
 	struct s_hw_p1_pdata Hardware;
 
+	if (argc < 2)
+		fprintf(stderr, "missing name of backend\n");
+
 	memset(&Hardware, 0x0, sizeof(Hardware));
+	Hardware.name = argv[1];
 
 	storage_online();
 	hw_p1_restore_relays(&Hardware);

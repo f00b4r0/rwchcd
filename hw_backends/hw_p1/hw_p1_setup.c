@@ -61,42 +61,6 @@ int hw_p1_setup_setbl(struct s_hw_p1_pdata * restrict const hw, const uint8_t pe
 }
 
 /**
- * Set hardware configuration for number of sensors.
- * @param hw private hw_p1 hardware data
- * @param lastid last connected sensor id
- * @return exec status
- */
-int hw_p1_setup_setnsensors(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t lastid)
-{
-	assert(hw);
-
-	if ((lastid <= 0) || (lastid > RWCHC_NTSENSORS))
-		return (-EINVALID);
-
-	hw->settings.nsensors = lastid;
-
-	return (ALL_OK);
-}
-
-/**
- * Set number of temperature samples for readouts.
- * @param hw private hw_p1 hardware data
- * @param nsamples number of samples
- * @return exec status
- */
-int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint_fast8_t nsamples)
-{
-	assert(hw);
-
-	if (!nsamples)
-		return (-EINVALID);
-
-	hw->set.nsamples = nsamples;
-
-	return (ALL_OK);
-}
-
-/**
  * Configure a temperature sensor.
  * @param hw private hw_p1 hardware data
  * @param sensor an allocated sensor structure which will be used as the configuration source for the new sensor
@@ -104,7 +68,7 @@ int hw_p1_setup_setnsamples(struct s_hw_p1_pdata * restrict const hw, const uint
  */
 int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const struct s_hw_p1_sensor * restrict const sensor)
 {
-	uint_fast8_t id;
+	uint_fast8_t id, i;
 	char * str;
 
 	assert(hw);
@@ -112,13 +76,9 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 	if (!sensor || !sensor->name)
 		return (-EUNKNOWN);
 
-	id = sensor->set.channel;
-	if (!id || (id > ARRAY_SIZE(hw->Sensors)))
+	id = hw->run.nsensors;
+	if (id >= ARRAY_SIZE(hw->Sensors))
 		return (-EINVALID);
-
-	id--;	// sensor array indexes from 0
-	if (hw->Sensors[id].set.configured)
-		return (-EEXISTS);
 
 	// ensure unique name
 	if (hw_p1_sid_by_name(hw, sensor->name) > 0)
@@ -127,6 +87,15 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 	// ensure valid type
 	if (!sensor->set.type)
 		return (-EINVALID);
+
+	if (sensor->set.channel > ARRAY_SIZE(hw->sensors))
+		return (-EINVALID);
+
+	// check for channel collision
+	for (i = 0; i < hw->run.nsensors; i++) {
+		if (sensor->set.channel == hw->Sensors[i].set.channel)
+			return (-EEXISTS);
+	}
 
 	str = strdup(sensor->name);
 	if (!str)
@@ -137,6 +106,8 @@ int hw_p1_setup_sensor_configure(struct s_hw_p1_pdata * restrict const hw, const
 	hw->Sensors[id].set.type = sensor->set.type;
 	hw->Sensors[id].set.offset = sensor->set.offset;
 	hw->Sensors[id].set.configured = true;
+
+	hw->run.nsensors++;
 
 	return (ALL_OK);
 }

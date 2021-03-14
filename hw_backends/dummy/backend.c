@@ -23,9 +23,10 @@
 /**
  * Setup dummy backend.
  * @param priv private backend data
+ * @param name user-set name for this backend
  * @return error state
  */
-__attribute__((warn_unused_result)) static int dummy_setup(void * priv)
+__attribute__((warn_unused_result)) static int dummy_setup(void * priv, const char * name)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 
@@ -33,6 +34,7 @@ __attribute__((warn_unused_result)) static int dummy_setup(void * priv)
 		return (-EINVALID);
 
 	hw->run.initialized = true;
+	hw->name = name;
 
 	return (ALL_OK);
 }
@@ -90,7 +92,7 @@ static void dummy_exit(void * priv)
 		return;
 
 	if (hw->run.online) {
-		dbgerr("backend is still online!");
+		dbgerr("dummy backend \"%s\" is still online!", hw->name);
 		return;
 	}
 
@@ -163,7 +165,7 @@ static int dummy_output_state_set(void * const priv, const enum e_hw_output_type
 			if (unlikely(!u.r->set.configured))
 				return (-ENOTCONFIGURED);
 			u.r->run.state = state->relay;
-			dbgmsg(1, 1, "relay \"%s\" new state: %d", u.r->name, u.r->run.state);
+			dbgmsg(1, 1, "dummy \"%s\": relay \"%s\" new state: %d", hw->name, u.r->name, u.r->run.state);
 			break;
 		case HW_OUTPUT_NONE:
 		default:

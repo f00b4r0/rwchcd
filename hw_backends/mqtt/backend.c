@@ -186,9 +186,10 @@ static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const str
 /**
  * Setup MQTT backend.
  * @param priv private backend data
+ * @param name user-set name for this backend
  * @return error state
  */
-__attribute__((warn_unused_result)) static int mqtt_setup(void * priv)
+__attribute__((warn_unused_result)) static int mqtt_setup(void * priv, const char * name)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 	int ret;
@@ -212,13 +213,14 @@ __attribute__((warn_unused_result)) static int mqtt_setup(void * priv)
 
 	ret = mosquitto_username_pw_set(hw->mosq, hw->set.username, hw->set.password);
 	if (ret) {
-		pr_err("MQTT username/password error: \"%s\"", mosquitto_strerror(ret));
+		pr_err("MQTT backend \"%s\": username/password error: \"%s\"", hw->name, mosquitto_strerror(ret));
 		ret = -EGENERIC;
 		goto fail;
 	}
 
 	mosquitto_message_callback_set(hw->mosq, mqtt_message_callback);
 
+	hw->name = name;
 	hw->run.initialized = true;
 
 	return (ALL_OK);
@@ -249,7 +251,7 @@ static int mqtt_online(void * priv)
 
 	ret = mosquitto_connect(hw->mosq, hw->set.host, hw->set.port, 60);
 	if (ret) {
-		pr_err("MQTT connect error: \"%s\"", mosquitto_strerror(ret));
+		pr_err("MQTT backend \"%s\": connect error: \"%s\"", hw->name, mosquitto_strerror(ret));
 		return (-EGENERIC);
 	}
 
@@ -276,7 +278,7 @@ static int mqtt_online(void * priv)
 
 		ret = mosquitto_subscribe(hw->mosq, NULL, str, MQTT_BKND_QOS);
 		if (ret) {
-			pr_err("MQTT subscription failed for \"%s\": \"%s\"", str, mosquitto_strerror(ret));
+			pr_err("MQTT backend \"%s\": subscription failed for \"%s\": \"%s\"", hw->name, str, mosquitto_strerror(ret));
 			free (str);
 			ret = -EGENERIC;
 			goto fail;
@@ -287,7 +289,7 @@ static int mqtt_online(void * priv)
 	// start the network background task
 	ret = mosquitto_loop_start(hw->mosq);
 	if (ret) {
-		pr_err("MQTT loop start failed: \"%s\"", mosquitto_strerror(ret));
+		pr_err("MQTT backend \"%s\": loop start failed: \"%s\"", hw->name, mosquitto_strerror(ret));
 		ret = -EGENERIC;
 		goto fail;
 	}
@@ -322,7 +324,7 @@ static int mqtt_pub_state(const struct s_mqtt_pdata * const hw, enum e_hw_output
 	ret = mosquitto_publish(hw->mosq, NULL, topic, strlen(message), message, MQTT_BKND_QOS, false);
 	free(topic);
 	if (ret) {
-		dbgerr("mosquitto_publish failed: \"%s\"", mosquitto_strerror(ret));
+		dbgerr("\"%s\" mosquitto_publish failed: \"%s\"", hw->name, mosquitto_strerror(ret));
 		return (-EHARDWARE);
 	}
 
@@ -365,7 +367,7 @@ static void mqtt_exit(void * priv)
 		return;
 
 	if (hw->run.online) {
-		dbgerr("hardware is still online!");
+		dbgerr("\"%s\" backend is still online!", hw->name);
 		return;
 	}
 

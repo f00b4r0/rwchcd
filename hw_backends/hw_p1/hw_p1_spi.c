@@ -2,7 +2,7 @@
 //  hw_backends/hw_p1/hw_p1_spi.c
 //  rwchcd
 //
-//  (C) 2016-2018 Thibaut VARENE
+//  (C) 2016-2018,2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -81,8 +81,7 @@
  */
 static uint8_t SPI_rw8bit(const struct s_hw_p1_spi * const spi, const uint8_t data)
 {
-	static uint8_t exch;
-	exch = data;
+	uint8_t exch = data;
 	wiringPiSPIDataRW(spi->set.chan, &exch, 1);
 	usleep(SPIDELAYUS);
 	return exch;
@@ -430,106 +429,78 @@ int hw_p1_spi_relays_w(struct s_hw_p1_spi * const spi, const union rwchc_u_relay
 }
 
 /**
- * Read a single sensor value.
- * Delay: none
- * @param spi HW P1 spi private data
- * @param tsensors pointer to target sensor array whose value will be updated if no error occurs
- * @param sensor target sensor number to be read
- * @return error code
- * @warning no check is performed on the size of the provided tsensors array
+ * 1-wire style CRC function.
  */
-int hw_p1_spi_sensor_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t tsensors[], const uint8_t sensor)
+static inline uint8_t crc1w(uint8_t byte, uint8_t crc)
 {
-	int ret;
-	uint16_t tsval;
-	uint8_t low, high;
-	
-	assert(tsensors);
+	uint8_t b;
 
-	if (sensor >= RWCHC_NTSENSORS)
-		return (-EINVALID);
-	
-	SPI_RESYNC(spi, sensor);
+	crc ^= byte;
+	for (b = 8; b > 0; b--)
+		crc = (crc & 0x01) ? (crc >> 1U) ^ RWCHC_CRC_POLY : (crc >> 1U);
 
-	if (!spi->run.spitout)
-		return (-ESPI);
-	
-	/* From here we invert the expectancy logic: we expect things to go well
-	 * and we'll flag if they don't. The point is that we must not interrupt
-	 * the loop even if there is a mistransfer, since the firmware expects
-	 * a full transfer regardless of errors. */
-	ret = ALL_OK;
-
-	low = SPI_rw8bit(spi, (uint8_t)~sensor);	// we get LSB first, sent byte must be ~sensor
-	if (spi->run.FWversion <= 8)
-		high = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);	// then MSB, sent byte is next command
-	else	// v9
-		high = SPI_rw8bit(spi, low);		// then MSB, sent byte is received LSB
-
-	if (RWCHC_SPIC_INVALID == high)		// MSB indicates an error
-		ret = -ESPI;
-	
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, sensor))
-		ret = -ESPI;
-
-	tsval = low;
-	tsval |= (uint16_t)(high << 8);
-
-	if (ALL_OK == ret)
-		tsensors[sensor] = tsval;
-
-	return ret;
+	return crc;
 }
 
 /**
- * Read a single reference value.
- * Delay: none
+ * Receive a block of CRC'd data over SPI.
  * @param spi HW P1 spi private data
- * @param refval pointer to target reference whose value will be updated if no error occurs
- * @param refn target reference number to be read (0 or 1)
- * @return error code
+ * @param dst pointer to target for data
+ * @param len length of data to receive
+ * @return exec status
  */
-int hw_p1_spi_ref_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refval, const uint8_t refn)
+static int _spi_crc_recv(const struct s_hw_p1_spi * const spi, uint8_t * const dst, int len)
 {
-	int ret;
-	uint8_t cmd;
-	uint16_t value;
+	uint8_t byte, crc, i;
 
-	assert(refval);
-	
-	switch (refn) {
-		case 0:
-			cmd = RWCHC_SPIC_REF0;
-			break;
-		case 1:
-			cmd = RWCHC_SPIC_REF1;
-			break;
-		default:
-			return (-EINVALID);
+	for (crc = 0, i = 0; i < len; i++) {
+		byte = SPI_rw8bit(spi, i);
+		crc = crc1w(byte, crc);
+		dst[i] = byte;
 	}
 
-	SPI_RESYNC(spi, cmd);
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, crc))
+		return -ESPI;
+	else
+		return ALL_OK;
+}
+
+/**
+ * Read all sensors.
+ * Delay: none
+ * @param spi HW P1 spi private data
+ * @param sensors pointer to array whose values will be populated to match current sensors values
+ * @return error code
+ */
+int hw_p1_spi_sensors_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const sensors)
+{
+	assert(sensors);
+
+	SPI_RESYNC(spi, RWCHC_SPIC_SENSORSR);
 
 	if (!spi->run.spitout)
 		return (-ESPI);
 
-	/* same logic as hw_p1_spi_sensor_r() */
-	ret = ALL_OK;
+	return _spi_crc_recv(spi, (uint8_t *)sensors, RWCHC_NTSENSORS*sizeof(*sensors));
+}
 
-	value = 0;
-	value |= (uint16_t)SPI_rw8bit(spi, (uint8_t)~cmd);	// we get LSB first, sent byte is ~cmd
-	value |= (uint16_t)(SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE) << 8);	// then MSB, sent byte is next command
+/**
+ * Read all calibration references.
+ * Delay: none
+ * @param spi HW P1 spi private data
+ * @param refs pointer to array whose values will be populated to match current refs values
+ * @return error code
+ */
+int hw_p1_spi_refs_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refs)
+{
+	assert(refs);
 
-	if ((*refval & 0xFF00) == (RWCHC_SPIC_INVALID << 8))	// MSB indicates an error
-		ret = -ESPI;
+	SPI_RESYNC(spi, RWCHC_SPIC_REFSR);
 
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, cmd))
-		ret = -ESPI;
+	if (!spi->run.spitout)
+		return (-ESPI);
 
-	if (ALL_OK == ret)
-		*refval = value;
-
-	return ret;
+	return _spi_crc_recv(spi, (uint8_t *)refs, RWCHC_NTREFS*sizeof(*refs));
 }
 
 /**
@@ -541,9 +512,6 @@ int hw_p1_spi_ref_r(struct s_hw_p1_spi * const spi, rwchc_sensor_t * const refva
  */
 int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings * const settings)
 {
-	unsigned int i;
-	int ret = ALL_OK;
-	
 	assert(settings);
 
 	SPI_RESYNC(spi, RWCHC_SPIC_SETTINGSR);
@@ -551,13 +519,7 @@ int hw_p1_spi_settings_r(struct s_hw_p1_spi * const spi, struct rwchc_s_settings
 	if (!spi->run.spitout)
 		return (-ESPI);
 	
-	for (i=0; i<sizeof(*settings); i++)
-		*((uint8_t *)settings+i) = SPI_rw8bit(spi, (uint8_t)i);
-	
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSR))
-		ret = -ESPI;
-
-	return ret;
+	return _spi_crc_recv(spi, (uint8_t *)settings, sizeof(*settings));
 }
 
 /**
@@ -591,7 +553,7 @@ int hw_p1_spi_settings_w(struct s_hw_p1_spi * const spi, const struct rwchc_s_se
 
 /**
  * Save current ram settings to eeprom.
- * Delay: none (eeprom write is faster than a SPI cycle)
+ * Delay: 100ms
  * @param spi HW P1 spi private data
  * @return error code
  */
@@ -603,6 +565,8 @@ int hw_p1_spi_settings_s(struct s_hw_p1_spi * const spi)
 	
 	if (!spi->run.spitout)
 		return (-ESPI);
+
+	usleep(100000);	// give time to write the flash
 	
 	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_SETTINGSS))
 		ret = -ESPI;

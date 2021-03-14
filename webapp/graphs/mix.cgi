@@ -1,11 +1,10 @@
 #!/usr/bin/rrdcgi
  <RRD::SETVAR rrdbc /var/lib/rwchcd/log_hcircuit_<RRD::CV::PATH hcircuit_name>>
  <RRD::SETVAR rrdbbm /var/lib/rwchcd/log_models_bmodel_<RRD::CV::PATH bmodel_name>>
- <RRD::SETVAR rrdbhw /var/lib/rwchcd/log_hw_p1_temps>
+ <RRD::SETVAR rrdbtemp /var/lib/rwchcd/log_inputs_temperatures>
  <RRD::SETVAR width 1200>
  <RRD::SETVAR height 600>
- <RRD::SETVAR cdeftconv 10,/,273,->
- <RRD::SETVAR cdeftconvp1 TIME,1550342839,GT,1024,1000,IF,/,273,->
+ <RRD::SETVAR cdeftconv 0,+>
  <RRD::GOODFOR 300>
  <HTML>
  <HEAD>
@@ -18,13 +17,13 @@
  <RRD::GRAPH tmp/rrd-mix-1w.svg -a SVG -s -1w --lazy --title="1w" -E
 	--imginfo '<IMG SRC=tmp/%s WIDTH=%lu HEIGHT=%lu>'
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
-	DEF:tbokelth=<RRD::GETVAR rrdbhw>:s2:MIN
+	DEF:tbokelth=<RRD::GETVAR rrdbtemp>:boiler:MIN
  	DEF:takelth=<RRD::GETVAR rrdbc>:target_ambient:LAST
  	DEF:aakelth=<RRD::GETVAR rrdbc>:actual_ambient:LAST
  	DEF:twkelth=<RRD::GETVAR rrdbc>:target_wtemp:LAST
  	DEF:awkelth=<RRD::GETVAR rrdbc>:actual_wtemp:LAST
 	DEF:tomkelth=<RRD::GETVAR rrdbbm>:t_out_mix:LAST
-	CDEF:tbocel=tbokelth,<RRD::GETVAR cdeftconvp1>
+	CDEF:tbocel=tbokelth
 	CDEF:tacel=takelth,<RRD::GETVAR cdeftconv>,0,50,LIMIT
 	CDEF:aacel=aakelth,<RRD::GETVAR cdeftconv>,-20,50,LIMIT
 	CDEF:twcel=twkelth,<RRD::GETVAR cdeftconv>,0,100,LIMIT

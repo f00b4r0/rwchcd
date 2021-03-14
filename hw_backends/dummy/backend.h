@@ -61,6 +61,7 @@ struct s_dummy_pdata {
 			struct s_dummy_relay * all;	///< pointer to array of relays size n
 		} rels;
 	} out;		///< outputs
+	const char * name;	///< user-set name for this backend
 };
 
 int dummy_input_ibn(void * const priv, const enum e_hw_input_type type, const char * const name);

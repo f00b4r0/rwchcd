@@ -27,7 +27,7 @@
 struct s_hw_p1_sensor {
 	struct {
 		bool configured;	///< sensor is configured
-		uint_fast8_t channel;	///< sensor channel, numbered from 1 to 15
+		uint_fast8_t channel;	///< sensor channel, numbered from 1 to 14
 		enum e_hw_lib_rtdt type;///< sensor type
 		tempdiff_t offset;	///< sensor value offset
 	} set;		///< settings (externally set)
@@ -61,9 +61,6 @@ struct s_hw_p1_relay {
 /** driver runtime data */
 struct s_hw_p1_pdata {
 	struct {
-		uint_fast8_t nsamples;		///< number of samples for temperature readout LP filtering
-	} set;		///< settings (externally set)
-	struct {
 		bool initialized;		///< hardware is initialized (setup() succeeded)
 		bool online;			///< hardware is online (online() succeeded)
 		timekeep_t sensors_ftime;	///< sensors fetch time
@@ -71,6 +68,12 @@ struct s_hw_p1_pdata {
 		res_t calib_nodac;		///< sensor calibration value without dac offset
 		res_t calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version
+		unsigned int nsensors;		///< number of configured sensors
+		// private data for input()
+		int count, systout;
+		bool syschg;
+		enum e_systemmode cursysmode;
+		uint_fast8_t tempid;
 	} run;		///< private runtime (internally handled)
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data
 	union rwchc_u_relays relays;		///< local copy of hardware relays data
@@ -78,15 +81,17 @@ struct s_hw_p1_pdata {
 	struct s_hw_p1_spi spi;			///< spi runtime
 	struct s_hw_p1_lcd lcd;			///< lcd subsystem private data
 	rwchc_sensor_t sensors[RWCHC_NTSENSORS];///< local copy of hardware sensors data
+	rwchc_sensor_t refs[RWCHC_NTREFS];	///< local copy of hardware sensors calibration reference data
 	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
-	uint_fast8_t scount[RWCHC_NTSENSORS];	///< counter for decimation
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
+	const char * name;			///< user-set name for this backend
 };
 
 int hw_p1_hwconfig_commit(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_calibrate(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_restore_relays(struct s_hw_p1_pdata * restrict const hw);
+int hw_p1_refs_read(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_sensors_read(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_rwchcrelays_write(struct s_hw_p1_pdata * restrict const hw);
 int hw_p1_rwchcperiphs_write(struct s_hw_p1_pdata * restrict const hw);

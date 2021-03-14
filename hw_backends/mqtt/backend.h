@@ -91,6 +91,7 @@ struct s_mqtt_pdata {
 		} rels;
 	} out;
 	struct mosquitto * mosq;	///< libmosquitto data
+	const char * name;		///< user-set name for this backend
 };
 
 int mqtt_input_ibn(void * const priv, const enum e_hw_input_type type, const char * const name);

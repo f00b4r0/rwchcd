@@ -83,9 +83,10 @@ struct s_hw_callbacks {
 	 * leaving enough time for the underlying hardware to collect itself.
 	 * @warning This callback @b MUST be implemented.
 	 * @param priv hardware backend private data
+	 * @param name a pointer to a string containing the user-set name for this backend. Guaranteed to be valid until exit() is called.
 	 * @return exec status
 	 */
-	int (*setup)(void * priv);
+	int (*setup)(void * priv, const char * name);
 
 	/**
 	 * Hardware backend online callback.
