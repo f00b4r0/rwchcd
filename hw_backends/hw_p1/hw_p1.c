@@ -26,7 +26,6 @@
 
 #include "lib.h"
 #include "storage.h"
-#include "alarms.h"
 #include "hw_backends/hw_lib.h"
 #include "hw_p1_spi.h"
 #include "hw_p1_lcd.h"
@@ -52,41 +51,6 @@ static inline res_t sensor_to_res(const rwchc_sensor_t raw)
 	value *= RES_OHMMULT;
 
 	return (value);
-}
-
-/**
- * Raise an alarm for a specific sensor.
- * This function raises an alarm if the sensor's temperature is invalid.
- * @param sensor target sensor
- * @param error sensor error
- * @return exec status
- */
-static int sensor_alarm(const struct s_hw_p1_sensor * const sensor, const int error)
-{
-	const char * restrict fail, * restrict name = NULL;
-	const uint_fast8_t channel = sensor->set.channel;
-	int ret;
-
-	switch (error) {
-		case -ESENSORSHORT:
-			fail = _("shorted");
-			name = sensor->name;
-			break;
-		case -ESENSORDISCON:
-			fail = _("disconnected");
-			name = sensor->name;
-			break;
-		case -ESENSORINVAL:
-			fail = _("invalid");
-			break;
-		default:
-			fail = _("error");
-			break;
-	}
-
-	ret = alarms_raise(error, _("HWP1: sensor \"%s\" (%d): %s"), name, channel, fail);
-
-	return (ret);
 }
 
 /**
@@ -121,11 +85,11 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 
 		if (unlikely(current <= RWCHCD_TEMPMIN)) {
 			aser(&sensor->run.value, TEMPSHORT);
-			sensor_alarm(sensor, -ESENSORSHORT);
+			dbgerr("\"%s\": sensor \"%s\" (%d): shorted", hw->name, sensor->name, sensor->set.channel);
 		}
 		else if (unlikely(current >= RWCHCD_TEMPMAX)) {
 			aser(&sensor->run.value, TEMPDISCON);
-			sensor_alarm(sensor, -ESENSORDISCON);
+			dbgerr("\"%s\": sensor \"%s\" (%d): disconnected", hw->name, sensor->name, sensor->set.channel);
 		}
 		else
 			aser(&sensor->run.value, current);
