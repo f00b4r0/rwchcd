@@ -38,6 +38,7 @@
 #include "timekeep.h"
 #include "hw_backends/hardware.h"
 #include "temperature.h"
+#include "alarms.h"
 
 static inline int hardware_sensor_clone_temp(const binid_t tempid, temp_t * const ctemp)
 {
@@ -149,8 +150,10 @@ end:
 		aser(&t->run.value, new);
 		aser(&t->run.last_update, now);
 	}
-	else
+	else {
 		aser(&t->run.value, TEMPINVALID);
+		alarms_raise(ret, _("Temperature \"%s\" invalid"), t->name);
+	}
 
 	atomic_flag_clear_explicit(&t->run.lock, memory_order_release);
 	return (ret);
