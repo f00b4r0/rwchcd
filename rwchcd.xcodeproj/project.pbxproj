@@ -207,7 +207,6 @@
 		4FC1847A1DA6809E000E514B /* storage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = storage.h; sourceTree = SOURCE_ROOT; };
 		4FC1847C1DA7B2F9000E514B /* dbus.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dbus.c; sourceTree = "<group>"; };
 		4FC1847D1DA7B2F9000E514B /* dbus.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dbus.h; sourceTree = "<group>"; };
-		4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; lineEnding = 0; path = rwchcd_introspection.xml; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.xml; };
 		4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = org.slashdirt.rwchcd.conf; sourceTree = "<group>"; };
 		4FC184831DA7D19D000E514B /* rwchcd.service */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rwchcd.service; sourceTree = "<group>"; };
 		4FC304A61EBDCDB900D77AC6 /* models.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = models.c; sourceTree = SOURCE_ROOT; };
@@ -484,7 +483,6 @@
 				4FA9A54F252B594C0091D0F5 /* Makefile */,
 				4FC1847C1DA7B2F9000E514B /* dbus.c */,
 				4FC1847D1DA7B2F9000E514B /* dbus.h */,
-				4FC1847F1DA7B9B8000E514B /* rwchcd_introspection.xml */,
 				4FC184821DA7D19D000E514B /* org.slashdirt.rwchcd.conf */,
 				4FC184831DA7D19D000E514B /* rwchcd.service */,
 			);
