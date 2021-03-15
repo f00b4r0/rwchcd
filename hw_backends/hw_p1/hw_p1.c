@@ -100,7 +100,6 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
  * Save hardware relays state to permanent storage.
  * @param hw HW P1 private data
  * @return exec status
- * @bug hardcoded identifier will collide if multiple instances.
  */
 int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw)
 {
@@ -123,7 +122,6 @@ int hw_p1_save_relays(const struct s_hw_p1_pdata * restrict const hw)
  * Restores cycles and on/off total time counts for all relays.
  * @param hw HW P1 private data
  * @return exec status
- * @bug hardcoded identifier will collide if multiple instances.
  * @note Each relay is "restored" in OFF state (due to initialization in
  * hw_p1_setup_new()).
  */
