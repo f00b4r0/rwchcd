@@ -1,5 +1,6 @@
 #!/usr/bin/rrdcgi
  <RRD::SETVAR rrdb /var/lib/rwchcd/log_hcircuit_<RRD::CV::PATH hcircuit_name>>
+ <RRD::SETVAR name <RRD::CV::PATH hcircuit_name>>
  <RRD::SETVAR width 1000>
  <RRD::SETVAR height 400>
  <RRD::SETVAR cdeftconv 0,+>
@@ -12,7 +13,7 @@
  <BODY>
  <H1>Circuit</H1>
  <P>
- <RRD::GRAPH tmp/rrd-circuit-2d.svg -a SVG -s -2d --lazy --title="2d" -E
+ <RRD::GRAPH tmp/rrd-hcircuit-<RRD::GETVAR name>-2d.svg -a SVG -s -2d --lazy --title="2d" -E
 	--imginfo '<IMG SRC=tmp/%s WIDTH=%lu HEIGHT=%lu>'
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
  	DEF:takelth=<RRD::GETVAR rrdb>:target_ambient:LAST
@@ -31,7 +32,7 @@
  >
  </P>
  <P>
- <RRD::GRAPH tmp/rrd-circuit-1w.svg -a SVG -s -1w --lazy --title="1w" -E
+ <RRD::GRAPH tmp/rrd-hcircuit-<RRD::GETVAR name>-1w.svg -a SVG -s -1w --lazy --title="1w" -E
 	--imginfo '<IMG SRC=tmp/%s WIDTH=%lu HEIGHT=%lu>'
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
  	DEF:takelth=<RRD::GETVAR rrdb>:target_ambient:LAST
@@ -50,7 +51,7 @@
  >
  </P>
  <P>
- <RRD::GRAPH tmp/rrd-circuit-1m.svg -a SVG -s -1m --lazy --title="1m" -E
+ <RRD::GRAPH tmp/rrd-hcircuit-<RRD::GETVAR name>-1m.svg -a SVG -s -1m --lazy --title="1m" -E
 	--imginfo '<IMG SRC=tmp/%s WIDTH=%lu HEIGHT=%lu>'
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
  	DEF:takelth=<RRD::GETVAR rrdb>:target_ambient:AVERAGE

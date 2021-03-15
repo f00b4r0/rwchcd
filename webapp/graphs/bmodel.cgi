@@ -1,5 +1,6 @@
 #!/usr/bin/rrdcgi
  <RRD::SETVAR rrdb /var/lib/rwchcd/log_models_bmodel_<RRD::CV::PATH bmodel_name>>
+ <RRD::SETVAR name <RRD::CV::PATH bmodel_name>>
  <RRD::SETVAR width 1000>
  <RRD::SETVAR height 600>
  <RRD::GOODFOR 300>
@@ -12,7 +13,7 @@
  <BODY>
  <H1>Bmodel</H1>
  <P>
- <RRD::GRAPH tmp/rrd-bmodel-1w.svg -a SVG -s -1w --lazy --title="1w" -E -A
+ <RRD::GRAPH tmp/rrd-bmodel-<RRD::GETVAR name>-1w.svg -a SVG -s -1w --lazy --title="1w" -E -A
 	--imginfo '<IMG SRC=tmp/%s WIDTH=%lu HEIGHT=%lu>'
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
  	DEF:tocelth=<RRD::GETVAR rrdb>:t_out:LAST
@@ -36,7 +37,7 @@
  >
  </P>
  <P>
- <RRD::GRAPH tmp/rrd-bmodel-1m.svg -a SVG -s -1m --lazy --title="1m" -E -A
+ <RRD::GRAPH tmp/rrd-bmodel-<RRD::GETVAR name>-1m.svg -a SVG -s -1m --lazy --title="1m" -E -A
 	--imginfo '<IMG SRC=tmp/%s WIDTH=%lu HEIGHT=%lu>'
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
  	DEF:tocelth=<RRD::GETVAR rrdb>:t_out:LAST
@@ -60,7 +61,7 @@
  >
  </P>
  <P>
- <RRD::GRAPH tmp/rrd-bmodel-1y.svg -a SVG -s -1y --lazy --title="1y" -E -A
+ <RRD::GRAPH tmp/rrd-bmodel-<RRD::GETVAR name>-1y.svg -a SVG -s -1y --lazy --title="1y" -E -A
 	--imginfo '<IMG SRC=tmp/%s WIDTH=%lu HEIGHT=%lu>'
 	-w <RRD::GETVAR width> -h <RRD::GETVAR height>
  	DEF:tofcelth=<RRD::GETVAR rrdb>:t_out_filt:AVERAGE
