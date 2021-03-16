@@ -27,8 +27,9 @@
 #include "plant/hcircuit.h"
 #include "dbus.h"
 
-#define DBUS_RUNTIME_IFACE "org.slashdirt.rwchcd.Runtime"
-#define DBUS_HCIRCUIT_IFACE "org.slashdirt.rwchcd.Hcircuit"
+#define DBUS_IFACE_BASE		"org.slashdirt.rwchcd"
+#define DBUS_RUNTIME_IFACE	DBUS_IFACE_BASE ".Runtime"
+#define DBUS_HCIRCUIT_IFACE	DBUS_IFACE_BASE ".Hcircuit"
 
 static GDBusNodeInfo *dbus_introspection_data = NULL;
 static GDBusInterfaceInfo *dbus_runtime_interface_info = NULL;
@@ -444,7 +445,7 @@ int dbus_main(void)
 
 	// register on dbus
 	owner_id = g_bus_own_name(G_BUS_TYPE_SYSTEM,
-				  "org.slashdirt.rwchcd",
+				  DBUS_IFACE_BASE,
 				  G_BUS_NAME_OWNER_FLAGS_DO_NOT_QUEUE,
 				  on_bus_acquired,
 				  on_name_acquired,
