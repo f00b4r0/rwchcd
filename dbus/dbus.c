@@ -31,6 +31,9 @@
 #define DBUS_RUNTIME_IFACE	DBUS_IFACE_BASE ".Runtime"
 #define DBUS_HCIRCUIT_IFACE	DBUS_IFACE_BASE ".Hcircuit"
 
+#define DBUS_OBJECT_BASE	"/org/slashdirt/rwchcd"
+#define DBUS_HCIRCUITS_OBJECT	DBUS_OBJECT_BASE "/Hcircuits"
+
 static GDBusNodeInfo *dbus_introspection_data = NULL;
 static GDBusInterfaceInfo *dbus_runtime_interface_info = NULL;
 static GDBusInterfaceInfo *dbus_hcircuit_interface_info = NULL;
@@ -302,10 +305,10 @@ static const GDBusInterfaceVTable hcircuit_vtable = {
 };
 
 static gchar **
-hcircuit_subtree_enumerate(GDBusConnection       *connection,
-			   const gchar           *sender,
-			   const gchar           *object_path,
-			   gpointer               user_data)
+rwchcd_subtree_enumerate(GDBusConnection       *connection,
+			 const gchar           *sender,
+			 const gchar           *object_path,
+			 gpointer               user_data)
 {
 	gchar **nodes;
 	GPtrArray *p;
@@ -327,17 +330,17 @@ hcircuit_subtree_enumerate(GDBusConnection       *connection,
 }
 
 static GDBusInterfaceInfo **
-hcircuit_subtree_introspect(GDBusConnection       *connection,
-			    const gchar           *sender,
-			    const gchar           *object_path,
-			    const gchar           *node,
-			    gpointer               user_data)
+rwchcd_subtree_introspect(GDBusConnection       *connection,
+			  const gchar           *sender,
+			  const gchar           *object_path,
+			  const gchar           *node,
+			  gpointer               user_data)
 {
 	GPtrArray *p;
 
 	p = g_ptr_array_new();
 
-	if (node)
+	if (g_str_has_prefix(object_path, DBUS_HCIRCUITS_OBJECT) && node)
 		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_hcircuit_interface_info));
 
 	g_ptr_array_add(p, NULL);
@@ -346,13 +349,13 @@ hcircuit_subtree_introspect(GDBusConnection       *connection,
 }
 
 static const GDBusInterfaceVTable *
-hcircuit_subtree_dispatch(GDBusConnection             *connection,
-			  const gchar                 *sender,
-			  const gchar                 *object_path,
-			  const gchar                 *interface_name,
-			  const gchar                 *node,
-			  gpointer                    *out_user_data,
-			  gpointer                     user_data)
+rwchcd_subtree_dispatch(GDBusConnection             *connection,
+			const gchar                 *sender,
+			const gchar                 *object_path,
+			const gchar                 *interface_name,
+			const gchar                 *node,
+			gpointer                    *out_user_data,
+			gpointer                     user_data)
 {
 	const GDBusInterfaceVTable *vtable_to_return;
 	gpointer user_data_to_return;
@@ -365,11 +368,11 @@ hcircuit_subtree_dispatch(GDBusConnection             *connection,
 	return vtable_to_return;
 }
 
-const GDBusSubtreeVTable hcircuit_subtree_vtable =
+static const GDBusSubtreeVTable rwchcd_subtree_vtable =
 {
-	hcircuit_subtree_enumerate,
-	hcircuit_subtree_introspect,
-	hcircuit_subtree_dispatch
+	rwchcd_subtree_enumerate,
+	rwchcd_subtree_introspect,
+	rwchcd_subtree_dispatch
 };
 
 
@@ -379,7 +382,7 @@ static void on_bus_acquired(GDBusConnection *connection, const gchar *name, gpoi
 	guint registration_id;
 
 	registration_id = g_dbus_connection_register_object(connection,
-							    "/org/slashdirt/rwchcd",
+							    DBUS_OBJECT_BASE,
 							    dbus_runtime_interface_info,
 							    &runtime_vtable,
 							    NULL,  /* user_data */
@@ -388,8 +391,8 @@ static void on_bus_acquired(GDBusConnection *connection, const gchar *name, gpoi
 	g_assert (registration_id > 0);
 
 	registration_id = g_dbus_connection_register_subtree(connection,
-							     "/org/slashdirt/rwchcd/Hcircuits",
-							     &hcircuit_subtree_vtable,
+							     DBUS_HCIRCUITS_OBJECT,
+							     &rwchcd_subtree_vtable,
 							     G_DBUS_SUBTREE_FLAGS_NONE,
 							     NULL,  /* user_data */
 							     NULL,  /* user_data_free_func */
