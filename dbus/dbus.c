@@ -25,18 +25,23 @@
 #include "runtime.h"
 #include "plant/plant.h"
 #include "plant/hcircuit.h"
+#include "io/inputs.h"
+#include "io/inputs/temperature.h"
 #include "dbus.h"
 
 #define DBUS_IFACE_BASE		"org.slashdirt.rwchcd"
 #define DBUS_RUNTIME_IFACE	DBUS_IFACE_BASE ".Runtime"
 #define DBUS_HCIRCUIT_IFACE	DBUS_IFACE_BASE ".Hcircuit"
+#define DBUS_TEMP_IFACE		DBUS_IFACE_BASE ".Temperature"
 
 #define DBUS_OBJECT_BASE	"/org/slashdirt/rwchcd"
 #define DBUS_HCIRCUITS_OBJECT	DBUS_OBJECT_BASE "/Hcircuits"
+#define DBUS_TEMPS_OBJECT	DBUS_OBJECT_BASE "/Temperatures"
 
 static GDBusNodeInfo *dbus_introspection_data = NULL;
 static GDBusInterfaceInfo *dbus_runtime_interface_info = NULL;
 static GDBusInterfaceInfo *dbus_hcircuit_interface_info = NULL;
+static GDBusInterfaceInfo *dbus_temp_interface_info = NULL;
 
 static const gchar dbus_introspection_xml[] =
 "<node>"
@@ -64,6 +69,10 @@ static const gchar dbus_introspection_xml[] =
 "   <arg name='runmode' direction='in' type='y' />"
 "  </method>"
 "  <method name='DisableRunmodeOverride' />"
+" </interface>"
+" <interface name='" DBUS_TEMP_IFACE "'>"
+"  <property name='Name' access='read' type='s' />"
+"  <property name='Value' access='read' type='d' />"
 " </interface>"
 "</node>";
 
@@ -304,6 +313,64 @@ static const GDBusInterfaceVTable hcircuit_vtable = {
 	//hcircuit_set_property,
 };
 
+/* Temperature */
+
+static GVariant *
+temperature_get_property(GDBusConnection  *connection,
+			 const gchar      *sender,
+			 const gchar      *object_path,
+			 const gchar      *interface_name,
+			 const gchar      *property_name,
+			 GError          **error,
+			 gpointer          user_data)
+{
+	GVariant *var;
+	const gchar *node, *name;
+	itid_t id;
+	int ret;
+
+	var = NULL;
+
+	node = strrchr(object_path, '/') + 1;
+	ret = atoi(node);
+	if (ret < 0)
+		goto out;
+
+	id = (itid_t)ret + 1;	// XXX
+
+	name = inputs_temperature_name(id);
+	if (!name)
+		goto out;
+
+	if (g_strcmp0(property_name, "Name") == 0)
+		var = g_variant_new_string(name);
+	else if (g_strcmp0(property_name, "Value") == 0) {
+		temp_t temp;
+		ret = inputs_temperature_get(id, &temp);
+		if (ALL_OK == ret)
+			var = g_variant_new_double(temp_to_celsius(temp));
+	}
+	else
+		g_assert_not_reached();
+
+out:
+	if (!var)
+		g_set_error_literal(error,
+				    G_IO_ERROR,
+				    G_IO_ERROR_FAILED,
+				    "Error");
+
+	return var;
+}
+
+static const GDBusInterfaceVTable temperature_vtable = {
+	NULL,
+	temperature_get_property,
+	//NULL,
+};
+
+extern struct s_inputs Inputs;	// XXX
+
 static gchar **
 rwchcd_subtree_enumerate(GDBusConnection       *connection,
 			 const gchar           *sender,
@@ -320,6 +387,10 @@ rwchcd_subtree_enumerate(GDBusConnection       *connection,
 	if (g_strcmp0(object_path, DBUS_HCIRCUITS_OBJECT) == 0) {
 		const struct s_plant * restrict const plant = runtime_get()->plant;
 		for (plid_t id = 0; id < plant->hcircuits.last; id++)
+			g_ptr_array_add(p, g_strdup_printf("%d", id));
+	}
+	else if (g_strcmp0(object_path, DBUS_TEMPS_OBJECT) == 0) {
+		for (itid_t id = 0; id < Inputs.temps.last; id++)
 			g_ptr_array_add(p, g_strdup_printf("%d", id));
 	}
 
@@ -342,6 +413,8 @@ rwchcd_subtree_introspect(GDBusConnection       *connection,
 
 	if (g_str_has_prefix(object_path, DBUS_HCIRCUITS_OBJECT) && node)
 		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_hcircuit_interface_info));
+	else if (g_str_has_prefix(object_path, DBUS_TEMPS_OBJECT) && node)
+		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_temp_interface_info));
 
 	g_ptr_array_add(p, NULL);
 
@@ -362,6 +435,8 @@ rwchcd_subtree_dispatch(GDBusConnection             *connection,
 
 	if (g_strcmp0(interface_name, DBUS_HCIRCUIT_IFACE) == 0)
 		vtable_to_return = &hcircuit_vtable;
+	else if (g_strcmp0(interface_name, DBUS_TEMP_IFACE) == 0)
+		vtable_to_return = &temperature_vtable;
 	else
 		g_assert_not_reached ();
 
@@ -392,6 +467,15 @@ static void on_bus_acquired(GDBusConnection *connection, const gchar *name, gpoi
 
 	registration_id = g_dbus_connection_register_subtree(connection,
 							     DBUS_HCIRCUITS_OBJECT,
+							     &rwchcd_subtree_vtable,
+							     G_DBUS_SUBTREE_FLAGS_NONE,
+							     NULL,  /* user_data */
+							     NULL,  /* user_data_free_func */
+							     NULL); /* GError** */
+	g_assert (registration_id > 0);
+
+	registration_id = g_dbus_connection_register_subtree(connection,
+							     DBUS_TEMPS_OBJECT,
 							     &rwchcd_subtree_vtable,
 							     G_DBUS_SUBTREE_FLAGS_NONE,
 							     NULL,  /* user_data */
@@ -445,6 +529,9 @@ int dbus_main(void)
 
 	dbus_hcircuit_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_HCIRCUIT_IFACE);
 	g_assert(dbus_hcircuit_interface_info != NULL);
+
+	dbus_temp_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_TEMP_IFACE);
+	g_assert(dbus_temp_interface_info != NULL);
 
 	// register on dbus
 	owner_id = g_bus_own_name(G_BUS_TYPE_SYSTEM,
