@@ -464,13 +464,12 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	prev_runmode = aler(&circuit->run.runmode);
 
 	// handle global/local runmodes
-	if (RM_AUTO == circuit->set.runmode) {
+	new_runmode = aler(&circuit->overrides.o_runmode) ? aler(&circuit->overrides.runmode) : circuit->set.runmode;
+	if (RM_AUTO == new_runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(circuit->set.schedid);
 		new_runmode = ((SYS_AUTO == runtime_systemmode()) && eparams) ? eparams->runmode : runtime_runmode();
 	}
-	else
-		new_runmode = circuit->set.runmode;
 
 	// if an absolute priority DHW charge is in progress, switch to dhw-only (will register the transition)
 	if (circuit->pdata->run.dhwc_absolute)
@@ -500,8 +499,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 	}
 
-	// apply offset
+	// apply offsets
 	request_temp += SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
+	request_temp += aler(&circuit->overrides.t_offset);
 	target_ambient = request_temp;
 
 	// save current ambient request (needed by hcircuit_outhoff())

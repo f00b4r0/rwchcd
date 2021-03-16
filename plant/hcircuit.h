@@ -85,6 +85,11 @@ struct s_hcircuit {
 		temp_t rorh_last_target;	///< previous set point target for rorh control
 		temp_t trans_start_temp;	///< temperature at transition start
 	} run;		///< private runtime (internally handled)
+	struct {
+		atomic_bool o_runmode;		///< true if set.runmode should be overriden by overrides.runmode
+		_Atomic enum e_runmode runmode;	///< runmode override (applied if o_runmode is set)
+		_Atomic temp_t t_offset;	///< offset adjustment for ambient targets, applied to all targets
+	} overrides;	///< overrides (used for temporary settings override via e.g. dbus calls)
 	void * restrict tlaw_priv;		///< Reference data for templaw
 	const struct s_pdata * pdata;		///< read-only plant data for this circuit
 	const char * restrict name;		///< unique name for this circuit
