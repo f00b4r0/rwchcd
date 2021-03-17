@@ -73,6 +73,10 @@ struct s_dhwt {
 		timekeep_t mode_since;		///< starting time of current mode (if #charge_on: charge start time, else charge end time)
 		int charge_yday;		///< last day forced charge was triggered in #DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
+	struct {
+		atomic_bool o_runmode;		///< true if set.runmode should be overriden by overrides.runmode
+		_Atomic enum e_runmode runmode;	///< runmode override (applied if o_runmode is set)
+	} overrides;	///< overrides (used for temporary settings override via e.g. dbus calls)
 	const struct s_pdata * pdata;		///< read-only plant data for this tank
 	const char * restrict name;		///< unique name for this tank
 	enum e_execs status;			///< last known status

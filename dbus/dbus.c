@@ -1,5 +1,5 @@
 //
-//  dbus.c
+//  dbus/dbus.c
 //  rwchcd
 //
 //  (C) 2016-2018,2021 Thibaut VARENE
@@ -10,11 +10,22 @@
  * @file
  * D-Bus implementation.
  *
- * This is a very basic (read: gross hack) implementation for bare minimal
- * remote control over D-Bus. It goes too low level into the API for its own good.
+ * This is a basic implementation for remote control over D-Bus.
+ * It goes too low level into the API for its own good.
  *
- * @warning will crash if any operation is attempted before the runtime/config structures
- * are properly set.
+ * Objects (circuits, temperatures, etc) are registered with a D-Bus path matching their internal index number,
+ * which will always be consistent with the order in which they appear in the configuration file.
+ * The general idea is to expose only relevant data and to allow write operations only where it makes sense.
+ * Specifically, this API is not a configuration interface.
+ *
+ * The current implementation supports:
+ *  - Changing the global runtime System and Run modes
+ *  - Reading heating circuits status and setting manual overrides for runmode and target temperature
+ *  - Reading DHWTs status and setting manual override for runmode, forcing charge and anti-legionella cycle
+ *  - Reading known temperatures
+ *
+ * @note will crash if any operation is attempted before the runtime/config structures
+ * are properly set, which should never happen in the current setup (dbus_main() is called after full initialization).
  */
 
 #include <gio/gio.h>
@@ -32,15 +43,18 @@
 #define DBUS_IFACE_BASE		"org.slashdirt.rwchcd"
 #define DBUS_RUNTIME_IFACE	DBUS_IFACE_BASE ".Runtime"
 #define DBUS_HCIRCUIT_IFACE	DBUS_IFACE_BASE ".Hcircuit"
+#define DBUS_DHWT_IFACE		DBUS_IFACE_BASE ".DHWT"
 #define DBUS_TEMP_IFACE		DBUS_IFACE_BASE ".Temperature"
 
 #define DBUS_OBJECT_BASE	"/org/slashdirt/rwchcd"
 #define DBUS_HCIRCUITS_OBJECT	DBUS_OBJECT_BASE "/Hcircuits"
+#define DBUS_DHWTS_OBJECT	DBUS_OBJECT_BASE "/DHWTs"
 #define DBUS_TEMPS_OBJECT	DBUS_OBJECT_BASE "/Temperatures"
 
 static GDBusNodeInfo *dbus_introspection_data = NULL;
 static GDBusInterfaceInfo *dbus_runtime_interface_info = NULL;
 static GDBusInterfaceInfo *dbus_hcircuit_interface_info = NULL;
+static GDBusInterfaceInfo *dbus_dhwt_interface_info = NULL;
 static GDBusInterfaceInfo *dbus_temp_interface_info = NULL;
 
 static const gchar dbus_introspection_xml[] =
@@ -65,6 +79,25 @@ static const gchar dbus_introspection_xml[] =
 "  <method name='SetTempOffsetOverride'>"
 "   <arg name='offset' direction='in' type='d' />"
 "  </method>"
+"  <method name='SetRunmodeOverride'>"
+"   <arg name='runmode' direction='in' type='y' />"
+"  </method>"
+"  <method name='DisableRunmodeOverride' />"
+" </interface>"
+" <interface name='" DBUS_DHWT_IFACE "'>"
+"  <property name='Name' access='read' type='s' />"
+"  <property name='ForceChargeOn' access='readwrite' type='b' />"
+"  <property name='LegionellaOn' access='readwrite' type='b' />"
+"  <property name='RecycleOn' access='read' type='b' />"
+"  <property name='ElectricModeOn' access='read' type='b' />"
+"  <property name='RunModeOverride' access='read' type='b' />"
+"  <property name='RunMode' access='read' type='y' />"
+"  <property name='TempComfort' access='read' type='d' />"
+"  <property name='TempEco' access='read' type='d' />"
+"  <property name='TempFrostFree' access='read' type='d' />"
+"  <property name='TempLegionella' access='read' type='d' />"
+"  <property name='TempTarget' access='read' type='d' />"
+"  <property name='TempCurrent' access='read' type='d' />"
 "  <method name='SetRunmodeOverride'>"
 "   <arg name='runmode' direction='in' type='y' />"
 "  </method>"
@@ -313,6 +346,196 @@ static const GDBusInterfaceVTable hcircuit_vtable = {
 	//hcircuit_set_property,
 };
 
+/* DHWT */
+
+static void
+dhwt_method_call(GDBusConnection       *connection,
+		 const gchar           *sender,
+		 const gchar           *object_path,
+		 const gchar           *interface_name,
+		 const gchar           *method_name,
+		 GVariant              *parameters,
+		 GDBusMethodInvocation *invocation,
+		 gpointer               user_data)
+{
+	const gchar *node;
+	const struct s_plant * restrict const plant = runtime_get()->plant;
+	struct s_dhwt * restrict dhwt;
+	int ret;
+	plid_t id;
+
+	node = strrchr(object_path, '/') + 1;
+	ret = atoi(node);
+	if (ret < 0)
+		goto notfound;
+
+	id = (plid_t)ret;
+	if (id >= plant->dhwts.last)
+		goto notfound;
+
+	dhwt = &plant->dhwts.all[id];
+	if (!dhwt)
+		goto notfound;
+
+	if (g_strcmp0(method_name, "SetRunmodeOverride") == 0) {
+		guint8 runmode;
+		g_variant_get(parameters, "(y)", &runmode);
+		if ((runmode >= 0) && (runmode < RM_UNKNOWN)) {
+			aser(&dhwt->overrides.runmode, runmode);
+			aser(&dhwt->overrides.o_runmode, true);
+		}
+		else
+			goto invalid;
+	}
+	else if (g_strcmp0(method_name, "DisableRunmodeOverride") == 0)
+		aser(&dhwt->overrides.o_runmode, false);
+
+	g_dbus_method_invocation_return_value(invocation, NULL);
+	return;
+
+notfound:
+	g_dbus_method_invocation_return_dbus_error(invocation,
+						   DBUS_DHWT_IFACE ".Error.Failed",
+						   "DHWT not found");
+	return;
+invalid:
+	g_dbus_method_invocation_return_dbus_error(invocation,
+						   DBUS_DHWT_IFACE ".Error.Failed",
+						   "Invalid argument");
+	return;
+}
+
+
+
+static GVariant *
+dhwt_get_property(GDBusConnection  *connection,
+		  const gchar      *sender,
+		  const gchar      *object_path,
+		  const gchar      *interface_name,
+		  const gchar      *property_name,
+		  GError          **error,
+		  gpointer          user_data)
+{
+	GVariant *var;
+	const gchar *node;
+	const struct s_plant * restrict const plant = runtime_get()->plant;
+	const struct s_dhwt * restrict dhwt;
+	plid_t id;
+	temp_t temp;
+	int ret;
+
+	var = NULL;
+
+	node = strrchr(object_path, '/') + 1;
+	ret = atoi(node);
+	if (ret < 0)
+		goto out;
+
+	id = (plid_t)ret;
+	if (id >= plant->dhwts.last)
+		goto out;
+
+	dhwt = &plant->dhwts.all[id];
+
+	if (g_strcmp0(property_name, "Name") == 0)
+		var = g_variant_new_string(dhwt->name);
+	else if (g_strcmp0(property_name, "RunMode") == 0) {
+		const enum e_runmode runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
+		var = g_variant_new_byte((guchar)runmode);
+	}
+	else if (g_strcmp0(property_name, "RunModeOverride") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&dhwt->overrides.o_runmode));
+	else if (g_strcmp0(property_name, "ForceChargeOn") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&dhwt->run.force_on));
+	else if (g_strcmp0(property_name, "LegionellaOn") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&dhwt->run.legionella_on));
+	else if (g_strcmp0(property_name, "RecycleOn") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&dhwt->run.recycle_on));
+	else if (g_strcmp0(property_name, "ElectricModeOn") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&dhwt->run.electric_mode));
+	else if (g_str_has_prefix(property_name, "Temp")) {
+		property_name += strlen("Temp");
+		if (g_strcmp0(property_name, "Comfort") == 0)
+			temp = SETorDEF(dhwt->set.params.t_comfort, dhwt->pdata->set.def_dhwt.t_comfort);
+		else if (g_strcmp0(property_name, "Eco") == 0)
+			temp = SETorDEF(dhwt->set.params.t_eco, dhwt->pdata->set.def_dhwt.t_eco);
+		else if (g_strcmp0(property_name, "FrostFree") == 0)
+			temp = SETorDEF(dhwt->set.params.t_frostfree, dhwt->pdata->set.def_dhwt.t_frostfree);
+		else if (g_strcmp0(property_name, "Legionella") == 0)
+			temp = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
+		else if (g_strcmp0(property_name, "Target") == 0)
+			temp = aler(&dhwt->run.target_temp);
+		else if (g_strcmp0(property_name, "Current") == 0)
+			temp = aler(&dhwt->run.actual_temp);
+		var = g_variant_new_double(temp_to_celsius(temp));
+	}
+	else
+		g_assert_not_reached();
+
+out:
+	if (!var)
+		g_set_error_literal(error,
+				    G_IO_ERROR,
+				    G_IO_ERROR_FAILED,
+				    "Error");
+
+	return var;
+}
+
+static gboolean
+dhwt_set_property(GDBusConnection  *connection,
+		  const gchar      *sender,
+		  const gchar      *object_path,
+		  const gchar      *interface_name,
+		  const gchar      *property_name,
+		  GVariant         *value,
+		  GError          **error,
+		  gpointer          user_data)
+{
+	const gchar *node;
+	const struct s_plant * restrict const plant = runtime_get()->plant;
+	const struct s_dhwt * restrict dhwt;
+	plid_t id;
+	int ret;
+
+	node = strrchr(object_path, '/') + 1;
+	ret = atoi(node);
+	if (ret < 0)
+		goto error;
+
+	id = (plid_t)ret;
+	if (id >= plant->dhwts.last)
+		goto error;
+
+	dhwt = &plant->dhwts.all[id];
+
+	if (g_strcmp0(property_name, "ForceChargeOn") == 0) {
+		gboolean on = g_variant_get_boolean(value);
+		aser(&dhwt->run.force_on, on);
+	}
+	else if (g_strcmp0(property_name, "LegionellaOn") == 0) {
+		gboolean on = g_variant_get_boolean(value);
+		aser(&dhwt->run.legionella_on, on);
+	}
+	else
+		g_assert_not_reached();
+
+	return TRUE;
+
+error:
+	g_set_error_literal(error,
+		    G_IO_ERROR,
+		    G_IO_ERROR_FAILED,
+		    "Invalid argument");
+	return FALSE;
+}
+
+static const GDBusInterfaceVTable dhwt_vtable = {
+	dhwt_method_call,
+	dhwt_get_property,
+	dhwt_set_property,
+};
+
 /* Temperature */
 
 static GVariant *
@@ -389,6 +612,11 @@ rwchcd_subtree_enumerate(GDBusConnection       *connection,
 		for (plid_t id = 0; id < plant->hcircuits.last; id++)
 			g_ptr_array_add(p, g_strdup_printf("%d", id));
 	}
+	else if (g_strcmp0(object_path, DBUS_DHWTS_OBJECT) == 0) {
+		const struct s_plant * restrict const plant = runtime_get()->plant;
+		for (plid_t id = 0; id < plant->dhwts.last; id++)
+			g_ptr_array_add(p, g_strdup_printf("%d", id));
+	}
 	else if (g_strcmp0(object_path, DBUS_TEMPS_OBJECT) == 0) {
 		for (itid_t id = 0; id < Inputs.temps.last; id++)
 			g_ptr_array_add(p, g_strdup_printf("%d", id));
@@ -413,6 +641,8 @@ rwchcd_subtree_introspect(GDBusConnection       *connection,
 
 	if (g_str_has_prefix(object_path, DBUS_HCIRCUITS_OBJECT) && node)
 		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_hcircuit_interface_info));
+	else if (g_str_has_prefix(object_path, DBUS_DHWTS_OBJECT) && node)
+		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_dhwt_interface_info));
 	else if (g_str_has_prefix(object_path, DBUS_TEMPS_OBJECT) && node)
 		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_temp_interface_info));
 
@@ -435,6 +665,8 @@ rwchcd_subtree_dispatch(GDBusConnection             *connection,
 
 	if (g_strcmp0(interface_name, DBUS_HCIRCUIT_IFACE) == 0)
 		vtable_to_return = &hcircuit_vtable;
+	else if (g_strcmp0(interface_name, DBUS_DHWT_IFACE) == 0)
+		vtable_to_return = &dhwt_vtable;
 	else if (g_strcmp0(interface_name, DBUS_TEMP_IFACE) == 0)
 		vtable_to_return = &temperature_vtable;
 	else
@@ -467,6 +699,15 @@ static void on_bus_acquired(GDBusConnection *connection, const gchar *name, gpoi
 
 	registration_id = g_dbus_connection_register_subtree(connection,
 							     DBUS_HCIRCUITS_OBJECT,
+							     &rwchcd_subtree_vtable,
+							     G_DBUS_SUBTREE_FLAGS_NONE,
+							     NULL,  /* user_data */
+							     NULL,  /* user_data_free_func */
+							     NULL); /* GError** */
+	g_assert (registration_id > 0);
+
+	registration_id = g_dbus_connection_register_subtree(connection,
+							     DBUS_DHWTS_OBJECT,
 							     &rwchcd_subtree_vtable,
 							     G_DBUS_SUBTREE_FLAGS_NONE,
 							     NULL,  /* user_data */
@@ -529,6 +770,9 @@ int dbus_main(void)
 
 	dbus_hcircuit_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_HCIRCUIT_IFACE);
 	g_assert(dbus_hcircuit_interface_info != NULL);
+
+	dbus_dhwt_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_DHWT_IFACE);
+	g_assert(dbus_dhwt_interface_info != NULL);
 
 	dbus_temp_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_TEMP_IFACE);
 	g_assert(dbus_temp_interface_info != NULL);

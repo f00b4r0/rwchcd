@@ -392,7 +392,8 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	prev_runmode = aler(&dhwt->run.runmode);
 
 	// handle global/local runmodes
-	if (RM_AUTO == dhwt->set.runmode) {
+	new_runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
+	if (RM_AUTO == new_runmode) {
 		// if we have a schedule, use it, or global settings if unavailable
 		eparams = scheduler_get_schedparams(dhwt->set.schedid);
 		if ((SYS_AUTO == runtime_systemmode()) && eparams) {
@@ -403,8 +404,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		else	// don't touch legionella/recycle
 			new_runmode = runtime_dhwmode();
 	}
-	else
-		new_runmode = dhwt->set.runmode;
 
 	// force DHWT ON during hs_overtemp condition
 	if (unlikely(dhwt->pdata->run.hs_overtemp))
