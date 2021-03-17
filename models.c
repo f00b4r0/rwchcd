@@ -620,21 +620,3 @@ int models_run(void)
 
 	return (ALL_OK);
 }
-
-/** @deprecated quick temporary hack for backward compatibility */
-temp_t models_outtemp(void)
-{
-	modid_t id;
-	temp_t temp = 0;
-
-	// if something isn't quite right, return error by default
-	if (!Models.online)
-		return (-EOFFLINE);
-
-	for (id = 0; id < Models.bmodels.last; id++)
-		temp += aler(&Models.bmodels.all[id].run.t_out);
-
-	temp /= Models.bmodels.last;	// average
-
-	return (temp);
-}

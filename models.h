@@ -64,6 +64,4 @@ int models_online(void);
 int models_offline(void);
 int models_run(void);
 
-temp_t models_outtemp(void) __attribute__ ((deprecated));
-
 #endif /* rwchcd_models_h */
