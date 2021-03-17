@@ -5,19 +5,18 @@ $def with (formmode)
     <META HTTP-EQUIV="Expires" CONTENT="-1">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Températures Extérieures de Non-Chauffage Maison</title>
+    <title>Réglages Circuit</title>
   </head>
   <body>
-    <h1>Températures extérieures de non chauffage maison</h1>
-    <p>Si la température extérieure dépasse les valeurs choisies ici
-    le chauffage est coupé suivant le mode de fonctionnement actuellement actif.</p>
+    <h1>Réglages Circuit</h1>
     <form method="post">
 	$if not formmode.valid: <p>Erreur!</p>
 	$:formmode.render()
 	<input type="submit" />
     </form>
-    <p><a href=".">Contrôle mode</a></p>
-    <p><a href="temps">Réglage températures ambiantes</a></p>
+    <p>Note: l'ajustement s'applique en plus ou en moins des températures grisées.
+	Ce réglage est temporaire et n'est pas préservé en cas de redémarrage du système.</p>
+    <p><a href=".">Contrôle</a></p>
     <p><a href="/">Accueil</a></p>
   </body>
 </html>

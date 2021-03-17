@@ -1,6 +1,6 @@
 Licence: GPLv2
 Copyright: (C) 2016 Thibaut VARENE
 
-Dependencies: python-webpy python-gi python-flup pydbus
+Dependencies: python-webpy python-gi python-flup python-pydbus
 
 A very basic web application demo for controlling rwchcd
