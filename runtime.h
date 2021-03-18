@@ -17,7 +17,6 @@
 #include "rwchcd.h"
 #include "timekeep.h"
 
-#include <pthread.h>	// rwlocks
 #include <stdatomic.h>
 
 /** Runtime environment structure */
@@ -34,7 +33,6 @@ struct s_runtime {
 		_Atomic enum e_runmode dhwmode;		///< CANNOT BE #RM_AUTO or #RM_DHWONLY
 	} run;
 	struct s_plant * restrict plant;	///< running plant
-	pthread_rwlock_t runtime_rwlock;///< @note having this here prevents using "const" in instances where it would otherwise be possible
 };
 
 struct s_runtime * runtime_get(void);

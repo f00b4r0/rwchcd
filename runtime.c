@@ -123,7 +123,7 @@ int runtime_init(void)
 	// fill the structure with zeroes, which turns everything off and sets sane values
 	memset(&Runtime, 0x0, sizeof(Runtime));
 	
-	return (pthread_rwlock_init(&Runtime.runtime_rwlock, NULL));
+	return (ALL_OK);
 }
 
 /**

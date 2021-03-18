@@ -335,20 +335,10 @@ static void * thread_master(void *arg)
 		if (ALL_OK != ret)
 			dbgerr("models_run returned: %d", ret);
 
-		// we lock globally here in this thread. Saves headaches and reduces heavy pressure on the lock
-		ret = pthread_rwlock_rdlock(&runtime->runtime_rwlock);
-		if (ret)
-			dbgerr("wrlock failed: %d", ret);
-
 		ret = runtime_run();
 		if (ret)
 			dbgerr("runtime_run returned: %d", ret);
 		
-		// we can unlock here
-		ret = pthread_rwlock_unlock(&runtime->runtime_rwlock);
-		if (ret)
-			dbgerr("unlock failed: %d", ret);
-
 		ret = hardware_output();
 		if (ret)
 			dbgerr("hardware_output returned: %d", ret);
