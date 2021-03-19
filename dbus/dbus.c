@@ -47,9 +47,9 @@
 #define DBUS_TEMP_IFACE		DBUS_IFACE_BASE ".Temperature"
 
 #define DBUS_OBJECT_BASE	"/org/slashdirt/rwchcd"
-#define DBUS_HCIRCUITS_OBJECT	DBUS_OBJECT_BASE "/Hcircuits"
-#define DBUS_DHWTS_OBJECT	DBUS_OBJECT_BASE "/DHWTs"
-#define DBUS_TEMPS_OBJECT	DBUS_OBJECT_BASE "/Temperatures"
+#define DBUS_HCIRCUITS_OBJECT	DBUS_OBJECT_BASE "/plant/hcircuits"
+#define DBUS_DHWTS_OBJECT	DBUS_OBJECT_BASE "/plant/dhwts"
+#define DBUS_TEMPS_OBJECT	DBUS_OBJECT_BASE "/inputs/temperatures"
 
 static GDBusNodeInfo *dbus_introspection_data = NULL;
 static GDBusInterfaceInfo *dbus_runtime_interface_info = NULL;
