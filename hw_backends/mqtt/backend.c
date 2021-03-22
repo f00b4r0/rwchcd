@@ -95,6 +95,59 @@ static int mqtt_str_to_bool(const char * str)
 }
 
 /**
+ * MQTT connect callback to subscribe upon connection.
+ * This is necessary to correctly handle subscription with unexpected disconnection/reconnection.
+ * @param mosq libmosquitto data
+ * @param obj MQTT backend private data
+ * @param rc connection response return code:
+ * 0 - success
+ * 1 - connection refused (unacceptable protocol version)
+ * 2 - connection refused (identifier rejected)
+ * 3 - connection refused (broker unavailable)
+ * @warning Subtopics subscription failures are @b only logged. The callback will still try to subscribe to as many subtopics as possible.
+ */
+static void mqtt_connect_callback(struct mosquitto * mosq, void * obj, int rc)
+{
+	struct s_mqtt_pdata * restrict const hw = obj;
+	unsigned int type;
+	char * str;
+	int ret;
+
+	if (rc) {
+		pr_err("MQTT backend \"%s\": connection failed: \"%s\"", hw->name, mosquitto_connack_string(rc));
+		return;
+	}
+
+	for (type = 0; type < ARRAY_SIZE(mqtt_intype_subtopics); type++) {
+		switch (type) {
+			case HW_INPUT_TEMP:
+				if (!hw->in.temps.l)
+					continue;
+				break;
+			case HW_INPUT_SWITCH:
+				if (!hw->in.switches.l)
+					continue;
+				break;
+			case HW_INPUT_NONE:
+			default:
+				continue;
+		}
+
+		ret = asprintf(&str, "%s/%s/#", hw->set.topic_root, mqtt_intype_subtopics[type]);
+		if (ret < 0) {
+			pr_err("MQTT backend \"%s\": preparing subtopic \"%s/%s/#\" failed: OUT OF MEMORY!",
+			       hw->name, hw->set.topic_root, mqtt_intype_subtopics[type]);
+			continue;
+		}
+
+		ret = mosquitto_subscribe(mosq, NULL, str, MQTT_BKND_QOS);
+		if (ret)
+			pr_err("MQTT backend \"%s\": subscription failed for \"%s\": \"%s\"", hw->name, str, mosquitto_strerror(ret));
+		free(str);
+	}
+}
+
+/**
  * MQTT message callback to process incoming messages from subscriptions.
  * @param mosq unused
  * @param obj MQTT backend private data
@@ -218,6 +271,7 @@ __attribute__((warn_unused_result)) static int mqtt_setup(void * priv, const cha
 		goto fail;
 	}
 
+	mosquitto_connect_callback_set(hw->mosq, mqtt_connect_callback);
 	mosquitto_message_callback_set(hw->mosq, mqtt_message_callback);
 
 	hw->name = name;
@@ -239,8 +293,6 @@ fail:
 static int mqtt_online(void * priv)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
-	unsigned int type;
-	char * str;
 	int ret;
 
 	if (!hw)
@@ -253,37 +305,6 @@ static int mqtt_online(void * priv)
 	if (ret) {
 		pr_err("MQTT backend \"%s\": connect error: \"%s\"", hw->name, mosquitto_strerror(ret));
 		return (-EGENERIC);
-	}
-
-	for (type = 0; type < ARRAY_SIZE(mqtt_intype_subtopics); type++) {
-		switch (type) {
-			case HW_INPUT_TEMP:
-				if (!hw->in.temps.l)
-					continue;
-				break;
-			case HW_INPUT_SWITCH:
-				if (!hw->in.switches.l)
-					continue;
-				break;
-			case HW_INPUT_NONE:
-			default:
-				continue;
-		}
-
-		ret = asprintf(&str, "%s/%s/#", hw->set.topic_root, mqtt_intype_subtopics[type]);
-		if (ret < 0) {
-			ret = -EOOM;
-			goto fail;
-		}
-
-		ret = mosquitto_subscribe(hw->mosq, NULL, str, MQTT_BKND_QOS);
-		if (ret) {
-			pr_err("MQTT backend \"%s\": subscription failed for \"%s\": \"%s\"", hw->name, str, mosquitto_strerror(ret));
-			free (str);
-			ret = -EGENERIC;
-			goto fail;
-		}
-		free(str);
 	}
 
 	// start the network background task
