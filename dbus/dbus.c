@@ -35,7 +35,6 @@
 #include "lib.h"
 #include "runtime.h"
 #include "plant/plant.h"
-#include "plant/hcircuit.h"
 #include "io/inputs.h"
 #include "io/inputs/temperature.h"
 #include "dbus.h"
@@ -44,17 +43,23 @@
 #define DBUS_RUNTIME_IFACE	DBUS_IFACE_BASE ".Runtime"
 #define DBUS_HCIRCUIT_IFACE	DBUS_IFACE_BASE ".Hcircuit"
 #define DBUS_DHWT_IFACE		DBUS_IFACE_BASE ".DHWT"
+#define DBUS_HEATSRC_IFACE	DBUS_IFACE_BASE ".Heatsource"
+#define DBUS_PUMP_IFACE		DBUS_IFACE_BASE ".Pump"
 #define DBUS_TEMP_IFACE		DBUS_IFACE_BASE ".Temperature"
 
 #define DBUS_OBJECT_BASE	"/org/slashdirt/rwchcd"
 #define DBUS_HCIRCUITS_OBJECT	DBUS_OBJECT_BASE "/plant/hcircuits"
 #define DBUS_DHWTS_OBJECT	DBUS_OBJECT_BASE "/plant/dhwts"
+#define DBUS_HEATSRCS_OBJECT	DBUS_OBJECT_BASE "/plant/heatsources"
+#define DBUS_PUMPS_OBJECT	DBUS_OBJECT_BASE "/plant/pumps"
 #define DBUS_TEMPS_OBJECT	DBUS_OBJECT_BASE "/inputs/temperatures"
 
 static GDBusNodeInfo *dbus_introspection_data = NULL;
 static GDBusInterfaceInfo *dbus_runtime_interface_info = NULL;
 static GDBusInterfaceInfo *dbus_hcircuit_interface_info = NULL;
 static GDBusInterfaceInfo *dbus_dhwt_interface_info = NULL;
+static GDBusInterfaceInfo *dbus_heatsrc_interface_info = NULL;
+static GDBusInterfaceInfo *dbus_pump_interface_info = NULL;
 static GDBusInterfaceInfo *dbus_temp_interface_info = NULL;
 
 static const gchar dbus_introspection_xml[] =
@@ -166,6 +171,28 @@ static const gchar dbus_introspection_xml[] =
 "  </method>"
 "  <method name='DisableRunmodeOverride' />"
 " </interface>"
+" <interface name='" DBUS_HEATSRC_IFACE "'>"
+"  <property name='Name' access='read' type='s'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
+"  </property>"
+"  <property name='Overtemp' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
+"  <property name='RunMode' access='read' type='y'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
+"  </property>"
+"  <property name='TempRequest' access='read' type='d'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
+" </interface>"
+" <interface name='" DBUS_PUMP_IFACE "'>"
+"  <property name='Name' access='read' type='s'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
+"  </property>"
+"  <property name='TurnOn' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
+" </interface>"
 " <interface name='" DBUS_TEMP_IFACE "'>"
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
@@ -175,6 +202,8 @@ static const gchar dbus_introspection_xml[] =
 "  </property>"
 " </interface>"
 "</node>";
+
+/// @todo handle offline (either report as property or report error if offline)
 
 static GMainLoop *Mainloop = NULL;
 
@@ -610,6 +639,122 @@ static const GDBusInterfaceVTable dhwt_vtable = {
 	dhwt_set_property,
 };
 
+/* Heatsource */
+
+static GVariant *
+heatsource_get_property(GDBusConnection  *connection,
+			const gchar      *sender,
+			const gchar      *object_path,
+			const gchar      *interface_name,
+			const gchar      *property_name,
+			GError          **error,
+			gpointer          user_data)
+{
+	GVariant *var;
+	const gchar *node;
+	const struct s_plant * restrict const plant = runtime_get()->plant;
+	const struct s_heatsource * restrict heat;
+	plid_t id;
+	int ret;
+
+	var = NULL;
+
+	node = strrchr(object_path, '/') + 1;
+	ret = atoi(node);
+	if (ret < 0)
+		goto out;
+
+	id = (plid_t)ret;
+	if (id >= plant->heatsources.last)
+		goto out;
+
+	heat = &plant->heatsources.all[id];
+
+	if (g_strcmp0(property_name, "Name") == 0)
+		var = g_variant_new_string(heat->name);
+	else if (g_strcmp0(property_name, "RunMode") == 0) {
+		const enum e_runmode runmode = heat->set.runmode;
+		var = g_variant_new_byte((guchar)runmode);
+	}
+	else if (g_strcmp0(property_name, "Overtemp") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&heat->run.overtemp));
+	else if (g_strcmp0(property_name, "TempRequest") == 0) {
+		temp_t temp = aler(&heat->run.temp_request);
+		var = g_variant_new_double(temp_to_celsius(temp));
+	}
+	else
+		g_assert_not_reached();
+
+out:
+	if (!var)
+		g_set_error_literal(error,
+				    G_IO_ERROR,
+				    G_IO_ERROR_FAILED,
+				    "Error");
+
+	return var;
+}
+
+static const GDBusInterfaceVTable heatsource_vtable = {
+	NULL,
+	heatsource_get_property,
+	//NULL,
+};
+
+/* Pump */
+
+static GVariant *
+pump_get_property(GDBusConnection  *connection,
+		  const gchar      *sender,
+		  const gchar      *object_path,
+		  const gchar      *interface_name,
+		  const gchar      *property_name,
+		  GError          **error,
+		  gpointer          user_data)
+{
+	GVariant *var;
+	const gchar *node, *name;
+	const struct s_plant * restrict const plant = runtime_get()->plant;
+	const struct s_pump * restrict pump;
+	plid_t id;
+	int ret;
+
+	var = NULL;
+
+	node = strrchr(object_path, '/') + 1;
+	ret = atoi(node);
+	if (ret < 0)
+		goto out;
+
+	id = (plid_t)ret;
+	if (id >= plant->pumps.last)
+		goto out;
+
+	pump = &plant->pumps.all[id];
+
+	if (g_strcmp0(property_name, "Name") == 0)
+		var = g_variant_new_string(pump->name);
+	else if (g_strcmp0(property_name, "TurnOn") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&pump->run.req_on));
+	else
+		g_assert_not_reached();
+
+out:
+	if (!var)
+		g_set_error_literal(error,
+				    G_IO_ERROR,
+				    G_IO_ERROR_FAILED,
+				    "Error");
+
+	return var;
+}
+
+static const GDBusInterfaceVTable pump_vtable = {
+	NULL,
+	pump_get_property,
+	//NULL,
+};
+
 /* Temperature */
 
 static GVariant *
@@ -691,6 +836,16 @@ rwchcd_subtree_enumerate(GDBusConnection       *connection,
 		for (plid_t id = 0; id < plant->dhwts.last; id++)
 			g_ptr_array_add(p, g_strdup_printf("%d", id));
 	}
+	else if (g_strcmp0(object_path, DBUS_HEATSRCS_OBJECT) == 0) {
+		const struct s_plant * restrict const plant = runtime_get()->plant;
+		for (plid_t id = 0; id < plant->heatsources.last; id++)
+			g_ptr_array_add(p, g_strdup_printf("%d", id));
+	}
+	else if (g_strcmp0(object_path, DBUS_PUMPS_OBJECT) == 0) {
+		const struct s_plant * restrict const plant = runtime_get()->plant;
+		for (plid_t id = 0; id < plant->pumps.last; id++)
+			g_ptr_array_add(p, g_strdup_printf("%d", id));
+	}
 	else if (g_strcmp0(object_path, DBUS_TEMPS_OBJECT) == 0) {
 		for (itid_t id = 0; id < Inputs.temps.last; id++)
 			g_ptr_array_add(p, g_strdup_printf("%d", id));
@@ -717,6 +872,10 @@ rwchcd_subtree_introspect(GDBusConnection       *connection,
 		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_hcircuit_interface_info));
 	else if (g_str_has_prefix(object_path, DBUS_DHWTS_OBJECT) && node)
 		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_dhwt_interface_info));
+	else if (g_str_has_prefix(object_path, DBUS_HEATSRCS_OBJECT) && node)
+		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_heatsrc_interface_info));
+	else if (g_str_has_prefix(object_path, DBUS_PUMPS_OBJECT) && node)
+		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_pump_interface_info));
 	else if (g_str_has_prefix(object_path, DBUS_TEMPS_OBJECT) && node)
 		g_ptr_array_add(p, g_dbus_interface_info_ref(dbus_temp_interface_info));
 
@@ -741,6 +900,10 @@ rwchcd_subtree_dispatch(GDBusConnection             *connection,
 		vtable_to_return = &hcircuit_vtable;
 	else if (g_strcmp0(interface_name, DBUS_DHWT_IFACE) == 0)
 		vtable_to_return = &dhwt_vtable;
+	else if (g_strcmp0(interface_name, DBUS_HEATSRC_IFACE) == 0)
+		vtable_to_return = &heatsource_vtable;
+	else if (g_strcmp0(interface_name, DBUS_PUMP_IFACE) == 0)
+		vtable_to_return = &pump_vtable;
 	else if (g_strcmp0(interface_name, DBUS_TEMP_IFACE) == 0)
 		vtable_to_return = &temperature_vtable;
 	else
@@ -782,6 +945,24 @@ static void on_bus_acquired(GDBusConnection *connection, const gchar *name, gpoi
 
 	registration_id = g_dbus_connection_register_subtree(connection,
 							     DBUS_DHWTS_OBJECT,
+							     &rwchcd_subtree_vtable,
+							     G_DBUS_SUBTREE_FLAGS_NONE,
+							     NULL,  /* user_data */
+							     NULL,  /* user_data_free_func */
+							     NULL); /* GError** */
+	g_assert (registration_id > 0);
+
+	registration_id = g_dbus_connection_register_subtree(connection,
+							     DBUS_HEATSRCS_OBJECT,
+							     &rwchcd_subtree_vtable,
+							     G_DBUS_SUBTREE_FLAGS_NONE,
+							     NULL,  /* user_data */
+							     NULL,  /* user_data_free_func */
+							     NULL); /* GError** */
+	g_assert (registration_id > 0);
+
+	registration_id = g_dbus_connection_register_subtree(connection,
+							     DBUS_PUMPS_OBJECT,
 							     &rwchcd_subtree_vtable,
 							     G_DBUS_SUBTREE_FLAGS_NONE,
 							     NULL,  /* user_data */
@@ -847,6 +1028,12 @@ int dbus_main(void)
 
 	dbus_dhwt_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_DHWT_IFACE);
 	g_assert(dbus_dhwt_interface_info != NULL);
+
+	dbus_heatsrc_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_HEATSRC_IFACE);
+	g_assert(dbus_heatsrc_interface_info != NULL);
+
+	dbus_pump_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_PUMP_IFACE);
+	g_assert(dbus_pump_interface_info != NULL);
 
 	dbus_temp_interface_info = g_dbus_node_info_lookup_interface(dbus_introspection_data, DBUS_TEMP_IFACE);
 	g_assert(dbus_temp_interface_info != NULL);
