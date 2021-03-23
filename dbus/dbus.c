@@ -92,7 +92,16 @@ static const gchar dbus_introspection_xml[] =
 "  <property name='TempOffsetOverride' access='read' type='d'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
-"  <property name='TempTarget' access='read' type='d'>"
+"  <property name='AmbientRequest' access='read' type='d'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
+"  <property name='AmbientActual' access='read' type='d'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
+"  <property name='WtempTarget' access='read' type='d'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
+"  <property name='WtempActual' access='read' type='d'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
 "  <property name='OutOffComfort' access='read' type='d'>"
@@ -360,10 +369,6 @@ hcircuit_get_property(GDBusConnection  *connection,
 		temp = aler(&hcircuit->overrides.t_offset);
 		var = g_variant_new_double(temp_to_deltaK((tempdiff_t)temp));
 	}
-	else if (g_strcmp0(property_name, "TempTarget") == 0) {
-		temp = aler(&hcircuit->run.request_ambient);
-		var = g_variant_new_double(temp_to_celsius(temp));
-	}
 	else if (g_str_has_prefix(property_name, "Temp")) {
 		property_name += strlen("Temp");
 		if (g_strcmp0(property_name, "Comfort") == 0)
@@ -385,8 +390,19 @@ hcircuit_get_property(GDBusConnection  *connection,
 			temp = SETorDEF(hcircuit->set.params.outhoff_frostfree, hcircuit->pdata->set.def_hcircuit.outhoff_frostfree);
 		var = g_variant_new_double(temp_to_celsius(temp));
 	}
-	else
-		g_assert_not_reached();
+	else {
+		if (g_strcmp0(property_name, "AmbientRequest") == 0)
+			temp = aler(&hcircuit->run.request_ambient);
+		else if (g_strcmp0(property_name, "AmbientActual") == 0)
+			temp = aler(&hcircuit->run.actual_ambient);
+		else if (g_strcmp0(property_name, "WtempTarget") == 0)
+			temp = aler(&hcircuit->run.target_wtemp);
+		else if (g_strcmp0(property_name, "WtempActual") == 0)
+			temp = aler(&hcircuit->run.actual_wtemp);
+		else
+			g_assert_not_reached();
+		var = g_variant_new_double(temp_to_celsius(temp));
+	}
 
 out:
 	if (!var)
