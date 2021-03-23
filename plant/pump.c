@@ -168,6 +168,8 @@ int pump_run(struct s_pump * restrict const pump)
 	if (unlikely(!pump->run.online))	// implies set.configured == true
 		return (-EOFFLINE);
 
+	dbgmsg(1, 1, "\"%s\": req: %d, force: %d", pump->name, pump->run.req_on, pump->run.force_state);
+
 	state = !!outputs_relay_state_get(pump->set.rid_pump);	// assumed cannot fail
 	if (state == pump->run.req_on)
 		return (ALL_OK);
