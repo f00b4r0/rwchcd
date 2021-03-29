@@ -61,7 +61,7 @@ int heatsource_online(struct s_heatsource * const heat)
 		ret = heat->cb.online(heat);
 
 	if (ALL_OK == ret) {
-		heat->run.online = true;
+		aser(&heat->run.online, true);
 
 		// log registration shouldn't cause online failure
 		if (heat->cb.log_reg) {
@@ -164,7 +164,7 @@ int heatsource_request_temp(struct s_heatsource * const heat, const temp_t req)
 	if (unlikely(!heat))
 		return (-EINVALID);
 
-	if (unlikely(!heat->run.online))
+	if (unlikely(!aler(&heat->run.online)))
 		return (-EOFFLINE);
 
 	aser(&heat->run.temp_request, req);
@@ -185,7 +185,7 @@ int heatsource_run(struct s_heatsource * const heat)
 	if (unlikely(!heat))
 		return (-EINVALID);
 
-	if (unlikely(!heat->run.online))	// implies set.configured == true
+	if (unlikely(!aler(&heat->run.online)))	// implies set.configured == true
 		return (-EOFFLINE);
 
 	ret = heatsource_logic(heat);

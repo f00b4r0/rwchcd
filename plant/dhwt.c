@@ -70,7 +70,7 @@ static int dhwt_logdata_cb(struct s_log_data * const ldata, const void * const o
 	if (!dhwt)
 		return (-EINVALID);
 
-	if (!dhwt->run.online)
+	if (!aler(&dhwt->run.online))
 		return (-EOFFLINE);
 
 	ldata->values[i++].i = aler(&dhwt->run.runmode);
@@ -260,7 +260,7 @@ int dhwt_online(struct s_dhwt * const dhwt)
 	}
 
 	if (ALL_OK == ret) {
-		dhwt->run.online = true;
+		aser(&dhwt->run.online, true);
 
 		// log registration shouldn't cause onlining to fail
 		if (dhwt_log_register(dhwt) != ALL_OK)
@@ -538,7 +538,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	assert(dhwt->pdata);
 
-	if (unlikely(!dhwt->run.online))	// implies set.configured == true
+	if (unlikely(!aler(&dhwt->run.online)))	// implies set.configured == true
 		return (-EOFFLINE);
 
 	ret = dhwt_logic(dhwt);

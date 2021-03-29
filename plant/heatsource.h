@@ -41,7 +41,7 @@ struct s_heatsource {
 		timekeep_t consumer_sdelay;	///< if set, consumers will wait this much time before reducing their consumption (prevents heatsource overheating after e.g. burner run). *Optional*
 	} set;		///< settings (externally set)
 	struct {
-		bool online;			///< true if source is available for use (under software management)
+		atomic_bool online;		///< true if source is available for use (under software management)
 		atomic_bool could_sleep;	///< true if source is could be sleeping (no recent heat request from circuits)
 		atomic_bool overtemp;		///< true if heatsource is overtemp
 		_Atomic enum e_runmode runmode;	///< heatsource actual (computed) runmode

@@ -26,6 +26,7 @@
  *
  * @note will crash if any operation is attempted before the runtime/config structures
  * are properly set, which should never happen in the current setup (dbus_main() is called after full initialization).
+ * @note the object properties are only valid if said object is 'online' (as reported by the namesake property).
  */
 
 #include <gio/gio.h>
@@ -76,6 +77,9 @@ static const gchar dbus_introspection_xml[] =
 "  </property>"
 " </interface>"
 " <interface name='" DBUS_HCIRCUIT_IFACE "'>"
+"  <property name='Online' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
@@ -127,6 +131,9 @@ static const gchar dbus_introspection_xml[] =
 "  <method name='DisableRunmodeOverride' />"
 " </interface>"
 " <interface name='" DBUS_DHWT_IFACE "'>"
+"  <property name='Online' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
@@ -172,6 +179,9 @@ static const gchar dbus_introspection_xml[] =
 "  <method name='DisableRunmodeOverride' />"
 " </interface>"
 " <interface name='" DBUS_HEATSRC_IFACE "'>"
+"  <property name='Online' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
@@ -186,6 +196,9 @@ static const gchar dbus_introspection_xml[] =
 "  </property>"
 " </interface>"
 " <interface name='" DBUS_PUMP_IFACE "'>"
+"  <property name='Online' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
@@ -202,8 +215,6 @@ static const gchar dbus_introspection_xml[] =
 "  </property>"
 " </interface>"
 "</node>";
-
-/// @todo handle offline (either report as property or report error if offline)
 
 static GMainLoop *Mainloop = NULL;
 
@@ -321,6 +332,9 @@ hcircuit_method_call(GDBusConnection       *connection,
 	if (!hcircuit)
 		goto notfound;
 
+	if (!aler(&hcircuit->run.online))
+		goto offline;
+
 	if (g_strcmp0(method_name, "SetTempOffsetOverride") == 0) {
 		gdouble offset;
 		g_variant_get(parameters, "(d)", &offset);
@@ -346,6 +360,11 @@ notfound:
 	g_dbus_method_invocation_return_dbus_error(invocation,
 						   DBUS_HCIRCUIT_IFACE ".Error.Failed",
 						   "Hcircuit not found");
+	return;
+offline:
+	g_dbus_method_invocation_return_dbus_error(invocation,
+						   DBUS_HCIRCUIT_IFACE ".Error.Failed",
+						   "Hcircuit offline");
 	return;
 invalid:
 	g_dbus_method_invocation_return_dbus_error(invocation,
@@ -386,7 +405,9 @@ hcircuit_get_property(GDBusConnection  *connection,
 
 	hcircuit = &plant->hcircuits.all[id];
 
-	if (g_strcmp0(property_name, "Name") == 0)
+	if (g_strcmp0(property_name, "Online") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&hcircuit->run.online));
+	else if (g_strcmp0(property_name, "Name") == 0)
 		var = g_variant_new_string(hcircuit->name);
 	else if (g_strcmp0(property_name, "RunMode") == 0) {
 		const enum e_runmode runmode = aler(&hcircuit->overrides.o_runmode) ? aler(&hcircuit->overrides.runmode) : hcircuit->set.runmode;
@@ -480,6 +501,9 @@ dhwt_method_call(GDBusConnection       *connection,
 	if (!dhwt)
 		goto notfound;
 
+	if (!aler(&dhwt->run.online))
+		goto offline;
+
 	if (g_strcmp0(method_name, "SetRunmodeOverride") == 0) {
 		guint8 runmode;
 		g_variant_get(parameters, "(y)", &runmode);
@@ -500,6 +524,11 @@ notfound:
 	g_dbus_method_invocation_return_dbus_error(invocation,
 						   DBUS_DHWT_IFACE ".Error.Failed",
 						   "DHWT not found");
+	return;
+offline:
+	g_dbus_method_invocation_return_dbus_error(invocation,
+						   DBUS_DHWT_IFACE ".Error.Failed",
+						   "DHWT offline");
 	return;
 invalid:
 	g_dbus_method_invocation_return_dbus_error(invocation,
@@ -540,7 +569,9 @@ dhwt_get_property(GDBusConnection  *connection,
 
 	dhwt = &plant->dhwts.all[id];
 
-	if (g_strcmp0(property_name, "Name") == 0)
+	if (g_strcmp0(property_name, "Online") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&dhwt->run.online));
+	else if (g_strcmp0(property_name, "Name") == 0)
 		var = g_variant_new_string(dhwt->name);
 	else if (g_strcmp0(property_name, "RunMode") == 0) {
 		const enum e_runmode runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
@@ -670,7 +701,9 @@ heatsource_get_property(GDBusConnection  *connection,
 
 	heat = &plant->heatsources.all[id];
 
-	if (g_strcmp0(property_name, "Name") == 0)
+	if (g_strcmp0(property_name, "Online") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&heat->run.online));
+	else if (g_strcmp0(property_name, "Name") == 0)
 		var = g_variant_new_string(heat->name);
 	else if (g_strcmp0(property_name, "RunMode") == 0) {
 		const enum e_runmode runmode = heat->set.runmode;
@@ -732,7 +765,9 @@ pump_get_property(GDBusConnection  *connection,
 
 	pump = &plant->pumps.all[id];
 
-	if (g_strcmp0(property_name, "Name") == 0)
+	if (g_strcmp0(property_name, "Online") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&pump->run.online));
+	else if (g_strcmp0(property_name, "Name") == 0)
 		var = g_variant_new_string(pump->name);
 	else if (g_strcmp0(property_name, "TurnOn") == 0)
 		var = g_variant_new_boolean((gboolean)aler(&pump->run.req_on));

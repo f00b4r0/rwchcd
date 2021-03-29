@@ -65,7 +65,7 @@ static int boiler_hs_logdata_cb(struct s_log_data * const ldata, const void * co
 	if (!boiler)
 		return (-EINVALID);
 
-	if (!hs->run.online)
+	if (!aler(&hs->run.online))
 		return (-EOFFLINE);
 
 	ldata->values[i++].i = aler(&hs->run.runmode);

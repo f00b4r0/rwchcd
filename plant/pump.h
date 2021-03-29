@@ -14,6 +14,8 @@
 #ifndef pump_h
 #define pump_h
 
+#include <stdatomic.h>
+
 #include "rwchcd.h"
 #include "timekeep.h"
 #include "io/outputs.h"
@@ -29,8 +31,8 @@ struct s_pump {
 		timekeep_t cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off. *Optional*, useful to prevent short runs that might clog the pump
 	} set;		///< settings (externally set)
 	struct {
-		bool online;			///< true if pump is operational (under software management)
-		bool req_on;			///< request pump on
+		atomic_bool online;		///< true if pump is operational (under software management)
+		atomic_bool req_on;		///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
 		bool dwht_use;			///< true if pump is currently used by active DHWT
 		timekeep_t last_switch;		///< last time the pump state was toggled

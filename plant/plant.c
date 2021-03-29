@@ -590,7 +590,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	// circuits first
 	for (id = 0; id < plant->hcircuits.last; id++) {
 		hcircuit = &plant->hcircuits.all[id];
-		if (!hcircuit->run.online || (ALL_OK != hcircuit->status))
+		if (!aler(&hcircuit->run.online) || (ALL_OK != hcircuit->status))
 			continue;
 
 		temp = aler(&hcircuit->run.heat_request);
@@ -610,7 +610,7 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 	// then dhwt
 	for (id = 0; id < plant->dhwts.last; id++) {
 		dhwt = &plant->dhwts.all[id];
-		if (!dhwt->run.online || (ALL_OK != dhwt->status))
+		if (!aler(&dhwt->run.online) || (ALL_OK != dhwt->status))
 			continue;
 
 		temp = dhwt->run.heat_request;
@@ -682,7 +682,7 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 	assert(plant->heatsources.last <= 1);	// XXX TODO: only one source supported at the moment
 	for (id = 0; id < plant->heatsources.last; id++) {
 		heatsource = &plant->heatsources.all[id];
-		if (!heatsource->run.online)
+		if (!aler(&heatsource->run.online))
 			continue;
 
 		ret = heatsource_request_temp(heatsource, plant->run.plant_hrequest);
@@ -713,7 +713,7 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 
 	for (id = 0; id < plant->hcircuits.last; id++) {
 		hcircuit = &plant->hcircuits.all[id];
-		if (!hcircuit->run.online)
+		if (!aler(&hcircuit->run.online))
 			continue;
 		summer &= aler(&hcircuit->set.p.bmodel->run.summer);
 	}
@@ -766,7 +766,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	// open all valves
 	for (id = 0; id < plant->valves.last; id++) {
 		valve = &plant->valves.all[id];
-		if (!valve->run.online)
+		if (!&valve->run.online)
 			continue;
 
 		if (VA_TYPE_ISOL == valve->set.type)
@@ -784,7 +784,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	// set all pumps ON
 	for (id = 0; id < plant->pumps.last; id++) {
 		pump = &plant->pumps.all[id];
-		if (!pump->run.online)
+		if (!aler(&pump->run.online))
 			continue;
 
 		if (pump->run.dwht_use)

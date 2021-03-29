@@ -72,7 +72,7 @@ static int hcircuit_logdata_cb(struct s_log_data * const ldata, const void * con
 	if (!circuit)
 		return (-EINVALID);
 
-	if (!circuit->run.online)
+	if (!aler(&circuit->run.online))
 		return (-EOFFLINE);
 
 	ldata->values[i++].i = aler(&circuit->run.runmode);
@@ -282,7 +282,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	}
 
 	if (ALL_OK == ret) {
-		circuit->run.online = true;
+		aser(&circuit->run.online, true);
 
 		// log registration shouldn't cause onlining to fail
 		if (hcircuit_log_register(circuit) != ALL_OK)
@@ -712,7 +712,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	if (unlikely(!circuit))
 		return (-EINVALID);
 
-	if (unlikely(!circuit->run.online))	// implies set.configured == true
+	if (unlikely(!aler(&circuit->run.online)))	// implies set.configured == true
 		return (-EOFFLINE);
 
 	// safety checks

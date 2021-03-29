@@ -62,7 +62,7 @@ int pump_online(struct s_pump * restrict const pump)
 		return (-EMISCONFIGURED);
 	}
 
-	pump->run.online = true;
+	aser(&pump->run.online, true);
 
 	return (ALL_OK);
 }
@@ -79,10 +79,10 @@ int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_
 	if (unlikely(!pump))
 		return (-EINVALID);
 
-	if (unlikely(!pump->run.online))
+	if (unlikely(!aler(&pump->run.online)))
 		return (-EOFFLINE);
 
-	pump->run.req_on = req_on;
+	aser(&pump->run.req_on, req_on);
 	pump->run.force_state = force_state;
 
 	return (ALL_OK);
@@ -99,7 +99,7 @@ int pump_get_state(const struct s_pump * restrict const pump)
 	if (unlikely(!pump))
 		return (-EINVALID);
 
-	if (unlikely(!pump->run.online))
+	if (unlikely(!aler(&pump->run.online)))
 		return (-EOFFLINE);
 
 	// NOTE we could return remaining cooldown time if necessary
@@ -159,30 +159,31 @@ int pump_run(struct s_pump * restrict const pump)
 {
 	const timekeep_t now = timekeep_now();
 	timekeep_t elapsed;
-	bool state;
+	bool state, req;
 	int ret;
 
 	if (unlikely(!pump))
 		return (-EINVALID);
 
-	if (unlikely(!pump->run.online))	// implies set.configured == true
+	if (unlikely(!aler(&pump->run.online)))	// implies set.configured == true
 		return (-EOFFLINE);
 
-	dbgmsg(1, 1, "\"%s\": req: %d, force: %d", pump->name, pump->run.req_on, pump->run.force_state);
+	dbgmsg(1, 1, "\"%s\": req: %d, force: %d", pump->name, aler(&pump->run.req_on), pump->run.force_state);
 
 	state = !!outputs_relay_state_get(pump->set.rid_pump);	// assumed cannot fail
-	if (state == pump->run.req_on)
+	req = aler(&pump->run.req_on);
+	if (state == req)
 		return (ALL_OK);
 
 	// apply cooldown to turn off, only if not forced.
 	// If ongoing cooldown, resume it, otherwise restore default value
-	if (!pump->run.req_on && !pump->run.force_state) {
+	if (!req && !pump->run.force_state) {
 		elapsed = now - pump->run.last_switch;
 		if (elapsed < pump->set.cooldown_time)
 			return (ALL_OK);
 	}
 
-	ret = outputs_relay_state_set(pump->set.rid_pump, pump->run.req_on);
+	ret = outputs_relay_state_set(pump->set.rid_pump, req);
 	if (unlikely(ret < 0))
 		goto fail;
 

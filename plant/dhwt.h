@@ -58,7 +58,7 @@ struct s_dhwt {
 		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {
-		bool online;			///< true if tank is available for use (under software management)
+		atomic_bool online;		///< true if tank is available for use (under software management)
 		bool active;			///< true if tank is active
 		atomic_bool charge_on;		///< true if charge ongoing
 		atomic_bool recycle_on;		///< true if recycle pump should be running.

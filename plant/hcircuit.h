@@ -66,7 +66,7 @@ struct s_hcircuit {
 		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {
-		bool online;			///< true if circuit is operational (under software management)
+		atomic_bool online;		///< true if circuit is operational (under software management)
 		bool active;			///< true if circuit is active
 		bool outhoff;			///< true if no heating conditions are met
 		bool floor_output;		///< true if the current output should not be reduced
