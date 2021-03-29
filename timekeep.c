@@ -2,7 +2,7 @@
 //  timekeep.c
 //  rwchcd
 //
-//  (C) 2019 Thibaut VARENE
+//  (C) 2019,2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -18,6 +18,7 @@
 #include <stdatomic.h>
 #include <assert.h>
 #include <pthread.h>	// only for pthread_setname_np()
+#include <errno.h>
 
 #include "rwchcd.h"
 #include "timekeep.h"
@@ -103,13 +104,24 @@ static int timekeep_clockupdate(void)
 
 /**
  * Sleep for at least N microseconds.
+ * Signal-safe nanosleep() wrapper, handles EINTR internally.
  * @param usecs time to sleep for (in microseconds).
  * @note does not require timekeep_thread() to be running
- * @warning no handling of signals
  */
 void timekeep_usleep(unsigned int usecs)
 {
-	usleep(usecs);
+	struct timespec tv;
+	int ret;
+
+	tv.tv_sec = usecs / 1000000;
+	tv.tv_nsec = (usecs % 1000000) * 1000;
+
+	while (1) {
+		ret = nanosleep(&tv, &tv);
+		if (ret && (EINTR == errno))
+			continue;
+		return;
+	}
 }
 
 /**
@@ -140,7 +152,7 @@ timekeep_t timekeep_now(void)
 /**
  * Simple timekeep thread.
  * Update the wall clock at Nyquist frequency
- * @todo hardcoded frequency, handle signals
+ * @note hardcoded frequency
  */
 void * timekeep_thread(void * arg __attribute__((unused)))
 {
@@ -151,7 +163,7 @@ void * timekeep_thread(void * arg __attribute__((unused)))
 	// start logging
 	while (1) {
 		timekeep_clockupdate();
-		usleep(500*1000);	// XXX will not handle signals correctly
+		timekeep_usleep(500*1000);
 	}
 }
 
