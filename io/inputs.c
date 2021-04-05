@@ -119,9 +119,9 @@ static int inputs_log_deregister(void)
 	int ret;
 
 	ret = log_deregister(&In_temps_lsrc);
-	if (ret)
+	if (ret) {
 		dbgerr("log_deregister failed (%d)", ret);
-
+	}
 	free((void *)In_temps_lsrc.keys);
 	free((void *)In_temps_lsrc.metrics);
 
@@ -149,9 +149,9 @@ int inputs_online(void)
 	int ret;
 
 	ret = inputs_log_register();
-	if (ret)
+	if (ret) {
 		dbgerr("inputs_log_register failed (%d)", ret);
-
+	}
 	return (ALL_OK);
 }
 

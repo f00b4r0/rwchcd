@@ -203,8 +203,9 @@ static int log_rrd_update(const char * restrict const identifier, const struct s
 
 	rrd_clear_error();
 	ret = rrd_update_r(identifier, NULL, 1, &buffer);
-	if (ret)
+	if (ret) {
 		dbgerr("%s", rrd_get_error());
+	}
 
 cleanup:
 	free(buffer);

@@ -301,9 +301,9 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 
 			dbgmsg(3, 1, "Trying %s node \"%s\"", node->name, sname);
 		}
-		else
+		else {
 			dbgmsg(3, 1, "Trying %s node", node->name);
-
+		}
 		// test parser
 		ret = parser(priv, node);
 		dbgmsg(3, (ALL_OK == ret), "found!");

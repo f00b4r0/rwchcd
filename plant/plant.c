@@ -776,9 +776,9 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 			continue;	// don't touch DHWT valves when in use
 
 		ret = valve_reqopen_full(valve);
-
-		if (ALL_OK != ret)
+		if (ALL_OK != ret) {
 			dbgerr("valve_reqopen_full failed on %d (%d)", id, ret);
+		}
 	}
 
 	// set all pumps ON
@@ -791,9 +791,9 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 			continue;	// don't touch DHWT pumps when in use
 
 		ret = pump_set_state(pump, ON, NOFORCE);
-
-		if (ALL_OK != ret)
+		if (ALL_OK != ret) {
 			dbgerr("pump_set_state failed on %d (%d)", id, ret);
+		}
 	}
 
 	return (ALL_OK);

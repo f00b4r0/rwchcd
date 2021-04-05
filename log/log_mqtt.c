@@ -185,9 +185,10 @@ static int log_mqtt_update(const char * restrict const identifier, const struct 
 				msize = 0;
 				break;
 		}
-		if (unlikely(msize >= MESSAGE_BUFLEN))
-			dbgerr("value for '%s/%d' too large: truncated", identifier, i);
-
+		if (unlikely(msize >= MESSAGE_BUFLEN)) {
+			dbgerr("value for '%s/%d' too large: skipped", identifier, i);
+			continue;
+		}
 		ret = mosquitto_publish(Log_mqtt.mosq, NULL, topic, msize, message, Log_mqtt.set.qos, false);
 		if (ret) {
 			dbgerr("mosquitto_publish failed: \"%s\"", mosquitto_strerror(ret));

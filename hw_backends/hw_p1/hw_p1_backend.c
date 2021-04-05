@@ -250,9 +250,9 @@ static int hw_p1_output(void * priv)
 
 	// update LCD
 	ret = hw_p1_lcd_run(&hw->lcd, &hw->spi, hw);
-	if (ALL_OK != ret)
+	if (ALL_OK != ret) {
 		dbgerr("\"%s\" hw_p1_lcd_run failed (%d)", hw->name, ret);
-
+	}
 	// write relays
 	ret = hw_p1_rwchcrelays_write(hw);
 	if (ALL_OK != ret) {
@@ -262,9 +262,9 @@ static int hw_p1_output(void * priv)
 
 	// write peripherals
 	ret = hw_p1_rwchcperiphs_write(hw);
-	if (ALL_OK != ret)
+	if (ALL_OK != ret) {
 		dbgerr("\"%s\" hw_p1_rwchcperiphs_write failed (%d)", hw->name, ret);
-
+	}
 out:
 	return (ret);
 }
@@ -299,7 +299,7 @@ static int hw_p1_offline(void * priv)
 	// update the hardware
 	ret = hw_p1_rwchcrelays_write(hw);
 	if (ret)
-		dbgerr("\"%s\" hw_p1_rwchcrelays_write failed (%d)", hw->name, ret);
+		pr_err("HWP1 \"%s\": Offlining: Failed to update hardware (%d)", hw->name, ret);
 
 	// update permanent storage with final count
 	hw_p1_save_relays(hw);
@@ -309,7 +309,7 @@ static int hw_p1_offline(void * priv)
 	// reset the hardware
 	ret = hw_p1_spi_reset(&hw->spi);
 	if (ret)
-		dbgerr("\"%s\" reset failed (%d)", hw->name, ret);
+		pr_err("HWP1 \"%s\": Offlining: Failed to reset hardware (%d)", hw->name, ret);
 
 	return (ret);
 }

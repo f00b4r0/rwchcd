@@ -498,8 +498,9 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 	// save/log relays state if there was a change
 	if (chflags) {
 		ret = hw_p1_save_relays(hw);
-		if (ret)
+		if (ret) {
 			dbgerr("\"%s\" hw_p1_save failed (%d)", hw->name, ret);
+		}
 	}
 	
 	// send new state to hardware

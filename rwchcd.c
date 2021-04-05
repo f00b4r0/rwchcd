@@ -328,21 +328,21 @@ static void * thread_master(void *arg)
 #endif
 
 		ret = hardware_input();
-		if (ret)
+		if (ret) {
 			dbgerr("hardware_input returned: %d", ret);
-
+		}
 		ret = models_run();
-		if (ALL_OK != ret)
+		if (ALL_OK != ret) {
 			dbgerr("models_run returned: %d", ret);
-
+		}
 		ret = runtime_run();
-		if (ret)
+		if (ret) {
 			dbgerr("runtime_run returned: %d", ret);
-		
+		}
 		ret = hardware_output();
-		if (ret)
+		if (ret) {
 			dbgerr("hardware_output returned: %d", ret);
-		
+		}
 		alarms_run();	// XXX run this here last as it clears the alarms
 
 #ifdef DEBUG

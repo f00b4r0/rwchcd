@@ -403,8 +403,9 @@ int log_online(void)
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		ret = timer_add_cb(Log_sched[i].interval, Log_sched[i].cb, Log_sched[i].name);
-		if (ALL_OK != ret)
+		if (ALL_OK != ret) {
 			dbgerr("failed to add %s log crawler timer", Log_sched[i].name);	// pr_warn()
+		}
 	}
 
 	return (ALL_OK);
