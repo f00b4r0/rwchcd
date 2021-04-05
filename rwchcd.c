@@ -343,7 +343,7 @@ static void * thread_master(void *arg)
 		if (ret) {
 			dbgerr("hardware_output returned: %d", ret);
 		}
-		alarms_run();	// XXX run this here last as it clears the alarms
+		alarms_run();	// run this here last as it clears the alarms
 
 #ifdef DEBUG
 		printf("\n");	// insert empty line between each run
@@ -425,7 +425,7 @@ int main(void)
 	ret = init_process();
 	if (ret != ALL_OK) {
 		pr_err(_("Process initialization failed (%d) - ABORTING!"), ret);
-		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
+		abort();	// terminate (and debug) - if this happens the program should not be allowed to continue
 	}
 
 	// setup SCHED_FIFO master thread
@@ -452,7 +452,7 @@ int main(void)
 	ret = online_subsystems();
 	if (ret != ALL_OK) {
 		pr_err(_("Subsystems onlining failed (%d) - ABORTING!"), ret);
-		abort();	// terminate (and debug) - XXX if this happens the program should not be allowed to continue
+		abort();	// terminate (and debug) - if this happens the program should not be allowed to continue
 	}
 
 	ret = pthread_create(&timekeep_thr, NULL, timekeep_thread, NULL);

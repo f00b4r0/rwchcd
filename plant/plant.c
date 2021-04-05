@@ -541,7 +541,7 @@ static int plant_alarm(const enum e_execs errorn, const int devid, const char * 
 			break;
 		case ESENSORINVAL:
 		case ESENSORSHORT:
-		case ESENSORDISCON:	// XXX review, sensor alarms currently detailed in backend
+		case ESENSORDISCON:
 			msgf = _("Sensor problem on %s");
 			break;
 		case ENOTCONFIGURED:	// this really should not happen
@@ -868,7 +868,7 @@ int plant_run(struct s_plant * restrict const plant)
 		// max stop delay
 		stop_delay = (heatsource->run.target_consumer_sdelay > stop_delay) ? heatsource->run.target_consumer_sdelay : stop_delay;
 
-		// XXX consumer_shift: if a critical shift is in effect it overrides the non-critical one
+		// consumer_shift: if a critical shift is in effect it overrides the non-critical one
 		assert(plant->heatsources.last <= 1);	// XXX TODO: only one source supported at the moment for consummer_shift
 		plant->pdata.run.consumer_shift = heatsource->run.cshift_crit ? heatsource->run.cshift_crit : heatsource->run.cshift_noncrit;
 	}

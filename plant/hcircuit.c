@@ -303,7 +303,7 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	assert(circuit);
 	assert(circuit->set.configured);
 
-	// XXX ensure actuators are reset after summer maintenance
+	// ensure actuators are reset after summer maintenance
 	if (circuit->set.p.pump_feed)
 		pump_shutdown(circuit->set.p.pump_feed);
 
@@ -551,8 +551,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
 	if (!circuit->pdata->run.consumer_sdelay)
 		circuit->run.floor_output = false;
-
-	// XXX OPTIM if return temp is known
 
 	// Ambient temperature is either read or modelled
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor

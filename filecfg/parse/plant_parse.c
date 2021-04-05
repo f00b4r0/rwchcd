@@ -111,7 +111,7 @@ static int plant_config_parse(void * restrict const priv, const struct s_filecfg
 		}
 	}
 
-	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
+	/// @todo XXX add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
 	return (ALL_OK);
 }
 

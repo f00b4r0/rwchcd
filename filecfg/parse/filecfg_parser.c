@@ -255,7 +255,6 @@ static int runtime_config_parse(void * restrict const priv, const struct s_filec
 
 	runtime->set.configured = true;
 
-	// XXX TODO add a "config_validate()" function to validate dhwt/hcircuit defconfig data?
 	return (ALL_OK);
 }
 

@@ -110,7 +110,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 		return (ALL_OK);
 
 	// we must ensure all requests get through. Spinlock if someone else is touching the target.
-	// XXX based on top comment assumption, there should never be contention here
+	// Note: based on top comment assumption, there should never be contention here
 	while (unlikely(atomic_flag_test_and_set_explicit(&r->run.lock, memory_order_acquire)));
 
 	// a change is needed, let's dive in

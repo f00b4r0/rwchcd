@@ -10,8 +10,9 @@
  * @file
  * File configuration dump interface implementation.
  *
- * @note the ability to dump the current configuration to file is a nice-to-have, but not a must-have.
+ * @deprecated the ability to dump the current configuration to file is a nice-to-have, but not a must-have.
  * As such, the code that handles this side of things is a rather hackish second-class citizen, and proper operation is not guaranteed.
+ * It might be removed entirely at some point.
  */
 
 #include <inttypes.h>

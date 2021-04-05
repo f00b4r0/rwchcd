@@ -150,12 +150,12 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 		logfmt.interval = log_data->interval;	// XXX do we need this?
 		logfmt.bend = Log.bkend->bkid;	// XXX HACK
 
-		// XXX reappend LOG_FMT_SUFFIX
+		// reappend LOG_FMT_SUFFIX
 		strcpy(p, LOG_FMT_SUFFIX);
 		ret = storage_dump(ident, version, &logfmt, sizeof(logfmt));
 		if (ALL_OK != ret)
 			return (ret);
-		// XXX restrip LOG_FMT_SUFFIX
+		// restrip LOG_FMT_SUFFIX
 		*p = '\0';
 	}
 

@@ -144,7 +144,7 @@ int alarms_online(void)
  * Run the alarms subsystem.
  * Currently only prints active alarms every 60s.
  * @return exec status
- * @bug hardcoded throttle (60s)
+ * @todo revisit hardcoded throttle (60s)
  * @todo hash table, only print a given alarm once? Stateful alarms?
  */
 int alarms_run(void)

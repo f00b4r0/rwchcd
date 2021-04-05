@@ -308,7 +308,7 @@ int dhwt_shutdown(struct s_dhwt * const dhwt)
 	assert(dhwt);
 	assert(dhwt->set.configured);
 
-	// XXX ensure pumps are stopped after summer maintenance
+	// ensure pumps are stopped after summer maintenance
 	if (dhwt->set.p.pump_feed)
 		pump_shutdown(dhwt->set.p.pump_feed);
 

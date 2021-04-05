@@ -34,9 +34,7 @@
  };
  valve "valve isol name" {
 	 ete_time 15s;
-	 type "isol" {
-		 reverse yes;
-	 };
+	 type "isol";
 	 motor "2way" {
 		 rid_trigger "dhw switch";
 		 trigger_opens true;
