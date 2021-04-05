@@ -94,7 +94,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 	struct {
 		unsigned int nkeys;
 		unsigned int nvalues;
-		int interval;
+		unsigned int interval;
 		enum e_log_bend bend;
 	} logfmt;
 

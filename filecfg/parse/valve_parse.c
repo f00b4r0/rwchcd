@@ -204,7 +204,7 @@ static int valve_tmix_parser(void * restrict const priv, const struct s_filecfg_
 	return (ret);
 }
 
-static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int valve_tisol_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node __attribute__((unused)))
 {
 	struct s_valve * restrict const valve = priv;
 

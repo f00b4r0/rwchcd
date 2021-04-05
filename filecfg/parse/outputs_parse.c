@@ -72,7 +72,7 @@ static int outputs_relays_parse(void * restrict const priv, const struct s_filec
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "relay", outputs_relay_wrap_parse));
 }
 
-int filecfg_outputs_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_outputs_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODELST,	"relays",	false,	outputs_relays_parse,	NULL, },

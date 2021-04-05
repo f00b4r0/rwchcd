@@ -180,7 +180,9 @@ static int log_mqtt_update(const char * restrict const identifier, const struct 
 			case LOG_METRIC_FGAUGE:
 			case LOG_METRIC_FCOUNTER:
 				msize = snprintf(message, MESSAGE_BUFLEN, "%f", log_data->values[i].f);
+				break;
 			default:
+				msize = 0;
 				break;
 		}
 		if (unlikely(msize >= MESSAGE_BUFLEN))

@@ -153,7 +153,7 @@ static void mqtt_connect_callback(struct mosquitto * mosq, void * obj, int rc)
  * @param obj MQTT backend private data
  * @param message libmosquitto message
  */
-static void mqtt_message_callback(struct mosquitto * mosq, void * obj, const struct mosquitto_message * message)
+static void mqtt_message_callback(struct mosquitto * mosq __attribute__((unused)), void * obj, const struct mosquitto_message * message)
 {
 	struct s_mqtt_pdata * restrict const hw = obj;
 	u_hw_in_value_t u;

@@ -227,7 +227,7 @@ fail:
  * @param node a `scheduler` node
  * @return exec status
  */
-int filecfg_scheduler_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_scheduler_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_schedules * schedules = &Schedules;
 	unsigned int n;

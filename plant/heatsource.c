@@ -133,8 +133,8 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	if (heat->pdata->run.dhwc_sliding) {
 		// jacket integral between -100Ks and 0
 		temp = temp_thrs_intg(&heat->run.sld_itg, aler(&heat->run.temp_request), heat->cb.temp(heat), heat->cb.time(heat), (signed)timekeep_sec_to_tk(deltaK_to_tempdiff(-100)), 0);
-		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift
-		heat->run.cshift_noncrit = timekeep_tk_to_sec(temp_to_ikelvind(temp));
+		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift - cannot overflow due to jacket
+		heat->run.cshift_noncrit = (typeof(heat->run.cshift_noncrit))timekeep_tk_to_sec(temp_to_ikelvind(temp));
 	}
 	else
 		reset_intg(&heat->run.sld_itg);

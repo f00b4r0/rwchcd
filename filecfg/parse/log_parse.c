@@ -83,7 +83,7 @@ static int log_parse_bkend(void * restrict const priv, const struct s_filecfg_pa
  * @param node a `logging` node
  * @return exec status
  */
-int filecfg_log_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_log_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL,		"enabled",	true, fcp_bool_s_log_enabled,	NULL, },

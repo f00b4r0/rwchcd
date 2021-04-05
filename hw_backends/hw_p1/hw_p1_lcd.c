@@ -485,7 +485,7 @@ int hw_p1_lcd_offline(struct s_hw_p1_lcd * const lcd)
  * LCD exit routine
  * @param spi HW P1 spi private data
  */
-void hw_p1_lcd_exit(struct s_hw_p1_lcd * const lcd)
+void hw_p1_lcd_exit(struct s_hw_p1_lcd * const lcd __attribute__((unused)))
 {
 	return;
 }

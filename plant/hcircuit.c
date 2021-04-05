@@ -557,7 +557,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// Ambient temperature is either read or modelled
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 												// calculate ambient shift based on measured ambient temp influence in percent
-		target_ambient += (circuit->set.ambient_factor) * (tempdiff_t)(target_ambient - ambient_temp) / 100;
+		target_ambient += circuit->set.ambient_factor * (tempdiff_t)(target_ambient - ambient_temp) / 100;
 		circuit->run.ambient_update_time = now;
 	}
 	else {	// no sensor (or faulty), apply ambient model

@@ -72,7 +72,7 @@ static int inputs_temperatures_parse(void * restrict const priv, const struct s_
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "temperature", inputs_temperature_wrap_parse));
 }
 
-int filecfg_inputs_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_inputs_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODELST,	"temperatures",	false,	inputs_temperatures_parse,	NULL, },

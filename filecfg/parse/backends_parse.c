@@ -51,7 +51,7 @@ static hw_bknd_parser_t HWparsers[] = {
 #endif
 };
 
-static int hardware_backend_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int hardware_backend_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	unsigned int i;
 	int ret = -EGENERIC;

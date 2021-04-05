@@ -55,8 +55,8 @@ const char * idle_mode_str[] = {
 
 FILECFG_PARSER_ENUM_PARSE_SET_FUNC(idle_mode_str, s_boiler_priv, idle_mode)
 
-// XXX REVIEW quick hack
 #include "runtime.h"
+/// @todo XXX REVIEW quick hack
 static inline const struct s_plant * __boiler_to_plant(void * priv)
 {
 	return (runtime_get()->plant);

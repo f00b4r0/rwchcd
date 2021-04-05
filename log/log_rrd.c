@@ -139,8 +139,8 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 
 cleanup:
 	for (i = 0; i < log_data->nkeys; i++)
-		free(argv[rrasize+i]);	// cleanup the dynamic DS formats
-	free(argv);
+		free((void *)argv[rrasize+i]);	// cleanup the dynamic DS formats
+	free((void *)argv);
 
 	return (ret);
 }

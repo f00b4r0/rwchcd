@@ -129,7 +129,7 @@ int hw_p1_filecfg_dump(void * priv)
 
 static int parse_type_lcdbl(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	return (hw_p1_setup_setbl((struct s_hw_p1_pdata *)priv, node->value.intval));
+	return (hw_p1_setup_setbl((struct s_hw_p1_pdata *)priv, (uint8_t)(node->value.intval & 0xFF)));
 }
 
 static int parse_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)

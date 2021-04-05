@@ -68,7 +68,7 @@ struct s_hw_p1_pdata {
 		res_t calib_nodac;		///< sensor calibration value without dac offset
 		res_t calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version
-		unsigned int nsensors;		///< number of configured sensors
+		uint_least8_t nsensors;		///< number of configured sensors
 		// private data for input()
 		int count, systout;
 		bool syschg;

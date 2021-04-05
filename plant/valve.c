@@ -260,7 +260,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	error = (tempdiff_t)(target_tout - tempout);		// error is unscaled
 
 	// Integral term I: (Ki * error) * sample interval - SIGNED
-	iterm = (Kp * error / (signed)Ti) * dt;		// iterm is scaled by VPI_FDEC
+	iterm = (Kp * error / (signed)Ti) * (signed)dt;		// iterm is scaled by VPI_FDEC
 
 	// Proportional term P applied to output: Kp * (previous - actual) - SIGNED
 	pterm = Kp * (tempdiff_t)(vpriv->run.prev_out - tempout);		// pterm is scaled by VPI_FDEC

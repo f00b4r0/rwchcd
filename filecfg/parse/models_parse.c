@@ -125,7 +125,7 @@ cleanup:
 	return (ret);
 }
 
-int filecfg_models_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_models_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	int ret;
 

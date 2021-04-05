@@ -112,7 +112,7 @@ static int filecfg_valve_tmix_dump(const struct s_valve * restrict const valve)
 	return (filecfg_valve_algo_dump(valve));			// mandatory
 }
 
-static int filecfg_valve_tisol_dump(const struct s_valve * restrict const valve)
+static int filecfg_valve_tisol_dump(const struct s_valve * restrict const valve __attribute__((unused)))
 {
 	return (ALL_OK);
 }
