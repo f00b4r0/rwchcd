@@ -160,17 +160,17 @@ static int log_mqtt_update(const char * restrict const identifier, const struct 
 	if (ret < 0)
 		return (-EOOM);
 
-	// basesize accounts for terminating '\0'
+	basesize = (size_t)ret;	// basesize does not account for terminating '\0'
 
 	for (i = 0; i < log_data->nvalues; i++) {
 		p = topic;	// save current in case realloc fails (poor man's reallocf() implementation)
-		topic = realloc(topic, basesize + strlen(log_data->keys[i]));
+		topic = realloc(topic, basesize + strlen(log_data->keys[i]) + 1);
 		if (!topic) {
 			ret = -EOOM;
 			topic = p;
 			goto cleanup;
 		}
-		strcpy(topic + (basesize - 1), log_data->keys[i]);	// append leaf topic
+		strcpy(topic + basesize, log_data->keys[i]);	// append leaf topic
 
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
