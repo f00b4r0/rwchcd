@@ -119,7 +119,7 @@ struct s_valve {
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
-		bool dwht_use;		///< true if valve is currently used by active DHWT
+		bool dhwt_use;		///< true if valve is currently used by active DHWT
 		bool true_pos;		///< true if current position is "true": position measured from a full close/open start, or provided by a sensor
 		bool ctrl_ready;	///< false if controller algorithm must be reset
 		int_least16_t actual_position;	///< current position in ‰

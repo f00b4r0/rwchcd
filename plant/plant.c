@@ -772,7 +772,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 		if (VA_TYPE_ISOL == valve->set.type)
 			continue;	// don't touch isolation valves
 
-		if (valve->run.dwht_use)
+		if (valve->run.dhwt_use)
 			continue;	// don't touch DHWT valves when in use
 
 		ret = valve_reqopen_full(valve);
@@ -787,7 +787,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 		if (!aler(&pump->run.online))
 			continue;
 
-		if (pump->run.dwht_use)
+		if (pump->run.dhwt_use)
 			continue;	// don't touch DHWT pumps when in use
 
 		ret = pump_set_state(pump, ON, NOFORCE);
