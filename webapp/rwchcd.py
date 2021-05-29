@@ -66,7 +66,7 @@ class rwchcd:
 			mode = int(form.sysmode.value)
 			rwchcd_Runtime.SystemMode = mode
 			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
-			raise web.found('')
+			raise web.found(web.ctx.environ['HTTP_REFERER'])
 
 class circuit:
 	def GET(self):
@@ -88,9 +88,8 @@ class circuit:
 			return render.circuit(form)
 		else:
 			overridetemp = float(form.overridetemp.value)
-			print(overridetemp)
 			hcircuit0_Hcircuit.SetTempOffsetOverride(overridetemp)
-			raise web.found('')
+			raise web.found(web.ctx.environ['HTTP_REFERER'])
 		
 
 if __name__ == "__main__":
