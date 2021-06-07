@@ -313,6 +313,9 @@ int plant_online(struct s_plant * restrict const plant)
 	if (!plant->set.configured)
 		return (-ENOTCONFIGURED);
 
+	// start in "could sleep" mode so that DHWTs with electric switchover start in electric
+	plant->pdata.run.plant_could_sleep = true;
+
 	// online the actuators first
 	// pumps
 	for (id = 0; id < plant->pumps.last; id++) {
