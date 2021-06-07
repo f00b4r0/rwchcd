@@ -660,15 +660,13 @@ static int valve_logic(struct s_valve * const valve)
 			if (OPEN == valve->run.request_action) {
 				if (valve->run.acc_open_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
 					valve->run.true_pos = true;
-					if (VA_M_2WAY != valve->set.motor)
-						valve_reqstop(valve);	// don't run if we're already maxed out (doesn't apply to 2way motorisation)
+					valve_reqstop(valve);	// don't run if we're already maxed out
 				}
 			}
 			else if (CLOSE == valve->run.request_action) {
 				if (valve->run.acc_close_time >= valve->set.ete_time * VALVE_MAX_RUNX) {
 					valve->run.true_pos = true;
-					if (VA_M_2WAY != valve->set.motor)
-						valve_reqstop(valve);	// don't run if we're already maxed out (doesn't apply to 2way motorisation)
+					valve_reqstop(valve);	// don't run if we're already maxed out
 				}
 			}
 			break;
@@ -806,10 +804,7 @@ int valve_run(struct s_valve * const valve)
 					valve->run.actual_action = CLOSE;
 					break;
 				default:
-				case STOP:	// there's no way to "stop" a 2way motor, but for compatibility with the rest of the API we unconditionally turn off the relay
-					ret = outputs_relay_state_set(valve->set.mset.m2way.rid_trigger, OFF);
-					if (unlikely(ALL_OK != ret))
-						goto fail;
+				case STOP:	// there's no way to "stop" a 2way motor, in order not to change the current "valve course", do nothing
 					valve->run.actual_action = STOP;
 					break;
 			}
@@ -818,9 +813,9 @@ int valve_run(struct s_valve * const valve)
 			return (-ENOTIMPLEMENTED);
 	}
 
-	dbgmsg(1, 1, "\"%s\": rq_act: %d, act: %d, pos: %.1f%%, rq_crs: %.1f%%",
+	dbgmsg(1, 1, "\"%s\": rq_act: %d, act: %d, pos: %.1f%% (true: %d), rq_crs: %.1f%%",
 	       valve->name, valve->run.request_action, valve->run.actual_action, (float)valve->run.actual_position/10.0F,
-	       (float)valve->run.target_course/10.0F);
+	       valve->run.true_pos, (float)valve->run.target_course/10.0F);
 
 	return (ALL_OK);
 
