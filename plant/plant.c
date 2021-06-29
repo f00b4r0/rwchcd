@@ -882,6 +882,7 @@ int plant_run(struct s_plant * restrict const plant)
 	if (overtemp) {
 		plant->pdata.run.plant_could_sleep = false;	// disable during overtemp
 		plant->pdata.run.consumer_shift = RWCHCD_CSHIFT_MAX;
+		plant->pdata.run.dhwt_currprio = UINT_FAST8_MAX;
 	}
 
 	if (plant->set.summer_maintenance)
