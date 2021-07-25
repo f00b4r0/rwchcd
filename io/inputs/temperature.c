@@ -152,7 +152,8 @@ end:
 	}
 	else {
 		aser(&t->run.value, TEMPINVALID);
-		alarms_raise(ret, _("Temperature \"%s\" invalid"), t->name);
+		if (T_MISS_IGN != t->set.missing)	// don't alarm for "ignore" missing temps
+			alarms_raise(ret, _("Temperature \"%s\" invalid"), t->name);
 	}
 
 	atomic_flag_clear_explicit(&t->run.lock, memory_order_release);
