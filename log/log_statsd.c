@@ -178,6 +178,7 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 	char mtype;
 	int ret;
 	ssize_t sent;
+	size_t offset;
 	unsigned int i;
 
 	assert(identifier && log_data);
@@ -196,13 +197,18 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 #endif
 
 		ret = 0;
+		offset = 0;
 		zerofirst = false;
 
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
-			case LOG_METRIC_FGAUGE:
 				mtype = 'g';
 				if (log_data->values[i].i < 0)
+					zerofirst = true;
+				break;
+			case LOG_METRIC_FGAUGE:
+				mtype = 'g';
+				if (log_data->values[i].f < 0.0)
 					zerofirst = true;
 				break;
 			case LOG_METRIC_ICOUNTER:
@@ -221,26 +227,29 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 				ret = -ESTORE;
 				goto cleanup;
 			}
+			offset += (size_t)ret;
 		}
+
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
 			case LOG_METRIC_ICOUNTER:
-				ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - (size_t)ret, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
+				ret = snprintf(buffer + offset, LOG_STATSD_UDP_BUFSIZE - offset, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
 				break;
 			case LOG_METRIC_FGAUGE:
 			case LOG_METRIC_FCOUNTER:
-				ret = snprintf(buffer + ret, LOG_STATSD_UDP_BUFSIZE - (size_t)ret, "%s%s.%s:%f|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].f, mtype);
+				ret = snprintf(buffer + offset, LOG_STATSD_UDP_BUFSIZE - offset, "%s%s.%s:%f|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].f, mtype);
 				break;
 			default:
 				break;	// cannot happen thanks to previous switch()
 		}
 
-		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
+		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE - offset))) {
 			ret = -ESTORE;
 			goto cleanup;
 		}
+		offset += (size_t)ret;
 
-		sent = sendto(Log_statsd.run.sockfd, buffer, (size_t)ret, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+		sent = sendto(Log_statsd.run.sockfd, buffer, offset, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 		if (-1 == sent) {
 			dbgerr("could not send");
 			perror("log_statsd");
