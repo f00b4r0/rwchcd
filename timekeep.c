@@ -125,16 +125,6 @@ void timekeep_usleep(unsigned int usecs)
 }
 
 /**
- * Sleep for at least N seconds.
- * @param seconds time to sleep for (in seconds).
- * @note does not require timekeep_thread() to be running
- */
-void timekeep_sleep(unsigned int seconds)
-{
-	while ((seconds = sleep(seconds)));
-}
-
-/**
  * Get the current timestamp.
  * This function atomically reads the internal wall clock.
  * @return a monotonically growing timestamp value, with 0 being init time.

@@ -36,6 +36,14 @@ void timekeep_sleep(unsigned int seconds);
 void * timekeep_thread(void * arg);
 
 /**
+ * Sleep for at least N seconds.
+ * @param seconds time to sleep for (in seconds).
+ * @warning Max 4294 seconds.
+ * @note does not require timekeep_thread() to be running
+ */
+#define timekeep_sleep(seconds)		timekeep_usleep((seconds) * 1000000)
+
+/**
  * Convert seconds to timekeep_t format.
  * @param seconds value to convert.
  * @return the value correctly formatted.
