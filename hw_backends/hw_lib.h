@@ -50,7 +50,7 @@ int hw_lib_match_rtdtype(const char * str);
  * @return the value correctly formatted.
  * @warning seconds must be < UINT32_MAX/RES_OHMMULT
  */
-#define hw_lib_ohm_to_res(ohms)	(res_t)(ohms * RES_OHMMULT)
+#define hw_lib_ohm_to_res(ohms)	(res_t)((ohms) * RES_OHMMULT)
 
 float hw_lib_res_to_ohm(const res_t res);
 

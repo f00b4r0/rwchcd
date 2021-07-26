@@ -49,7 +49,7 @@ void * timekeep_thread(void * arg);
  * @return the value correctly formatted.
  * @warning seconds must be < UINT32_MAX/TIMEKEEP_SMULT
  */
-#define timekeep_sec_to_tk(seconds)	(timekeep_t)(seconds * TIMEKEEP_SMULT)
+#define timekeep_sec_to_tk(seconds)	(timekeep_t)((seconds) * TIMEKEEP_SMULT)
 
 /**
  * Convert timekeep_t format back to seconds.
