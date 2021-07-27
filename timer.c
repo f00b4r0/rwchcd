@@ -66,7 +66,7 @@ void * timer_thread(void * arg __attribute__((unused)))
 		now = timekeep_now();
 
 		for (lcb = Timer_cb_head; lcb != NULL; lcb = lcb->next) {
-			if ((now - lcb->last_call) < lcb->tkperiod)
+			if ((now - lcb->last_call) < (lcb->tkperiod - tperiod/2))	// allow negative jitter
 				break;	// ordered list, first mismatch means we don't need to check further
 			
 			ret = lcb->cb();
