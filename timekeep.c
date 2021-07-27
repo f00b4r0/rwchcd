@@ -79,7 +79,7 @@ void timekeep_exit()
  * This function atomically updates the internal wall clock.
  * @return exec status
  */
-static int timekeep_clockupdate(void)
+static inline int timekeep_clockupdate(void)
 {
 	static struct timespec tsnow;	// defined as static to reduce stack pressure since we can only be called from timekeep_thread()
 	timekeep_t retval;
@@ -153,7 +153,7 @@ void * timekeep_thread(void * arg __attribute__((unused)))
 	// start logging
 	while (1) {
 		timekeep_clockupdate();
-		timekeep_usleep(500*1000);
+		timekeep_usleep(50*1000);	// 100ms precision -> 50ms tick
 	}
 }
 
