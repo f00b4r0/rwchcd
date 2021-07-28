@@ -56,7 +56,7 @@ void * timekeep_thread(void * arg);
  * @param tk value to convert.
  * @return the value expressed in seconds.
  */
-#define timekeep_tk_to_sec(tk)		(tk / TIMEKEEP_SMULT)
+#define timekeep_tk_to_sec(tk)		((tk) / TIMEKEEP_SMULT)
 
 /**
  * Tests if timestamp a is after or at timestamp b.
