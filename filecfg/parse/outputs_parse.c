@@ -96,7 +96,7 @@ int filecfg_outputs_parse(void * restrict const priv __attribute__((unused)), co
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = rwchcd_add_subsyscb("outputs", NULL, NULL, outputs_exit);
+	ret = rwchcd_add_subsyscb("outputs", outputs_online, outputs_offline, outputs_exit);
 	if (ALL_OK != ret)
 		outputs_exit();
 

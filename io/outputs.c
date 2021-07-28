@@ -2,7 +2,7 @@
 //  io/outputs.c
 //  rwchcd
 //
-//  (C) 2020 Thibaut VARENE
+//  (C) 2020-2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -14,22 +14,173 @@
  * instead they should use this interface,.
  *
  * The outputs implementation supports:
+ * - Logging of output accounting
  * - Virtually unlimited number of outputs, of various types:
  *   - Relays
  */
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "rwchcd.h"
 #include "outputs/relay.h"
 #include "outputs.h"
+#include "log/log.h"
 
 struct s_outputs Outputs;
+static struct s_log_source Out_rcycles_lsrc;
+static struct s_log_source Out_ronsecs_lsrc;
 
 // Workaround to disambiguate 0 orid
 #define outputs_orid_to_id(x)	((typeof(x))(x-1))
 #define outputs_id_to_orid(x)	((typeof(x))(x+1))
+
+/**
+ * Relay cycles data log callback.
+ * This function logs relay cycles.
+ * @param ldata the log data to populate
+ * @param object unused
+ * @return exec status
+ */
+static int rcycles_logdata_cb(struct s_log_data * const ldata, const void * const object __attribute__((unused)))
+{
+	unsigned int id = 0;
+
+	assert(ldata);
+	assert(ldata->nkeys >= Outputs.relays.last);
+
+	for (id = 0; id < Outputs.relays.last; id++)
+		ldata->values[id].i = relay_acct_cycles_get(&Outputs.relays.all[id]);
+
+	ldata->nvalues = id;
+
+	return (ALL_OK);
+}
+
+/**
+ * Relay on time data log callback.
+ * This function logs relay on seconds.
+ * @param ldata the log data to populate
+ * @param object unused
+ * @return exec status
+ */
+static int ronsecs_logdata_cb(struct s_log_data * const ldata, const void * const object __attribute__((unused)))
+{
+	unsigned int id = 0;
+
+	assert(ldata);
+	assert(ldata->nkeys >= Outputs.relays.last);
+
+	for (id = 0; id < Outputs.relays.last; id++)
+		ldata->values[id].i = relay_acct_ontotsec_get(&Outputs.relays.all[id]);
+
+	ldata->nvalues = id;
+
+	return (ALL_OK);
+}
+
+/**
+ * Register outputs for logging.
+ * @return exec status
+ */
+static int outputs_log_register(void)
+{
+	const unsigned int nmemb = Outputs.relays.last;
+	log_key_t *keys;
+	enum e_log_metric *metrics;
+	unsigned int id;
+	int ret;
+
+	if (!nmemb)
+		return (ALL_OK);
+
+	keys = calloc(nmemb, sizeof(*keys));
+	if (!keys)
+		return (-EOOM);
+
+	for (id = 0; id < nmemb; id++)
+		keys[id] = Outputs.relays.all[id].name;
+
+	metrics = calloc(nmemb, sizeof(*metrics));
+	if (!metrics) {
+		free(keys);
+		return (-EOOM);
+	}
+
+	for (id = 0; id < nmemb; id++)
+		metrics[id] = LOG_METRIC_ICOUNTER;
+
+	Out_rcycles_lsrc = (struct s_log_source){
+		.log_sched = LOG_SCHED_15mn,
+		.basename = "outputs",
+		.identifier = "relays_cycles",
+		.version = 1,
+		.logdata_cb = rcycles_logdata_cb,
+		.nkeys = nmemb,
+		.keys = keys,
+		.metrics = metrics,
+		.object = NULL,
+	};
+
+	Out_ronsecs_lsrc = (struct s_log_source){
+		.log_sched = LOG_SCHED_15mn,
+		.basename = "outputs",
+		.identifier = "relays_onsecs",
+		.version = 1,
+		.logdata_cb = ronsecs_logdata_cb,
+		.nkeys = nmemb,
+		// Note: reuse keys/metrics
+		.keys = keys,
+		.metrics = metrics,
+		.object = NULL,
+	};
+
+	ret = log_register(&Out_rcycles_lsrc);
+	if (ret) {
+		dbgerr("log_register failed for Out_rcycles_lsrc (%d)", ret);
+		goto cleanup;
+	}
+
+	ret = log_register(&Out_ronsecs_lsrc);
+	if (ret) {
+		dbgerr("log_register failed for Out_ronsecs_lsrc (%d)", ret);
+		goto cleanup;
+	}
+
+	return (ret);
+
+cleanup:
+	log_deregister(&Out_ronsecs_lsrc);
+	log_deregister(&Out_rcycles_lsrc);
+	// shared between ronsecs and rcycles
+	free((void *)Out_rcycles_lsrc.keys);
+	free((void *)Out_rcycles_lsrc.metrics);
+	return (ret);
+}
+
+/**
+ * Deregister outputs from logging.
+ * @return exec status
+ */
+static int outputs_log_deregister(void)
+{
+	int ret;
+
+	ret = log_deregister(&Out_ronsecs_lsrc);
+	if (ret) {
+		dbgerr("log_deregister failed for Out_ronsecs_lsrc (%d)", ret);
+	}
+	ret = log_deregister(&Out_rcycles_lsrc);
+	if (ret) {
+		dbgerr("log_deregister failed for Out_rcycles_lsrc (%d)", ret);
+	}
+	// shared between ronsecs and rcycles
+	free((void *)Out_rcycles_lsrc.keys);
+	free((void *)Out_rcycles_lsrc.metrics);
+
+	return (ret);
+}
 
 /**
  * Init outputs system.
@@ -39,6 +190,22 @@ int outputs_init(void)
 {
 	memset(&Outputs, 0x00, sizeof(Outputs));
 
+	return (ALL_OK);
+}
+
+/**
+ * Online outputs.
+ * Registers log.
+ * @return exec status
+ */
+int outputs_online(void)
+{
+	int ret;
+
+	ret = outputs_log_register();
+	if (ret) {
+		dbgerr("outputs_log_register failed (%d)", ret);
+	}
 	return (ALL_OK);
 }
 
@@ -139,6 +306,17 @@ int outputs_relay_state_get(const orid_t rid)
 		return (-EINVALID);
 
 	return (relay_state_get(&Outputs.relays.all[id]));
+}
+
+/**
+ * Offline outputs.
+ * Deregister log.
+ * @return exec status
+ */
+int outputs_offline(void)
+{
+	outputs_log_deregister();
+	return (ALL_OK);
 }
 
 /**
