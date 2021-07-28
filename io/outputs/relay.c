@@ -2,7 +2,7 @@
 //  io/outputs/relay.c
 //  rwchcd
 //
-//  (C) 2020 Thibaut VARENE
+//  (C) 2020-2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -24,6 +24,11 @@
  * If "stop at first non-error target" is set together with "ignore all target errors", a simple failover mechanism is achieved
  * (the first working target is controlled, the implementation will always report an error if no working target is available).
  *
+ * Basic accounting is provided by this abstraction layer. Specifically, total on/off time as well as total cycles are available.
+ * The metrics only reflect the "software view" of outputs, they do not account for how/when backends actually enact the requested states.
+ * Furthermore, these metrics - while always increasing (until overflow) - are only guaranteed to do so within the current execution of the main program.
+ * In other words, these counters will reset when the program is restarted. This is not a problem for most time-series databases.
+ *
  * @note the implementation is thread-safe.
  */
 
@@ -32,6 +37,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "timekeep.h"
 #include "hw_backends/hardware.h"
 #include "relay.h"
 
@@ -81,6 +87,30 @@ static inline int hardware_relay_set_state(const boutid_t relid, const bool turn
 }
 
 /**
+ * Update relay accounting.
+ * @param r the target relay
+ * @param turn_on the new relay state
+ */
+static void relay_update(struct s_relay * const r, const bool turn_on)
+{
+	timekeep_t state_time, now;
+
+	// update state time counter
+	now = timekeep_now();
+	state_time = now - r->run.state_since;
+
+	// we are only called on actual state changes, with lock held
+	if (turn_on) {	// relay is currently off => turn on
+		aser(&r->run.cycles, aler(&r->run.cycles) + 1);	// increment cycle count
+		r->run.off_totsecs += (unsigned)timekeep_tk_to_sec(state_time);
+	}
+	else {				// relay is currently on => turn off
+		r->run.on_totsecs += (unsigned)timekeep_tk_to_sec(state_time);
+	}
+	r->run.state_since = now;
+}
+
+/**
  * Set an output relay state.
  * This function will request target relays to update according to the #turn_on parameter.
  * This function performs a simple check and only propagates the request to the backends if the requested state differs from the last known state.
@@ -110,7 +140,7 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 		return (ALL_OK);
 
 	// we must ensure all requests get through. Spinlock if someone else is touching the target.
-	// Note: based on top comment assumption, there should never be contention here
+	// Note: based on top comment assumption, the only possible contention here is through the accounting access routines
 	while (unlikely(atomic_flag_test_and_set_explicit(&r->run.lock, memory_order_acquire)));
 
 	// a change is needed, let's dive in
@@ -143,8 +173,10 @@ int relay_state_set(struct s_relay * const r, const bool turn_on)
 
 end:
 	// at least one good relay must be reached for the value to be updated
-	if (likely(ALL_OK == ret))
+	if (likely(ALL_OK == ret)) {
 		aser(&r->run.turn_on, turn_on);
+		relay_update(r, turn_on);
+	}
 
 	atomic_flag_clear_explicit(&r->run.lock, memory_order_release);
 	return (ret);
@@ -155,7 +187,7 @@ end:
  * This function returns the "software view" of the state of the relay.
  * @param r the output relay to read from
  * @return relay state or error
- * @note this function does @b not query the backends
+ * @note this function does @b not query the backends. lockless
  */
 int relay_state_get(const struct s_relay * const r)
 {
@@ -165,6 +197,57 @@ int relay_state_get(const struct s_relay * const r)
 		return (-ENOTCONFIGURED);
 
 	return (aler(&r->run.turn_on));
+}
+
+/**
+ * Return total number of seconds the relay was ON.
+ * @note spinlocks
+ */
+uint32_t relay_acct_ontotsec_get(const struct s_relay * const r)
+{
+	uint32_t total, offset = 0;
+
+	while (unlikely(atomic_flag_test_and_set_explicit(&r->run.lock, memory_order_acquire)))
+		timekeep_usleep(500);	// yield
+
+	if (aler(&r->run.turn_on))
+		offset = (unsigned)timekeep_tk_to_sec(timekeep_now() - r->run.state_since);
+
+	total = r->run.on_totsecs + offset;
+
+	atomic_flag_clear_explicit(&r->run.lock, memory_order_release);
+
+	return (total);
+}
+
+/**
+ * Return total number of seconds the relay was OFF.
+ * @note spinlocks
+ */
+uint32_t relay_acct_offtotsec_get(const struct s_relay * const r)
+{
+	uint32_t total, offset = 0;
+
+	while (unlikely(atomic_flag_test_and_set_explicit(&r->run.lock, memory_order_acquire)))
+		timekeep_usleep(500);	// yield
+
+	if (!aler(&r->run.turn_on))
+		offset = (unsigned)timekeep_tk_to_sec(timekeep_now() - r->run.state_since);
+
+	total = r->run.off_totsecs + offset;
+
+	atomic_flag_clear_explicit(&r->run.lock, memory_order_release);
+
+	return (total);
+}
+
+/**
+ * Return total number of cycles performed by the relay.
+ * @note lockless
+ */
+uint32_t relay_acct_cycles_get(const struct s_relay * const r)
+{
+	return (aler(&r->run.cycles));
 }
 
 /**

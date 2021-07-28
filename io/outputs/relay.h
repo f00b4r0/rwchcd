@@ -43,6 +43,11 @@ struct s_relay {
 		atomic_flag grabbed;	///< relay has been claimed by an active user (that will set its state)
 		atomic_flag lock;	///< basic spinlock to avoid multiple threads updating at the same time
 		_Atomic bool turn_on;
+		_Atomic uint32_t cycles;	///< number of power cycles since start
+		// these variables are accessed under lock
+		uint32_t on_totsecs;	///< total seconds spent in on state since start (updated at state change only)
+		uint32_t off_totsecs;	///< total seconds spent in off state since start (updated at state change only)
+		timekeep_t state_since;	///< last time state changed
 	} run;		///< private runtime (internally handled)
 	uint_fast8_t rnum;		///< number of relay targets allocated. Max 256
 	uint_fast8_t rlast;		///< last free target slot. if rlast == rnum, array is full.
@@ -54,6 +59,9 @@ int relay_grab(struct s_relay * const r);
 int relay_thaw(struct s_relay * const r);
 int relay_state_set(struct s_relay * const r, const bool turn_on);
 int relay_state_get(const struct s_relay * const r);
+uint32_t relay_acct_ontotsec_get(const struct s_relay * const r);
+uint32_t relay_acct_offtotsec_get(const struct s_relay * const r);
+uint32_t relay_acct_cycles_get(const struct s_relay * const r);
 void relay_clear(struct s_relay * const r);
 
 #endif /* relay_h */
