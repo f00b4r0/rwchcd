@@ -428,7 +428,7 @@ int main(void)
 		abort();	// terminate (and debug) - if this happens the program should not be allowed to continue
 	}
 
-	// setup SCHED_FIFO master thread
+	// setup SCHED_FIFO master & timekeep threads
 	pthread_attr_init(&attr);
 	pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
@@ -438,6 +438,10 @@ int main(void)
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
 		errx(ret, "failed to create master thread!");
+
+	ret = pthread_create(&timekeep_thr, &attr, timekeep_thread, NULL);
+	if (ret)
+		errx(ret, "failed to create timekeep thread!");
 
 	// XXX Dropping privileges here because we need root to set SCHED_FIFO during pthread_create().
 	// We block the master thread via Sem_master_thread
@@ -454,10 +458,6 @@ int main(void)
 		pr_err(_("Subsystems onlining failed (%d) - ABORTING!"), ret);
 		abort();	// terminate (and debug) - if this happens the program should not be allowed to continue
 	}
-
-	ret = pthread_create(&timekeep_thr, NULL, timekeep_thread, NULL);
-	if (ret)
-		errx(ret, "failed to create timekeep thread!");
 
 	// launch master thread here, before we kick off the watchdog - strong ordering
 	atomic_store(&Sem_master_thread, true);
