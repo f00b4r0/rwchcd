@@ -168,17 +168,17 @@ static int log_statsd_create(const char * restrict const identifier __attribute_
  * @param identifier the database identifier
  * @param log_data the data to be logged
  * @return exec status
- * @todo improve performance by grouping data (look into sendmsg()).
+ * @warning not thread-safe.
  */
 static int log_statsd_update(const char * restrict const identifier, const struct s_log_data * const log_data)
 {
-	static char sbuffer[LOG_STATSD_UDP_BUFSIZE];	// a static buffer is preferable to dynamic allocation for performance reasons
-	char * restrict buffer;
+	static char sbuffer[LOG_STATSD_UDP_BUFSIZE];
+	char * buffer;
 	bool zerofirst;
 	char mtype;
 	int ret;
 	ssize_t sent;
-	size_t offset;
+	size_t avail;
 	unsigned int i;
 
 	assert(identifier && log_data);
@@ -187,6 +187,7 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 		return (-EOFFLINE);
 
 	buffer = sbuffer;
+	avail = LOG_STATSD_UDP_BUFSIZE;
 
 	for (i = 0; i < log_data->nvalues; i++) {
 #ifdef DEBUG
@@ -196,8 +197,6 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 		}
 #endif
 
-		ret = 0;
-		offset = 0;
 		zerofirst = false;
 
 		switch (log_data->metrics[i]) {
@@ -220,48 +219,66 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 				goto cleanup;
 		}
 
+restartzero:
 		// StatsD has a schizophrenic idea of what a gauge is (negative values are subtracted from previous data and not registered as is): work around its dementia
 		if (zerofirst) {
-			ret = snprintf(buffer, LOG_STATSD_UDP_BUFSIZE, "%s%s.%s:0|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], mtype);
-			if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE))) {
+			ret = snprintf(buffer, avail, "%s%s.%s:0|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], mtype);
+			assert(ret < LOG_STATSD_UDP_BUFSIZE);
+			if (ret >= avail) {
+				// send what we have, reset buffer, restart - no need to add '\0': sendto will truncate anyway
+				sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+				buffer = sbuffer;
+				avail = LOG_STATSD_UDP_BUFSIZE;
+				goto restartzero;
+			}
+			else if (ret < 0) {
 				ret = -ESTORE;
 				goto cleanup;
 			}
-			offset += (size_t)ret;
+			buffer += ret;
+			avail -= ret;
 		}
 
+restartbuffer:
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
 			case LOG_METRIC_ICOUNTER:
-				ret = snprintf(buffer + offset, LOG_STATSD_UDP_BUFSIZE - offset, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
+				ret = snprintf(buffer, avail, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
 				break;
 			case LOG_METRIC_FGAUGE:
 			case LOG_METRIC_FCOUNTER:
-				ret = snprintf(buffer + offset, LOG_STATSD_UDP_BUFSIZE - offset, "%s%s.%s:%f|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].f, mtype);
+				ret = snprintf(buffer, avail, "%s%s.%s:%f|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].f, mtype);
 				break;
 			default:
+				ret = 0;
 				break;	// cannot happen thanks to previous switch()
 		}
 
-		if ((ret < 0) || (ret >= (LOG_STATSD_UDP_BUFSIZE - offset))) {
+		assert(ret < LOG_STATSD_UDP_BUFSIZE);
+		if (ret >= avail) {
+			// send what we have, reset buffer, restart - no need to add '\0': sendto will truncate anyway
+			sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+			buffer = sbuffer;
+			avail = LOG_STATSD_UDP_BUFSIZE;
+			goto restartbuffer;
+		}
+		else if (ret < 0) {
 			ret = -ESTORE;
 			goto cleanup;
 		}
-		offset += (size_t)ret;
-
-		sent = sendto(Log_statsd.run.sockfd, buffer, offset, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
-		if (-1 == sent) {
-			dbgerr("could not send");
-			perror("log_statsd");
-			goto cleanup;
-		}
-
+		buffer += ret;
+		avail -= ret;
 	}
 
 	ret = ALL_OK;
 
 cleanup:
-
+	// we only check for sendto() errors here
+	sent = sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+	if (-1 == sent) {
+		dbgerr("could not send");
+		perror("log_statsd");
+	}
 	return (ret);
 }
 
