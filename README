@@ -24,15 +24,3 @@ To generate documentation, run 'make doc'
 A systemd service file is provided that will be installed when running
 'make install'. The daemon will be started at next reboot unless manually
 started with systemctl start rwchcd.service
-
-The D-Bus interface exposed by the daemon are presented in the
-rwchcd_introspection.xml file.
-
-Examples:
-dbus-send --print-reply --system --dest=org.slashdirt.rwchcd \
-        --type=method_call /org/slashdirt/rwchcd \
-        org.slashdirt.rwchcd.Control.SysmodeSet byte:2
-
-dbus-send --print-reply --system --dest=org.slashdirt.rwchcd \
-        --type=method_call /org/slashdirt/rwchcd \
-        org.slashdirt.rwchcd.Control.ToutdoorGet
