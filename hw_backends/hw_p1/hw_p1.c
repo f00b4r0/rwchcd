@@ -53,6 +53,10 @@ static inline res_t sensor_to_res(const rwchc_sensor_t raw)
 	return (value);
 }
 
+#define max(x,y) ( \
+    { __auto_type __x = (x); __auto_type __y = (y); \
+      __x > __y ? __x : __y; })
+
 /**
  * Process raw sensor data.
  * Flag and raise alarm if value is out of #RWCHCD_TEMPMIN and #RWCHCD_TEMPMAX bounds.
@@ -78,8 +82,10 @@ static void hw_p1_parse_temps(struct s_hw_p1_pdata * restrict const hw)
 		refid = sensor->set.channel <= 7 ? 0 : 1;
 		res /= hw->refs[refid] * 4U;
 
+		// work around HWP1.4 hardware bug by using max(previous, current) R value - not necessary on HWP1.5
 		// R0 hardcoded: HWP1 only supports R0 = 1000 ohms
-		current = celsius_to_temp(hw_lib_rtd_res_to_celsius(sensor->set.type, hw_lib_ohm_to_res(1000), res));
+		current = celsius_to_temp(hw_lib_rtd_res_to_celsius(sensor->set.type, hw_lib_ohm_to_res(1000), max(res, sensor->run.res)));
+		sensor->run.res = res;
 
 		dbgmsg(2, 1, "s%d, raw: %x, res: %d, temp: %.2f", sensor->set.channel, hw->sensors[sensor->set.channel-1], res, temp_to_celsius(current));
 

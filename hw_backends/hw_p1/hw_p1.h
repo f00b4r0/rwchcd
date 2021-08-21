@@ -33,6 +33,7 @@ struct s_hw_p1_sensor {
 	} set;		///< settings (externally set)
 	struct {
 		_Atomic temp_t value;	///< sensor current temperature value
+		res_t res;		///< last resistance value
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< @b unique (per backend) user-defined name for the sensor
 };
