@@ -152,17 +152,6 @@ static int hw_p1_input(void * priv)
 		// XXX reset runtime?
 	}
 
-	// handle software alarm
-	if (alarms_count()) {
-		hw->peripherals.o_LED2 = 1;
-		hw->peripherals.o_buzz = !hw->peripherals.o_buzz;
-		hw->run.count = 2;
-	}
-	else {
-		hw->peripherals.o_LED2 = 0;
-		hw->peripherals.o_buzz = 0;
-	}
-
 	// handle switch 1
 	if (hw->peripherals.i_SW1) {
 		hw->peripherals.i_SW1 = 0;
@@ -178,19 +167,6 @@ static int hw_p1_input(void * priv)
 		hw_p1_lcd_sysmode_change(&hw->lcd, hw->run.cursysmode);	// update LCD
 	}
 
-	if (!hw->run.systout) {
-		if (hw->run.syschg && (hw->run.cursysmode != runtime_systemmode())) {
-			// change system mode
-			runtime_set_systemmode(hw->run.cursysmode);
-			// hw_p1_beep()
-			hw->peripherals.o_buzz = 1;
-		}
-		hw->run.syschg = false;
-		hw->run.cursysmode = runtime_systemmode();
-	}
-	else
-		hw->run.systout--;
-
 	// handle switch 2
 	if (hw->peripherals.i_SW2) {
 		// increase displayed tempid
@@ -203,15 +179,6 @@ static int hw_p1_input(void * priv)
 
 		hw_p1_lcd_set_tempid(&hw->lcd, hw->run.tempid);	// update sensor
 	}
-
-	// trigger timed backlight
-	if (hw->run.count) {
-		hw->peripherals.o_LCDbl = 1;
-		if (!--hw->run.count)
-			hw_p1_lcd_fade(&hw->spi);	// apply fadeout
-	}
-	else
-		hw->peripherals.o_LCDbl = 0;
 
 skip_periphs:
 	// read sensors
@@ -259,6 +226,40 @@ static int hw_p1_output(void * priv)
 		dbgerr("\"%s\" hw_p1_rwchcrelays_write failed (%d)", hw->name, ret);
 		goto out;
 	}
+
+	// handle software alarm
+	if (alarms_count()) {
+		hw->peripherals.o_LED2 = 1;
+		hw->peripherals.o_buzz = !hw->peripherals.o_buzz;
+		hw->run.count = 2;
+	}
+	else {
+		hw->peripherals.o_LED2 = 0;
+		hw->peripherals.o_buzz = 0;
+	}
+
+	// handle mode changes
+	if (!hw->run.systout) {
+		if (hw->run.syschg && (hw->run.cursysmode != runtime_systemmode())) {
+			// change system mode
+			runtime_set_systemmode(hw->run.cursysmode);
+			// hw_p1_beep()
+			hw->peripherals.o_buzz = 1;
+		}
+		hw->run.syschg = false;
+		hw->run.cursysmode = runtime_systemmode();
+	}
+	else
+		hw->run.systout--;
+
+	// trigger timed backlight
+	if (hw->run.count) {
+		hw->peripherals.o_LCDbl = 1;
+		if (!--hw->run.count)
+			hw_p1_lcd_fade(&hw->spi);	// apply fadeout
+	}
+	else
+		hw->peripherals.o_LCDbl = 0;
 
 	// write peripherals
 	ret = hw_p1_rwchcperiphs_write(hw);
