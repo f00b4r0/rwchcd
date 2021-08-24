@@ -1,6 +1,6 @@
 [Unit]
 Description=rWCHC Simple Daemon
-After=time-sync.target
+After=time-set.target
 
 [Service]
 Type=dbus
