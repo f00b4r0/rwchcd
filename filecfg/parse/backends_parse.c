@@ -104,16 +104,6 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 	if (ALL_OK != ret)
 		goto cleanup;
 
-	// depends on nothing (config)
-	ret = hardware_setup();		// must happen as root (for SPI access)
-	if (ret) {
-		pr_err(_("Failed to setup hardware (%d)"), ret);
-		goto cleanup;
-	}
-
-	// give the hardware time to collect themselves
-	timekeep_sleep(2);
-
 	// bring the hardware online
 	// depends on storage && hw_backends (configured)
 

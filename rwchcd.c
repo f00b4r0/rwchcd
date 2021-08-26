@@ -448,12 +448,22 @@ int main(int argc, char **argv)
 	if (ret)
 		err(ret, "failed to setup pipe!");
 
-	// run init_process() as root (necessary for some hardware access, e.g. SPI)
 	ret = init_process();
 	if (ret != ALL_OK) {
 		pr_err(_("Process initialization failed (%d) - ABORTING!"), ret);
 		abort();	// terminate (and debug) - if this happens the program should not be allowed to continue
 	}
+
+	// depends on nothing (config) - hardware setup must run as root (necessary for some hardware access, e.g. SPI)
+	// run this outside of init_process() so that this function can be used to test config
+	ret = hardware_setup();		// must happen as root (for SPI access)
+	if (ret) {
+		pr_err(_("Failed to setup hardware (%d)"), ret);
+		goto cleanup;
+	}
+
+	// give the hardware time to collect themselves
+	timekeep_sleep(2);
 
 	// setup SCHED_FIFO master & timekeep threads
 	pthread_attr_init(&attr);
@@ -548,6 +558,7 @@ int main(int argc, char **argv)
 #ifdef HAS_DBUS
 	pthread_join(master_thr, NULL);	// wait for cleanup
 #endif
+cleanup:
 	close(pipefd[0]);
 	close(pipefd[1]);
 

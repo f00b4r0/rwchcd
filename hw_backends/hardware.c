@@ -53,11 +53,8 @@ int hardware_setup(void)
 		}
 	}
 
-	// fail if we have no registered backend
-	if (!id)
-		return (-ENOTCONFIGURED);
-	// or if one of them returned error
-	else if (fail)
+	// fail if one of them returned error
+	if (fail)
 		return (-EGENERIC);
 	else
 		return (ALL_OK);
