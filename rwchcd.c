@@ -107,6 +107,7 @@
 #endif
 
 static atomic_bool Sem_master_thread = false;
+static const char *configfile = NULL;		///< path to configuration file
 
 static const char Version[] = RWCHCD_REV;	///< Build version string
 
@@ -208,8 +209,8 @@ static int init_process(void)
 	}
 
 #ifdef HAS_FILECFG
-	if (!(filecfg_parser_in = fopen(RWCHCD_CONFIG, "r"))) {
-		perror(RWCHCD_CONFIG);
+	if (!(filecfg_parser_in = fopen(configfile, "r"))) {
+		perror(configfile);
 		return (-EGENERIC);
 	}
 	ret = filecfg_parser_parse();	// XXX REVIEW happens as root
@@ -415,8 +416,11 @@ int main(int argc, char **argv)
 	FILE *outpipe = NULL;
 #endif
 
-	while ((ch = getopt(argc, argv, "t")) != -1) {
+	while ((ch = getopt(argc, argv, "c:t")) != -1) {
 		switch (ch) {
+			case 'c':
+				configfile = optarg;
+				break;
 			case 't':
 				testconfig = true;
 				break;
@@ -424,6 +428,9 @@ int main(int argc, char **argv)
 				exit(-1);
 		}
 	}
+
+	if (!configfile)
+		configfile = RWCHCD_CONFIG;
 
 	if (testconfig) {
 		pr_log(_("Running configuration test"));
