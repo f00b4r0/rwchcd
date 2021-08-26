@@ -27,7 +27,7 @@ struct s_dhwt {
 	struct {
 		bool configured;		///< if true, DHWT is properly configured
 		bool log;			///< true if data logging should be enabled for this dhwt. *Defaults to false*
-		bool electric_failover;		///< if true, if none of the DHWT sensors are working the electric self-heating relay will be turned on in all active modes. *Defaults to false*
+		bool electric_hasthermostat;	///< true if electric self-heating has its own thermostat. When switching to electric, self-heating relay will be permanently on; and if none of the DHWT sensors are working the electric self-heating relay will be turned on in all active modes. *Defaults to false*
 		bool anti_legionella;		///< if true, anti-legionella heat charge is allowed for this DHWT. *Defaults to false*
 		bool legionella_recycle;	///< if true, recycle pump will be turned on during anti-legionella heat charge. *Defaults to false*
 		bool electric_recycle;		///< if true, recycle pump will be turned on while the DHWT operates in electric self-heating. *Defaults to false*

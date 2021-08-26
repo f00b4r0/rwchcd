@@ -113,8 +113,8 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 
 	if (FCD_Exhaustive || dhwt->set.log)
 		filecfg_dump_nodebool("log", dhwt->set.log);
-	if (FCD_Exhaustive || dhwt->set.electric_failover)
-		filecfg_dump_nodebool("electric_failover", dhwt->set.electric_failover);
+	if (FCD_Exhaustive || dhwt->set.electric_hasthermostat)
+		filecfg_dump_nodebool("electric_hasthermostat", dhwt->set.electric_hasthermostat);
 	if (FCD_Exhaustive || dhwt->set.anti_legionella)
 		filecfg_dump_nodebool("anti_legionella", dhwt->set.anti_legionella);
 	if (FCD_Exhaustive || dhwt->set.legionella_recycle)

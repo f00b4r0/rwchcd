@@ -446,6 +446,9 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 
 	// transition detection
 	if (unlikely(prev_runmode != new_runmode)) {
+		// force untrip electric here to stop potential permanent charge when hasthermostat is true
+		aser(&dhwt->run.electric_mode, false);
+
 		// handle programmed forced charges at COMFORT switch on
 		if (RM_COMFORT == new_runmode) {
 			if (DHWTF_ALWAYS == dhwt->set.force_mode)
@@ -499,9 +502,9 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 
 	dhwt_shutdown(dhwt);
 
-	ret = outputs_relay_state_set(dhwt->set.rid_selfheater, dhwt->set.electric_failover ? ON : OFF);
+	ret = outputs_relay_state_set(dhwt->set.rid_selfheater, dhwt->set.electric_hasthermostat ? ON : OFF);
 	if (ALL_OK == ret)
-		aser(&dhwt->run.electric_mode, dhwt->set.electric_failover);
+		aser(&dhwt->run.electric_mode, dhwt->set.electric_hasthermostat);
 }
 
 /**
@@ -693,8 +696,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 				test = true;
 		}
 
-		// if heating in progress, untrip at target temp (if we're running electric this is the only untrip condition that applies)
-		if (curr_temp >= target_temp)
+		// when running electric, disable untripping when we have a thermostat, and plant_could_sleep
+		if (electric_mode && dhwt->set.electric_hasthermostat && dhwt->pdata->run.plant_could_sleep);
+		// if heating in progress, untrip at target temp (if we're running electric without thermostat this is the only untrip condition that applies)
+		else if (curr_temp >= target_temp)
 			test = true;
 
 		// stop all heat input (ensures they're all off at switchover)
