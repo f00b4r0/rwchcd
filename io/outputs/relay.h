@@ -59,8 +59,8 @@ int relay_grab(struct s_relay * const r);
 int relay_thaw(struct s_relay * const r);
 int relay_state_set(struct s_relay * const r, const bool turn_on);
 int relay_state_get(const struct s_relay * const r);
-uint32_t relay_acct_ontotsec_get(const struct s_relay * const r);
-uint32_t relay_acct_offtotsec_get(const struct s_relay * const r);
+uint32_t relay_acct_ontotsec_get(struct s_relay * const r);
+uint32_t relay_acct_offtotsec_get(struct s_relay * const r);
 uint32_t relay_acct_cycles_get(const struct s_relay * const r);
 void relay_clear(struct s_relay * const r);
 

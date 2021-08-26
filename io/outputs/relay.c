@@ -203,7 +203,7 @@ int relay_state_get(const struct s_relay * const r)
  * Return total number of seconds the relay was ON.
  * @note spinlocks
  */
-uint32_t relay_acct_ontotsec_get(const struct s_relay * const r)
+uint32_t relay_acct_ontotsec_get(struct s_relay * const r)
 {
 	uint32_t total, offset = 0;
 
@@ -224,7 +224,7 @@ uint32_t relay_acct_ontotsec_get(const struct s_relay * const r)
  * Return total number of seconds the relay was OFF.
  * @note spinlocks
  */
-uint32_t relay_acct_offtotsec_get(const struct s_relay * const r)
+uint32_t relay_acct_offtotsec_get(struct s_relay * const r)
 {
 	uint32_t total, offset = 0;
 
