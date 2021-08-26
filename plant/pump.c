@@ -148,7 +148,7 @@ int pump_shutdown(struct s_pump * restrict const pump)
 	if (unlikely(!pump))
 		return (-EINVALID);
 
-	return(pump_set_state(pump, OFF, FORCE));
+	return(pump_set_state(pump, OFF, NOFORCE));
 }
 
 /**
