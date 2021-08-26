@@ -44,7 +44,7 @@
 
 // http://www.energieplus-lesite.be/index.php?id=10963
 
-#include <unistd.h>	// sleep/usleep/setuid
+#include <unistd.h>	// sleep/usleep/setuid/getopt
 #include <stdlib.h>	// exit
 #include <signal.h>
 #include <pthread.h>
@@ -402,17 +402,37 @@ static void * thread_watchdog(void * arg)
 		err(ret, NULL);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
 	struct sigaction saction;
 	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr, timekeep_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
+	bool testconfig = false;
 	int pipefd[2];
-	int ret;
+	int ch, ret;
 #ifdef DEBUG
 	FILE *outpipe = NULL;
 #endif
+
+	while ((ch = getopt(argc, argv, "t")) != -1) {
+		switch (ch) {
+			case 't':
+				testconfig = true;
+				break;
+			default:
+				exit(-1);
+		}
+	}
+
+	if (testconfig) {
+		pr_log(_("Running configuration test"));
+		ret = init_process();
+		if (ret)
+			errx(ret, _("Configuration test failed"));
+		exit_process();
+		return 0;
+	}
 
 	pr_log(_("Revision %s starting"), Version);
 
