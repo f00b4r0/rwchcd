@@ -202,7 +202,7 @@ static const gchar dbus_introspection_xml[] =
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
-"  <property name='TurnOn' access='read' type='b'>"
+"  <property name='Active' access='read' type='b'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
 " </interface>"
@@ -769,7 +769,7 @@ pump_get_property(GDBusConnection  *connection,
 		var = g_variant_new_boolean((gboolean)aler(&pump->run.online));
 	else if (g_strcmp0(property_name, "Name") == 0)
 		var = g_variant_new_string(pump->name);
-	else if (g_strcmp0(property_name, "TurnOn") == 0)
+	else if (g_strcmp0(property_name, "Active") == 0)
 		var = g_variant_new_boolean((gboolean)aler(&pump->run.req_on));
 	else
 		g_assert_not_reached();
