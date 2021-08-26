@@ -72,6 +72,5 @@ int filecfg_storage_parse(void * restrict const priv __attribute__((unused)), co
 	return (ret);
 
 invaliddata:
-	filecfg_parser_report_invaliddata(currnode);
 	return (-EINVALID);
 }
