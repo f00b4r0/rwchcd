@@ -110,14 +110,31 @@ static int _spi_fwversion(struct s_hw_p1_spi * const spi)
 {
 	int ret;
 
-	SPI_RESYNC(spi, RWCHC_SPIC_VERSION);
+	SPI_RESYNC(spi, RWCHC_SPIC_FWVERSION);
 
 	if (!spi->run.spitout)
 		return (-ESPI);
 
 	ret = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);
 
-	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_VERSION))
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_FWVERSION))
+		ret = -ESPI;
+
+	return ret;
+}
+
+static int _spi_hwversion(struct s_hw_p1_spi * const spi)
+{
+	int ret;
+
+	SPI_RESYNC(spi, RWCHC_SPIC_HWVERSION);
+
+	if (!spi->run.spitout)
+		return (-ESPI);
+
+	ret = SPI_rw8bit(spi, RWCHC_SPIC_KEEPALIVE);
+
+	if (!SPI_ASSERT(spi, RWCHC_SPIC_KEEPALIVE, ~RWCHC_SPIC_HWVERSION))
 		ret = -ESPI;
 
 	return ret;
@@ -135,6 +152,20 @@ int hw_p1_spi_fwversion(struct s_hw_p1_spi * const spi)
 		spi->run.FWversion = _spi_fwversion(spi);
 
 	return (spi->run.FWversion);
+}
+
+/**
+ * Retrieve hardware version number.
+ * Delay: none
+ * @param spi HW P1 spi private data
+ * @return negative error code or positive version number
+ */
+int hw_p1_spi_hwversion(struct s_hw_p1_spi * const spi)
+{
+	if (spi->run.HWversion <= 0)
+		spi->run.HWversion = _spi_hwversion(spi);
+
+	return (spi->run.HWversion);
 }
 
 /**

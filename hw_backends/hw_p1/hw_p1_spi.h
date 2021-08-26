@@ -25,11 +25,13 @@ struct s_hw_p1_spi {
 	struct {
 		uint_fast16_t spitout;	///< timeout counter used for SPI_RESYNC (pun not intended)
 		int FWversion;		///< detected firmware version
+		int HWversion;		///< detected hardware version
 	} run;
 };
 
 int hw_p1_spi_keepalive(struct s_hw_p1_spi * const spi) __attribute__((warn_unused_result));
 int hw_p1_spi_fwversion(struct s_hw_p1_spi * const spi);
+int hw_p1_spi_hwversion(struct s_hw_p1_spi * const spi);
 int hw_p1_spi_lcd_acquire(struct s_hw_p1_spi * const spi) __attribute__((warn_unused_result));
 int hw_p1_spi_lcd_relinquish(struct s_hw_p1_spi * const spi) __attribute__((warn_unused_result));
 int hw_p1_spi_lcd_fade(struct s_hw_p1_spi * const spi) __attribute__((warn_unused_result));

@@ -40,7 +40,7 @@
 __attribute__((warn_unused_result)) static int hw_p1_setup(void * priv, const char * name)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
-	int ret, i = 0;
+	int fwv, hwv, i = 0;
 
 	if (!hw)
 		return (-EINVALID);
@@ -50,16 +50,18 @@ __attribute__((warn_unused_result)) static int hw_p1_setup(void * priv, const ch
 
 	// fetch firmware version
 	do {
-		ret = hw_p1_spi_fwversion(&hw->spi);
-	} while ((ret <= 0) && (i++ < INIT_MAX_TRIES));
+		fwv = hw_p1_spi_fwversion(&hw->spi);
+	} while ((fwv <= 0) && (i++ < INIT_MAX_TRIES));
 
-	if (ret <= 0) {
+	if (fwv <= 0) {
 		pr_err(_("HWP1 \"%s\": could not connect"), name);
 		return (-ESPI);
 	}
 
-	pr_log(_("HWP1 \"%s\": Firmware version %d detected"), name, ret);
-	hw->run.fwversion = ret;
+	hwv = hw_p1_spi_hwversion(&hw->spi);
+
+	pr_log(_("HWP1 \"%s\": Firmware version %d running on hardware %d detected"), name, fwv, hwv);
+	hw->run.fwversion = fwv;
 	hw->name = name;
 	hw->run.initialized = true;
 
