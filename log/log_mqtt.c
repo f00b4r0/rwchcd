@@ -115,7 +115,13 @@ static void log_mqtt_offline(void)
 	mosquitto_destroy(Log_mqtt.mosq);
 
 	mosquitto_lib_cleanup();
+}
 
+/**
+ * Cleanup MQTT log backend.
+ */
+static void log_mqtt_cleanup(void)
+{
 	free((void *)Log_mqtt.set.host);
 	free((void *)Log_mqtt.set.username);
 	free((void *)Log_mqtt.set.password);
@@ -210,6 +216,7 @@ static const struct s_log_bendcbs log_mqtt_cbs = {
 	.separator	= '/',
 	.log_online	= log_mqtt_online,
 	.log_offline	= log_mqtt_offline,
+	.log_cleanup	= log_mqtt_cleanup,
 	.log_create	= log_mqtt_create,
 	.log_update	= log_mqtt_update,
 };
@@ -287,15 +294,7 @@ int log_mqtt_filecfg_parse(void * restrict const priv __attribute__((unused)), c
 	return (ALL_OK);
 
 fail:
-	if (Log_mqtt.set.topic_root)
-		free((void *)Log_mqtt.set.topic_root);
-	if (Log_mqtt.set.host)
-		free((void *)Log_mqtt.set.host);
-	if (Log_mqtt.set.username)
-		free((void *)Log_mqtt.set.username);
-	if (Log_mqtt.set.password)
-		free((void *)Log_mqtt.set.password);
-
+	log_mqtt_cleanup();
 	return (ret);
 }
 #endif /* HAS_FILECFG */

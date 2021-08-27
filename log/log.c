@@ -441,6 +441,9 @@ void log_exit(void)
 
 	Log.set.configured = false;
 
+	if (Log.bkend->log_cleanup)
+		Log.bkend->log_cleanup();
+
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
 		for (lelmt = Log_sched[i].loglist; lelmt;) {
 			next = lelmt->next;

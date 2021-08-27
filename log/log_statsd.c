@@ -138,15 +138,15 @@ static int log_statsd_online(void)
 static void log_statsd_offline(void)
 {
 	close (Log_statsd.run.sockfd);
+	memset(&Log_statsd.run, 0, sizeof(Log_statsd.run));
+}
 
-	if (Log_statsd.set.host)
-		free((void *)Log_statsd.set.host);
-	if (Log_statsd.set.port)
-		free((void *)Log_statsd.set.port);
-	if (Log_statsd.set.prefix)
-		free((void *)Log_statsd.set.prefix);
-
-	memset(&Log_statsd, 0, sizeof(Log_statsd));
+/** Cleanup the StatsD log backend. */
+static void log_statsd_cleanup(void)
+{
+	free((void *)Log_statsd.set.host);
+	free((void *)Log_statsd.set.port);
+	free((void *)Log_statsd.set.prefix);
 }
 
 /**
@@ -288,6 +288,7 @@ static const struct s_log_bendcbs log_statsd_cbs = {
 	.separator	= '.',
 	.log_online	= log_statsd_online,
 	.log_offline	= log_statsd_offline,
+	.log_cleanup	= log_statsd_cleanup,
 	.log_create	= log_statsd_create,
 	.log_update	= log_statsd_update,
 };
@@ -378,13 +379,7 @@ int log_statsd_filecfg_parse(void * restrict const priv __attribute__((unused)),
 	return (ALL_OK);
 
 fail:
-	if (Log_statsd.set.host)
-		free((void *)Log_statsd.set.host);
-	if (Log_statsd.set.port)
-		free((void *)Log_statsd.set.port);
-	if (Log_statsd.set.prefix)
-		free((void *)Log_statsd.set.prefix);
-
+	log_statsd_cleanup();
 	return (ret);
 }
 #endif	/* HAS_FILECFG */

@@ -88,6 +88,8 @@ struct s_log_bendcbs {
 	int (*log_online)(void);
 	/** optional backend log offline callback */
 	void (*log_offline)(void);
+	/** optional backend log cleanup callback - frees memory allocated during config parsing */
+	void (*log_cleanup)(void);
 	/** backend log create callback */
 	int (*log_create)(const char * restrict const identifier, const struct s_log_data * const log_data);
 	/** backend log update callback */
