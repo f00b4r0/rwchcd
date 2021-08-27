@@ -281,13 +281,17 @@ static void offline_subsystems(void)
  */
 static void exit_process(void)
 {
-	const struct s_subsys_cb_l * cbs;
+	const struct s_subsys_cb_l * cbs, * cp;
 
 	timer_clean_callbacks();
 
-	for (cbs = Finish_head; cbs; cbs = cbs->prev) {
+	cbs = Finish_head;
+	while (cbs) {
 		if (cbs->exit)
 			cbs->exit();
+		cp = cbs->prev;
+		free((void *)cbs);
+		cbs = cp;
 	}
 
 	runtime_exit();		// depends on nothing
