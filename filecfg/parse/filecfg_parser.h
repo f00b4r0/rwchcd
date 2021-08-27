@@ -90,12 +90,6 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 #define filecfg_parser_pr_err(format, ...)		fprintf(stderr, "CONFIG ERROR! " format "\n", ## __VA_ARGS__)
 
 /**
- * Report (generic) invalid data for node.
- * @param NODE the faulty node
- */
-#define filecfg_parser_report_invaliddata(NODE)		filecfg_parser_pr_err("Invalid data for node \"%s\" closing at line %d", NODE->name, NODE->lineno)
-
-/**
  * Parse a list of "named" sibling nodes (String nodes).
  * @param priv optional private data
  * @param nodelist the list of sibling nodes

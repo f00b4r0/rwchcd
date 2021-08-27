@@ -479,6 +479,8 @@ int filecfg_parser_match_nodechildren(const struct s_filecfg_parser_node * const
 	return (ret);
 }
 
+#define filecfg_parser_report_invaliddata(NODE)		filecfg_parser_pr_err("Invalid data for node \"%s\" closing at line %d", NODE->name, NODE->lineno)
+
 /**
  * Trigger all parsers from a parser list.
  * @param priv optional private data
