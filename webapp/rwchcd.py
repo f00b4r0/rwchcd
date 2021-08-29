@@ -37,16 +37,40 @@ urls = (
 	'/circuit', 'circuit',
 )
 
-formMode = form.Form(
-	form.Dropdown('sysmode', [(1, 'Off'), (2, 'Auto'), (3, 'Confort'), (4, 'Eco'), (5, 'Hors-Gel'), (6, 'ECS')], description='Mode'),
+from web import net
+class BootForm(form.Form):
+	def render_css(self):
+		out = []
+		out.append(self.rendernote(self.note))
+		for i in self.inputs:
+			out.append('<div class="mb-3">')
+			if i.note:
+				i.attrs['class'] += ' is-invalid'
+			if not i.is_hidden():
+				out.append('<label for="%s" class="form-label">%s</label>' % (i.id, net.websafe(i.description)))
+			out.append(i.pre)
+			out.append(i.render())
+			out.append(self.rendernote(i.note))
+			out.append(i.post)
+			out.append('</div>')
+			out.append('\n')
+		return ''.join(out)
+
+	def rendernote(self, note):
+		if note: return '<div class="invalid-feedback">%s</div>' % net.websafe(note)
+		else: return ""
+
+
+formMode = BootForm(
+	form.Dropdown('sysmode', [(1, 'Off'), (2, 'Auto'), (3, 'Confort'), (4, 'Eco'), (5, 'Hors-Gel'), (6, 'ECS')], description='Mode', class_='form-select'),
 	)
 
-formTemps = form.Form(
-	form.Textbox('name', disabled='true', description='Nom'),
-	form.Textbox('comftemp', disabled='true', description='Confort'),
-	form.Textbox('econtemp', disabled='true', description='Eco'),
-	form.Textbox('frostemp', disabled='true', description='Hors-Gel'),
-	form.Textbox('overridetemp', form.notnull, form.regexp('^-?\d+\.?\d*$', 'decimal number: xx.x'), description='Ajustement'),
+formTemps = BootForm(
+	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
+	form.Textbox('comftemp', disabled='true', description='Confort', class_='form-control'),
+	form.Textbox('econtemp', disabled='true', description='Eco', class_='form-control'),
+	form.Textbox('frostemp', disabled='true', description='Hors-Gel', class_='form-control'),
+	form.Textbox('overridetemp', form.notnull, form.regexp('^-?\d+\.?\d*$', 'decimal number: xx.x'), description='Ajustement', class_='form-control'),
 	)
 
 class rwchcd:

@@ -1,22 +1,28 @@
 $def with (formmode, outtemp)
+<!doctype html>
 <html>
  <head>
-    <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
-    <META HTTP-EQUIV="Expires" CONTENT="-1">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="Expires" content="-1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
     <title>Contrôle Chauffage Maison</title>
   </head>
   <body>
+    <div class="container mt-3">
     <h1>Contrôle chauffage maison</h1>
-    <h2>Température extérieure: $outtemp °C</h2>
+    <p>Température extérieure: <strong>$outtemp °C</strong></p>
     <form method="post">
-	$if not formmode.valid: <p>Erreur!</p>
-	$:formmode.render()
-	<input type="submit" />
+	$if not formmode.valid: <p class="text-danger"><strong>Erreur!</strong></p>
+	$:formmode.render_css()
+	<div class="mb-3">
+	<input type="submit" class="btn btn-primary"/>
+	</div>
     </form>
     <p><a href="circuit">Réglage chauffage</a></p>
     <p><a href="/">Accueil</a></p>
+    </div>
   </body>
 </html>
 
