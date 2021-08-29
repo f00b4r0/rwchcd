@@ -10,6 +10,19 @@ $def with (content)
     <title>$content.title</title>
   </head>
   <body>
+    <nav class="navbar navbar-expand navbar-light bg-light">
+      <div class="container-fluid">
+      <a class="navbar-brand" href="/">Accueil</a>
+      <ul class="navbar-nav">
+	<li class="nav-item">
+	  <a class="nav-link" href=".">Contrôle</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link" href="circuit">Réglage</a>
+	</li>
+      </ul>
+      </div>
+    </nav>
     <div class="container mt-3">
 	$:content
     </div>
