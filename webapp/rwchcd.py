@@ -30,7 +30,7 @@ hcircuit0_Hcircuit = hcircuit0[RWCHCD_DBUS_IFACE_HCIRC]
 temp0 = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_TEMPS+'/0')
 temp0_Temperature = temp0[RWCHCD_DBUS_IFACE_TEMP]
 
-render = web.template.render('templates/')
+render = web.template.render('templates/', base='base')
 
 urls = (
 	'/', 'rwchcd',
