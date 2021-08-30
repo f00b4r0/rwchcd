@@ -33,20 +33,27 @@ hcircuit0_Hcircuit = hcircuit0[RWCHCD_DBUS_IFACE_HCIRC]
 temp0 = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_TEMPS+'/0')
 temp0_Temperature = temp0[RWCHCD_DBUS_IFACE_TEMP]
 
-render = web.template.render('templates/', base='base')
-
-urls = (
-	'/', 'rwchcd',
-	'/circuit', 'circuit',
-)
-
 # config JSON:
-# {"modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]]}
+# {
+# "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],
+# "graphurl": "url"
+# }
 def loadcfg():
 	config = {}
 	with open(CFG_FILE, 'r') as f:
 		config = json.load(f)
 	return config
+
+def getcfg(key):
+	cfg = loadcfg()
+	return cfg.get(key)
+
+render = web.template.render('templates/', base='base', globals={'getcfg': getcfg})
+
+urls = (
+	'/', 'rwchcd',
+	'/circuit', 'circuit',
+)
 
 from web import net
 class BootForm(form.Form):
