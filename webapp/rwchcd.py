@@ -30,13 +30,12 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 hcircuit0 = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_HCIRCS+'/0')
 hcircuit0_Hcircuit = hcircuit0[RWCHCD_DBUS_IFACE_HCIRC]
 
-temp0 = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_TEMPS+'/0')
-temp0_Temperature = temp0[RWCHCD_DBUS_IFACE_TEMP]
-
 # config JSON:
 # {
 # "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],
-# "graphurl": "url"
+# "graphurl": "url",
+# "toutdoor": N,
+# "tindoor": N,
 # }
 def loadcfg():
 	config = {}
@@ -48,7 +47,13 @@ def getcfg(key):
 	cfg = loadcfg()
 	return cfg.get(key)
 
-render = web.template.render('templates/', base='base', globals={'getcfg': getcfg})
+def gettemp(id):
+	obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
+	bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+	temp_T = bustemp[RWCHCD_DBUS_IFACE_TEMP]
+	return "{:.1f}".format(temp_T.Value)
+
+render = web.template.render('templates/', base='base', globals={'getcfg': getcfg, 'gettemp': gettemp})
 
 urls = (
 	'/', 'rwchcd',
@@ -94,20 +99,18 @@ formTemps = BootForm(
 class rwchcd:
 	def GET(self):
 		cfg = loadcfg()
-		outtemp = "{:.1f}".format(temp0_Temperature.Value)
 		currmode = rwchcd_Runtime.SystemMode
 		fm = formMode()
 		fm.sysmode.args = cfg['modes']
 		fm.sysmode.value = currmode
-		return render.rwchcd(fm, outtemp)
+		return render.rwchcd(fm)
 	def POST(self):
 		cfg = loadcfg()
-		temp = 0
 		form = formMode()
 		form.sysmode.args = cfg['modes']
 		if not form.validates():
 			form.sysmode.value = int(form.sysmode.value)
-			return render.rwchcd(form, temp)
+			return render.rwchcd(form)
 		else:
 			mode = int(form.sysmode.value)
 			rwchcd_Runtime.SystemMode = mode

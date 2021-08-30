@@ -1,7 +1,16 @@
-$def with (form, outtemp)
+$def with (form)
 $var title: Contrôle Chauffage Maison
 <h1>Contrôle chauffage maison</h1>
-<p>Température extérieure: <strong>$outtemp °C</strong></p>
+
+<p>
+<ul class="list-group">
+$if getcfg('toutdoor') is not None:
+  <li class="list-group-item d-flex justify-content-between align-items-center">Température extérieure: <span class="badge bg-primary rounded-pill">$gettemp(getcfg('toutdoor')) °C</span></li>
+$if getcfg('tindoor') is not None:
+  <li class="list-group-item d-flex justify-content-between align-items-center">Température intérieure: <span class="badge bg-primary rounded-pill">$gettemp(getcfg('tindoor')) °C</span></li>
+</ul>
+</p>
+
 <form method="post">
 $if not form.valid: <p class="text-danger"><strong>Erreur!</strong></p>
 $:form.render_css()
