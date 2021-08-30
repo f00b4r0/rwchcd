@@ -5,9 +5,12 @@
 # TODO: check http://www.web2py.com
 
 import web
+import json
 from web import form
 from pydbus import SystemBus
 from os import system
+
+CFG_FILE = 'cfg.json'
 
 RWCHCD_DBUS_NAME = 'org.slashdirt.rwchcd'
 
@@ -37,6 +40,14 @@ urls = (
 	'/circuit', 'circuit',
 )
 
+# config JSON:
+# {"modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]]}
+def loadcfg():
+	config = {}
+	with open(CFG_FILE, 'r') as f:
+		config = json.load(f)
+	return config
+
 from web import net
 class BootForm(form.Form):
 	def render_css(self):
@@ -62,7 +73,7 @@ class BootForm(form.Form):
 
 
 formMode = BootForm(
-	form.Dropdown('sysmode', [(1, 'Off'), (2, 'Auto'), (3, 'Confort'), (4, 'Eco'), (5, 'Hors-Gel'), (6, 'ECS')], description='Mode', class_='form-select'),
+	form.Dropdown('sysmode', [], description='Mode', class_='form-select'),
 	)
 
 formTemps = BootForm(
@@ -75,14 +86,18 @@ formTemps = BootForm(
 
 class rwchcd:
 	def GET(self):
+		cfg = loadcfg()
 		outtemp = "{:.1f}".format(temp0_Temperature.Value)
 		currmode = rwchcd_Runtime.SystemMode
 		fm = formMode()
+		fm.sysmode.args = cfg['modes']
 		fm.sysmode.value = currmode
 		return render.rwchcd(fm, outtemp)
 	def POST(self):
+		cfg = loadcfg()
 		temp = 0
 		form = formMode()
+		form.sysmode.args = cfg['modes']
 		if not form.validates():
 			form.sysmode.value = int(form.sysmode.value)
 			return render.rwchcd(form, temp)
