@@ -48,10 +48,14 @@ def getcfg(key):
 	return cfg.get(key)
 
 def gettemp(id):
-	obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
-	bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-	temp_T = bustemp[RWCHCD_DBUS_IFACE_TEMP]
-	return "{:.1f}".format(temp_T.Value)
+	try:
+		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
+		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+		temp_T = bustemp[RWCHCD_DBUS_IFACE_TEMP]
+		temp = temp_T.Value
+	except:
+		temp = float('nan')
+	return "{:.1f}".format(temp)
 
 render = web.template.render('templates/', base='base', globals={'getcfg': getcfg, 'gettemp': gettemp})
 
