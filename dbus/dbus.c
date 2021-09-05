@@ -826,6 +826,8 @@ temperature_get_property(GDBusConnection  *connection,
 		ret = inputs_temperature_get(id, &temp);
 		if (ALL_OK == ret)
 			var = g_variant_new_double(temp_to_celsius(temp));
+		else
+			goto out;
 	}
 	else
 		g_assert_not_reached();
