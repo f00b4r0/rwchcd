@@ -120,10 +120,11 @@
 		4F08256624859F9D0068FC22 /* valve_dump.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = valve_dump.c; sourceTree = "<group>"; };
 		4F0E1D72220A16FD00DB5ACA /* timekeep.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = timekeep.c; sourceTree = SOURCE_ROOT; };
 		4F0E1D73220A16FD00DB5ACA /* timekeep.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = timekeep.h; sourceTree = SOURCE_ROOT; };
-		4F15163926E7BA5B00C16CDD /* plant_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = plant_priv.h; sourceTree = "<group>"; };
 		4F15163726E7B03B00C16CDD /* pump_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pump_priv.h; sourceTree = "<group>"; };
+		4F15163926E7BA5B00C16CDD /* plant_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = plant_priv.h; sourceTree = "<group>"; };
 		4F15A85C1EBF74880000507A /* alarms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = alarms.c; sourceTree = SOURCE_ROOT; };
 		4F15A85D1EBF74880000507A /* alarms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alarms.h; sourceTree = SOURCE_ROOT; };
+		4F1C189F26E7EECF003C47F1 /* valve_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = valve_priv.h; sourceTree = "<group>"; };
 		4F263EFE2528A19500733F75 /* Makefile.sub */ = {isa = PBXFileReference; explicitFileType = sourcecode.make; path = Makefile.sub; sourceTree = SOURCE_ROOT; };
 		4F299C8A218E1DBE009DCBC2 /* log_rrd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_rrd.c; sourceTree = "<group>"; };
 		4F299C8B218E1DBE009DCBC2 /* log_rrd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_rrd.h; sourceTree = "<group>"; };
@@ -378,6 +379,7 @@
 				4F15163726E7B03B00C16CDD /* pump_priv.h */,
 				4F42A5D11F968069001B0A1F /* valve.c */,
 				4F42A5D21F968069001B0A1F /* valve.h */,
+				4F1C189F26E7EECF003C47F1 /* valve_priv.h */,
 				4F42A5D41F9683CC001B0A1F /* heatsource.c */,
 				4F42A5D51F9683CC001B0A1F /* heatsource.h */,
 				4F42A5DD1F96AD0A001B0A1F /* boiler.c */,

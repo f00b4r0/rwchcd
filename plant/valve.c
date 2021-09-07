@@ -2,7 +2,7 @@
 //  plant/valve.c
 //  rwchcd
 //
-//  (C) 2017-2019 Thibaut VARENE
+//  (C) 2017-2019,2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -32,6 +32,7 @@
 #include "io/inputs.h"
 #include "io/outputs.h"
 #include "alarms.h"
+#include "valve_priv.h"
 
 
 /**

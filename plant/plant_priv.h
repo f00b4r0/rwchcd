@@ -19,7 +19,7 @@
 #include "timekeep.h"
 
 #include "pump_priv.h"
-#include "valve.h"
+#include "valve_priv.h"
 #include "hcircuit.h"
 #include "dhwt.h"
 #include "heatsource.h"

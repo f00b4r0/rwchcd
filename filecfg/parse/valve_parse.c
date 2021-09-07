@@ -50,6 +50,7 @@
 #include "valve_parse.h"
 #include "plant/valve.h"
 #include "plant/plant.h"
+#include "plant/valve_priv.h"
 #include "filecfg_parser.h"
 
 

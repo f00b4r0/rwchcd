@@ -16,6 +16,7 @@
 #include "lib.h"
 #include "io/inputs.h"
 #include "io/outputs.h"
+#include "plant/valve_priv.h"
 
 static int filecfg_v_bangbang_dump(const struct s_valve * restrict const valve __attribute__((unused)))
 {
