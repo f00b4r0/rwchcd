@@ -13,6 +13,7 @@
 \verbatim
  heatsources {
 	 heatsource "chaudière" {
+		 log yes;
 		 runmode "auto";
 		 schedid "default";
 		 type "type name" { ... };
@@ -29,7 +30,7 @@
 #include "boiler_parse.h"
 
 #include "scheduler.h"
-#include "plant/plant.h"
+#include "plant/heatsource_priv.h"
 
 static int heatsource_type_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {

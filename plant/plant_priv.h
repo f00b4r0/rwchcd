@@ -22,7 +22,7 @@
 #include "valve_priv.h"
 #include "hcircuit_priv.h"
 #include "dhwt_priv.h"
-#include "heatsource.h"
+#include "heatsource_priv.h"
 
 typedef uint_fast8_t	plid_t;
 #define PLID_MAX	UINT_FAST8_MAX

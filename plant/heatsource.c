@@ -28,6 +28,7 @@
 #include "heatsource.h"
 #include "runtime.h"
 #include "scheduler.h"
+#include "heatsource_priv.h"
 
 /**
  * Put heatsource online.

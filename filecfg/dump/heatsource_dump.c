@@ -12,7 +12,7 @@
  */
 
 #include "heatsource_dump.h"
-#include "plant/heatsource.h"
+#include "plant/heatsource_priv.h"
 #include "filecfg_dump.h"
 #include "scheduler.h"
 

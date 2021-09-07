@@ -18,7 +18,7 @@
 
 #include "rwchcd.h"
 #include "lib.h"	// for s_temp_intgrl
-#include "heatsource.h"
+#include "heatsource_priv.h"
 #include "timekeep.h"
 #include "io/inputs.h"
 #include "io/outputs.h"
