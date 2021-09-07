@@ -441,7 +441,7 @@ void log_exit(void)
 
 	Log.set.configured = false;
 
-	if (Log.bkend->log_cleanup)
+	if (Log.bkend && Log.bkend->log_cleanup)
 		Log.bkend->log_cleanup();
 
 	for (i = 0; i < ARRAY_SIZE(Log_sched); i++) {
