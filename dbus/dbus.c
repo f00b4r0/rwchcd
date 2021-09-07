@@ -770,7 +770,7 @@ pump_get_property(GDBusConnection  *connection,
 	else if (g_strcmp0(property_name, "Name") == 0)
 		var = g_variant_new_string(pump->name);
 	else if (g_strcmp0(property_name, "Active") == 0)
-		var = g_variant_new_boolean((gboolean)aler(&pump->run.req_on));
+		var = g_variant_new_boolean((gboolean)aler(&pump->run.state));
 	else
 		g_assert_not_reached();
 

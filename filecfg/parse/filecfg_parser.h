@@ -303,13 +303,23 @@ static int fcp_bmodel_##_struct##_p##_setpmember(void * restrict const priv, con
 static int fcp_pump_##_struct##_p##_setpmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
 {										\
 	struct _struct * restrict const s = priv;				\
+	struct s_pump * restrict pump;						\
+	int ret;								\
 	assert(NODESTR == n->type);						\
 	if (n->children) return(-ENOTWANTED);					\
 	if (strlen(n->value.stringval) < 1)					\
 		return (ALL_OK);	/* nothing to do */			\
-	s->set.p._setpmember = plant_fbn_pump(_priv2plant(priv), n->value.stringval);	\
-	if (!s->set.p._setpmember)						\
-		return (-EINVALID);						\
+	pump = plant_fbn_pump(_priv2plant(priv), n->value.stringval);		\
+	if (!pump) return (-EINVALID);						\
+	ret = pump_grab(pump);							\
+	if (ALL_OK != ret) {							\
+		if (-EEXISTS == ret) {						\
+			if (pump_is_shared(pump)) pump = pump_virtual_new(pump);	\
+			else { filecfg_parser_pr_err("pump \"%s\" is already used", pump_name(pump)); return (ret); }\
+		} else return (ret);						\
+	}									\
+	if (!pump) return (-EOOM);						\
+	s->set.p._setpmember = pump;						\
 	return (ALL_OK);							\
 }
 

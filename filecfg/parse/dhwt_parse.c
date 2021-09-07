@@ -44,6 +44,7 @@
 
 #include "scheduler.h"
 #include "plant/plant.h"
+#include "plant/pump.h"
 
 
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_dhwt_params, t_comfort)

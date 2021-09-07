@@ -49,6 +49,7 @@
 
 #include "scheduler.h"
 #include "plant/plant.h"
+#include "plant/pump.h"
 #include "models.h"
 
 

@@ -34,6 +34,7 @@
 #include "outputs_parse.h"
 
 #include "plant/plant.h"
+#include "plant/pump.h"
 
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_boiler_priv, hysteresis)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_thardmax)
