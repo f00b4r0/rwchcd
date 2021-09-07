@@ -244,7 +244,7 @@ int dhwt_online(struct s_dhwt * const dhwt)
 			pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
 			ret = -EMISCONFIGURED;
 		}
-		else if (VA_TYPE_ISOL != dhwt->set.p.valve_hwisol->set.type) {
+		else if (VA_TYPE_ISOL != valve_get_type(dhwt->set.p.valve_hwisol)) {
 			pr_err(_("\"%s\": Invalid type for valve_hwisol \"%s\" (isolation valve expected)"), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
 			ret = -EMISCONFIGURED;
 		}

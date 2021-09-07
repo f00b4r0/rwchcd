@@ -311,7 +311,7 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 			pr_err(_("\"%s\": valve_ret \"%s\" is set but not online"), heat->name, valve_name(boiler->set.p.valve_ret));
 			ret = -EMISCONFIGURED;
 		}
-		else if (VA_TYPE_MIX != boiler->set.p.valve_ret->set.type) {
+		else if (VA_TYPE_MIX != valve_get_type(boiler->set.p.valve_ret)) {
 			pr_err(_("\"%s\": Invalid type for valve_ret \"%s\" (mixing valve expected)"), heat->name, valve_name(boiler->set.p.valve_ret));
 			ret = -EMISCONFIGURED;
 		}

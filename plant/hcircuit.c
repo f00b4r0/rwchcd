@@ -265,7 +265,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 			pr_err(_("\"%s\": valve_mix \"%s\" is set but not configured"), circuit->name, valve_name(circuit->set.p.valve_mix));
 			ret = -EMISCONFIGURED;
 		}
-		else if (VA_TYPE_MIX != circuit->set.p.valve_mix->set.type) {
+		else if (VA_TYPE_MIX != valve_get_type(circuit->set.p.valve_mix)) {
 			pr_err(_("\"%s\": Invalid type for valve_mix \"%s\" (mixing valve expected)"), circuit->name, valve_name(circuit->set.p.valve_mix));
 			ret = -EMISCONFIGURED;
 		}

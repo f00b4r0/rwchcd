@@ -148,6 +148,7 @@ int valve_mix_tcontrol(struct s_valve * const valve, const temp_t target_tout) _
 int valve_isol_trigger(struct s_valve * const valve, bool isolate) __attribute__((warn_unused_result));
 
 bool valve_is_online(const struct s_valve * const valve);
+enum e_valve_type valve_get_type(const struct s_valve * const valve);
 const char * valve_name(const struct s_valve * const valve);
 
 #define VALVE_REQMAXPTH			1200	///< request value for full open/close state

@@ -1003,6 +1003,16 @@ bool valve_is_online(const struct s_valve * const valve)
 	return (valve->run.online);
 }
 
+/**
+ * Get valve type.
+ * @param valve target valve
+ * @return valve type
+ */
+enum e_valve_type valve_get_type(const struct s_valve * const valve)
+{
+	assert(valve);
+	return (valve->set.type);
+}
 
 /**
  * Get valve name.

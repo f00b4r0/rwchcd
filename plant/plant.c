@@ -772,7 +772,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 		if (!valve_is_online(valve))
 			continue;
 
-		if (VA_TYPE_ISOL == valve->set.type)
+		if (VA_TYPE_ISOL == valve_get_type(valve))
 			continue;	// don't touch isolation valves
 
 		ret = valve_reqopen_full(valve);
