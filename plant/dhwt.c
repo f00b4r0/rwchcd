@@ -291,10 +291,10 @@ static inline void dhwt_actuator_use(struct s_dhwt * const dhwt, bool active)
 	assert(dhwt);
 
 	if (dhwt->set.p.pump_feed)
-		dhwt->set.p.pump_feed->run.dhwt_use = active;
+		pump_set_dhwt_use(dhwt->set.p.pump_feed, active);
 
 	if (dhwt->set.p.pump_recycle)
-		dhwt->set.p.pump_recycle->run.dhwt_use = active;
+		pump_set_dhwt_use(dhwt->set.p.pump_recycle, active);
 }
 
 /**

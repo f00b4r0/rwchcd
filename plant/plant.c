@@ -787,16 +787,10 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	// set all pumps ON
 	for (id = 0; id < plant->pumps.last; id++) {
 		pump = &plant->pumps.all[id];
-		if (!aler(&pump->run.online))
-			continue;
-
-		if (pump->run.dhwt_use)
+		if (pump_get_dhwt_use(pump))
 			continue;	// don't touch DHWT pumps when in use
 
-		ret = pump_set_state(pump, ON, NOFORCE);
-		if (ALL_OK != ret) {
-			dbgerr("pump_set_state failed on %d (%d)", id, ret);
-		}
+		(void)pump_set_state(pump, ON, NOFORCE);
 	}
 
 	return (ALL_OK);

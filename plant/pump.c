@@ -20,6 +20,7 @@
 
 #include <stdlib.h>	// calloc/free
 #include <string.h>	// memset
+#include <assert.h>
 
 #include "pump.h"
 #include "io/outputs.h"
@@ -104,6 +105,35 @@ int pump_get_state(const struct s_pump * restrict const pump)
 
 	// NOTE we could return remaining cooldown time if necessary
 	return (outputs_relay_state_get(pump->set.rid_pump));
+}
+
+/**
+ * Set pump DHWT use.
+ * @param pump target pump
+ * @param used set pump as used by DHWT if true
+ * @return error code if any
+ */
+int pump_set_dhwt_use(struct s_pump * const pump, bool used)
+{
+	assert(pump);
+	assert(aler(&pump->run.online));
+
+	pump->run.dhwt_use = used;
+
+	return (ALL_OK);
+}
+
+/**
+ * Get pump DHWT use.
+ * @param pump target pump
+ * @return true if pump is used by DHWT
+ */
+int pump_get_dhwt_use(const struct s_pump * const pump)
+{
+	assert(pump);
+	assert(aler(&pump->run.online));
+
+	return (pump->run.dhwt_use);
 }
 
 /**

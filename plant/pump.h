@@ -45,6 +45,8 @@ void pump_cleanup(struct s_pump * restrict pump);
 int pump_online(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state) __attribute__((warn_unused_result));
 int pump_get_state(const struct s_pump * restrict const pump);
+int pump_set_dhwt_use(struct s_pump * const pump, bool used);
+int pump_get_dhwt_use(const struct s_pump * const pump);
 int pump_shutdown(struct s_pump * restrict const pump);
 int pump_offline(struct s_pump * restrict const pump);
 int pump_run(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
