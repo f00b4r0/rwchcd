@@ -50,6 +50,7 @@
 #include "io/outputs.h"
 #include "log/log.h"
 #include "alarms.h"
+#include "dhwt_priv.h"
 
 #define DHWT_STORAGE_PREFIX	"dhwt"
 

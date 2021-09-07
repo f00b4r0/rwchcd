@@ -14,6 +14,7 @@
 #ifndef dhwt_dump_h
 #define dhwt_dump_h
 
+#include "rwchcd.h"
 #include "plant/dhwt.h"
 
 int filecfg_dhwt_params_dump(const struct s_dhwt_params * restrict const params);

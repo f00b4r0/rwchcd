@@ -12,12 +12,24 @@
  *
 \verbatim
  dhwt "dhwt name" {
+	 log yes;
+ 	 electric_hasthermostat no;
+  	 anti_legionella yes;
+  	 legionella_recycle no;
+  	 electric_recycle yes;
+    	 prio 0;
 	 runmode "auto";
 	 schedid "default";
 	 dhwt_cprio "paralmax";
 	 force_mode "never";
 	 tid_bottom "boiler";
+ 	 tid_top "";
+ 	 tid_win "";
+ 	 rid_selfheater "";
 	 params { ... };
+ 	 pump_feed "";
+ 	 pump_recycle "";
+ 	 valve_hwisol "";
  };
 \endverbatim
  */
@@ -28,7 +40,7 @@
 #include "inputs_parse.h"
 #include "dhwt_parse.h"
 #include "filecfg_parser.h"
-#include "plant/dhwt.h"
+#include "plant/dhwt_priv.h"
 
 #include "scheduler.h"
 #include "plant/plant.h"

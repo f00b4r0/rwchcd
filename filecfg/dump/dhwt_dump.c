@@ -13,7 +13,7 @@
 
 #include "dhwt_dump.h"
 #include "filecfg_dump.h"
-#include "plant/dhwt.h"
+#include "plant/dhwt_priv.h"
 #include "plant/pump.h"
 #include "plant/valve.h"
 #include "lib.h"

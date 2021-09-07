@@ -125,6 +125,7 @@
 		4F15A85C1EBF74880000507A /* alarms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = alarms.c; sourceTree = SOURCE_ROOT; };
 		4F15A85D1EBF74880000507A /* alarms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alarms.h; sourceTree = SOURCE_ROOT; };
 		4F1C189F26E7EECF003C47F1 /* valve_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = valve_priv.h; sourceTree = "<group>"; };
+		4F1C18A026E7FB67003C47F1 /* dhwt_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt_priv.h; sourceTree = "<group>"; };
 		4F263EFE2528A19500733F75 /* Makefile.sub */ = {isa = PBXFileReference; explicitFileType = sourcecode.make; path = Makefile.sub; sourceTree = SOURCE_ROOT; };
 		4F299C8A218E1DBE009DCBC2 /* log_rrd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_rrd.c; sourceTree = "<group>"; };
 		4F299C8B218E1DBE009DCBC2 /* log_rrd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_rrd.h; sourceTree = "<group>"; };
@@ -386,6 +387,7 @@
 				4F42A5DE1F96AD0A001B0A1F /* boiler.h */,
 				4F42A5DA1F968AE8001B0A1F /* dhwt.c */,
 				4F42A5DB1F968AE8001B0A1F /* dhwt.h */,
+				4F1C18A026E7FB67003C47F1 /* dhwt_priv.h */,
 				4F42A5D71F9687F3001B0A1F /* hcircuit.c */,
 				4F42A5D81F9687F3001B0A1F /* hcircuit.h */,
 			);

@@ -21,7 +21,7 @@
 #include "pump_priv.h"
 #include "valve_priv.h"
 #include "hcircuit.h"
-#include "dhwt.h"
+#include "dhwt_priv.h"
 #include "heatsource.h"
 
 typedef uint_fast8_t	plid_t;
