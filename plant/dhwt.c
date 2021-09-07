@@ -228,14 +228,14 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		ret = -EMISCONFIGURED;
 	}
 
-	// if pumps exist check they're correctly configured
-	if (dhwt->set.p.pump_feed && !dhwt->set.p.pump_feed->set.configured) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.pump_feed->name);
+	// if pumps exist check they're available
+	if (dhwt->set.p.pump_feed && !pump_is_online(dhwt->set.p.pump_feed)) {
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), dhwt->name, dhwt->set.p.pump_feed->name);
 		ret = -EMISCONFIGURED;
 	}
 
-	if (dhwt->set.p.pump_recycle && !dhwt->set.p.pump_recycle->set.configured) {
-		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.pump_recycle->name);
+	if (dhwt->set.p.pump_recycle && !pump_is_online(dhwt->set.p.pump_recycle)) {
+		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not online"), dhwt->name, dhwt->set.p.pump_recycle->name);
 		ret = -EMISCONFIGURED;
 	}
 

@@ -227,3 +227,13 @@ fail:
 	return (ret);
 }
 
+/**
+ * Test if pump is online.
+ * @param pump target pump
+ * @return true if online, false otherwise
+ */
+bool pump_is_online(const struct s_pump * const pump)
+{
+	assert(pump);
+	return (aler(&pump->run.online));
+}

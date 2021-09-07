@@ -300,8 +300,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 	}
 
 	// if pump exists check it's correctly configured
-	if (boiler->set.p.pump_load && !boiler->set.p.pump_load->set.configured) {
-		pr_err(_("\"%s\": pump_load \"%s\" is set but not configured"), heat->name, boiler->set.p.pump_load->name);
+	if (boiler->set.p.pump_load && !pump_is_online(boiler->set.p.pump_load)) {
+		pr_err(_("\"%s\": pump_load \"%s\" is set but not online"), heat->name, boiler->set.p.pump_load->name);
 		ret = -EMISCONFIGURED;
 	}
 

@@ -253,9 +253,9 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		pr_err(_("\"%s\": building model \"%s\" is set but not configured"), circuit->name, circuit->set.p.bmodel->name);
 		ret = -EMISCONFIGURED;
 	}
-	// if pump exists check it's correctly configured
-	if (circuit->set.p.pump_feed && !circuit->set.p.pump_feed->set.configured) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not configured"), circuit->name, circuit->set.p.pump_feed->name);
+	// if pump exists check it's available
+	if (circuit->set.p.pump_feed && !pump_is_online(circuit->set.p.pump_feed)) {
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), circuit->name, circuit->set.p.pump_feed->name);
 		ret = -EMISCONFIGURED;
 	}
 
