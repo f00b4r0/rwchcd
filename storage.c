@@ -20,7 +20,9 @@
 #include <stdlib.h>	// free
 #include <unistd.h>	// chdir
 #include <string.h>	// memset/strdup
-#include <db.h>
+#ifdef HAS_BDB
+ #include <db.h>
+#endif
 
 #include "storage.h"
 #include "rwchcd.h"
@@ -192,8 +194,10 @@ failret:
  */
 int storage_online(void)
 {
+#ifdef HAS_BDB
 	DB *dbp;
 	DBT key, data;
+#endif
 	storage_version_t sv;
 	int dbret;
 
