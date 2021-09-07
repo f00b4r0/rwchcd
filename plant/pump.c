@@ -2,7 +2,7 @@
 //  plant/pump.c
 //  rwchcd
 //
-//  (C) 2017,2020 Thibaut VARENE
+//  (C) 2017,2020-2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -25,6 +25,7 @@
 #include "pump.h"
 #include "io/outputs.h"
 #include "alarms.h"
+#include "pump_priv.h"
 
 /**
  * Cleanup a pump.

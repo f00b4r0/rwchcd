@@ -18,7 +18,7 @@
 
 #include "timekeep.h"
 
-#include "pump.h"
+#include "pump_priv.h"
 #include "valve.h"
 #include "hcircuit.h"
 #include "dhwt.h"

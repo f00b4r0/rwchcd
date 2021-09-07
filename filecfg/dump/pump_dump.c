@@ -14,6 +14,7 @@
 #include "pump_dump.h"
 #include "filecfg_dump.h"
 #include "io/outputs.h"
+#include "plant/pump_priv.h"
 
 int filecfg_pump_dump(const struct s_pump * restrict const pump)
 {

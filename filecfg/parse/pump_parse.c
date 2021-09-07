@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include "pump_parse.h"
-#include "plant/pump.h"
+#include "plant/pump_priv.h"
 #include "plant/plant.h"
 #include "filecfg_parser.h"
 #include "outputs_parse.h"
