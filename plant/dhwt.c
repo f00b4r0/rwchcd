@@ -241,11 +241,11 @@ int dhwt_online(struct s_dhwt * const dhwt)
 
 	if (dhwt->set.p.valve_hwisol) {
 		if (!dhwt->set.p.valve_hwisol->set.configured) {
-			pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, dhwt->set.p.valve_hwisol->name);
+			pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
 			ret = -EMISCONFIGURED;
 		}
 		else if (VA_TYPE_ISOL != dhwt->set.p.valve_hwisol->set.type) {
-			pr_err(_("\"%s\": Invalid type for valve_hwisol \"%s\" (isolation valve expected)"), dhwt->name, dhwt->set.p.valve_hwisol->name);
+			pr_err(_("\"%s\": Invalid type for valve_hwisol \"%s\" (isolation valve expected)"), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
 			ret = -EMISCONFIGURED;
 		}
 	}
@@ -585,7 +585,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	if (dhwt->set.p.valve_hwisol && !electric_mode) {
 		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
 		if (ALL_OK != ret) {
-			alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, dhwt->set.p.valve_hwisol->name);
+			alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
 			goto fail;
 		}
 	}

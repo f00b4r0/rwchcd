@@ -157,7 +157,7 @@ int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 	filecfg_iprintf("tlaw"); filecfg_hcircuit_tlaw_dump(circuit);			// mandatory
 
 	if (FCD_Exhaustive || circuit->set.p.valve_mix)
-		filecfg_dump_nodestr("valve_mix", circuit->set.p.valve_mix ? circuit->set.p.valve_mix->name : "");
+		filecfg_dump_nodestr("valve_mix", circuit->set.p.valve_mix ? valve_name(circuit->set.p.valve_mix) : "");
 	if (FCD_Exhaustive || circuit->set.p.pump_feed)
 		filecfg_dump_nodestr("pump_feed", circuit->set.p.pump_feed ? pump_name(circuit->set.p.pump_feed) : "");
 	if (FCD_Exhaustive || circuit->set.p.bmodel)

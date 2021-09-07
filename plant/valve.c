@@ -991,3 +991,13 @@ int valve_isol_trigger(struct s_valve * const valve, bool isolate)
 
 	return (ret);
 }
+
+/**
+ * Get valve name.
+ * @param valve target valve
+ * @return valve name
+ */
+const char * valve_name(const struct s_valve * const valve)
+{
+	return (valve->name);
+}

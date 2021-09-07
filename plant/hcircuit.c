@@ -262,11 +262,11 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	// if mix valve exists check it's correctly configured
 	if (circuit->set.p.valve_mix) {
 		if (!circuit->set.p.valve_mix->set.configured) {
-			pr_err(_("\"%s\": valve_mix \"%s\" is set but not configured"), circuit->name, circuit->set.p.valve_mix->name);
+			pr_err(_("\"%s\": valve_mix \"%s\" is set but not configured"), circuit->name, valve_name(circuit->set.p.valve_mix));
 			ret = -EMISCONFIGURED;
 		}
 		else if (VA_TYPE_MIX != circuit->set.p.valve_mix->set.type) {
-			pr_err(_("\"%s\": Invalid type for valve_mix \"%s\" (mixing valve expected)"), circuit->name, circuit->set.p.valve_mix->name);
+			pr_err(_("\"%s\": Invalid type for valve_mix \"%s\" (mixing valve expected)"), circuit->name, valve_name(circuit->set.p.valve_mix));
 			ret = -EMISCONFIGURED;
 		}
 	}
@@ -834,7 +834,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		// adjust valve position if necessary
 		ret = valve_mix_tcontrol(circuit->set.p.valve_mix, water_temp);
 		if (unlikely(ret)) {
-			alarms_raise(ret, _("HCircuit \"%s\": failed to control mixing valve \"%s\""), circuit->name, circuit->set.p.valve_mix->name);
+			alarms_raise(ret, _("HCircuit \"%s\": failed to control mixing valve \"%s\""), circuit->name, valve_name(circuit->set.p.valve_mix));
 			goto fail;
 		}
 	}
