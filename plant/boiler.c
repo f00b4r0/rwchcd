@@ -301,7 +301,7 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	// if pump exists check it's correctly configured
 	if (boiler->set.p.pump_load && !pump_is_online(boiler->set.p.pump_load)) {
-		pr_err(_("\"%s\": pump_load \"%s\" is set but not online"), heat->name, boiler->set.p.pump_load->name);
+		pr_err(_("\"%s\": pump_load \"%s\" is set but not online"), heat->name, pump_name(boiler->set.p.pump_load));
 		ret = -EMISCONFIGURED;
 	}
 
@@ -668,7 +668,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	if (boiler->set.p.pump_load) {
 		ret = pump_set_state(boiler->set.p.pump_load, ON, 0);
 		if (unlikely(ALL_OK != ret)) {
-			alarms_raise(ret, _("Boiler \"%s\": failed to request load pump \"%s\" ON"), heat->name, boiler->set.p.pump_load->name);
+			alarms_raise(ret, _("Boiler \"%s\": failed to request load pump \"%s\" ON"), heat->name, pump_name(boiler->set.p.pump_load));
 			goto fail;	// critical error: stop there
 		}
 	}

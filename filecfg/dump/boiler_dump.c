@@ -73,7 +73,7 @@ int filecfg_boiler_hs_dump(const struct s_heatsource * restrict const heat)
 		filecfg_dump_nodestr("rid_burner_2", outputs_relay_name(priv->set.rid_burner_2));
 
 	if (FCD_Exhaustive || priv->set.p.pump_load)
-		filecfg_dump_nodestr("pump_load", priv->set.p.pump_load ? priv->set.p.pump_load->name : "");
+		filecfg_dump_nodestr("pump_load", priv->set.p.pump_load ? pump_name(priv->set.p.pump_load) : "");
 	if (FCD_Exhaustive || priv->set.p.valve_ret)
 		filecfg_dump_nodestr("valve_ret", priv->set.p.valve_ret ? priv->set.p.valve_ret->name : "");
 

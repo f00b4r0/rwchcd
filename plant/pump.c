@@ -237,3 +237,13 @@ bool pump_is_online(const struct s_pump * const pump)
 	assert(pump);
 	return (aler(&pump->run.online));
 }
+
+/**
+ * Get pump name.
+ * @param pump target pump
+ * @return pump name
+ */
+const char * pump_name(const struct s_pump * const pump)
+{
+	return (pump->name);
+}

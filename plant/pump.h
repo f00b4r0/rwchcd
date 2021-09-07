@@ -52,5 +52,6 @@ int pump_offline(struct s_pump * restrict const pump);
 int pump_run(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 
 bool pump_is_online(const struct s_pump * const pump);
+const char * pump_name(const struct s_pump * const pump);
 
 #endif /* pump_h */

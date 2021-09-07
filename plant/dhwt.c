@@ -230,12 +230,12 @@ int dhwt_online(struct s_dhwt * const dhwt)
 
 	// if pumps exist check they're available
 	if (dhwt->set.p.pump_feed && !pump_is_online(dhwt->set.p.pump_feed)) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), dhwt->name, dhwt->set.p.pump_feed->name);
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_feed));
 		ret = -EMISCONFIGURED;
 	}
 
 	if (dhwt->set.p.pump_recycle && !pump_is_online(dhwt->set.p.pump_recycle)) {
-		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not online"), dhwt->name, dhwt->set.p.pump_recycle->name);
+		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_recycle));
 		ret = -EMISCONFIGURED;
 	}
 
@@ -612,7 +612,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			ret = pump_set_state(dhwt->set.p.pump_recycle, OFF, NOFORCE);
 
 		if (ALL_OK != ret)	// this is a non-critical error, keep going
-			alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, dhwt->set.p.pump_recycle->name);
+			alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_recycle));
 	}
 
 	charge_on = aler(&dhwt->run.charge_on);
@@ -754,7 +754,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		}
 
 		if (unlikely(ALL_OK != ret))	// pump_set_state result
-			alarms_raise(ret, _("DHWT \"%s\": failed to request feed pump \"%s\" state"), dhwt->name, dhwt->set.p.pump_feed->name);
+			alarms_raise(ret, _("DHWT \"%s\": failed to request feed pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_feed));
 	}
 
 	aser(&dhwt->run.actual_temp, curr_temp);

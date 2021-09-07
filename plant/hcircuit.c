@@ -255,7 +255,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 	}
 	// if pump exists check it's available
 	if (circuit->set.p.pump_feed && !pump_is_online(circuit->set.p.pump_feed)) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), circuit->name, circuit->set.p.pump_feed->name);
+		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), circuit->name, pump_name(circuit->set.p.pump_feed));
 		ret = -EMISCONFIGURED;
 	}
 
@@ -767,7 +767,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	if (circuit->set.p.pump_feed) {
 		ret = pump_set_state(circuit->set.p.pump_feed, ON, 0);
 		if (unlikely(ALL_OK != ret)) {
-			alarms_raise(ret, _("HCircuit \"%s\": failed to request feed pump \"%s\" ON"), circuit->name, circuit->set.p.pump_feed->name);
+			alarms_raise(ret, _("HCircuit \"%s\": failed to request feed pump \"%s\" ON"), circuit->name, pump_name(circuit->set.p.pump_feed));
 			goto fail;
 		}
 	}

@@ -159,7 +159,7 @@ int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 	if (FCD_Exhaustive || circuit->set.p.valve_mix)
 		filecfg_dump_nodestr("valve_mix", circuit->set.p.valve_mix ? circuit->set.p.valve_mix->name : "");
 	if (FCD_Exhaustive || circuit->set.p.pump_feed)
-		filecfg_dump_nodestr("pump_feed", circuit->set.p.pump_feed ? circuit->set.p.pump_feed->name : "");
+		filecfg_dump_nodestr("pump_feed", circuit->set.p.pump_feed ? pump_name(circuit->set.p.pump_feed) : "");
 	if (FCD_Exhaustive || circuit->set.p.bmodel)
 		filecfg_dump_nodestr("bmodel", circuit->set.p.bmodel ? circuit->set.p.bmodel->name : "");
 
