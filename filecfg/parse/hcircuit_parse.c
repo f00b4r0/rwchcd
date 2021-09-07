@@ -123,6 +123,7 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	return (ret);
 }
 
+#include "plant/plant_priv.h"
 static inline const struct s_plant * __hcircuit_to_plant(void * priv)
 {
 	return (pdata_to_plant(((struct s_hcircuit *)priv)->pdata));

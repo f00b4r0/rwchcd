@@ -62,6 +62,8 @@
 
 #include "runtime.h"
 
+#include "plant/plant_priv.h"
+
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_plant, summer_maintenance)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_plant, sleeping_delay)
 FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_plant, summer_run_interval)

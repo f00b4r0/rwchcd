@@ -65,7 +65,7 @@ int filecfg_dhwt_params_parse(void * restrict const priv, const struct s_filecfg
 	return (filecfg_parser_run_parsers(priv, parsers, ARRAY_SIZE(parsers)));
 }
 
-
+#include "plant/plant_priv.h"
 static inline const struct s_plant * __dhwt_to_plant(void * priv)
 {
 	return (pdata_to_plant(((struct s_dhwt *)priv)->pdata));

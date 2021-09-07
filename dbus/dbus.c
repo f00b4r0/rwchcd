@@ -35,7 +35,7 @@
 
 #include "lib.h"
 #include "runtime.h"
-#include "plant/plant.h"
+#include "plant/plant_priv.h"
 #include "io/inputs.h"
 #include "io/inputs/temperature.h"
 #include "dbus.h"

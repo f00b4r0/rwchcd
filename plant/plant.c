@@ -2,7 +2,7 @@
 //  plant/plant.c
 //  rwchcd
 //
-//  (C) 2016-2020 Thibaut VARENE
+//  (C) 2016-2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -39,6 +39,8 @@
 #include "plant.h"
 #include "models.h"	// s_bmodel for plant_summer_ok()
 #include "alarms.h"
+
+#include "plant_priv.h"	// for the sake of performance we tolerate for now that the plant accesses the underlying structures
 
 /**
  * Find a pump by name in a plant.
@@ -607,8 +609,6 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 		plant->pdata.run.plant_could_sleep = true;
 	else
 		plant->pdata.run.plant_could_sleep = false;
-
-	/// @todo should update PCS if any DHWT is active and cannot do electric?
 
 	// then dhwt
 	for (id = 0; id < plant->dhwts.last; id++) {

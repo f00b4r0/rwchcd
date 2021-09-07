@@ -22,6 +22,8 @@
 #include "hcircuit_dump.h"
 #include "dhwt_dump.h"
 
+#include "plant/plant_priv.h"
+
 int filecfg_plant_dump(const struct s_plant * restrict const plant)
 {
 	plid_t id;
