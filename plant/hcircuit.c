@@ -261,7 +261,7 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 
 	// if mix valve exists check it's correctly configured
 	if (circuit->set.p.valve_mix) {
-		if (!circuit->set.p.valve_mix->set.configured) {
+		if (!valve_is_online(circuit->set.p.valve_mix)) {
 			pr_err(_("\"%s\": valve_mix \"%s\" is set but not configured"), circuit->name, valve_name(circuit->set.p.valve_mix));
 			ret = -EMISCONFIGURED;
 		}

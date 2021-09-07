@@ -993,6 +993,18 @@ int valve_isol_trigger(struct s_valve * const valve, bool isolate)
 }
 
 /**
+ * Test if valve is online.
+ * @param valve target valve
+ * @return true if online, false otherwise
+ */
+bool valve_is_online(const struct s_valve * const valve)
+{
+	assert(valve);
+	return (valve->run.online);
+}
+
+
+/**
  * Get valve name.
  * @param valve target valve
  * @return valve name

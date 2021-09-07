@@ -305,10 +305,10 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		ret = -EMISCONFIGURED;
 	}
 
-	// if return valve exists check it's correctly configured
+	// if return valve exists check it's online
 	if (boiler->set.p.valve_ret) {
-		if (!boiler->set.p.valve_ret->set.configured) {
-			pr_err(_("\"%s\": valve_ret \"%s\" is set but not configured"), heat->name, valve_name(boiler->set.p.valve_ret));
+		if (!valve_is_online(boiler->set.p.valve_ret)) {
+			pr_err(_("\"%s\": valve_ret \"%s\" is set but not online"), heat->name, valve_name(boiler->set.p.valve_ret));
 			ret = -EMISCONFIGURED;
 		}
 		else if (VA_TYPE_MIX != boiler->set.p.valve_ret->set.type) {

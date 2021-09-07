@@ -769,7 +769,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	// open all valves
 	for (id = 0; id < plant->valves.last; id++) {
 		valve = &plant->valves.all[id];
-		if (!valve->run.online)
+		if (!valve_is_online(valve))
 			continue;
 
 		if (VA_TYPE_ISOL == valve->set.type)

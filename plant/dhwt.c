@@ -240,7 +240,7 @@ int dhwt_online(struct s_dhwt * const dhwt)
 	}
 
 	if (dhwt->set.p.valve_hwisol) {
-		if (!dhwt->set.p.valve_hwisol->set.configured) {
+		if (!valve_is_online(dhwt->set.p.valve_hwisol)) {
 			pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
 			ret = -EMISCONFIGURED;
 		}
