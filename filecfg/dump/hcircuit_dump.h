@@ -14,6 +14,7 @@
 #ifndef hcircuit_dump_h
 #define hcircuit_dump_h
 
+#include "rwchcd.h"
 #include "plant/hcircuit.h"
 
 int filecfg_hcircuit_params_dump(const struct s_hcircuit_params * restrict const params);

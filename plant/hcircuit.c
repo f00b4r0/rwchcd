@@ -50,6 +50,7 @@
 #include "scheduler.h"
 #include "storage.h"
 #include "alarms.h"
+#include "hcircuit_priv.h"
 
 #define HCIRCUIT_RORH_1HTAU	(3600*TIMEKEEP_SMULT)	///< 1h tau expressed in internal time representation
 #define HCIRCUIT_RORH_DT	(10*TIMEKEEP_SMULT)	///< absolute min for 3600s tau is 8s dt, use 10s

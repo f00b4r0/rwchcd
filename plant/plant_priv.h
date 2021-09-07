@@ -20,7 +20,7 @@
 
 #include "pump_priv.h"
 #include "valve_priv.h"
-#include "hcircuit.h"
+#include "hcircuit_priv.h"
 #include "dhwt_priv.h"
 #include "heatsource.h"
 

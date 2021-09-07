@@ -13,13 +13,16 @@
 \verbatim
  hcircuit "name" {
 	 log yes;
+ 	 fast_cooldown no;
 	 runmode "auto";
 	 schedid "default";
 	 wtemp_rorh 25.0;
 	 tambient_boostdelta 2.0;
 	 boost_maxtime 4h;
+ 	 ambient_factor 20;
 	 tid_outgoing "circuit out";
 	 tid_return "circuit return";
+ 	 tid_ambient "ambient";
 	 tlaw "bilinear" {
 		 tout1 -5.0;
 		 twater1 42.0;
@@ -27,6 +30,7 @@
 		 twater2 23.5;
 		 nH100 110;
 	 };
+ 	 params { ... };
 	 valve_mix "circuit mix";
 	 pump_feed "circuit pump";
 	 bmodel "house";
@@ -41,6 +45,7 @@
 #include "hcircuit_parse.h"
 #include "filecfg_parser.h"
 #include "plant/hcircuit.h"
+#include "plant/hcircuit_priv.h"
 
 #include "scheduler.h"
 #include "plant/plant.h"

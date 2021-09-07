@@ -13,7 +13,7 @@
 
 #include "hcircuit_dump.h"
 #include "filecfg_dump.h"
-#include "plant/hcircuit.h"
+#include "plant/hcircuit_priv.h"
 #include "plant/pump.h"
 #include "plant/valve.h"
 #include "lib.h"
