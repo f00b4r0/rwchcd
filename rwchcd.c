@@ -407,12 +407,23 @@ static void * thread_watchdog(void * arg)
 		err(ret, NULL);
 }
 
+static void usage(const char *name)
+{
+	printf("usage: %s [-c config] [-ht]\n"
+	       " -c config\t"	"use <config> as configuration\n"
+	       " -h\t\t"	"show this help message\n"
+	       " -t\t\t"	"test configuration and exit\n"
+	       " -V\t\t"	"output version information and exit\n"
+	       , name);
+}
+
 int main(int argc, char **argv)
 {
 	struct sigaction saction;
 	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr, timekeep_thr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
+	const char *progname;
 	bool testconfig = false;
 	int pipefd[2];
 	int ch, ret;
@@ -420,7 +431,13 @@ int main(int argc, char **argv)
 	FILE *outpipe = NULL;
 #endif
 
-	while ((ch = getopt(argc, argv, "c:t")) != -1) {
+#ifdef _GNU_SOURCE
+	progname = program_invocation_short_name;
+#else
+	progname = argv[0];
+#endif
+
+	while ((ch = getopt(argc, argv, "c:htV")) != -1) {
 		switch (ch) {
 			case 'c':
 				configfile = optarg;
@@ -428,7 +445,16 @@ int main(int argc, char **argv)
 			case 't':
 				testconfig = true;
 				break;
+			case 'h':
+				usage(progname);
+				return 0;
+			case 'V':
+				printf("%s %s\n"
+				       "License GPLv2: GNU GPL version 2 <https://gnu.org/licenses/gpl-2.0.html>.\n"
+				       "Copyright (C) 2016-2021 Thibaut Varène.\n", progname, Version);
+				return 0;
 			default:
+				usage(progname);
 				exit(-1);
 		}
 	}
