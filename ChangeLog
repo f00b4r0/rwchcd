@@ -1,0 +1,16 @@
+x.x
+	* Fix StatsD log output
+	* Implement non-permanent relay accounting
+	* Improve HWP1 support
+	* DHWT implement electric thermostat
+	* Implement config checking and using alternative config
+	* Fix memory leaks on program exit path
+	* Use Bootstrap for webapp and implement basic JSON config
+	* Fix D-Bus temperature read primitive
+	* Implement alarm notifier
+	* Support shared pumps
+	* Cleanup API, add usage()
+
+
+1.0
+	* Initial release

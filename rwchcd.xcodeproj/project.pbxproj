@@ -128,6 +128,7 @@
 		4F1C18A026E7FB67003C47F1 /* dhwt_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt_priv.h; sourceTree = "<group>"; };
 		4F1C18A126E7FDCB003C47F1 /* hcircuit_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hcircuit_priv.h; sourceTree = "<group>"; };
 		4F1C18A226E8033B003C47F1 /* heatsource_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = heatsource_priv.h; sourceTree = "<group>"; };
+		4F1C18BD26E95393003C47F1 /* ChangeLog */ = {isa = PBXFileReference; lastKnownFileType = text; path = ChangeLog; sourceTree = SOURCE_ROOT; };
 		4F263EFE2528A19500733F75 /* Makefile.sub */ = {isa = PBXFileReference; explicitFileType = sourcecode.make; path = Makefile.sub; sourceTree = SOURCE_ROOT; };
 		4F299C8A218E1DBE009DCBC2 /* log_rrd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log_rrd.c; sourceTree = "<group>"; };
 		4F299C8B218E1DBE009DCBC2 /* log_rrd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_rrd.h; sourceTree = "<group>"; };
@@ -529,6 +530,7 @@
 			isa = PBXGroup;
 			children = (
 				4F2F7F6A1DDF1DD80095AAEE /* README */,
+				4F1C18BD26E95393003C47F1 /* ChangeLog */,
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4F263EFE2528A19500733F75 /* Makefile.sub */,
 				4FC6895C207176F800A3A065 /* hw_backends */,
