@@ -16,7 +16,7 @@
 
 #include "rwchcd.h"
 
-int alarms_online(void);
+int alarms_online(const char * notifier);
 int alarms_count(void);
 int alarms_raise(const enum e_execs type, const char * restrict format, ...);
 int alarms_run(void);

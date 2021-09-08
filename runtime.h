@@ -26,6 +26,7 @@ struct s_runtime {
 		enum e_systemmode startup_sysmode;	///< sysmode applied at startup. *REQUIRED*
 		enum e_runmode startup_runmode;		///< if #startup_sysmode is #SYS_MANUAL, this runtime runmode will be applied and is *REQUIRED*.
 		enum e_runmode startup_dhwmode;		///< if #startup_sysmode is #SYS_MANUAL, this runtime dhwmode will be applied and is *REQUIRED*
+		const char * notifier;			///< notifier execvp()'d when alarms are logged. Arguments are individual alarm messages
 	} set;
 	struct {
 		_Atomic enum e_systemmode systemmode;	///< current operation mode

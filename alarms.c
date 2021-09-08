@@ -2,7 +2,7 @@
 //  alarms.c
 //  rwchcd
 //
-//  (C) 2017-2018,2020 Thibaut VARENE
+//  (C) 2017-2018,2020-2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -24,13 +24,16 @@
  * The other inconvenient is that spurious alarms (that happen once and go away)
  * will be reported. Then again, those /should not/ happen in the first place.
  *
- * @todo implement a notifier (exec() some external script?)
+ * @note the current implementation isn't quite best in class nor standard (for
+ * instance the online() call takes an argument); it's a second-citizen in the codebase,
+ * but it does the job for now.
  */
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>	// fork()/execv()
 
 #include "alarms.h"
 #include "timekeep.h"
@@ -48,10 +51,12 @@ static struct s_alarms {
 	bool online;		///< true if alarm system is online
 	int count;		///< active alarms in the system
 	struct s_alarm * alarm_head;	///< head pointer to the current list of alarms
+	const char * notifier;	///< file executed when alarms are logged. Passed to `execvp()`, with a list of alarm messages as arguments
 } Alarms = {
 	.online = false,
 	.count = 0,
 	.alarm_head = NULL,
+	.notifier = NULL,
 }; ///< Alarms subsystem private data
 
 /**
@@ -132,11 +137,13 @@ int alarms_raise(const enum e_execs type, const char * restrict format, ...)
 
 /**
  * Init alarms subsystem.
+ * @param notifier name/path that will be executed when alarms are logged
  * @return exec status
  */
-int alarms_online(void)
+int alarms_online(const char * notifier)
 {
 	Alarms.online = true;
+	Alarms.notifier = notifier;
 	return (ALL_OK);
 }
 
@@ -150,6 +157,7 @@ int alarms_online(void)
 int alarms_run(void)
 {
 	static timekeep_t last = 0;
+	const char * argv[Alarms.count+1];
 	const timekeep_t now = timekeep_now();
 	const timekeep_t dt = now - last;
 	const struct s_alarm * alarm;
@@ -168,11 +176,24 @@ int alarms_run(void)
 
 		pr_log(_("Alarms active in the system (%d), most recent first:"), count);
 
+		argv[count] = NULL;
 		while (alarm) {
 			msg = alarm->msg;
 			pr_log(_("\tALARM #%d: %s (%d)"), count--, msg, alarm->type);
+			argv[count] = msg;	// alarms will be most recent last here (i.e. in natural order)
 			alarm = alarm->next;
 			last = now;
+		}
+
+		if (Alarms.notifier) {
+			switch (fork()) {
+				case 0:	// main - nothing more to do
+				case -1: // error - most likely ENOMEM, don't add insult to injury by using printf()
+					break;
+				default: // child
+					execv(Alarms.notifier, argv);
+					perror("Alarm notifier execution failed");	// execv() only returns on error
+			}
 		}
 	}
 

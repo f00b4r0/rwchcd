@@ -226,12 +226,20 @@ static int runtime_sysmode_parse(void * restrict const priv, const struct s_file
 	return (sysmode_parse(&runtime->set.startup_sysmode, node));
 }
 
+static int runtime_notifier_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_runtime * restrict const runtime = priv;
+	runtime->set.notifier = strdup(node->value.stringval);
+	return (ALL_OK);
+}
+
 static int runtime_config_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODESTR,		"startup_sysmode",	true,	runtime_sysmode_parse,			NULL, },	// 0
 		{ NODESTR,		"startup_runmode",	false,	fcp_runmode_s_runtime_startup_runmode,	NULL, },
 		{ NODESTR,		"startup_dhwmode",	false,	fcp_runmode_s_runtime_startup_dhwmode,	NULL, },	// 2
+		{ NODESTR,		"notifier",		false,	runtime_notifier_parse,			NULL, },
 	};
 	struct s_runtime * const runtime = priv;
 	int ret;

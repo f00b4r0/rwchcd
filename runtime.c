@@ -275,7 +275,7 @@ int runtime_online(void)
 
 	log_register(&Runtime_lsrc);
 
-	alarms_online();
+	alarms_online(Runtime.set.notifier);
 
 	return (plant_online(Runtime.plant));
 }
