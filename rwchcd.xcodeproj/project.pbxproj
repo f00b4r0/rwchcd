@@ -136,7 +136,7 @@
 		4F299C8E218E4E2E009DCBC2 /* log_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log_file.h; sourceTree = "<group>"; };
 		4F299C9021AABD2C009DCBC2 /* log.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log.c; sourceTree = "<group>"; };
 		4F299C9121AABD2C009DCBC2 /* log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log.h; sourceTree = "<group>"; };
-		4F2F7F6A1DDF1DD80095AAEE /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = SOURCE_ROOT; };
+		4F2F7F6A1DDF1DD80095AAEE /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		4F3AFBAD1D8884ED00D86EE7 /* runtime.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = runtime.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
 		4F3AFBAE1D8884ED00D86EE7 /* runtime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = runtime.h; sourceTree = SOURCE_ROOT; };
 		4F3AFBB01D88867600D86EE7 /* lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; lineEnding = 0; path = lib.c; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.c; };
@@ -529,7 +529,7 @@
 		4FCD55071D835CF6003BB848 /* daemon */ = {
 			isa = PBXGroup;
 			children = (
-				4F2F7F6A1DDF1DD80095AAEE /* README */,
+				4F2F7F6A1DDF1DD80095AAEE /* README.md */,
 				4F1C18BD26E95393003C47F1 /* ChangeLog */,
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4F263EFE2528A19500733F75 /* Makefile.sub */,
