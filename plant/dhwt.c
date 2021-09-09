@@ -447,9 +447,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 
 	// transition detection
 	if (unlikely(prev_runmode != new_runmode)) {
-		// force untrip electric here to stop potential permanent charge when hasthermostat is true
-		aser(&dhwt->run.electric_mode, false);
-
 		// handle programmed forced charges at COMFORT switch on
 		if (RM_COMFORT == new_runmode) {
 			if (DHWTF_ALWAYS == dhwt->set.force_mode)
@@ -532,7 +529,7 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 int dhwt_run(struct s_dhwt * const dhwt)
 {
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp, target_temp;
-	bool valid_ttop, valid_tbottom, charge_on, electric_mode, test;
+	bool valid_ttop, valid_tbottom, charge_on, electric_mode, skip_untrip, test;
 	const timekeep_t now = timekeep_now();
 	timekeep_t limit;
 	int ret;
@@ -549,11 +546,14 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	if (unlikely(ALL_OK != ret))
 		goto fail;
 
+	skip_untrip = false;
+
 	switch (aler(&dhwt->run.runmode)) {
 		case RM_OFF:
 			return (dhwt_shutdown(dhwt));
 		case RM_COMFORT:
 		case RM_ECO:
+			skip_untrip = dhwt->set.electric_hasthermostat;
 			dhwt_actuator_use(dhwt, true);
 			break;
 		case RM_FROSTFREE:
@@ -698,8 +698,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 				test = true;
 		}
 
-		// when running electric, disable untripping when we have a thermostat, and plant_could_sleep
-		if (electric_mode && dhwt->set.electric_hasthermostat && dhwt->pdata->run.plant_could_sleep);
+		// when running electric, disable untripping when we should
+		if (electric_mode && skip_untrip);
 		// if heating in progress, untrip at target temp (if we're running electric without thermostat this is the only untrip condition that applies)
 		else if (curr_temp >= target_temp)
 			test = true;
