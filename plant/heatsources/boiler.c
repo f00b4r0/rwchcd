@@ -1,5 +1,5 @@
 //
-//  plant/boiler.c
+//  plant/heatsources/boiler.c
 //  rwchcd
 //
 //  (C) 2017-2020 Thibaut VARENE
@@ -36,8 +36,9 @@
 #include <string.h>	// memset
 #include <assert.h>
 
-#include "pump.h"
-#include "valve.h"
+#include "plant/pump.h"
+#include "plant/valve.h"
+#include "plant/heatsource_priv.h"
 #include "lib.h"
 #include "boiler.h"
 #include "alarms.h"

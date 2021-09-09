@@ -387,8 +387,7 @@
 				4F42A5D41F9683CC001B0A1F /* heatsource.c */,
 				4F42A5D51F9683CC001B0A1F /* heatsource.h */,
 				4F1C18A226E8033B003C47F1 /* heatsource_priv.h */,
-				4F42A5DD1F96AD0A001B0A1F /* boiler.c */,
-				4F42A5DE1F96AD0A001B0A1F /* boiler.h */,
+				4FE0061C26EA02DB00A24999 /* heatsources */,
 				4F42A5DA1F968AE8001B0A1F /* dhwt.c */,
 				4F42A5DB1F968AE8001B0A1F /* dhwt.h */,
 				4F1C18A026E7FB67003C47F1 /* dhwt_priv.h */,
@@ -560,6 +559,15 @@
 			);
 			path = daemon;
 			sourceTree = SOURCE_ROOT;
+		};
+		4FE0061C26EA02DB00A24999 /* heatsources */ = {
+			isa = PBXGroup;
+			children = (
+				4F42A5DD1F96AD0A001B0A1F /* boiler.c */,
+				4F42A5DE1F96AD0A001B0A1F /* boiler.h */,
+			);
+			path = heatsources;
+			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 

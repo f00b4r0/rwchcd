@@ -27,7 +27,6 @@
  */
 
 #include "boiler_parse.h"
-#include "plant/boiler.h"
 #include "filecfg_parser.h"
 #include "heatsource_parse.h"
 #include "inputs_parse.h"
@@ -35,6 +34,8 @@
 
 #include "plant/plant.h"
 #include "plant/pump.h"
+#include "plant/heatsources/boiler.h"
+#include "plant/heatsource_priv.h"
 
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_boiler_priv, hysteresis)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_boiler_priv, limit_thardmax)

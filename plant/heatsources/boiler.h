@@ -1,5 +1,5 @@
 //
-//  plant/boiler.h
+//  plant/heatsources/boiler.h
 //  rwchcd
 //
 //  (C) 2017 Thibaut VARENE
@@ -18,7 +18,7 @@
 
 #include "rwchcd.h"
 #include "lib.h"	// for s_temp_intgrl
-#include "heatsource_priv.h"
+#include "plant/heatsource.h"
 #include "timekeep.h"
 #include "io/inputs.h"
 #include "io/outputs.h"

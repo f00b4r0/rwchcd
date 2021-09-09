@@ -26,7 +26,7 @@ ifeq ($(HOST_OS),Linux)
   CONFIG += -DHAS_MQTT
  endif
 else
- CONFIG :=
+ CONFIG := -DHAS_FILECFG
 endif
 
 CFLAGS += $(CONFIG)
@@ -38,7 +38,7 @@ DEPS := $(SRCS:.c=.d)
 MAIN := rwchcd
 MAINOBJS := $(OBJS)
 
-SUBDIRS := plant/ io/ io/inputs/ io/outputs/
+SUBDIRS := plant/ plant/heatsources/ io/ io/inputs/ io/outputs/
 
 HWBACKENDS_DIRS := dummy/
 
