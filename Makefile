@@ -13,8 +13,10 @@ CFLAGS := -I$(CURDIR) -std=gnu11 $(OPTIMS) -DRWCHCD_REV='"$(REVISION)"' -DRWCHCD
 # -lm is only necessary for sqrtf() used in hw_lib.c
 LDLIBS := -lm
 
+CONFIG := -DHAS_FILECFG -DDEBUG=2
+
 ifeq ($(HOST_OS),Linux)
- CONFIG := -DHAS_FILECFG -DHAS_BDB -DHAS_HWP1 -DDEBUG=2
+ CONFIG += -DHAS_BDB
  CFLAGS += -D_GNU_SOURCE -pthread -DC_HAS_BUILTIN_EXPECT
  ifeq ($(shell pkg-config --exists gio-unix-2.0 && echo 1),1)
   CONFIG += -DHAS_DBUS
@@ -25,8 +27,10 @@ ifeq ($(HOST_OS),Linux)
  ifeq ($(shell pkg-config --exists libmosquitto && echo 1),1)
   CONFIG += -DHAS_MQTT
  endif
-else
- CONFIG := -DHAS_FILECFG
+ # quick hack to enable HWP1
+ ifneq (,$(findstring Raspberry,$(shell cat /proc/device-tree/model)))
+  CONFIG += -DHAS_HWP1
+ endif
 endif
 
 CFLAGS += $(CONFIG)
