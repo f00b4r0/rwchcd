@@ -4,6 +4,9 @@ A weather compensated central heating controller daemon
 
 Home page: http://hacks.slashdirt.org/sw/rwchcd/
 
+Initially designed to operate the [rWCHC hardware](http://hacks.slashdirt.org/hw/rwchc/),
+this software is now completely standalone and hardware-independent.
+
 ## License
 
 GPLv2-only - http://www.gnu.org/licenses/gpl-2.0.html
@@ -22,10 +25,10 @@ See LICENSE.md for details
 
 ## Dependencies
 
- - Mandatory: make gcc flex bison
- - Recommended: libdb-dev (for permanent storage only)
- - Optional: pkg-config libglib2.0-dev wiringpi librrd-dev libmosquitto-dev
- - To build documentation: doxygen graphviz
+ - Mandatory: **make gcc**
+ - Recommended: **flex bison** (for config file support), **libdb-dev** (for permanent storage support)
+ - Optional: **pkg-config libglib2.0-dev wiringpi librrd-dev libmosquitto-dev**
+ - To build documentation: **doxygen graphviz**
 
 ## Building
 
