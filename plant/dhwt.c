@@ -406,10 +406,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 			new_runmode = runtime_dhwmode();
 	}
 
-	// force DHWT ON during hs_overtemp condition
-	if (unlikely(dhwt->pdata->run.hs_overtemp))
-		new_runmode = RM_COMFORT;
-
 	// depending on dhwt run mode, assess dhwt target temp
 	switch (new_runmode) {
 		case RM_OFF:
@@ -442,6 +438,16 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
 		aser(&dhwt->run.force_on, true);
 		aser(&dhwt->run.recycle_on, dhwt->set.legionella_recycle);
+		goto settarget;
+	}
+
+	// In hs_overtemp condition, apply maximum available temp, force charge and recycle, and bypass logic
+	if (unlikely(dhwt->pdata->run.hs_overtemp)) {
+		ltmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
+		ltmin = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
+		target_temp = ltmax > ltmin ? ltmax : ltmin;
+		aser(&dhwt->run.force_on, true);
+		aser(&dhwt->run.recycle_on, true);
 		goto settarget;
 	}
 
