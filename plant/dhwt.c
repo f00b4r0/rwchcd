@@ -581,6 +581,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	dhwt->run.active = true;
 
 	electric_mode = aler(&dhwt->run.electric_mode);
+	electric_mode &= dhwt->pdata->run.plant_could_sleep;	// electric is always off when !plant_could_sleep
 
 	// de-isolate the DHWT if necessary (when not on electric)
 	if (dhwt->set.p.valve_hwisol && !electric_mode) {
@@ -648,6 +649,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 		// trip condition
 		if (curr_temp < trip_temp) {
+			electric_mode = false;	// by default assume we can't do electric
 			if (dhwt->pdata->run.plant_could_sleep && (ALL_OK == outputs_relay_state_set(dhwt->set.rid_selfheater, ON))) {
 				// the plant is sleeping and we have a configured self heater: use it
 				electric_mode = true;
@@ -660,7 +662,6 @@ int dhwt_run(struct s_dhwt * const dhwt)
 				dhwt->run.mode_since = now;
 			}
 			else if (dhwt->pdata->run.dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
-				electric_mode = false;
 				// calculate necessary water feed temp: target tank temp + offset
 				water_temp = target_temp + SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset);
 
@@ -721,6 +722,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			dhwt->run.mode_since = now;
 		}
 	}
+
+	// ensure we always turn off the self-heater as soon as we exit electric_mode
+	if (!electric_mode)
+		(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, OFF);
 
 	// handle pump_feed - outside of the trigger since we need to manage inlet temp
 	if (dhwt->set.p.pump_feed) {
