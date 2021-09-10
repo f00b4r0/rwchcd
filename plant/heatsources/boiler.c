@@ -749,14 +749,18 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		goto fail;
 	}
 
+	// ret is now ALL_OK until proven otherwise
+
 	// computations performed while burner is on
 	if (outputs_relay_state_get(boiler->set.rid_burner_1) > 0) {
 		// if boiler temp is > limit_tmin, as long as the burner is running we reset the cooldown delay
 		if (boiler->set.limit_tmin < actual_temp)
 			heat->run.target_consumer_sdelay = heat->set.consumer_sdelay;
 		// otherwise if boiler doesn't heat up after 6h we very likely have a problem
-		else if (unlikely((now - boiler->run.burner_1_last_switch) > timekeep_sec_to_tk(3600*6)))
-			alarms_raise(-EGENERIC, _("Boiler \"%s\": Burner failure, no heat output after 6h"), heat->name);
+		else if (unlikely((now - boiler->run.burner_1_last_switch) > timekeep_sec_to_tk(3600*6))) {
+			ret = -EGENERIC;
+			alarms_raise(ret, _("Boiler \"%s\": Burner failure, no heat output after 6h"), heat->name);
+		}
 
 		// compute turn-on anticipation for next run
 		if (temp_deriv < 0) {
@@ -795,7 +799,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	       temp_to_celsius(actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(temp), temp_deriv, boiler->run.turnon_curr_adj);
 #endif
 
-	return (ALL_OK);
+	return (ret);
 
 fail:
 	boiler_failsafe(boiler);
