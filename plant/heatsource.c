@@ -168,6 +168,9 @@ int heatsource_request_temp(struct s_heatsource * const heat, const temp_t req)
 	if (unlikely(!aler(&heat->run.online)))
 		return (-EOFFLINE);
 
+	if (unlikely(heat->run.failed))
+		return (-EGENERIC);
+
 	aser(&heat->run.temp_request, req);
 
 	return (ALL_OK);
@@ -191,12 +194,14 @@ int heatsource_run(struct s_heatsource * const heat)
 
 	ret = heatsource_logic(heat);
 	if (unlikely(ALL_OK != ret))
-		return (ret);
+		goto out;
 
 	if (likely(heat->cb.run))
-		return (heat->cb.run(heat));
-	else
-		return (-ENOTIMPLEMENTED);
+		ret = heat->cb.run(heat);
+
+out:
+	heat->run.failed = (ALL_OK == ret) ? false : true;
+	return (ret);
 }
 
 /**

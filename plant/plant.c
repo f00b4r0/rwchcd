@@ -693,6 +693,7 @@ static void plant_dispatch_hrequests(struct s_plant * restrict const plant)
 			serviced = true;
 	}
 
+	plant->pdata.run.hs_allfailed = !serviced;
 	if (!serviced)
 		alarms_raise(-EEMPTY, _("No heatsource available!"));
 }

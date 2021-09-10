@@ -535,7 +535,7 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 int dhwt_run(struct s_dhwt * const dhwt)
 {
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp, target_temp;
-	bool valid_ttop, valid_tbottom, charge_on, electric_mode, skip_untrip, test;
+	bool valid_ttop, valid_tbottom, charge_on, electric_mode, skip_untrip, try_electric, test;
 	const timekeep_t now = timekeep_now();
 	timekeep_t limit;
 	int ret;
@@ -656,7 +656,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		// trip condition
 		if (curr_temp < trip_temp) {
 			electric_mode = false;	// by default assume we can't do electric
-			if (dhwt->pdata->run.plant_could_sleep && (ALL_OK == outputs_relay_state_set(dhwt->set.rid_selfheater, ON))) {
+			try_electric = (dhwt->pdata->run.plant_could_sleep || dhwt->pdata->run.hs_allfailed) && !dhwt->pdata->run.hs_overtemp;
+			if (try_electric && (ALL_OK == outputs_relay_state_set(dhwt->set.rid_selfheater, ON))) {
 				// the plant is sleeping and we have a configured self heater: use it
 				electric_mode = true;
 				// isolate the DHWT if possible when operating from electric
@@ -667,6 +668,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 				charge_on = true;
 				dhwt->run.mode_since = now;
 			}
+			else if (dhwt->pdata->run.hs_allfailed);	// no electric and no heatsource: can't do anything
 			else if (dhwt->pdata->run.dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
 				// calculate necessary water feed temp: target tank temp + offset
 				water_temp = target_temp + SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset);
@@ -702,6 +704,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			}
 			// if DHWT exceeds current allowed prio, untrip
 			if (dhwt->pdata->run.dhwt_currprio < dhwt->set.prio)
+				test = true;
+
+			// if heatsources failed, untrip (next run will retry electric or nothing)
+			if (dhwt->pdata->run.hs_allfailed)
 				test = true;
 		}
 

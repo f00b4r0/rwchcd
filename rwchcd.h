@@ -182,6 +182,7 @@ struct s_pdata {
 		bool dhwc_absolute;		///< true if absolute DHWT charge in progress
 		bool dhwc_sliding;		///< true if sliding DHWT charge in progress
 		bool hs_overtemp;		///< true if a plant heatsource is overtemping (requires all consumers to accept heat input to accelerate heatsource cooldown)
+		bool hs_allfailed;		///< true if no heatsource plant is available
 		timekeep_t consumer_sdelay;	///< minimum time consumers should keep their current consumption before turning off
 		int_least16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
 		uint_fast8_t dhwt_currprio;	///< current allowed DHWT priority charge in the plant
