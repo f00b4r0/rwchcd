@@ -36,6 +36,7 @@ hcircuit0_Hcircuit = hcircuit0[RWCHCD_DBUS_IFACE_HCIRC]
 # "graphurl": "url",
 # "toutdoor": N,
 # "tindoor": N,
+# "webapptitle": "title"
 # }
 def loadcfg():
 	config = {}
