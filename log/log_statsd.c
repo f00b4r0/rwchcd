@@ -73,9 +73,7 @@ static int log_statsd_udp_link(void)
 	// try each address until one succeeds
 	for (rp = result; rp; rp = rp->ai_next) {
 		sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-		if (-1 == sockfd)
-			continue;
-		else
+		if (-1 != sockfd)
 			break;	// success
 	}
 
