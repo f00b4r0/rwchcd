@@ -43,7 +43,7 @@ struct s_heatsource {
 		atomic_bool online;		///< true if source is available for use (under software management)
 		atomic_bool could_sleep;	///< true if source is could be sleeping (no recent heat request from circuits)
 		atomic_bool overtemp;		///< true if heatsource is overtemp
-		bool failed;			///< true if heatsource has failed
+		atomic_bool failed;		///< true if heatsource has failed
 		_Atomic enum e_runmode runmode;	///< heatsource actual (computed) runmode
 		_Atomic temp_t temp_request;	///< current temperature request for heat source
 		timekeep_t last_run_time;	///< last time heatsource was run
