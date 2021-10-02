@@ -626,10 +626,6 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	charge_on = aler(&dhwt->run.charge_on);
 	target_temp = aler(&dhwt->run.target_temp);
 
-	dbgmsg(1, 1, "\"%s\": on: %d, since: %u, elec: %d, tg_t: %.1f, bot_t: %.1f, top_t: %.1f",
-	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), electric_mode, temp_to_celsius(target_temp),
-	       valid_tbottom ? temp_to_celsius(bottom_temp) : -273.0, valid_ttop ? temp_to_celsius(top_temp) : -273.0);
-
 	// handle heat charge
 	/* NOTE we enforce sensor position, it SEEMS desirable, so that the full tank capacity is used before triggering a charge.
 	   apply hysteresis on logic: trip at target - hysteresis (preferably on top sensor), untrip at target (preferably on bottom sensor). */
@@ -779,6 +775,11 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	aser(&dhwt->run.actual_temp, curr_temp);
 	aser(&dhwt->run.charge_on, charge_on);
 	aser(&dhwt->run.electric_mode, electric_mode);
+
+	dbgmsg(1, 1, "\"%s\": on: %d, since: %u, elec: %d, tg_t: %.1f, bot_t: %.1f, top_t: %.1f, hrq_t: %.1f",
+	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), electric_mode, temp_to_celsius(target_temp),
+	       valid_tbottom ? temp_to_celsius(bottom_temp) : -273.0, valid_ttop ? temp_to_celsius(top_temp) : -273.0,
+	       temp_to_celsius(dhwt->run.heat_request));
 
 	return (ALL_OK);
 
