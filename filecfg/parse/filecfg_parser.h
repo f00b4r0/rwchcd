@@ -80,6 +80,7 @@ int filecfg_parser_run_parsers(void * restrict const priv, const struct s_filecf
 int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_filecfg_parser_nodelist * const nodelist, const char * nname, const enum e_filecfg_nodetype ntype, const parser_t parser);
 unsigned int filecfg_parser_count_siblings(const struct s_filecfg_parser_nodelist * const nodelist, const char * nname);
 
+int filecfg_parser_sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);

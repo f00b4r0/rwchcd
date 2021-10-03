@@ -175,7 +175,7 @@ struct s_filecfg_parser_nodelist * filecfg_parser_new_nodelistelmt(struct s_file
 	return (listelmt);
 }
 
-static int sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+int filecfg_parser_sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	const struct {
 		const char * pstr;
@@ -223,7 +223,7 @@ FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_runtime, startup_dhwmode)
 static int runtime_sysmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_runtime * restrict const runtime = priv;
-	return (sysmode_parse(&runtime->set.startup_sysmode, node));
+	return (filecfg_parser_sysmode_parse(&runtime->set.startup_sysmode, node));
 }
 
 static int runtime_notifier_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
