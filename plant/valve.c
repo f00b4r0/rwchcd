@@ -1005,6 +1005,18 @@ bool valve_is_online(const struct s_valve * const valve)
 }
 
 /**
+ * Test if valve is open.
+ * Primarily useful for isolation valves.
+ * @param valve target valve
+ * @return true if valve is certain to be fully open, false otherwise
+ */
+bool valve_is_open(const struct s_valve * const valve)
+{
+	assert(valve);
+	return (valve->run.true_pos && (valve->run.actual_position >= 1000));
+}
+
+/**
  * Get valve type.
  * @param valve target valve
  * @return valve type
