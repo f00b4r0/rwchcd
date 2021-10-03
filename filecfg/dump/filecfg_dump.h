@@ -27,6 +27,7 @@ int filecfg_ilevel_inc(void);
 int filecfg_ilevel_dec(void);
 
 const char * filecfg_runmode_str(const enum e_runmode runmode);
+const char * filecfg_sysmode_str(const enum e_systemmode sysmode);
 
 int filecfg_dump_nodebool(const char *name, bool value);
 int filecfg_dump_nodestr(const char *name, const char *value);
