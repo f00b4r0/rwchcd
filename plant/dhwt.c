@@ -530,8 +530,6 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
  * @note discharge protection will fail if the input sensor needs water flow
  * in the pump_feed. It is thus important to ensure that the water input temperature sensor
  * can provide a reliable reading even when the feedpump is off.
- * @note there is a short window during which the feed pump could be operating while
- * the isolation valve is still partially closed (if a charge begins immediately at first turn-on).
  * @note An ongoing anti-legionella charge will not be interrupted by a plant-wide change in priority.
  * @note Since anti-legionella can only be unset _after_ a complete charge (or a DHWT shutdown),
  * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
@@ -748,15 +746,20 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 		// on heatsource charge
 		if (charge_on && !electric_mode) {
+			if (dhwt->set.p.valve_hwisol)	// do not turn on feed pump if we have an isolation valve and it isn't fully open
+				test = valve_is_open(dhwt->set.p.valve_hwisol) ? ON : OFF;
+			else
+				test = ON;
+
 			if (ALL_OK == ret) {	// inputs_temperature_get result
 				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
 				if (water_temp < curr_temp)
 					ret = pump_set_state(dhwt->set.p.pump_feed, OFF, FORCE);
 				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K hysteresis
-					ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);
+					ret = pump_set_state(dhwt->set.p.pump_feed, test, NOFORCE);
 			}
 			else
-				ret = pump_set_state(dhwt->set.p.pump_feed, ON, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
+				ret = pump_set_state(dhwt->set.p.pump_feed, test, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
 		}
 		// no charge or electric charge
 		else {
