@@ -217,5 +217,7 @@ void hw_p1_setup_del(struct s_hw_p1_pdata * restrict const hw)
 		hw_p1_setup_sensor_deconfigure(hw, i);
 
 	hw_p1_lcd_exit(&hw->lcd);
+
+	free(hw->availsysmodes);
 	free(hw);
 }

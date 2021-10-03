@@ -74,6 +74,7 @@ struct s_hw_p1_pdata {
 		bool syschg;
 		enum e_systemmode cursysmode;
 		uint_fast8_t tempid;
+		uint_least8_t sysmodeindex;
 	} run;		///< private runtime (internally handled)
 	struct rwchc_s_settings settings;	///< local copy of hardware settings data
 	union rwchc_u_relays relays;		///< local copy of hardware relays data
@@ -84,6 +85,8 @@ struct s_hw_p1_pdata {
 	rwchc_sensor_t refs[RWCHC_NTREFS];	///< local copy of hardware sensors calibration reference data
 	struct s_hw_p1_sensor Sensors[RWCHC_NTSENSORS];	///< software view of physical sensors
 	struct s_hw_p1_relay Relays[RELAY_MAX_ID];	///< software view of physical relays
+	enum e_systemmode *availsysmodes;
+	uint_least8_t navailsysmodes;
 	const char * name;			///< user-set name for this backend
 };
 

@@ -9,10 +9,37 @@
 /**
  * @file
  * Hardware Prototype 1 file configuration implementation.
+ \verbatim
+ backend "prototype" {
+	 type "hw_p1" {		// mandatory type declaration
+		 lcdbl 75;		// optional LCD backlight brightness
+ 		 sysmodes {	// optional list of sysmodes available when using button 1, if absent button 1 will be disregarded
+ 		 	sysmode "auto";
+ 		 	sysmode "frostfree";
+ 		 	sysmode "test";
+ 		 };
+	 };
+	 temperatures {		// optional list of temperature sensors
+		 sensor "outdoor" {
+			 channel 1;	// mandatory channel
+			 type "PT3850";	// mandatory type
+			 offset -0.5;	// optional offset
+		 };
+ 		 { ... };
+	 };
+	 relays {			// optional list of output relays
+		 relay "pump" {
+			 channel 3;	// mandatory channel
+			 failstate on;	// mandatory failover state (applied when host software does not run)
+		 };
+ 		 { ... };
+ 	 };
+ \endverbatim
  */
 
 #include <inttypes.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "lib.h"
 #include "filecfg/dump/filecfg_dump.h"
@@ -26,12 +53,21 @@
 
 static void config_dump(const struct s_hw_p1_pdata * restrict const hw)
 {
+	unsigned int i;
 	assert(hw);
 
 	filecfg_iprintf("type \"hw_p1\" {\n");
 	filecfg_ilevel_inc();
 
 	filecfg_iprintf("lcdbl %d;\n", hw->settings.lcdblpct);
+	if (hw->navailsysmodes) {
+		filecfg_iprintf("sysmodes {\n");
+		filecfg_ilevel_inc();
+		for (i = 0; i < hw->navailsysmodes; i++)
+			filecfg_iprintf("sysmode \"%s\";\n", filecfg_sysmode_str(hw->availsysmodes[i]));
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");
+	}
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
@@ -132,10 +168,45 @@ static int parse_type_lcdbl(void * restrict const priv, const struct s_filecfg_p
 	return (hw_p1_setup_setbl((struct s_hw_p1_pdata *)priv, (uint8_t)(node->value.intval & 0xFF)));
 }
 
+static int sysmode_wrap_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hw_p1_pdata * const hw = priv;
+	enum e_systemmode * s;
+	int ret;
+
+	s = &hw->availsysmodes[hw->navailsysmodes];
+
+	ret = filecfg_parser_sysmode_parse(s, node);
+	if (ALL_OK == ret)
+		hw->navailsysmodes++;
+
+	return (ret);
+}
+
+static int parse_type_sysmodes(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	struct s_hw_p1_pdata * const hw = priv;
+	unsigned int n;
+
+	n = filecfg_parser_count_siblings(node->children, "sysmode");
+
+	if (!n)
+		return (-EEMPTY);
+
+	hw->availsysmodes = calloc(n, sizeof(hw->availsysmodes[0]));
+	if (!hw->availsysmodes)
+		return (-EOOM);
+
+	hw->navailsysmodes = 0;
+
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "sysmode", sysmode_wrap_parse));
+}
+
 static int parse_type(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEINT, "lcdbl", false, parse_type_lcdbl, NULL, },
+		{ NODELST, "sysmodes", false, parse_type_sysmodes, NULL, },
 	};
 	int ret = ALL_OK;
 

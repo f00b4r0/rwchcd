@@ -155,17 +155,17 @@ static int hw_p1_input(void * priv)
 	}
 
 	// handle switch 1
-	if (hw->peripherals.i_SW1) {
+	if (hw->peripherals.i_SW1 && hw->navailsysmodes) {
 		hw->peripherals.i_SW1 = 0;
 		hw->run.count = 5;
 		hw->run.systout = 3;
 		hw->run.syschg = true;
 
-		hw->run.cursysmode++;
+		hw->run.sysmodeindex++;
+		if (hw->run.sysmodeindex >= hw->navailsysmodes)
+			hw->run.sysmodeindex = 0;
 
-		if (hw->run.cursysmode >= SYS_UNKNOWN)	// last valid mode
-			hw->run.cursysmode = SYS_NONE + 1;	// first valid mode
-
+		hw->run.cursysmode = hw->availsysmodes[hw->run.sysmodeindex];
 		hw_p1_lcd_sysmode_change(&hw->lcd, hw->run.cursysmode);	// update LCD
 	}
 
