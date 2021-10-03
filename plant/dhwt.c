@@ -594,15 +594,6 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	electric_mode = aler(&dhwt->run.electric_mode);
 
-	// de-isolate the DHWT if necessary (when not on electric)
-	if (dhwt->set.p.valve_hwisol && !electric_mode) {
-		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
-		if (ALL_OK != ret) {
-			alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
-			goto fail;
-		}
-	}
-
 	// check which sensors are available
 	ret = inputs_temperature_get(dhwt->set.tid_bottom, &bottom_temp);
 	valid_tbottom = (ALL_OK == ret) ? true : false;
@@ -661,9 +652,6 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			if (try_electric && (ALL_OK == outputs_relay_state_set(dhwt->set.rid_selfheater, ON))) {
 				// the plant is sleeping and we have a configured self heater: use it
 				electric_mode = true;
-				// isolate the DHWT if possible when operating from electric
-				if (dhwt->set.p.valve_hwisol)
-					(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
 
 				// mark heating in progress
 				charge_on = true;
@@ -737,6 +725,16 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			aser(&dhwt->run.legionella_on, false);
 			charge_on = false;
 			dhwt->run.mode_since = now;
+		}
+	}
+
+	// handle valve_hwisol
+	if (dhwt->set.p.valve_hwisol) {
+		// open when not running on electric, isolate the DHWT when operating from electric
+		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, electric_mode ? true : false);
+		if (ALL_OK != ret) {
+			alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
+			goto fail;
 		}
 	}
 
