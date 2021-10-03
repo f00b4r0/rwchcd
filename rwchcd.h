@@ -118,7 +118,7 @@ typedef int32_t 	tempdiff_t;	///< signed temp type, used for some maths where th
 /** Valid run modes */
 enum e_runmode {
 	RM_OFF = 0,	///< device is fully off, no operation performed (not even frost protection). Config `off`
-	RM_AUTO,	///< device is running based on global plant set_runmode. Config `auto`
+	RM_AUTO,	///< device is running based on global plant set_runmode or device schedule if any. Config `auto`
 	RM_COMFORT,	///< device is in comfort mode. Config `comfort`
 	RM_ECO,		///< device is in eco mode. Config `eco`
 	RM_FROSTFREE,	///< device is in frostfree mode. Config `frostfree`
@@ -130,13 +130,13 @@ enum e_runmode {
 /** Valid system modes. */
 enum e_systemmode {
 	SYS_NONE = 0,	///< system is unconfigured
-	SYS_OFF,	///< system is fully off. Config `off`
+	SYS_OFF,	///< system is fully off, overrides every device runmode to RM_OFF (a.k.a "force everything off"). Config `off` (should not be used in permament config)
 	SYS_AUTO,	///< system is running in automatic mode. Only in this mode will the system allow scheduled states. Config `auto`
 	SYS_COMFORT,	///< system is running in comfort mode. Config `comfort`
 	SYS_ECO,	///< system is running in eco mode. Config `eco`
 	SYS_FROSTFREE,	///< system is running in frostfree mode. Config `frostfree`
 	SYS_DHWONLY,	///< system is running in DHW only mode. Config `dhwonly`
-	SYS_TEST,	///< system is running in test mode. Config `test` (should not be used in permament config)
+	SYS_TEST,	///< system is running in test mode, overrides every device runmode to RM_TEST (a.k.a "force everything on"). Config `test` (should not be used in permament config)
 	SYS_MANUAL,	///< system is running in manual mode: runtime runmode and dhwmode must be set manually. Config `manual`
 	SYS_UNKNOWN,	///< invalid past this value
 };

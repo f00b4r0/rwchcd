@@ -384,6 +384,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	const struct s_schedule_eparams * eparams;
 	const time_t tnow = time(NULL);
 	const struct tm * const ltime = localtime(&tnow);	// localtime handles DST and TZ for us
+	const enum e_systemmode sysmode = runtime_systemmode();
 	enum e_runmode prev_runmode, new_runmode;
 	temp_t target_temp, ltmin, ltmax;
 
@@ -392,18 +393,23 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	// store current status for transition detection
 	prev_runmode = aler(&dhwt->run.runmode);
 
-	// handle global/local runmodes
-	new_runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
-	if (RM_AUTO == new_runmode) {
-		// if we have a schedule, use it, or global settings if unavailable
-		eparams = scheduler_get_schedparams(dhwt->set.schedid);
-		if ((SYS_AUTO == runtime_systemmode()) && eparams) {
-			new_runmode = eparams->dhwmode;
-			aser(&dhwt->run.legionella_on, eparams->legionella);
-			aser(&dhwt->run.recycle_on, aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle);
+	// SYS_TEST/SYS_OFF always override
+	if ((SYS_TEST == sysmode) || (SYS_OFF == sysmode))
+		new_runmode = runtime_dhwmode();
+	else {
+		// handle global/local runmodes
+		new_runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
+		if (RM_AUTO == new_runmode) {
+			// if we have a schedule, use it, or global settings if unavailable
+			eparams = scheduler_get_schedparams(dhwt->set.schedid);
+			if ((SYS_AUTO == sysmode) && eparams) {
+				new_runmode = eparams->dhwmode;
+				aser(&dhwt->run.legionella_on, eparams->legionella);
+				aser(&dhwt->run.recycle_on, aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle);
+			}
+			else	// don't touch legionella/recycle
+				new_runmode = runtime_dhwmode();
 		}
-		else	// don't touch legionella/recycle
-			new_runmode = runtime_dhwmode();
 	}
 
 	// depending on dhwt run mode, assess dhwt target temp

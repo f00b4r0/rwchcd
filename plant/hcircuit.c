@@ -447,6 +447,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 {
 	const struct s_schedule_eparams * eparams;
 	const struct s_bmodel * restrict bmodel;
+	const enum e_systemmode sysmode = runtime_systemmode();
 	enum e_runmode prev_runmode, new_runmode;
 	temp_t request_temp, target_ambient, ambient_temp;
 	timekeep_t elapsed_time, dtmin;
@@ -464,12 +465,17 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// store current status for transition detection
 	prev_runmode = aler(&circuit->run.runmode);
 
-	// handle global/local runmodes
-	new_runmode = aler(&circuit->overrides.o_runmode) ? aler(&circuit->overrides.runmode) : circuit->set.runmode;
-	if (RM_AUTO == new_runmode) {
-		// if we have a schedule, use it, or global settings if unavailable
-		eparams = scheduler_get_schedparams(circuit->set.schedid);
-		new_runmode = ((SYS_AUTO == runtime_systemmode()) && eparams) ? eparams->runmode : runtime_runmode();
+	// SYS_TEST/SYS_OFF always overrides
+	if ((SYS_TEST == sysmode) || (SYS_OFF == sysmode))
+		new_runmode = runtime_runmode();
+	else {
+		// handle global/local runmodes
+		new_runmode = aler(&circuit->overrides.o_runmode) ? aler(&circuit->overrides.runmode) : circuit->set.runmode;
+		if (RM_AUTO == new_runmode) {
+			// if we have a schedule, use it, or global settings if unavailable
+			eparams = scheduler_get_schedparams(circuit->set.schedid);
+			new_runmode = ((SYS_AUTO == sysmode) && eparams) ? eparams->runmode : runtime_runmode();
+		}
 	}
 
 	// if an absolute priority DHW charge is in progress, switch to dhw-only (will register the transition)

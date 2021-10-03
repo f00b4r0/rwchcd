@@ -115,17 +115,23 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 	const struct s_schedule_eparams * eparams;
 	const timekeep_t now = timekeep_now();
 	const timekeep_t dt = now - heat->run.last_run_time;
+	const enum e_systemmode sysmode = runtime_systemmode();
 	tempdiff_t temp;
 	int ret = -ENOTIMPLEMENTED;
 
-	// handle global/local runmodes
-	if (RM_AUTO == heat->set.runmode) {
-		// if we have a schedule, use it, or global settings if unavailable
-		eparams = scheduler_get_schedparams(heat->set.schedid);
-		aser(&heat->run.runmode, ((SYS_AUTO == runtime_systemmode()) && eparams) ? eparams->runmode : runtime_runmode());
+	// SYS_TEST/SYS_OFF always override
+	if ((SYS_TEST == sysmode) || (SYS_OFF == sysmode))
+		aser(&heat->run.runmode, runtime_runmode());
+	else {
+		// handle global/local runmodes
+		if (RM_AUTO == heat->set.runmode) {
+			// if we have a schedule, use it, or global settings if unavailable
+			eparams = scheduler_get_schedparams(heat->set.schedid);
+			aser(&heat->run.runmode, ((SYS_AUTO == sysmode) && eparams) ? eparams->runmode : runtime_runmode());
+		}
+		else
+			aser(&heat->run.runmode, heat->set.runmode);
 	}
-	else
-		aser(&heat->run.runmode, heat->set.runmode);
 
 	aser(&heat->run.could_sleep, heat->pdata->run.plant_could_sleep);	// XXX
 
