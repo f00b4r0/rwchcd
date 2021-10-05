@@ -37,7 +37,7 @@ static struct {
 	} set;
 	struct {
 		bool online;			///< true if backend is online
-		struct sockaddr ai_addr;
+		struct sockaddr_storage ai_addr;
 		socklen_t ai_addrlen;
 		int sockfd;
 	} run;
@@ -83,7 +83,7 @@ static int log_statsd_udp_link(void)
 		goto cleanup;
 	}
 
-	memcpy(&Log_statsd.run.ai_addr, rp->ai_addr, sizeof(Log_statsd.run.ai_addr));
+	memcpy(&Log_statsd.run.ai_addr, rp->ai_addr, rp->ai_addrlen);	// ai_addrlen is guaranteed to be <= sizeof(sockaddr_storage)
 	Log_statsd.run.ai_addrlen = rp->ai_addrlen;
 
 	ret = sockfd;
@@ -224,7 +224,7 @@ restartzero:
 			assert(ret < LOG_STATSD_UDP_BUFSIZE);
 			if (ret >= avail) {
 				// send what we have, reset buffer, restart - no need to add '\0': sendto will truncate anyway
-				sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+				sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, (struct sockaddr *)&Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 				buffer = sbuffer;
 				avail = LOG_STATSD_UDP_BUFSIZE;
 				goto restartzero;
@@ -255,7 +255,7 @@ restartbuffer:
 		assert(ret < LOG_STATSD_UDP_BUFSIZE);
 		if (ret >= avail) {
 			// send what we have, reset buffer, restart - no need to add '\0': sendto will truncate anyway
-			sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+			sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, (struct sockaddr *)&Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 			buffer = sbuffer;
 			avail = LOG_STATSD_UDP_BUFSIZE;
 			goto restartbuffer;
@@ -272,7 +272,7 @@ restartbuffer:
 
 cleanup:
 	// we only check for sendto() errors here
-	sent = sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, &Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
+	sent = sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, (struct sockaddr *)&Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 	if (-1 == sent) {
 		dbgerr("could not send");
 		perror("log_statsd");
