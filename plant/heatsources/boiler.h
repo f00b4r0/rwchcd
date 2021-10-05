@@ -48,6 +48,7 @@ struct s_boiler_priv {
 		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {
+		bool active;			///< true if boiler is active
 		bool antifreeze;		///< true if anti freeze tripped
 		_Atomic temp_t target_temp;	///< current target temp
 		_Atomic temp_t actual_temp;	///< actual boiler temperature

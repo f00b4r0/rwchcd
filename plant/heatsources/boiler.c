@@ -354,6 +354,43 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 }
 
 /**
+ * Shutdown boiler.
+ * Perform all necessary actions to  shut down the boiler.
+ * @param boiler target boiler
+ * @return exec status
+ */
+static int boiler_shutdown(struct s_boiler_priv * const boiler)
+{
+	assert(boiler);
+
+	// ensure pumps and valves are off after summer maintenance
+	if (boiler->set.p.pump_load)
+		pump_shutdown(boiler->set.p.pump_load);
+
+	if (boiler->set.p.valve_ret)
+		(void)!valve_reqclose_full(boiler->set.p.valve_ret);
+
+	if (!boiler->run.active)
+		return (ALL_OK);
+
+	boiler->run.turnon_negderiv = 0;
+	boiler->run.negderiv_starttime = 0;
+	boiler->run.turnon_curr_adj = 0;
+	boiler->run.turnon_next_adj = 0;
+
+	// reset integrals
+	reset_intg(&boiler->run.boil_itg);
+	reset_intg(&boiler->run.ret_itg);
+
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
+	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
+
+	boiler->run.active = false;
+
+	return (ALL_OK);
+}
+
+/**
  * Put boiler offline.
  * Perform all necessary actions to completely shut down the boiler.
  * @param heat heatsource parent structure
@@ -367,17 +404,13 @@ static int boiler_hscb_offline(struct s_heatsource * const heat)
 	assert(HS_BOILER == heat->set.type);
 	assert(boiler);
 
-	// reset runtime
-	memset(&boiler->run, 0x0, sizeof(boiler->run));
-
-	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
-	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
+	boiler_shutdown(boiler);
 
 	outputs_relay_thaw(boiler->set.rid_burner_1);
 	outputs_relay_thaw(boiler->set.rid_burner_2);
 
-	if (boiler->set.p.pump_load)
-		pump_shutdown(boiler->set.p.pump_load);
+	// reset runtime
+	memset(&boiler->run, 0x0, sizeof(boiler->run));
 
 	return (ALL_OK);
 }
@@ -533,6 +566,9 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	deriv_tau = outputs_relay_state_get(boiler->set.rid_burner_1) ? timekeep_sec_to_tk(20) : timekeep_sec_to_tk(120);
 	temp_lin_deriv(&boiler->run.temp_drv, actual_temp, boiler_ttime, deriv_tau);
 
+	if (!boiler->run.active)
+		goto out;	// we're done here
+
 	/// @todo review integral jacketing - maybe use a PI(D) instead?
 	// handle boiler minimum temp if set
 	if (boiler->set.limit_tmin) {
@@ -575,6 +611,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	heat->run.cshift_crit = (cshift_boil < cshift_ret) ? cshift_boil : cshift_ret;
 	dbgmsg(1, (heat->run.cshift_crit), "\"%s\": cshift_crit: %d%%", heat->name, heat->run.cshift_crit);
 
+out:
 	return (ALL_OK);
 
 fail:
@@ -616,7 +653,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	switch (aler(&heat->run.runmode)) {
 		case RM_OFF:
 			if (!boiler->run.antifreeze)
-				return (boiler_hscb_offline(heat));	// Only if no antifreeze (see above)
+				return (boiler_shutdown(boiler));	// Only if no antifreeze (see above)
 		case RM_COMFORT:
 		case RM_ECO:
 		case RM_DHWONLY:
@@ -633,6 +670,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	}
 
 	// if we reached this point then the boiler is active (online or antifreeze)
+	boiler->run.active = true;
 
 	// Ensure safety first
 #if 0	// already executed in _logic()
