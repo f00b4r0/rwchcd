@@ -299,8 +299,8 @@ static inline void dhwt_actuator_use(struct s_dhwt * const dhwt, bool active)
 }
 
 /**
- * Put dhwt offline.
- * Perform all necessary actions to completely shut down the dhwt.
+ * Shutdown dhwt.
+ * Perform all necessary actions to shut down the dhwt.
  * @param dhwt target dhwt
  * @return error status
  */
@@ -541,6 +541,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp, target_temp;
 	bool valid_ttop, valid_tbottom, charge_on, electric_mode, skip_untrip, try_electric, test;
 	const timekeep_t now = timekeep_now();
+	enum e_runmode dhwmode;
 	timekeep_t limit;
 	int ret;
 
@@ -558,7 +559,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	skip_untrip = false;
 
-	switch (aler(&dhwt->run.runmode)) {
+	dhwmode = aler(&dhwt->run.runmode);
+	switch (dhwmode) {
 		case RM_OFF:
 			return (dhwt_shutdown(dhwt));
 		case RM_COMFORT:
@@ -639,8 +641,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		curr_temp = valid_ttop ? top_temp : bottom_temp;
 
 		// set trip point to (target temp - hysteresis)
-		if (aler(&dhwt->run.force_on))
-			trip_temp = target_temp - deltaK_to_temp(1);	// if forced charge, force hysteresis at 1K
+		if (aler(&dhwt->run.force_on) || (RM_FROSTFREE == dhwmode))
+			trip_temp = target_temp - deltaK_to_temp(1);	// if forced charge or frostfree, force hysteresis at 1K
 		else
 			trip_temp = target_temp - SETorDEF(dhwt->set.params.hysteresis, dhwt->pdata->set.def_dhwt.hysteresis);
 
