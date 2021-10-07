@@ -180,11 +180,11 @@ int temperature_get(struct s_temperature * const t, temp_t * const tout)
 
 	current = aler(&t->run.value);
 
-	if (tout)
-		*tout = current;
-
 	if (!current)
 		return (-EINVALID);
+
+	if (tout)
+		*tout = current;
 
 	return (ALL_OK);
 }
