@@ -73,7 +73,7 @@ static int temperature_update(struct s_temperature * const t)
 	if (unlikely(!t->set.configured))
 		return (-ENOTCONFIGURED);
 
-	// only skip run if we're under update period and we have a value (this handles init)
+	// only skip run if we're under update period and we have a value (this handles init/failures)
 	if ((now - (aler(&t->run.last_update)) < t->set.period) && aler(&t->run.value))
 		return (ALL_OK);
 
@@ -151,7 +151,7 @@ end:
 		aser(&t->run.last_update, now);
 	}
 	else {
-		aser(&t->run.value, TEMPINVALID);
+		aser(&t->run.value, 0);
 		if (T_MISS_IGN != t->set.missing)	// don't alarm for "ignore" missing temps
 			alarms_raise(ret, _("Temperature \"%s\" invalid"), t->name);
 	}
