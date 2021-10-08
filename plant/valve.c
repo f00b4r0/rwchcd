@@ -210,11 +210,15 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 Under these circumstances and without this adjustment, if target_tout is
 	 higher than tempin_h but lower than tempout, jacketting would still force
 	 the valve in full open position.
+	 On the low side, we factor in the current valve position in the adjustment
+	 computation, so that if we don't have a tid_cold sensor and tid_hot - Ksmax
+	 vastly overestimate tempin_l, we won't imediately close the valve after we
+	 started opening it. The more the valve is open, the closer tempout == tempin_l
 	 */
 	if (tempout > tempin_h)
 		tempin_h = tempout;
 	else if (tempout < tempin_l)
-		tempin_l = tempout;
+		tempin_l = tempout - (vpriv->set.Ksmax * (1000 - valve->run.actual_position)) / 1000;
 
 	// jacketing for saturation
 	if (target_tout <= tempin_l) {		// check tempin_l first to prioritize valve closing (useful in case of temporary _h < _l)
