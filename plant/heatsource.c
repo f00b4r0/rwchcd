@@ -143,8 +143,10 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 		// percentage of shift is formed by the integral of current temp vs expected temp: 1Ks is -1% shift - cannot overflow due to jacket
 		heat->run.cshift_noncrit = (typeof(heat->run.cshift_noncrit))timekeep_tk_to_sec(temp_to_ikelvind(temp));
 	}
-	else
+	else {
 		reset_intg(&heat->run.sld_itg);
+		heat->run.cshift_noncrit = 0;
+	}
 
 	// decrement consummer stop delay if any
 	if (dt < heat->run.target_consumer_sdelay)
