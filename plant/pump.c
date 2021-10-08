@@ -311,7 +311,7 @@ int pump_run(struct s_pump * restrict const pump)
 	}
 
 skipvirtual:
-	dbgmsg(1, 1, "\"%s\": shared: %d, req: %d, force: %d", pump->name, pump->set.shared, req, force);
+	dbgmsg(1, 1, "\"%s\": shared: %d, state: %d, req: %d, force: %d", pump->name, pump->set.shared, state, req, force);
 
 	if (state == req)
 		return (ALL_OK);
