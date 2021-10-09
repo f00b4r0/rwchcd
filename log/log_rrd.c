@@ -24,32 +24,12 @@
 #include "log_rrd.h"
 #include "rwchcd.h"
 
-/* Hardcoded RRAs */
-/** 1mn hardcoded RRAs */
-static const char *RRAs_1mn[] = {
-	"RRA:LAST:0.5:1:2d",		// record 1-step samples for 2d
-	"RRA:AVERAGE:0.5:15m:2M",	// record 15mn samples for 2M
-	"RRA:MIN:0.5:15m:2M",
-	"RRA:MAX:0.5:15m:2M",
-	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y
-	"RRA:MIN:0.5:1h:1y",
-	"RRA:MAX:0.5:1h:1y",
-};
-
-/** 5mn hardcoded RRAs */
-static const char *RRAs_5mn[] = {
+/** Hardcoded RRAs */
+static const char *RRAs[] = {
 	"RRA:LAST:0.5:1:1w",		// record 1-step samples for 1w
 	"RRA:AVERAGE:0.5:15m:1M",	// record 15mn samples for 1M
 	"RRA:MIN:0.5:15m:1M",
 	"RRA:MAX:0.5:15m:1M",
-	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y
-	"RRA:MIN:0.5:1h:1y",
-	"RRA:MAX:0.5:1h:1y",
-};
-
-/** 15mn hardcoded RRAs */
-static const char *RRAs_15mn[] = {
-	"RRA:LAST:0.5:1:1M",		// record 1-step samples for 1M
 	"RRA:AVERAGE:0.5:1h:1y",	// record 1h samples for 1y
 	"RRA:MIN:0.5:1h:1y",
 	"RRA:MAX:0.5:1h:1y",
@@ -72,23 +52,8 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 
 	assert(identifier && log_data);
 
-	switch (log_data->interval) {
-		case LOG_INTVL_1mn:
-			rras = RRAs_1mn;
-			rrasize = ARRAY_SIZE(RRAs_1mn);
-			break;
-		case LOG_INTVL_5mn:
-			rras = RRAs_5mn;
-			rrasize = ARRAY_SIZE(RRAs_5mn);
-			break;
-		case LOG_INTVL_15mn:
-			rras = RRAs_15mn;
-			rrasize = ARRAY_SIZE(RRAs_15mn);
-			break;
-		default:
-			dbgerr("\"%s\": invalid interval (%d)", identifier, log_data->interval);
-			return (-EINVALID);
-	}
+	rras = RRAs;
+	rrasize = ARRAY_SIZE(RRAs);
 
 	argv = calloc(rrasize + log_data->nkeys, sizeof(*argv));
 	if (!argv)
