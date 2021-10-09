@@ -202,35 +202,6 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	if (ALL_OK != ret)
 		tempin_l = tempin_h - vpriv->set.Ksmax;
 
-	/*
-	 If the current output is out of bound, adjust bounds.
-	 This can typically happen if e.g. the valve is open in full,
-	 the tid_hot sensor is set as the boiler sensor, and the boiler actual
-	 output at the water exhaust is higher than measured by the boiler sensor.
-	 Under these circumstances and without this adjustment, if target_tout is
-	 higher than tempin_h but lower than tempout, jacketting would still force
-	 the valve in full open position.
-	 On the low side, we factor in the current valve position in the adjustment
-	 computation, so that if we don't have a tid_cold sensor and tid_hot - Ksmax
-	 vastly overestimate tempin_l, we won't imediately close the valve after we
-	 started opening it. The more the valve is open, the closer tempout == tempin_l
-	 */
-	if (tempout > tempin_h)
-		tempin_h = tempout;
-	else if (tempout < tempin_l)
-		tempin_l = tempout - (vpriv->set.Ksmax * (1000 - valve->run.actual_position)) / 1000;
-
-	// jacketing for saturation
-	if (target_tout <= tempin_l) {		// check tempin_l first to prioritize valve closing (useful in case of temporary _h < _l)
-		valve_reqclose_full(valve);
-		valve->run.ctrl_ready = false;
-		return (ALL_OK);
-	} else if (target_tout >= tempin_h) {
-		valve_reqopen_full(valve);
-		valve->run.ctrl_ready = false;
-		return (ALL_OK);
-	}
-
 	// stop PI operation if inputs are (temporarily) inverted or too close (would make K==0)
 	if ((tempin_l >= tempin_h) || (tempin_h - tempin_l <= 1000)) {
 		valve->run.ctrl_ready = false;
