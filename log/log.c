@@ -132,6 +132,10 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 		// compare with current backend
 		if (logfmt.bend != Log.bkend->bkid)
 			fcreate = true;
+
+		// compare with current interval
+		if (logfmt.interval != log_data->interval)
+			fcreate = true;
 	}
 
 	// strip LOG_FMT_SUFFIX
@@ -147,7 +151,7 @@ static int _log_dump(const char * restrict const basename, const char * restrict
 		// register new format
 		logfmt.nkeys = log_data->nkeys;
 		logfmt.nvalues = log_data->nvalues;	// XXX no need?
-		logfmt.interval = log_data->interval;	// XXX do we need this?
+		logfmt.interval = log_data->interval;
 		logfmt.bend = Log.bkend->bkid;	// XXX HACK
 
 		// reappend LOG_FMT_SUFFIX
