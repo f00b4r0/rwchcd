@@ -433,6 +433,9 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit, const enum e_run
  * Sets the target ambient temperature for a circuit based on selected run mode.
  * Runs the ambient model, and applies temperature shift based on mesured or
  * modelled ambient temperature. Handles runmode transitions.
+ * Transitions are ended when temperature is within a set threshold of the target temp:
+ * - 0.5°K when an indoor sensor is available
+ * - 1°K otherwise
  * @param circuit target circuit
  * @return exec status
  * @note the ambient model has a hackish acknowledgment of lag due to circuit warming up
@@ -449,7 +452,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	const struct s_bmodel * restrict bmodel;
 	const enum e_systemmode sysmode = runtime_systemmode();
 	enum e_runmode prev_runmode, new_runmode;
-	temp_t request_temp, target_ambient, ambient_temp;
+	temp_t request_temp, target_ambient, ambient_temp, trans_thrsh;
 	timekeep_t elapsed_time, dtmin;
 	const timekeep_t now = timekeep_now();
 	bool can_fastcool;
@@ -564,9 +567,11 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 												// calculate ambient shift based on measured ambient temp influence in percent
 		target_ambient += circuit->set.ambient_factor * (tempdiff_t)(target_ambient - ambient_temp) / 100;
 		circuit->run.ambient_update_time = now;
+		trans_thrsh = deltaK_to_temp(0.5);	// apply a tight threshold for end-of-transition
 	}
 	else {	// no sensor (or faulty), apply ambient model
 		dtmin = expw_mavg_dtmin(3*bmodel->set.tau);
+		trans_thrsh = deltaK_to_temp(1);
 
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
 		if (RM_OFF == new_runmode) {
@@ -610,14 +615,14 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	aser(&circuit->run.actual_ambient, ambient_temp);
 	aser(&circuit->run.target_ambient, target_ambient);
 
-	// handle transitions - transition is over when we are 1K from target
+	// handle transitions - transition is over when we are trans_thrsh from target
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
-			if (ambient_temp <= (request_temp + deltaK_to_temp(1)))
+			if (ambient_temp <= (request_temp + trans_thrsh))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_UP:
-			if (ambient_temp >= (request_temp - deltaK_to_temp(1)))
+			if (ambient_temp >= (request_temp - trans_thrsh))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			break;
 		case TRANS_NONE:
