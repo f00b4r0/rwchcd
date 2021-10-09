@@ -745,11 +745,8 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	else
 		trip_temp = 0;
 
-	// always apply untrip temp (stop condition must always exist): untrip = target + hyst/2
-	untrip_temp = (target_temp + boiler->set.hysteresis/2);
-
-	// operate at constant hysteresis on the low end: when trip_temp is flored, shift untrip; i.e. when limit_tmin < target < (limit_tmin + hyst/2), trip == tmin and untrip == tmin + hyst
-	untrip_temp += (boiler->set.hysteresis - (untrip_temp - trip_temp));
+	// always apply untrip temp (stop condition must always exist):
+	untrip_temp = trip_temp + boiler->set.hysteresis;
 
 	// allow shifting down untrip temp if actual heat request goes below trip_temp (e.g. when trip_temp = limit_tmin)...
 	temp = trip_temp - aler(&heat->run.temp_request);
