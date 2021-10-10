@@ -563,7 +563,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 	 * this will make the derivative lag behind true value, but since we're only interested in the time
 	 * difference between two arbitrary values computed with the same lag, it doesn't matter. */
 	/// @todo variable tau
-	deriv_tau = outputs_relay_state_get(boiler->set.rid_burner_1) ? timekeep_sec_to_tk(20) : timekeep_sec_to_tk(120);
+	deriv_tau = outputs_relay_state_get(boiler->set.rid_burner_1) ? timekeep_sec_to_tk(10) : timekeep_sec_to_tk(60);
 	temp_lin_deriv(&boiler->run.temp_drv, actual_temp, boiler_ttime, deriv_tau);
 
 	if (!boiler->run.active)
