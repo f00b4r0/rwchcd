@@ -12,8 +12,9 @@
  *
  * The DHWT implementation supports:
  * - boiler-integrated tanks (by setting temp_inoffset to a near-zero value, assuming the boiler temp equals the DHWT temp; and making sure the chosen target temp and hysteresis align with the settings of the heatsource).
- * - automatic switch-over to (optional) integrated electric-heating.
+ * - automatic switch-over to (optional) integrated electric-heating (in summer or when heatsource failed).
  * - single and dual sensor operation (top/bottom) with adaptive hysteresis strategies.
+ * - adaptive heatsource feed temperature management based on current DHWT temperature.
  * - timed feedpump cooldown at untrip with temperature discharge protection.
  * - 5 charge priority models (no priority, parallel or absolute; with heat request selection).
  * - forced manual charge.
@@ -659,8 +660,13 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			}
 			else if (dhwt->pdata->run.hs_allfailed);	// no electric and no heatsource: can't do anything
 			else if (dhwt->pdata->run.dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
-				// calculate necessary water feed temp: target tank temp + offset
-				water_temp = target_temp + SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset);
+				/* calculate necessary water feed temp: target tank temp + offset
+				   because we calculate the feed temp once, we can be a bit smarter and adjust the
+				   requested feed temp offset based on the current temp of the DHWT:
+				   we use the delta between current temp and target temp, *UP TO* the set offset.
+				   This prevents requesting full offset (typically 10K) when e.g. we trigger a forced
+				   charge with only 1 or 2K target delta. */
+				water_temp = target_temp + min(target_temp - curr_temp, SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset));
 
 				// enforce limits
 				wintmax = SETorDEF(dhwt->set.params.limit_wintmax, dhwt->pdata->set.def_dhwt.limit_wintmax);

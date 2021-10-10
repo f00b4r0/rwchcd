@@ -22,6 +22,11 @@
 #include <time.h>	// time()
 #include <stdio.h>	// (f)printf
 
+#define min(a,b) \
+	({ __typeof__ (a) _a = (a); \
+	   __typeof__ (b) _b = (b); \
+	   _a < _b ? _a : _b; })
+
 #define testbit(var, bit)	((var) & (1U << (bit)))
 #define setbit(var, bit)	((var) |= (typeof (var))(1U << (bit)))
 #define clrbit(var, bit)	((var) &= (typeof (var))~(1U << (bit)))
