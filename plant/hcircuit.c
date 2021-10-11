@@ -107,7 +107,7 @@ static const struct s_log_source * hcircuit_lsrc(const struct s_hcircuit * const
 	static struct s_log_source Hcircuit_lreg;
 
 	Hcircuit_lreg = (struct s_log_source){
-		.log_sched = LOG_SCHED_5mn,
+		.log_sched = LOG_SCHED_1mn,
 		.basename = HCIRCUIT_STORAGE_PREFIX,
 		.identifier = circuit->name,
 		.version = version,

@@ -39,15 +39,15 @@ enum e_log_bend {
 
 /** discrete logging schedules */
 enum e_log_sched {
+	LOG_SCHED_10s,
 	LOG_SCHED_1mn,
-	LOG_SCHED_5mn,
 	LOG_SCHED_15mn,
 };
 
 /** discrete logging intervals (seconds). Must match #e_log_sched */
 enum e_log_intvl {
+	LOG_INTVL_10s = 10,
 	LOG_INTVL_1mn = 60,
-	LOG_INTVL_5mn = 300,
 	LOG_INTVL_15mn = 900,
 };
 

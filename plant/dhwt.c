@@ -107,7 +107,7 @@ static const struct s_log_source * dhwt_lsrc(const struct s_dhwt * const dhwt)
 	static struct s_log_source Dhwt_lsrc;
 
 	Dhwt_lsrc = (struct s_log_source){
-		.log_sched = LOG_SCHED_5mn,
+		.log_sched = LOG_SCHED_1mn,
 		.basename = DHWT_STORAGE_PREFIX,
 		.identifier = dhwt->name,
 		.version = version,

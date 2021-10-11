@@ -36,8 +36,8 @@ struct s_log_list {
 static int log_crawl(const int log_sched_id);
 
 /* wrapper callbacks for interfacing with scheduler_now() */
+static int log_crawl_10s(void)	{ return (log_crawl(LOG_SCHED_10s)); }
 static int log_crawl_1mn(void)	{ return (log_crawl(LOG_SCHED_1mn)); }
-static int log_crawl_5mn(void)	{ return (log_crawl(LOG_SCHED_5mn)); }
 static int log_crawl_15mn(void)	{ return (log_crawl(LOG_SCHED_15mn)); }
 
 /**
@@ -51,17 +51,17 @@ static struct {
 	const char * name;		///< name of the schedule
 } Log_sched[] = {
 	{
+		// LOG_SCHED_10s
+		.loglist = NULL,
+		.interval = LOG_INTVL_10s,
+		.cb = log_crawl_10s,
+		.name = "log_crawl_10s",
+	}, {
 		// LOG_SCHED_1mn
 		.loglist = NULL,
 		.interval = LOG_INTVL_1mn,
 		.cb = log_crawl_1mn,
 		.name = "log_crawl_1mn",
-	}, {
-		// LOG_SCHED_5mn
-		.loglist = NULL,
-		.interval = LOG_INTVL_5mn,
-		.cb = log_crawl_5mn,
-		.name = "log_crawl_5mn",
 	}, {
 		// LOG_SCHED_15mn
 		.loglist = NULL,

@@ -96,7 +96,7 @@ static int inputs_log_register(void)
 		metrics[id] = LOG_METRIC_FGAUGE;
 
 	In_temps_lsrc = (struct s_log_source){
-		.log_sched = LOG_SCHED_1mn,
+		.log_sched = LOG_SCHED_10s,
 		.basename = "inputs",
 		.identifier = "temperatures",
 		.version = 1,

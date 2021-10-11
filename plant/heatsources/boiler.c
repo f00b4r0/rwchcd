@@ -101,7 +101,7 @@ static const struct s_log_source * boiler_hs_lsrc(const struct s_heatsource * co
 	static struct s_log_source Boiler_lsrc;
 
 	Boiler_lsrc = (struct s_log_source){
-		.log_sched = LOG_SCHED_5mn,
+		.log_sched = LOG_SCHED_1mn,
 		.basename = BOILER_STORAGE_PREFIX,
 		.identifier = heat->name,
 		.version = version,
