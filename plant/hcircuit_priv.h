@@ -81,6 +81,7 @@ struct s_hcircuit {
 		_Atomic temp_t target_wtemp;	///< current target water temp
 		_Atomic temp_t actual_wtemp;	///< actual water temperature
 		_Atomic temp_t heat_request;	///< current temp request from heat source for this circuit
+		temp_t floor_wtemp;		///< saves current wtemp, stops updating when when floor_output is active
 		temp_t rorh_temp_increment;	///< temperature increment for the rorh limiter. Computed once in hcircuit_online()
 		temp_t rorh_last_target;	///< previous set point target for rorh control
 		temp_t trans_start_temp;	///< temperature at transition start

@@ -806,7 +806,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	else if (water_temp > lwtmax)
 		water_temp = lwtmax;
 
-	// save "non-interfered" target water temp, i.e. the real target (within enforced limits)
+	// save "non-interfered" target water temp, i.e. the real target (within enforced limits) - needed by _logic()
 	aser(&circuit->run.target_wtemp, water_temp);
 
 	// heat request is always computed based on non-interfered water_temp value
@@ -819,9 +819,11 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		if (circuit->set.wtemp_rorh)
 			water_temp = hcircuit_ror_limiter(circuit, curr_temp, water_temp);
 
-		// interference: handle output flooring requests: maintain current or higher wtemp
+		// interference: handle output flooring requests: maintain previous or higher wtemp
 		if (circuit->run.floor_output)
-			water_temp = (water_temp > curr_temp) ? water_temp : curr_temp;
+			water_temp = (water_temp > circuit->run.floor_wtemp) ? water_temp : circuit->run.floor_wtemp;
+		else
+			circuit->run.floor_wtemp = curr_temp;
 
 		// interference: apply global power shift
 		if (circuit->pdata->run.consumer_shift) {
