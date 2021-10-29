@@ -208,13 +208,13 @@ int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_pa
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	ret = filecfg_parser_run_parsers(hcircuit, parsers, ARRAY_SIZE(parsers));
-	if (ALL_OK != ret)
-		return (ret);
-
 	hcircuit->name = strdup(node->value.stringval);
 	if (!hcircuit->name)
 		return (-EOOM);
+
+	ret = filecfg_parser_run_parsers(hcircuit, parsers, ARRAY_SIZE(parsers));
+	if (ALL_OK != ret)
+		return (ret);
 
 	hcircuit->set.configured = true;
 
