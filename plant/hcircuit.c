@@ -944,9 +944,10 @@ int hcircuit_make_bilinear(struct s_hcircuit * const circuit,
 	priv->run.twaterinfl = tlin + ((tlin - celsius_to_temp(20)) * (nH100 - 100) / 100);
 
 	if ((priv->run.toutinfl <= tout1) || (priv->run.toutinfl >= tout2) || (priv->run.twaterinfl > twater1) || (priv->run.twaterinfl < twater2)) {
-		dbgerr("\"%s\": bilinear inflexion point computation failed!", circuit->name);
-		free(priv);
-		return (-EINVALID);
+		pr_err("\"%s\": bilinear inflexion point computation failed! (outinfl: %.2f, waterinfl: %.2f) - switching to linear mode",
+		       circuit->name, temp_to_celsius(priv->run.toutinfl), temp_to_celsius(priv->run.twaterinfl));
+		priv->run.toutinfl = (tout2 + tout1) / 2;
+		priv->run.twaterinfl = (twater2 + twater1) / 2;
 	}
 
 	// attach priv structure
