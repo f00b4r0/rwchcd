@@ -253,6 +253,9 @@ static int online_subsystems(void)
 /**
  * Reverse operations from online_subsystems().
  * @warning not thread safe.
+ * @note when this is run, all other execution threads (including D-Bus, when available) are stopped,
+ * which means we can relax the atomic requirements in the called routines.
+ * Specifically, some of the underlying subsystem will perform non-atomic memcpy()s to dump their state to permanent storage: this is explicitely "OK".
  */
 static void offline_subsystems(void)
 {

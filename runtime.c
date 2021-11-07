@@ -2,7 +2,7 @@
 //  runtime.c
 //  rwchcd
 //
-//  (C) 2016-2018 Thibaut VARENE
+//  (C) 2016-2018,2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -14,12 +14,16 @@
 
 #include <string.h>	// memset/memcpy
 #include <assert.h>
+#include <stdatomic.h>
 
 #include "plant/plant.h"
 #include "runtime.h"
 #include "storage.h"
 #include "log/log.h"
 #include "alarms.h"	// alarms_raise()
+#include "timekeep.h"	// timekeep_usleep()
+
+static atomic_flag Runtime_savef = ATOMIC_FLAG_INIT;
 
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);
 
@@ -136,6 +140,9 @@ int runtime_set_systemmode(const enum e_systemmode sysmode)
 {
 	enum e_runmode runmode, dhwmode;
 
+	while(unlikely(atomic_flag_test_and_set_explicit(&Runtime_savef, memory_order_acquire)))
+		timekeep_usleep(500);	// yield
+
 	switch (sysmode) {
 		case SYS_OFF:
 			runmode = RM_OFF;
@@ -180,6 +187,8 @@ out:
 	
 	runtime_save();
 
+	atomic_flag_clear_explicit(&Runtime_savef, memory_order_release);
+
 	pr_log(_("System mode set: %d"), sysmode);
 
 	return (ALL_OK);
@@ -214,9 +223,14 @@ int runtime_set_runmode(const enum e_runmode runmode)
 			return (-EINVALIDMODE);
 	}
 
+	while(unlikely(atomic_flag_test_and_set_explicit(&Runtime_savef, memory_order_acquire)))
+		timekeep_usleep(500);	// yield
+
 	aser(&Runtime.run.runmode, runmode);
 
 	runtime_save();
+
+	atomic_flag_clear_explicit(&Runtime_savef, memory_order_release);
 
 	pr_log(_("Run mode set: %d"), runmode);
 
@@ -252,9 +266,14 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 			return (-EINVALIDMODE);
 	}
 
+	while(unlikely(atomic_flag_test_and_set_explicit(&Runtime_savef, memory_order_acquire)))
+		timekeep_usleep(500);	// yield
+
 	aser(&Runtime.run.dhwmode, dhwmode);
 
 	runtime_save();
+
+	atomic_flag_clear_explicit(&Runtime_savef, memory_order_release);
 
 	pr_log(_("DHW mode set: %d"), dhwmode);
 
