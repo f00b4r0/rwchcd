@@ -42,12 +42,19 @@ enum e_hcircuit_laws {
 	HCL_BILINEAR,	///< bilinear temperature law. Config `bilinear`. *Requires extra parameters, see #s_tlaw_bilin20C_priv)
 };
 
+enum e_fastcooldown_modes {
+	FCM_NONE	= 0x00,
+	FCM_FROSTFREE	= 0x01,
+	FCM_ECO		= 0x02,
+	FCM_ALL		= 0x03,
+};
+
 /** Heating circuit element structure */
 struct s_hcircuit {
 	struct {
 		bool configured;		///< true if circuit is configured
-		bool fast_cooldown;		///< if true, switching to cooler mode triggers active cooldown (heating is disabled until temperature has cooled to new target). *Defaults to false*
 		bool log;			///< true if data logging should be enabled for this circuit. *Defaults to false*
+		uint_least8_t fast_cooldown;	///< bitfield used to trigger active cooldown (heating is disabled until temperature has cooled to new target) when switching to specified (cooler) mode. *Defaults to none*
 		schedid_t schedid;		///< schedule id for this hcircuit. *Optional*
 		enum e_runmode runmode;		///< current circuit set_runmode. *REQUIRED*
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (*default*: 0 disables). *Optional*, requires #p.valve_mix

@@ -119,6 +119,36 @@ int filecfg_hcircuit_params_dump(const struct s_hcircuit_params * restrict const
 	return (ALL_OK);
 }
 
+static void filecfg_hcircuit_fcm_dump(const uint_least8_t fcm)
+{
+	if (fcm == FCM_NONE) {
+		if (FCD_Exhaustive) {
+			filecfg_iprintf("fast_cooldown {\n");
+			filecfg_ilevel_inc();
+			filecfg_iprintf("mode \"none\";\n");
+			filecfg_ilevel_dec();
+			filecfg_iprintf("};\n");
+		}
+	}
+	else if (fcm == FCM_ALL) {
+		filecfg_iprintf("fast_cooldown {\n");
+		filecfg_ilevel_inc();
+		filecfg_iprintf("mode \"all\";\n");
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");
+	}
+	else {
+		filecfg_iprintf("fast_cooldown {\n");
+		filecfg_ilevel_inc();
+		if (fcm & FCM_FROSTFREE)
+			filecfg_iprintf("mode \"frostfree\";\n");
+		if (fcm & FCM_ECO)
+			filecfg_iprintf("mode \"eco\";\n");
+		filecfg_ilevel_dec();
+		filecfg_iprintf("};\n");
+	}
+}
+
 int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 {
 	if (!circuit)
@@ -130,10 +160,9 @@ int filecfg_hcircuit_dump(const struct s_hcircuit * restrict const circuit)
 	filecfg_iprintf("hcircuit \"%s\" {\n", circuit->name);
 	filecfg_ilevel_inc();
 
-	if (FCD_Exhaustive || circuit->set.fast_cooldown)
-		filecfg_dump_nodebool("fast_cooldown", circuit->set.fast_cooldown);
 	if (FCD_Exhaustive || circuit->set.log)
 		filecfg_dump_nodebool("log", circuit->set.log);
+	filecfg_hcircuit_fcm_dump(circuit->set.fast_cooldown);
 	if (FCD_Exhaustive || circuit->set.schedid)
 		filecfg_dump_nodestr("schedid", scheduler_get_schedname(circuit->set.schedid));
 	filecfg_dump_nodestr("runmode", filecfg_runmode_str(circuit->set.runmode));	// mandatory

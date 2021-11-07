@@ -2,7 +2,7 @@
 //  plant/hcircuit.c
 //  rwchcd
 //
-//  (C) 2017-2020 Thibaut VARENE
+//  (C) 2017-2021 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -455,15 +455,12 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	temp_t request_temp, target_ambient, ambient_temp, trans_thrsh;
 	timekeep_t elapsed_time, dtmin;
 	const timekeep_t now = timekeep_now();
-	bool can_fastcool;
+	bool can_fastcool, fastcool_mode = false;
 
 	assert(circuit);
 
 	bmodel = circuit->set.p.bmodel;
 	assert(bmodel);
-
-	// fast cooldown can only be applied if set AND not in frost condition
-	can_fastcool = (circuit->set.fast_cooldown && !aler(&bmodel->run.frost));
 
 	// store current status for transition detection
 	prev_runmode = aler(&circuit->run.runmode);
@@ -495,6 +492,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			request_temp = SETorDEF(circuit->set.params.t_comfort, circuit->pdata->set.def_hcircuit.t_comfort);
 			break;
 		case RM_ECO:
+			fastcool_mode = (circuit->set.fast_cooldown & FCM_ECO);
 			request_temp = SETorDEF(circuit->set.params.t_eco, circuit->pdata->set.def_hcircuit.t_eco);
 			break;
 		case RM_AUTO:
@@ -505,9 +503,13 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			// fallthrough
 		case RM_DHWONLY:
 		case RM_FROSTFREE:
+			fastcool_mode = (circuit->set.fast_cooldown & FCM_FROSTFREE);
 			request_temp = SETorDEF(circuit->set.params.t_frostfree, circuit->pdata->set.def_hcircuit.t_frostfree);
 			break;
 	}
+
+	// fast cooldown can only be applied if set AND not in frost condition
+	can_fastcool = (fastcool_mode && !aler(&bmodel->run.frost));
 
 	// apply offsets
 	request_temp += SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);

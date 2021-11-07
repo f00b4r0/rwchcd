@@ -13,7 +13,7 @@
 \verbatim
  hcircuit "name" {
 	 log yes;
- 	 fast_cooldown no;
+ 	 fast_cooldown { mode "none"; };		// list of modes; allowed "none", "all", "eco", "frostfree"
 	 runmode "auto";
 	 schedid "default";
 	 wtemp_rorh 25.0;
@@ -129,13 +129,54 @@ static int hcircuit_tlaw_bilinear_parser(void * restrict const priv, const struc
 	return (ret);
 }
 
+static int hcircuit_fastcool_mode_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	const struct {
+		const char * pstr;
+		const enum e_fastcooldown_modes pfcm;
+	} params[] = {
+		{ "none",	FCM_NONE,	},
+		{ "eco",	FCM_ECO,	},
+		{ "frostfree",	FCM_FROSTFREE,	},
+		{ "all",	FCM_ALL,	},
+	};
+	struct s_hcircuit * restrict const hcircuit = priv;
+	const char * restrict n;
+	unsigned int i;
+
+	assert(NODESTR == node->type);
+
+	if (node->children)
+		return(-ENOTWANTED);
+
+	n = node->value.stringval;
+
+	for (i = 0; i < ARRAY_SIZE(params); i++) {
+		if (!strcmp(n, params[i].pstr)) {
+			hcircuit->set.fast_cooldown |= params[i].pfcm;
+			break;
+		}
+	}
+
+	if (i == ARRAY_SIZE(params)) {
+		filecfg_parser_pr_err(_("Unknown fastcool mode \"%s\" at line %d"), n, node->lineno);
+		return (-EINVALID);
+	}
+
+	return (ALL_OK);
+}
+
+static int hcircuit_fastcool_modes_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, "mode", hcircuit_fastcool_mode_parser));
+}
+
 #include "plant/plant_priv.h"
 static inline const struct s_plant * __hcircuit_to_plant(void * priv)
 {
 	return (pdata_to_plant(((struct s_hcircuit *)priv)->pdata));
 }
 
-FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, fast_cooldown)
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_hcircuit, log)
 FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_hcircuit, runmode)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, true, s_hcircuit, wtemp_rorh)
@@ -180,7 +221,7 @@ static int fcp_hcircuit_ambient_factor(void * restrict const priv, const struct 
 int filecfg_hcircuit_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEBOL,		"fast_cooldown",	false,	fcp_bool_s_hcircuit_fast_cooldown,	NULL, },
+		{ NODELST,		"fast_cooldown",	false,	hcircuit_fastcool_modes_parser,		NULL, },
 		{ NODEBOL,		"log",			false,	fcp_bool_s_hcircuit_log,		NULL, },
 		{ NODESTR,		"runmode",		true,	fcp_runmode_s_hcircuit_runmode,		NULL, },
 		{ NODESTR,		"schedid",		false,	fcp_schedid_s_hcircuit_schedid,		NULL, },
