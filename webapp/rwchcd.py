@@ -26,12 +26,9 @@ bus = SystemBus()
 rwchcd = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)
 rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 
-# XXX REVISIT: I don't know how to walk the object tree with Pydbus
-hcircuit0 = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_HCIRCS+'/0')
-hcircuit0_Hcircuit = hcircuit0[RWCHCD_DBUS_IFACE_HCIRC]
-
 # config JSON:
 # {
+# "hcircuits": [0, 1, ...],
 # "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],
 # "graphurl": "url",
 # "toutdoor": N,
@@ -48,6 +45,14 @@ def getcfg(key):
 	cfg = loadcfg()
 	return cfg.get(key)
 
+def getobjname(type, id):
+	if type == "hcircuit":
+		#this is only called from template and thus cannot trigger an error
+		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
+		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
+		return hcirc.Name
+
 def gettemp(id):
 	try:
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
@@ -58,11 +63,11 @@ def gettemp(id):
 		temp = float('nan')
 	return "{:.1f}".format(temp)
 
-render = web.template.render('templates/', base='base', globals={'getcfg': getcfg, 'gettemp': gettemp})
+render = web.template.render('templates/', base='base', globals={'getcfg': getcfg, 'gettemp': gettemp, 'getobjname': getobjname})
 
 urls = (
 	'/', 'rwchcd',
-	'/circuit', 'circuit',
+	'/hcircuit/(\d+)', 'hcircuit',
 )
 
 from web import net
@@ -122,27 +127,40 @@ class rwchcd:
 			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
 			raise web.found(web.ctx.environ['HTTP_REFERER'])
 
-class circuit:
-	def GET(self):
-		Name = hcircuit0_Hcircuit.Name
-		Comftemp = "{:.1f}".format(hcircuit0_Hcircuit.TempComfort)
-		Ecotemp = "{:.1f}".format(hcircuit0_Hcircuit.TempEco)
-		Frosttemp = "{:.1f}".format(hcircuit0_Hcircuit.TempFrostFree)
-		OffsetOverrideTemp = "{:.1f}".format(hcircuit0_Hcircuit.TempOffsetOverride)
+class hcircuit:
+	def GET(self, id):
+		cfg = loadcfg()
+		if int(id) not in cfg.get('hcircuits'):
+			raise web.badrequest()
+		#with the above, this "cannot" fail
+		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
+		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
+		Name = hcirc.Name
+		Comftemp = "{:.1f}".format(hcirc.TempComfort)
+		Ecotemp = "{:.1f}".format(hcirc.TempEco)
+		Frosttemp = "{:.1f}".format(hcirc.TempFrostFree)
+		OffsetOverrideTemp = "{:.1f}".format(hcirc.TempOffsetOverride)
 		fm = formTemps()
 		fm.name.value = Name
 		fm.comftemp.value = Comftemp
 		fm.econtemp.value = Ecotemp
 		fm.frostemp.value = Frosttemp
 		fm.overridetemp.value = OffsetOverrideTemp
-		return render.circuit(fm)
-	def POST(self):
+		return render.hcircuit(fm)
+	def POST(self, id):
+		cfg = loadcfg()
+		if int(id) not in cfg.get('hcircuits'):
+			raise web.badrequest()
 		form = formTemps()
 		if not form.validates():
-			return render.circuit(form)
+			return render.hcircuit(form)
 		else:
+			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
+			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+			hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 			overridetemp = float(form.overridetemp.value)
-			hcircuit0_Hcircuit.SetTempOffsetOverride(overridetemp)
+			hcirc.SetTempOffsetOverride(overridetemp)
 			raise web.found(web.ctx.environ['HTTP_REFERER'])
 		
 
