@@ -75,6 +75,9 @@ static const gchar dbus_introspection_xml[] =
 "  <property name='DhwMode' access='readwrite' type='y'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
+"  <property name='StopDhw' access='readwrite' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
 " </interface>"
 " <interface name='" DBUS_HCIRCUIT_IFACE "'>"
 "  <property name='Online' access='read' type='b'>"
@@ -245,6 +248,8 @@ runtime_get_property(GDBusConnection  *connection,
 		enum e_runmode dhwmode = runtime_dhwmode();
 		var = g_variant_new_byte((guchar)dhwmode);
 	}
+	else if (g_strcmp0(property_name, "StopDhw") == 0)
+		var = g_variant_new_boolean((gboolean)runtime_get_stopdhw());
 	else
 		g_assert_not_reached();
 
@@ -281,6 +286,10 @@ runtime_set_property(GDBusConnection  *connection,
 			runtime_set_dhwmode(runmode);
 		else
 			goto error;
+	}
+	else if (g_strcmp0(property_name, "StopDhw") == 0) {
+		gboolean state = g_variant_get_boolean(value);
+		runtime_set_stopdhw(state);
 	}
 	else
 		g_assert_not_reached();

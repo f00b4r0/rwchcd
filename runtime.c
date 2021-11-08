@@ -368,3 +368,22 @@ enum e_runmode runtime_dhwmode(void)
 {
 	return (aler(&Runtime.run.dhwmode));
 }
+
+/**
+ * Get the global DHW kill switch state.
+ * @return current state
+ */
+bool runtime_get_stopdhw(void)
+{
+	return (aler(&Runtime.run.stopdhw));
+}
+
+/**
+ * Set the global DHW kill switch state.
+ * @return exec status
+ */
+int runtime_set_stopdhw(bool state)
+{
+	aser(&Runtime.run.stopdhw, state);
+	return (ALL_OK);
+}

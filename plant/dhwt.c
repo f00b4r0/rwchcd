@@ -397,6 +397,8 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	// SYS_TEST/SYS_OFF always override
 	if ((SYS_TEST == sysmode) || (SYS_OFF == sysmode))
 		new_runmode = runtime_dhwmode();
+	else if (runtime_get_stopdhw())
+		new_runmode = RM_FROSTFREE;
 	else {
 		// handle global/local runmodes
 		new_runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
