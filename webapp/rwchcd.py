@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # License: GPLv2
 
@@ -28,6 +29,7 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 
 # config JSON:
 # {
+# "allowstopdhw": 1,
 # "hcircuits": [0, 1, ...],
 # "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],
 # "graphurl": "url",
@@ -77,14 +79,21 @@ class BootForm(form.Form):
 		out.append(self.rendernote(self.note))
 		for i in self.inputs:
 			out.append('<div class="mb-3">')
-			if i.note:
-				i.attrs['class'] += ' is-invalid'
-			if not i.is_hidden():
-				out.append('<label for="%s" class="form-label">%s</label>' % (i.id, net.websafe(i.description)))
+			if isinstance(i, form.Checkbox):
+				out.append('<div class="%s">' % i.attrs['class'])
+				i.attrs['class'] = 'form-check-input'
+				out.append('<label for="%s" class="form-check-label">%s</label>' % (net.websafe(i.id), net.websafe(i.description)))
+			else:
+				if i.note:
+					i.attrs['class'] += ' is-invalid'
+				if not i.is_hidden():
+					out.append('<label for="%s" class="form-label">%s</label>' % (net.websafe(i.id), net.websafe(i.description)))
 			out.append(i.pre)
 			out.append(i.render())
 			out.append(self.rendernote(i.note))
 			out.append(i.post)
+			if isinstance(i, form.Checkbox):
+				out.append('</div>')
 			out.append('</div>')
 			out.append('\n')
 		return ''.join(out)
@@ -93,10 +102,11 @@ class BootForm(form.Form):
 		if note: return '<div class="invalid-feedback">%s</div>' % net.websafe(note)
 		else: return ""
 
-
-formMode = BootForm(
-	form.Dropdown('sysmode', [], description='Mode', class_='form-select'),
-	)
+def makerwchcdform(cfg):
+	args = (form.Dropdown('sysmode', [], description='Mode', class_='form-select'), )
+	if cfg.get('allowstopdhw'):
+		args = args + (form.Checkbox('stopdhw', description='Arrêt ECS', value='dummy', class_='form-check'), )
+	return BootForm(*args)
 
 formTemps = BootForm(
 	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
@@ -110,13 +120,15 @@ class rwchcd:
 	def GET(self):
 		cfg = loadcfg()
 		currmode = rwchcd_Runtime.SystemMode
-		fm = formMode()
+		fm = makerwchcdform(cfg)
 		fm.sysmode.args = cfg['modes']
 		fm.sysmode.value = currmode
+		if cfg.get('allowstopdhw'):
+			fm.stopdhw.checked = rwchcd_Runtime.StopDhw
 		return render.rwchcd(fm)
 	def POST(self):
 		cfg = loadcfg()
-		form = formMode()
+		form = makerwchcdform(cfg)
 		form.sysmode.args = cfg['modes']
 		if not form.validates():
 			form.sysmode.value = int(form.sysmode.value)
@@ -124,6 +136,8 @@ class rwchcd:
 		else:
 			mode = int(form.sysmode.value)
 			rwchcd_Runtime.SystemMode = mode
+			if cfg.get('allowstopdhw'):
+				rwchcd_Runtime.StopDhw = form.stopdhw.checked
 			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
 			raise web.found(web.ctx.environ['HTTP_REFERER'])
 
