@@ -29,9 +29,8 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 
 # config JSON:
 # {
-# "allowstopdhw": 1,
 # "hcircuits": [0, 1, ...],
-# "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],
+# "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
 # "graphurl": "url",
 # "toutdoor": N,
 # "tindoor": N,
@@ -102,11 +101,9 @@ class BootForm(form.Form):
 		if note: return '<div class="invalid-feedback">%s</div>' % net.websafe(note)
 		else: return ""
 
-def makerwchcdform(cfg):
-	args = (form.Dropdown('sysmode', [], description='Mode', class_='form-select'), )
-	if cfg.get('allowstopdhw'):
-		args = args + (form.Checkbox('stopdhw', description='Arrêt ECS', value='dummy', class_='form-check'), )
-	return BootForm(*args)
+formRwchcd = BootForm(
+	form.Dropdown('sysmode', [], description='Mode', class_='form-select'),
+	)
 
 formTemps = BootForm(
 	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
@@ -120,24 +117,23 @@ class rwchcd:
 	def GET(self):
 		cfg = loadcfg()
 		currmode = rwchcd_Runtime.SystemMode
-		fm = makerwchcdform(cfg)
+		if rwchcd_Runtime.StopDhw:
+			currmode = currmode | 0x80
+		fm = formRwchcd()
 		fm.sysmode.args = cfg['modes']
 		fm.sysmode.value = currmode
-		if cfg.get('allowstopdhw'):
-			fm.stopdhw.checked = rwchcd_Runtime.StopDhw
 		return render.rwchcd(fm)
 	def POST(self):
 		cfg = loadcfg()
-		form = makerwchcdform(cfg)
+		form = formRwchcd()
 		form.sysmode.args = cfg['modes']
 		if not form.validates():
 			form.sysmode.value = int(form.sysmode.value)
 			return render.rwchcd(form)
 		else:
 			mode = int(form.sysmode.value)
-			rwchcd_Runtime.SystemMode = mode
-			if cfg.get('allowstopdhw'):
-				rwchcd_Runtime.StopDhw = form.stopdhw.checked
+			rwchcd_Runtime.StopDhw = mode & 0x80
+			rwchcd_Runtime.SystemMode = mode & 0x7F
 			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
 			raise web.found(web.ctx.environ['HTTP_REFERER'])
 
