@@ -1,16 +1,30 @@
-x.x
-	* Fix StatsD log output
-	* Implement non-permanent relay accounting
-	* Improve HWP1 support
-	* DHWT implement electric thermostat
-	* Implement config checking and using alternative config
-	* Fix memory leaks on program exit path
-	* Use Bootstrap for webapp and implement basic JSON config
-	* Fix D-Bus temperature read primitive
-	* Implement alarm notifier
-	* Support shared pumps
-	* Cleanup API, add usage()
-
+1.1
+	* rwchcd: implement config checking and using alternative config
+	* rwchcd: fix memory leaks on program exit path
+	* runtime: implement DHW kill switch
+	* io: implement non-permanent relay accounting
+	* alarms: implement a notifier
+	* pumps: implement shared pumps
+	* hwp1: improve support
+	* dhwt: implement support for electric thermostat
+	* dhwt: fix electric operation logic & handling of hs_overtemp
+	* dhwt: implement electric switchover on heatsource failure
+	* dhwt: don't engage feedpump if isolation valve is closed
+	* dhwt: ensure frostfree temperature is honored
+	* dhwt: implement adaptive heat request
+	* boiler: Adjust trip anticipation up to full hysteresis
+	* boiler: fix RM_OFF handling
+	* hcircuit: tighten transition threshold when indoor sensor is present
+	* hcircuit: fix floor output logic
+	* hcircuit: gracefully handle bilinear computation failure
+	* hcircuit: implement per-runmode fast cooldown
+	* valve: remove PI controller jacketing
+	* plant: SYS_OFF/SYS_TEST always take precedence
+	* log_statsd: fix log output & IPv6 support
+	* log_rrd: allow arbitrary log intervals
+	* dbus: fix temperature read primitive
+	* webapp: use Bootstrap for webapp and implement basic JSON config
+	* Cleanup API, add usage(), reorganize code
 
 1.0
 	* Initial release
