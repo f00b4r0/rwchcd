@@ -169,7 +169,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	const timekeep_t now = timekeep_now();
 	int_least16_t perth;
 	temp_t tempin_h, tempin_l, tempout;
-	tempdiff_t error, iterm, pterm, output, pthfl, Kp;
+	tempdiff_t error, iterm, pterm, output, pthfl, Kp, Ksmax;
 	const timekeep_t dt = now - vpriv->run.last_time;
 	int ret;
 	timekeep_t Ti;
@@ -227,6 +227,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
+	Ksmax = (tempdiff_t)(tempin_h - tempin_l);
 	// Kp is UNSIGNED (positive) by construction, assert result is < INT32_MAX
 	Kp = (tempdiff_t)(vpriv->run.Kp_t * 1000 / (tempin_h - tempin_l));	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
 	// Ti is UNSIGNED
@@ -234,6 +235,12 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 
 	// calculate error E: (target - actual) - SIGNED
 	error = (tempdiff_t)(target_tout - tempout);		// error is unscaled
+
+	// jacket error to prevent overflow
+	if (error < -Ksmax)
+		error = -Ksmax;
+	else if (error > Ksmax)
+		error = Ksmax;
 
 	// Integral term I: (Ki * error) * sample interval - SIGNED
 	iterm = (Kp * error / (signed)Ti) * (signed)dt;		// iterm is scaled by VPI_FDEC
