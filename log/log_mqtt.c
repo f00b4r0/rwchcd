@@ -24,6 +24,7 @@
 #include "filecfg/dump/filecfg_dump.h"
 #include "filecfg/parse/filecfg_parser.h"
 
+/** Internal state */
 static struct s_log_mqtt {
 	struct {
 		const char * restrict topic_root;///< MQTT log topic root for this backend, must not end with a '/'

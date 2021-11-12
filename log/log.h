@@ -96,6 +96,7 @@ struct s_log_bendcbs {
 	int (*log_update)(const char * restrict const identifier, const struct s_log_data * const log_data);
 };
 
+/** Log subsystem runtime */
 struct s_log {
 	struct {
 		bool configured;			///< true if properly configured

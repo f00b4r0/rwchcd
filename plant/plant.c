@@ -238,6 +238,7 @@ enum e_plant_devtype {
  * @param devid the plant device id
  * @param devname the plant device name
  * @param pdev the plant device type identifier
+ * @param on true: called from 'online()', false: called from 'offline()'
  */
 static void plant_onfline_printerr(const enum e_execs errorn, const int devid, const char * restrict devname, const enum e_plant_devtype pdev, bool on)
 {

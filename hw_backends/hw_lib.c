@@ -122,6 +122,7 @@ static const struct s_hw_lib_lookupt Nickel_ND_lt = {
  * @param R0 Nominal resistance at 0°C in ohms
  * @param lt the lookup table data
  * @param Rt the resistance value to convert in ohms
+ * @return temperature in Celsius
  */
 static float quadratic_interpol(const float R0, const struct s_hw_lib_lookupt * lt, const float Rt)
 {
@@ -275,7 +276,7 @@ quadapprox:
 
 /**
  * Convert res_t format back to ohms.
- * @param tk value to convert.
+ * @param res value to convert.
  * @return the value expressed in ohms.
  */
 float hw_lib_res_to_ohm(const res_t res)

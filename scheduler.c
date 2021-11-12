@@ -149,7 +149,7 @@ static int scheduler_now(void)
 
 /**
  * Return a pointer to the current valid parameters for a given schedule id.
- * @param schedid the target schedule id
+ * @param schedule_id the target schedule id
  * @return pointer to params if found, NULL otherwise.
  */
 const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t schedule_id)
@@ -176,7 +176,7 @@ const struct s_schedule_eparams * scheduler_get_schedparams(const schedid_t sche
 
 /**
  * Return the name of a given schedule id.
- * @param schedid the target schedule id
+ * @param schedule_id the target schedule id
  * @return name if found, NULL otherwise.
  */
 const char * scheduler_get_schedname(const schedid_t schedule_id)

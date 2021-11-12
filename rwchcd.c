@@ -111,6 +111,7 @@ static const char *configfile = NULL;		///< path to configuration file
 
 static const char Version[] = RWCHCD_REV;	///< Build version string
 
+/** Subsystem callbacks list */
 static struct s_subsys_cb_l {
 	const char * name;		///< optional static name of the subsystem
 	int (* online)(void);		///< optional online() call for subsystem

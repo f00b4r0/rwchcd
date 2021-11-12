@@ -19,7 +19,7 @@
  *     - Support for water temperature rate of rise control
  * - Multiple types of heating curves (linear and bilinear approximations are implemented)
  * - Ambient temperature modelisation in the absence of an ambient sensor
- * - Accelerated cooldown and boost warmup transitions
+ * - Accelerated cooldown (per-runmode) and boost warmup transitions
  * - Optional circuit ambient temperature sensor
  * - Optional circuit water return temperature sensor
  * - Automatic circuit turn-off based on outdoor temperature evolution

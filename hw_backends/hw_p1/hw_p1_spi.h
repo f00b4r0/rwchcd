@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include "rwchc_export.h"
 
+/** HWP1 SPI runtime */
 struct s_hw_p1_spi {
 	struct {
 		uint_least32_t clock;	///< SPI clock (1MHz recommended)
