@@ -544,7 +544,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			if (circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute)
 				circuit->run.floor_output = true;
 			// if fast cooldown is possible, turn off circuit
-			if (!circuit->run.floor_output && can_fastcool)
+			if (can_fastcool)
 				new_runmode = RM_OFF;
 			break;
 		case TRANS_UP:
