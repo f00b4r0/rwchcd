@@ -748,7 +748,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// handle special runmode cases
 	switch (aler(&circuit->run.runmode)) {
 		case RM_OFF:
-			if (aler(&circuit->run.target_wtemp) && (circuit->pdata->run.consumer_sdelay > 0)) {
+			if (circuit->run.active && circuit->run.floor_output) {	// executed at first switch from any mode to RM_OFF with floor_output
 				// disable heat request from this circuit
 				aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
 				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %u", circuit->name, timekeep_tk_to_sec(circuit->pdata->run.consumer_sdelay));
