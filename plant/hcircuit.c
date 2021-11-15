@@ -444,6 +444,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit, const enum e_run
  * @note this function performs some checks to work around uninitialized data at startup, maybe this should be handled in online() instead.
  * @todo add optimizations (anticipated turn on/off, max ambient...)
  * @todo ambient max delta shutdown; optim based on return temp
+ * @todo revisit runmode alterations
  */
 __attribute__((warn_unused_result))
 int hcircuit_logic(struct s_hcircuit * restrict const circuit)
@@ -510,6 +511,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	// fast cooldown can only be applied if set AND not in frost condition
 	can_fastcool = (fastcool_mode && !aler(&bmodel->run.frost));
+	if ((TRANS_DOWN == circuit->run.transition) && can_fastcool)	// applied on the next cycle after transition start
+		new_runmode = RM_OFF;
 
 	// apply offsets
 	request_temp += SETorDEF(circuit->set.params.t_offset, circuit->pdata->set.def_hcircuit.t_offset);
@@ -524,6 +527,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
 	if (circuit->run.outhoff && !aler(&bmodel->run.frost))
 		new_runmode = RM_OFF;
+
+	aser(&circuit->run.runmode, new_runmode);
 
 	// transition detection - check actual_ambient to avoid false trigger at e.g. startup
 	ambient_temp = aler(&circuit->run.actual_ambient);
@@ -543,9 +548,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
 			if (circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute)
 				circuit->run.floor_output = true;
-			// if fast cooldown is possible, turn off circuit
-			if (can_fastcool)
-				new_runmode = RM_OFF;
 			break;
 		case TRANS_UP:
 			circuit->run.trans_active_elapsed += elapsed_time;
@@ -557,8 +559,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		default:
 			break;
 	}
-
-	aser(&circuit->run.runmode, new_runmode);
 
 	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
 	if (!circuit->pdata->run.consumer_sdelay)
