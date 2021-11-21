@@ -774,7 +774,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 		}
 	}
 	else if ((actual_temp > untrip_temp) && outputs_relay_state_get(boiler->set.rid_burner_1)) {	// untrip condition
-		if (elapsed >= boiler->set.burner_min_time) {	// delayed stop
+		if ((elapsed >= boiler->set.burner_min_time) || (actual_temp > boiler->set.limit_tmax)) {	// delayed stop - except if we're maxing out
 			ret = outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 			boiler->run.burner_1_last_switch = now;
 		}
