@@ -545,8 +545,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	switch (circuit->run.transition) {
 		case TRANS_DOWN:
 			circuit->run.trans_active_elapsed += elapsed_time;
-			// floor output during down transition if requested by the plant, except when absolute DHWT priority charge is in effect
-			if (circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute)
+			// Floor output when requested (through consumer_sdelay) if down transition started no later
+			// than consumer_sdelay ago and no absolute DHWT priority charge is in effect
+			if ((circuit->run.trans_active_elapsed < circuit->pdata->run.consumer_sdelay) && !circuit->pdata->run.dhwc_absolute)
 				circuit->run.floor_output = true;
 			break;
 		case TRANS_UP:
