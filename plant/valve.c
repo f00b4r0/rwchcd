@@ -23,7 +23,7 @@
  * ever expected to happen to a given valve.
  */
 
-#include <stdlib.h>	// calloc/free
+#include <stdlib.h>	// calloc/free/abs
 #include <assert.h>
 #include <string.h>	// memset
 
@@ -168,8 +168,8 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	struct s_valve_pi_priv * restrict const vpriv = valve->priv;
 	const timekeep_t now = timekeep_now();
 	int_least16_t perth;
-	temp_t tempin_h, tempin_l, tempout;
-	tempdiff_t error, iterm, pterm, output, pthfl, Kp, Ksmax;
+	temp_t tempin_h, tempin_l, tempout, erroru, iterm, pterm, Kp, Ksmax;
+	tempdiff_t errori, errorp, output, pthfl;
 	const timekeep_t dt = now - vpriv->run.last_time;
 	int ret;
 	timekeep_t Ti;
@@ -203,7 +203,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 		tempin_l = tempin_h - vpriv->set.Ksmax;
 
 	// stop PI operation if inputs are (temporarily) inverted or too close (would make K==0)
-	if ((tempin_l >= tempin_h) || (tempin_h - tempin_l <= 1000)) {
+	if ((tempin_l >= tempin_h) || (tempin_h - tempin_l <= 1000U)) {
 		valve->run.ctrl_ready = false;
 		dbgerr("\"%s\": inputs inverted or input range too narrow", valve->name);
 		return (ALL_OK);
@@ -227,26 +227,30 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 with [A,B] in [0.1,0.8],[1,8],[10,80] for respectively aggressive, moderate and conservative tunings.
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
-	Ksmax = (tempdiff_t)(tempin_h - tempin_l);
-	// Kp is UNSIGNED (positive) by construction, assert result is < INT32_MAX
-	Kp = (tempdiff_t)(vpriv->run.Kp_t * 1000 / (tempin_h - tempin_l));	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
-	// Ti is UNSIGNED
+	Ksmax = (tempin_h - tempin_l);
+	Kp = (vpriv->run.Kp_t * 1000U / Ksmax);	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
 	Ti = vpriv->set.Tu;			// Ti is unscaled
 
-	// calculate error E: (target - actual) - SIGNED
-	error = (tempdiff_t)(target_tout - tempout);		// error is unscaled
+	// calculate error E: (target - actual)
+	errori = (tempdiff_t)(target_tout - tempout);		// error is unscaled
+	erroru = (temp_t)abs(errori);
 
 	// jacket error to prevent overflow
-	if (error < -Ksmax)
-		error = -Ksmax;
-	else if (error > Ksmax)
-		error = Ksmax;
+	if (erroru > Ksmax)
+		erroru = Ksmax;
 
-	// Integral term I: (Ki * error) * sample interval - SIGNED
-	iterm = (Kp * error / (signed)Ti) * (signed)dt;		// iterm is scaled by VPI_FDEC
+	// Integral term I: (Ki * error) * sample interval
+	iterm = (Kp * erroru / Ti) * dt;		// iterm is scaled by VPI_FDEC
 
-	// Proportional term P applied to output: Kp * (previous - actual) - SIGNED
-	pterm = Kp * (tempdiff_t)(vpriv->run.prev_out - tempout);		// pterm is scaled by VPI_FDEC
+	// Proportional term P applied to output: Kp * (previous - actual)
+	errorp = (tempdiff_t)(vpriv->run.prev_out - tempout);
+	erroru = (temp_t)abs(errorp);
+
+	// jacket error to prevent overflow
+	if (erroru > Ksmax)
+		erroru = Ksmax;
+
+	pterm = Kp * erroru;		// pterm is scaled by VPI_FDEC
 
 	/*
 	 Applying the proportional term to the output O avoids kicks when
@@ -257,7 +261,11 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 and setpoint change does not require specific treatment.
 	 */
 
-	output = iterm + pterm;		// output is scaled by VPI_FDEC
+	// The output is the sum of iterm and pterm if both errors have the same sign, subtraction otherwise.
+	output = (tempdiff_t)(((errori ^ errorp) < 0) ? iterm - pterm : iterm + pterm);
+	// Multiply by the sign of the first operand to find the sign of the result.
+	output *= (errori < 0) ? -1 : 1;	// output is scaled by VPI_FDEC
+
 	pthfl = output + vpriv->run.db_acc;
 
 	/*
@@ -267,8 +275,8 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 */
 	perth = (int_least16_t)(pthfl / VPI_FPDEC);	// unscale
 
-	dbgmsg(2, 1, "\"%s\": Kp: %x, E: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
-	       valve->name, Kp, error, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
+	dbgmsg(2, 1, "\"%s\": Kp: %x, Ei: %x, Ep: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
+	       valve->name, Kp, errori, errorp, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
 
 	/*
 	 if we are below valve deadband, everything behaves as if the sample rate
@@ -282,7 +290,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 and so Nyquist is still satisfied
 	 */
 	if (valve_request_pth(valve, perth) != ALL_OK)
-		vpriv->run.db_acc += iterm;
+		vpriv->run.db_acc += (int32_t)((errori < 0) ? -iterm : iterm);
 	else {
 		vpriv->run.prev_out = tempout;
 		vpriv->run.db_acc = 0;
