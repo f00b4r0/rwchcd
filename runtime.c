@@ -90,6 +90,7 @@ static int runtime_restore(void)
 		aser(&Runtime.run.systemmode, aler(&temp_runtime.run.systemmode));
 		aser(&Runtime.run.runmode, aler(&temp_runtime.run.runmode));
 		aser(&Runtime.run.dhwmode, aler(&temp_runtime.run.dhwmode));
+		aser(&Runtime.run.stopdhw, aler(&temp_runtime.run.stopdhw));
 		pr_log(_("Runtime state restored"));
 	}
 	
