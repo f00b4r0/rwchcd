@@ -228,29 +228,23 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 Ki = Kp/Ti with Ti integration time. Ti = Tu
 	 */
 	Ksmax = (tempin_h - tempin_l);
-	Kp = (vpriv->run.Kp_t * 1000U / Ksmax);	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
+	Kp = lib_satmul_u32(vpriv->run.Kp_t, 1000U) / Ksmax;	// Make sure K cannot be 0 here. Kp_t is already scaled by VPI_FDEC
 	Ti = vpriv->set.Tu;			// Ti is unscaled
 
 	// calculate error E: (target - actual)
 	errori = (tempdiff_t)(target_tout - tempout);		// error is unscaled
 	erroru = (temp_t)abs(errori);
 
-	// jacket error to prevent overflow
-	if (erroru > Ksmax)
-		erroru = Ksmax;
-
 	// Integral term I: (Ki * error) * sample interval
-	iterm = (Kp * erroru / Ti) * dt;		// iterm is scaled by VPI_FDEC
+	iterm = (lib_satmul_u32(Kp, erroru) / Ti) * dt;	// iterm is scaled by VPI_FDEC
+	iterm /= 2U;	// ensure it fits INT32
 
 	// Proportional term P applied to output: Kp * (previous - actual)
 	errorp = (tempdiff_t)(vpriv->run.prev_out - tempout);
 	erroru = (temp_t)abs(errorp);
 
-	// jacket error to prevent overflow
-	if (erroru > Ksmax)
-		erroru = Ksmax;
-
-	pterm = Kp * erroru;		// pterm is scaled by VPI_FDEC
+	pterm = lib_satmul_u32(Kp, erroru);			// pterm is scaled by VPI_FDEC
+	pterm /= 2U;	// ensure it fits INT32
 
 	/*
 	 Applying the proportional term to the output O avoids kicks when
@@ -262,18 +256,18 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 */
 
 	// The output is the sum of iterm and pterm if both errors have the same sign, subtraction otherwise.
-	output = (tempdiff_t)(((errori ^ errorp) < 0) ? iterm - pterm : iterm + pterm);
+	output = (tempdiff_t)(((errori ^ errorp) < 0) ? lib_satsub_s32((int32_t)iterm, (int32_t)pterm) : lib_satadd_s32((int32_t)iterm, (int32_t)pterm));
 	// Multiply by the sign of the first operand to find the sign of the result.
-	output *= (errori < 0) ? -1 : 1;	// output is scaled by VPI_FDEC
+	output *= sign(errori);					// output is scaled by VPI_FDEC
 
-	pthfl = output + vpriv->run.db_acc;
+	pthfl = lib_satadd_s32(output, vpriv->run.db_acc);
 
 	/*
 	 trunc() so that the algorithm never requests _more_ than what it needs.
 	 No need to keep track of the residual since the requested value is
 	 an instantaneous calculation at the time of the algorithm run.
 	 */
-	perth = (int_least16_t)(pthfl / VPI_FPDEC);	// unscale
+	perth = (int_least16_t)(pthfl / (VPI_FPDEC/2));		// unscale, compensating for the /2 of iterm and pterm
 
 	dbgmsg(2, 1, "\"%s\": Kp: %x, Ei: %x, Ep: %x, I: %x, P: %x, O: %x, acc: %x, pthfl: %x, perth: %d",
 	       valve->name, Kp, errori, errorp, iterm, pterm, output, vpriv->run.db_acc, pthfl, perth);
@@ -290,7 +284,7 @@ static int v_pi_tcontrol(struct s_valve * const valve, const temp_t target_tout)
 	 and so Nyquist is still satisfied
 	 */
 	if (valve_request_pth(valve, perth) != ALL_OK)
-		vpriv->run.db_acc += (int32_t)((errori < 0) ? -iterm : iterm);
+		vpriv->run.db_acc += sign(errori) * (int32_t)iterm;	// can never overflow by construction
 	else {
 		vpriv->run.prev_out = tempout;
 		vpriv->run.db_acc = 0;
