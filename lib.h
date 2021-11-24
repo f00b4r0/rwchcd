@@ -120,6 +120,97 @@ __attribute__((always_inline)) static inline void reset_intg(struct s_temp_intgr
 	intgrl->last_time = 0;
 }
 
+/**
+ * Branchless saturated u32 add.
+ * If the result is smaller than either of the initial values (checking either is enough), overflow occurred => return all bits set.
+ * @param a first operand
+ * @param b second operand
+ * @return saturated a+b
+ */
+__attribute__((always_inline)) static inline uint32_t lib_satadd_u32(uint32_t a, uint32_t b)
+{
+	uint32_t c = a + b;
+	c |= (uint32_t)-(c < a);
+	return (c);
+}
+
+/**
+ * Branchless saturated u32 sub.
+ * The logic is the inverse from add: we only care for underflow (overflow is not possible).
+ * Unsigned sub is a 2-complement add, the test is similar to add, the bitmask is simply inverted so that underflow zeroes out, otherwise we AND with all bits set (-1).
+ * @param a first operand
+ * @param b second operand
+ * @return saturated a-b
+ */
+__attribute__((always_inline)) static inline uint32_t lib_satsub_u32(uint32_t a, uint32_t b)
+{
+	uint32_t c = a - b;
+	c &= (uint32_t)-(c <= a);
+	return (c);
+}
+
+/**
+ * Branchless saturated u32 mul.
+ * Use an intermediary 64bit var for result to check for overflow, AND with all bits set (-1) if overflow occured
+ * @param a first operand
+ * @param b second operand
+ * @return saturated a*b
+ */
+__attribute__((always_inline)) static inline uint32_t lib_satmul_u32(uint32_t a, uint32_t b)
+{
+	uint32_t hi, lo;
+	uint64_t temp = a;
+	temp *= b;
+	hi = (uint32_t)(temp >> 32);	// carry - i.e. overflow
+	lo = (uint32_t)temp;
+	return (lo | (uint32_t)-!!hi);
+}
+
+/**
+ * Branchless satured s32 add.
+ * Over/underflow can only happen if both operands have the same sign: then if result has opposite sign to the arguments, over/underflow occured.
+ * Note: INT32_MIN = INT32_MAX + 1
+ * @param a first operand
+ * @param b second operand
+ * @return saturated a+b
+ */
+__attribute__((always_inline)) static inline int32_t lib_satadd_s32(int32_t a, int32_t b)
+{
+	uint32_t ua = (uint32_t)a;
+	uint32_t ub = (uint32_t)b;
+	uint32_t uc = ua + ub;
+
+	ua = (ua >> 31) + INT32_MAX;	// calculate saturated result using sign of first operand *without* changing it
+
+	// compiler should resolve the following block branchless through a conditional move
+	if ((int32_t)(~(ua ^ ub) & (ua ^ uc)) < 0)
+		uc = ua;
+
+	return ((int32_t)uc);
+}
+
+/**
+ * Branchless satured s32 sub.
+ * Over/underflow can only happen if both operands have opposite sign: then if result has opposite sign to the first arg, over/underflow occured.
+ * Note: INT32_MIN = INT32_MAX + 1
+ * @param a first operand
+ * @param b second operand
+ * @return saturated a-b
+ */
+__attribute__((always_inline)) static inline int32_t lib_satsub_s32(int32_t a, int32_t b)
+{
+	uint32_t ua = (uint32_t)a;
+	uint32_t ub = (uint32_t)b;
+	uint32_t uc = ua - ub;
+
+	ua = (ua >> 31) + INT32_MAX;
+
+	if ((int32_t)((ua ^ ub) & (ua ^ uc)) < 0)
+		uc = ua;
+
+	return ((int32_t)uc);
+}
+
 __attribute__((always_inline)) static inline int32_t lib_fpmul_s32(const int32_t a, const int32_t b, const uint32_t scale)
 {
 	int64_t temp = a;
