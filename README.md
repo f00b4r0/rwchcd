@@ -11,7 +11,7 @@ this software is now completely standalone and hardware-independent.
 
 GPLv2-only - http://www.gnu.org/licenses/gpl-2.0.html
 
-Copyright: (C) 2016-2021 Thibaut VARENE
+Copyright: (C) 2016-2022 Thibaut VARENE
 
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License
@@ -49,5 +49,5 @@ unless specified differently on the command line. Example configurations
 are provided in `filecfg/examples`.
 
 A systemd service file is provided that will be installed when running
-`make install`. The daemon will be started at next reboot unless manually
-started with systemctl start rwchcd.service
+`make install` if DBus is available. The daemon will be started at next reboot
+unless manually started with `systemctl start rwchcd.service`
