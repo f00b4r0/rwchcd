@@ -12,13 +12,8 @@
  */
 
 #include <assert.h>
-#include <limits.h>	// CHAR_BIT
 
 #include "lib.h"
-
-// NB: we rely on the fact that gcc sign-extends
-#define sign(x)		((x>>(sizeof(x)*CHAR_BIT-1))|1)		///< -1 if x<0, 1 if x>=0
-#define zerosign(x)	((x>>(sizeof(x)*CHAR_BIT-1))|(!!x))	///< -1 if x<0, 1 if x>0, 0 if x==0
 
 /**
  * Convert temperature from internal format to Celsius value.
