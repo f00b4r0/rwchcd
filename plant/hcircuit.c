@@ -561,8 +561,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 	}
 
-	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early)
-	if (!circuit->pdata->run.consumer_sdelay)
+	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early - elapsed_time is still updated after end of transition)
+	if (elapsed_time > circuit->pdata->run.consumer_sdelay)
 		circuit->run.floor_output = false;
 
 	// Ambient temperature is either read or modelled
