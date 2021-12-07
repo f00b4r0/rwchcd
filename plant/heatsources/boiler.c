@@ -267,8 +267,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	// check that mandatory sensors are set
 	ret = inputs_temperature_get(boiler->set.tid_boiler, NULL);
-	if (ret) {
-		pr_err(_("\"%s\": tid_boiler failed! (%d)"), heat->name, ret);
+	if (ALL_OK != ret) {
+		pr_err(_("\"%s\": tid_boiler failed!"), heat->name);
 		ret = - EMISCONFIGURED;
 	}
 
@@ -321,9 +321,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	if (boiler->set.limit_treturnmin) {
 		// if return min is set make sure the associated sensor is configured.
-		ret = inputs_temperature_get(boiler->set.tid_boiler_return, NULL);
-		if (ALL_OK != ret) {
-			pr_err(_("\"%s\": limit_treturnmin is set but return sensor is unavaiable (%d)"), heat->name, ret);
+		if (inputs_temperature_get(boiler->set.tid_boiler_return, NULL) != ALL_OK) {
+			pr_err(_("\"%s\": limit_treturnmin is set but return sensor is unavaiable"), heat->name);
 			ret = -EMISCONFIGURED;
 		}
 		// treturnmin should never be higher than tmax (and possibly not higher than tmin either)
@@ -335,17 +334,15 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 
 	// grab relays
 	if (outputs_relay_name(boiler->set.rid_burner_1)) {
-		ret = outputs_relay_grab(boiler->set.rid_burner_1);
-		if (ALL_OK != ret) {
-			pr_err(_("\"%s\": rid_burner1 is unavailable (%d)"), heat->name, ret);
+		if (outputs_relay_grab(boiler->set.rid_burner_1) != ALL_OK) {
+			pr_err(_("\"%s\": rid_burner1 is unavailable"), heat->name);
 			ret = -EMISCONFIGURED;
 		}
 	}
 
 	if (outputs_relay_name(boiler->set.rid_burner_2)) {
-		ret = outputs_relay_grab(boiler->set.rid_burner_2);
-		if (ALL_OK != ret) {
-			pr_err(_("\"%s\": rid_burner2 is unavailable (%d)"), heat->name, ret);
+		if (outputs_relay_grab(boiler->set.rid_burner_2) != ALL_OK) {
+			pr_err(_("\"%s\": rid_burner2 is unavailable"), heat->name);
 			ret = -EMISCONFIGURED;
 		}
 	}
