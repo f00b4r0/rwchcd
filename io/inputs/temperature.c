@@ -114,6 +114,8 @@ static int temperature_update(struct s_temperature * const t)
 			dbgerr("\"%s\": hw clone temp %d/%d returned (%d)", t->name, t->tlist[i].bid, t->tlist[i].inid, ret);
 			switch (t->set.missing) {
 				case T_MISS_IGN:
+					if (new)
+						ret = ALL_OK;
 					continue;
 				case T_MISS_IGNDEF:
 					stemp = t->set.igntemp;
