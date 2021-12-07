@@ -55,6 +55,7 @@
 #include <sys/types.h>	// fifo
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/file.h>	// flock
 #ifdef DEBUG
  #include <time.h>
 #endif
@@ -100,6 +101,10 @@
 
 #ifndef RWCHCD_CONFIG
  #define RWCHCD_CONFIG	"/etc/rwchcd.conf"	///< Config file location. Can be overriden via CFLAGS
+#endif
+
+#ifndef RWCHCD_LOCK
+ #define RWCHCD_LOCK	"/run/rwchcd.lock"	///< instance lock location. Can be overriden via CFLAGS
 #endif
 
 #ifndef RWCHCD_REV
@@ -429,7 +434,7 @@ int main(int argc, char **argv)
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	const char *progname;
 	bool testconfig = false;
-	int pipefd[2];
+	int pipefd[2], lockfd;
 	int ch, ret;
 #ifdef DEBUG
 	FILE *outpipe = NULL;
@@ -474,6 +479,14 @@ int main(int argc, char **argv)
 		exit_process();
 		return 0;
 	}
+
+	// run exactly one instance
+	lockfd = open(RWCHCD_LOCK, O_RDWR|O_CREAT, 0600);
+	if (lockfd < 0)
+		err(lockfd, "Failed to open lock file");
+
+	if (flock(lockfd, LOCK_EX|LOCK_NB) < 0)
+		errx(1, "Another instance is running!");
 
 	pr_log(_("Revision %s starting"), Version);
 
@@ -606,6 +619,8 @@ cleanup:
 		fclose(outpipe);
 	unlink(RWCHCD_FIFO);
 #endif
+	close(lockfd);
+	unlink(RWCHCD_LOCK);
 
 	return (0);
 }
