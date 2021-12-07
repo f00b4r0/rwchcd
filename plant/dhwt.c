@@ -166,7 +166,7 @@ static int dhwt_log_deregister(const struct s_dhwt * const dhwt)
 int dhwt_online(struct s_dhwt * const dhwt)
 {
 	temp_t temp;
-	int ret = -EGENERIC;
+	int ret;
 
 	if (!dhwt)
 		return (-EINVALID);
@@ -254,9 +254,8 @@ int dhwt_online(struct s_dhwt * const dhwt)
 
 	// grab relay as needed
 	if (outputs_relay_name(dhwt->set.rid_selfheater)) {
-		ret = outputs_relay_grab(dhwt->set.rid_selfheater);
-		if (ALL_OK != ret) {
-			pr_err(_("\"%s\": Relay for self-heater is unavailable (%d)"), dhwt->name, ret);
+		if (outputs_relay_grab(dhwt->set.rid_selfheater) != ALL_OK) {
+			pr_err(_("\"%s\": Relay for self-heater is unavailable"), dhwt->name);
 			ret = -EMISCONFIGURED;
 		}
 	}
