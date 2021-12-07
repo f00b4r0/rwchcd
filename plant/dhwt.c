@@ -231,9 +231,16 @@ int dhwt_online(struct s_dhwt * const dhwt)
 	}
 
 	// if pumps exist check they're available
-	if (dhwt->set.p.pump_feed && !pump_is_online(dhwt->set.p.pump_feed)) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_feed));
-		ret = -EMISCONFIGURED;
+	if (dhwt->set.p.pump_feed) {
+		if (!pump_is_online(dhwt->set.p.pump_feed)) {
+			pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_feed));
+			ret = -EMISCONFIGURED;
+		}
+		// make sure we have win sensor
+		if (inputs_temperature_get(dhwt->set.tid_win, NULL) != ALL_OK) {
+			pr_err(_("\"%s\": tid_win failed or missing: needed with feed pump!"), dhwt->name);
+			ret = -EMISCONFIGURED;
+		}
 	}
 
 	if (dhwt->set.p.pump_recycle && !pump_is_online(dhwt->set.p.pump_recycle)) {
