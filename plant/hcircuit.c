@@ -551,7 +551,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				circuit->run.floor_output = true;
 			break;
 		case TRANS_UP:
-			circuit->run.trans_active_elapsed += elapsed_time;
+			//  account active elapsed time only if hcircuit wtempt is at least within 5K of target
+			if (aler(&circuit->run.actual_wtemp) > (aler(&circuit->run.target_wtemp) - deltaK_to_temp(5)))
+				circuit->run.trans_active_elapsed += elapsed_time;
 			// apply boost target
 			if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
 				target_ambient += circuit->set.tambient_boostdelta;
