@@ -64,6 +64,6 @@ void * timekeep_thread(void * arg);
  * @param b timekeep_t timestamp
  * @return false is b is strictly after a, true otherwise (including a == b)
  */
-#define timekeep_a_ge_b(a, b)		((a - b) < TIMEKEEP_MAX/2)
+#define timekeep_a_ge_b(a, b)		(((a) - (b)) < TIMEKEEP_MAX/2)
 
 #endif /* timekeep_h */
