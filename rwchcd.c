@@ -389,7 +389,8 @@ static void * thread_watchdog(void * arg)
 	struct timeval timeout;
 	fd_set set;
 	int ret, dummy;
-	
+	timekeep_t now, prevtime = 0;
+
 #ifdef _GNU_SOURCE
 	pthread_setname_np(pthread_self(), "watchdog");
 #endif
@@ -406,6 +407,11 @@ static void * thread_watchdog(void * arg)
 			read(piperfd, &dummy, 1);	// empty the pipe; we don't care what we read
 		else if ((ret < 0) && (EINTR == errno))
 			ret = 1;	// ignore signal interruptions - SA_RESTART doesn't work for select()
+
+		now = timekeep_now();
+		if (timekeep_a_ge_b(prevtime, now))
+			errx(-1, "Time moved back or froze!");
+		prevtime = now;
 	} while (ret > 0);
 	
 	if (!ret) {// timemout occured
