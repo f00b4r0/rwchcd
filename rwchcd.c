@@ -56,9 +56,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/file.h>	// flock
-#ifdef DEBUG
- #include <time.h>
-#endif
+#include <time.h>	// clock_gettime()
 
 #include "rwchcd.h"
 #include "hw_backends/hw_backends.h"
@@ -308,6 +306,9 @@ static void exit_process(void)
 	timekeep_exit();
 }
 
+static pthread_mutex_t master_mutex;
+static pthread_cond_t master_cond;
+
 static void * thread_master(void *arg)
 {
 	int pipewfd = *((int *)arg);
@@ -372,6 +373,11 @@ static void * thread_master(void *arg)
 		 * with significant impact on temp_expw_mavg() and hardware routines. */
 		timekeep_sleep(1);
 	}
+
+	/* signal we are about to terminate cleanly */
+	pthread_mutex_lock(&master_mutex);
+	pthread_cond_broadcast(&master_cond);
+	pthread_mutex_unlock(&master_mutex);
 
 	dbgmsg(1, 1, "thread exiting!");
 	pthread_exit(NULL);		// exit
@@ -440,6 +446,7 @@ int main(int argc, char **argv)
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	const char *progname;
 	bool testconfig = false;
+	struct timespec ts;
 	int pipefd[2], lockfd;
 	int ch, ret;
 #ifdef DEBUG
@@ -525,6 +532,14 @@ int main(int argc, char **argv)
 	pthread_attr_setschedparam(&attr, &sparam);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+	ret = pthread_mutex_init(&master_mutex, NULL);
+	if (ret)
+		errx(ret, "failed to create master mutex!");
+
+	ret = pthread_cond_init(&master_cond, NULL);
+	if (ret)
+		errx(ret, "failed to create master condition!");
+
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
 		errx(ret, "failed to create master thread!");
@@ -609,8 +624,30 @@ int main(int argc, char **argv)
 	pthread_join(watchdog_thr, NULL);
 	pthread_join(timekeep_thr, NULL);
 #ifdef HAS_DBUS
+	/* wait (but not forever) until master thread has finished */
+	ret = clock_gettime(CLOCK_REALTIME, &ts);
+	if (ret) {
+		warn("failed to get real time!");
+		goto cancel;	// something is terribly wrong
+	}
+
+	ts.tv_sec += 2;		// 2s timeout
+
+	pthread_mutex_lock(&master_mutex);
+	ret = pthread_cond_timedwait(&master_cond, &master_mutex, &ts);
+	pthread_mutex_unlock(&master_mutex);
+
+	if (ETIMEDOUT == ret) {
+		warnx("Timed out waiting for master thread to exit!");
+cancel:
+		pthread_cancel(master_thr);	// forcefully cancel master thread
+	}
 	pthread_join(master_thr, NULL);	// wait for cleanup
 #endif
+
+	pthread_mutex_destroy(&master_mutex);
+	pthread_cond_destroy(&master_cond);
+
 cleanup:
 	close(pipefd[0]);
 	close(pipefd[1]);
