@@ -367,7 +367,11 @@ static void * thread_master(void *arg)
 		
 		// send keepalive to watchdog
 		/// @warning the loop must run more often than the wdog timeout
-		write(pipewfd, " ", 1);	// we don't care what we send
+		ret = write(pipewfd, " ", 1);	// we don't care what we send
+		if (ret < 1) {
+			dbgerr("watchdog write returned: %d", ret);
+			abort();
+		}
 		
 		/* this sleep determines the maximum time resolution for the loop,
 		 * with significant impact on temp_expw_mavg() and hardware routines. */
