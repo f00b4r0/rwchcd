@@ -421,6 +421,10 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		}
 	}
 
+	// force dhwt ON during hs_overtemp condition
+	if (unlikely(dhwt->pdata->run.hs_overtemp))
+		new_runmode = RM_COMFORT;
+
 	// depending on dhwt run mode, assess dhwt target temp
 	switch (new_runmode) {
 		case RM_OFF:
