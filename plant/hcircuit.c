@@ -665,19 +665,17 @@ static temp_t hcircuit_ror_limiter(struct s_hcircuit * restrict const circuit, c
 		target_temp = curr_temp;
 		if (curr_temp < circuit->run.rorh_last_target)
 			circuit->run.rorh_last_target = curr_temp;
-		// if the heat source has not yet reached optimal output, wait before resuming normal algorithm operation
-		if (circuit->pdata->run.consumer_shift < 0)
-			circuit->run.rorh_update_time = now + timekeep_sec_to_tk(30);
 	}
 	// startup is done.
+
 	// Request for temp lower than (or equal) current: don't touch water_temp (let low request pass), update target to current
 	else if (target_temp <= curr_temp) {
 		circuit->run.rorh_last_target = curr_temp;	// update last_target to current point
 		circuit->run.rorh_update_time = now;
 	}
-	// else: request for higher temp: apply rate limiter: target_temp is updated every minute
+	// else: request for higher temp: apply rate limiter: target_temp is updated every HCIRCUIT_RORH_DT unless consumer_shift is negative in which case the algorithm pauses
 	else {
-		if ((now - circuit->run.rorh_update_time) >= HCIRCUIT_RORH_DT) {
+		if (((now - circuit->run.rorh_update_time) >= HCIRCUIT_RORH_DT) && (circuit->pdata->run.consumer_shift >= 0)) {
 			// compute next target step
 			temp = circuit->run.rorh_last_target + circuit->run.rorh_temp_increment;
 			// new request is min of next target step and actual request
