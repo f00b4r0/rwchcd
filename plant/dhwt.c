@@ -640,6 +640,9 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	/* NOTE we enforce sensor position, it SEEMS desirable, so that the full tank capacity is used before triggering a charge.
 	   apply hysteresis on logic: trip at target - hysteresis (preferably on top sensor), untrip at target (preferably on bottom sensor). */
 	if (!charge_on) {	// no charge in progress
+		// when no charge, switch off electric as soon as possible
+		electric_mode &= try_electric;
+
 		if (!electric_mode) {	// in non-electric mode: prevent charge "pumping", enforce delay between charges
 			limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
 			if (dhwt->run.charge_overtime) {
