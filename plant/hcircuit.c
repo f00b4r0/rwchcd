@@ -848,6 +848,8 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 		if (water_temp > lwtmax)
 			water_temp = lwtmax;
 
+		// XXX REVISIT: enforce lwtmin when frost is in effect? (this would bypass cshift)
+
 		// adjust valve position if necessary
 		ret = valve_mix_tcontrol(circuit->set.p.valve_mix, water_temp);
 		if (unlikely(ret)) {

@@ -592,9 +592,9 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 			ret = inputs_temperature_get(boiler->set.tid_boiler_return, &ret_temp);
 			(void)!inputs_temperature_time(boiler->set.tid_boiler_return, &ttime);
 			if (likely(ALL_OK == ret)) {
-				// jacket integral between 0 and -1000Ks - XXX hardcoded
-				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, (signed)timekeep_sec_to_tk(deltaK_to_tempdiff(-1000)), 0);
-				// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - cannot overflow due to jacket - XXX hardcoded
+				// jacket integral between 0 and -500Ks - XXX hardcoded
+				temp_intgrl = temp_thrs_intg(&boiler->run.ret_itg, boiler->set.limit_treturnmin, ret_temp, ttime, (signed)timekeep_sec_to_tk(deltaK_to_tempdiff(-500)), 0);
+				// percentage of shift is formed by the integral of current temp vs expected temp: 10Ks is -1% shift - cannot overflow due to jacket at -50% - XXX hardcoded
 				cshift_ret = (typeof(cshift_ret))timekeep_tk_to_sec(temp_to_ikelvind(temp_intgrl / 10));
 
 				dbgmsg(2, (temp_intgrl < 0), "\"%s\": ret integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_ret);
