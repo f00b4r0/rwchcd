@@ -187,12 +187,13 @@ int alarms_run(void)
 
 		if (Alarms.notifier) {
 			switch (fork()) {
-				case 0:	// main - nothing more to do
-				case -1: // error - most likely ENOMEM, don't add insult to injury by using printf()
-					break;
-				default: // child
+				case 0:	// child
 					execv(Alarms.notifier, argv);
 					perror("Alarm notifier execution failed");	// execv() only returns on error
+					break;
+				case -1: // error - most likely ENOMEM, don't add insult to injury by using printf()
+				default: // parent
+					break;
 			}
 		}
 	}
