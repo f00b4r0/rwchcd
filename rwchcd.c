@@ -175,9 +175,8 @@ static void sig_handler(int signum)
 		case SIGTERM:
 #ifdef HAS_DBUS
 			dbus_quit();
-#else
-			aser(&Sem_master_thread, false);
 #endif
+			aser(&Sem_master_thread, false);
 			break;
 		case SIGUSR1:
 #ifdef HAS_FILECFG
