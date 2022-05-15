@@ -749,6 +749,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			// mark heating as done
 			aser(&dhwt->run.legionella_on, false);
 			charge_on = false;
+			electric_mode = false;
 			dhwt->run.mode_since = now;
 		}
 	}
