@@ -61,6 +61,7 @@ FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_comfo
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_eco)
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, outhoff_frostfree)
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_hcircuit_params, outhoff_hysteresis)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, inoff_temp)
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmin)
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmax)
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, true, s_hcircuit_params, temp_inoffset)
@@ -76,6 +77,7 @@ int filecfg_hcircuit_params_parse(void * restrict const priv, const struct s_fil
 		{ NODEFLT|NODEINT,	"outhoff_eco",		false,	fcp_temp_s_hcircuit_params_outhoff_eco,		NULL, },
 		{ NODEFLT|NODEINT,	"outhoff_frostfree",	false,	fcp_temp_s_hcircuit_params_outhoff_frostfree,	NULL, },
 		{ NODEFLT|NODEINT,	"outhoff_hysteresis",	false,	fcp_temp_s_hcircuit_params_outhoff_hysteresis,	NULL, },
+		{ NODEFLT|NODEINT,	"inoff_temp",		false,	fcp_temp_s_hcircuit_params_inoff_temp,		NULL, },
 		{ NODEFLT|NODEINT,	"limit_wtmin",		false,	fcp_temp_s_hcircuit_params_limit_wtmin,		NULL, },
 		{ NODEFLT|NODEINT,	"limit_wtmax",		false,	fcp_temp_s_hcircuit_params_limit_wtmax,		NULL, },
 		{ NODEFLT|NODEINT,	"temp_inoffset",	false,	fcp_temp_s_hcircuit_params_temp_inoffset,	NULL, },

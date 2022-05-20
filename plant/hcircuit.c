@@ -2,7 +2,7 @@
 //  plant/hcircuit.c
 //  rwchcd
 //
-//  (C) 2017-2021 Thibaut VARENE
+//  (C) 2017-2022 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -22,7 +22,7 @@
  * - Accelerated cooldown (per-runmode) and boost warmup transitions
  * - Optional circuit ambient temperature sensor
  * - Optional circuit water return temperature sensor
- * - Automatic circuit turn-off based on outdoor temperature evolution
+ * - Automatic circuit turn-off based on indoor/outdoor temperature evolution
  * - Timed cooldown at turn-off
  * - Min/max limits on circuit water temperature
  * - Logging of state and temperatures
@@ -282,6 +282,12 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		circuit->run.rorh_temp_increment = temp_expw_mavg(0, circuit->set.wtemp_rorh, HCIRCUIT_RORH_1HTAU, HCIRCUIT_RORH_DT);
 	}
 
+	// warn on unenforceable configuration
+	if (circuit->set.params.inoff_temp) {
+		if (inputs_temperature_get(circuit->set.tid_ambient, NULL) != ALL_OK)
+			pr_warn(_("\"%s\": inoff_temp set but no ambient sensor available: ignored."), circuit->name);
+	}
+
 	if (ALL_OK == ret) {
 		aser(&circuit->run.online, true);
 
@@ -350,10 +356,10 @@ int hcircuit_offline(struct s_hcircuit * const circuit)
 }
 
 /**
- * Conditions for running heating circuit.
+ * Outdoor conditions for running heating circuit.
  * The trigger temperature is the lowest of the set.outhoff_MODE and requested_ambient
  *
- * Circuit is off in @b ANY of the following conditions are met:
+ * Circuit is off if @b ANY of the following conditions are met:
  * - building model summer is true
  * - t_out > current temp_trigger
  * - t_out_mix > current temp_trigger
@@ -426,6 +432,39 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit, const enum e_run
 		    (t_out_mix < temp_trigger))
 			circuit->run.outhoff = false;
 	}
+}
+
+/**
+ * Indoor conditions for running heating circuit.
+ * Only applies when an ambient sensor is available and inoff_temp is set.
+ *
+ * Circuit is off if ambient temperature is > inoff_temp
+ * Circuit is back on if ambient temperature is < inoff_temp - 1K; or ambient sensor is unavailable
+ *
+ * State is preserved in all other cases.
+ * @param circuit the target circuit
+ */
+static void hcircuit_inoff(struct s_hcircuit * const circuit)
+{
+	temp_t temp_trigger, t_ambient;
+
+	// input sanitization performed in logic_hcircuit()
+	assert(circuit->pdata);
+
+	temp_trigger = SETorDEF(circuit->set.params.inoff_temp, circuit->pdata->set.def_hcircuit.inoff_temp);
+	if (!temp_trigger) {
+		circuit->run.inoff = false;
+		return;
+	}
+
+	if (inputs_temperature_get(circuit->set.tid_ambient, &t_ambient) == ALL_OK) {
+		if (t_ambient > temp_trigger)
+			circuit->run.inoff = true;
+		else if (t_ambient < temp_trigger - temp_to_deltaK(1))
+			circuit->run.inoff = false;
+	}
+	else
+		circuit->run.inoff = false;
 }
 
 /**
@@ -522,10 +561,11 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// save current ambient request (needed by hcircuit_outhoff())
 	aser(&circuit->run.request_ambient, request_temp);
 
-	// Check if the circuit meets run.outhoff conditions
+	// Check if the circuit meets outoff/inoff conditions
 	hcircuit_outhoff(circuit, new_runmode);
+	hcircuit_inoff(circuit);
 	// if the circuit does meet the conditions (and frost is not in effect), turn it off: update runmode.
-	if (circuit->run.outhoff && !aler(&bmodel->run.frost))
+	if ((circuit->run.outhoff || circuit->run.inoff) && !aler(&bmodel->run.frost))
 		new_runmode = RM_OFF;
 
 	aser(&circuit->run.runmode, new_runmode);

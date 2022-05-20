@@ -75,7 +75,8 @@ struct s_hcircuit {
 	struct {
 		atomic_bool online;		///< true if circuit is operational (under software management)
 		bool active;			///< true if circuit is active
-		bool outhoff;			///< true if no heating conditions are met
+		bool outhoff;			///< true if outdoor no heating conditions are met
+		bool inoff;			///< true if indoor no heating conditions are met
 		bool floor_output;		///< true if the current output should not be reduced
 		_Atomic enum e_runmode runmode;	///< circuit actual (computed) runmode
 		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current transition underwent by the circuit

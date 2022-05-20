@@ -125,6 +125,9 @@ static const gchar dbus_introspection_xml[] =
 "  <property name='OutOffFrostFree' access='read' type='d'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
+"  <property name='InOffTemp' access='read' type='d'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
+"  </property>"
 "  <method name='SetTempOffsetOverride'>"
 "   <arg name='offset' direction='in' type='d' />"
 "  </method>"
@@ -447,6 +450,10 @@ hcircuit_get_property(GDBusConnection  *connection,
 			temp = SETorDEF(hcircuit->set.params.outhoff_eco, hcircuit->pdata->set.def_hcircuit.outhoff_eco);
 		else if (g_strcmp0(property_name, "FrostFree") == 0)
 			temp = SETorDEF(hcircuit->set.params.outhoff_frostfree, hcircuit->pdata->set.def_hcircuit.outhoff_frostfree);
+		var = g_variant_new_double(temp_to_celsius(temp));
+	}
+	else if (g_strcmp0(property_name, "InOffTemp") == 0) {
+		temp = SETorDEF(hcircuit->set.params.inoff_temp, hcircuit->pdata->set.def_hcircuit.inoff_temp);
 		var = g_variant_new_double(temp_to_celsius(temp));
 	}
 	else {

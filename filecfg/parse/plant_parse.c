@@ -25,6 +25,7 @@
 			 outhoff_eco 16.0;
 			 outhoff_frostfree 7.5;
 			 outhoff_hysteresis 1.0;
+ *			 inoff_temp 22.0;
 			 limit_wtmin 20.0;
 			 limit_wtmax 80.0;
 			 temp_inoffset 7.0;

@@ -104,6 +104,8 @@ int filecfg_hcircuit_params_dump(const struct s_hcircuit_params * restrict const
 		filecfg_dump_celsius("outhoff_frostfree", params->outhoff_frostfree);
 	if (FCD_Exhaustive || params->outhoff_hysteresis)
 		filecfg_dump_deltaK("outhoff_hysteresis", params->outhoff_hysteresis);
+	if (FCD_Exhaustive || params->inoff_temp)
+		filecfg_dump_celsius("inoff_temp", params->inoff_temp);
 
 	if (FCD_Exhaustive || params->limit_wtmin)
 		filecfg_dump_celsius("limit_wtmin", params->limit_wtmin);
