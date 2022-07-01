@@ -1,8 +1,10 @@
 1.1
 	* rwchcd: implement config checking and using alternative config
 	* rwchcd: fix memory leaks on program exit path
+	* rwchcd: ensure only one instance is running
 	* runtime: implement DHW kill switch
 	* io: implement non-permanent relay accounting
+	* io: fix aggregate temperature failure logic
 	* alarms: implement a notifier
 	* pumps: implement shared pumps
 	* hwp1: improve support
@@ -12,13 +14,19 @@
 	* dhwt: don't engage feedpump if isolation valve is closed
 	* dhwt: ensure frostfree temperature is honored
 	* dhwt: implement adaptive heat request
+	* dhwt: ensure recycling stops when switching system mode
 	* boiler: Adjust trip anticipation up to full hysteresis
 	* boiler: fix RM_OFF handling
+	* boiler: ensure limit_tmax is always honored
+	* boiler: improve handling of minimum return temp with no mixing valve
 	* hcircuit: tighten transition threshold when indoor sensor is present
-	* hcircuit: fix floor output logic
+	* hcircuit: fix floor output logic and improve rate-of-rise limiter
 	* hcircuit: gracefully handle bilinear computation failure
 	* hcircuit: implement per-runmode fast cooldown
+	* hcircuit: fix up transition boost accounting
+	* hcircuit: implement indoor max temp
 	* valve: remove PI controller jacketing
+	* valve: PI controller: implement saturated arithmetic
 	* plant: SYS_OFF/SYS_TEST always take precedence
 	* log_statsd: fix log output & IPv6 support
 	* log_rrd: allow arbitrary log intervals
