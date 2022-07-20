@@ -185,6 +185,7 @@ struct s_pdata {
 	} set;
 	struct {
 		bool plant_could_sleep;		///< true if all consumers without electric failover haven't requested heat since plant->set.sleeping_delay
+		bool summer_maint;		///< true if summer maintenance is requested
 		bool dhwc_absolute;		///< true if absolute DHWT charge in progress
 		bool dhwc_sliding;		///< true if sliding DHWT charge in progress
 		bool hs_overtemp;		///< true if a plant heatsource is overtemping (requires all consumers to accept heat input to accelerate heatsource cooldown)

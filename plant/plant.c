@@ -2,7 +2,7 @@
 //  plant/plant.c
 //  rwchcd
 //
-//  (C) 2016-2021 Thibaut VARENE
+//  (C) 2016-2022 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -735,6 +735,11 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
  * @param plant target plant
  * @return exec status
  * @todo sequential run (instead of parallel), then we can handle isolation valves
+ * @note summer maintenance can only happen if the plant can sleep:
+ * Handling mixed setups with tanks operating while others are attempting maintenance, especially
+ * in the context of shared pumps, is a headache I don't want to deal with for now.
+ * Likewise, to exert circuits mixing valve we must be certain that sending cold water back to the
+ * heatsource is not going to be a problem, or that the intake is actually not too hot (for e.g. floor heating).
  */
 static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {
@@ -753,6 +758,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	// don't do anything if summer AND plant asleep aren't in effect
 	if (!(plant_summer_ok(plant) && plant->pdata.run.plant_could_sleep)) {
 		plant->run.summer_timer = now;
+		plant->pdata.run.summer_maint = false;
 		return (ALL_OK);
 	}
 
@@ -760,6 +766,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 	if ((now - plant->run.summer_timer) >= (plant->set.summer_run_interval + plant->set.summer_run_duration)) {
 		pr_log(_("Summer maintenance completed"));
 		plant->run.summer_timer = now;
+		plant->pdata.run.summer_maint = false;
 	}
 
 	// don't run too often
@@ -767,6 +774,7 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 		return (ALL_OK);
 
 	dbgmsg(1, 1, "summer maintenance active");
+	plant->pdata.run.summer_maint = true;
 
 	// open all valves
 	for (id = 0; id < plant->valves.last; id++) {
