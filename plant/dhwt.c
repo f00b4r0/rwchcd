@@ -395,6 +395,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	const enum e_systemmode sysmode = runtime_systemmode();
 	enum e_runmode prev_runmode, new_runmode;
 	temp_t target_temp, ltmin, ltmax;
+	bool recycle = false;
 
 	assert(dhwt);
 
@@ -404,10 +405,8 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	// SYS_TEST/SYS_OFF always override
 	if ((SYS_TEST == sysmode) || (SYS_OFF == sysmode))
 		new_runmode = runtime_dhwmode();
-	else if (runtime_get_stopdhw()) {
+	else if (runtime_get_stopdhw())
 		new_runmode = RM_FROSTFREE;
-		aser(&dhwt->run.recycle_on, false);	// XXX REVISIT recycle can only be set via schedule for now
-	}
 	else {
 		// handle global/local runmodes
 		new_runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
@@ -417,12 +416,11 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 			if ((SYS_AUTO == sysmode) && eparams) {
 				new_runmode = eparams->dhwmode;
 				aser(&dhwt->run.legionella_on, eparams->legionella);
-				aser(&dhwt->run.recycle_on, aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle);
+				// XXX REVISIT recycle can only be set via schedule for now
+				recycle = aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
 			}
-			else {	// don't touch legionella
+			else	// don't touch legionella
 				new_runmode = runtime_dhwmode();
-				aser(&dhwt->run.recycle_on, false);	// XXX REVISIT recycle can only be set via schedule for now
-			}
 		}
 	}
 
@@ -433,7 +431,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		ltmin = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
 		target_temp = ltmax > ltmin ? ltmax : ltmin;
 		aser(&dhwt->run.force_on, true);
-		aser(&dhwt->run.recycle_on, true);
+		recycle = true;
 		goto settarget;
 	}
 
@@ -468,7 +466,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	if (unlikely(aler(&dhwt->run.legionella_on))) {
 		target_temp = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
 		aser(&dhwt->run.force_on, true);
-		aser(&dhwt->run.recycle_on, dhwt->set.legionella_recycle);
+		recycle = dhwt->set.legionella_recycle;
 		goto settarget;
 	}
 
@@ -494,6 +492,8 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		target_temp = ltmax;
 
 settarget:
+	aser(&dhwt->run.recycle_on, recycle);
+
 	// XXX hardcoded safety cap
 	if (unlikely(target_temp > celsius_to_temp(90)))
 		target_temp = celsius_to_temp(90);
