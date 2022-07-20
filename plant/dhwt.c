@@ -27,6 +27,7 @@
  * - isolation valve.
  * - individual scheduling.
  * - logging of state and temperatures.
+ * - hardcoded 90°C maximum target temperature (including for anti-legionella).
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given dhwt, with the exception of
@@ -493,6 +494,10 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		target_temp = ltmax;
 
 settarget:
+	// XXX hardcoded safety cap
+	if (unlikely(target_temp > celsius_to_temp(90)))
+		target_temp = celsius_to_temp(90);
+
 	// save current target dhw temp
 	aser(&dhwt->run.target_temp, target_temp);
 	aser(&dhwt->run.runmode, new_runmode);
