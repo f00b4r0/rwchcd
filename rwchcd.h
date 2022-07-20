@@ -130,6 +130,7 @@ enum e_runmode {
 	RM_DHWONLY,	///< device is in DHW only mode. Config `dhwonly`
 	RM_TEST,	///< device is in test mode (typically all actuators are on). Config `test` (should not be used in permanent config)
 	RM_UNKNOWN,	///< invalid past this value
+	RM_SUMMAINT,	///< device is in summer maintenance mode (typically pumps and valves are active, no heat requested). Not available in config. NB: after RM_UNKNOWN so it cannot be set externally.
 };
 
 /** Valid system modes. */

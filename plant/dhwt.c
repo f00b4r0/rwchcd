@@ -28,6 +28,7 @@
  * - individual scheduling.
  * - logging of state and temperatures.
  * - hardcoded 90°C maximum target temperature (including for anti-legionella).
+ * - summer maintenance of actuators when operating in frostfree mode.
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given dhwt, with the exception of
@@ -35,6 +36,9 @@
  * It is worth noting that no data consistency is guaranteed for logging, i.e. the data points logged
  * during a particular call of dhwt_logdata_cb() may represent values from different time frames:
  * the overhead of ensuring consistency seems overkill for the purpose served by the log facility.
+ *
+ * @note during test / summer maintenance, if the DHWT features an isolation valve, the feed
+ * pump turn on will be delayed until that valve is fully opened.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -312,7 +316,7 @@ static inline void dhwt_actuator_use(struct s_dhwt * const dhwt, bool active)
  * @param dhwt target dhwt
  * @return error status
  */
-int dhwt_shutdown(struct s_dhwt * const dhwt)
+static int dhwt_shutdown(struct s_dhwt * const dhwt)
 {
 	assert(dhwt);
 	assert(dhwt->set.configured);
@@ -453,12 +457,15 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		case RM_AUTO:
 		case RM_DHWONLY:
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			dbgerr("\"%s\": invalid runmode (%d), falling back to RM_FROSTREE", dhwt->name, new_runmode);
 			new_runmode = RM_FROSTFREE;
 			// fallthrough
 		case RM_FROSTFREE:
 			target_temp = SETorDEF(dhwt->set.params.t_frostfree, dhwt->pdata->set.def_dhwt.t_frostfree);
+			if (dhwt->pdata->run.summer_maint)
+				new_runmode = RM_SUMMAINT;
 			break;
 	}
 
@@ -548,6 +555,8 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
  * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
  * although not necessarily at the planned time if there is delay in servicing the target DHWT priority.
  * @note this function ensures that in the event of an error, the dhwt is put in a failsafe state as defined in dhwt_failsafe().
+ * @todo review shared recycle pump summer maintenance scenarios - with electric (can they materially exist?).
+ * @warning RM_TEST and RM_SUMMAINT bypass all safety logic.
  */
 int dhwt_run(struct s_dhwt * const dhwt)
 {
@@ -585,14 +594,25 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			dhwt_actuator_use(dhwt, false);
 			break;
 		case RM_TEST:
+			(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, ON);
+			// fallthrough - we want everything on
+		case RM_SUMMAINT:
+			// NB: we do enable the isolation valve in summaint because it makes no sense to turn the
+			// feedpump on if there is an isolation valve and it's closed. If we reached this point we
+			// aren't operating on electric heater anyway.
 			dhwt->run.active = true;
-			if (dhwt->set.p.valve_hwisol)
+			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+			if (dhwt->set.p.valve_hwisol) {
 				(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
+				// if we have an isolation valve, it must be open before turning on the feedpump
+				test = valve_is_open(dhwt->set.p.valve_hwisol) ? ON : OFF;
+			}
+			else
+				test = ON;
 			if (dhwt->set.p.pump_feed)
-				(void)!pump_set_state(dhwt->set.p.pump_feed, ON, FORCE);
+				(void)!pump_set_state(dhwt->set.p.pump_feed, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
 			if (dhwt->set.p.pump_recycle)
 				(void)!pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
-			(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, ON);
 			return (ALL_OK);
 		case RM_AUTO:
 		case RM_DHWONLY:
