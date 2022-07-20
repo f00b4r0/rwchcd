@@ -2,7 +2,7 @@
 //  plant/dhwt.c
 //  rwchcd
 //
-//  (C) 2017-2021 Thibaut VARENE
+//  (C) 2017-2022 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -425,9 +425,16 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		}
 	}
 
-	// force dhwt ON during hs_overtemp condition
-	if (unlikely(dhwt->pdata->run.hs_overtemp))
+	// force dhwt ON during hs_overtemp condition: apply maximum available temp, force charge and recycle, and bypass logic
+	if (unlikely(dhwt->pdata->run.hs_overtemp)) {
 		new_runmode = RM_COMFORT;
+		ltmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
+		ltmin = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
+		target_temp = ltmax > ltmin ? ltmax : ltmin;
+		aser(&dhwt->run.force_on, true);
+		aser(&dhwt->run.recycle_on, true);
+		goto settarget;
+	}
 
 	// depending on dhwt run mode, assess dhwt target temp
 	switch (new_runmode) {
@@ -464,16 +471,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		goto settarget;
 	}
 
-	// In hs_overtemp condition, apply maximum available temp, force charge and recycle, and bypass logic
-	if (unlikely(dhwt->pdata->run.hs_overtemp)) {
-		ltmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
-		ltmin = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
-		target_temp = ltmax > ltmin ? ltmax : ltmin;
-		aser(&dhwt->run.force_on, true);
-		aser(&dhwt->run.recycle_on, true);
-		goto settarget;
-	}
-
 	// transition detection
 	if (unlikely(prev_runmode != new_runmode)) {
 		// handle programmed forced charges at COMFORT switch on
@@ -494,12 +491,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		target_temp = ltmin;
 	else if (target_temp > ltmax)
 		target_temp = ltmax;
-
-	// force maximum temp during hs_overtemp condition
-	if (unlikely(dhwt->pdata->run.hs_overtemp)) {
-		target_temp = ltmax;
-		aser(&dhwt->run.force_on, true);
-	}
 
 settarget:
 	// save current target dhw temp
