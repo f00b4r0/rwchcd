@@ -166,6 +166,7 @@ const char * filecfg_runmode_str(const enum e_runmode runmode)
 		case RM_DHWONLY:
 			return ("dhwonly");
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			return ("");
 	}

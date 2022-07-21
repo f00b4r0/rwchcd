@@ -488,6 +488,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			dbgerr("\"%s\": invalid runmode (%d), falling back to RM_FROSTREE", heat->name, aler(&heat->run.runmode));
 			aser(&heat->run.runmode, RM_FROSTFREE);
@@ -650,6 +651,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			ret = -EINVALIDMODE;	// this can never happen due to fallback in _logic()
 			goto fail;

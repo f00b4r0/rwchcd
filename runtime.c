@@ -220,6 +220,7 @@ int runtime_set_runmode(const enum e_runmode runmode)
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			return (-EINVALIDMODE);
 	}
@@ -263,6 +264,7 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
 		case RM_AUTO:
 		case RM_DHWONLY:
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			return (-EINVALIDMODE);
 	}
