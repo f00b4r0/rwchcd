@@ -26,6 +26,7 @@
  * - Timed cooldown at turn-off
  * - Min/max limits on circuit water temperature
  * - Logging of state and temperatures
+ * - summer maintenance of actuators when operating in frostfree/dhwonly modes
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given hcircuit, with the exception of
@@ -33,6 +34,9 @@
  * It is worth noting that no data consistency is guaranteed for logging, i.e. the data points logged
  * during a particular call of hcircuit_logdata_cb() may represent values from different time frames:
  * the overhead of ensuring consistency seems overkill for the purpose served by the log facility.
+ *
+ * @note in "test" mode the mixing valve (if any) is stopped (so that it can be manually adjusted
+ * as needed). During summer maintenance it is opened in full.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -406,6 +410,7 @@ static void hcircuit_outhoff(struct s_hcircuit * const circuit, const enum e_run
 		case RM_AUTO:
 		case RM_TEST:
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			return;
 	}
@@ -537,6 +542,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			break;
 		case RM_AUTO:
 		case RM_UNKNOWN:
+		case RM_SUMMAINT:
 		default:
 			dbgerr("\"%s\": invalid runmode (%d), falling back to RM_FROSTREE", circuit->name, new_runmode);
 			new_runmode = RM_FROSTFREE;
@@ -545,6 +551,10 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		case RM_FROSTFREE:
 			fastcool_mode = (circuit->set.fast_cooldown & FCM_FROSTFREE);
 			request_temp = SETorDEF(circuit->set.params.t_frostfree, circuit->pdata->set.def_hcircuit.t_frostfree);
+			if (circuit->pdata->run.summer_maint) {
+				aser(&circuit->run.runmode, RM_SUMMAINT);
+				return (ALL_OK);	// bypass everything
+			}
 			break;
 	}
 
@@ -756,6 +766,7 @@ static void hcircuit_failsafe(struct s_hcircuit * restrict const circuit)
  * @return exec status
  * @warning circuit->run.target_ambient must be properly set before this runs
  * @note this function ensures that in the event of an error, the hcircuit is put in a failsafe state as defined in hcircuit_failsafe().
+ * @warning RM_TEST and RM_SUMMAINT bypass all safety logic.
  */
 int hcircuit_run(struct s_hcircuit * const circuit)
 {
@@ -798,8 +809,13 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 			else
 				return (hcircuit_shutdown(circuit));
 		case RM_TEST:
+			valve_reqstop(circuit->set.p.valve_mix);	// in test mode, don't touch the valve (let the operator use it manually)
+			goto summaint;
+		case RM_SUMMAINT:
+			valve_reqopen_full(circuit->set.p.valve_mix);	// in summer maintenance, open the valve in full
+summaint:
 			circuit->run.active = true;
-			valve_reqstop(circuit->set.p.valve_mix);
+			aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
 			if (circuit->set.p.pump_feed)
 				(void)!pump_set_state(circuit->set.p.pump_feed, ON, FORCE);
 			return (ALL_OK);
