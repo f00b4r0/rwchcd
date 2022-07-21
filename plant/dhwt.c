@@ -284,33 +284,6 @@ int dhwt_online(struct s_dhwt * const dhwt)
 }
 
 /**
- * Flag actuators currently used.
- * This function is necessary to ensure proper behavior of the summer maintenance
- * system:
- * - When the DHWT is in active use (ECO/COMFORT) then the related actuators
- *   are flagged in use.
- * - When the DHWT is offline or in FROSTFREE then the related actuators are
- *   unflagged. This works because the summer maintenance can only run when
- *   frost condition is @b GUARANTEED not to happen.
- *
- * @note the pump_feed is @b NOT unflagged when running electric to avoid sending
- * cold water into the feed circuit. Thus the pump_feed cannot be "summer maintained"
- * when the DHWT is running electric.
- * @param dhwt target dhwt
- * @param active flag status
- */
-static inline void dhwt_actuator_use(struct s_dhwt * const dhwt, bool active)
-{
-	assert(dhwt);
-
-	if (dhwt->set.p.pump_feed)
-		pump_set_dhwt_use(dhwt->set.p.pump_feed, active);
-
-	if (dhwt->set.p.pump_recycle)
-		pump_set_dhwt_use(dhwt->set.p.pump_recycle, active);
-}
-
-/**
  * Shutdown dhwt.
  * Perform all necessary actions to shut down the dhwt.
  * @param dhwt target dhwt
@@ -343,8 +316,6 @@ static int dhwt_shutdown(struct s_dhwt * const dhwt)
 
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	aser(&dhwt->run.target_temp, 0);
-
-	dhwt_actuator_use(dhwt, false);
 
 	(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, OFF);
 
@@ -588,10 +559,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		case RM_COMFORT:
 		case RM_ECO:
 			skip_untrip = dhwt->set.electric_hasthermostat;
-			dhwt_actuator_use(dhwt, true);
 			break;
 		case RM_FROSTFREE:
-			dhwt_actuator_use(dhwt, false);
 			break;
 		case RM_TEST:
 			(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, ON);

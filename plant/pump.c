@@ -184,42 +184,6 @@ int pump_get_state(const struct s_pump * restrict const pump)
 }
 
 /**
- * Set pump DHWT use.
- * @param pump target pump
- * @param used set pump as used by DHWT if true
- * @return error code if any
- */
-int pump_set_dhwt_use(struct s_pump * const pump, bool used)
-{
-	assert(pump);
-
-	pump->run.dhwt_use = used;
-
-	return (ALL_OK);
-}
-
-/**
- * Get pump DHWT use.
- * @param pump target pump
- * @return true if pump is used by DHWT
- */
-int pump_get_dhwt_use(const struct s_pump * const pump)
-{
-	const struct s_pump * p;
-	bool used = false;
-
-	assert(pump);
-
-	// for shared pumps, if any child pump is used, the parent is used
-	if (pump->set.shared) {
-		for (p = pump->virt.child; p; p = p->virt.child)
-			used |= p->run.dhwt_use;
-	}
-
-	return (used);
-}
-
-/**
  * Shutdown an online pump.
  * Perform all necessary actions to completely shut down the pump.
  * @param pump target pump
