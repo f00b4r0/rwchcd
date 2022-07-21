@@ -64,7 +64,6 @@ static inline const struct s_plant * __boiler_to_plant(void * priv)
 	return (runtime_get()->plant);
 }
 
-FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__boiler_to_plant, s_boiler_priv, pump_load)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__boiler_to_plant, s_boiler_priv, valve_ret)
 
 int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filecfg_parser_node * const node)
@@ -82,7 +81,6 @@ int hs_boiler_parse(struct s_heatsource * const heatsource, const struct s_filec
 		{ NODESTR,		"tid_boiler_return",	false,	fcp_inputs_temperature_s_boiler_priv_tid_boiler_return, NULL, },
 		{ NODESTR,		"rid_burner_1",		true,	fcp_outputs_relay_s_boiler_priv_rid_burner_1,	NULL, },
 		{ NODESTR,		"rid_burner_2",		false,	fcp_outputs_relay_s_boiler_priv_rid_burner_2,	NULL, },
-		{ NODESTR,		"pump_load",		false,	fcp_pump_s_boiler_priv_ppump_load,	NULL, },
 		{ NODESTR,		"valve_ret",		false,	fcp_valve_s_boiler_priv_pvalve_ret,	NULL, },
 	};
 	struct s_boiler_priv * boiler;

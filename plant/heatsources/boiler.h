@@ -43,8 +43,7 @@ struct s_boiler_priv {
 		orid_t rid_burner_1;		///< first stage of burner. *REQUIRED*
 		orid_t rid_burner_2;		///< second stage of burner. *Optional* -- XXX NOT IMPLEMENTED
 		struct {
-			struct s_pump * restrict pump_load;	///< load pump for the boiler. *Optional*
-			struct s_valve * restrict valve_ret;	///< mixing return valve for the boiler. *Optional*
+			struct s_valve * restrict valve_ret;	///< mixing return valve for the boiler. *Optional* -- XXX UNTESTED
 		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {

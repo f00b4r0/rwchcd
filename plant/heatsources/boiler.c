@@ -301,12 +301,6 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 		ret = -EMISCONFIGURED;
 	}
 
-	// if pump exists check it's correctly configured
-	if (boiler->set.p.pump_load && !pump_is_online(boiler->set.p.pump_load)) {
-		pr_err(_("\"%s\": pump_load \"%s\" is set but not online"), heat->name, pump_name(boiler->set.p.pump_load));
-		ret = -EMISCONFIGURED;
-	}
-
 	// if return valve exists check it's online
 	if (boiler->set.p.valve_ret) {
 		if (!valve_is_online(boiler->set.p.valve_ret)) {
@@ -361,9 +355,6 @@ static int boiler_shutdown(struct s_boiler_priv * const boiler)
 	assert(boiler);
 
 	// ensure pumps and valves are off after summer maintenance
-	if (boiler->set.p.pump_load)
-		pump_shutdown(boiler->set.p.pump_load);
-
 	if (boiler->set.p.valve_ret)
 		(void)!valve_reqclose_full(boiler->set.p.valve_ret);
 
@@ -430,9 +421,6 @@ static void boiler_failsafe(struct s_boiler_priv * const boiler)
 	(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 	(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
 	// failsafe() is called after runchecklist(), the above can't fail
-
-	if (boiler->set.p.pump_load)
-		(void)!pump_set_state(boiler->set.p.pump_load, ON, FORCE);
 
 	if (boiler->set.p.valve_ret)
 		(void)!valve_reqopen_full(boiler->set.p.valve_ret);
@@ -578,7 +566,7 @@ static int boiler_hscb_logic(struct s_heatsource * restrict const heat)
 		dbgmsg(2, (temp_intgrl < 0), "\"%s\": boil integral: %d mKs, cshift: %d%%", heat->name, temp_intgrl, cshift_boil);
 	}
 
-	// handler boiler return temp if set - @todo Consider handling of pump_load. Consider adjusting target temp
+	// handler boiler return temp if set - @todo Consider adjusting target temp
 	if (boiler->set.limit_treturnmin) {
 		// if we have a configured mixing return valve, use it
 		if (boiler->set.p.valve_ret) {
@@ -633,6 +621,7 @@ fail:
  * @return exec status. If error action must be taken (e.g. offline boiler)
  * @warning no parameter check
  * @todo XXX TODO: implement 2nd stage
+ * @todo implement summer maintenance for mixing valve
  * @note will trigger an alarm if burner stays on for >6h without heat output
  * @note this function ensures that in the event of an error, the boiler is put in a failsafe state as defined in boiler_failsafe().
  */
@@ -700,15 +689,6 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	// overtemp turn off at 2K hardcoded histeresis
 	if (unlikely(aler(&heat->run.overtemp)) && (actual_temp < (boiler->set.limit_thardmax - deltaK_to_temp(2))))
 		aser(&heat->run.overtemp, false);
-
-	// turn pump on if any
-	if (boiler->set.p.pump_load) {
-		ret = pump_set_state(boiler->set.p.pump_load, ON, 0);
-		if (unlikely(ALL_OK != ret)) {
-			alarms_raise(ret, _("Boiler \"%s\": failed to request load pump \"%s\" ON"), heat->name, pump_name(boiler->set.p.pump_load));
-			goto fail;	// critical error: stop there
-		}
-	}
 
 	/* un/trip points */
 	// apply trip_temp only if we have a heat request
