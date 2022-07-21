@@ -38,7 +38,7 @@ struct s_plant {
 		bool summer_maintenance;		///< true if pumps/valves should be run periodically in summer. *Defaults to false*. See summer_run_interval and #summer_run_duration
 		timekeep_t sleeping_delay;		///< if no circuit request for this much time, then plant could sleep (will trigger electric switchover when available). (*default*: 0 disables). *Optional*
 		timekeep_t summer_run_interval;		///< interval between summer maintenance runs (suggested: 1 week). *Required* if #summer_maintenance is true
-		timekeep_t summer_run_duration;		///< duration of summer maintenance operation (suggested: 10mn). *Required* if #summer_maintenance is true.
+		timekeep_t summer_run_duration;		///< duration of summer maintenance operation (suggested: 10mn). *Required* if #summer_maintenance is true. @note should last long enough for valves to be fully cycled. 
 	} set;
 	struct {
 		bool online;			///< true if plant is online

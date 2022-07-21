@@ -22,6 +22,11 @@
  *
  * @todo multiple heatsources: in switchover mode (e.g. wood furnace + fuel:
  * switch to fuel when wood dies out) and cascade mode (for large systems).
+ *
+ * @warning during summer maintenance (which only happens when the plant is "asleep"), the plant entities
+ * bypass their normal operating logic (including safety checks) to operate their respective actuators (pumps,
+ * valves...). Temperature readings will typically not be updated. Thus summer maintenance should only be set
+ * to last a a few minutes.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -728,26 +733,21 @@ static bool plant_summer_ok(const struct s_plant * restrict const plant)
 
 /**
  * Plant summer maintenance operations.
- * When summer conditions are met, the pumps and mixing valves are periodically actuated.
- * The idea of this function is to run as an override filter in the plant_run()
- * loop so that during summer maintenance, the state of these actuators is
- * overriden.
+ * When summer conditions are met, a plant-wide signal is raised so that
+ * the pumps and mixing valves can be periodically actuated.
  * @param plant target plant
  * @return exec status
- * @todo sequential run (instead of parallel), then we can handle isolation valves
  * @note summer maintenance can only happen if the plant can sleep:
  * Handling mixed setups with tanks operating while others are attempting maintenance, especially
  * in the context of shared pumps, is a headache I don't want to deal with for now.
  * Likewise, to exert circuits mixing valve we must be certain that sending cold water back to the
  * heatsource is not going to be a problem, or that the intake is actually not too hot (for e.g. floor heating).
+ * @warning during summer maintenance, most entities bypass their normal operating logic and forcefully
+ * operate their actuators: this state should not be carried on for too long a time.
  */
 static int plant_summer_maintenance(struct s_plant * restrict const plant)
 {
 	const timekeep_t now = timekeep_now();
-	struct s_pump * pump;
-	struct s_valve * valve;
-	plid_t id;
-	int ret;
 
 	assert(plant);
 	assert(plant->run.online);
@@ -775,30 +775,6 @@ static int plant_summer_maintenance(struct s_plant * restrict const plant)
 
 	dbgmsg(1, 1, "summer maintenance active");
 	plant->pdata.run.summer_maint = true;
-
-	// open all valves
-	for (id = 0; id < plant->valves.last; id++) {
-		valve = &plant->valves.all[id];
-		if (!valve_is_online(valve))
-			continue;
-
-		if (VA_TYPE_ISOL == valve_get_type(valve))
-			continue;	// don't touch isolation valves
-
-		ret = valve_reqopen_full(valve);
-		if (ALL_OK != ret) {
-			dbgerr("valve_reqopen_full failed on %d (%d)", id, ret);
-		}
-	}
-
-	// set all pumps ON
-	for (id = 0; id < plant->pumps.last; id++) {
-		pump = &plant->pumps.all[id];
-		if (pump_get_dhwt_use(pump))
-			continue;	// don't touch DHWT pumps when in use
-
-		(void)pump_set_state(pump, ON, NOFORCE);
-	}
 
 	return (ALL_OK);
 }
@@ -855,6 +831,9 @@ int plant_run(struct s_plant * restrict const plant)
 	plant_collect_hrequests(plant);
 	plant_dispatch_hrequests(plant);
 
+	if (plant->set.summer_maintenance)
+		plant_summer_maintenance(plant);
+
 	// now run the heat sources
 	for (id = 0; id < plant->heatsources.last; id++) {
 		heatsource = &plant->heatsources.all[id];
@@ -885,9 +864,6 @@ int plant_run(struct s_plant * restrict const plant)
 		plant->pdata.run.consumer_shift = RWCHCD_CSHIFT_MAX;
 		plant->pdata.run.dhwt_currprio = UINT_FAST8_MAX;
 	}
-
-	if (plant->set.summer_maintenance)
-		plant_summer_maintenance(plant);
 
 	// finally run the actuators
 	// run the valves
