@@ -15,10 +15,12 @@
 	* dhwt: ensure frostfree temperature is honored
 	* dhwt: implement adaptive heat request
 	* dhwt: ensure recycling stops when switching system mode
+	* dhwt: implement hard cap at 90°C
 	* boiler: Adjust trip anticipation up to full hysteresis
 	* boiler: fix RM_OFF handling
 	* boiler: ensure limit_tmax is always honored
 	* boiler: improve handling of minimum return temp with no mixing valve
+	* boiler: remove load pump implementation
 	* hcircuit: tighten transition threshold when indoor sensor is present
 	* hcircuit: fix floor output logic and improve rate-of-rise limiter
 	* hcircuit: gracefully handle bilinear computation failure
@@ -28,6 +30,7 @@
 	* valve: remove PI controller jacketing
 	* valve: PI controller: implement saturated arithmetic
 	* plant: SYS_OFF/SYS_TEST always take precedence
+	* plant: move summer maintenance routines to individual entities
 	* log_statsd: fix log output & IPv6 support
 	* log_rrd: allow arbitrary log intervals
 	* dbus: fix temperature read primitive
