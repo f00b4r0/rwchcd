@@ -504,8 +504,10 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 	dhwt_shutdown(dhwt);
 
 	ret = outputs_relay_state_set(dhwt->set.rid_selfheater, dhwt->set.electric_hasthermostat ? ON : OFF);
-	if (ALL_OK == ret)
+	if (ALL_OK == ret) {
 		aser(&dhwt->run.electric_mode, dhwt->set.electric_hasthermostat);
+		aser(&dhwt->run.charge_on, dhwt->set.electric_hasthermostat);
+	}
 }
 
 /**
@@ -527,6 +529,7 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
  * although not necessarily at the planned time if there is delay in servicing the target DHWT priority.
  * @note this function ensures that in the event of an error, the dhwt is put in a failsafe state as defined in dhwt_failsafe().
  * @todo review shared recycle pump summer maintenance scenarios - with electric (can they materially exist?).
+ * @todo REFACTOR
  * @warning RM_TEST and RM_SUMMAINT bypass all safety logic.
  */
 int dhwt_run(struct s_dhwt * const dhwt)
