@@ -32,7 +32,6 @@ struct s_pump {
 		bool grabbed;			///< true if pump has been grabbed for use
 		bool req_on;			///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
-		bool dhwt_use;			///< true if pump is currently used by active DHWT
 		timekeep_t last_switch;		///< last time the pump state was toggled
 	} run;		///< private runtime (internally handled)
 	struct {
