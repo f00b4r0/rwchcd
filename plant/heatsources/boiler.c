@@ -191,7 +191,7 @@ static struct s_boiler_priv * boiler_new(void)
 		boiler->set.limit_tmax = celsius_to_temp(90);
 		boiler->set.limit_thardmax = celsius_to_temp(100);
 		boiler->set.t_freeze = celsius_to_temp(5);
-		boiler->set.burner_min_time = 60 * 4;	// 4mn
+		boiler->set.burner_min_time = timekeep_sec_to_tk(60 * 4);	// 4mn
 	}
 
 	return (boiler);
