@@ -56,6 +56,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/file.h>	// flock
+#include <sys/wait.h>	// wait
 #include <time.h>	// clock_gettime()
 
 #include "rwchcd.h"
@@ -166,10 +167,12 @@ int rwchcd_add_subsyscb(const char * const name, int (* oncb)(void), int (* offc
  * Daemon signal handler.
  * - SIGINT, SIGTERM: graceful shutdown.
  * - SIGUSR1: configuration dump.
+ * - SIGCHLD: cleanup zombies
  * @param signum signal to handle.
  */
 static void sig_handler(int signum)
 {
+	int ret;
 	switch (signum) {
 		case SIGINT:
 		case SIGTERM:
@@ -182,6 +185,9 @@ static void sig_handler(int signum)
 #ifdef HAS_FILECFG
 			filecfg_dump();
 #endif
+			break;
+		case SIGCHLD:
+			wait(&ret);	// cleanup after zombies
 			break;
 		default:
 			break;
@@ -610,6 +616,7 @@ int main(int argc, char **argv)
 	sigaction(SIGINT, &saction, NULL);
 	sigaction(SIGTERM, &saction, NULL);
 	sigaction(SIGUSR1, &saction, NULL);
+	sigaction(SIGCHLD, &saction, NULL);
 
 #ifdef HAS_DBUS
 	dbus_main();	// launch dbus main loop, blocks execution until termination
