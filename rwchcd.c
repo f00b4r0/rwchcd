@@ -424,17 +424,18 @@ static void * thread_watchdog(void * arg)
 			ret = 1;	// ignore signal interruptions - SA_RESTART doesn't work for select()
 
 		now = timekeep_now();
-		if (timekeep_a_ge_b(prevtime, now))
-			errx(-1, "Time moved back or froze!");
+		if (timekeep_a_ge_b(prevtime, now)) {
+			pr_err("Time moved back or froze!");
+			goto die;
+		}
 		prevtime = now;
 	} while (ret > 0);
 	
-	if (!ret) {// timemout occured
-		dbgerr("die!");
-		abort();
-	}
-	else	// ret < 0
-		err(ret, NULL);
+	if (!ret) // timemout occured
+		dbgerr("watchdog timeout!");
+die:
+	dbgerr("die!");
+	abort();
 }
 
 static void usage(const char *name)
