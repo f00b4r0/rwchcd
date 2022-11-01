@@ -613,7 +613,7 @@ int main(int argc, char **argv)
 	// No error checking because it's no big deal if it fails
 	saction.sa_handler = sig_handler;
 	sigemptyset(&saction.sa_mask);
-	saction.sa_flags = SA_RESETHAND; // reset default handler after first call
+	saction.sa_flags = 0;
 	sigaction(SIGINT, &saction, NULL);
 	sigaction(SIGTERM, &saction, NULL);
 	sigaction(SIGUSR1, &saction, NULL);
