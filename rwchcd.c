@@ -58,6 +58,7 @@
 #include <sys/file.h>	// flock
 #include <sys/wait.h>	// wait
 #include <time.h>	// clock_gettime()
+#include <locale.h>	// setlocale()
 
 #include "rwchcd.h"
 #include "hw_backends/hw_backends.h"
@@ -204,6 +205,8 @@ static void sig_handler(int signum)
 static int init_process(void)
 {
 	int ret;
+
+	setlocale(LC_NUMERIC, "C");	// ensure floats have decimal dot (for log outputs)
 
 	ret = timekeep_init();
 	if (ret) {
