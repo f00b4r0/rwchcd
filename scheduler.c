@@ -91,8 +91,10 @@ end:
 static void scheduler_update_schedule(struct s_schedule * const sched)
 {
 	const time_t now = time(NULL);
-	struct tm * const ltime = localtime(&now);	// localtime handles DST and TZ for us
 	const struct s_schedule_e * schent, * schent_start, * schent_curr;
+	struct tm ltime;
+
+	localtime_r(&now, &ltime);	// localtime handles DST and TZ for us
 
 	schent_curr = aler(&sched->current);
 
@@ -109,12 +111,12 @@ restart:
 	// find the current running schedule
 
 	// special case first entry which may be the only one
-	if (scheduler_ent_past_today(schent_start, ltime))
+	if (scheduler_ent_past_today(schent_start, &ltime))
 		aser(&sched->current, schent_start);
 
 	// loop over other entries, stop if/when back at first entry
 	for (schent = schent_start->next; schent_start != schent; schent = schent->next) {
-		if (unlikely(scheduler_ent_past_today(schent, ltime)))
+		if (unlikely(scheduler_ent_past_today(schent, &ltime)))
 			aser(&sched->current, schent);
 		else if (likely(schent_curr))
 			break;	// if we already have a valid schedule entry ('synced'), first future entry stops search
@@ -126,10 +128,10 @@ restart:
 		 we must roll back through the week until we find one.
 		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
 		 to find the last known valid schedule */
-		ltime->tm_min = 59;
-		ltime->tm_hour = 23;
-		if (--ltime->tm_wday < 0)
-			ltime->tm_wday = 6;
+		ltime.tm_min = 59;
+		ltime.tm_hour = 23;
+		if (--ltime.tm_wday < 0)
+			ltime.tm_wday = 6;
 		goto restart;
 	}
 }

@@ -366,13 +366,15 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 {
 	const struct s_schedule_eparams * eparams;
 	const time_t tnow = time(NULL);
-	const struct tm * const ltime = localtime(&tnow);	// localtime handles DST and TZ for us
 	const enum e_systemmode sysmode = runtime_systemmode();
 	enum e_runmode prev_runmode, new_runmode;
 	temp_t target_temp, ltmin, ltmax;
 	bool recycle = false;
+	struct tm ltime;
 
 	assert(dhwt);
+
+	localtime_r(&tnow, &ltime);	// localtime handles DST and TZ for us
 
 	// store current status for transition detection
 	prev_runmode = aler(&dhwt->run.runmode);
@@ -454,9 +456,9 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		if (RM_COMFORT == new_runmode) {
 			if (DHWTF_ALWAYS == dhwt->set.force_mode)
 				aser(&dhwt->run.force_on, true);
-			else if ((DHWTF_FIRST == dhwt->set.force_mode) && (ltime->tm_yday != dhwt->run.charge_yday)) {
+			else if ((DHWTF_FIRST == dhwt->set.force_mode) && (ltime.tm_yday != dhwt->run.charge_yday)) {
 				aser(&dhwt->run.force_on, true);
-				dhwt->run.charge_yday = ltime->tm_yday;
+				dhwt->run.charge_yday = ltime.tm_yday;
 			}
 		}
 	}
