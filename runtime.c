@@ -15,6 +15,7 @@
 #include <string.h>	// memset/memcpy
 #include <assert.h>
 #include <stdatomic.h>
+#include <stdlib.h>	// free()
 
 #include "plant/plant.h"
 #include "runtime.h"
@@ -342,6 +343,7 @@ int runtime_offline(void)
 void runtime_exit(void)
 {
 	plant_del(Runtime.plant);
+	free((void *)Runtime.set.notifier);
 	runtime_init();		// clear runtime
 }
 
