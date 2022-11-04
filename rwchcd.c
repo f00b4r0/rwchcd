@@ -314,13 +314,14 @@ static void exit_process(void)
 	timekeep_exit();
 }
 
-static pthread_mutex_t master_mutex;
-static pthread_cond_t master_cond;
+static pthread_mutex_t master_mutex, wdog_mutex;
+static pthread_cond_t master_cond, wdog_cond;
 
 static void * thread_master(void *arg)
 {
 	int pipewfd = *((int *)arg);
 	struct s_runtime * restrict const runtime = runtime_get();
+	struct timespec ts;
 	int ret;
 
 #ifdef _GNU_SOURCE
@@ -380,7 +381,27 @@ static void * thread_master(void *arg)
 			dbgerr("watchdog write returned: %d", ret);
 			abort();
 		}
-		
+
+#ifdef _GNU_SOURCE
+		/* wait (but not forever) until watchdog thread has "replied" */
+		ret = clock_gettime(CLOCK_MONOTONIC, &ts);
+		if (ret) {
+			warn("failed to get monotonic time!");
+			goto kill;	// something is terribly wrong
+		}
+
+		ts.tv_sec += 2;		// 2s timeout
+
+		pthread_mutex_lock(&wdog_mutex);
+		ret = pthread_cond_timedwait(&wdog_cond, &wdog_mutex, &ts);
+		pthread_mutex_unlock(&wdog_mutex);
+
+		if (ETIMEDOUT == ret) {
+			warnx("Timed out waiting for watchdog!");
+kill:
+			abort();	// die!
+		}
+#endif
 		/* this sleep determines the maximum time resolution for the loop,
 		 * with significant impact on temp_expw_mavg() and hardware routines. */
 		timekeep_sleep(1);
@@ -431,6 +452,13 @@ static void * thread_watchdog(void * arg)
 			pr_err("Time moved back or froze!");
 			goto die;
 		}
+
+#ifdef _GNU_SOURCE
+		// let the master thread know we're still alive
+		pthread_mutex_lock(&wdog_mutex);
+		pthread_cond_signal(&wdog_cond);
+		pthread_mutex_unlock(&wdog_mutex);
+#endif
 		prevtime = now;
 	} while (ret > 0);
 	
@@ -455,6 +483,7 @@ int main(int argc, char **argv)
 {
 	struct sigaction saction;
 	pthread_t master_thr, timer_thr, scheduler_thr, watchdog_thr, timekeep_thr;
+	pthread_condattr_t condattr;
 	pthread_attr_t attr;
 	const struct sched_param sparam = { RWCHCD_PRIO };
 	const char *progname;
@@ -552,6 +581,21 @@ int main(int argc, char **argv)
 	ret = pthread_cond_init(&master_cond, NULL);
 	if (ret)
 		errx(ret, "failed to create master condition!");
+
+#ifdef _GNU_SOURCE
+	ret = pthread_mutex_init(&wdog_mutex, NULL);
+	if (ret)
+		errx(ret, "failed to create watchdog mutex!");
+
+	pthread_condattr_init(&condattr);
+	pthread_condattr_setclock(&condattr, CLOCK_MONOTONIC);
+	ret = pthread_cond_init(&wdog_cond, &condattr);
+	if (ret)
+		errx(ret, "failed to create watchdog condition!");
+	pthread_condattr_destroy(&condattr);
+#else
+ #warning No support for pthread_condattr_setclock(): detection of watchdog failure impossible
+#endif
 
 	ret = pthread_create(&master_thr, &attr, thread_master, &pipefd[1]);
 	if (ret)
@@ -663,6 +707,10 @@ cancel:
 
 	pthread_mutex_destroy(&master_mutex);
 	pthread_cond_destroy(&master_cond);
+#ifdef _GNU_SOURCE
+	pthread_mutex_destroy(&wdog_mutex);
+	pthread_cond_destroy(&wdog_cond);
+#endif
 
 cleanup:
 	close(pipefd[0]);
