@@ -561,6 +561,8 @@ int main(int argc, char **argv)
 	if (ret)
 		errx(ret, "failed to create timekeep thread!");
 
+	pthread_attr_destroy(&attr);
+
 	// XXX Dropping privileges here because we need root to set SCHED_FIFO during pthread_create().
 	// We block the master thread via Sem_master_thread
 	// note: setuid() sends SIG_RT1 to thread due to NPTL implementation
