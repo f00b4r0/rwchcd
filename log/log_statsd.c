@@ -222,19 +222,19 @@ restartzero:
 		if (zerofirst) {
 			ret = snprintf(buffer, avail, "%s%s.%s:0|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], mtype);
 			assert(ret < LOG_STATSD_UDP_BUFSIZE);
-			if (ret >= avail) {
+			if (ret < 0) {
+				ret = -ESTORE;
+				goto cleanup;
+			}
+			else if ((size_t)ret >= avail) {
 				// send what we have, reset buffer, restart - no need to add '\0': sendto will truncate anyway
 				sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, (struct sockaddr *)&Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 				buffer = sbuffer;
 				avail = LOG_STATSD_UDP_BUFSIZE;
 				goto restartzero;
 			}
-			else if (ret < 0) {
-				ret = -ESTORE;
-				goto cleanup;
-			}
 			buffer += ret;
-			avail -= ret;
+			avail -= (size_t)ret;
 		}
 
 restartbuffer:
@@ -253,19 +253,19 @@ restartbuffer:
 		}
 
 		assert(ret < LOG_STATSD_UDP_BUFSIZE);
-		if (ret >= avail) {
+		if (ret < 0) {
+			ret = -ESTORE;
+			goto cleanup;
+		}
+		else if ((size_t)ret >= avail) {
 			// send what we have, reset buffer, restart - no need to add '\0': sendto will truncate anyway
 			sendto(Log_statsd.run.sockfd, sbuffer, LOG_STATSD_UDP_BUFSIZE - avail, 0, (struct sockaddr *)&Log_statsd.run.ai_addr, Log_statsd.run.ai_addrlen);
 			buffer = sbuffer;
 			avail = LOG_STATSD_UDP_BUFSIZE;
 			goto restartbuffer;
 		}
-		else if (ret < 0) {
-			ret = -ESTORE;
-			goto cleanup;
-		}
 		buffer += ret;
-		avail -= ret;
+		avail -= (size_t)ret;
 	}
 
 	ret = ALL_OK;
