@@ -32,7 +32,7 @@ struct s_runtime {
 		_Atomic enum e_systemmode systemmode;	///< current operation mode
 		_Atomic enum e_runmode runmode;		///< CANNOT BE #RM_AUTO
 		_Atomic enum e_runmode dhwmode;		///< CANNOT BE #RM_AUTO or #RM_DHWONLY
-		atomic_bool stopdhw;			///< DHW kill switch: if true, all DHWTs will switch to RM_FROSTFREE
+		atomic_bool stopdhw;			///< DHW kill switch: if true, all DHWTs running RM_AUTO will switch to RM_FROSTFREE
 	} run;
 	struct s_plant * restrict plant;	///< running plant
 };

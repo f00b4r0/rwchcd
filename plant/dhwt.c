@@ -382,22 +382,24 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	// SYS_TEST/SYS_OFF always override
 	if ((SYS_TEST == sysmode) || (SYS_OFF == sysmode))
 		new_runmode = runtime_dhwmode();
-	else if (runtime_get_stopdhw())
-		new_runmode = RM_FROSTFREE;
 	else {
 		// handle global/local runmodes
 		new_runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
 		if (RM_AUTO == new_runmode) {
-			// if we have a schedule, use it, or global settings if unavailable
-			eparams = scheduler_get_schedparams(dhwt->set.schedid);
-			if ((SYS_AUTO == sysmode) && eparams) {
-				new_runmode = eparams->dhwmode;
-				aser(&dhwt->run.legionella_on, eparams->legionella);
-				// XXX REVISIT recycle can only be set via schedule for now
-				recycle = aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
+			if (runtime_get_stopdhw())	// if killswitch is engaged, stop
+				new_runmode = RM_FROSTFREE;
+			else {
+				// if we have a schedule, use it, or global settings if unavailable
+				eparams = scheduler_get_schedparams(dhwt->set.schedid);
+				if ((SYS_AUTO == sysmode) && eparams) {
+					new_runmode = eparams->dhwmode;
+					aser(&dhwt->run.legionella_on, eparams->legionella);
+					// XXX REVISIT recycle can only be set via schedule for now
+					recycle = aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
+				}
+				else	// don't touch legionella
+					new_runmode = runtime_dhwmode();
 			}
-			else	// don't touch legionella
-				new_runmode = runtime_dhwmode();
 		}
 	}
 
