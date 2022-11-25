@@ -300,6 +300,8 @@ int runtime_online(void)
 
 	alarms_online(Runtime.set.notifier);
 
+	Runtime.run.lastrun = timekeep_now();
+
 	return (plant_online(Runtime.plant));
 }
 
@@ -309,8 +311,14 @@ int runtime_online(void)
  */
 int runtime_run(void)
 {
+	const timekeep_t now = timekeep_now();
+	const timekeep_t step = now - Runtime.run.lastrun;
+
 	if (unlikely(!Runtime.set.configured || !Runtime.plant))
 		return (-ENOTCONFIGURED);
+
+	aser(&Runtime.run.timestep, step);
+	Runtime.run.lastrun = now;
 
 	return (plant_run(Runtime.plant));
 }
@@ -391,4 +399,9 @@ int runtime_set_stopdhw(bool state)
 {
 	aser(&Runtime.run.stopdhw, state);
 	return (ALL_OK);
+}
+
+timekeep_t runtime_get_timestep(void)
+{
+	return (aler(&Runtime.run.timestep));
 }

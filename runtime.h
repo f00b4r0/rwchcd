@@ -33,6 +33,8 @@ struct s_runtime {
 		_Atomic enum e_runmode runmode;		///< CANNOT BE #RM_AUTO
 		_Atomic enum e_runmode dhwmode;		///< CANNOT BE #RM_AUTO or #RM_DHWONLY
 		atomic_bool stopdhw;			///< DHW kill switch: if true, all DHWTs running RM_AUTO will switch to RM_FROSTFREE
+		_Atomic timekeep_t timestep;		///< Stores the elapsed time between the last two consecutive runs of runtime_run()
+		timekeep_t lastrun;			///< Last time runtime_run() was executed
 	} run;
 	struct s_plant * restrict plant;	///< running plant
 };
@@ -52,5 +54,7 @@ enum e_runmode runtime_runmode(void);
 enum e_runmode runtime_dhwmode(void);
 bool runtime_get_stopdhw(void);
 int runtime_set_stopdhw(bool state);
+
+timekeep_t runtime_get_timestep(void);
 
 #endif /* rwchcd_runtime_h */
