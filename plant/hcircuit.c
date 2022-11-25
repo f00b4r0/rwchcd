@@ -629,13 +629,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	// transition detection
 	if (prev_runmode != new_runmode) {
-		typeof(circuit->run.transition) newtrans = (ambient_temp > request_temp) ? TRANS_DOWN : TRANS_UP;
-		// make sure that we really have a transition before updating state variables
-		if (circuit->run.transition != newtrans) {
-			circuit->run.transition = newtrans;
-			circuit->run.trans_start_temp = ambient_temp;
-			circuit->run.trans_start_time = now;
-		}
+		circuit->run.transition = (ambient_temp > request_temp) ? TRANS_DOWN : TRANS_UP;
+		circuit->run.trans_start_temp = ambient_temp;
+		circuit->run.trans_start_time = now;
 	}
 
 	// handle transitions logic - transition is over when we are trans_thrsh from target
