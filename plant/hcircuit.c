@@ -576,8 +576,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	if ((circuit->run.outhoff || circuit->run.inoff) && !aler(&bmodel->run.frost))
 		new_runmode = RM_OFF;
 
-	elapsed_time = now - circuit->run.ambient_update_time;
-
 	// Ambient temperature is either read or modelled
 	ambient_temp = aler(&circuit->run.actual_ambient);
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
@@ -587,6 +585,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		trans_thrsh = deltaK_to_temp(0.5);	// apply a tight threshold for end-of-transition
 	}
 	else {	// no sensor (or faulty), apply ambient model
+		elapsed_time = now - circuit->run.ambient_update_time;
 		dtmin = expw_mavg_dtmin(3*bmodel->set.tau);
 		trans_thrsh = deltaK_to_temp(1);
 
@@ -635,8 +634,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		if (circuit->run.transition != newtrans) {
 			circuit->run.transition = newtrans;
 			circuit->run.trans_start_temp = ambient_temp;
-			circuit->run.trans_active_elapsed = 0;
-			circuit->run.ambient_update_time = now;	// reset timer
+			circuit->run.trans_start_time = now;
 		}
 	}
 
@@ -646,10 +644,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			if (ambient_temp <= (request_temp + trans_thrsh))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			else {
-				circuit->run.trans_active_elapsed += elapsed_time;
 				// Floor output when requested (through consumer_sdelay) if down transition started no later
 				// than consumer_sdelay ago and no absolute DHWT priority charge is in effect
-				if ((circuit->run.trans_active_elapsed < circuit->pdata->run.consumer_sdelay) && !circuit->pdata->run.dhwc_absolute)
+				if (((now - circuit->run.trans_start_time) < circuit->pdata->run.consumer_sdelay) && !circuit->pdata->run.dhwc_absolute)
 					circuit->run.floor_output = true;
 				else if (can_fastcool)
 					new_runmode = RM_OFF;	// enact RM_OFF on transition when possible (do it here to catch e.g. outoff deasserted but ambient temp warrants fastcool)
@@ -659,11 +656,11 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 			if (ambient_temp >= (request_temp - trans_thrsh))
 				circuit->run.transition = TRANS_NONE;	// transition completed
 			else {
-				//  account active elapsed time only if hcircuit wtempt is at least within 5K of target
-				if (aler(&circuit->run.actual_wtemp) > (aler(&circuit->run.target_wtemp) - deltaK_to_temp(5)))
-					circuit->run.trans_active_elapsed += elapsed_time;
+				//  shift start time to delay stop trigger if hcircuit wtempt is not at least within 5K of target
+				if (aler(&circuit->run.actual_wtemp) < (aler(&circuit->run.target_wtemp) - deltaK_to_temp(5)))
+					circuit->run.trans_start_time += runtime_get_timestep();
 				// apply boost target
-				if (circuit->run.trans_active_elapsed < circuit->set.boost_maxtime)
+				if ((now - circuit->run.trans_start_time) < circuit->set.boost_maxtime)
 					target_ambient += circuit->set.tambient_boostdelta;
 			}
 			break;
@@ -674,16 +671,16 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	aser(&circuit->run.runmode, new_runmode);
 
-	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early - elapsed_time is still updated after end of transition)
-	if (elapsed_time > circuit->pdata->run.consumer_sdelay)
+	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early and retriggers when consumer_sdelay is reloaded)
+	if ((now - circuit->run.trans_start_time) > circuit->pdata->run.consumer_sdelay)
 		circuit->run.floor_output = false;
 
 	// store current ambient & target temp
 	aser(&circuit->run.actual_ambient, ambient_temp);
 	aser(&circuit->run.target_ambient, target_ambient);
 
-	dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, active_elapsed: %u",
-	       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_active_elapsed));
+	dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, since: %u",
+	       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_start_time));
 
 	return (ALL_OK);
 }
