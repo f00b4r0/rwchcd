@@ -113,8 +113,7 @@ __attribute__((warn_unused_result))
 static int heatsource_logic(struct s_heatsource * restrict const heat)
 {
 	const struct s_schedule_eparams * eparams;
-	const timekeep_t now = timekeep_now();
-	const timekeep_t dt = now - heat->run.last_run_time;
+	const timekeep_t dt = runtime_get_timestep();
 	const enum e_systemmode sysmode = runtime_systemmode();
 	tempdiff_t temp;
 	int ret = -ENOTIMPLEMENTED;
@@ -156,8 +155,6 @@ static int heatsource_logic(struct s_heatsource * restrict const heat)
 
 	if (heat->cb.logic)
 		ret = heat->cb.logic(heat);
-
-	heat->run.last_run_time = now;
 
 	return (ret);
 }
