@@ -630,7 +630,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	// transition detection
 	if (prev_runmode != new_runmode) {
 		circuit->run.transition = (ambient_temp > request_temp) ? TRANS_DOWN : TRANS_UP;
-		circuit->run.trans_start_temp = ambient_temp;
 		circuit->run.trans_start_time = now;
 	}
 
@@ -675,8 +674,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	aser(&circuit->run.actual_ambient, ambient_temp);
 	aser(&circuit->run.target_ambient, target_ambient);
 
-	dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, st_amb: %.1f, cr_amb: %.1f, since: %u",
-	       circuit->name, circuit->run.transition, temp_to_celsius(circuit->run.trans_start_temp), temp_to_celsius(ambient_temp), timekeep_tk_to_sec(circuit->run.trans_start_time));
+	dbgmsg(1, (circuit->run.transition), "\"%s\": Trans: %d, since: %u",
+	       circuit->name, circuit->run.transition, timekeep_tk_to_sec(circuit->run.trans_start_time));
 
 	return (ALL_OK);
 }

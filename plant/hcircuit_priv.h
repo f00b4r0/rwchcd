@@ -92,7 +92,6 @@ struct s_hcircuit {
 		temp_t floor_wtemp;		///< saves current wtemp, stops updating when when floor_output is active
 		temp_t rorh_temp_increment;	///< temperature increment for the rorh limiter. Computed once in hcircuit_online()
 		temp_t rorh_last_target;	///< previous set point target for rorh control
-		temp_t trans_start_temp;	///< temperature at transition start
 	} run;		///< private runtime (internally handled)
 	struct {
 		atomic_bool o_runmode;		///< true if set.runmode should be overriden by overrides.runmode
