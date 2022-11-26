@@ -634,7 +634,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 		// apply output flooring when transitioning to lower power modes when requested (through consumer_sdelay) and no absolute DHWT priority charge is in effect
 		if (circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute && lib_runmode_is_changedown(prev_runmode, new_runmode))
-			circuit->run.floor_output = true;
+			circuit->run.floor_until_time = now + circuit->pdata->run.consumer_sdelay;	// XXX in the very unlucky even that this results in 0, this particular flooring request will be missed
 	}
 
 	// handle transitions logic - transition is over when we are trans_thrsh from target
@@ -642,7 +642,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		case TRANS_DOWN:
 			if (ambient_temp <= (request_temp + trans_thrsh))
 				circuit->run.transition = TRANS_NONE;	// transition completed
-			else if (can_fastcool && !circuit->run.floor_output)
+			else if (can_fastcool && !circuit->run.floor_until_time)
 				new_runmode = RM_OFF;	// enact RM_OFF on transition when possible (do it here to catch e.g. outoff deasserted but ambient temp warrants fastcool)
 			break;
 		case TRANS_UP:
@@ -664,9 +664,9 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 
 	aser(&circuit->run.runmode, new_runmode);
 
-	// reset output flooring ONLY when sdelay is elapsed (avoid early reset if transition ends early and retriggers when consumer_sdelay is reloaded)
-	if ((now - circuit->run.trans_start_time) > circuit->pdata->run.consumer_sdelay)
-		circuit->run.floor_output = false;
+	// reset output flooring ONLY when initial sdelay is elapsed (avoid early reset if transition ends early and retriggers when consumer_sdelay is reloaded)
+	if (circuit->run.floor_until_time && timekeep_a_ge_b(now, circuit->run.floor_until_time))
+		circuit->run.floor_until_time = 0;
 
 	// store current ambient & target temp
 	aser(&circuit->run.actual_ambient, ambient_temp);
@@ -787,7 +787,7 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	// handle special runmode cases
 	switch (aler(&circuit->run.runmode)) {
 		case RM_OFF:
-			if (circuit->run.active && circuit->run.floor_output) {	// executed at first switch from any mode to RM_OFF with floor_output
+			if (circuit->run.active && circuit->run.floor_until_time) {	// executed at first switch from any mode to RM_OFF with floor_until_time
 				// disable heat request from this circuit
 				aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
 				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %u", circuit->name, timekeep_tk_to_sec(circuit->pdata->run.consumer_sdelay));
@@ -866,7 +866,7 @@ summaint:
 			water_temp = hcircuit_ror_limiter(circuit, curr_temp, water_temp);
 
 		// interference: handle output flooring requests: maintain previous or higher wtemp
-		if (circuit->run.floor_output)
+		if (circuit->run.floor_until_time)
 			water_temp = (water_temp > circuit->run.floor_wtemp) ? water_temp : circuit->run.floor_wtemp;
 		else
 			circuit->run.floor_wtemp = curr_temp;

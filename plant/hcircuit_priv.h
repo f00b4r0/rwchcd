@@ -77,9 +77,9 @@ struct s_hcircuit {
 		bool active;			///< true if circuit is active
 		bool outhoff;			///< true if outdoor no heating conditions are met
 		bool inoff;			///< true if indoor no heating conditions are met
-		bool floor_output;		///< true if the current output should not be reduced
 		_Atomic enum e_runmode runmode;	///< circuit actual (computed) runmode
 		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current temperature transition happening on the circuit
+		timekeep_t floor_until_time;	///< non-zero if the current output should not be reduced until this future timestamp
 		timekeep_t rorh_update_time;	///< last time output was updated with respect to rorh
 		timekeep_t ambient_update_time;	///< ambient model last update time
 		timekeep_t trans_start_time;	///< transition start time (may be shifted if power doesn't meet demand)
