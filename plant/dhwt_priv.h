@@ -54,7 +54,7 @@ struct s_dhwt {
 		struct {
 			struct s_pump * restrict pump_feed;	///< feed pump for this tank. *Optional*
 			struct s_pump * restrict pump_recycle;	///< dhw recycle pump for this tank. *Optional*
-			struct s_valve * restrict valve_hwisol;	///< Isolation valve used to disconnect the DHWT from the heatwater flow. *Optional*. This valve will be open when the DHWT is in use (non-electric mode) and closed otherwise
+			struct s_valve * restrict valve_hwisol;	///< Isolation valve used to disconnect the DHWT from the heatwater flow. *Optional*.
 		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {
@@ -71,6 +71,7 @@ struct s_dhwt {
 		_Atomic temp_t actual_temp;	///< current temperature as retained by the software (could be top or bottom)
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 		timekeep_t mode_since;		///< starting time of current mode (if #charge_on: charge start time, else charge end time)
+		timekeep_t floor_until_time;	///< non-zero if the current intake should not be reduced until this future timestamp
 		int charge_yday;		///< last day forced charge was triggered in #DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
 	struct {

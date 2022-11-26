@@ -515,6 +515,148 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
 }
 
 /**
+ * Check if DHWT water inlet temperature is acceptable.
+ * Temperature is acceptable if all these conditions are met:
+ * - it is >= DHWT current temperature + 1K (hysteresis);
+ * - it is <= DHWT maximum permissible inlet temperature
+ * @param dhwt target DHWT
+ * @return 1 if temperature is acceptable, 0 if it is in the hysteresis region, -1 in all other cases (including sensor failure)
+ */
+static int dhwt_wintemp_acceptable(struct s_dhwt * restrict const dhwt)
+{
+	const temp_t win_tmax = SETorDEF(dhwt->set.params.limit_wintmax, dhwt->pdata->set.def_dhwt.limit_wintmax);
+	const temp_t curr_temp = aler(&dhwt->run.actual_temp);
+	temp_t win_temp;
+	int ret;
+
+	/// @warning Note: tid_win sensor must not rely on pump running for accurate read, otherwise this can be a problem
+	ret = inputs_temperature_get(dhwt->set.tid_win, &win_temp);
+	if (unlikely(ALL_OK != ret)) {
+		alarms_raise(ret, _("DHWT \"%s\": failed to get inlet temperature!"), dhwt->name);
+		return -1;
+	}
+
+	ret = -1;
+	if (win_temp <= win_tmax) {
+		if (win_temp >= (curr_temp + deltaK_to_temp(1)))
+			ret = 1;
+		else if (win_temp >= curr_temp)
+			ret = 0;
+	}
+
+	return (ret);
+}
+
+/**
+ * DHWT isolation valve operation.
+ * Adjusts the state of the tank isolation valve based on the following pseudo-code logic:
+ @verbatim
+ if electric: close
+ else
+	if hs_overtemp && curr_temp < tmax: open (XXX tolerate that win may be > wintmax in this emergency case)
+	else if (charge_on || floor_until_time):
+		if wintemp acceptable: open
+		else if wintemp unacceptable: close
+		else (hysteresis): do nothing
+	else: close
+ @endverbatim
+ * @param dhwt target DHWT
+ * @return exec status
+ * @note assumes that hs_overtemp cannot happen in electric_mode (i.e. electric_mode will be turned off)
+ */
+static int dhwt_run_hwisol(struct s_dhwt * restrict const dhwt)
+{
+	const temp_t tmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
+	bool isolate = true;
+	int ret;
+
+	if (aler(&dhwt->run.electric_mode))
+		goto set;
+
+	if (dhwt->pdata->run.hs_overtemp && (aler(&dhwt->run.actual_temp) < tmax))	// no hysteresis for this rare emergency
+		isolate = false;
+	else if ((aler(&dhwt->run.charge_on) || dhwt->run.floor_until_time)) {
+		ret = dhwt_wintemp_acceptable(dhwt);
+		if (!ret)	// dead zone - do nothing
+			goto out;
+		isolate = (ret != 1);	// isolate if temp not acceptable
+	}
+
+set:
+	ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, isolate);
+	if (unlikely(ALL_OK != ret))
+		alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
+out:
+	return ret;
+}
+
+/**
+ * DHWT feed pump operation.
+ * Adjusts the state of the tank feedpump based on the following pseudo-code logic:
+ @verbatim
+ if electric: (hwisol ? soft : hard) off
+ else:
+ 	if hs_overtemp && curr_temp < tmax: soft on (XXX tolerate that win may be > wintmax in this emergency case)
+	else if (charge_on || floor_until_time):
+ 		if wintemp acceptable: soft on
+ 		else if wintemp not acceptable : (hwisol ? soft : hard) off
+ 		else (hysteresis): do nothing
+ 	else (stop):
+ 		(hwisol || wintemp acceptable ? soft : hard) off // hwisol takes care of wintemp acceptable
+	if hwisol closed: override off
+ @endverbatim
+ * @param dhwt target DHWT
+ * @return exec status
+ * @warning do NOT assign cooldown_time for (shared) pumps which are feeding only hwisol-equipped DHWTs - XXX todo disambiguate shared force?
+ * @note discharge protection will fail if the input sensor needs water flow
+ * in the pump_feed. It is thus important to ensure that the water input temperature sensor
+ * can provide a reliable reading even when the feedpump is off.
+ * @note assumes that hs_overtemp cannot happen in electric_mode (i.e. electric_mode will be turned off)
+ */
+static int dhwt_run_feedpump(struct s_dhwt * restrict const dhwt)
+{
+	const temp_t tmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
+	const bool has_hwisol = !!dhwt->set.p.valve_hwisol;
+	bool turn_on, force;
+	int ret;
+
+	if (aler(&dhwt->run.electric_mode)) {
+		turn_on = OFF;
+		force = has_hwisol ? NOFORCE : FORCE;
+		goto set;
+	}
+
+	ret = dhwt_wintemp_acceptable(dhwt);
+
+	force = NOFORCE;
+	if (dhwt->pdata->run.hs_overtemp && (aler(&dhwt->run.actual_temp) < tmax))	// no hysteresis for this rare emergency
+		turn_on = ON;
+	else if (aler(&dhwt->run.charge_on) || dhwt->run.floor_until_time) {
+		if (!ret)	// dead zone - do nothing
+			goto out;
+
+		turn_on = (ret == 1);	// turn on if wintemp is acceptable
+		if (!turn_on)
+			force = has_hwisol ? NOFORCE : FORCE;
+	}
+	else {
+		turn_on = OFF;
+		force = (has_hwisol || (ret >= 0)) ? NOFORCE : FORCE;
+	}
+
+	// override while hwisol is closed
+	if (has_hwisol && !valve_is_open(dhwt->set.p.valve_hwisol))
+		turn_on = OFF;
+
+set:
+	ret = pump_set_state(dhwt->set.p.pump_feed, turn_on, force);
+	if (unlikely(ALL_OK != ret))
+		alarms_raise(ret, _("DHWT \"%s\": failed to request feed pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_feed));
+out:
+	return ret;
+}
+
+/**
  * DHWT control loop.
  * Controls the dhwt's elements to achieve the desired target temperature.
  * If charge time exceeds the limit, the DHWT will be stopped for the duration
@@ -524,9 +666,6 @@ static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)
  * considered a degraded operation mode and it will be reported as an error.
  * @param dhwt target dhwt
  * @return error status
- * @note discharge protection will fail if the input sensor needs water flow
- * in the pump_feed. It is thus important to ensure that the water input temperature sensor
- * can provide a reliable reading even when the feedpump is off.
  * @note An ongoing anti-legionella charge will not be interrupted by a plant-wide change in priority.
  * @note Since anti-legionella can only be unset _after_ a complete charge (or a DHWT shutdown),
  * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
@@ -743,64 +882,34 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			charge_on = false;
 			electric_mode = false;
 			dhwt->run.mode_since = now;
+
+			// handle heatsource flooring requests on untrip
+			if (dhwt->pdata->run.consumer_sdelay)
+				dhwt->run.floor_until_time = now + dhwt->pdata->run.consumer_sdelay;
 		}
 	}
 
-	// handle valve_hwisol
-	if (dhwt->set.p.valve_hwisol) {
-		// open when not running on electric, isolate the DHWT when operating from electric
-		ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, electric_mode ? true : false);
-		if (ALL_OK != ret) {
-			alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
-			goto fail;
-		}
-	}
-
-	// handle pump_feed - outside of the trigger since we need to manage inlet temp
-	if (dhwt->set.p.pump_feed) {
-		// if available, test for inlet water temp
-		/// @warning Note: tid_win sensor must not rely on pump running for accurate read, otherwise this can be a problem
-		ret = inputs_temperature_get(dhwt->set.tid_win, &water_temp);
-		if (unlikely(ALL_OK != ret))
-			alarms_raise(ret, _("DHWT \"%s\": failed to get inlet temperature!"), dhwt->name);
-
-		// on heatsource charge
-		if (charge_on && !electric_mode) {
-			if (dhwt->set.p.valve_hwisol)	// do not turn on feed pump if we have an isolation valve and it isn't fully open
-				test = valve_is_open(dhwt->set.p.valve_hwisol) ? ON : OFF;
-			else
-				test = ON;
-
-			if (ALL_OK == ret) {	// inputs_temperature_get result
-				// discharge protection: if water feed temp is < dhwt current temp, stop the pump
-				if (water_temp < curr_temp)
-					ret = pump_set_state(dhwt->set.p.pump_feed, OFF, FORCE);
-				else if (water_temp >= (curr_temp + deltaK_to_temp(1)))	// 1K hysteresis
-					ret = pump_set_state(dhwt->set.p.pump_feed, test, NOFORCE);
-			}
-			else
-				ret = pump_set_state(dhwt->set.p.pump_feed, test, NOFORCE);	// if sensor fails, turn on the pump unconditionally during heatsource charge
-		}
-		// no charge or electric charge
-		else {
-			test = FORCE;	// by default, force pump_feed immediate turn off
-			if (ALL_OK == ret) {	// inputs_temperature_get result
-				// discharge protection: if water feed temp is > dhwt current temp, we can apply cooldown
-				if (water_temp > curr_temp)
-					test = NOFORCE;
-			}
-
-			// turn off pump with conditional cooldown
-			ret = pump_set_state(dhwt->set.p.pump_feed, OFF, test);
-		}
-
-		if (unlikely(ALL_OK != ret))	// pump_set_state result
-			alarms_raise(ret, _("DHWT \"%s\": failed to request feed pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_feed));
-	}
+	// reset flooring when enough time has passed
+	if (dhwt->run.floor_until_time && timekeep_a_ge_b(now, dhwt->run.floor_until_time))
+		dhwt->run.floor_until_time = 0;
 
 	aser(&dhwt->run.actual_temp, curr_temp);
 	aser(&dhwt->run.charge_on, charge_on);
 	aser(&dhwt->run.electric_mode, electric_mode);
+
+	// handle valve_hwisol
+	if (dhwt->set.p.valve_hwisol) {
+		ret = dhwt_run_hwisol(dhwt);
+		if (ALL_OK != ret)
+			goto fail;
+	}
+
+	// handle feed pump
+	if (dhwt->set.p.pump_feed) {
+		ret = dhwt_run_feedpump(dhwt);
+		if (ALL_OK != ret)
+			goto fail;
+	}
 
 	dbgmsg(1, 1, "\"%s\": on: %d, since: %u, elec: %d, tg_t: %.1f, bot_t: %.1f, top_t: %.1f, hrq_t: %.1f",
 	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), electric_mode, temp_to_celsius(target_temp),
