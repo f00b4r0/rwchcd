@@ -46,6 +46,8 @@ tempdiff_t temp_lin_deriv(struct s_temp_deriv * const deriv, const temp_t new_te
 tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrsh, const temp_t new_temp, const timekeep_t new_time,
 		      const tempdiff_t tlow_jacket, const tempdiff_t thigh_jacket);
 
+bool lib_runmode_is_changedown(const enum e_runmode prev_runmode, const enum e_runmode new_runmode);
+
 /**
  * Convert kelvin value to internal temp_t format (Kelvin * KPRECISION).
  * @note The preprocessor will do the right thing whether kelvin is a float or a native integer type.

@@ -159,3 +159,41 @@ tempdiff_t temp_thrs_intg(struct s_temp_intgrl * const intgrl, const temp_t thrs
 
 	return (intg);
 }
+
+/**
+ * Compares old and new runmode for change down detection.
+ * @param prev_runmode the old runmode
+ * @param new_runmode the new runmode
+ * @return true if new_runmode is different and "lower" than prev_runmode; false in all other cases.
+ * @note: only valid for RM_OFF, RM_COMFORT, RM_ECO and RM_FROSTFREE.
+ */
+bool lib_runmode_is_changedown(const enum e_runmode prev_runmode, const enum e_runmode new_runmode)
+{
+	bool down = false;
+
+	if (prev_runmode == new_runmode)
+		return false;
+
+	switch (new_runmode) {
+		case RM_OFF:
+			down = true;	// always true
+			break;
+		case RM_COMFORT:
+			break;	// always false
+		case RM_ECO:
+		case RM_FROSTFREE:
+			if ((RM_COMFORT == prev_runmode) || (RM_ECO == prev_runmode))
+				down = true;
+			break;
+		case RM_AUTO:
+		case RM_TEST:
+		case RM_UNKNOWN:
+		case RM_SUMMAINT:
+		case RM_DHWONLY:
+			dbgerr("Invalid comparison! (%d, %d)", prev_runmode, new_runmode);
+			break;
+	}
+
+	return (down);
+}
+
