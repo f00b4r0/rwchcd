@@ -631,6 +631,10 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	if (prev_runmode != new_runmode) {
 		circuit->run.transition = (ambient_temp > request_temp) ? TRANS_DOWN : TRANS_UP;
 		circuit->run.trans_start_time = now;
+
+		// apply output flooring when transitioning to lower power modes when requested (through consumer_sdelay) and no absolute DHWT priority charge is in effect
+		if (circuit->pdata->run.consumer_sdelay && !circuit->pdata->run.dhwc_absolute && lib_runmode_is_changedown(prev_runmode, new_runmode))
+			circuit->run.floor_output = true;
 	}
 
 	// handle transitions logic - transition is over when we are trans_thrsh from target
@@ -638,14 +642,8 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		case TRANS_DOWN:
 			if (ambient_temp <= (request_temp + trans_thrsh))
 				circuit->run.transition = TRANS_NONE;	// transition completed
-			else {
-				// Floor output when requested (through consumer_sdelay) if down transition started no later
-				// than consumer_sdelay ago and no absolute DHWT priority charge is in effect
-				if (((now - circuit->run.trans_start_time) < circuit->pdata->run.consumer_sdelay) && !circuit->pdata->run.dhwc_absolute)
-					circuit->run.floor_output = true;
-				else if (can_fastcool)
-					new_runmode = RM_OFF;	// enact RM_OFF on transition when possible (do it here to catch e.g. outoff deasserted but ambient temp warrants fastcool)
-			}
+			else if (can_fastcool && !circuit->run.floor_output)
+				new_runmode = RM_OFF;	// enact RM_OFF on transition when possible (do it here to catch e.g. outoff deasserted but ambient temp warrants fastcool)
 			break;
 		case TRANS_UP:
 			if (ambient_temp >= (request_temp - trans_thrsh))
