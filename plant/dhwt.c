@@ -720,6 +720,31 @@ static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
 }
 
 /**
+ * DHWT heat request computation
+ * Calculate necessary water feed temp: target tank temp + offset.
+ * adjust requested feed temp offset based on the current temp of the DHWT:
+ * we use the delta between current temp and target temp, *UP TO* the set offset.
+ * This avoids requesting full offset (typically 10K) when the tank is nearly fully charged.
+ * @param dhwt target DHWT
+ * @param curr_temp current DHWT temp
+ * @param target_temp DHWT target temp
+ * @return a computed heat request temperature for this DHWT
+ */
+static temp_t dhwt_heat_request(struct s_dhwt * restrict const dhwt, const temp_t curr_temp, const temp_t target_temp)
+{
+	const temp_t wintmax = SETorDEF(dhwt->set.params.limit_wintmax, dhwt->pdata->set.def_dhwt.limit_wintmax);
+	temp_t heat_req;
+
+	heat_req = target_temp + min((target_temp - curr_temp), SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset));
+
+	// enforce limits
+	if (heat_req > wintmax)
+		heat_req = wintmax;
+
+	return (heat_req);
+}
+
+/**
  * DHWT control loop.
  * Controls the dhwt's elements to achieve the desired target temperature.
  * If charge time exceeds the limit, the DHWT will be stopped for the duration
@@ -738,7 +763,7 @@ static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
  */
 int dhwt_run(struct s_dhwt * const dhwt)
 {
-	temp_t water_temp, top_temp, bottom_temp, curr_temp, wintmax, trip_temp, target_temp;
+	temp_t top_temp, bottom_temp, curr_temp, trip_temp, target_temp;
 	bool valid_ttop, valid_tbottom, charge_on, electric_mode, skip_untrip, try_electric, test;
 	const timekeep_t now = timekeep_now();
 	enum e_runmode dhwmode;
@@ -847,21 +872,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			}
 			else if (dhwt->pdata->run.hs_allfailed);	// no electric and no heatsource: can't do anything
 			else if (dhwt->pdata->run.dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
-				/* calculate necessary water feed temp: target tank temp + offset
-				   because we calculate the feed temp once, we can be a bit smarter and adjust the
-				   requested feed temp offset based on the current temp of the DHWT:
-				   we use the delta between current temp and target temp, *UP TO* the set offset.
-				   This prevents requesting full offset (typically 10K) when e.g. we trigger a forced
-				   charge with only 1 or 2K target delta. */
-				water_temp = target_temp + min(target_temp - curr_temp, SETorDEF(dhwt->set.params.temp_inoffset, dhwt->pdata->set.def_dhwt.temp_inoffset));
-
-				// enforce limits
-				wintmax = SETorDEF(dhwt->set.params.limit_wintmax, dhwt->pdata->set.def_dhwt.limit_wintmax);
-				if (water_temp > wintmax)
-					water_temp = wintmax;
-
-				// apply heat request
-				dhwt->run.heat_request = water_temp;
+				// apply heat request - refer bottom temp if available since this is what will be used for untripping
+				dhwt->run.heat_request = dhwt_heat_request(dhwt, valid_tbottom ? bottom_temp : top_temp, target_temp);
 
 				// mark heating in progress
 				charge_on = true;
@@ -902,6 +914,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		// if heating in progress, untrip at target temp (if we're running electric without thermostat this is the only untrip condition that applies)
 		else if (curr_temp >= target_temp)
 			test = true;
+		else	// keep updating heat request while !electric charge is in progress
+			dhwt->run.heat_request = dhwt_heat_request(dhwt, curr_temp, target_temp);
 
 		// stop all heat input (ensures they're all off at switchover)
 		if (test) {
