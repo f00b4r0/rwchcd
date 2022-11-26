@@ -20,7 +20,7 @@
  * - forced manual charge.
  * - 3 RM_COMFORT mode charge forcing models (never force charge, force first charge of the day, force all comfort charges).
  * - charge duration cap.
- * - DHW circulator pump.
+ * - DHW recycling pump.
  * - min/max limits on DHW temperature.
  * - maximum intake temperature limit.
  * - periodic anti-legionella high heat charge.
@@ -657,6 +657,37 @@ out:
 }
 
 /**
+ * DHWT recycle pump opration.
+ * Currently very limited logic as follows:
+ @verbatim
+ if hs_overtemp: hard on
+ else: soft (recycle_on ? on : off)
+ @endverbatim
+ * @param dhwt target DHWT
+ * @return exec status
+ */
+static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
+{
+	bool turn_on, force;
+	int ret;
+
+	if (dhwt->pdata->run.hs_overtemp) {
+		turn_on = ON;
+		force = FORCE;
+	}
+	else {
+		force = NOFORCE;
+		turn_on = aler(&dhwt->run.recycle_on) ? ON : OFF;
+	}
+
+	ret = pump_set_state(dhwt->set.p.pump_recycle, turn_on, force);
+	if (unlikely(ALL_OK != ret))
+		alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_recycle));
+
+	return ret;
+}
+
+/**
  * DHWT control loop.
  * Controls the dhwt's elements to achieve the desired target temperature.
  * If charge time exceeds the limit, the DHWT will be stopped for the duration
@@ -755,17 +786,6 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	}
 
 	// We're good to go
-
-	// handle recycle loop
-	if (dhwt->set.p.pump_recycle) {
-		if (aler(&dhwt->run.recycle_on))
-			ret = pump_set_state(dhwt->set.p.pump_recycle, ON, NOFORCE);
-		else
-			ret = pump_set_state(dhwt->set.p.pump_recycle, OFF, NOFORCE);
-
-		if (ALL_OK != ret)	// this is a non-critical error, keep going
-			alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_recycle));
-	}
 
 	charge_on = aler(&dhwt->run.charge_on);
 	target_temp = aler(&dhwt->run.target_temp);
@@ -910,6 +930,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		if (ALL_OK != ret)
 			goto fail;
 	}
+
+	// handle recycle loop
+	if (dhwt->set.p.pump_recycle)
+		dhwt_run_recyclepump(dhwt);	// ignore failure
 
 	dbgmsg(1, 1, "\"%s\": on: %d, since: %u, elec: %d, tg_t: %.1f, bot_t: %.1f, top_t: %.1f, hrq_t: %.1f",
 	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), electric_mode, temp_to_celsius(target_temp),
