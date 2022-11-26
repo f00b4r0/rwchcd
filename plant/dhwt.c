@@ -403,17 +403,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		}
 	}
 
-	// force dhwt ON during hs_overtemp condition: apply maximum available temp, force charge and recycle, and bypass logic
-	if (unlikely(dhwt->pdata->run.hs_overtemp)) {
-		new_runmode = RM_COMFORT;
-		ltmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
-		ltmin = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
-		target_temp = ltmax > ltmin ? ltmax : ltmin;
-		aser(&dhwt->run.force_on, true);
-		recycle = true;
-		goto settarget;
-	}
-
 	// depending on dhwt run mode, assess dhwt target temp
 	switch (new_runmode) {
 		case RM_OFF:
@@ -730,8 +719,13 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	skip_untrip = false;
 
 	dhwmode = aler(&dhwt->run.runmode);
+
+	// force dhwt ON during hs_overtemp condition
+	if (unlikely(dhwt->pdata->run.hs_overtemp))
+		dhwmode = RM_COMFORT;
+
 	switch (dhwmode) {
-		case RM_OFF:
+		case RM_OFF:	// XXX NB we don't deal with flooring here because turning off DHWT should be a rare occurence and hs_overtemp will be there if anything goes wrong
 			return (dhwt_shutdown(dhwt));
 		case RM_COMFORT:
 		case RM_ECO:
