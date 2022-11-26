@@ -537,6 +537,49 @@ static int dhwt_wintemp_acceptable(struct s_dhwt * restrict const dhwt)
 }
 
 /**
+ * DHWT test / summer maintenance routine.
+ * The only difference between test and summer maintenance is that the former triggers the electric heating (if any).
+ * For safety purposes, the test stops if/when the tank temperature reaches the configured maximum.
+ * @param dhwt target dhwt
+ * @param runmode target runmode (only RM_TEST and RM_SUMMAINT allowed)
+ * @return exec status
+ * @note no check on inlet temperature is performed
+ * @todo review shared recycle pump summer maintenance scenarios - with electric (can they materially exist?).
+ */
+static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_runmode runmode)
+{
+	const temp_t tmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
+	bool test;
+
+	assert((RM_TEST == runmode) || (RM_SUMMAINT == runmode));
+
+	if (aler(&dhwt->run.actual_temp) >= tmax)
+		return (dhwt_shutdown(dhwt));		// stop the test if we've reached max temp
+
+	if (RM_TEST == runmode)
+		(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, ON);
+
+	// NB: we do enable the isolation valve in summaint because it makes no sense to turn the
+	// feedpump on if there is an isolation valve and it's closed. If we reached this point we
+	// aren't operating on electric heater anyway.
+	dhwt->run.active = true;
+	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+	if (dhwt->set.p.valve_hwisol) {
+		(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
+		// if we have an isolation valve, it must be open before turning on the feedpump
+		test = valve_is_open(dhwt->set.p.valve_hwisol) ? ON : OFF;
+	}
+	else
+		test = ON;
+	if (dhwt->set.p.pump_feed)
+		(void)!pump_set_state(dhwt->set.p.pump_feed, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
+	if (dhwt->set.p.pump_recycle)
+		(void)!pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
+
+	return (ALL_OK);
+}
+
+/**
  * DHWT isolation valve operation.
  * Adjusts the state of the tank isolation valve based on the following pseudo-code logic:
  @verbatim
@@ -691,9 +734,7 @@ static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
  * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
  * although not necessarily at the planned time if there is delay in servicing the target DHWT priority.
  * @note this function ensures that in the event of an error, the dhwt is put in a failsafe state as defined in dhwt_failsafe().
- * @todo review shared recycle pump summer maintenance scenarios - with electric (can they materially exist?).
  * @todo REFACTOR
- * @warning RM_TEST and RM_SUMMAINT bypass all safety logic.
  */
 int dhwt_run(struct s_dhwt * const dhwt)
 {
@@ -734,26 +775,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		case RM_FROSTFREE:
 			break;
 		case RM_TEST:
-			(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, ON);
-			// fallthrough - we want everything on
 		case RM_SUMMAINT:
-			// NB: we do enable the isolation valve in summaint because it makes no sense to turn the
-			// feedpump on if there is an isolation valve and it's closed. If we reached this point we
-			// aren't operating on electric heater anyway.
-			dhwt->run.active = true;
-			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-			if (dhwt->set.p.valve_hwisol) {
-				(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
-				// if we have an isolation valve, it must be open before turning on the feedpump
-				test = valve_is_open(dhwt->set.p.valve_hwisol) ? ON : OFF;
-			}
-			else
-				test = ON;
-			if (dhwt->set.p.pump_feed)
-				(void)!pump_set_state(dhwt->set.p.pump_feed, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
-			if (dhwt->set.p.pump_recycle)
-				(void)!pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
-			return (ALL_OK);
+			return (dhwt_run_testsummaint(dhwt, dhwmode));
 		case RM_AUTO:
 		case RM_DHWONLY:
 		case RM_UNKNOWN:
