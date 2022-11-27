@@ -73,7 +73,7 @@
 /**
  * Extract a temperature value from config.
  * This function will handle a temperature value (in Celsius/Kelvin) expressed as
- * either a pure int or a decimal value.
+ * either a pure int or a decimal value. It will "ensure" that the parsed value is within RWCHCD_TEMPMIN-RWCHCD_TEMPAX range.
  * @param positiveonly true if strictly negative values should be rejected
  * @param delta true if the extracted temperature should be considered a delta (in Kelvin), false if absolute temp (in Celsius)
  * @param n the configuration node to parse
@@ -83,6 +83,7 @@
 int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_filecfg_parser_node * const n, void *priv)
 {
 	temp_t *temp = priv;
+	temp_t t;
 	float fv; int iv;
 
 	assert((NODEFLT|NODEINT) & n->type);
@@ -94,13 +95,28 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 		fv = n->value.floatval;
 		if (positiveonly && (fv < 0))
 			return (-EINVALID);
-		*temp = delta ? deltaK_to_temp(fv) : celsius_to_temp(fv);
+		t = delta ? deltaK_to_temp(fv) : celsius_to_temp(fv);
 	} else { /* NODEINT */
 		iv = n->value.intval;
 		if (positiveonly && (iv < 0))
 			return (-EINVALID);
-		*temp = delta ? deltaK_to_temp(iv) : celsius_to_temp(iv);
+		t = delta ? deltaK_to_temp(iv) : celsius_to_temp(iv);
 	}
+
+	// minimum sanity checks
+	if (delta) {
+		if (t >= (RWCHCD_TEMPMAX - RWCHCD_TEMPMIN)) {
+			filecfg_parser_pr_err(_("Configured temperature delta out of range at line %d"), n->lineno);
+			return (-EINVALID);
+		}
+	} else {
+		if ((RWCHCD_TEMPMIN > t) || (RWCHCD_TEMPMAX < t)) {
+			filecfg_parser_pr_err(_("Configured temperature out of range at line %d"), n->lineno);
+			return (-EINVALID);
+		}
+	}
+
+	*temp = t;
 	return (ALL_OK);
 }
 
