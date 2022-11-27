@@ -465,7 +465,7 @@ static void hcircuit_inoff(struct s_hcircuit * const circuit)
 	if (inputs_temperature_get(circuit->set.tid_ambient, &t_ambient) == ALL_OK) {
 		if (t_ambient > temp_trigger)
 			circuit->run.inoff = true;
-		else if (t_ambient < temp_trigger - temp_to_deltaK(1))
+		else if (t_ambient < temp_trigger - deltaK_to_temp(1))
 			circuit->run.inoff = false;
 	}
 	else
