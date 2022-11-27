@@ -639,7 +639,6 @@ out:
  @endverbatim
  * @param dhwt target DHWT
  * @return exec status
- * @warning do NOT assign cooldown_time for (shared) pumps which are feeding only hwisol-equipped DHWTs - XXX todo disambiguate shared force?
  * @note discharge protection will fail if the input sensor needs water flow
  * in the pump_feed. It is thus important to ensure that the water input temperature sensor
  * can provide a reliable reading even when the feedpump is off.

@@ -138,7 +138,7 @@ int pump_online(struct s_pump * restrict const pump)
  * Set pump state.
  * @param pump target pump
  * @param req_on request pump on if true
- * @param force_state skips cooldown if true
+ * @param force_state alters shared pump logic if true (used to ensure pump stops)
  * @return error code if any
  */
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state)
@@ -239,9 +239,7 @@ int pump_offline(struct s_pump * restrict const pump)
  */
 int pump_run(struct s_pump * restrict const pump)
 {
-	const timekeep_t now = timekeep_now();
 	const struct s_pump * p;
-	timekeep_t elapsed;
 	bool state, req, force;
 	int ret;
 
@@ -280,20 +278,11 @@ skipvirtual:
 	if (state == req)
 		return (ALL_OK);
 
-	// apply cooldown to turn off, only if not forced.
-	// If ongoing cooldown, resume it, otherwise restore default value
-	if (!req && !force) {
-		elapsed = now - pump->run.last_switch;
-		if (elapsed < pump->set.cooldown_time)
-			return (ALL_OK);
-	}
-
 	ret = outputs_relay_state_set(pump->set.rid_pump, req);
 	if (unlikely(ret < 0))
 		goto fail;
 
 	aser(&pump->run.state, req);
-	pump->run.last_switch = now;
 
 	return (ALL_OK);
 

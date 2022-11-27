@@ -26,8 +26,8 @@ int filecfg_pump_dump(const struct s_pump * restrict const pump)
 
 	filecfg_iprintf("pump \"%s\" {\n", pump->name);
 	filecfg_ilevel_inc();
-	if (FCD_Exhaustive || pump->set.cooldown_time)
-		filecfg_dump_tk("cooldown_time", pump->set.cooldown_time);
+	if (FCD_Exhaustive || pump->set.shared)
+		filecfg_dump_nodebool("shared", pump->set.shared);
 	filecfg_dump_nodestr("rid_pump", outputs_relay_name(pump->set.rid_pump));	// mandatory
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

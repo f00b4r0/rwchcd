@@ -24,7 +24,6 @@ struct s_pump {
 		bool configured;		///< true if properly configured
 		bool shared;			///< true if pump is allowed to be shared between users.
 		orid_t rid_pump;		///< relay controlling that pump. *REQUIRED*
-		timekeep_t cooldown_time;	///< preset cooldown time during which the pump remains on for transitions from on to off. *Optional*, useful to prevent short runs that might clog the pump
 	} set;		///< settings (externally set)
 	struct {
 		atomic_bool online;		///< true if pump is operational (under software management)
@@ -32,7 +31,6 @@ struct s_pump {
 		bool grabbed;			///< true if pump has been grabbed for use
 		bool req_on;			///< request pump on
 		bool force_state;		///< true if req_state should be forced (no cooldown)
-		timekeep_t last_switch;		///< last time the pump state was toggled
 	} run;		///< private runtime (internally handled)
 	struct {
 		struct s_pump *parent;		///< parent (master) pump

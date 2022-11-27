@@ -13,7 +13,6 @@
 \verbatim
  pump "pump name" {
 	 shared no;
-	 cooldown_time 2mn;
 	 rid_pump "rid name";
  };
 \endverbatim
@@ -28,14 +27,12 @@
 #include "outputs_parse.h"
 
 FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_pump, shared)
-FILECFG_PARSER_TIME_PARSE_SET_FUNC(s_pump, cooldown_time)
 FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_pump, rid_pump)
 
 int filecfg_pump_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
 		{ NODEBOL,		"shared",		false,	fcp_bool_s_pump_shared,			NULL, },
-		{ NODEINT|NODEDUR,	"cooldown_time",	false,	fcp_tk_s_pump_cooldown_time,		NULL, },
 		{ NODESTR,		"rid_pump",		true,	fcp_outputs_relay_s_pump_rid_pump,	NULL, },
 	};
 	struct s_pump * restrict const pump = priv;

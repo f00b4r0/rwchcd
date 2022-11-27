@@ -823,7 +823,7 @@ summaint:
 
 	// circuit is active, ensure pump is running
 	if (circuit->set.p.pump_feed) {
-		ret = pump_set_state(circuit->set.p.pump_feed, ON, 0);
+		ret = pump_set_state(circuit->set.p.pump_feed, ON, NOFORCE);
 		if (unlikely(ALL_OK != ret)) {
 			alarms_raise(ret, _("HCircuit \"%s\": failed to request feed pump \"%s\" ON"), circuit->name, pump_name(circuit->set.p.pump_feed));
 			goto fail;
