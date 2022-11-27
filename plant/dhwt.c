@@ -27,7 +27,6 @@
  * - isolation valve.
  * - individual scheduling.
  * - logging of state and temperatures.
- * - hardcoded 90°C maximum target temperature (including for anti-legionella).
  * - summer maintenance of actuators when operating in frostfree mode.
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
@@ -464,10 +463,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 
 settarget:
 	aser(&dhwt->run.recycle_on, recycle);
-
-	// XXX hardcoded safety cap
-	if (unlikely(target_temp > celsius_to_temp(90)))
-		target_temp = celsius_to_temp(90);
 
 	// save current target dhw temp
 	aser(&dhwt->run.target_temp, target_temp);
