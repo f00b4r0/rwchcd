@@ -291,10 +291,23 @@ int runtime_set_dhwmode(const enum e_runmode dhwmode)
  */
 int runtime_online(void)
 {
+	int ret;
+
 	if (!Runtime.set.configured || !Runtime.plant)
 		return (-ENOTCONFIGURED);
 
 	runtime_restore();
+
+	if (SYS_NONE == runtime_systemmode()) {	// runtime was not restored
+						// set sysmode/runmode from startup config
+		ret = runtime_set_systemmode(Runtime.set.startup_sysmode);
+		if (ALL_OK != ret)
+			runtime_set_systemmode(SYS_FROSTFREE);	// fallback to frostfree
+		else if (SYS_MANUAL == Runtime.set.startup_sysmode) {
+			runtime_set_runmode(Runtime.set.startup_runmode);
+			runtime_set_dhwmode(Runtime.set.startup_dhwmode);
+		}
+	}
 
 	log_register(&Runtime_lsrc);
 

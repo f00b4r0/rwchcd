@@ -320,7 +320,6 @@ static pthread_cond_t master_cond, wdog_cond;
 static void * thread_master(void *arg)
 {
 	int pipewfd = *((int *)arg);
-	struct s_runtime * restrict const runtime = runtime_get();
 	struct timespec ts;
 	int ret;
 
@@ -334,17 +333,6 @@ static void * thread_master(void *arg)
 		usleep(500);
 
 	// unleash the dogs
-
-	if (SYS_NONE == runtime_systemmode()) {	// runtime was not restored
-						// set sysmode/runmode from startup config
-		ret = runtime_set_systemmode(runtime->set.startup_sysmode);
-		if (ALL_OK != ret)
-			runtime_set_systemmode(SYS_FROSTFREE);	// fallback to frostfree
-		else if (SYS_MANUAL == runtime->set.startup_sysmode) {
-			runtime_set_runmode(runtime->set.startup_runmode);
-			runtime_set_dhwmode(runtime->set.startup_dhwmode);
-		}
-	}
 
 	while (aler(&Sem_master_thread)) {
 #ifdef DEBUG
