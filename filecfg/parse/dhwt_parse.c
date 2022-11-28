@@ -29,7 +29,7 @@
 	 params { ... };
  	 pump_feed "";
  	 pump_recycle "";
- 	 valve_hwisol "";
+ 	 valve_feedisol "";
  };
 \endverbatim
  */
@@ -98,7 +98,7 @@ FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_recycle)
-FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_hwisol)
+FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_feedisol)
 
 static const char * dhwt_cprio_str[] = {
 	[DHWTP_PARALMAX]	= "paralmax",
@@ -144,7 +144,7 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },
 		{ NODESTR,	"pump_feed",		false,	fcp_pump_s_dhwt_ppump_feed,		NULL, },
 		{ NODESTR,	"pump_recycle",		false,	fcp_pump_s_dhwt_ppump_recycle,		NULL, },
-		{ NODESTR,	"valve_hwisol",		false,	fcp_valve_s_dhwt_pvalve_hwisol,		NULL, },
+		{ NODESTR,	"valve_feedisol",	false,	fcp_valve_s_dhwt_pvalve_feedisol,	NULL, },
 	};
 	struct s_dhwt * restrict const dhwt = priv;
 	int ret;

@@ -252,13 +252,13 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		ret = -EMISCONFIGURED;
 	}
 
-	if (dhwt->set.p.valve_hwisol) {
-		if (!valve_is_online(dhwt->set.p.valve_hwisol)) {
-			pr_err(_("\"%s\": valve_hwisol \"%s\" is set but not configured"), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
+	if (dhwt->set.p.valve_feedisol) {
+		if (!valve_is_online(dhwt->set.p.valve_feedisol)) {
+			pr_err(_("\"%s\": valve_feedisol \"%s\" is set but not configured"), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
 			ret = -EMISCONFIGURED;
 		}
-		else if (VA_TYPE_ISOL != valve_get_type(dhwt->set.p.valve_hwisol)) {
-			pr_err(_("\"%s\": Invalid type for valve_hwisol \"%s\" (isolation valve expected)"), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
+		else if (VA_TYPE_ISOL != valve_get_type(dhwt->set.p.valve_feedisol)) {
+			pr_err(_("\"%s\": Invalid type for valve_feedisol \"%s\" (isolation valve expected)"), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
 			ret = -EMISCONFIGURED;
 		}
 	}
@@ -319,8 +319,8 @@ static int dhwt_shutdown(struct s_dhwt * const dhwt)
 	(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, OFF);
 
 	// isolate DHWT if possible
-	if (dhwt->set.p.valve_hwisol)
-		(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, true);
+	if (dhwt->set.p.valve_feedisol)
+		(void)!valve_isol_trigger(dhwt->set.p.valve_feedisol, true);
 
 	dhwt->run.active = false;
 
@@ -559,10 +559,10 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
 	// aren't operating on electric heater anyway.
 	dhwt->run.active = true;
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-	if (dhwt->set.p.valve_hwisol) {
-		(void)!valve_isol_trigger(dhwt->set.p.valve_hwisol, false);
+	if (dhwt->set.p.valve_feedisol) {
+		(void)!valve_isol_trigger(dhwt->set.p.valve_feedisol, false);
 		// if we have an isolation valve, it must be open before turning on the feedpump
-		test = valve_is_open(dhwt->set.p.valve_hwisol) ? ON : OFF;
+		test = valve_is_open(dhwt->set.p.valve_feedisol) ? ON : OFF;
 	}
 	else
 		test = ON;
@@ -575,8 +575,8 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
 }
 
 /**
- * DHWT isolation valve operation.
- * Adjusts the state of the tank isolation valve based on the following pseudo-code logic:
+ * DHWT feed isolation valve operation.
+ * Adjusts the state of the tank feed isolation valve based on the following pseudo-code logic:
  @verbatim
  if electric: close
  else
@@ -591,7 +591,7 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
  * @return exec status
  * @note assumes that hs_overtemp cannot happen in electric_mode (i.e. electric_mode will be turned off)
  */
-static int dhwt_run_hwisol(struct s_dhwt * restrict const dhwt)
+static int dhwt_run_feedisol(struct s_dhwt * restrict const dhwt)
 {
 	const temp_t tmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
 	bool isolate = true;
@@ -610,9 +610,9 @@ static int dhwt_run_hwisol(struct s_dhwt * restrict const dhwt)
 	}
 
 set:
-	ret = valve_isol_trigger(dhwt->set.p.valve_hwisol, isolate);
+	ret = valve_isol_trigger(dhwt->set.p.valve_feedisol, isolate);
 	if (unlikely(ALL_OK != ret))
-		alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_hwisol));
+		alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
 out:
 	return ret;
 }
@@ -621,16 +621,16 @@ out:
  * DHWT feed pump operation.
  * Adjusts the state of the tank feedpump based on the following pseudo-code logic:
  @verbatim
- if electric: (hwisol ? soft : hard) off
+ if electric: (feedisol ? soft : hard) off
  else:
  	if hs_overtemp && curr_temp < tmax: soft on (XXX tolerate that win may be > wintmax in this emergency case)
 	else if (charge_on || floor_until_time):
  		if wintemp acceptable: soft on
- 		else if wintemp not acceptable : (hwisol ? soft : hard) off
+ 		else if wintemp not acceptable : (feedisol ? soft : hard) off
  		else (hysteresis): do nothing
  	else (stop):
- 		(hwisol || wintemp acceptable ? soft : hard) off // hwisol takes care of wintemp acceptable
-	if hwisol closed: override off
+ 		(feedisol || wintemp acceptable ? soft : hard) off // feedisol takes care of wintemp acceptable
+	if feedisol closed: override off
  @endverbatim
  * @param dhwt target DHWT
  * @return exec status
@@ -642,13 +642,13 @@ out:
 static int dhwt_run_feedpump(struct s_dhwt * restrict const dhwt)
 {
 	const temp_t tmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
-	const bool has_hwisol = !!dhwt->set.p.valve_hwisol;
+	const bool has_feedisol = !!dhwt->set.p.valve_feedisol;
 	bool turn_on, force;
 	int ret;
 
 	if (aler(&dhwt->run.electric_mode)) {
 		turn_on = OFF;
-		force = has_hwisol ? NOFORCE : FORCE;
+		force = has_feedisol ? NOFORCE : FORCE;
 		goto set;
 	}
 
@@ -663,15 +663,15 @@ static int dhwt_run_feedpump(struct s_dhwt * restrict const dhwt)
 
 		turn_on = (ret == 1);	// turn on if wintemp is acceptable
 		if (!turn_on)
-			force = has_hwisol ? NOFORCE : FORCE;
+			force = has_feedisol ? NOFORCE : FORCE;
 	}
 	else {
 		turn_on = OFF;
-		force = (has_hwisol || (ret >= 0)) ? NOFORCE : FORCE;
+		force = (has_feedisol || (ret >= 0)) ? NOFORCE : FORCE;
 	}
 
-	// override while hwisol is closed
-	if (has_hwisol && !valve_is_open(dhwt->set.p.valve_hwisol))
+	// override while feedisol is closed
+	if (has_feedisol && !valve_is_open(dhwt->set.p.valve_feedisol))
 		turn_on = OFF;
 
 set:
@@ -980,9 +980,9 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			dhwt->run.floor_until_time = 0;
 	}
 
-	// handle valve_hwisol
-	if (dhwt->set.p.valve_hwisol) {
-		ret = dhwt_run_hwisol(dhwt);
+	// handle valve_feedisol
+	if (dhwt->set.p.valve_feedisol) {
+		ret = dhwt_run_feedisol(dhwt);
 		if (ALL_OK != ret)
 			goto fail;
 	}

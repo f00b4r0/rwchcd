@@ -54,7 +54,7 @@ struct s_dhwt {
 		struct {
 			struct s_pump * restrict pump_feed;	///< feed pump for this tank. *Optional*
 			struct s_pump * restrict pump_recycle;	///< dhw recycle pump for this tank. *Optional*
-			struct s_valve * restrict valve_hwisol;	///< Isolation valve used to disconnect the DHWT from the heatwater flow. *Optional*.
+			struct s_valve * restrict valve_feedisol;	///< Isolation valve used to disconnect the DHWT from the heatwater flow. *Optional*.
 		} p;		///< pointer-based settings. For configuration details see specific types instructions
 	} set;		///< settings (externally set)
 	struct {

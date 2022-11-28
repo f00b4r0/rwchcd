@@ -144,8 +144,8 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 		filecfg_dump_nodestr("pump_feed", dhwt->set.p.pump_feed ? pump_name(dhwt->set.p.pump_feed) : "");
 	if (FCD_Exhaustive || dhwt->set.p.pump_recycle)
 		filecfg_dump_nodestr("pump_recycle", dhwt->set.p.pump_recycle ? pump_name(dhwt->set.p.pump_recycle) : "");
-	if (FCD_Exhaustive || dhwt->set.p.valve_hwisol)
-		filecfg_dump_nodestr("valve_hwisol", dhwt->set.p.valve_hwisol ? valve_name(dhwt->set.p.valve_hwisol) : "");
+	if (FCD_Exhaustive || dhwt->set.p.valve_feedisol)
+		filecfg_dump_nodestr("valve_feedisol", dhwt->set.p.valve_feedisol ? valve_name(dhwt->set.p.valve_feedisol) : "");
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");
