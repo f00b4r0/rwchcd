@@ -739,6 +739,26 @@ static temp_t dhwt_heat_request(struct s_dhwt * restrict const dhwt, const temp_
 }
 
 /**
+ * DHWT charge update helper.
+ * Ensure consistency of force_on and legionnella_on when charge is turned off.
+ * @param dhwt target DHWT
+ * @param charge_on new charge state
+ * @param now current timestamp
+ */
+static inline void dhwt_update_charge(struct s_dhwt * restrict const dhwt, const bool charge_on, const timekeep_t now)
+{
+	if (!charge_on) {
+		// untrip force charge: force can run only once
+		aser(&dhwt->run.force_on, false);
+
+		// untrip legionella if it was on
+		aser(&dhwt->run.legionella_on, false);
+	}
+	dhwt->run.mode_since = now;
+	aser(&dhwt->run.charge_on, charge_on);
+}
+
+/**
  * DHWT control loop.
  * Controls the dhwt's elements to achieve the desired target temperature.
  * If charge time exceeds the limit, the DHWT will be stopped for the duration
@@ -746,14 +766,42 @@ static temp_t dhwt_heat_request(struct s_dhwt * restrict const dhwt, const temp_
  * Due to implementation in dhwt_failsafe() the DHWT can be configured to operate
  * purely on electric heating in the event of sensor failure, but this is still
  * considered a degraded operation mode and it will be reported as an error.
+ * Operation logic pseudo code is as follows:
+ @verbatim
+  // attempt electric operation first if needed
+  if try_electric && relay:
+	 // switch on can only happen at trip, switch off happens at failure (!charge_on)
+	 if no charge:
+		 if trip point:
+			 if electric relay set successful: set electric_mode / signal charge / shutdown water
+			 else: set no electric_mode
+		 else: nothing - state unchanged
+	 else if electric_mode:	// ongoing electric charge
+		 if !skip_untrip && (temp > target): turn off relay / signal no charge (but stay in electric mode)
+		 else: nothing - state uchanged
+	 else:	// ongoing water charge
+		 nothing // let water code deal with it
+  else:
+	 turn off relay / unset electric_mode (let water operations resume)
+
+  // fallback to water-based
+  if !electric_mode:
+	 if no charge:
+		 if charge_overtime:
+			 if last charge not too recent: relax
+		 else if trip condition (temp ok && hs ok && prio ok): set charge
+		 else: nothing
+	 else:
+		 if temp ok || hs failed || (!legionella && (overtime || prio nok)): untrip / set nocharge
+		 else: keep updating heat request
+ @endverbatim
  * @param dhwt target dhwt
  * @return error status
- * @note An ongoing anti-legionella charge will not be interrupted by a plant-wide change in priority.
+ * @note An ongoing anti-legionella charge will not be interrupted by a plant-wide change in priority or overtime.
  * @note Since anti-legionella can only be unset _after_ a complete charge (or a DHWT shutdown),
  * once the anti-legionella charge has been requested, it is @b guaranteed to happen,
  * although not necessarily at the planned time if there is delay in servicing the target DHWT priority.
  * @note this function ensures that in the event of an error, the dhwt is put in a failsafe state as defined in dhwt_failsafe().
- * @todo REFACTOR
  */
 int dhwt_run(struct s_dhwt * const dhwt)
 {
@@ -761,6 +809,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	bool valid_ttop, valid_tbottom, charge_on, electric_mode, skip_untrip, try_electric, test;
 	const timekeep_t now = timekeep_now();
 	enum e_runmode dhwmode;
+	orid_t rselfheater;
 	timekeep_t limit;
 	int ret;
 
@@ -807,8 +856,6 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	// if we reached this point then the dhwt is active
 	dhwt->run.active = true;
 
-	electric_mode = aler(&dhwt->run.electric_mode);
-
 	// check which sensors are available
 	ret = inputs_temperature_get(dhwt->set.tid_bottom, &bottom_temp);
 	valid_tbottom = (ALL_OK == ret) ? true : false;
@@ -825,122 +872,113 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	charge_on = aler(&dhwt->run.charge_on);
 	target_temp = aler(&dhwt->run.target_temp);
+	electric_mode = aler(&dhwt->run.electric_mode);
 	try_electric = (dhwt->pdata->run.plant_could_sleep || dhwt->pdata->run.hs_allfailed) && !dhwt->pdata->run.hs_overtemp;
 
-	// handle heat charge
-	/* NOTE we enforce sensor position, it SEEMS desirable, so that the full tank capacity is used before triggering a charge.
+	// current temperature
+	/* NOTE we try to enforce sensor position, it SEEMS desirable, so that the full tank capacity is used before triggering a charge.
 	   apply hysteresis on logic: trip at target - hysteresis (preferably on top sensor), untrip at target (preferably on bottom sensor). */
-	if (!charge_on) {	// no charge in progress
-		// when no charge, switch off electric as soon as possible
-		electric_mode &= try_electric;
+	if (!charge_on)
+		curr_temp = valid_ttop ? top_temp : bottom_temp;	// prefer top temp if available (trip charge when top is cold)
+	else
+		curr_temp = valid_tbottom ? bottom_temp : top_temp;	// prefer bottom temp if available (untrip charge when bottom is hot)
 
-		if (!electric_mode) {	// in non-electric mode: prevent charge "pumping", enforce delay between charges
-			limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
-			if (dhwt->run.charge_overtime) {
-				if (limit && ((now - dhwt->run.mode_since) <= limit))
-					return (ALL_OK); // no further processing, must wait
-				else
-					dhwt->run.charge_overtime = false;	// reset status
+	aser(&dhwt->run.actual_temp, curr_temp);
+
+	// set trip point to (target temp - hysteresis)
+	if (aler(&dhwt->run.force_on) || (RM_FROSTFREE == dhwmode))
+		trip_temp = target_temp - deltaK_to_temp(1);	// if forced charge or frostfree, force hysteresis at 1K
+	else
+		trip_temp = target_temp - SETorDEF(dhwt->set.params.hysteresis, dhwt->pdata->set.def_dhwt.hysteresis);
+
+	// electric operation
+	rselfheater = dhwt->set.rid_selfheater;
+	if (try_electric && outputs_relay_name(rselfheater)) {
+		if (!charge_on) {		// heat_request is necessarily off here
+			electric_mode = true;	// immediately pretend we can do electric (to disable water-based processing)
+			if (curr_temp < trip_temp) {
+				if (ALL_OK == outputs_relay_state_set(rselfheater, ON)) {
+					// the plant is sleeping and we have a configured self heater: use it
+					charge_on = true;
+					dhwt_update_charge(dhwt, charge_on, now);
+				}
+				else		// electric failure
+					electric_mode = false;
 			}
 		}
-
-		// prefer top temp if available (trip charge when top is cold)
-		curr_temp = valid_ttop ? top_temp : bottom_temp;
-
-		// set trip point to (target temp - hysteresis)
-		if (aler(&dhwt->run.force_on) || (RM_FROSTFREE == dhwmode))
-			trip_temp = target_temp - deltaK_to_temp(1);	// if forced charge or frostfree, force hysteresis at 1K
-		else
-			trip_temp = target_temp - SETorDEF(dhwt->set.params.hysteresis, dhwt->pdata->set.def_dhwt.hysteresis);
-
-		// trip condition
-		if (curr_temp < trip_temp) {
-			electric_mode = false;	// by default assume we can't do electric
-			if (try_electric && (ALL_OK == outputs_relay_state_set(dhwt->set.rid_selfheater, ON))) {
-				// the plant is sleeping and we have a configured self heater: use it
-				electric_mode = true;
-
-				// mark heating in progress
-				charge_on = true;
-				dhwt->run.mode_since = now;
+		else if (electric_mode) {	// electric charge in progress
+			if (!skip_untrip && (curr_temp >= target_temp)) {
+				// stop self-heater (if any)
+				(void)!outputs_relay_state_set(rselfheater, OFF);
+				charge_on = false;
+				dhwt_update_charge(dhwt, charge_on, now);
 			}
-			else if (dhwt->pdata->run.hs_allfailed);	// no electric and no heatsource: can't do anything
-			else if (dhwt->pdata->run.dhwt_currprio >= dhwt->set.prio) {	// run from plant heat source if prio is allowed
+		}
+		// else non electric charge - fallthrough to water-based logic
+	}
+	else {
+		// electric off
+		(void)!outputs_relay_state_set(rselfheater, OFF);
+		electric_mode = false;
+	}
+
+	aser(&dhwt->run.electric_mode, electric_mode);
+
+	// water-based operation
+	if (!electric_mode) {
+		if (!charge_on) {
+			if (dhwt->run.charge_overtime) {	// prevent charge "pumping", enforce delay between charges
+				limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
+				if (!(limit && ((now - dhwt->run.mode_since) <= limit)))	// timeout expired
+					dhwt->run.charge_overtime = false;	// reset status for next cycle
+			}
+			// no overtime, trip condition: temp ok && hs ok && prio ok
+			else if ((curr_temp < trip_temp) && !dhwt->pdata->run.hs_allfailed && (dhwt->pdata->run.dhwt_currprio >= dhwt->set.prio)) {
 				// apply heat request - refer bottom temp if available since this is what will be used for untripping
 				dhwt->run.heat_request = dhwt_heat_request(dhwt, valid_tbottom ? bottom_temp : top_temp, target_temp);
 
 				// mark heating in progress
 				charge_on = true;
-				dhwt->run.mode_since = now;
+				dhwt_update_charge(dhwt, charge_on, now);
 			}
 		}
-	}
-	else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
-		// prefer bottom temp if available (untrip charge when bottom is hot)
-		curr_temp = valid_tbottom ? bottom_temp : top_temp;
+		else {	// NOTE: untrip should always be last to take precedence, especially because charge can be forced
+			test = false;	// untrip test conditions
 
-		// untrip conditions
-		test = false;
-
-		// if running electric and we should not, stop and restart on water
-		if (electric_mode && !try_electric)
-			test = true;
-
-		// in non-electric mode and no anti-legionella charge (never interrupt an anti-legionella charge):
-		if (!electric_mode && !aler(&dhwt->run.legionella_on)) {
-			// if heating gone overtime, untrip
-			limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
-			if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
+			// if target reached, untrip or if heatsources failed, untrip (next run will retry electric or nothing)
+			if ((curr_temp >= target_temp) || dhwt->pdata->run.hs_allfailed)
 				test = true;
-				dhwt->run.charge_overtime = true;
+			// if no anti-legionella charge (never interrupt an anti-legionella charge):
+			else if (!aler(&dhwt->run.legionella_on)) {
+				// if heating gone overtime, untrip
+				limit = SETorDEF(dhwt->set.params.limit_chargetime, dhwt->pdata->set.def_dhwt.limit_chargetime);
+				if ((limit) && ((now - dhwt->run.mode_since) > limit)) {
+					test = true;
+					dhwt->run.charge_overtime = true;
+				}
+				// if DHWT exceeds current allowed prio, untrip
+				if (dhwt->pdata->run.dhwt_currprio < dhwt->set.prio)
+					test = true;
 			}
-			// if DHWT exceeds current allowed prio, untrip
-			if (dhwt->pdata->run.dhwt_currprio < dhwt->set.prio)
-				test = true;
 
-			// if heatsources failed, untrip (next run will retry electric or nothing)
-			if (dhwt->pdata->run.hs_allfailed)
-				test = true;
+			if (test) {
+				// clear heat request (ensures it's off at electric switchover)
+				dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
+				charge_on = false;
+				dhwt_update_charge(dhwt, charge_on, now);
+
+				// handle heatsource flooring requests on untrip
+				if (dhwt->pdata->run.consumer_sdelay)
+					dhwt->run.floor_until_time = now + dhwt->pdata->run.consumer_sdelay;
+			}
+			else	// keep updating heat request while !electric charge is in progress - curr_temp is bottom if available here
+				dhwt->run.heat_request = dhwt_heat_request(dhwt, curr_temp, target_temp);
 		}
 
-		// when running electric, disable untripping when we should
-		if (electric_mode && skip_untrip);
-		// if heating in progress, untrip at target temp (if we're running electric without thermostat this is the only untrip condition that applies)
-		else if (curr_temp >= target_temp)
-			test = true;
-		else	// keep updating heat request while !electric charge is in progress
-			dhwt->run.heat_request = dhwt_heat_request(dhwt, curr_temp, target_temp);
-
-		// stop all heat input (ensures they're all off at switchover)
-		if (test) {
-			// stop self-heater (if any)
-			(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, OFF);
-
-			// clear heat request
-			dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
-
-			// untrip force charge: force can run only once
-			aser(&dhwt->run.force_on, false);
-
-			// mark heating as done
-			aser(&dhwt->run.legionella_on, false);
-			charge_on = false;
-			electric_mode = false;
-			dhwt->run.mode_since = now;
-
-			// handle heatsource flooring requests on untrip
-			if (dhwt->pdata->run.consumer_sdelay)
-				dhwt->run.floor_until_time = now + dhwt->pdata->run.consumer_sdelay;
-		}
+		// reset flooring when enough time has passed - XXX handled only in water charge assuming flooring request cannot happen simultaneously with plant_could_sleep
+		if (dhwt->run.floor_until_time && timekeep_a_ge_b(now, dhwt->run.floor_until_time))
+			dhwt->run.floor_until_time = 0;
 	}
-
-	// reset flooring when enough time has passed
-	if (dhwt->run.floor_until_time && timekeep_a_ge_b(now, dhwt->run.floor_until_time))
-		dhwt->run.floor_until_time = 0;
-
-	aser(&dhwt->run.actual_temp, curr_temp);
-	aser(&dhwt->run.charge_on, charge_on);
-	aser(&dhwt->run.electric_mode, electric_mode);
 
 	// handle valve_hwisol
 	if (dhwt->set.p.valve_hwisol) {
