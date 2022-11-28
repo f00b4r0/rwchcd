@@ -28,7 +28,7 @@
  	 rid_selfheater "";
 	 params { ... };
  	 pump_feed "";
- 	 pump_recycle "";
+ 	 pump_dhwrecycle "";
  	 valve_feedisol "";
  };
 \endverbatim
@@ -98,7 +98,7 @@ FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_dhwt, tthresh_dhwisol)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
-FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_recycle)
+FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_dhwrecycle)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_feedisol)
 FILECFG_PARSER_PLANT_PVALVE_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, valve_dhwisol)
 
@@ -146,7 +146,7 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODEFLT|NODEINT, "tthresh_dhwisol",	false,	fcp_temp_s_dhwt_tthresh_dhwisol,	NULL, },
 		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },
 		{ NODESTR,	"pump_feed",		false,	fcp_pump_s_dhwt_ppump_feed,		NULL, },
-		{ NODESTR,	"pump_recycle",		false,	fcp_pump_s_dhwt_ppump_recycle,		NULL, },
+		{ NODESTR,	"pump_dhwrecycle",	false,	fcp_pump_s_dhwt_ppump_dhwrecycle,	NULL, },
 		{ NODESTR,	"valve_feedisol",	false,	fcp_valve_s_dhwt_pvalve_feedisol,	NULL, },
 		{ NODESTR,	"valve_dhwisol",	false,	fcp_valve_s_dhwt_pvalve_dhwisol,	NULL, },
 	};

@@ -54,7 +54,7 @@ struct s_dhwt {
 		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max. Some settings must be set either globally or locally.
 		struct {
 			struct s_pump * restrict pump_feed;	///< feed pump for this tank. *Optional*
-			struct s_pump * restrict pump_recycle;	///< dhw recycle pump for this tank. *Optional*
+			struct s_pump * restrict pump_dhwrecycle;	///< dhw recycle pump for this tank. *Optional*
 			struct s_valve * restrict valve_feedisol;	///< Isolation valve used to disconnect the DHWT from the heatwater flow. *Optional*.
 			struct s_valve * restrict valve_dhwisol;	///< Isolation valve used to disconnect the DHWT from the DHW circuit. *Optional*.
 		} p;		///< pointer-based settings. For configuration details see specific types instructions

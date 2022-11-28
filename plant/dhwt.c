@@ -258,8 +258,8 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		}
 	}
 
-	if (dhwt->set.p.pump_recycle && !pump_is_online(dhwt->set.p.pump_recycle)) {
-		pr_err(_("\"%s\": pump_recycle \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_recycle));
+	if (dhwt->set.p.pump_dhwrecycle && !pump_is_online(dhwt->set.p.pump_dhwrecycle)) {
+		pr_err(_("\"%s\": pump_dhwrecycle \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_dhwrecycle));
 		ret = -EMISCONFIGURED;
 	}
 
@@ -287,8 +287,8 @@ int dhwt_online(struct s_dhwt * const dhwt)
 
 	// warn on unenforceable configuration
 	if (dhwt->set.tthresh_dhwisol) {
-		if (!(dhwt->set.p.valve_dhwisol || dhwt->set.p.pump_recycle))
-			pr_warn(_("\"%s\": tthresh_dhwisol set but neither pump_recycle nor valve_dhwisol set: ignored."), dhwt->name);
+		if (!(dhwt->set.p.valve_dhwisol || dhwt->set.p.pump_dhwrecycle))
+			pr_warn(_("\"%s\": tthresh_dhwisol set but neither pump_dhwrecycle nor valve_dhwisol set: ignored."), dhwt->name);
 	}
 
 	// grab relay as needed
@@ -325,8 +325,8 @@ static int dhwt_shutdown(struct s_dhwt * const dhwt)
 	if (dhwt->set.p.pump_feed)
 		pump_shutdown(dhwt->set.p.pump_feed);
 
-	if (dhwt->set.p.pump_recycle)
-		pump_shutdown(dhwt->set.p.pump_recycle);
+	if (dhwt->set.p.pump_dhwrecycle)
+		pump_shutdown(dhwt->set.p.pump_dhwrecycle);
 
 	if (!dhwt->run.active)
 		return (ALL_OK);
@@ -607,8 +607,8 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
 	}
 	else
 		test = ON;
-	if (dhwt->set.p.pump_recycle)
-		(void)!pump_set_state(dhwt->set.p.pump_recycle, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
+	if (dhwt->set.p.pump_dhwrecycle)
+		(void)!pump_set_state(dhwt->set.p.pump_dhwrecycle, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
 
 	return (ALL_OK);
 }
@@ -759,7 +759,7 @@ out:
 }
 
 /**
- * DHWT recycle pump opration.
+ * DHWT DHW recycle pump opration.
  * Currently very limited logic as follows:
  @verbatim
  if hs_overtemp: hard on
@@ -775,7 +775,7 @@ out:
  * @param dhwt target DHWT
  * @return exec status
  */
-static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
+static int dhwt_run_dhwrecyclepump(struct s_dhwt * restrict const dhwt)
 {
 	const temp_t thresh = dhwt->set.tthresh_dhwisol;
 	const temp_t curr_temp = aler(&dhwt->run.actual_temp);
@@ -802,9 +802,9 @@ static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
 	if (dhwt->set.p.valve_dhwisol && !valve_is_open(dhwt->set.p.valve_dhwisol))
 		turn_on = OFF;
 
-	ret = pump_set_state(dhwt->set.p.pump_recycle, turn_on, force);
+	ret = pump_set_state(dhwt->set.p.pump_dhwrecycle, turn_on, force);
 	if (unlikely(ALL_OK != ret))
-		alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_recycle));
+		alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_dhwrecycle));
 out:
 	return ret;
 }
@@ -1095,8 +1095,8 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		dhwt_run_dhwisol(dhwt);		// ignore failure
 
 	// handle recycle loop
-	if (dhwt->set.p.pump_recycle)
-		dhwt_run_recyclepump(dhwt);	// ignore failure
+	if (dhwt->set.p.pump_dhwrecycle)
+		dhwt_run_dhwrecyclepump(dhwt);	// ignore failure
 
 	dbgmsg(1, 1, "\"%s\": on: %d, since: %u, elec: %d, tg_t: %.1f, bot_t: %.1f, top_t: %.1f, hrq_t: %.1f",
 	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), electric_mode, temp_to_celsius(target_temp),
