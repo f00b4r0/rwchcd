@@ -810,9 +810,10 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 
 #ifdef DEBUG
 	(void)!inputs_temperature_get(boiler->set.tid_boiler_return, &temp);
-	dbgmsg(1, 1, "\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d",
+	dbgmsg(1, 1, "\"%s\": on: %d, hrq_t: %.1f, tg_t: %.1f, cr_t: %.1f, trip_t: %.1f, untrip_t: %.1f, ret: %.1f, deriv: %d, curradj: %d, sdelay: %d",
 	       heat->name, outputs_relay_state_get(boiler->set.rid_burner_1), temp_to_celsius(aler(&heat->run.temp_request)), temp_to_celsius(target_temp),
-	       temp_to_celsius(actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(temp), temp_deriv, boiler->run.turnon_curr_adj);
+	       temp_to_celsius(actual_temp), temp_to_celsius(trip_temp), temp_to_celsius(untrip_temp), temp_to_celsius(temp), temp_deriv, boiler->run.turnon_curr_adj,
+	       heat->run.target_consumer_sdelay);
 #endif
 
 	return (ret);

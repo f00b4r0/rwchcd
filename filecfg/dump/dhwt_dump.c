@@ -137,6 +137,8 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 		filecfg_dump_nodestr("tid_win", inputs_temperature_name(dhwt->set.tid_win));
 	if (FCD_Exhaustive || outputs_relay_name(dhwt->set.rid_selfheater))
 		filecfg_dump_nodestr("rid_selfheater", outputs_relay_name(dhwt->set.rid_selfheater));
+	if (FCD_Exhaustive || dhwt->set.tthresh_dhwisol)
+		filecfg_dump_celsius("tthresh_dhwisol", dhwt->set.tthresh_dhwisol);
 
 	filecfg_iprintf("params"); filecfg_dhwt_params_dump(&dhwt->set.params);
 
@@ -146,6 +148,8 @@ int filecfg_dhwt_dump(const struct s_dhwt * restrict const dhwt)
 		filecfg_dump_nodestr("pump_recycle", dhwt->set.p.pump_recycle ? pump_name(dhwt->set.p.pump_recycle) : "");
 	if (FCD_Exhaustive || dhwt->set.p.valve_feedisol)
 		filecfg_dump_nodestr("valve_feedisol", dhwt->set.p.valve_feedisol ? valve_name(dhwt->set.p.valve_feedisol) : "");
+	if (FCD_Exhaustive || dhwt->set.p.valve_dhwisol)
+		filecfg_dump_nodestr("valve_dhwisol", dhwt->set.p.valve_dhwisol ? valve_name(dhwt->set.p.valve_dhwisol) : "");
 
 	filecfg_ilevel_dec();
 	filecfg_iprintf("};\n");

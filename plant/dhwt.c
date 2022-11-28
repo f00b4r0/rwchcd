@@ -21,10 +21,11 @@
  * - 3 RM_COMFORT mode charge forcing models (never force charge, force first charge of the day, force all comfort charges).
  * - charge duration cap.
  * - DHW recycling pump.
+ * - DHWT isolation valve.
  * - min/max limits on DHW temperature.
  * - maximum intake temperature limit.
  * - periodic anti-legionella high heat charge.
- * - isolation valve.
+ * - feed isolation valve.
  * - individual scheduling.
  * - logging of state and temperatures.
  * - summer maintenance of actuators when operating in frostfree mode.
@@ -36,8 +37,18 @@
  * during a particular call of dhwt_logdata_cb() may represent values from different time frames:
  * the overhead of ensuring consistency seems overkill for the purpose served by the log facility.
  *
- * @note during test / summer maintenance, if the DHWT features an isolation valve, the feed
- * pump turn on will be delayed until that valve is fully opened.
+ * @note during test / summer maintenance, if the DHWT features a feed isolation valve, the feed
+ * pump turn on will be delayed until that valve is fully opened. Likewise, the DHW recycle pump will
+ * be delayed until the DHW isolation valve is open, if present.
+ *
+ * @note the threshold logic on DHW isolation valve allows as a side effect the following setup to operate correctly:
+ * Boiler integrated DHW tank + external electric-only DHWT (with own thermostat) + switchover valve. Suitable DHWT configuration:
+ * - near-zero temp_inoffset
+ * - electric heater relay controlling external electric DHWT
+ * - electric_hasthermostat set to true
+ * - tthresh_dhwisol set to a low enough temperature that is only reached when boiler is powered off (e.g. 35°C)
+ * - valve_dhwisol trigger controlling switchover valve: when open integrated DHWT is used, when closed electric DHWT is used
+ * Result: when plant_could_sleep is asserted, the electric heated DHWT will be turned on. As the boiler cools down, the switchover valve flips.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -263,6 +274,23 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		}
 	}
 
+	if (dhwt->set.p.valve_dhwisol) {
+		if (!valve_is_online(dhwt->set.p.valve_dhwisol)) {
+			pr_err(_("\"%s\": valve_dhwisol \"%s\" is set but not configured"), dhwt->name, valve_name(dhwt->set.p.valve_dhwisol));
+			ret = -EMISCONFIGURED;
+		}
+		else if (VA_TYPE_ISOL != valve_get_type(dhwt->set.p.valve_dhwisol)) {
+			pr_err(_("\"%s\": Invalid type for valve_dhwisol \"%s\" (isolation valve expected)"), dhwt->name, valve_name(dhwt->set.p.valve_dhwisol));
+			ret = -EMISCONFIGURED;
+		}
+	}
+
+	// warn on unenforceable configuration
+	if (dhwt->set.tthresh_dhwisol) {
+		if (!(dhwt->set.p.valve_dhwisol || dhwt->set.p.pump_recycle))
+			pr_warn(_("\"%s\": tthresh_dhwisol set but neither pump_recycle nor valve_dhwisol set: ignored."), dhwt->name);
+	}
+
 	// grab relay as needed
 	if (outputs_relay_name(dhwt->set.rid_selfheater)) {
 		if (outputs_relay_grab(dhwt->set.rid_selfheater) != ALL_OK) {
@@ -321,6 +349,9 @@ static int dhwt_shutdown(struct s_dhwt * const dhwt)
 	// isolate DHWT if possible
 	if (dhwt->set.p.valve_feedisol)
 		(void)!valve_isol_trigger(dhwt->set.p.valve_feedisol, true);
+
+	if (dhwt->set.p.valve_dhwisol)
+		(void)!valve_isol_trigger(dhwt->set.p.valve_dhwisol, true);
 
 	dhwt->run.active = false;
 
@@ -561,17 +592,62 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
 	dhwt->run.heat_request = RWCHCD_TEMP_NOREQUEST;
 	if (dhwt->set.p.valve_feedisol) {
 		(void)!valve_isol_trigger(dhwt->set.p.valve_feedisol, false);
-		// if we have an isolation valve, it must be open before turning on the feedpump
+		// if we have a feed isolation valve, it must be open before turning on the feedpump
 		test = valve_is_open(dhwt->set.p.valve_feedisol) ? ON : OFF;
 	}
 	else
 		test = ON;
 	if (dhwt->set.p.pump_feed)
 		(void)!pump_set_state(dhwt->set.p.pump_feed, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
+
+	if (dhwt->set.p.valve_dhwisol) {
+		(void)!valve_isol_trigger(dhwt->set.p.valve_dhwisol, false);
+		// if we have a dhw isolation valve, it must be open before turning on the recycle pump
+		test = valve_is_open(dhwt->set.p.valve_dhwisol) ? ON : OFF;
+	}
+	else
+		test = ON;
 	if (dhwt->set.p.pump_recycle)
-		(void)!pump_set_state(dhwt->set.p.pump_recycle, ON, FORCE);
+		(void)!pump_set_state(dhwt->set.p.pump_recycle, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
 
 	return (ALL_OK);
+}
+
+/**
+ * DHWT domestic hot water isolation valve operation.
+ * Adjusts the state of the tank DHW isolation valve based on the following pseudo-code logic:
+ @verbatim
+ if no thresh: open
+ else:
+	if curr_temp < threshold: close
+	else if: curr_temp > threshold + hyst: open
+	else (hysteresis deadband): do nothing
+ @endverbatim
+ * @param dhwt target DHWT
+ * @return exec status
+ */
+static int dhwt_run_dhwisol(struct s_dhwt * restrict const dhwt)
+{
+	const temp_t thresh = dhwt->set.tthresh_dhwisol;
+	const temp_t curr_temp = aler(&dhwt->run.actual_temp);
+	bool isolate = false;
+	int ret = ALL_OK;
+
+	if (!thresh)
+		goto set;
+
+	if (curr_temp < thresh)
+		isolate = true;
+	else if (curr_temp < (thresh + deltaK_to_temp(1)))
+		goto out;	// deadband
+	// else we are above threshold: open
+
+set:
+	ret = valve_isol_trigger(dhwt->set.p.valve_dhwisol, isolate);
+	if (unlikely(ALL_OK != ret))
+		alarms_raise(ret, _("DHWT \%s\": failed to control DHW isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_dhwisol));
+out:
+	return ret;
 }
 
 /**
@@ -612,7 +688,7 @@ static int dhwt_run_feedisol(struct s_dhwt * restrict const dhwt)
 set:
 	ret = valve_isol_trigger(dhwt->set.p.valve_feedisol, isolate);
 	if (unlikely(ALL_OK != ret))
-		alarms_raise(ret, _("DHWT \%s\": failed to control isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
+		alarms_raise(ret, _("DHWT \%s\": failed to control feed isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
 out:
 	return ret;
 }
@@ -687,15 +763,24 @@ out:
  * Currently very limited logic as follows:
  @verbatim
  if hs_overtemp: hard on
- else: soft (recycle_on ? on : off)
+ else:
+  	soft (recycle_on ? on : off)
+	if ttresh_dhwisol:
+		if curr_temp < threshold: override off
+		else if: curr_temp > threshold + hyst: no override
+		else (hysteresis deadband): do nothing
+ *
+ if dhwisol closed: override off
  @endverbatim
  * @param dhwt target DHWT
  * @return exec status
  */
 static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
 {
+	const temp_t thresh = dhwt->set.tthresh_dhwisol;
+	const temp_t curr_temp = aler(&dhwt->run.actual_temp);
 	bool turn_on, force;
-	int ret;
+	int ret = ALL_OK;
 
 	if (dhwt->pdata->run.hs_overtemp) {
 		turn_on = ON;
@@ -704,12 +789,23 @@ static int dhwt_run_recyclepump(struct s_dhwt * restrict const dhwt)
 	else {
 		force = NOFORCE;
 		turn_on = aler(&dhwt->run.recycle_on) ? ON : OFF;
+		if (thresh) {
+			if (curr_temp < thresh)
+				turn_on = OFF;	// override off
+			else if (curr_temp < (thresh + deltaK_to_temp(1)))
+				goto out;	// deadband, preserve current state
+			// else we are above threshold: no override
+		}
 	}
+
+	// override while dhwisol is closed
+	if (dhwt->set.p.valve_dhwisol && !valve_is_open(dhwt->set.p.valve_dhwisol))
+		turn_on = OFF;
 
 	ret = pump_set_state(dhwt->set.p.pump_recycle, turn_on, force);
 	if (unlikely(ALL_OK != ret))
 		alarms_raise(ret, _("DHWT \"%s\": failed to request recycle pump \"%s\" state"), dhwt->name, pump_name(dhwt->set.p.pump_recycle));
-
+out:
 	return ret;
 }
 
@@ -993,6 +1089,10 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		if (ALL_OK != ret)
 			goto fail;
 	}
+
+	// handle valve_dhwisol
+	if (dhwt->set.p.valve_dhwisol)
+		dhwt_run_dhwisol(dhwt);		// ignore failure
 
 	// handle recycle loop
 	if (dhwt->set.p.pump_recycle)
