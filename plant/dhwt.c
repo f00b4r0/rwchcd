@@ -214,8 +214,13 @@ int dhwt_online(struct s_dhwt * const dhwt)
 	}
 
 	if (dhwt->set.anti_legionella) {
-		if (SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella) <= 0) {
+		temp = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
+		if (!temp) {
 			pr_err(_("\"%s\": anti_legionella is set: t_legionella must be locally or globally > 0°K!"), dhwt->name);
+			ret = -EMISCONFIGURED;
+		}
+		else if (temp > SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax)) {
+			pr_err(_("\"%s\": anti_legionella is set: t_legionella must be locally or globally <= limit_tmax"), dhwt->name);
 			ret = -EMISCONFIGURED;
 		}
 	}
@@ -484,6 +489,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 		}
 	}
 
+settarget:
 	// enforce limits on dhw temp
 	ltmin = SETorDEF(dhwt->set.params.limit_tmin, dhwt->pdata->set.def_dhwt.limit_tmin);
 	ltmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
@@ -492,7 +498,6 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	else if (target_temp > ltmax)
 		target_temp = ltmax;
 
-settarget:
 	aser(&dhwt->run.recycle_on, recycle);
 
 	// save current target dhw temp

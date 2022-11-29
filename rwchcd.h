@@ -170,7 +170,7 @@ struct s_dhwt_params {
 	temp_t limit_wintmax;		///< maximum allowed water intake temp when active
 	temp_t limit_tmin;		///< minimum dhwt temp when active (e.g. for frost protection). @warning MUST be locally or globally > 0C
 	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. @warning MUST be locally or globally > #limit_tmin
-	temp_t t_legionella;		///< target temp for legionella prevention. @note If set, will override #limit_tmin and #limit_tmax during anti-legionella operation
+	temp_t t_legionella;		///< target temp for legionella prevention. @warning must be locally or globally < #limit_tmax
 	temp_t t_comfort;		///< target temp in comfort mode. @warning MUST be locally or globally > #t_frostfree
 	temp_t t_eco;			///< target temp in eco mode. @warning MUST be locally or globally > #tfrostfree
 	temp_t t_frostfree;		///< target temp in frost-free mode. @warning MUST be locally or globally > 0C
