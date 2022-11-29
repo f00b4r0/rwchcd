@@ -29,6 +29,7 @@
  * - individual scheduling.
  * - logging of state and temperatures.
  * - summer maintenance of actuators when operating in frostfree mode.
+ * - 1K hysteresis on overtemp condition (triggered by reaching limit_tmax)
  *
  * @note the implementation doesn't really care about thread safety on the assumption that
  * no concurrent operation is ever expected to happen to a given dhwt, with the exception of
@@ -659,9 +660,9 @@ out:
  * DHWT feed isolation valve operation.
  * Adjusts the state of the tank feed isolation valve based on the following pseudo-code logic:
  @verbatim
- if electric: close
+ if (electric || overtemp): close
  else
-	if hs_overtemp && curr_temp < tmax: open (XXX tolerate that win may be > wintmax in this emergency case)
+	if hs_overtemp: open (XXX tolerate that win may be > wintmax in this emergency case)
 	else if (charge_on || floor_until_time):
 		if wintemp acceptable: open
 		else if wintemp unacceptable: close
@@ -674,14 +675,13 @@ out:
  */
 static int dhwt_run_feedisol(struct s_dhwt * restrict const dhwt)
 {
-	const temp_t tmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
 	bool isolate = true;
 	int ret;
 
-	if (aler(&dhwt->run.electric_mode))
+	if (aler(&dhwt->run.electric_mode) || dhwt->run.overtemp)
 		goto set;
 
-	if (dhwt->pdata->run.hs_overtemp && (aler(&dhwt->run.actual_temp) < tmax))	// no hysteresis for this rare emergency
+	if (dhwt->pdata->run.hs_overtemp)
 		isolate = false;
 	else if ((aler(&dhwt->run.charge_on) || dhwt->run.floor_until_time)) {
 		ret = dhwt_wintemp_acceptable(dhwt);
@@ -702,9 +702,9 @@ out:
  * DHWT feed pump operation.
  * Adjusts the state of the tank feedpump based on the following pseudo-code logic:
  @verbatim
- if electric: (feedisol ? soft : hard) off
+ if (electric || overtemp): (feedisol ? soft : hard) off
  else:
- 	if hs_overtemp && curr_temp < tmax: soft on (XXX tolerate that win may be > wintmax in this emergency case)
+ 	if hs_overtemp: soft on (XXX tolerate that win may be > wintmax in this emergency case)
 	else if (charge_on || floor_until_time):
  		if wintemp acceptable: soft on
  		else if wintemp not acceptable : (feedisol ? soft : hard) off
@@ -722,12 +722,11 @@ out:
  */
 static int dhwt_run_feedpump(struct s_dhwt * restrict const dhwt)
 {
-	const temp_t tmax = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
 	const bool has_feedisol = !!dhwt->set.p.valve_feedisol;
 	bool turn_on, force;
 	int ret;
 
-	if (aler(&dhwt->run.electric_mode)) {
+	if (aler(&dhwt->run.electric_mode) || dhwt->run.overtemp) {
 		turn_on = OFF;
 		force = has_feedisol ? NOFORCE : FORCE;
 		goto set;
@@ -736,7 +735,7 @@ static int dhwt_run_feedpump(struct s_dhwt * restrict const dhwt)
 	ret = dhwt_wintemp_acceptable(dhwt);
 
 	force = NOFORCE;
-	if (dhwt->pdata->run.hs_overtemp && (aler(&dhwt->run.actual_temp) < tmax))	// no hysteresis for this rare emergency
+	if (dhwt->pdata->run.hs_overtemp)
 		turn_on = ON;
 	else if (aler(&dhwt->run.charge_on) || dhwt->run.floor_until_time) {
 		if (!ret)	// dead zone - do nothing
@@ -970,6 +969,21 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	}
 
 	// We're good to go
+
+	// assess overtemp status - prefer bottom (colder) temp if available - use hardcoded 1K hysteresis
+	curr_temp = valid_tbottom ? bottom_temp : top_temp;
+	trip_temp = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
+	if (unlikely(dhwt->run.overtemp)) {
+		if (curr_temp <= (trip_temp - deltaK_to_temp(-1))) {
+			dhwt->run.overtemp = false;
+			pr_err(_("DHWT \"%s\": overtemp condition ended."), dhwt->name);
+		}
+	}
+	else if (unlikely(curr_temp > trip_temp)) {
+		dhwt->run.overtemp = true;
+		pr_err(_("DHWT \"%s\": overtemp!"), dhwt->name);	// this is a "soft" error - printed only at onset
+		// go on: the rest of the code will end the charge if overtemp anyway since target_temp is enforced <= limit_tmax
+	}
 
 	charge_on = aler(&dhwt->run.charge_on);
 	target_temp = aler(&dhwt->run.target_temp);
