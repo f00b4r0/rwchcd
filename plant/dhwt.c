@@ -327,13 +327,6 @@ static int dhwt_shutdown(struct s_dhwt * const dhwt)
 	assert(dhwt);
 	assert(dhwt->set.configured);
 
-	// ensure pumps are stopped after summer maintenance
-	if (dhwt->set.p.pump_feed)
-		pump_shutdown(dhwt->set.p.pump_feed);
-
-	if (dhwt->set.p.pump_dhwrecycle)
-		pump_shutdown(dhwt->set.p.pump_dhwrecycle);
-
 	if (!dhwt->run.active)
 		return (ALL_OK);
 
@@ -351,6 +344,12 @@ static int dhwt_shutdown(struct s_dhwt * const dhwt)
 	aser(&dhwt->run.target_temp, 0);
 
 	(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, OFF);
+
+	if (dhwt->set.p.pump_feed)
+		pump_shutdown(dhwt->set.p.pump_feed);
+
+	if (dhwt->set.p.pump_dhwrecycle)
+		pump_shutdown(dhwt->set.p.pump_dhwrecycle);
 
 	// isolate DHWT if possible
 	if (dhwt->set.p.valve_feedisol)
