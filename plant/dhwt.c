@@ -430,7 +430,8 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 					new_runmode = eparams->dhwmode;
 					aser(&dhwt->run.legionella_on, eparams->legionella);
 					// XXX REVISIT recycle can only be set via schedule for now
-					recycle = aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
+					if (dhwt->set.p.pump_dhwrecycle)
+						recycle = aler(&dhwt->run.electric_mode) ? (eparams->recycle && dhwt->set.electric_recycle) : eparams->recycle;
 				}
 				else	// don't touch legionella
 					new_runmode = runtime_dhwmode();
