@@ -30,6 +30,11 @@
  * It is worth noting that no data consistency is guaranteed for logging, i.e. the data points logged
  * during a particular call of boiler_hs_logdata_cb() may represent values from different time frames:
  * the overhead of ensuring consistency seems overkill for the purpose served by the log facility.
+ *
+ * @note contrary to usual implementations, here the trip_temp for boiler heatup is the actual
+ * requested target temperature (and not target-hysteresis/2). This allows consummers to be assured
+ * that their request will always be met when the boiler is running under normal conditions; and not
+ * have to factor-in the boiler hysteresis in their own request offset, simplifying configuration.
  */
 
 #include <stdlib.h>	// calloc/free
@@ -607,7 +612,7 @@ fail:
 
 /**
  * Implement basic single stage boiler.
- * The boiler default trip/untrip points are target +/- hysteresis/2, with the following adaptiveness:
+ * The boiler default trip/untrip points are target/target + hysteresis, with the following adaptiveness:
  * - On the low end of the curve (low temperatures):
  *   - trip temp cannot be lower than limit_tmin;
  *   - untrip temp is proportionately adjusted (increased) to allow for the full hysteresis swing;
@@ -696,7 +701,7 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 	/* un/trip points */
 	// apply trip_temp only if we have a heat request
 	if (likely(RWCHCD_TEMP_NOREQUEST != target_temp)) {
-		trip_temp = (target_temp - boiler->set.hysteresis/2);
+		trip_temp = target_temp;
 
 		if (trip_temp < boiler->set.limit_tmin)
 			trip_temp = boiler->set.limit_tmin;

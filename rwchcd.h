@@ -160,7 +160,7 @@ struct s_hcircuit_params {
 	temp_t inoff_temp;		///< maximum ambient temp above which heating is disabled for this circuit (only valid with an ambient sensor), a -1K hysteresis is applied to reenable
 	temp_t limit_wtmin;		///< minimum water pipe temp when this circuit is active (e.g. for frost protection)
 	temp_t limit_wtmax;		///< maximum allowed water pipe temp when this circuit is active. @warning MUST be locally or globally > 0C
-	temp_t temp_inoffset;		///< offset temp for heat source request. @note beware of interaction with e.g. boiler hysteresis
+	temp_t temp_inoffset;		///< offset temp for heat source request.
 };
 
 #include "timekeep.h"
