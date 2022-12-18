@@ -656,6 +656,14 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 				if ((now - circuit->run.trans_start_time) < circuit->set.boost_maxtime)
 					target_ambient += circuit->set.tambient_boostdelta;
 			}
+
+			// detect end of boost for flooring in all cases (timeout or transition over)
+			if (circuit->set.boost_maxtime) {
+				// assume that a 1K+ downstep signals end of boost - smaller boost deltas should be irrelevant
+				// NB: can't directly compare to tambient_boostdelta because target_ambient can be altered by indoor sensor
+				if (target_ambient <= (aler(&circuit->run.target_ambient) - deltaK_to_temp(1)))
+					circuit->run.floor_output = true;
+			}
 			break;
 		case TRANS_NONE:
 		default:
