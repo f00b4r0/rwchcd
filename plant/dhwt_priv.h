@@ -69,12 +69,12 @@ struct s_dhwt {
 		bool charge_overtime;		///< true if charge went overtime
 		atomic_bool electric_mode;	///< true if operating on electric heater
 		bool overtemp;			///< true if tank is over temperature
+		bool floor_intake;		///< true if the current intake should not be reduced
 		_Atomic enum e_runmode runmode;	///< dhwt actual (computed) runmode
 		_Atomic temp_t target_temp;	///< current target temp for this tank
 		_Atomic temp_t actual_temp;	///< current temperature as retained by the software (could be top or bottom)
 		temp_t heat_request;		///< current temp request from heat source for this circuit
 		timekeep_t mode_since;		///< starting time of current mode (if #charge_on: charge start time, else charge end time)
-		timekeep_t floor_until_time;	///< non-zero if the current intake should not be reduced until this future timestamp
 		int charge_yday;		///< last day forced charge was triggered in #DHWTF_FIRST mode
 	} run;		///< private runtime (internally handled)
 	struct {

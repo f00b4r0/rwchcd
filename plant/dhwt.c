@@ -663,7 +663,7 @@ out:
  if (electric || overtemp): close
  else
 	if hs_overtemp: open (XXX tolerate that win may be > wintmax in this emergency case)
-	else if (charge_on || floor_until_time):
+	else if (charge_on || floor_intake):
 		if wintemp acceptable: open
 		else if wintemp unacceptable: close
 		else (hysteresis): do nothing
@@ -683,7 +683,7 @@ static int dhwt_run_feedisol(struct s_dhwt * restrict const dhwt)
 
 	if (dhwt->pdata->run.hs_overtemp)
 		isolate = false;
-	else if ((aler(&dhwt->run.charge_on) || dhwt->run.floor_until_time)) {
+	else if ((aler(&dhwt->run.charge_on) || dhwt->run.floor_intake)) {
 		ret = dhwt_wintemp_acceptable(dhwt);
 		if (!ret)	// dead zone - do nothing
 			goto out;
@@ -705,7 +705,7 @@ out:
  if (electric || overtemp): (feedisol ? soft : hard) off
  else:
  	if hs_overtemp: soft on (XXX tolerate that win may be > wintmax in this emergency case)
-	else if (charge_on || floor_until_time):
+	else if (charge_on || floor_intake):
  		if wintemp acceptable: soft on
  		else if wintemp not acceptable : (feedisol ? soft : hard) off
  		else (hysteresis): do nothing
@@ -737,7 +737,7 @@ static int dhwt_run_feedpump(struct s_dhwt * restrict const dhwt)
 	force = NOFORCE;
 	if (dhwt->pdata->run.hs_overtemp)
 		turn_on = ON;
-	else if (aler(&dhwt->run.charge_on) || dhwt->run.floor_until_time) {
+	else if (aler(&dhwt->run.charge_on) || dhwt->run.floor_intake) {
 		if (!ret)	// dead zone - do nothing
 			goto out;
 
@@ -1084,15 +1084,15 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 				// handle heatsource flooring requests on untrip
 				if (dhwt->pdata->run.consumer_sdelay)
-					dhwt->run.floor_until_time = now + dhwt->pdata->run.consumer_sdelay;
+					dhwt->run.floor_intake = true;
 			}
 			else	// keep updating heat request while !electric charge is in progress - curr_temp is bottom if available here
 				dhwt->run.heat_request = dhwt_heat_request(dhwt, curr_temp, target_temp);
 		}
 
-		// reset flooring when enough time has passed - XXX handled only in water charge assuming flooring request cannot happen simultaneously with plant_could_sleep
-		if (dhwt->run.floor_until_time && timekeep_a_ge_b(now, dhwt->run.floor_until_time))
-			dhwt->run.floor_until_time = 0;
+		// reset flooring when consumer_sdelay is reset (assumes it will reach 0 before retriggering) - XXX handled only in water charge assuming flooring request cannot happen simultaneously with plant_could_sleep
+		if (dhwt->run.floor_intake && !dhwt->pdata->run.consumer_sdelay)
+			dhwt->run.floor_intake = false;
 	}
 
 	// handle valve_feedisol
