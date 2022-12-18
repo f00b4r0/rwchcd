@@ -811,6 +811,10 @@ static int boiler_hscb_run(struct s_heatsource * const heat)
 			boiler->run.turnon_next_adj = 0;		// reset next value
 			boiler->run.negderiv_starttime = 0;		// reset time start
 		}
+
+		// preemptively reset consummer_sdelay when heat stops rising: assume it is now safe to let floored consummer drop even if the full delay hasn't elapsed
+		if (heat->run.target_consumer_sdelay && (temp_deriv < 0))
+			heat->run.target_consumer_sdelay = 0;
 	}
 
 #ifdef DEBUG
