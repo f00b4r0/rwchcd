@@ -784,14 +784,19 @@ int hcircuit_run(struct s_hcircuit * const circuit)
 	if (unlikely(circuit->pdata->run.hs_overtemp))
 		aser(&circuit->run.runmode, RM_COMFORT);
 
+	// fetch limits
+	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, circuit->pdata->set.def_hcircuit.limit_wtmin);
+	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, circuit->pdata->set.def_hcircuit.limit_wtmax);
+
 	// handle special runmode cases
 	switch (aler(&circuit->run.runmode)) {
 		case RM_OFF:
 			if (circuit->run.active && circuit->run.floor_output) {	// executed at first switch from any mode to RM_OFF with floor_output
 				// disable heat request from this circuit
 				aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
+				water_temp = circuit->run.floor_wtemp;	// maintain last wtemp
 				dbgmsg(2, 1, "\"%s\": in cooldown, remaining: %u", circuit->name, timekeep_tk_to_sec(circuit->pdata->run.consumer_sdelay));
-				return (ALL_OK);	// stop processing: maintain current output
+				goto valveop;
 			}
 			else
 				return (hcircuit_shutdown(circuit));
@@ -830,10 +835,6 @@ summaint:
 		}
 	}
 
-	// fetch limits
-	lwtmin = SETorDEF(circuit->set.params.limit_wtmin, circuit->pdata->set.def_hcircuit.limit_wtmin);
-	lwtmax = SETorDEF(circuit->set.params.limit_wtmax, circuit->pdata->set.def_hcircuit.limit_wtmax);
-
 	// calculate water pipe temp
 	switch (circuit->set.tlaw) {
 		case HCL_BILINEAR:
@@ -858,6 +859,7 @@ summaint:
 	// heat request is always computed based on non-interfered water_temp value
 	aser(&circuit->run.heat_request, water_temp + SETorDEF(circuit->set.params.temp_inoffset, circuit->pdata->set.def_hcircuit.temp_inoffset));
 
+valveop:
 	// alterations to the computed value only make sense if a mixing valve is available
 	if (circuit->set.p.valve_mix) {
 		// interference: apply rate of rise limitation if any
