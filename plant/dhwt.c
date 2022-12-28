@@ -576,7 +576,6 @@ static int dhwt_wintemp_acceptable(struct s_dhwt * restrict const dhwt)
  * @param runmode target runmode (only RM_TEST and RM_SUMMAINT allowed)
  * @return exec status
  * @note no check on inlet temperature is performed
- * @todo review shared recycle pump summer maintenance scenarios - with electric (can they materially exist?).
  */
 static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_runmode runmode)
 {
@@ -604,7 +603,7 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
 	else
 		test = ON;
 	if (dhwt->set.p.pump_feed)
-		(void)!pump_set_state(dhwt->set.p.pump_feed, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
+		(void)!pump_set_state(dhwt->set.p.pump_feed, test, NOFORCE);	// don't force off (for shared pumps)
 
 	if (dhwt->set.p.valve_dhwisol) {
 		(void)!valve_isol_trigger(dhwt->set.p.valve_dhwisol, false);
@@ -614,7 +613,7 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
 	else
 		test = ON;
 	if (dhwt->set.p.pump_dhwrecycle)
-		(void)!pump_set_state(dhwt->set.p.pump_dhwrecycle, test, (test == ON) ? FORCE : NOFORCE);	// don't force off (for shared pumps)
+		(void)!pump_set_state(dhwt->set.p.pump_dhwrecycle, test, NOFORCE);	// don't force off (for shared pumps)
 
 	return (ALL_OK);
 }
