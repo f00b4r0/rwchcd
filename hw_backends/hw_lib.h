@@ -23,7 +23,7 @@ typedef	uint32_t	res_t;	///< resistance value
 
 /**
  * Known types of RTDs, identified by their element and temperature coefficient (ppm/K).
- * See #hw_lib_rtdtype_str for configuration strings.
+ * See `hw_lib_rtdtype_str` in #hw_lib.c for configuration strings.
  */
 enum e_hw_lib_rtdt {
 	HW_RTD_NONE = 0,	///< invalid - not configured

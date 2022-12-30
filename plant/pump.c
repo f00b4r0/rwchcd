@@ -83,6 +83,7 @@ struct s_pump * pump_virtual_new(struct s_pump * restrict const pump)
 
 /**
  * Grab a pump for use.
+ * This is currently only used once at configuration time, hence the lack of a reverse operation.
  * @param pump the (parent) pump to claim
  * @return exec status
  * @note in the current implementation of shared pumps, we do not (need to) keep a count of users.

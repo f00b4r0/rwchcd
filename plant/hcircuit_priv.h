@@ -42,6 +42,7 @@ enum e_hcircuit_laws {
 	HCL_BILINEAR,	///< bilinear temperature law. Config `bilinear`. *Requires extra parameters, see #s_tlaw_bilin20C_priv)
 };
 
+/** Fast cooldown bitwise identifiers for s_hcircuit fast_cooldown setting */
 enum e_fastcooldown_modes {
 	FCM_NONE	= 0x00,
 	FCM_FROSTFREE	= 0x01,

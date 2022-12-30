@@ -459,7 +459,7 @@ die:
 
 static void usage(const char *name)
 {
-	printf("usage: %s [-c config] [-ht]\n"
+	printf("usage: %s [-c config] [-htV]\n"
 	       " -c config\t"	"use <config> as configuration\n"
 	       " -h\t\t"	"show this help message\n"
 	       " -t\t\t"	"test configuration and exit\n"

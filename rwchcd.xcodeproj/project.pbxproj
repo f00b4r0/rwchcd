@@ -175,6 +175,7 @@
 		4F739A60252CB6DF007DD18E /* backend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = backend.h; sourceTree = "<group>"; };
 		4F739A61252CB6DF007DD18E /* backend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = backend.c; sourceTree = "<group>"; };
 		4F811B98252DE16D0041DDF7 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
+		4F831E09293CE6E600BD4F14 /* UPGRADING */ = {isa = PBXFileReference; lastKnownFileType = text; path = UPGRADING; sourceTree = SOURCE_ROOT; };
 		4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.lex; path = filecfg_parser.l; sourceTree = "<group>"; };
 		4F94475D21DAA14200FCF120 /* filecfg_parser.y */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.yacc; path = filecfg_parser.y; sourceTree = "<group>"; };
 		4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_parser.c; sourceTree = "<group>"; };
@@ -530,6 +531,7 @@
 			children = (
 				4F2F7F6A1DDF1DD80095AAEE /* README.md */,
 				4F1C18BD26E95393003C47F1 /* ChangeLog */,
+				4F831E09293CE6E600BD4F14 /* UPGRADING */,
 				4F961F9F1D899D5100E2A8AF /* Makefile */,
 				4F263EFE2528A19500733F75 /* Makefile.sub */,
 				4FC6895C207176F800A3A065 /* hw_backends */,

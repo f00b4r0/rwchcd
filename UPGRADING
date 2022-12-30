@@ -1,0 +1,40 @@
+1.0 -> 1.1
+	* Operation changes:
+	  The boiler now operates from its requested temperature to +hysteresis, instead of oscillating at +/- hysteresis/2.
+	  This means that the heat circuit and DHWT "temp_inoffset" can be set being assured that the boiler will
+	  attempt to maintain a temperature strictly above the requested input temperature.
+	  In other words, there is no longer a need to account for the boiler's own hysteresis in setting these values.
+	  Example with DHWT: target DHWT temp: 60C. DHWT "temp_inoffset" set at 5C;
+	  Old behaviour: boiler trips at 65C-hysteresis/2 and untrips at 65C+hysteresis/2
+	  New behaviour: boiler trips at 65C and untrips at 65C+hysteresis: DHWT always gets input >=65C
+
+	  For DHWT, "t_legionella" no longer overrides t_min/t_max and must thus be set within those two values.
+
+	* Configuration changes:
+	  - Renamed options:
+	    - DHWT:
+	      - "valve_hwisol" -> "valve_feedisol"
+	      - "pump_recycle" -> "pump_dhwrecycle"
+
+	  - Added options:
+	    - Defconfig:
+	      - "notifier": string path to an executable that will be called when an alarm is raised in the system
+	    - Pump:
+	      - "shared": boolean, signals a pump shared between several plant entities
+	    - DHWT:
+	      - "electric_hasthermostat": boolean, if true, DHWT has its own thermostat for electric operation.
+	      - "tthresh_dhwisol": minimum temperature threshold for DHWT disconnection from DHW circuit
+	    - Hcircuit params:
+	      - "inoff_temp": maximum indoor temperature for circuit operation
+
+	  - Removed options:
+	    - Pump:
+	      - "cooldown_time": no longer necessary (logic handled at entity level)
+	    - Boiler:
+	      - "pump_load": removed untested implementation
+	    - DHWT:
+	      - "electric_failover": superseeded by "electric_hasthermostat"
+
+	  - Modified options:
+	    - Hcircuit:
+	      - "fast_cooldown": now a list of allowed modes for fast cooldown operation

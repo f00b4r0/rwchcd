@@ -299,6 +299,11 @@ static const char * const hw_lib_rtdtype_str[] = {
 	[HW_RTD_NI6180] = "NI6180",
 };
 
+/**
+ * Print human readable name of RTD type.
+ * @param type the internal representation of RTD type
+ * @return human readable string
+ */
 const char * hw_lib_print_rtdtype(const enum e_hw_lib_rtdt type)
 {
 	if (type >= ARRAY_SIZE(hw_lib_rtdtype_str))
@@ -307,6 +312,11 @@ const char * hw_lib_print_rtdtype(const enum e_hw_lib_rtdt type)
 	return (hw_lib_rtdtype_str[type]);
 }
 
+/**
+ * Match a human-readable representation of RTD type to internal type.
+ * @param str the string to parse
+ * @return corresponding internal type or -ENOTFOUND if not found
+ */
 int hw_lib_match_rtdtype(const char * str)
 {
 	unsigned int i;

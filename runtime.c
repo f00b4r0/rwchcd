@@ -414,6 +414,10 @@ int runtime_set_stopdhw(bool state)
 	return (ALL_OK);
 }
 
+/**
+ * Return the last measured timestep between two consecutive executions of runtime_run().
+ * @return timestep value
+ */
 timekeep_t runtime_get_timestep(void)
 {
 	return (aler(&Runtime.run.timestep));

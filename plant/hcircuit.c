@@ -487,8 +487,7 @@ static void hcircuit_inoff(struct s_hcircuit * const circuit)
  * TRANS_UP remaining active, i.e. the boost can be applied for a total time longer than the set time.
  * @note this function performs some checks to work around uninitialized data at startup, maybe this should be handled in online() instead.
  * @todo add optimizations (anticipated turn on/off, max ambient...)
- * @todo ambient max delta shutdown; optim based on return temp
- * @todo revisit runmode alterations
+ * @todo optim based on return temp
  */
 __attribute__((warn_unused_result))
 int hcircuit_logic(struct s_hcircuit * restrict const circuit)

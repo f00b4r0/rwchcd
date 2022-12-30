@@ -515,7 +515,7 @@ settarget:
  * (this assumes that the self-heater has a local thermostat, which should always be the case).
  * The major inconvenient here is that this failsafe mode COULD provoke a DHWT
  * freeze in the most adverse conditions.
- * @warning DHWT could freeze - TODO: needs review
+ * @warning DHWT could freeze if not electric self-heater is available
  * @param dhwt target dhwt
  */
 static void dhwt_failsafe(struct s_dhwt * restrict const dhwt)

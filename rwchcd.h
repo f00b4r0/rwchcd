@@ -172,7 +172,7 @@ struct s_dhwt_params {
 	temp_t limit_tmax;		///< maximum allowed dhwt temp when active. DHWT will be considered overtemp and stopped if this value is exceeded on the coldest measurement. @warning MUST be locally or globally > #limit_tmin
 	temp_t t_legionella;		///< target temp for legionella prevention. @warning must be locally or globally < #limit_tmax (ideally well below it)
 	temp_t t_comfort;		///< target temp in comfort mode. @warning MUST be locally or globally > #t_frostfree
-	temp_t t_eco;			///< target temp in eco mode. @warning MUST be locally or globally > #tfrostfree
+	temp_t t_eco;			///< target temp in eco mode. @warning MUST be locally or globally > #t_frostfree
 	temp_t t_frostfree;		///< target temp in frost-free mode. @warning MUST be locally or globally > 0C
 	temp_t hysteresis;		///< hysteresis for target temp. @warning MUST be locally or globally positive
 	temp_t temp_inoffset;		///< offset temp for heat source request. This value will be added to the computed target temperature to form the heat request.
@@ -192,7 +192,7 @@ struct s_pdata {
 		bool hs_overtemp;		///< true if a plant heatsource is overtemping (requires all consumers to accept heat input to accelerate heatsource cooldown)
 		bool hs_allfailed;		///< true if no heatsource plant is available
 		timekeep_t consumer_sdelay;	///< minimum time consumers should keep their current consumption before turning off
-		int_least16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests. @todo XXX REVIEW
+		int_least16_t consumer_shift;	///< a factor to inhibit (negative) or increase (positive) consummers' heat requests.
 		uint_fast8_t dhwt_currprio;	///< current allowed DHWT priority charge in the plant
 	} run;
 };

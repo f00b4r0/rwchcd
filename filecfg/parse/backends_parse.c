@@ -41,6 +41,7 @@ typedef int (* const hw_bknd_parser_t)(const struct s_filecfg_parser_node * cons
 
 extern struct s_hw_backends HW_backends;
 
+/** Known hardware backend parsers */
 static hw_bknd_parser_t HWparsers[] = {
 	dummy_filecfg_parse,
 #ifdef HAS_HWP1		// XXX
@@ -51,6 +52,12 @@ static hw_bknd_parser_t HWparsers[] = {
 #endif
 };
 
+/**
+ * Try all known hardware backend parsers.
+ * @param priv ignored
+ * @param node the backend node to parse
+ * @return exec status
+ */
 static int hardware_backend_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)
 {
 	unsigned int i;
@@ -67,6 +74,9 @@ static int hardware_backend_parse(void * restrict const priv __attribute__((unus
 
 /**
  * Initialize, configure and bring online hardware backends.
+ * @param priv ignored
+ * @param node the backends configuration node to parse
+ * @return exec status
  */
 int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {

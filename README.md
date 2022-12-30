@@ -46,7 +46,8 @@ To uninstall, as root run `make uninstall`
 
 The daemon expects to find its configuration in `/etc/rwchcd.conf`,
 unless specified differently on the command line. Example configurations
-are provided in `filecfg/examples`.
+are provided in `filecfg/examples`. `rwchcd -h` provides information about the
+(very few) available command line parameters.
 
 A systemd service file is provided that will be installed when running
 `make install` if DBus is available. The daemon will be started at next reboot

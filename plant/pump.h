@@ -24,7 +24,6 @@ struct s_pump;
 void pump_cleanup(struct s_pump * restrict pump);
 struct s_pump * pump_virtual_new(struct s_pump * restrict const pump);
 int pump_grab(struct s_pump * restrict pump);
-int pump_thaw(struct s_pump * restrict pump);
 int pump_online(struct s_pump * restrict const pump) __attribute__((warn_unused_result));
 int pump_set_state(struct s_pump * restrict const pump, bool req_on, bool force_state) __attribute__((warn_unused_result));
 int pump_get_state(const struct s_pump * restrict const pump);
