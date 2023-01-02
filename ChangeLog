@@ -2,7 +2,6 @@
 	* rwchcd: implement config checking and using alternative config
 	* rwchcd: fix memory leaks on program exit path
 	* rwchcd: ensure only one instance is running
-	* rwchcd: prevent creation of zombie notifier processes
 	* runtime: implement DHW kill switch
 	* io: implement non-permanent relay accounting
 	* io: fix aggregate temperature failure logic
@@ -16,7 +15,6 @@
 	* dhwt: ensure frostfree temperature is honored
 	* dhwt: implement adaptive heat request
 	* dhwt: ensure recycling stops when switching system mode
-	* dhwt: killswitch only applies to RM_AUTO
 	* dhwt: improve handling of isolation valve and feed and recycle pumps
 	* dhwt: support DHW isolation valve (support external electric failover for integrated tank boiler)
 	* boiler: Adjust trip anticipation up to full hysteresis
