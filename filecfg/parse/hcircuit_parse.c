@@ -64,7 +64,7 @@ FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_hcircuit_params, outhoff_hystere
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, inoff_temp)
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmin)
 FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, false, s_hcircuit_params, limit_wtmax)
-FILECFG_PARSER_CELSIUS_PARSE_FUNC(false, true, s_hcircuit_params, temp_inoffset)
+FILECFG_PARSER_CELSIUS_PARSE_FUNC(true, true, s_hcircuit_params, temp_inoffset)
 
 int filecfg_hcircuit_params_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
