@@ -105,7 +105,7 @@ int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_f
 
 	// minimum sanity checks
 	if (delta) {
-		if (t >= (RWCHCD_TEMPMAX - RWCHCD_TEMPMIN)) {
+		if (abs((tempdiff_t)t) >= (RWCHCD_TEMPMAX - RWCHCD_TEMPMIN)) {
 			filecfg_parser_pr_err(_("Configured temperature delta out of range at line %d"), n->lineno);
 			return (-EINVALID);
 		}
