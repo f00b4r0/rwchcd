@@ -314,15 +314,14 @@ static int hcircuit_shutdown(struct s_hcircuit * const circuit)
 	assert(circuit);
 	assert(circuit->set.configured);
 
-	// ensure actuators are reset after summer maintenance
+	if (!circuit->run.active)
+		return (ALL_OK);
+
 	if (circuit->set.p.pump_feed)
 		pump_shutdown(circuit->set.p.pump_feed);
 
 	if (circuit->set.p.valve_mix)
 		valve_shutdown(circuit->set.p.valve_mix);
-
-	if (!circuit->run.active)
-		return (ALL_OK);
 
 	aser(&circuit->run.heat_request, RWCHCD_TEMP_NOREQUEST);
 	aser(&circuit->run.target_wtemp, 0);
