@@ -44,30 +44,6 @@ static FILE * FCD_File = NULL;		///< pointer to target configuration file (for d
 static unsigned int FCD_ilevel;		///< current indentation level
 
 /**
- * Programmatically indent with tabs.
- * @param level desired indentation level
- * @return a string containing the required number of '\\t'
- */
-static const char * filecfg_tabs(const unsigned int level)
-{
-	const char * const indents[] = {
-		"",
-		"\t",
-		"\t\t",
-		"\t\t\t",
-		"\t\t\t\t",
-		"\t\t\t\t\t",
-		"\t\t\t\t\t\t",
-		"\t\t\t\t\t\t\t",
-	};
-
-	if (level >= ARRAY_SIZE(indents))
-		return ("");
-
-	return (indents[level]);
-}
-
-/**
  * fprintf() wrapper to config file output.
  * This function will write to the set #FCD_File and handle
  * indentation level based on the value of #FCD_ilevel.
@@ -77,6 +53,7 @@ static const char * filecfg_tabs(const unsigned int level)
  */
 int filecfg_printf_wrapper(const bool indent, const char * restrict format, ...)
 {
+	const char indents[] = "\t\t\t\t\t\t\t\t";
 	FILE * file = FCD_File;
 	int ret;
 	va_list args;
@@ -87,7 +64,7 @@ int filecfg_printf_wrapper(const bool indent, const char * restrict format, ...)
 	va_start(args, format);
 
 	if (indent)
-		fprintf(file, "%s", filecfg_tabs(FCD_ilevel));
+		fprintf(file, "%.*s", FCD_ilevel, indents);
 	ret = vfprintf(file, format, args);
 
 	va_end(args);
