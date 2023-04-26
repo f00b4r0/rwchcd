@@ -64,7 +64,14 @@ def gettemp(id):
 		temp = float('nan')
 	return "{:.1f}".format(temp)
 
-render = web.template.render('templates/', base='base', globals={'getcfg': getcfg, 'gettemp': gettemp, 'getobjname': getobjname})
+template_globals = {
+	'getcfg': getcfg,
+	'gettemp': gettemp,
+	'getobjname': getobjname,
+	'app_path': lambda p: web.ctx.homepath + p
+}
+
+render = web.template.render('templates/', base='base', globals=template_globals)
 
 urls = (
 	'/', 'rwchcd',
