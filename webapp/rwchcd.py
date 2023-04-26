@@ -108,6 +108,35 @@ class BootForm(form.Form):
 		if note: return '<div class="invalid-feedback">%s</div>' % net.websafe(note)
 		else: return ""
 
+class BootRunModeOverrideGrpForm(BootForm):
+	def __init__(self, *inputs, **kw):
+		self.grplabel = kw.pop("grplabel", "")
+		super().__init__(*inputs, **kw)
+
+	def render_css(self):
+		out = []
+		out.append(self.rendernote(self.note))
+		out.append('<div class="mb-3">')
+		out.append('<label class="form-label">%s</label>' % (net.websafe(self.grplabel)))
+		out.append('<div class="input-group">')
+		for i in self.inputs:
+			if isinstance(i, form.Checkbox):
+				out.append('<div class="input-group-text">')
+				i.attrs['class'] = 'form-check-input mt-0'
+			else:
+				if i.note:
+					i.attrs['class'] += ' is-invalid'
+			out.append(i.pre)
+			out.append(i.render())
+			out.append(self.rendernote(i.note))
+			out.append(i.post)
+			if isinstance(i, form.Checkbox):
+				out.append('</div>')
+		out.append('</div></div>')
+		out.append('\n')
+		return ''.join(out)
+
+
 formRwchcd = BootForm(
 	form.Dropdown('sysmode', [], description='Mode', class_='form-select'),
 	)
@@ -120,8 +149,12 @@ formTemps = BootForm(
 	form.Textbox('econtemp', disabled='true', description='Eco', class_='form-control'),
 	form.Textbox('frostemp', disabled='true', description='Hors-Gel', class_='form-control'),
 	form.Textbox('overridetemp', form.notnull, form.regexp('^-?\d+\.?\d*$', 'decimal number: xx.x'), description='Ajustement', class_='form-control'),
-	form.Checkbox('overriderunmode', description='Forçage du mode', value='om', class_='form-check form-check-inline'),
-	form.Dropdown('runmode', [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]], description='Mode', class_='form-select')
+	)
+
+formRunMode = BootRunModeOverrideGrpForm(
+	form.Checkbox('overriderunmode', value='y'),
+	form.Dropdown('runmode', [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]], class_='form-select'),
+	grplabel="Mode Forcé"
 	)
 
 class rwchcd:
@@ -168,24 +201,28 @@ class hcircuit:
 		fm.econtemp.value = Ecotemp
 		fm.frostemp.value = Frosttemp
 		fm.overridetemp.value = OffsetOverrideTemp
-		fm.overriderunmode.checked = hcirc.RunModeOverride
-		fm.runmode.value = hcirc.RunMode
-		return render.hcircuit(fm)
+		fmr = formRunMode()
+		fmr.overriderunmode.checked = hcirc.RunModeOverride
+		fmr.runmode.value = hcirc.RunMode
+		return render.hcircuit(fm, fmr)
 	def POST(self, id):
 		cfg = loadcfg()
 		if int(id) not in cfg.get('hcircuits'):
 			raise web.badrequest()
 		form = formTemps()
-		if not form.validates():
-			return render.hcircuit(form)
+		formrm = formRunMode()
+		v1 = form.validates()
+		v2 = formrm.validates()
+		if not (v1 and v2):
+			return render.hcircuit(form, formrm)
 		else:
 			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
 			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
 			hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 			overridetemp = float(form.overridetemp.value)
 			hcirc.SetTempOffsetOverride(overridetemp)
-			if form.overriderunmode.checked:
-				hcirc.SetRunmodeOverride(int(form.runmode.value))
+			if formrm.overriderunmode.checked:
+				hcirc.SetRunmodeOverride(int(formrm.runmode.value))
 			else:
 				hcirc.DisableRunmodeOverride()
 			return render.valid(web.ctx.path)
