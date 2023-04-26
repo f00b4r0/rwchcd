@@ -142,7 +142,7 @@ class rwchcd:
 			rwchcd_Runtime.StopDhw = mode & 0x80
 			rwchcd_Runtime.SystemMode = mode & 0x7F
 			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
-			raise web.found(web.ctx.environ['HTTP_REFERER'])
+			return render.valid(web.ctx.path)
 
 class hcircuit:
 	def GET(self, id):
@@ -178,7 +178,7 @@ class hcircuit:
 			hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 			overridetemp = float(form.overridetemp.value)
 			hcirc.SetTempOffsetOverride(overridetemp)
-			raise web.found(web.ctx.environ['HTTP_REFERER'])
+			return render.valid(web.ctx.path)
 		
 
 if __name__ == "__main__":
