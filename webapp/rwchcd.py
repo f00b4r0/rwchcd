@@ -112,12 +112,16 @@ formRwchcd = BootForm(
 	form.Dropdown('sysmode', [], description='Mode', class_='form-select'),
 	)
 
+# NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
+
 formTemps = BootForm(
 	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
 	form.Textbox('comftemp', disabled='true', description='Confort', class_='form-control'),
 	form.Textbox('econtemp', disabled='true', description='Eco', class_='form-control'),
 	form.Textbox('frostemp', disabled='true', description='Hors-Gel', class_='form-control'),
 	form.Textbox('overridetemp', form.notnull, form.regexp('^-?\d+\.?\d*$', 'decimal number: xx.x'), description='Ajustement', class_='form-control'),
+	form.Checkbox('overriderunmode', description='Forçage du mode', value='om', class_='form-check form-check-inline'),
+	form.Dropdown('runmode', [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]], description='Mode', class_='form-select')
 	)
 
 class rwchcd:
@@ -164,6 +168,8 @@ class hcircuit:
 		fm.econtemp.value = Ecotemp
 		fm.frostemp.value = Frosttemp
 		fm.overridetemp.value = OffsetOverrideTemp
+		fm.overriderunmode.checked = hcirc.RunModeOverride
+		fm.runmode.value = hcirc.RunMode
 		return render.hcircuit(fm)
 	def POST(self, id):
 		cfg = loadcfg()
@@ -178,6 +184,10 @@ class hcircuit:
 			hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 			overridetemp = float(form.overridetemp.value)
 			hcirc.SetTempOffsetOverride(overridetemp)
+			if form.overriderunmode.checked:
+				hcirc.SetRunmodeOverride(int(form.runmode.value))
+			else:
+				hcirc.DisableRunmodeOverride()
 			return render.valid(web.ctx.path)
 		
 
