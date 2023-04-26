@@ -137,11 +137,11 @@ class BootRunModeOverrideGrpForm(BootForm):
 		return ''.join(out)
 
 
+# NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
+
 formRwchcd = BootForm(
 	form.Dropdown('sysmode', [], description='Mode', class_='form-select'),
 	)
-
-# NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
 
 formTemps = BootForm(
 	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
@@ -157,29 +157,35 @@ formRunMode = BootRunModeOverrideGrpForm(
 	grplabel="Mode Forcé"
 	)
 
+
 class rwchcd:
 	def GET(self):
 		cfg = loadcfg()
 		currmode = rwchcd_Runtime.SystemMode
 		if rwchcd_Runtime.StopDhw:
-			currmode = currmode | 0x80
-		fm = formRwchcd()
-		fm.sysmode.args = cfg['modes']
-		fm.sysmode.value = currmode
-		return render.rwchcd(fm)
+			currmode |= 0x80
+
+		fr = formRwchcd()
+		fr.sysmode.args = cfg['modes']
+		fr.sysmode.value = currmode
+
+		return render.rwchcd(fr)
+
 	def POST(self):
 		cfg = loadcfg()
-		form = formRwchcd()
-		form.sysmode.args = cfg['modes']
-		if not form.validates():
-			form.sysmode.value = int(form.sysmode.value)
+		fr = formRwchcd()
+		fr.sysmode.args = cfg['modes']
+
+		if not fr.validates():
+			fr.sysmode.value = int(fr.sysmode.value)
 			return render.rwchcd(form)
 		else:
-			mode = int(form.sysmode.value)
+			mode = int(fr.sysmode.value)
 			rwchcd_Runtime.StopDhw = mode & 0x80
 			rwchcd_Runtime.SystemMode = mode & 0x7F
 			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
 			return render.valid(web.ctx.path)
+
 
 class hcircuit:
 	def GET(self, id):
@@ -190,43 +196,43 @@ class hcircuit:
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
 		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
 		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
-		Name = hcirc.Name
-		Comftemp = "{:.1f}".format(hcirc.TempComfort)
-		Ecotemp = "{:.1f}".format(hcirc.TempEco)
-		Frosttemp = "{:.1f}".format(hcirc.TempFrostFree)
-		OffsetOverrideTemp = "{:.1f}".format(hcirc.TempOffsetOverride)
-		fm = formTemps()
-		fm.name.value = Name
-		fm.comftemp.value = Comftemp
-		fm.econtemp.value = Ecotemp
-		fm.frostemp.value = Frosttemp
-		fm.overridetemp.value = OffsetOverrideTemp
-		fmr = formRunMode()
-		fmr.overriderunmode.checked = hcirc.RunModeOverride
-		fmr.runmode.value = hcirc.RunMode
-		return render.hcircuit(fm, fmr)
+
+		ft = formTemps()
+		ft.name.value = hcirc.Name
+		ft.comftemp.value = "{:.1f}".format(hcirc.TempComfort)
+		ft.econtemp.value = "{:.1f}".format(hcirc.TempEco)
+		ft.frostemp.value = "{:.1f}".format(hcirc.TempFrostFree)
+		ft.overridetemp.value = "{:.1f}".format(hcirc.TempOffsetOverride)
+
+		frm = formRunMode()
+		frm.overriderunmode.checked = hcirc.RunModeOverride
+		frm.runmode.value = hcirc.RunMode
+
+		return render.hcircuit(ft, frm)
+
 	def POST(self, id):
 		cfg = loadcfg()
 		if int(id) not in cfg.get('hcircuits'):
 			raise web.badrequest()
-		form = formTemps()
-		formrm = formRunMode()
-		v1 = form.validates()
-		v2 = formrm.validates()
-		if not (v1 and v2):
-			return render.hcircuit(form, formrm)
+
+		ft = formTemps()
+		frm = formRunMode()
+		vft = ft.validates()
+		vfrm = frm.validates()
+
+		if not (vft and vfrm):
+			return render.hcircuit(ft, frm)
 		else:
 			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
 			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
 			hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
-			overridetemp = float(form.overridetemp.value)
-			hcirc.SetTempOffsetOverride(overridetemp)
-			if formrm.overriderunmode.checked:
-				hcirc.SetRunmodeOverride(int(formrm.runmode.value))
+			hcirc.SetTempOffsetOverride(float(ft.overridetemp.value))
+			if frm.overriderunmode.checked:
+				hcirc.SetRunmodeOverride(int(frm.runmode.value))
 			else:
 				hcirc.DisableRunmodeOverride()
 			return render.valid(web.ctx.path)
-		
+
 
 if __name__ == "__main__":
 	app = web.application(urls, globals())
