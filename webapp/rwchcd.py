@@ -104,15 +104,13 @@ class BootForm(form.Form):
 			out.append(i.post)
 			if isinstance(i, form.Checkbox):
 				out.append('</div>')
-			out.append('</div>')
-			out.append('\n')
+			out.append('</div>\n')
 		return ''.join(out)
 
 	def rendernote(self, note):
-		if note: return '<div class="invalid-feedback">%s</div>' % net.websafe(note)
-		else: return ""
+		return '<div class="invalid-feedback">%s</div>' % net.websafe(note) if note else ''
 
-class BootRunModeOverrideGrpForm(BootForm):
+class BootGrpForm(BootForm):
 	def __init__(self, *inputs, **kw):
 		self.grplabel = kw.pop("grplabel", "")
 		super().__init__(*inputs, **kw)
@@ -121,23 +119,17 @@ class BootRunModeOverrideGrpForm(BootForm):
 		out = []
 		out.append(self.rendernote(self.note))
 		out.append('<div class="mb-3">')
-		out.append('<label class="form-label">%s</label>' % (net.websafe(self.grplabel)))
+		if self.grplabel:
+			out.append('<label class="form-label">%s</label>' % (net.websafe(self.grplabel)))
 		out.append('<div class="input-group">')
 		for i in self.inputs:
-			if isinstance(i, form.Checkbox):
-				out.append('<div class="input-group-text">')
-				i.attrs['class'] = 'form-check-input mt-0'
-			else:
-				if i.note:
-					i.attrs['class'] += ' is-invalid'
+			if i.note:
+				i.attrs['class'] += ' is-invalid'
 			out.append(i.pre)
 			out.append(i.render())
 			out.append(self.rendernote(i.note))
 			out.append(i.post)
-			if isinstance(i, form.Checkbox):
-				out.append('</div>')
-		out.append('</div></div>')
-		out.append('\n')
+		out.append('</div></div>\n')
 		return ''.join(out)
 
 
@@ -155,8 +147,8 @@ formTemps = BootForm(
 	form.Textbox('overridetemp', form.notnull, form.regexp('^[+-]?\d+\.?\d*$', 'decimal number: (+-)N(.N)'), description='Ajustement', class_='form-control'),
 	)
 
-formRunMode = BootRunModeOverrideGrpForm(
-	form.Checkbox('overriderunmode', value='y'),
+formRunMode = BootGrpForm(
+	form.Checkbox('overriderunmode', value='y', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
 	form.Dropdown('runmode', [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]], class_='form-select'),
 	grplabel="Mode Forcé"
 	)
