@@ -1,0 +1,7 @@
+{
+  "name": "$getcfg('webapptitle')",
+  "short_name": "$getcfg('webapptitle')",
+  "display": "standalone",
+  "scope": "$app_path('/')",
+  "start_url": "$app_path('/')"
+}

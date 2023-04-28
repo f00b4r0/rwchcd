@@ -36,6 +36,7 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 # "tindoor": N,
 # "webapptitle": "title"
 # }
+# defining webapptitle enables PWA integration
 def loadcfg():
 	config = {}
 	with open(CFG_FILE, 'r') as f:
@@ -73,10 +74,12 @@ template_globals = {
 }
 
 render = web.template.render('templates/', base='base', globals=template_globals)
+tplmanifest = web.template.frender('templates/manifest.json', globals=template_globals)
 
 urls = (
 	'/', 'rwchcd',
 	'/hcircuit/(\d+)', 'hcircuit',
+	'/manifest.json', 'manifest',
 )
 
 from web import net
@@ -227,6 +230,14 @@ class hcircuit:
 			else:
 				hcirc.DisableRunmodeOverride()
 			return render.valid(web.ctx.path)
+
+
+class manifest:
+	def GET(self):
+		if not cfg.get('webapptitle'):
+			raise web.notfound()
+		web.header('Content-Type', 'application/manifest+json')
+		return tplmanifest()
 
 
 if __name__ == "__main__":
