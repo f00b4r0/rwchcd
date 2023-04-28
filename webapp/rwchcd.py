@@ -152,7 +152,7 @@ formTemps = BootForm(
 	form.Textbox('comftemp', disabled='true', description='Confort', class_='form-control'),
 	form.Textbox('econtemp', disabled='true', description='Eco', class_='form-control'),
 	form.Textbox('frostemp', disabled='true', description='Hors-Gel', class_='form-control'),
-	form.Textbox('overridetemp', form.notnull, form.regexp('^-?\d+\.?\d*$', 'decimal number: xx.x'), description='Ajustement', class_='form-control'),
+	form.Textbox('overridetemp', form.notnull, form.regexp('^[+-]?\d+\.?\d*$', 'decimal number: (+-)N(.N)'), description='Ajustement', class_='form-control'),
 	)
 
 formRunMode = BootRunModeOverrideGrpForm(
