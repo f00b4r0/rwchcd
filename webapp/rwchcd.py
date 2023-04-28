@@ -42,8 +42,9 @@ def loadcfg():
 		config = json.load(f)
 	return config
 
+cfg = loadcfg()
+
 def getcfg(key):
-	cfg = loadcfg()
 	return cfg.get(key)
 
 def getobjname(type, id):
@@ -140,7 +141,7 @@ class BootRunModeOverrideGrpForm(BootForm):
 # NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
 
 formRwchcd = BootForm(
-	form.Dropdown('sysmode', [], description='Mode', class_='form-select'),
+	form.Dropdown('sysmode', cfg['modes'], description='Mode', class_='form-select'),
 	)
 
 formTemps = BootForm(
@@ -160,21 +161,17 @@ formRunMode = BootRunModeOverrideGrpForm(
 
 class rwchcd:
 	def GET(self):
-		cfg = loadcfg()
 		currmode = rwchcd_Runtime.SystemMode
 		if rwchcd_Runtime.StopDhw:
 			currmode |= 0x80
 
 		fr = formRwchcd()
-		fr.sysmode.args = cfg['modes']
 		fr.sysmode.value = currmode
 
 		return render.rwchcd(fr)
 
 	def POST(self):
-		cfg = loadcfg()
 		fr = formRwchcd()
-		fr.sysmode.args = cfg['modes']
 
 		if not fr.validates():
 			fr.sysmode.value = int(fr.sysmode.value)
@@ -189,7 +186,6 @@ class rwchcd:
 
 class hcircuit:
 	def GET(self, id):
-		cfg = loadcfg()
 		if int(id) not in cfg.get('hcircuits'):
 			raise web.badrequest()
 		#with the above, this "cannot" fail
@@ -211,7 +207,6 @@ class hcircuit:
 		return render.hcircuit(ft, frm)
 
 	def POST(self, id):
-		cfg = loadcfg()
 		if int(id) not in cfg.get('hcircuits'):
 			raise web.badrequest()
 
