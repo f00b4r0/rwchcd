@@ -32,6 +32,7 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 # "hcircuits": [0, 1, ...],
 # "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
 # "graphurl": "url",
+# "hcircrunmodes": [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]],
 # "toutdoor": N,
 # "tindoor": N,
 # "webapptitle": "title"
@@ -147,9 +148,9 @@ formTemps = BootForm(
 	form.Textbox('overridetemp', form.notnull, form.regexp('^[+-]?\d+\.?\d*$', 'decimal number: (+-)N(.N)'), description='Ajustement', class_='form-control'),
 	)
 
-formRunMode = BootGrpForm(
+formHcRunMode = BootGrpForm(
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
-	form.Dropdown('runmode', [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]], class_='form-select'),
+	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select'),
 	grplabel="Mode Forcé"
 	)
 
@@ -195,11 +196,13 @@ class hcircuit:
 		ft.frostemp.value = "{:.1f}".format(hcirc.TempFrostFree)
 		ft.overridetemp.value = "{:.1f}".format(hcirc.TempOffsetOverride)
 
-		frm = formRunMode()
-		frm.overriderunmode.checked = hcirc.RunModeOverride
-		if not frm.overriderunmode.checked:
-			frm.runmode.attrs["disabled"] = 'true'
-		frm.runmode.value = hcirc.RunMode
+		frm = None
+		if cfg.get('hcircrunmodes'):
+			frm = formHcRunMode()
+			frm.overriderunmode.checked = hcirc.RunModeOverride
+			if not frm.overriderunmode.checked:
+				frm.runmode.attrs["disabled"] = 'true'
+			frm.runmode.value = hcirc.RunMode
 
 		return render.hcircuit(ft, frm)
 
@@ -208,23 +211,28 @@ class hcircuit:
 			raise web.badrequest()
 
 		ft = formTemps()
-		frm = formRunMode()
 		vft = ft.validates()
-		vfrm = frm.validates()
 
-		if not (vft and vfrm):
+		frm = None
+		vfrm = True
+		if cfg.get('hcircrunmodes'):
+			frm = formHcRunMode()
+			vfrm = frm.validates()
 			if not frm.overriderunmode.checked:
 				frm.runmode.attrs["disabled"] = 'true'
+
+		if not (vft and vfrm):
 			return render.hcircuit(ft, frm)
 		else:
 			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
 			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
 			hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 			hcirc.SetTempOffsetOverride(float(ft.overridetemp.value))
-			if frm.overriderunmode.checked:
-				hcirc.SetRunmodeOverride(int(frm.runmode.value))
-			else:
-				hcirc.DisableRunmodeOverride()
+			if cfg.get('hcircrunmodes'):
+				if frm.overriderunmode.checked:
+					hcirc.SetRunmodeOverride(int(frm.runmode.value))
+				else:
+					hcirc.DisableRunmodeOverride()
 			return render.valid(web.ctx.path)
 
 

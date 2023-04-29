@@ -2,9 +2,10 @@ $def with (formt, formrm)
 $var title: Réglages Circuit
 <h1>Réglages Circuit</h1>
 <form method="post">
-$if not (formt.valid and formrm.valid): <p class="text-danger"><strong>Erreur!</strong></p>
+$if (not formt.valid) or (formrm and not formrm.valid): <p class="text-danger"><strong>Erreur!</strong></p>
 $:formt.render_css()
-$:formrm.render_css()
+$if formrm:
+  $:formrm.render_css()
 <div class="mb-3">
 <input type="submit" value="Valider" class="btn btn-primary"/>
 </div>
