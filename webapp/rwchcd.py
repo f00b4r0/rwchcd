@@ -148,7 +148,7 @@ formTemps = BootForm(
 	)
 
 formRunMode = BootGrpForm(
-	form.Checkbox('overriderunmode', value='y', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
+	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
 	form.Dropdown('runmode', [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]], class_='form-select'),
 	grplabel="Mode Forcé"
 	)
@@ -197,6 +197,8 @@ class hcircuit:
 
 		frm = formRunMode()
 		frm.overriderunmode.checked = hcirc.RunModeOverride
+		if not frm.overriderunmode.checked:
+			frm.runmode.attrs["disabled"] = 'true'
 		frm.runmode.value = hcirc.RunMode
 
 		return render.hcircuit(ft, frm)
@@ -211,6 +213,8 @@ class hcircuit:
 		vfrm = frm.validates()
 
 		if not (vft and vfrm):
+			if not frm.overriderunmode.checked:
+				frm.runmode.attrs["disabled"] = 'true'
 			return render.hcircuit(ft, frm)
 		else:
 			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
