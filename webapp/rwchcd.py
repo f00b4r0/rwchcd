@@ -37,6 +37,7 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 # "tindoor": N,
 # "webapptitle": "title"
 # }
+# all items are optional
 # defining webapptitle enables PWA integration
 def loadcfg():
 	config = {}
@@ -137,7 +138,7 @@ class BootGrpForm(BootForm):
 # NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
 
 formRwchcd = BootForm(
-	form.Dropdown('sysmode', cfg['modes'], description='Mode', class_='form-select'),
+	form.Dropdown('sysmode', cfg.get('modes'), description='Mode', class_='form-select'),
 	)
 
 formTemps = BootForm(
@@ -157,16 +158,21 @@ formHcRunMode = BootGrpForm(
 
 class rwchcd:
 	def GET(self):
-		currmode = rwchcd_Runtime.SystemMode
-		if rwchcd_Runtime.StopDhw:
-			currmode |= 0x80
+		fr = None
+		if cfg.get('modes'):
+			currmode = rwchcd_Runtime.SystemMode
+			if rwchcd_Runtime.StopDhw:
+				currmode |= 0x80
 
-		fr = formRwchcd()
-		fr.sysmode.value = currmode
+			fr = formRwchcd()
+			fr.sysmode.value = currmode
 
 		return render.rwchcd(fr)
 
 	def POST(self):
+		if not cfg.get('modes'):
+			raise web.badrequest()
+
 		fr = formRwchcd()
 
 		if not fr.validates():
@@ -182,8 +188,13 @@ class rwchcd:
 
 class hcircuit:
 	def GET(self, id):
-		if int(id) not in cfg.get('hcircuits'):
+		try:
+			notfound = int(id) not in cfg.get('hcircuits')
+		except:
 			raise web.badrequest()
+		if notfound:
+			raise web.notfound()
+
 		#with the above, this "cannot" fail
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
 		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
@@ -207,8 +218,12 @@ class hcircuit:
 		return render.hcircuit(ft, frm)
 
 	def POST(self, id):
-		if int(id) not in cfg.get('hcircuits'):
+		try:
+			notfound = int(id) not in cfg.get('hcircuits')
+		except:
 			raise web.badrequest()
+		if notfound:
+			raise web.notfound()
 
 		ft = formTemps()
 		vft = ft.validates()

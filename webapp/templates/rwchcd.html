@@ -11,11 +11,12 @@ $if getcfg('tindoor') is not None:
 </ul>
 </p>
 
-<form method="post">
-$if not form.valid: <p class="text-danger"><strong>Erreur!</strong></p>
-$:form.render_css()
-<div class="mb-3">
-<input type="submit" value="Valider" class="btn btn-primary"/>
-</div>
-</form>
+$if form:
+  <form method="post">
+  $if not form.valid: <p class="text-danger"><strong>Erreur!</strong></p>
+  $:form.render_css()
+  <div class="mb-3">
+  <input type="submit" value="Valider" class="btn btn-primary"/>
+  </div>
+  </form>
 
