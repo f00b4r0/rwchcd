@@ -1,6 +1,42 @@
 Licence: GPLv2
-Copyright: (C) 2016 Thibaut VARENE
+Copyright: (C) 2016-2023 Thibaut VARENE
 
 Dependencies: python-webpy python-gi python-flup python-pydbus
 
 A very basic web application demo for controlling rwchcd
+
+This web app uses a configuration file named "cfg.json", expected in the same
+directory, and containing a single JSON object with any of the following items:
+
+{
+  "hcircuits": [0, 1, ...],
+  "hcircrunmodes": [[1, "System"], [2, "Comfort"], [3, "Eco"], [4, "Frost-Free"]],
+  "modes": [[1, "Off"], [2, "Auto"], [130, "Auto no DHW"], [3, "Comfort"], [4, "Eco"], [5, "Frost-Free"], [6, "DHW Only"]],
+  "graphurl": "url",
+  "toutdoor": N,
+  "tindoor": N,
+  "webapptitle": "WebApp Name"
+}
+
+All items are optional
+
+- "hcircuits" is an array of valid DBus hcircuit node ids, defining enables
+  heating circuit page with temperature offset adjustment
+- "hcircrunmodes" enables per-circuit runmode override, the format is an array
+  of [runmode, "description"] tuples where valid runmodes are as defined in
+  enum e_runmode. Options will be presented in the order listed.
+  Only used if "hcircuits" is defined.
+- "modes" is an array of [sysmode, "description"] tuples where valid sysmodes
+  are as defined in enum e_systemmode. Defining enables system mode control.
+  Adding 128 to the value triggers Runtime.StopDhw. Options will be presented
+  in the order listed.
+- "graphurl" is an optional url to e.g. telemetry graphs
+- "toutdoor" is the DBus temperature node id for the outdoor temperature
+- "tindoor" is the DBus temperature node id for the indoor temperature
+- "webapptitle" is the name of the web app, defining enables PWA integration
+
+Available DBus nodes can be explored using e.g.
+gdbus introspect --system --dest "org.slashdirt.rwchcd" --object-path "/org/slashdirt/rwchcd" --recurse
+
+!! IMPORTANT !!
+No sanity checks are performed on the content of this file

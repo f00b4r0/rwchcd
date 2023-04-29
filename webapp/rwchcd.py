@@ -37,8 +37,6 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 # "tindoor": N,
 # "webapptitle": "title"
 # }
-# all items are optional
-# defining webapptitle enables PWA integration
 def loadcfg():
 	config = {}
 	with open(CFG_FILE, 'r') as f:
