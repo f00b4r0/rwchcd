@@ -101,6 +101,7 @@ class BootForm(form.Form):
 		out = []
 		out.append(self.rendernote(self.note))
 		for i in self.inputs:
+			help = i.attrs.pop('help', "")
 			out.append('<div class="mb-3">')
 			if isinstance(i, form.Checkbox):
 				out.append('<div class="%s">' % i.attrs['class'])
@@ -117,6 +118,8 @@ class BootForm(form.Form):
 			out.append(i.post)
 			if isinstance(i, form.Checkbox):
 				out.append('</div>')
+			if help:
+				out.append('<div class="form-text">%s</div>' % (net.websafe(help)))
 			out.append('</div>\n')
 		return ''.join(out)
 
@@ -136,13 +139,17 @@ class BootGrpForm(BootForm):
 			out.append('<label class="form-label">%s</label>' % (net.websafe(self.grplabel)))
 		out.append('<div class="input-group">')
 		for i in self.inputs:
+			help = i.attrs.pop('help', "")
 			if i.note:
 				i.attrs['class'] += ' is-invalid'
 			out.append(i.pre)
 			out.append(i.render())
 			out.append(self.rendernote(i.note))
 			out.append(i.post)
-		out.append('</div></div>\n')
+		out.append('</div>')
+		if help:
+			out.append('<div class="form-text">%s</div>' % (net.websafe(help)))
+		out.append('</div>\n')
 		return ''.join(out)
 
 
