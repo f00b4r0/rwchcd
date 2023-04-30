@@ -9,6 +9,8 @@ This web app uses a configuration file named "cfg.json", expected in the same
 directory, and containing a single JSON object with any of the following items:
 
 {
+  "dhwts": [0, 1, ...],
+  "dhwtrunmodes": [[1, "System"], [2, "Comfort"], [3, "Eco"], [4, "Frost-Free"]],
   "hcircuits": [0, 1, ...],
   "hcircrunmodes": [[1, "System"], [2, "Comfort"], [3, "Eco"], [4, "Frost-Free"]],
   "modes": [[1, "Off"], [2, "Auto"], [130, "Auto no DHW"], [3, "Comfort"], [4, "Eco"], [5, "Frost-Free"], [6, "DHW Only"]],
@@ -20,6 +22,12 @@ directory, and containing a single JSON object with any of the following items:
 
 All items are optional
 
+- "dhwts" is an array of valid DBus DHWT node ids, defining enables DHWT page
+  with info and force charge option
+- "dhwtrunmodes" enables per-DHWT runmode override, the format is an array
+  of [runmode, "description"] tuples where valid runmodes are as defined in
+  enum e_runmode. Options will be presented in the order listed.
+  Only used if "dhwts" is defined.
 - "hcircuits" is an array of valid DBus hcircuit node ids, defining enables
   heating circuit page with temperature offset adjustment
 - "hcircrunmodes" enables per-circuit runmode override, the format is an array

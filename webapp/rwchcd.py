@@ -17,10 +17,12 @@ RWCHCD_DBUS_NAME = 'org.slashdirt.rwchcd'
 
 RWCHCD_DBUS_OBJ_BASE = '/org/slashdirt/rwchcd'
 RWCHCD_DBUS_OBJ_HCIRCS = RWCHCD_DBUS_OBJ_BASE + '/plant/hcircuits'
+RWCHCD_DBUS_OBJ_DHWTS = RWCHCD_DBUS_OBJ_BASE + '/plant/dhwts'
 RWCHCD_DBUS_OBJ_TEMPS = RWCHCD_DBUS_OBJ_BASE + '/inputs/temperatures'
 
 RWCHCD_DBUS_IFACE_RUNTIME = RWCHCD_DBUS_NAME + '.Runtime'
 RWCHCD_DBUS_IFACE_HCIRC = RWCHCD_DBUS_NAME + '.Hcircuit'
+RWCHCD_DBUS_IFACE_DHWT = RWCHCD_DBUS_NAME + '.DHWT'
 RWCHCD_DBUS_IFACE_TEMP = RWCHCD_DBUS_NAME + '.Temperature'
 
 bus = SystemBus()
@@ -29,6 +31,8 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 
 # config JSON:
 # {
+# "dhwts": [0, 1, ...],
+# "dhwtrunmodes": [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]],
 # "hcircuits": [0, 1, ...],
 # "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
 # "graphurl": "url",
@@ -55,6 +59,12 @@ def getobjname(type, id):
 		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
 		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 		return hcirc.Name
+	if type == "dhwt":
+		#this is only called from template and thus cannot trigger an error
+		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_DHWTS, id)
+		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+		dhwt = bustemp[RWCHCD_DBUS_IFACE_DHWT]
+		return dhwt.Name
 
 def gettemp(id):
 	try:
@@ -79,6 +89,7 @@ tplmanifest = web.template.frender('templates/manifest.json', globals=template_g
 urls = (
 	'/', 'rwchcd',
 	'/hcircuit/(\d+)', 'hcircuit',
+	'/dhwt/(\d+)', 'dhwt',
 	'/manifest.json', 'manifest',
 )
 
@@ -139,7 +150,7 @@ formRwchcd = BootForm(
 	form.Dropdown('sysmode', cfg.get('modes'), description='Mode', class_='form-select'),
 	)
 
-formTemps = BootForm(
+formHcTemps = BootForm(
 	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
 	form.Textbox('comftemp', disabled='true', description='Confort', class_='form-control'),
 	form.Textbox('econtemp', disabled='true', description='Eco', class_='form-control'),
@@ -153,6 +164,19 @@ formHcRunMode = BootGrpForm(
 	grplabel="Mode Forcé"
 	)
 
+formDhwProps = BootForm(
+	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
+	form.Textbox('targettemp', disabled='true', description='T Cible', class_='form-control'),
+	form.Checkbox('chargeon', disabled='true', description='Chauffe en cours', value='y', class_='form-check form-switch', role='switch'),
+	form.Checkbox('forcecharge', description='Chauffe Forcée', value='y', class_='form-check form-switch', role='switch'),
+	)
+
+
+formDhwRunMode = BootGrpForm(
+	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
+	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select'),
+	grplabel="Mode Forcé"
+	)
 
 class rwchcd:
 	def GET(self):
@@ -198,7 +222,7 @@ class hcircuit:
 		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
 		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 
-		ft = formTemps()
+		ft = formHcTemps()
 		ft.name.value = hcirc.Name
 		ft.comftemp.value = "{:.1f}".format(hcirc.TempComfort)
 		ft.econtemp.value = "{:.1f}".format(hcirc.TempEco)
@@ -223,7 +247,7 @@ class hcircuit:
 		if notfound:
 			raise web.notfound()
 
-		ft = formTemps()
+		ft = formHcTemps()
 		vft = ft.validates()
 
 		frm = None
@@ -246,6 +270,70 @@ class hcircuit:
 					hcirc.SetRunmodeOverride(int(frm.runmode.value))
 				else:
 					hcirc.DisableRunmodeOverride()
+			return render.valid(web.ctx.path)
+
+
+class dhwt:
+	def GET(self, id):
+		try:
+			notfound = int(id) not in cfg.get('dhwts')
+		except:
+			raise web.badrequest()
+		if notfound:
+			raise web.notfound()
+
+		#with the above, this "cannot" fail
+		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_DHWTS, id)
+		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+		dhwt = bustemp[RWCHCD_DBUS_IFACE_DHWT]
+
+		fp = formDhwProps()
+		fp.name.value = dhwt.Name
+		fp.targettemp.value = "{:.1f}".format(dhwt.TempTarget)
+		fp.chargeon.checked = dhwt.ChargeOn
+		fp.forcecharge.checked = dhwt.ForceChargeOn
+
+		frm = None
+		if cfg.get('dhwtrunmodes'):
+			frm = formDhwRunMode()
+			frm.overriderunmode.checked = dhwt.RunModeOverride
+			if not frm.overriderunmode.checked:
+				frm.runmode.attrs["disabled"] = 'true'
+			frm.runmode.value = dhwt.RunMode
+
+		return render.dhwt(fp, frm)
+
+	def POST(self, id):
+		try:
+			notfound = int(id) not in cfg.get('dhwts')
+		except:
+			raise web.badrequest()
+		if notfound:
+			raise web.notfound()
+
+		fp = formDhwProps()
+		vfp = fp.validates()
+
+		frm = None
+		vfrm = True
+		if cfg.get('dhwtrunmodes'):
+			frm = formDhwRunMode()
+			vfrm = frm.validates()
+			if not frm.overriderunmode.checked:
+				frm.runmode.attrs["disabled"] = 'true'
+
+		if not (vfp and vfrm):
+			return render.dhwt(fp, frm)
+		else:
+			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_DHWTS, id)
+			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+			dhwt = bustemp[RWCHCD_DBUS_IFACE_DHWT]
+			dhwt.ForceChargeOn = fp.forcecharge.checked
+			if cfg.get('dhwtrunmodes'):
+				if frm.overriderunmode.checked:
+					dhwt.SetRunmodeOverride(int(frm.runmode.value))
+				else:
+					dhwt.DisableRunmodeOverride()
 			return render.valid(web.ctx.path)
 
 

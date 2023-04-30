@@ -30,6 +30,14 @@ $def with (content)
 	      <li><a class="dropdown-item" href="$app_path('/hcircuit')/$i">$getobjname("hcircuit",i)</a></li>
 	    </ul>
 	  </li>
+	$if getcfg('dhwts'):
+	  <li class="nav-item dropdown">
+	    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">ECS</a>
+	    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+	    $for i in getcfg('dhwts'):
+	      <li><a class="dropdown-item" href="$app_path('/dhwt')/$i">$getobjname("dhwt",i)</a></li>
+	    </ul>
+	  </li>
 	$if getcfg('graphurl'):
 	  <li class="nav-item">
 	  <a class="nav-link" href="$getcfg('graphurl')">Graphiques</a>

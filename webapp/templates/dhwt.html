@@ -1,0 +1,15 @@
+$def with (formp, formrm)
+$var title: Réglages ECS
+<h1>Réglages ECS</h1>
+<form method="post">
+$if (not formp.valid) or (formrm and not formrm.valid): <p class="text-danger"><strong>Erreur!</strong></p>
+$:formp.render_css()
+$if formrm:
+  $:formrm.render_css()
+<div class="mb-3">
+<input type="submit" value="Valider" class="btn btn-primary"/>
+</div>
+</form>
+<p>Note: Les modifications effectuées ici sont temporaires et ne sont pas préservées en cas de redémarrage du système.</p>
+
+
