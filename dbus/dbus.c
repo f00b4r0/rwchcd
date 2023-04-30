@@ -143,6 +143,9 @@ static const gchar dbus_introspection_xml[] =
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
+"  <property name='ChargeOn' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
 "  <property name='ForceChargeOn' access='readwrite' type='b'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
@@ -595,6 +598,8 @@ dhwt_get_property(GDBusConnection  *connection,
 	}
 	else if (g_strcmp0(property_name, "RunModeOverride") == 0)
 		var = g_variant_new_boolean((gboolean)aler(&dhwt->overrides.o_runmode));
+	else if (g_strcmp0(property_name, "ChargeOn") == 0)
+		var = g_variant_new_boolean((gboolean)aler(&dhwt->run.charge_on));
 	else if (g_strcmp0(property_name, "ForceChargeOn") == 0)
 		var = g_variant_new_boolean((gboolean)aler(&dhwt->run.force_on));
 	else if (g_strcmp0(property_name, "LegionellaOn") == 0)
