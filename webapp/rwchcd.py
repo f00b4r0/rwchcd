@@ -37,6 +37,7 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 # "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
 # "graphurl": "url",
 # "hcircrunmodes": [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]],
+# "temperatures": [0, 1, ...],
 # "toutdoor": N,
 # "tindoor": N,
 # "webapptitle": "title"
@@ -90,6 +91,7 @@ urls = (
 	'/', 'rwchcd',
 	'/hcircuit/(\d+)', 'hcircuit',
 	'/dhwt/(\d+)', 'dhwt',
+	'/temperatures', 'temperatures',
 	'/manifest.json', 'manifest',
 )
 
@@ -335,6 +337,23 @@ class dhwt:
 				else:
 					dhwt.DisableRunmodeOverride()
 			return render.valid(web.ctx.path)
+
+
+class temperatures:
+	def GET(self):
+		if not cfg.get('temperatures'):
+			raise web.notfound()
+
+		tlist = []
+
+		for id in cfg.get('temperatures'):
+			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
+			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+			temp = bustemp[RWCHCD_DBUS_IFACE_TEMP]
+
+			tlist.append((temp.Name, "{:.1f}".format(temp.Value)))
+
+		return render.temperatures(tlist)
 
 
 class manifest:

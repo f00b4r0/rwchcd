@@ -1,0 +1,12 @@
+$def with (tlist)
+$var title: Températures
+<h1>Températures</h1>
+
+<p>
+<ul class="list-group">
+$for (tname, tval) in tlist:
+  <li class="list-group-item d-flex justify-content-between align-items-center">$tname <span class="badge bg-primary rounded-pill">$tval °C</span></li>
+</ul>
+</p>
+
+
