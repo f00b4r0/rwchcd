@@ -21,11 +21,11 @@ $def with (content)
       <a class="navbar-brand" href="/">Accueil</a>
       <ul class="navbar-nav">
 	<li class="nav-item">
-	  <a class="nav-link" href="$app_path('/')">Contrôle</a>
+	  <a class="nav-link" href="$app_path('/')">Général</a>
 	</li>
 	$if getcfg('hcircuits'):
   	  <li class="nav-item dropdown">
-	    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Circuits</a>
+	    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Chauffage</a>
 	    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
 	    $for i in getcfg('hcircuits'):
 	      <li><a class="dropdown-item" href="$app_path('/hcircuit')/$i">$getobjname("hcircuit",i)</a></li>

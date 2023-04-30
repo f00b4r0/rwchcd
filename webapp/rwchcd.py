@@ -32,11 +32,11 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 # config JSON:
 # {
 # "dhwts": [0, 1, ...],
-# "dhwtrunmodes": [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]],
+# "dhwtrunmodes": [[1, "Mode Général"], [2, "Confort"], [3, "Réduit"], [4, "Hors-Gel"]],
 # "hcircuits": [0, 1, ...],
-# "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Eco"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
+# "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Réduit"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
 # "graphurl": "url",
-# "hcircrunmodes": [[1, "Auto"], [2, "Confort"], [3, "Eco"], [4, "Hors-Gel"]],
+# "hcircrunmodes": [[1, "Mode Général"], [2, "Confort"], [3, "Réduit"], [4, "Hors-Gel"]],
 # "temperatures": [0, 1, ...],
 # "toutdoor": N,
 # "tindoor": N,
@@ -156,34 +156,34 @@ class BootGrpForm(BootForm):
 # NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
 
 formRwchcd = BootForm(
-	form.Dropdown('sysmode', cfg.get('modes'), description='Mode', class_='form-select'),
+	form.Dropdown('sysmode', cfg.get('modes'), description='Mode Général', class_='form-select', help='Règle le mode de fonctionnement général de l\'installation'),
 	)
 
 formHcTemps = BootForm(
 	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
-	form.Textbox('comftemp', disabled='true', description='Confort', class_='form-control'),
-	form.Textbox('econtemp', disabled='true', description='Eco', class_='form-control'),
-	form.Textbox('frostemp', disabled='true', description='Hors-Gel', class_='form-control'),
-	form.Textbox('overridetemp', form.notnull, form.regexp('^[+-]?\d+\.?\d*$', 'decimal number: (+-)N(.N)'), description='Ajustement', class_='form-control'),
+	form.Textbox('comftemp', disabled='true', description='T° Consigne Confort', class_='form-control'),
+	form.Textbox('econtemp', disabled='true', description='T° Consigne Réduit', class_='form-control'),
+	form.Textbox('frostemp', disabled='true', description='T° Consigne Hors-Gel', class_='form-control'),
+	form.Textbox('overridetemp', form.notnull, form.regexp('^[+-]?\d+\.?\d*$', 'decimal number: (+-)N(.N)'), description='Ajustement', class_='form-control', help='S\'applique en plus ou en moins (si négatif) des températures de consigne grisées.' ),
 	)
 
 formHcRunMode = BootGrpForm(
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
-	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select'),
+	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select', help='Cocher la case pour forcer un mode différent du réglage actuel'),
 	grplabel="Mode Forcé"
 	)
 
 formDhwProps = BootForm(
 	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
-	form.Textbox('targettemp', disabled='true', description='T Cible', class_='form-control'),
+	form.Textbox('targettemp', disabled='true', description='T° Consigne', class_='form-control'),
 	form.Checkbox('chargeon', disabled='true', description='Chauffe en cours', value='y', class_='form-check form-switch', role='switch'),
-	form.Checkbox('forcecharge', description='Chauffe Forcée', value='y', class_='form-check form-switch', role='switch'),
+	form.Checkbox('forcecharge', description='Chauffe Forcée', value='y', class_='form-check form-switch', role='switch', help='N\'utiliser que pour test'),
 	)
 
 
 formDhwRunMode = BootGrpForm(
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
-	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select'),
+	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select', help='Cocher la case pour forcer un mode différent du réglage actuel'),
 	grplabel="Mode Forcé"
 	)
 
