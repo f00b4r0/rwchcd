@@ -469,12 +469,16 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 			break;
 	}
 
-	// if anti-legionella charge is requested, enforce temp and bypass logic
+	// if anti-legionella charge is requested and allowed, enforce temp and bypass logic
 	if (unlikely(aler(&dhwt->run.legionella_on))) {
-		target_temp = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
-		aser(&dhwt->run.force_on, true);
-		recycle = dhwt->set.legionella_recycle;
-		goto settarget;
+		if (dhwt->set.anti_legionella) {
+			target_temp = SETorDEF(dhwt->set.params.t_legionella, dhwt->pdata->set.def_dhwt.t_legionella);
+			aser(&dhwt->run.force_on, true);
+			recycle = dhwt->set.legionella_recycle;
+			goto settarget;
+		}
+		else
+			aser(&dhwt->run.legionella_on, false);
 	}
 
 	// transition detection
