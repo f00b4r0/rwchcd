@@ -1,20 +1,22 @@
-$def with (form)
+$def with (data)
 $var title: Contrôle Général
 <h1>Contrôle Général</h1>
 
 <p>
 <ul class="list-group">
-$if getcfg('toutdoor') is not None:
-  <li class="list-group-item d-flex justify-content-between align-items-center">Température extérieure: <span class="badge bg-primary rounded-pill">$gettemp(getcfg('toutdoor')) °C</span></li>
-$if getcfg('tindoor') is not None:
-  <li class="list-group-item d-flex justify-content-between align-items-center">Température intérieure: <span class="badge bg-primary rounded-pill">$gettemp(getcfg('tindoor')) °C</span></li>
+$for (tname, tval) in data["temps"]:
+  <li class="list-group-item d-flex justify-content-between align-items-center">$tname <span class="badge bg-primary rounded-pill">$tval °C</span></li>
 </ul>
 </p>
 
-$if form:
+$if data["forms"]:
   <form method="post">
-  $if not form.valid: <p class="text-danger"><strong>Erreur!</strong></p>
-  $:form.render_css()
+  $for form in data["forms"]:
+	  $if not form.valid:
+	    <p class="text-danger"><strong>Erreur!</strong></p>
+	    $break
+  $for form in data["forms"]:
+    $:form.render_css()
   <div class="mb-3">
   <input type="submit" value="Valider" class="btn btn-primary"/>
   </div>

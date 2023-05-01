@@ -26,8 +26,6 @@ RWCHCD_DBUS_IFACE_DHWT = RWCHCD_DBUS_NAME + '.DHWT'
 RWCHCD_DBUS_IFACE_TEMP = RWCHCD_DBUS_NAME + '.Temperature'
 
 bus = SystemBus()
-rwchcd = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)
-rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 
 # config JSON:
 # {
@@ -80,7 +78,6 @@ def gettemp(id):
 
 template_globals = {
 	'getcfg': getcfg,
-	'gettemp': gettemp,
 	'getobjname': getobjname,
 	'app_path': lambda p: web.ctx.homepath + p
 }
@@ -194,8 +191,23 @@ formDhwRunMode = BootGrpForm(
 	)
 
 class rwchcd:
+	def get_rwchruntime(self):
+		rwchcd = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)
+		return rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
+
+	def prep_rwchdata(self):
+		data = {}
+		data["temps"] = []
+		if getcfg('toutdoor') is not None:
+			data["temps"].append(("Température Extérieure", gettemp(getcfg('toutdoor'))))
+		if getcfg('tindoor') is not None:
+			data["temps"].append(("Température Intérieure", gettemp(getcfg('tindoor'))))
+		data["forms"] = []
+		return data
+
 	def GET(self):
-		fr = None
+		data = self.prep_rwchdata()
+		rwchcd_Runtime = self.get_rwchruntime()
 		if cfg.get('modes'):
 			currmode = rwchcd_Runtime.SystemMode
 			if rwchcd_Runtime.StopDhw:
@@ -203,18 +215,22 @@ class rwchcd:
 
 			fr = formRwchcd()
 			fr.sysmode.value = currmode
+			data["forms"].append(fr)
 
-		return render.rwchcd(fr)
+		return render.rwchcd(data)
 
 	def POST(self):
 		if not cfg.get('modes'):
 			raise web.badrequest()
 
 		fr = formRwchcd()
+		rwchcd_Runtime = self.get_rwchruntime()
 
 		if not fr.validates():
 			fr.sysmode.value = int(fr.sysmode.value)
-			return render.rwchcd(form)
+			data = self.prep_rwchdata()
+			data["forms"].append(fr)
+			return render.rwchcd(data)
 		else:
 			mode = int(fr.sysmode.value)
 			rwchcd_Runtime.StopDhw = mode & 0x80
