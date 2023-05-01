@@ -255,6 +255,7 @@ class hcircuit:
 
 	def prep_hcdata(self, hcirc):
 		data = {}
+		data["title"] = "Réglages Chauffage"
 		data["name"] = hcirc.Name
 		data["temps"] = [
 			("T° Consigne Confort", "{:.1f}".format(hcirc.TempComfort)),
@@ -283,7 +284,7 @@ class hcircuit:
 			frm.runmode.value = hcirc.RunMode
 			data["forms"].append(frm)
 
-		return render.hcircuit(data)
+		return render.settings(data)
 
 	def POST(self, id):
 		hcirc = self.get_hcirc(id)
@@ -303,7 +304,7 @@ class hcircuit:
 			data = self.prep_hcdata(hcirc)
 			data["forms"].append(ft)
 			if frm: data["forms"].append(frm)
-			return render.hcircuit(data)
+			return render.settings(data)
 		else:
 			hcirc.SetTempOffsetOverride(float(ft.overridetemp.value))
 			if cfg.get('hcircrunmodes'):
@@ -330,6 +331,7 @@ class dhwt:
 
 	def prep_dhwtdata(self, dhwt):
 		data = {}
+		data["title"] = "Réglages ECS"
 		data["name"] = dhwt.Name
 		data["temps"] = [
 			("T° Consigne Confort", "{:.1f}".format(dhwt.TempComfort)),
@@ -358,7 +360,7 @@ class dhwt:
 			frm.runmode.value = dhwt.RunMode
 			data["forms"].append(frm)
 
-		return render.dhwt(data)
+		return render.settings(data)
 
 	def POST(self, id):
 		dhwt = self.get_dhwt(id)
@@ -378,7 +380,7 @@ class dhwt:
 			data = self.prep_dhwtdata(dhwt)
 			data["forms"].append(fp)
 			if frm: data["forms"].append(frm)
-			return render.dhwt(data)
+			return render.settings(data)
 		else:
 			dhwt.ForceChargeOn = fp.forcecharge.checked
 			if cfg.get('dhwtrunmodes'):
