@@ -243,8 +243,11 @@ class hcircuit:
 		data["temps"] = [
 			("T° Consigne Confort", "{:.1f}".format(hcirc.TempComfort)),
 			("T° Consigne Réduit", "{:.1f}".format(hcirc.TempEco)),
-			("T° Consigne Hors-Gel", "{:.1f}".format(hcirc.TempFrostFree))
+			("T° Consigne Hors-Gel", "{:.1f}".format(hcirc.TempFrostFree)),
+			("T° Consigne Actuelle", "{:.1f}".format(hcirc.AmbientRequest)),
 		]
+		if hcirc.HasAmbientSensor:
+			data["temps"].append(("T° Ambiante Actuelle", "{:.1f}".format(hcirc.AmbientActual)))
 		data["forms"] = []
 		return data
 
@@ -313,7 +316,11 @@ class dhwt:
 		data = {}
 		data["name"] = dhwt.Name
 		data["temps"] = [
-			("T° Consigne", "{:.1f}".format(dhwt.TempTarget))
+			("T° Consigne Confort", "{:.1f}".format(dhwt.TempComfort)),
+			("T° Consigne Réduit", "{:.1f}".format(dhwt.TempEco)),
+			("T° Consigne Hors-Gel", "{:.1f}".format(dhwt.TempFrostFree)),
+			("T° Consigne Actuelle", "{:.1f}".format(dhwt.TempTarget)),
+			("T° Actuelle", "{:.1f}".format(dhwt.TempCurrent)),
 		]
 		data["forms"] = []
 		return data
