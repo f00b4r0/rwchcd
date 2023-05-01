@@ -170,11 +170,7 @@ formRwchcd = BootForm(
 	)
 
 formHcTemps = BootForm(
-	form.Textbox('name', disabled='true', description='Nom', class_='form-control'),
-	form.Textbox('comftemp', disabled='true', description='T° Consigne Confort', class_='form-control'),
-	form.Textbox('econtemp', disabled='true', description='T° Consigne Réduit', class_='form-control'),
-	form.Textbox('frostemp', disabled='true', description='T° Consigne Hors-Gel', class_='form-control'),
-	form.Textbox('overridetemp', form.notnull, form.regexp('^[+-]?\d+\.?\d*$', 'decimal number: (+-)N(.N)'), description='Ajustement', class_='form-control', help='S\'applique en plus ou en moins (si négatif) des températures de consigne grisées.' ),
+	form.Textbox('overridetemp', form.notnull, form.regexp('^[+-]?\d+\.?\d*$', 'chiffre décimal: (+-)N(.N)'), description='Ajustement (°C)', class_='form-control', help='S\'applique en plus ou en moins (si négatif) des températures de consigne.' ),
 	)
 
 formHcRunMode = BootGrpForm(
@@ -230,6 +226,16 @@ class rwchcd:
 
 
 class hcircuit:
+	def prep_hcdata(self, hcirc):
+		data = {}
+		data["name"] = hcirc.Name
+		data["temps"] = [
+			("T° Consigne Confort", "{:.1f}".format(hcirc.TempComfort)),
+			("T° Consigne Réduit", "{:.1f}".format(hcirc.TempEco)),
+			("T° Consigne Hors-Gel", "{:.1f}".format(hcirc.TempFrostFree))
+		]
+		return data
+
 	def GET(self, id):
 		try:
 			notfound = int(id) not in cfg.get('hcircuits')
@@ -243,11 +249,9 @@ class hcircuit:
 		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
 		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 
+		data = self.prep_hcdata(hcirc)
+
 		ft = formHcTemps()
-		ft.name.value = hcirc.Name
-		ft.comftemp.value = "{:.1f}".format(hcirc.TempComfort)
-		ft.econtemp.value = "{:.1f}".format(hcirc.TempEco)
-		ft.frostemp.value = "{:.1f}".format(hcirc.TempFrostFree)
 		ft.overridetemp.value = "{:.1f}".format(hcirc.TempOffsetOverride)
 
 		frm = None
@@ -258,7 +262,9 @@ class hcircuit:
 				frm.runmode.attrs["disabled"] = 'true'
 			frm.runmode.value = hcirc.RunMode
 
-		return render.hcircuit(ft, frm)
+		data["ft"] = ft
+		data["frm"] = frm
+		return render.hcircuit(data)
 
 	def POST(self, id):
 		try:
@@ -267,6 +273,10 @@ class hcircuit:
 			raise web.badrequest()
 		if notfound:
 			raise web.notfound()
+
+		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
+		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
+		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 
 		ft = formHcTemps()
 		vft = ft.validates()
@@ -280,11 +290,11 @@ class hcircuit:
 				frm.runmode.attrs["disabled"] = 'true'
 
 		if not (vft and vfrm):
-			return render.hcircuit(ft, frm)
+			data = self.prep_hcdata(hcirc)
+			data["ft"] = ft
+			data["frm"] = frm
+			return render.hcircuit(data)
 		else:
-			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
-			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-			hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 			hcirc.SetTempOffsetOverride(float(ft.overridetemp.value))
 			if cfg.get('hcircrunmodes'):
 				if frm.overriderunmode.checked:

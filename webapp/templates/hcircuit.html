@@ -1,11 +1,20 @@
-$def with (formt, formrm)
+$def with (data)
 $var title: Réglages Circuit
 <h1>Réglages Circuit</h1>
+<p></p>
+<h3>$data["name"]</h3>
+<p>
+<ul class="list-group">
+$for (tname, tval) in data["temps"]:
+  <li class="list-group-item d-flex justify-content-between align-items-center">$tname <span class="badge bg-primary rounded-pill">$tval °C</span></li>
+</ul>
+</p>
+
 <form method="post">
-$if (not formt.valid) or (formrm and not formrm.valid): <p class="text-danger"><strong>Erreur!</strong></p>
-$:formt.render_css()
-$if formrm:
-  $:formrm.render_css()
+$if (not data["ft"].valid) or (data["frm"] and not data["frm"].valid): <p class="text-danger"><strong>Erreur!</strong></p>
+$:data["ft"].render_css()
+$if data["frm"]:
+  $:data["frm"].render_css()
 <div class="mb-3">
 <input type="submit" value="Valider" class="btn btn-primary"/>
 </div>
