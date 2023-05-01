@@ -18,7 +18,8 @@ $def with (content)
     <!-- TODO: responsive collapse with right alignment -->
     <nav class="navbar navbar-expand navbar-light bg-light">
       <div class="container-fluid">
-      <a class="navbar-brand" href="/">Accueil</a>
+      $if getcfg('homeurl'):
+        <a class="navbar-brand" href="$getcfg('homeurl')">Accueil</a>
       <ul class="navbar-nav">
 	<li class="nav-item">
 	  <a class="nav-link" href="$app_path('/')">Général</a>

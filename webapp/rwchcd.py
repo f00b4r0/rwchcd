@@ -36,6 +36,7 @@ rwchcd_Runtime = rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
 # "hcircuits": [0, 1, ...],
 # "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Réduit"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
 # "graphurl": "url",
+# "homeurl": "url",
 # "hcircrunmodes": [[1, "Mode Général"], [2, "Confort"], [3, "Réduit"], [4, "Hors-Gel"]],
 # "temperatures": [0, 1, ...],
 # "toutdoor": N,
