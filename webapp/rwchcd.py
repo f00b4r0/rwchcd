@@ -226,17 +226,7 @@ class rwchcd:
 
 
 class hcircuit:
-	def prep_hcdata(self, hcirc):
-		data = {}
-		data["name"] = hcirc.Name
-		data["temps"] = [
-			("T° Consigne Confort", "{:.1f}".format(hcirc.TempComfort)),
-			("T° Consigne Réduit", "{:.1f}".format(hcirc.TempEco)),
-			("T° Consigne Hors-Gel", "{:.1f}".format(hcirc.TempFrostFree))
-		]
-		return data
-
-	def GET(self, id):
+	def get_hcirc(self, id):
 		try:
 			notfound = int(id) not in cfg.get('hcircuits')
 		except:
@@ -247,37 +237,40 @@ class hcircuit:
 		#with the above, this "cannot" fail
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
 		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
+		return bustemp[RWCHCD_DBUS_IFACE_HCIRC]
 
+	def prep_hcdata(self, hcirc):
+		data = {}
+		data["name"] = hcirc.Name
+		data["temps"] = [
+			("T° Consigne Confort", "{:.1f}".format(hcirc.TempComfort)),
+			("T° Consigne Réduit", "{:.1f}".format(hcirc.TempEco)),
+			("T° Consigne Hors-Gel", "{:.1f}".format(hcirc.TempFrostFree))
+		]
+		data["forms"] = []
+		return data
+
+	def GET(self, id):
+		hcirc = self.get_hcirc(id)
 		data = self.prep_hcdata(hcirc)
 
 		ft = formHcTemps()
 		ft.overridetemp.value = "{:.1f}".format(hcirc.TempOffsetOverride)
+		data["forms"].append(ft)
 
-		frm = None
 		if cfg.get('hcircrunmodes'):
 			frm = formHcRunMode()
 			frm.overriderunmode.checked = hcirc.RunModeOverride
 			if not frm.overriderunmode.checked:
 				frm.runmode.attrs["disabled"] = 'true'
 			frm.runmode.value = hcirc.RunMode
+			data["forms"].append(frm)
 
-		data["ft"] = ft
-		data["frm"] = frm
 		return render.hcircuit(data)
 
 	def POST(self, id):
-		try:
-			notfound = int(id) not in cfg.get('hcircuits')
-		except:
-			raise web.badrequest()
-		if notfound:
-			raise web.notfound()
-
-		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
-		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
-
+		hcirc = self.get_hcirc(id)
+		
 		ft = formHcTemps()
 		vft = ft.validates()
 
@@ -291,8 +284,8 @@ class hcircuit:
 
 		if not (vft and vfrm):
 			data = self.prep_hcdata(hcirc)
-			data["ft"] = ft
-			data["frm"] = frm
+			data["forms"].append(ft)
+			if frm: data["forms"].append(frm)
 			return render.hcircuit(data)
 		else:
 			hcirc.SetTempOffsetOverride(float(ft.overridetemp.value))
