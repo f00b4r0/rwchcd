@@ -128,30 +128,39 @@ class BootForm(form.Form):
 		return '<div class="invalid-feedback">%s</div>' % net.websafe(note) if note else ''
 
 class BootGrpForm(BootForm):
-	def __init__(self, *inputs, **kw):
-		self.grplabel = kw.pop("grplabel", "")
-		super().__init__(*inputs, **kw)
-
 	def render_css(self):
 		out = []
 		out.append(self.rendernote(self.note))
-		out.append('<div class="mb-3">')
-		if self.grplabel:
-			out.append('<label class="form-label">%s</label>' % (net.websafe(self.grplabel)))
-		out.append('<div class="input-group">')
 		for i in self.inputs:
-			help = i.attrs.pop('help', "")
 			if i.note:
 				i.attrs['class'] += ' is-invalid'
 			out.append(i.pre)
 			out.append(i.render())
 			out.append(self.rendernote(i.note))
 			out.append(i.post)
-		out.append('</div>')
-		if help:
-			out.append('<div class="form-text">%s</div>' % (net.websafe(help)))
-		out.append('</div>\n')
 		return ''.join(out)
+
+# GroupOpen(name, label='label')
+class GroupOpen(form.Input):
+	def render(self):
+		attrs = self.attrs.copy()
+		label = attrs.pop("label", None)
+		x = '<div class="mb-3">'
+		if label:
+			x += f'<label class="form-label">{net.websafe(label)}</label>'
+		x += '<div class="input-group">'
+		return x
+
+# GroupClose(name, help='help')
+class GroupClose(form.Input):
+	def render(self):
+		attrs = self.attrs.copy()
+		help = attrs.pop("help", None)
+		x = '</div>'
+		if help:
+			x += f'<div class="form-text">{net.websafe(help)}</div>'
+		x += '</div>'
+		return x
 
 
 # NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
@@ -169,9 +178,10 @@ formHcTemps = BootForm(
 	)
 
 formHcRunMode = BootGrpForm(
+	GroupOpen('', label='Mode Forcé'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
-	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select', help='Cocher la case pour forcer un mode différent du réglage actuel'),
-	grplabel="Mode Forcé"
+	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select'),
+	GroupClose('', help='Cocher la case pour forcer un mode différent du réglage actuel'),
 	)
 
 formDhwProps = BootForm(
@@ -183,9 +193,10 @@ formDhwProps = BootForm(
 
 
 formDhwRunMode = BootGrpForm(
+	GroupOpen('', label='Mode Forcé'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
-	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select', help='Cocher la case pour forcer un mode différent du réglage actuel'),
-	grplabel="Mode Forcé"
+	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select'),
+	GroupClose('', help='Cocher la case pour forcer un mode différent du réglage actuel'),
 	)
 
 class rwchcd:
