@@ -86,6 +86,9 @@ static const gchar dbus_introspection_xml[] =
 "  <property name='Name' access='read' type='s'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
+"  <property name='HasAmbientSensor' access='read' type='b'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
+"  </property>"
 "  <property name='RunModeOverride' access='read' type='b'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
@@ -422,6 +425,8 @@ hcircuit_get_property(GDBusConnection  *connection,
 
 	if (g_strcmp0(property_name, "Online") == 0)
 		var = g_variant_new_boolean((gboolean)aler(&hcircuit->run.online));
+	else if (g_strcmp0(property_name, "HasAmbientSensor") == 0)
+		var = g_variant_new_boolean((gboolean)(inputs_temperature_name(hcircuit->set.tid_ambient) != NULL));	// XXX the real test should be to read value: will detect stale
 	else if (g_strcmp0(property_name, "Name") == 0)
 		var = g_variant_new_string(hcircuit->name);
 	else if (g_strcmp0(property_name, "RunMode") == 0) {
