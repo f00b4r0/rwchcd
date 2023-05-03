@@ -175,6 +175,7 @@ formHcRunMode = BootGrpForm(
 	)
 
 formDhwProps = BootForm(
+	form.Checkbox('electricon', disabled='true', description='Fonctionnement sur résistance de chauffe (si disponible)', value='y', class_='form-check form-switch', role='switch'),
 	form.Checkbox('chargeon', disabled='true', description='Chauffe en cours', value='y', class_='form-check form-switch', role='switch'),
 	form.Checkbox('forcecharge', description='Chauffe Forcée', value='y', class_='form-check form-switch', role='switch', help='N\'utiliser que pour test'),
 	)
@@ -343,6 +344,7 @@ class dhwt:
 
 		fp = formDhwProps()
 		fp.chargeon.checked = dhwt.ChargeOn
+		fp.electricon.checked = dhwt.ElectricModeOn
 		fp.forcecharge.checked = dhwt.ForceChargeOn
 		data["forms"].append(fp)
 
