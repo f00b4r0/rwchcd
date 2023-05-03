@@ -56,21 +56,18 @@ def getobjname(type, id):
 	if type == "hcircuit":
 		#this is only called from template and thus cannot trigger an error
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
-		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-		hcirc = bustemp[RWCHCD_DBUS_IFACE_HCIRC]
+		hcirc = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_HCIRC]
 		return hcirc.Name
 	if type == "dhwt":
 		#this is only called from template and thus cannot trigger an error
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_DHWTS, id)
-		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-		dhwt = bustemp[RWCHCD_DBUS_IFACE_DHWT]
+		dhwt = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_DHWT]
 		return dhwt.Name
 
 def gettemp(id):
 	try:
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
-		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-		temp_T = bustemp[RWCHCD_DBUS_IFACE_TEMP]
+		temp_T = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_TEMP]
 		temp = temp_T.Value
 	except:
 		temp = float('nan')
@@ -192,8 +189,7 @@ formDhwRunMode = BootGrpForm(
 
 class rwchcd:
 	def get_rwchruntime(self):
-		rwchcd = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)
-		return rwchcd[RWCHCD_DBUS_IFACE_RUNTIME]
+		return bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)[RWCHCD_DBUS_IFACE_RUNTIME]
 
 	def prep_rwchdata(self):
 		data = {}
@@ -250,8 +246,7 @@ class hcircuit:
 
 		#with the above, this "cannot" fail
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
-		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-		return bustemp[RWCHCD_DBUS_IFACE_HCIRC]
+		return bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_HCIRC]
 
 	def prep_hcdata(self, hcirc):
 		data = {}
@@ -326,8 +321,7 @@ class dhwt:
 
 		#with the above, this "cannot" fail
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_DHWTS, id)
-		bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-		return bustemp[RWCHCD_DBUS_IFACE_DHWT]
+		return bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_DHWT]
 
 	def prep_dhwtdata(self, dhwt):
 		data = {}
@@ -400,8 +394,7 @@ class temperatures:
 
 		for id in cfg.get('temperatures'):
 			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
-			bustemp = bus.get(RWCHCD_DBUS_NAME, obj)
-			temp = bustemp[RWCHCD_DBUS_IFACE_TEMP]
+			temp = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_TEMP]
 
 			tlist.append((temp.Name, "{:.1f}".format(temp.Value)))
 
