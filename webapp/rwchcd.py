@@ -64,6 +64,12 @@ def getobjname(type, id):
 		dhwt = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_DHWT]
 		return dhwt.Name
 
+def ftemp(t):
+	if t == -273:
+		return "--.-"
+	else:
+		return "{:.1f}".format(t)
+
 def gettemp(id):
 	try:
 		obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
@@ -71,7 +77,7 @@ def gettemp(id):
 		temp = temp_T.Value
 	except:
 		temp = float('nan')
-	return "{:.1f}".format(temp)
+	return ftemp(temp)
 
 template_globals = {
 	'getcfg': getcfg,
@@ -254,13 +260,13 @@ class hcircuit:
 		data["title"] = "Réglages Chauffage"
 		data["name"] = hcirc.Name
 		data["temps"] = [
-			("T° Consigne Confort", "{:.1f}".format(hcirc.TempComfort)),
-			("T° Consigne Réduit", "{:.1f}".format(hcirc.TempEco)),
-			("T° Consigne Hors-Gel", "{:.1f}".format(hcirc.TempFrostFree)),
-			("T° Consigne Actuelle", "{:.1f}".format(hcirc.AmbientRequest)),
+			("T° Consigne Confort", ftemp(hcirc.TempComfort)),
+			("T° Consigne Réduit", ftemp(hcirc.TempEco)),
+			("T° Consigne Hors-Gel", ftemp(hcirc.TempFrostFree)),
+			("T° Consigne Actuelle", ftemp(hcirc.AmbientRequest)),
 		]
 		if hcirc.HasAmbientSensor:
-			data["temps"].append(("T° Ambiante Actuelle", "{:.1f}".format(hcirc.AmbientActual)))
+			data["temps"].append(("T° Ambiante Actuelle", ftemp(hcirc.AmbientActual)))
 		data["forms"] = []
 		return data
 
@@ -269,7 +275,7 @@ class hcircuit:
 		data = self.prep_hcdata(hcirc)
 
 		ft = formHcTemps()
-		ft.overridetemp.value = "{:.1f}".format(hcirc.TempOffsetOverride)
+		ft.overridetemp.value = ftemp(hcirc.TempOffsetOverride)
 		data["forms"].append(ft)
 
 		if cfg.get('hcircrunmodes'):
@@ -329,11 +335,11 @@ class dhwt:
 		data["title"] = "Réglages ECS"
 		data["name"] = dhwt.Name
 		data["temps"] = [
-			("T° Consigne Confort", "{:.1f}".format(dhwt.TempComfort)),
-			("T° Consigne Réduit", "{:.1f}".format(dhwt.TempEco)),
-			("T° Consigne Hors-Gel", "{:.1f}".format(dhwt.TempFrostFree)),
-			("T° Consigne Actuelle", "{:.1f}".format(dhwt.TempTarget)),
-			("T° Actuelle", "{:.1f}".format(dhwt.TempCurrent)),
+			("T° Consigne Confort", ftemp(dhwt.TempComfort)),
+			("T° Consigne Réduit", ftemp(dhwt.TempEco)),
+			("T° Consigne Hors-Gel", ftemp(dhwt.TempFrostFree)),
+			("T° Consigne Actuelle", ftemp(dhwt.TempTarget)),
+			("T° Actuelle", ftemp(dhwt.TempCurrent)),
 		]
 		data["forms"] = []
 		return data
@@ -398,7 +404,7 @@ class temperatures:
 			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
 			temp = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_TEMP]
 
-			tlist.append((temp.Name, "{:.1f}".format(temp.Value)))
+			tlist.append((temp.Name, ftemp(temp.Value)))
 
 		return render.temperatures(tlist)
 
