@@ -334,15 +334,16 @@ fail:
  */
 static int mqtt_pub_state(const struct s_mqtt_pdata * const hw, enum e_hw_output_type type, const char * restrict const name, const char * restrict const message)
 {
-	char * restrict topic;
+	char * topic;
+	char ** restrict tptr = &topic;
 	int ret;
 
 	assert(type < ARRAY_SIZE(mqtt_outtype_subtopics));
 
-	ret = asprintf(&topic, "%s/%s/%s", hw->set.topic_root, mqtt_outtype_subtopics[type], name);
+	ret = asprintf(tptr, "%s/%s/%s", hw->set.topic_root, mqtt_outtype_subtopics[type], name);
 	if (ret < 0)
 		return (-EOOM);
-	ret = mosquitto_publish(hw->mosq, NULL, topic, strlen(message), message, MQTT_BKND_QOS, false);
+	ret = mosquitto_publish(hw->mosq, NULL, topic, (int)strlen(message), message, MQTT_BKND_QOS, false);
 	free(topic);
 	if (ret) {
 		dbgerr("\"%s\" mosquitto_publish failed: \"%s\"", hw->name, mosquitto_strerror(ret));
