@@ -206,7 +206,7 @@ static temp_t templaw_bilinear(const struct s_hcircuit * const circuit, const te
 	// XXX under "normal" conditions, the following operations should not overflow
 	t_output = (tempdiff_t)(source_temp - tld->run.toutinfl) * diffnum;
 	t_output /= diffden;		// no rounding: will slightly over estimate output, which is desirable
-	t_output += tld->run.twaterinfl;
+	t_output += (tempdiff_t)tld->run.twaterinfl;
 
 	// shift output based on actual target temperature: (tgt - 20C) * (1 - slope)
 	t_output += (tempdiff_t)(aler(&circuit->run.target_ambient) - celsius_to_temp(20)) * (slopeden - slopenum) / slopeden;
