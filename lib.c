@@ -190,6 +190,7 @@ bool lib_runmode_is_changedown(const enum e_runmode prev_runmode, const enum e_r
 		case RM_UNKNOWN:
 		case RM_SUMMAINT:
 		case RM_DHWONLY:
+		default:
 			dbgerr("Invalid comparison! (%d, %d)", prev_runmode, new_runmode);
 			break;
 	}
