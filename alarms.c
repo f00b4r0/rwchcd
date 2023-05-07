@@ -157,7 +157,7 @@ int alarms_online(const char * notifier)
 int alarms_run(void)
 {
 	static timekeep_t last = 0;
-	const char * argv[Alarms.count+1];
+	const char * argv[1+Alarms.count+1];	// [0] = filename, n+1 = NULL termination
 	const timekeep_t now = timekeep_now();
 	const timekeep_t dt = now - last;
 	const struct s_alarm * alarm;
@@ -176,19 +176,20 @@ int alarms_run(void)
 
 		pr_log(_("Alarms active in the system (%d), most recent first:"), count);
 
-		argv[count] = NULL;
 		while (alarm) {
 			msg = alarm->msg;
-			pr_log(_("\tALARM #%d: %s (%d)"), count--, msg, alarm->type);
-			argv[count] = msg;	// alarms will be most recent last here (i.e. in natural order)
+			pr_log(_("\tALARM #%d: %s (%d)"), count, msg, alarm->type);
+			argv[count--] = msg;	// alarms will be most recent last here (i.e. in natural order)
 			alarm = alarm->next;
 			last = now;
 		}
 
 		if (Alarms.notifier) {
+			argv[0] = Alarms.notifier;
+			argv[Alarms.count+1] = NULL;
 			switch (fork()) {
 				case 0:	// child
-					execv(Alarms.notifier, argv);
+					execv(Alarms.notifier, (char *const *)(uintptr_t)argv);	// we have fork()ed so it doesn't matter if execv(const char *__path, char *const __argv[]) thinks it can write the arguments (it cannot anyway)
 					perror("Alarm notifier execution failed");	// execv() only returns on error
 					break;
 				case -1: // error - most likely ENOMEM
