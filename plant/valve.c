@@ -478,12 +478,12 @@ int valve_online(struct s_valve * const valve)
 		return (-ENOTCONFIGURED);
 
 	if ((VA_TYPE_NONE == valve->set.type) || (VA_TYPE_UNKNOWN <= valve->set.type)) {
-		pr_err(_("\%s\": Invalid valve type"), valve->name);
+		pr_err(_("\"%s\": Invalid valve type"), valve->name);
 		return (-EMISCONFIGURED);
 	}
 
 	if (!valve->set.ete_time) {
-		pr_err(_("\%s\": End-to-end time not set"), valve->name);
+		pr_err(_("\"%s\": End-to-end time not set"), valve->name);
 		return (-EMISCONFIGURED);
 	}
 

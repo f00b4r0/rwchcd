@@ -654,7 +654,7 @@ static int dhwt_run_dhwisol(struct s_dhwt * restrict const dhwt)
 set:
 	ret = valve_isol_trigger(dhwt->set.p.valve_dhwisol, isolate);
 	if (unlikely(ALL_OK != ret))
-		alarms_raise(ret, _("DHWT \%s\": failed to control DHW isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_dhwisol));
+		alarms_raise(ret, _("DHWT \"%s\": failed to control DHW isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_dhwisol));
 out:
 	return ret;
 }
@@ -696,7 +696,7 @@ static int dhwt_run_feedisol(struct s_dhwt * restrict const dhwt)
 set:
 	ret = valve_isol_trigger(dhwt->set.p.valve_feedisol, isolate);
 	if (unlikely(ALL_OK != ret))
-		alarms_raise(ret, _("DHWT \%s\": failed to control feed isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
+		alarms_raise(ret, _("DHWT \"%s\": failed to control feed isolation valve \"%s\""), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
 out:
 	return ret;
 }
