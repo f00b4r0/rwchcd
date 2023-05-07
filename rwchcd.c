@@ -305,7 +305,7 @@ static void exit_process(void)
 		if (cbs->exit)
 			cbs->exit();
 		cp = cbs->prev;
-		free((void *)cbs);
+		freeconst(cbs);
 		cbs = cp;
 	}
 

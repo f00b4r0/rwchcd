@@ -122,8 +122,8 @@ static int inputs_log_deregister(void)
 	if (ret) {
 		dbgerr("log_deregister failed (%d)", ret);
 	}
-	free((void *)In_temps_lsrc.keys);
-	free((void *)In_temps_lsrc.metrics);
+	freeconst(In_temps_lsrc.keys);
+	freeconst(In_temps_lsrc.metrics);
 
 	return (ret);
 }
@@ -246,6 +246,6 @@ void inputs_exit(void)
 	for (id = 0; id < Inputs.temps.last; id++)
 		temperature_clear(&Inputs.temps.all[id]);
 
-	free((void *)Inputs.temps.all);
+	freeconst(Inputs.temps.all);
 	memset(&Inputs, 0x00, sizeof(Inputs));
 }

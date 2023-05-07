@@ -401,19 +401,19 @@ static void mqtt_exit(void * priv)
 
 	mosquitto_lib_cleanup();
 
-	free((void *)hw->set.host);
-	free((void *)hw->set.username);
-	free((void *)hw->set.password);
-	free((void *)hw->set.topic_root);
+	freeconst(hw->set.host);
+	freeconst(hw->set.username);
+	freeconst(hw->set.password);
+	freeconst(hw->set.topic_root);
 
 	for (id = 0; (id < hw->in.temps.l); id++)
-		free((void *)hw->in.temps.all[id].name);
+		freeconst(hw->in.temps.all[id].name);
 
 	for (id = 0; (id < hw->in.switches.l); id++)
-		free((void *)hw->in.switches.all[id].name);
+		freeconst(hw->in.switches.all[id].name);
 
 	for (id = 0; (id < hw->out.rels.l); id++)
-		free((void *)hw->out.rels.all[id].name);
+		freeconst(hw->out.rels.all[id].name);
 
 	free(hw->in.temps.all);
 	free(hw->in.switches.all);

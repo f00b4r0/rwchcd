@@ -346,7 +346,7 @@ static void scheduler_cleanup_schedule(struct s_schedule * sched)
 			break;
 	}
 
-	free((void *)sched->name);
+	freeconst(sched->name);
 }
 
 void scheduler_exit(void)

@@ -154,8 +154,8 @@ cleanup:
 	log_deregister(&Out_ronsecs_lsrc);
 	log_deregister(&Out_rcycles_lsrc);
 	// shared between ronsecs and rcycles
-	free((void *)Out_rcycles_lsrc.keys);
-	free((void *)Out_rcycles_lsrc.metrics);
+	freeconst(Out_rcycles_lsrc.keys);
+	freeconst(Out_rcycles_lsrc.metrics);
 	return (ret);
 }
 
@@ -176,8 +176,8 @@ static int outputs_log_deregister(void)
 		dbgerr("log_deregister failed for Out_rcycles_lsrc (%d)", ret);
 	}
 	// shared between ronsecs and rcycles
-	free((void *)Out_rcycles_lsrc.keys);
-	free((void *)Out_rcycles_lsrc.metrics);
+	freeconst(Out_rcycles_lsrc.keys);
+	freeconst(Out_rcycles_lsrc.metrics);
 
 	return (ret);
 }
@@ -330,6 +330,6 @@ void outputs_exit(void)
 	for (id = 0; id < Outputs.relays.last; id++)
 		relay_clear(&Outputs.relays.all[id]);
 
-	free((void *)Outputs.relays.all);
+	freeconst(Outputs.relays.all);
 	memset(&Outputs, 0x00, sizeof(Outputs));
 }

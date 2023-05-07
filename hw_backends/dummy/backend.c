@@ -102,10 +102,10 @@ static void dummy_exit(void * priv)
 	hw->run.initialized = false;
 
 	for (id = 0; (id < hw->in.temps.l); id++)
-		free((void *)hw->in.temps.all[id].name);
+		freeconst(hw->in.temps.all[id].name);
 
 	for (id = 0; (id < hw->out.rels.l); id++)
-		free((void *)hw->out.rels.all[id].name);
+		freeconst(hw->out.rels.all[id].name);
 
 	free(hw->in.temps.all);
 	free(hw->out.rels.all);

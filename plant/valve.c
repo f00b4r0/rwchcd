@@ -47,7 +47,7 @@ void valve_cleanup(struct s_valve * valve)
 
 	free(valve->priv);
 	valve->priv = NULL;
-	free((void *)valve->name);
+	freeconst(valve->name);
 	valve->name = NULL;
 }
 

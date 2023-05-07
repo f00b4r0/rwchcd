@@ -49,7 +49,7 @@ void pump_cleanup(struct s_pump * restrict pump)
 		p = pn;
 	}
 
-	free((void *)pump->name);
+	freeconst(pump->name);
 	pump->name = NULL;
 }
 

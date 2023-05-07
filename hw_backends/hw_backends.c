@@ -110,7 +110,7 @@ void hw_backends_exit(void)
 
 	// cleanup all backends
 	for (id = 0; id < HW_backends.last; id++) {
-		free((void *)HW_backends.all[id].name);
+		freeconst(HW_backends.all[id].name);
 		HW_backends.all[id].name = NULL;
 	}
 

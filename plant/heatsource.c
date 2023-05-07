@@ -222,6 +222,6 @@ void heatsource_cleanup(struct s_heatsource * heat)
 		heat->cb.del_priv(heat->priv);
 	heat->priv = NULL;
 
-	free((void *)heat->name);
+	freeconst(heat->name);
 	heat->name = NULL;
 }

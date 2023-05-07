@@ -267,7 +267,7 @@ fail:
 static void log_clear_listelmt(struct s_log_list * restrict lelmt)
 {
 	free(lelmt->vbuffer);
-	free((void *)lelmt->lsource);
+	freeconst(lelmt->lsource);
 	free(lelmt);
 }
 

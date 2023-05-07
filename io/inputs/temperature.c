@@ -216,8 +216,8 @@ void temperature_clear(struct s_temperature * const t)
 	if (!t)
 		return;
 
-	free((void *)t->name);
-	free((void *)t->tlist);
+	freeconst(t->name);
+	freeconst(t->tlist);
 
 	memset(t, 0x00, sizeof(*t));
 }

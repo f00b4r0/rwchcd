@@ -259,8 +259,8 @@ void relay_clear(struct s_relay * const r)
 	if (!r)
 		return;
 
-	free((void *)r->name);
-	free((void *)r->rlist);
+	freeconst(r->name);
+	freeconst(r->rlist);
 
 	memset(r, 0x00, sizeof(*r));
 }

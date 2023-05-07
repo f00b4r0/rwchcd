@@ -123,10 +123,10 @@ static void log_mqtt_offline(void)
  */
 static void log_mqtt_cleanup(void)
 {
-	free((void *)Log_mqtt.set.host);
-	free((void *)Log_mqtt.set.username);
-	free((void *)Log_mqtt.set.password);
-	free((void *)Log_mqtt.set.topic_root);
+	freeconst(Log_mqtt.set.host);
+	freeconst(Log_mqtt.set.username);
+	freeconst(Log_mqtt.set.password);
+	freeconst(Log_mqtt.set.topic_root);
 }
 
 /**

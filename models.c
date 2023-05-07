@@ -322,7 +322,7 @@ static void bmodel_cleanup(struct s_bmodel * restrict bmodel)
 	if (!bmodel)
 		return;
 
-	free((void *)bmodel->name);
+	freeconst(bmodel->name);
 	bmodel->name = NULL;
 }
 

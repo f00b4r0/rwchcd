@@ -1142,6 +1142,6 @@ void dhwt_cleanup(struct s_dhwt * restrict dhwt)
 	if (!dhwt)
 		return;
 
-	free((void *)dhwt->name);
+	freeconst(dhwt->name);
 	dhwt->name = NULL;
 }

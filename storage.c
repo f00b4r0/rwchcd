@@ -208,7 +208,7 @@ int storage_online(void)
 	// make sure we're in target wd. XXX This updates wd for all threads
 	if (chdir(Storage_path)) {
 		perror(Storage_path);
-		free((void *)Storage_path);
+		freeconst(Storage_path);
 		Storage_path = NULL;
 		return (-ESTORE);
 	}
@@ -318,6 +318,6 @@ void storage_exit(void)
 	dbenvp->close(dbenvp, 0);
 #endif
 
-	free((void *)Storage_path);
+	freeconst(Storage_path);
 	Storage_path = NULL;
 }

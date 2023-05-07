@@ -128,7 +128,7 @@ int hw_p1_setup_sensor_deconfigure(struct s_hw_p1_pdata * restrict const hw, con
 	if (!hw->Sensors[id].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free((void *)hw->Sensors[id].name);
+	freeconst(hw->Sensors[id].name);
 	memset(&hw->Sensors[id], 0x00, sizeof(hw->Sensors[id]));
 
 	return (ALL_OK);
@@ -193,7 +193,7 @@ int hw_p1_setup_relay_release(struct s_hw_p1_pdata * restrict const hw, const ui
 	if (!hw->Relays[id].set.configured)
 		return (-ENOTCONFIGURED);
 
-	free((void *)hw->Relays[id].name);
+	freeconst(hw->Relays[id].name);
 
 	memset(&hw->Relays[id], 0x00, sizeof(hw->Relays[id]));
 

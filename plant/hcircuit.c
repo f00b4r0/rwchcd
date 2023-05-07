@@ -1021,7 +1021,7 @@ void hcircuit_cleanup(struct s_hcircuit * circuit)
 	if (!circuit)
 		return;
 
-	free((void *)circuit->name);
+	freeconst(circuit->name);
 	circuit->name = NULL;
 	free(circuit->tlaw_priv);
 	circuit->tlaw_priv = NULL;

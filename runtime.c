@@ -364,7 +364,7 @@ int runtime_offline(void)
 void runtime_exit(void)
 {
 	plant_del(Runtime.plant);
-	free((void *)Runtime.set.notifier);
+	freeconst(Runtime.set.notifier);
 	runtime_init();		// clear runtime
 }
 

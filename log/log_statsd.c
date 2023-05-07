@@ -142,9 +142,9 @@ static void log_statsd_offline(void)
 /** Cleanup the StatsD log backend. */
 static void log_statsd_cleanup(void)
 {
-	free((void *)Log_statsd.set.host);
-	free((void *)Log_statsd.set.port);
-	free((void *)Log_statsd.set.prefix);
+	freeconst(Log_statsd.set.host);
+	freeconst(Log_statsd.set.port);
+	freeconst(Log_statsd.set.prefix);
 }
 
 /**
