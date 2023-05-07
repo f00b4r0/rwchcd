@@ -113,8 +113,8 @@ void timekeep_usleep(unsigned int usecs)
 	struct timespec tv;
 	int ret;
 
-	tv.tv_sec = usecs / 1000000;
-	tv.tv_nsec = (usecs % 1000000) * 1000;
+	tv.tv_sec = (time_t)(usecs / 1000000U);
+	tv.tv_nsec = (long)((usecs % 1000000U) * 1000U);
 
 	while (1) {
 		ret = nanosleep(&tv, &tv);
