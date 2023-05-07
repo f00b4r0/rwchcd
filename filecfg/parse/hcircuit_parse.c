@@ -155,7 +155,7 @@ static int hcircuit_fastcool_mode_parser(void * restrict const priv, const struc
 
 	for (i = 0; i < ARRAY_SIZE(params); i++) {
 		if (!strcmp(n, params[i].pstr)) {
-			hcircuit->set.fast_cooldown |= params[i].pfcm;
+			hcircuit->set.fast_cooldown |= (typeof(hcircuit->set.fast_cooldown))params[i].pfcm;
 			break;
 		}
 	}
