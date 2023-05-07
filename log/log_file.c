@@ -72,8 +72,10 @@ static int log_file_update(const char * restrict const identifier, const struct 
 	for (i = 0; i < log_data->nvalues; i++) {
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
-			case LOG_METRIC_ICOUNTER:
 				fprintf(file, "%d;", log_data->values[i].i);
+				break;
+			case LOG_METRIC_ICOUNTER:
+				fprintf(file, "%u;", log_data->values[i].u);
 				break;
 			case LOG_METRIC_FGAUGE:
 			case LOG_METRIC_FCOUNTER:

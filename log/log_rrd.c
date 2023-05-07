@@ -73,8 +73,10 @@ static int log_rrd_create(const char * restrict const identifier, const struct s
 				mtype = "GAUGE";
 				break;
 			case LOG_METRIC_ICOUNTER:
-			case LOG_METRIC_FCOUNTER:
 				mtype = "COUNTER";
+				break;
+			case LOG_METRIC_FCOUNTER:
+				mtype = "DCOUNTER";
 				break;
 			default:
 				ret = -EINVALID;
@@ -136,6 +138,8 @@ static int log_rrd_update(const char * restrict const identifier, const struct s
 	for (i = 0; i < log_data->nvalues; i++) {
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_ICOUNTER:
+				ret = snprintf(buffer + offset, buffer_len - offset, ":%u", log_data->values[i].u);
+				break;
 			case LOG_METRIC_IGAUGE:
 				ret = snprintf(buffer + offset, buffer_len - offset, ":%d", log_data->values[i].i);
 				break;

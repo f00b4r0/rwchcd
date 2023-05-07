@@ -19,12 +19,12 @@
 
 typedef uint32_t	log_version_t;	///< log version type
 typedef const char *	log_key_t;	///< log keys type
-typedef union { int32_t i; float f; }	log_value_t;	///< log values type
+typedef union { int32_t i; uint32_t u; float f; }	log_value_t;	///< log values type
 
 /** log metrics types */
 enum e_log_metric {
-	LOG_METRIC_IGAUGE,
-	LOG_METRIC_ICOUNTER,
+	LOG_METRIC_IGAUGE,	///< Integer val
+	LOG_METRIC_ICOUNTER,	///< Unsigned (positive) integer val
 	LOG_METRIC_FGAUGE,
 	LOG_METRIC_FCOUNTER,
 };

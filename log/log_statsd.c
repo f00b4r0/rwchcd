@@ -240,8 +240,10 @@ restartzero:
 restartbuffer:
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
-			case LOG_METRIC_ICOUNTER:
 				ret = snprintf(buffer, avail, "%s%s.%s:%d|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].i, mtype);
+				break;
+			case LOG_METRIC_ICOUNTER:
+				ret = snprintf(buffer, avail, "%s%s.%s:%u|%c\n", Log_statsd.set.prefix ? Log_statsd.set.prefix : "", identifier, log_data->keys[i], log_data->values[i].u, mtype);
 				break;
 			case LOG_METRIC_FGAUGE:
 			case LOG_METRIC_FCOUNTER:

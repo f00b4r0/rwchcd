@@ -51,7 +51,7 @@ static int rcycles_logdata_cb(struct s_log_data * const ldata, const void * cons
 	assert(ldata->nkeys >= Outputs.relays.last);
 
 	for (id = 0; id < Outputs.relays.last; id++)
-		ldata->values[id].i = relay_acct_cycles_get(&Outputs.relays.all[id]);
+		ldata->values[id].u = relay_acct_cycles_get(&Outputs.relays.all[id]);
 
 	ldata->nvalues = id;
 
@@ -73,7 +73,7 @@ static int ronsecs_logdata_cb(struct s_log_data * const ldata, const void * cons
 	assert(ldata->nkeys >= Outputs.relays.last);
 
 	for (id = 0; id < Outputs.relays.last; id++)
-		ldata->values[id].i = relay_acct_ontotsec_get(&Outputs.relays.all[id]);
+		ldata->values[id].u = relay_acct_ontotsec_get(&Outputs.relays.all[id]);
 
 	ldata->nvalues = id;
 

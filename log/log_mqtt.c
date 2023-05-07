@@ -181,8 +181,10 @@ static int log_mqtt_update(const char * restrict const identifier, const struct 
 
 		switch (log_data->metrics[i]) {
 			case LOG_METRIC_IGAUGE:
-			case LOG_METRIC_ICOUNTER:
 				msize = snprintf(message, MESSAGE_BUFLEN, "%d", log_data->values[i].i);
+				break;
+			case LOG_METRIC_ICOUNTER:
+				msize = snprintf(message, MESSAGE_BUFLEN, "%u", log_data->values[i].u);
 				break;
 			case LOG_METRIC_FGAUGE:
 			case LOG_METRIC_FCOUNTER:
