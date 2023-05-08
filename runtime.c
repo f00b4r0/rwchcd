@@ -28,7 +28,7 @@ static atomic_flag Runtime_savef = ATOMIC_FLAG_INIT;
 
 static int runtime_logdata_cb(struct s_log_data * const ldata, const void * const object);
 
-static const storage_version_t Runtime_sversion = 10;
+static const storage_version_t Runtime_sversion = 11;
 
 static struct s_runtime Runtime;	///< Runtime private data
 

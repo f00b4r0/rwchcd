@@ -26,7 +26,7 @@ enum e_heatsource_type {
 	HS_NONE = 0,		///< No heat source: that's a misconfiguration
 	HS_BOILER,		///< boiler type heatsource. Config `boiler`
 	HS_UNKNOWN,		///< invalid past this value
-};
+} ATTRPACK;
 
 /** Heat source element structure */
 struct s_heatsource {

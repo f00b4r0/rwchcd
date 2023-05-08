@@ -23,7 +23,7 @@ enum e_valve_type {
 	VA_TYPE_MIX,		///< mixing type. Config `mix`
 	VA_TYPE_ISOL,		///< isolation type. Config `isol`. Isolation valve isolates target by closing itself.
 	VA_TYPE_UNKNOWN,	///< invalid past this value
-};
+} ATTRPACK;
 
 struct s_valve;
 

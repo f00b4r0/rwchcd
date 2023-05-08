@@ -39,13 +39,13 @@ enum e_hw_input_type {
 	HW_INPUT_NONE = 0,	///< input type not configured
 	HW_INPUT_TEMP,		///< temperature input
 	HW_INPUT_SWITCH,	///< switch input
-};
+} ATTRPACK;
 
 /** Known hardware output types */
 enum e_hw_output_type {
 	HW_OUTPUT_NONE = 0,	///< output type not configured
 	HW_OUTPUT_RELAY,	///< relay output
-};
+} ATTRPACK;
 
 typedef uint_fast8_t	bid_t;	///< backend idex type - defines theoretical maximum number of backends
 typedef uint_fast8_t	inid_t;	///< hardware input index type - defines theoretical maximum number of inputs per backend

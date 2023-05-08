@@ -48,7 +48,7 @@ enum e_fastcooldown_modes {
 	FCM_FROSTFREE	= 0x01,
 	FCM_ECO		= 0x02,
 	FCM_ALL		= 0x03,
-};
+} ATTRPACK;
 
 /** Heating circuit element structure */
 struct s_hcircuit {

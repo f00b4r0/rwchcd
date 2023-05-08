@@ -40,12 +40,12 @@ struct s_dhwt {
 			DHWTP_SLIDMAX,		///< sliding priority with maximum selection: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config `slidmax`
 			DHWTP_SLIDDHW,		///< sliding priority with DHW temp request override: a non-critical inhibit signal will be formed if the heatsource cannot sustain the requested temperature. Config `sliddhw`
 			DHWTP_ABSOLUTE,		///< absolute priority: heating circuits will not receive heat during DHW charge. Config `absolute`
-		} dhwt_cprio;	///< DHW charge priority. *Optional*
+		} ATTRPACK dhwt_cprio;	///< DHW charge priority. *Optional*
 		enum {
 			DHWTF_NEVER = 0,	///< never force. Config `never`. *DEFAULT*
 			DHWTF_FIRST,		///< force first comfort charge of the day. Config `first`
 			DHWTF_ALWAYS		///< force all comfort charges. Config `always`
-		} force_mode;	///< Programmed force charge when switching to #RM_COMFORT. *Optional*
+		} ATTRPACK force_mode;	///< Programmed force charge when switching to #RM_COMFORT. *Optional*
 		itid_t tid_bottom;		///< temp sensor id at bottom of dhw tank. *Optional* if #tid_top is set, *Required* otherwise
 		itid_t tid_top;			///< temp sensor id at top of dhw tank. *Optional* if #tid_bottom is set, *Required* otherwise
 		itid_t tid_win;			///< temp sensor id heatwater inlet. *Required* if #p.pump_feed is set. @note must @b NOT rely on pump_feed operation for accurate temp read.

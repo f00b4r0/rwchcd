@@ -54,7 +54,7 @@ enum e_valve_talgos {
 	VA_TALG_BANGBANG,	///< bangbang controller. Config `bangbang`
 	VA_TALG_SAPPROX,	///< sapprox controller. Config `sapprox`
 	VA_TALG_PI,		///< PI controller. Config `PI`
-};
+} ATTRPACK;
 
 /** valve motorisation identifiers */
 enum e_valve_motor {
@@ -63,7 +63,7 @@ enum e_valve_motor {
 	VA_M_2WAY,	///< 2way motor control. Config `2way`
 	//VA_M_10V,
 	//VA_M_20MA,
-};
+} ATTRPACK;
 
 /** Private structure for 3way motorisation settings */
 struct s_valve_motor_3way_set {

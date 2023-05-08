@@ -24,14 +24,14 @@ enum e_temp_op {
 	T_OP_FIRST = 0,	///< use first value. Config `first`. *Default*
 	T_OP_MIN,	///< use min of all available values. Config `min`
 	T_OP_MAX,	///< use max of all available values. Config `max`
-};
+} ATTRPACK;
 
 /** Missing source behavior */
 enum e_temp_miss {
 	T_MISS_FAIL = 0,///< fail if any underlying source cannot be read. Config `fail`. *Default*
 	T_MISS_IGN,	///< ignore sources that cannot be read. If all sources cannot be read the temperature will return an error. Config `ignore`. @note if #T_OP_FIRST is set, a basic failover system is created.
 	T_MISS_IGNDEF,	///< Assign default value  `igntemp` to sources that cannot be read. Config `ignoredef`. @warning if #T_OP_FIRST is set, if the first source fails then the default value will be returned.
-};
+} ATTRPACK;
 
 /** Software representation of a temperature */
 struct s_temperature {

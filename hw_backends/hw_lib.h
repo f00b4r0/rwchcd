@@ -37,7 +37,7 @@ enum e_hw_lib_rtdt {
 	HW_RTD_PT3928,
 	HW_RTD_NI5000,
 	HW_RTD_NI6180,
-};
+} ATTRPACK;
 
 float hw_lib_rtd_res_to_celsius(const enum e_hw_lib_rtdt rtdtype, const res_t R0res, const res_t Rtres);
 

@@ -53,6 +53,8 @@
  #define unlikely(x)	(x)
 #endif
 
+#define ATTRPACK	__attribute__((__packed__))
+
 #ifdef DEBUG	// debug output will be sent via stdout to nonblocking FIFO, normal logging information will go to stderr
  #define dbgmsg(level, cond, format, ...)	do { if ((DEBUG >= level) && (cond)) printf("[%s:%d] (%s()) " format "\n", __FILE__, __LINE__, __func__, ## __VA_ARGS__); } while(0)
  #define dbgerr(format, ...)	fprintf(stderr, "(%ld) ERROR! [%s:%d] (%s()) " format "\n", time(NULL), __FILE__, __LINE__, __func__, ## __VA_ARGS__)
@@ -133,7 +135,7 @@ enum e_runmode {
 	RM_TEST,	///< device is in test mode (typically all actuators are on). Config `test` (should not be used in permanent config)
 	RM_UNKNOWN,	///< invalid past this value
 	RM_SUMMAINT,	///< device is in summer maintenance mode (typically pumps and valves are active, no heat requested). Not available in config. NB: after RM_UNKNOWN so it cannot be set externally.
-};
+} ATTRPACK;
 
 /** Valid system modes. */
 enum e_systemmode {

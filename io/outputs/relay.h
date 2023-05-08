@@ -24,13 +24,13 @@
 enum e_relay_op {
 	R_OP_FIRST = 0,	///< Control first relay. Config `first`. *Default*
 	R_OP_ALL,	///< Control all relays. Config `all`
-};
+} ATTRPACK;
 
 /** Missing target behavior */
 enum e_relay_miss {
 	R_MISS_FAIL = 0,///< fail if any underlying target cannot be reached. Config `fail`. *Default*
 	R_MISS_IGN,	///< ignore targets that cannot be reached. If all sources cannot be read the relay will return an error. Config `ignore`. @note if #R_OP_FIRST is set, a basic failover system is created (where the first @b working relay is controlled).
-};
+} ATTRPACK;
 
 /** Software representation of a relay */
 struct s_relay {
