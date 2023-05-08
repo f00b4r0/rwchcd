@@ -58,13 +58,13 @@ struct s_hcircuit {
 		uint_least8_t fast_cooldown;	///< bitfield used to trigger active cooldown (heating is disabled until temperature has cooled to new target) when switching to specified (cooler) mode. *Defaults to none*
 		schedid_t schedid;		///< schedule id for this hcircuit. *Optional*
 		enum e_runmode runmode;		///< current circuit set_runmode. *REQUIRED*
-		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (*default*: 0 disables). *Optional*, requires #p.valve_mix
-		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (*default*: 0 disables). *Optional*
-		timekeep_t boost_maxtime;	///< maximum duration of transition boost. *Optional*
-		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent (*default*: 0 disables). *Optional*
 		itid_t tid_outgoing;		///< outgoing temp sensor id for this circuit. *REQUIRED*
 		itid_t tid_return;		///< return temp sensor id for this circuit. *Optional*
 		itid_t tid_ambient;		///< ambient temp sensor id related to this circuit. *Optional*
+		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent (*default*: 0 disables). *Optional*
+		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (*default*: 0 disables). *Optional*, requires #p.valve_mix
+		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (*default*: 0 disables). *Optional*
+		timekeep_t boost_maxtime;	///< maximum duration of transition boost. *Optional*
 		enum e_hcircuit_laws tlaw;	///< temperature law identifier. *REQUIRED*
 		struct s_hcircuit_params params;///< local parameters overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max. Some settings must be set either globally or locally.
 		struct {
@@ -79,7 +79,7 @@ struct s_hcircuit {
 		bool outhoff;			///< true if outdoor no heating conditions are met
 		bool inoff;			///< true if indoor no heating conditions are met
 		_Atomic enum e_runmode runmode;	///< circuit actual (computed) runmode
-		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } transition;	///< current temperature transition happening on the circuit
+		enum { TRANS_NONE = 0, TRANS_UP, TRANS_DOWN } ATTRPACK transition;	///< current temperature transition happening on the circuit
 		bool floor_output;		///< true if the current output should not be reduced
 		timekeep_t rorh_update_time;	///< last time output was updated with respect to rorh
 		timekeep_t ambient_update_time;	///< ambient model last update time

@@ -63,16 +63,16 @@ struct s_hw_p1_pdata {
 	struct {
 		bool initialized;		///< hardware is initialized (setup() succeeded)
 		bool online;			///< hardware is online (online() succeeded)
+		uint_least8_t nsensors;		///< number of configured sensors
 		timekeep_t sensors_ftime;	///< sensors fetch time
 		timekeep_t last_calib;		///< time of last calibration
 		res_t calib_nodac;		///< sensor calibration value without dac offset
 		res_t calib_dac;		///< sensor calibration value with dac offset
 		int fwversion;			///< firmware version
-		uint_least8_t nsensors;		///< number of configured sensors
 		// private data for input()
 		int count, systout;
-		bool syschg;
 		enum e_systemmode cursysmode;
+		bool syschg;
 		uint_fast8_t tempid;
 		uint_least8_t sysmodeindex;
 	} run;		///< private runtime (internally handled)

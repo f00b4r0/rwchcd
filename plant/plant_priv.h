@@ -42,10 +42,10 @@ struct s_plant {
 	} set;
 	struct {
 		bool online;			///< true if plant is online
+		uint_fast8_t dhwt_maxprio;	///< largest online value for DHWT prio
 		timekeep_t summer_timer;	///< timer for summer maintenance
 		timekeep_t last_creqtime;	///< last recorded time for circuit heat request
 		temp_t plant_hrequest;		///< plant heat request
-		uint_fast8_t dhwt_maxprio;	///< largest online value for DHWT prio
 	} run;
 	struct s_pdata pdata;		///< plant-wide data shared with plant entities. No atomic/locking since this data is written/read within a single thread of execution (master)
 	struct {

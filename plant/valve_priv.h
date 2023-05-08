@@ -103,23 +103,23 @@ union u_valve_type_set {
 struct s_valve {
 	struct {
 		bool configured;	///< true if properly configured
-		timekeep_t ete_time;	///< end-to-end run time. *REQUIRED*
 		enum e_valve_type type;	///< type of valve. *REQUIRED*
 		enum e_valve_motor motor;	///< type of motor. *REQUIRED*
-		union u_valve_type_set tset;	///< type configuration data
+		timekeep_t ete_time;	///< end-to-end run time. *REQUIRED*
 		union u_valve_motor_set mset;	///< motor configuration data
+		union u_valve_type_set tset;	///< type configuration data
 	} set;		///< settings (externally set)
 	struct {
 		bool online;		///< true if valve is operational (under software management)
 		bool true_pos;		///< true if current position is "true": position measured from a full close/open start, or provided by a sensor
 		bool ctrl_ready;	///< false if controller algorithm must be reset
+		enum { STOP = 0, OPEN, CLOSE } ATTRPACK actual_action,	///< current valve action
+							request_action;	///< requested action
 		int_least16_t actual_position;	///< current position in ‰
 		int_least16_t target_course;	///< current target course in ‰ of #set.ete_time
 		timekeep_t acc_open_time;	///< accumulated open time since last close
 		timekeep_t acc_close_time;	///< accumulated close time since last open
 		timekeep_t last_run_time;	///< last time valve_run() was invoked
-		enum { STOP = 0, OPEN, CLOSE } actual_action,	///< current valve action
-					       request_action;	///< requested action
 	} run;		///< private runtime (internally handled)
 	const char * restrict name;	///< unique valve name
 	void * restrict priv;		///< private data
