@@ -1122,7 +1122,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 
 	dbgmsg(1, 1, "\"%s\": on: %d, since: %u, elec: %d, tg_t: %.1f, bot_t: %.1f, top_t: %.1f, hrq_t: %.1f",
 	       dhwt->name, charge_on, timekeep_tk_to_sec(dhwt->run.mode_since), electric_mode, temp_to_celsius(target_temp),
-	       valid_tbottom ? temp_to_celsius(bottom_temp) : -273.0, valid_ttop ? temp_to_celsius(top_temp) : -273.0,
+	       valid_tbottom ? temp_to_celsius(bottom_temp) : -273.0F, valid_ttop ? temp_to_celsius(top_temp) : -273.0F,
 	       temp_to_celsius(dhwt->run.heat_request));
 
 	return (ALL_OK);

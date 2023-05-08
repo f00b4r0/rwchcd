@@ -205,7 +205,7 @@ static int log_statsd_update(const char * restrict const identifier, const struc
 				break;
 			case LOG_METRIC_FGAUGE:
 				mtype = 'g';
-				if (log_data->values[i].f < 0.0)
+				if (log_data->values[i].f < 0.0F)
 					zerofirst = true;
 				break;
 			case LOG_METRIC_ICOUNTER:

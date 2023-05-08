@@ -265,7 +265,7 @@ float hw_lib_rtd_res_to_celsius(const enum e_hw_lib_rtdt rtdtype, const res_t R0
 		case HW_RTD_NONE:
 		default:
 			dbgerr("UNKNOWN SENSOR TYPE!");
-			return (-273.0);
+			return (-273.0F);
 	}
 
 quadcvd:
