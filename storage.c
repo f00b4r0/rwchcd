@@ -197,10 +197,9 @@ int storage_online(void)
 #ifdef HAS_BDB
 	DB *dbp;
 	DBT key, data;
-#endif
 	storage_version_t sv;
 	int dbret;
-
+#endif
 	// if we don't have a configured path, fallback to default
 	if (!Storage_path)
 		Storage_path = strdup(RWCHCD_STORAGE_PATH);	// not the most efficient use of memory
@@ -213,7 +212,7 @@ int storage_online(void)
 		return (-ESTORE);
 	}
 #ifndef HAS_BDB
-	return (ALL_OK);	//	we're done - NB in this configuration Storage_path will be freed by program termination (not in storage_exit())
+	return (ALL_OK);	//	we're done
 #else
 	dbret = db_env_create(&dbenvp, 0);
 	if (dbret) {
@@ -309,9 +308,10 @@ bool storage_haspath(void)
 
 void storage_exit(void)
 {
+#ifdef HAS_BDB	// we have to free Storage_path anyway
 	if (!Storage_configured)
 		return;
-
+#endif
 	Storage_configured = false;
 
 #ifdef HAS_BDB
