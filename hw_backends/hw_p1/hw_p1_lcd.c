@@ -384,7 +384,7 @@ static void hw_p1_lcd_line1(struct s_hw_p1_lcd * const lcd, struct s_hw_p1_pdata
 
 		ret = hw_p1_input_value_get(hw, 1, tempid, &temp);
 
-		snprintf((char *)buf, 4, "%2u:", hw->Sensors[tempid].set.channel);	// print in human readable
+		snprintf((char *)buf, 4, "%2hhu:", hw->Sensors[tempid].set.channel);	// print in human readable
 
 		buf += 3;
 
