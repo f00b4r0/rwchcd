@@ -196,6 +196,9 @@ FILECFG_PARSER_STR_PARSE_SET_FUNC(true, true, s_mqtt_pdata, topic_root)
 FILECFG_PARSER_STR_PARSE_SET_FUNC(true, true, s_mqtt_pdata, username)
 FILECFG_PARSER_STR_PARSE_SET_FUNC(true, true, s_mqtt_pdata, password)
 FILECFG_PARSER_STR_PARSE_SET_FUNC(true, true, s_mqtt_pdata, host)
+FILECFG_PARSER_STR_PARSE_SET_FUNC(true, true, s_mqtt_pdata, topic_temperatures)
+FILECFG_PARSER_STR_PARSE_SET_FUNC(true, true, s_mqtt_pdata, topic_switches)
+FILECFG_PARSER_STR_PARSE_SET_FUNC(true, true, s_mqtt_pdata, topic_relays)
 FILECFG_PARSER_INT_PARSE_SET_FUNC(true, s_mqtt_pdata, port)
 FILECFG_PARSER_ENUM_PARSE_SET_FUNC(temp_unit_str, s_mqtt_pdata, temp_unit)
 
@@ -206,6 +209,9 @@ static int type_parse(void * restrict const priv, const struct s_filecfg_parser_
 		{ NODESTR,	"username",	false,	fcp_str_s_mqtt_pdata_username,		NULL, },
 		{ NODESTR,	"password",	false,	fcp_str_s_mqtt_pdata_password,		NULL, },
 		{ NODESTR,	"host",		true,	fcp_str_s_mqtt_pdata_host,		NULL, },
+		{ NODESTR,	"topic_temperatures",	false,	fcp_str_s_mqtt_pdata_topic_temperatures, NULL, },
+		{ NODESTR,	"topic_switches",	false,	fcp_str_s_mqtt_pdata_topic_switches, NULL, },
+		{ NODESTR,	"topic_relays",	false,	fcp_str_s_mqtt_pdata_topic_relays,	NULL, },
 		{ NODEINT,	"port",		false,	fcp_int_s_mqtt_pdata_port,		NULL, },
 		{ NODESTR,	"temp_unit",	false,	fcp_enum_s_mqtt_pdata_temp_unit,	NULL, },
 	};

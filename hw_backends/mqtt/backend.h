@@ -64,9 +64,12 @@ struct s_mqtt_pdata {
 		const char * username;	///< MQTT broker username. *Optional*
 		const char * password;	///< MQTT broker password. *Optional*
 		const char * host;	///< MQTT broker host. *REQUIRED*
+		const char * topic_temperatures;	///< MQTT topic for temperatures. *Optional, defaults to "temperatures"*. @note No trailing '/'
+		const char * topic_switches;	///< MQTT topic for switches. *Optional, defaults to "switches"*. @note No trailing '/'
+		const char * topic_relays;	///< MQTT topic for relays. *Optional, defaults to "relays"*. @note No trailing '/'
 		int port;		///< MQTT broker port. *Optional, defaults to 1883*
 		enum e_mqtt_tunit temp_unit;	///< temperature unit used in subscribed temperatures. *Optional, defaults to Celsius*
-	} set;		///< settings
+	} set;		///< settings. @warning Any topic string must not be a prefix of any other
 	struct {
 		bool initialized;	///< hardware is initialized (setup() succeeded)
 		bool online;		///< hardware is online (online() succeeded)

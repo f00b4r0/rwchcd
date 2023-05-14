@@ -2,7 +2,7 @@
 //  hw_backends/mqtt/backend.c
 //  rwchcd
 //
-//  (C) 2020 Thibaut VARENE
+//  (C) 2020,2023 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -31,13 +31,13 @@
 
 #define MQTT_BKND_QOS	2	///< highest QoS level to make sure message are delivered only once
 
-/** Subtopics for outputs. @note Strings should not have common radicals */
+/** Subtopics for outputs. @warning Any topic string must not be a prefix of any other */
 static const char * mqtt_outtype_subtopics[] = {
 	[HW_OUTPUT_NONE]	= "",	// should never happen
 	[HW_OUTPUT_RELAY]	= "relays",
 };
 
-/** Subtopics for inputs. @note Strings should not have common radicals */
+/** Subtopics for inputs. @warning Any topic string must not be a prefix of any other */
 static const char * mqtt_intype_subtopics[] = {
 	[HW_INPUT_NONE]		= "",	// should never happen
 	[HW_INPUT_TEMP]		= "temperatures",
@@ -271,6 +271,14 @@ __attribute__((warn_unused_result)) static int mqtt_setup(void * priv, const cha
 		goto fail;
 	}
 
+	// adjust subtopics from defaults if necessary
+	if (hw->set.topic_temperatures)
+		mqtt_intype_subtopics[HW_INPUT_TEMP] = hw->set.topic_temperatures;
+	if (hw->set.topic_switches)
+		mqtt_intype_subtopics[HW_INPUT_SWITCH] = hw->set.topic_switches;
+	if (hw->set.topic_relays)
+		mqtt_outtype_subtopics[HW_OUTPUT_RELAY] = hw->set.topic_relays;
+
 	mosquitto_connect_callback_set(hw->mosq, mqtt_connect_callback);
 	mosquitto_message_callback_set(hw->mosq, mqtt_message_callback);
 
@@ -406,6 +414,9 @@ static void mqtt_exit(void * priv)
 	freeconst(hw->set.username);
 	freeconst(hw->set.password);
 	freeconst(hw->set.topic_root);
+	freeconst(hw->set.topic_temperatures);
+	freeconst(hw->set.topic_switches);
+	freeconst(hw->set.topic_relays);
 
 	for (id = 0; (id < hw->in.temps.l); id++)
 		freeconst(hw->in.temps.all[id].name);
