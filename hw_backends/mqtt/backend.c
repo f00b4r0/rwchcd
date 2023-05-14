@@ -59,11 +59,11 @@ static int mqtt_str_to_bool(const char * str)
 	if (!str)
 		return (ret);
 
-	switch (*str) {
+	switch (str[0]) {
 		case '0':
 		case '1':
 			if ('\0' == str[1])
-				ret = (*str - '0');
+				ret = (str[0] - '0');
 			break;
 		case 'o':
 			switch (str[1]) {
@@ -72,7 +72,7 @@ static int mqtt_str_to_bool(const char * str)
 						ret = 1;
 					break;
 				case 'f':
-					if (('f' == str[2]) && ('\0' == str[4]))
+					if (('f' == str[2]) && ('\0' == str[3]))
 						ret = 0;
 					break;
 				default:
