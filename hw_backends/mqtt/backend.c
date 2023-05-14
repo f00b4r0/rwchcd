@@ -189,6 +189,12 @@ static void mqtt_message_callback(struct mosquitto * mosq __attribute__((unused)
 	switch (type) {
 		case HW_INPUT_TEMP:
 			/// For temperatures we expect a string representing a decimal value compatible with strtof()
+			// let's see who that message is for
+			ret = mqtt_input_ibn(hw, type, str);
+			if (ret < 0)
+				return;
+			id = (inid_t)ret;
+
 			// start with a sanity check:
 			f = strtof(message->payload, NULL);
 			switch (hw->set.temp_unit) {
@@ -206,29 +212,24 @@ static void mqtt_message_callback(struct mosquitto * mosq __attribute__((unused)
 			if (validate_temp(u.temperature))
 				return;	// invalid value
 
-			// now let's see who that message is for
+			aser(&hw->in.temps.all[id].run.value, u.temperature);
+			aser(&hw->in.temps.all[id].run.tstamp, timekeep_now());
+			break;
+		case HW_INPUT_SWITCH:
 			ret = mqtt_input_ibn(hw, type, str);
 			if (ret < 0)
 				return;
 			id = (inid_t)ret;
 
-			aser(&hw->in.temps.all[id].run.value, u.temperature);
-			aser(&hw->in.temps.all[id].run.tstamp, timekeep_now());
-			break;
-		case HW_INPUT_SWITCH:
 			/// For switches we expect a string representing a boolean values compatible with mqtt_str_to_bool()
 			ret = mqtt_str_to_bool(message->payload);
 			if (ret < 0)
 				return;
 			u.inswitch = !!ret;
 
-			ret = mqtt_input_ibn(hw, type, str);
-			if (ret < 0)
-				return;
-			id = (inid_t)ret;
-
 			aser(&hw->in.switches.all[id].run.state, u.inswitch);
 			aser(&hw->in.switches.all[id].run.tstamp, timekeep_now());
+			break;
 		case HW_INPUT_NONE:
 		default:
 			return;	// not for us
