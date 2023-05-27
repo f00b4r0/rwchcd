@@ -40,6 +40,7 @@
 		4F4E98D9254458200052EEB8 /* log_mqtt.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F4E98D8254458200052EEB8 /* log_mqtt.c */; };
 		4F650A0025261AB90071EC45 /* backend.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F6509FF25261AB90071EC45 /* backend.c */; };
 		4F650A09252626580071EC45 /* filecfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F650A08252626580071EC45 /* filecfg.c */; };
+		4F84E2AD2A22997E00551307 /* switch_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F84E2AC2A22997E00551307 /* switch_parse.c */; };
 		4F869E99233A5EF300541A07 /* log_statsd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F42E98A23393156000A268A /* log_statsd.c */; };
 		4F94476021EA7BBE00FCF120 /* filecfg_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */; };
 		4F99FD222088D18500DDAB75 /* filecfg_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F99FD202088D18500DDAB75 /* filecfg_dump.c */; };
@@ -179,6 +180,8 @@
 		4F739A61252CB6DF007DD18E /* backend.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = backend.c; sourceTree = "<group>"; };
 		4F811B98252DE16D0041DDF7 /* daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F831E09293CE6E600BD4F14 /* UPGRADING */ = {isa = PBXFileReference; lastKnownFileType = text; path = UPGRADING; sourceTree = SOURCE_ROOT; };
+		4F84E2AB2A22997E00551307 /* switch_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = switch_parse.h; sourceTree = "<group>"; };
+		4F84E2AC2A22997E00551307 /* switch_parse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = switch_parse.c; sourceTree = "<group>"; };
 		4F94475C21DAA0FF00FCF120 /* filecfg_parser.l */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.lex; path = filecfg_parser.l; sourceTree = "<group>"; };
 		4F94475D21DAA14200FCF120 /* filecfg_parser.y */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.yacc; path = filecfg_parser.y; sourceTree = "<group>"; };
 		4F94475E21EA7BBE00FCF120 /* filecfg_parser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = filecfg_parser.c; sourceTree = "<group>"; };
@@ -366,6 +369,8 @@
 				4F08255724844CD40068FC22 /* log_parse.c */,
 				4FC1132425239963009AA17D /* temperature_parse.h */,
 				4FC1132525239963009AA17D /* temperature_parse.c */,
+				4F84E2AB2A22997E00551307 /* switch_parse.h */,
+				4F84E2AC2A22997E00551307 /* switch_parse.c */,
 				4FC1132825239B50009AA17D /* inputs_parse.h */,
 				4FC1132925239B50009AA17D /* inputs_parse.c */,
 				4F3EC1672524E42B00ACE8BA /* relay_parse.h */,
@@ -664,6 +669,7 @@
 				4FBFEB81252889E40062B1FB /* temperature_dump.c in Sources */,
 				4F99FD27208B7F0F00DDAB75 /* hw_p1_backend.c in Sources */,
 				4F08255824844CD40068FC22 /* log_parse.c in Sources */,
+				4F84E2AD2A22997E00551307 /* switch_parse.c in Sources */,
 				4FC1847B1DA6809E000E514B /* storage.c in Sources */,
 				4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */,
 				4F42A5D61F9683CC001B0A1F /* heatsource.c in Sources */,

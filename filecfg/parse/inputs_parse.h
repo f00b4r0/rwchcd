@@ -37,4 +37,11 @@ static int fcp_inputs_temperature_##_struct##_##_setmember(void * restrict const
 	return (filecfg_inputs_parse_helper_inid(INPUT_TEMP, &s->set._setmember, n));		\
 }
 
+#define FILECFG_INPUTS_PARSER_SWITCH_PARSE_SET_FUNC(_struct, _setmember)	\
+static int fcp_inputs_switch_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\
+{										\
+	struct _struct * restrict const s = priv;				\
+	return (filecfg_inputs_parse_helper_inid(INPUT_SWITCH, &s->set._setmember, n));		\
+}
+
 #endif /* inputs_parse_h */
