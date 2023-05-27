@@ -46,10 +46,10 @@ struct s_dhwt {
 			DHWTF_FIRST,		///< force first comfort charge of the day. Config `first`
 			DHWTF_ALWAYS		///< force all comfort charges. Config `always`
 		} ATTRPACK force_mode;	///< Programmed force charge when switching to #RM_COMFORT. *Optional*
-		itid_t tid_bottom;		///< temp sensor id at bottom of dhw tank. *Optional* if #tid_top is set, *Required* otherwise
-		itid_t tid_top;			///< temp sensor id at top of dhw tank. *Optional* if #tid_bottom is set, *Required* otherwise
-		itid_t tid_win;			///< temp sensor id heatwater inlet. *Required* if #p.pump_feed is set. @note must @b NOT rely on pump_feed operation for accurate temp read.
-		orid_t rid_selfheater;		///< relay for internal electric heater (if available). *Optional*
+		inid_t tid_bottom;		///< temp sensor id at bottom of dhw tank. *Optional* if #tid_top is set, *Required* otherwise
+		inid_t tid_top;			///< temp sensor id at top of dhw tank. *Optional* if #tid_bottom is set, *Required* otherwise
+		inid_t tid_win;			///< temp sensor id heatwater inlet. *Required* if #p.pump_feed is set. @note must @b NOT rely on pump_feed operation for accurate temp read.
+		outid_t rid_selfheater;		///< relay for internal electric heater (if available). *Optional*
 		temp_t tthresh_dhwisol;		///< threshold temperature below wich the DHW isol valve will be closed and/or the recycling pump stopped. Hysteresis +1K for reverse operation. *Optional*, only makes sense if valve and/or pump are available.
 		struct s_dhwt_params params;	///< local parameter overrides. @note if a default is set in config, it will prevail over any unset (0) value here: to locally set 0 value as "unlimited", set it to max. Some settings must be set either globally or locally.
 		struct {

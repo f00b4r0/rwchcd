@@ -58,9 +58,9 @@ struct s_hcircuit {
 		uint_least8_t fast_cooldown;	///< bitfield used to trigger active cooldown (heating is disabled until temperature has cooled to new target) when switching to specified (cooler) mode. *Defaults to none*
 		schedid_t schedid;		///< schedule id for this hcircuit. *Optional*
 		enum e_runmode runmode;		///< current circuit set_runmode. *REQUIRED*
-		itid_t tid_outgoing;		///< outgoing temp sensor id for this circuit. *REQUIRED*
-		itid_t tid_return;		///< return temp sensor id for this circuit. *Optional*
-		itid_t tid_ambient;		///< ambient temp sensor id related to this circuit. *Optional*
+		inid_t tid_outgoing;		///< outgoing temp sensor id for this circuit. *REQUIRED*
+		inid_t tid_return;		///< return temp sensor id for this circuit. *Optional*
+		inid_t tid_ambient;		///< ambient temp sensor id related to this circuit. *Optional*
 		int_least16_t ambient_factor;	///< influence of ambient temp on templaw calculations, in percent (*default*: 0 disables). *Optional*
 		temp_t wtemp_rorh;		///< water temp rate of rise in temp per hour (*default*: 0 disables). *Optional*, requires #p.valve_mix
 		temp_t tambient_boostdelta;	///< positive temperature delta applied during boost turn-on (*default*: 0 disables). *Optional*

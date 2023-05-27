@@ -829,7 +829,7 @@ temperature_get_property(GDBusConnection  *connection,
 {
 	GVariant *var;
 	const gchar *node, *name;
-	itid_t id;
+	inid_t id;
 	int ret;
 
 	var = NULL;
@@ -839,7 +839,7 @@ temperature_get_property(GDBusConnection  *connection,
 	if (ret < 0)
 		goto out;
 
-	id = (itid_t)ret + 1;	// XXX
+	id = (inid_t)ret + 1;	// XXX
 
 	name = inputs_temperature_name(id);
 	if (!name)
@@ -910,7 +910,7 @@ rwchcd_subtree_enumerate(GDBusConnection       *connection,
 			g_ptr_array_add(p, g_strdup_printf("%d", id));
 	}
 	else if (g_strcmp0(object_path, DBUS_TEMPS_OBJECT) == 0) {
-		for (itid_t id = 0; id < Inputs.temps.last; id++)
+		for (inid_t id = 0; id < Inputs.temps.last; id++)
 			g_ptr_array_add(p, g_strdup_printf("%d", id));
 	}
 

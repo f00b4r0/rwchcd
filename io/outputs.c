@@ -32,9 +32,9 @@ struct s_outputs Outputs;
 static struct s_log_source Out_rcycles_lsrc;
 static struct s_log_source Out_ronsecs_lsrc;
 
-// Workaround to disambiguate 0 orid
-#define outputs_orid_to_id(x)	((typeof(x))(x-1))
-#define outputs_id_to_orid(x)	((typeof(x))(x+1))
+// Workaround to disambiguate 0 outid
+#define outputs_outid_to_id(x)	((typeof(x))(x-1))
+#define outputs_id_to_outid(x)	((typeof(x))(x+1))
 
 /**
  * Relay cycles data log callback.
@@ -216,7 +216,7 @@ int outputs_online(void)
  */
 int outputs_relay_fbn(const char * name)
 {
-	orid_t id;
+	outid_t id;
 	int ret = -ENOTFOUND;
 
 	if (!name)
@@ -224,7 +224,7 @@ int outputs_relay_fbn(const char * name)
 
 	for (id = 0; id < Outputs.relays.last; id++) {
 		if (!strcmp(Outputs.relays.all[id].name, name)) {
-			ret = (int)outputs_id_to_orid(id);
+			ret = (int)outputs_id_to_outid(id);
 			break;
 		}
 	}
@@ -235,9 +235,9 @@ int outputs_relay_fbn(const char * name)
 /**
  * Return a relay output name.
  */
-const char * outputs_relay_name(const orid_t rid)
+const char * outputs_relay_name(const outid_t rid)
 {
-	const orid_t id = outputs_orid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(rid);
 
 	if (unlikely(id >= Outputs.relays.last))
 		return (NULL);
@@ -252,9 +252,9 @@ const char * outputs_relay_name(const orid_t rid)
  * @return exec status
  * @note This function should obviously be used only once, typically in online() call
  */
-int outputs_relay_grab(const orid_t rid)
+int outputs_relay_grab(const outid_t rid)
 {
-	const orid_t id = outputs_orid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(rid);
 
 	if (unlikely(id >= Outputs.relays.last))
 		return (-EINVALID);
@@ -267,9 +267,9 @@ int outputs_relay_grab(const orid_t rid)
  * @param rid the relay output id to grab
  * @return exec status
  */
-int outputs_relay_thaw(const orid_t rid)
+int outputs_relay_thaw(const outid_t rid)
 {
-	const orid_t id = outputs_orid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(rid);
 
 	if (unlikely(id >= Outputs.relays.last))
 		return (-EINVALID);
@@ -283,9 +283,9 @@ int outputs_relay_thaw(const orid_t rid)
  * @param turn_on the requested state for the relay
  * @return exec status
  */
-int outputs_relay_state_set(const orid_t rid, const bool turn_on)
+int outputs_relay_state_set(const outid_t rid, const bool turn_on)
 {
-	const orid_t id = outputs_orid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(rid);
 
 	if (unlikely(id >= Outputs.relays.last))
 		return (-EINVALID);
@@ -298,9 +298,9 @@ int outputs_relay_state_set(const orid_t rid, const bool turn_on)
  * @param rid the relay output id to read from
  * @return relay state or error
  */
-int outputs_relay_state_get(const orid_t rid)
+int outputs_relay_state_get(const outid_t rid)
 {
-	const orid_t id = outputs_orid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(rid);
 
 	if (unlikely(id >= Outputs.relays.last))
 		return (-EINVALID);
@@ -324,7 +324,7 @@ int outputs_offline(void)
  */
 void outputs_exit(void)
 {
-	orid_t id;
+	outid_t id;
 
 	// clean all registered relays
 	for (id = 0; id < Outputs.relays.last; id++)

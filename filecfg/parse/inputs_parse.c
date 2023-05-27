@@ -59,14 +59,14 @@ static int inputs_temperatures_parse(void * restrict const priv, const struct s_
 	if (!n)
 		return (-EEMPTY);
 
-	if (n >= ITID_MAX)
+	if (n >= INID_MAX)
 		return (-ETOOBIG);
 
 	inputs->temps.all = calloc(n, sizeof(inputs->temps.all[0]));
 	if (!inputs->temps.all)
 		return (-EOOM);
 
-	inputs->temps.n = (itid_t)n;
+	inputs->temps.n = (inid_t)n;
 	//inputs->temps.last = 0;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "temperature", inputs_temperature_wrap_parse));
@@ -103,7 +103,7 @@ int filecfg_inputs_parse(void * restrict const priv __attribute__((unused)), con
 	return (ret);
 }
 
-int filecfg_inputs_parse_helper_tid(itid_t *tid, const struct s_filecfg_parser_node * const node)
+int filecfg_inputs_parse_helper_tid(inid_t *tid, const struct s_filecfg_parser_node * const node)
 {
 	int ret;
 	const char *str = node->value.stringval;
@@ -114,7 +114,7 @@ int filecfg_inputs_parse_helper_tid(itid_t *tid, const struct s_filecfg_parser_n
 	if (ret < 0)
 		return (ret);
 
-	*tid = (itid_t)ret;
+	*tid = (inid_t)ret;
 
 	return (ALL_OK);
 }

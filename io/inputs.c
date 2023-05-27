@@ -32,9 +32,9 @@
 struct s_inputs Inputs;
 static struct s_log_source In_temps_lsrc;
 
-// Workaround to disambiguate 0 itid
-#define inputs_itid_to_id(x)	((typeof(x))(x-1))
-#define inputs_id_to_itid(x)	((typeof(x))(x+1))
+// Workaround to disambiguate 0 inid
+#define inputs_inid_to_id(x)	((typeof(x))(x-1))
+#define inputs_id_to_inid(x)	((typeof(x))(x+1))
 
 /**
  * Temperatures data log callback.
@@ -162,7 +162,7 @@ int inputs_online(void)
  */
 int inputs_temperature_fbn(const char * name)
 {
-	itid_t id;
+	inid_t id;
 	int ret = -ENOTFOUND;
 
 	if (!name)
@@ -170,7 +170,7 @@ int inputs_temperature_fbn(const char * name)
 
 	for (id = 0; id < Inputs.temps.last; id++) {
 		if (!strcmp(Inputs.temps.all[id].name, name)) {
-			ret = (int)inputs_id_to_itid(id);
+			ret = (int)inputs_id_to_inid(id);
 			break;
 		}
 	}
@@ -181,9 +181,9 @@ int inputs_temperature_fbn(const char * name)
 /**
  * Return a temperature input name.
  */
-const char * inputs_temperature_name(const itid_t tid)
+const char * inputs_temperature_name(const inid_t tid)
 {
-	const itid_t id = inputs_itid_to_id(tid);
+	const inid_t id = inputs_inid_to_id(tid);
 
 	if (unlikely(id >= Inputs.temps.last))
 		return (NULL);
@@ -197,9 +197,9 @@ const char * inputs_temperature_name(const itid_t tid)
  * @param tout an optional pointer to store the result
  * @return exec status
  */
-int inputs_temperature_get(const itid_t tid, temp_t * const tout)
+int inputs_temperature_get(const inid_t tid, temp_t * const tout)
 {
-	const itid_t id = inputs_itid_to_id(tid);
+	const inid_t id = inputs_inid_to_id(tid);
 
 	if (unlikely(id >= Inputs.temps.last))
 		return (-EINVALID);
@@ -214,9 +214,9 @@ int inputs_temperature_get(const itid_t tid, temp_t * const tout)
  * @return exec status
  * @note this function will @b not request an update of the underlying temperature
  */
-int inputs_temperature_time(const itid_t tid, timekeep_t * const stamp)
+int inputs_temperature_time(const inid_t tid, timekeep_t * const stamp)
 {
-	const itid_t id = inputs_itid_to_id(tid);
+	const inid_t id = inputs_inid_to_id(tid);
 
 	if (unlikely(id >= Inputs.temps.last))
 		return (-EINVALID);
@@ -240,7 +240,7 @@ int inputs_offline(void)
  */
 void inputs_exit(void)
 {
-	itid_t id;
+	inid_t id;
 
 	// clean all registered temps
 	for (id = 0; id < Inputs.temps.last; id++)

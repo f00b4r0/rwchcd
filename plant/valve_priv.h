@@ -68,13 +68,13 @@ enum e_valve_motor {
 /** Private structure for 3way motorisation settings */
 struct s_valve_motor_3way_set {
 	uint_least16_t deadband;///< deadband for valve operation in ‰: no operation if requested move is less than that. *Optional*
-	orid_t rid_open;	///< relay for opening the valve. *REQUIRED*
-	orid_t rid_close;	///< relay for closing the valve. *REQUIRED*
+	outid_t rid_open;	///< relay for opening the valve. *REQUIRED*
+	outid_t rid_close;	///< relay for closing the valve. *REQUIRED*
 };
 
 /** Private structure for 2way motorisation settings */
 struct s_valve_motor_2way_set {
-	orid_t rid_trigger;	///< relay for triggering the motor. *REQUIRED*
+	outid_t rid_trigger;	///< relay for triggering the motor. *REQUIRED*
 	bool trigger_opens;	///< true if the trigger opens the valve (false if the trigger closes the valve). *REQUIRED*
 };
 
@@ -87,9 +87,9 @@ union u_valve_motor_set {
 /** Private structure for mixing type valve */
 struct s_valve_type_mix_set {
 	temp_t tdeadzone;	///< valve deadzone: no operation when target temp in deadzone. *Optional*
-	itid_t tid_hot;		///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input. *REQUIRED or Optional depending on algorithm*
-	itid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input. *Optional*
-	itid_t tid_out;		///< temp at the output. *REQUIRED*
+	inid_t tid_hot;		///< temp at the "hot" input: when position is 0% (closed) there is 0% flow from this input. *REQUIRED or Optional depending on algorithm*
+	inid_t tid_cold;	///< temp at the "cold" input: when position is 0% (closed) there is 100% flow from this input. *Optional*
+	inid_t tid_out;		///< temp at the output. *REQUIRED*
 	enum e_valve_talgos algo;///< valve tcontrol algorithm identifier. *REQUIRED*
 };
 

@@ -912,7 +912,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	bool valid_ttop, valid_tbottom, charge_on, electric_mode, skip_untrip, try_electric, test;
 	const timekeep_t now = timekeep_now();
 	enum e_runmode dhwmode;
-	orid_t rselfheater;
+	outid_t rselfheater;
 	timekeep_t limit;
 	int ret;
 

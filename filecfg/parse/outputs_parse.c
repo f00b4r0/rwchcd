@@ -59,14 +59,14 @@ static int outputs_relays_parse(void * restrict const priv, const struct s_filec
 	if (!n)
 		return (-EEMPTY);
 
-	if (n >= ORID_MAX)
+	if (n >= OUTID_MAX)
 		return (-ETOOBIG);
 
 	outputs->relays.all = calloc(n, sizeof(outputs->relays.all[0]));
 	if (!outputs->relays.all)
 		return (-EOOM);
 
-	outputs->relays.n = (orid_t)n;
+	outputs->relays.n = (outid_t)n;
 	//outputs->relays.last = 0;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "relay", outputs_relay_wrap_parse));
@@ -103,7 +103,7 @@ int filecfg_outputs_parse(void * restrict const priv __attribute__((unused)), co
 	return (ret);
 }
 
-int filecfg_outputs_parse_helper_rid(orid_t *rid, const struct s_filecfg_parser_node * const node)
+int filecfg_outputs_parse_helper_rid(outid_t *rid, const struct s_filecfg_parser_node * const node)
 {
 	int ret;
 	const char *str = node->value.stringval;
@@ -114,7 +114,7 @@ int filecfg_outputs_parse_helper_rid(orid_t *rid, const struct s_filecfg_parser_
 	if (ret < 0)
 		return (ret);
 
-	*rid = (orid_t)ret;
+	*rid = (outid_t)ret;
 
 	return (ALL_OK);
 }

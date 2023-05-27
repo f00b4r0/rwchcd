@@ -19,7 +19,7 @@
 #include "io/outputs.h"
 
 int filecfg_outputs_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
-int filecfg_outputs_parse_helper_rid(orid_t *rid, const struct s_filecfg_parser_node * const node);
+int filecfg_outputs_parse_helper_rid(outid_t *rid, const struct s_filecfg_parser_node * const node);
 
 #define FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(_struct, _setmember)	\
 static int fcp_outputs_relay_##_struct##_##_setmember(void * restrict const priv, const struct s_filecfg_parser_node * const n)	\

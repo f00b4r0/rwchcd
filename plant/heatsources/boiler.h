@@ -38,10 +38,10 @@ struct s_boiler_priv {
 		temp_t limit_treturnmin;	///< minimum boiler return temp. *Optional*
 		temp_t t_freeze;		///< boiler temp trip point for antifreeze. *REQUIRED >0*
 		timekeep_t burner_min_time;	///< minimum burner state time (i.e. minimum time spent in either on or off state). Prevents pumping. *Optional, defaults to 4mn*
-		itid_t tid_boiler;		///< boiler temp id. *REQUIRED*
-		itid_t tid_boiler_return;	///< boiler inflow temp id. *Required* if #limit_treturnmin is set
-		orid_t rid_burner_1;		///< first stage of burner. *REQUIRED*
-		orid_t rid_burner_2;		///< second stage of burner. *Optional* -- XXX NOT IMPLEMENTED
+		inid_t tid_boiler;		///< boiler temp id. *REQUIRED*
+		inid_t tid_boiler_return;	///< boiler inflow temp id. *Required* if #limit_treturnmin is set
+		outid_t rid_burner_1;		///< first stage of burner. *REQUIRED*
+		outid_t rid_burner_2;		///< second stage of burner. *Optional* -- XXX NOT IMPLEMENTED
 		struct {
 			struct s_valve * restrict valve_ret;	///< mixing return valve for the boiler. *Optional* -- XXX UNTESTED
 		} p;		///< pointer-based settings. For configuration details see specific types instructions

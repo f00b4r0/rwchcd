@@ -23,7 +23,7 @@ struct s_pump {
 	struct {
 		bool configured;		///< true if properly configured
 		bool shared;			///< true if pump is allowed to be shared between users.
-		orid_t rid_pump;		///< relay controlling that pump. *REQUIRED*
+		outid_t rid_pump;		///< relay controlling that pump. *REQUIRED*
 	} set;		///< settings (externally set)
 	struct {
 		atomic_bool online;		///< true if pump is operational (under software management)

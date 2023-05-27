@@ -16,15 +16,15 @@
 
 #include "rwchcd.h"
 
-typedef uint_fast8_t itid_t;	///< input id
+typedef uint_fast8_t inid_t;	///< input id
 
-#define ITID_MAX	UINT_FAST8_MAX
+#define INID_MAX	UINT_FAST8_MAX
 
 /** Inputs internal data */
 struct s_inputs {
 	struct {
-		itid_t n;			///< number of allocated temperature inputs
-		itid_t last;			///< id of last free slot
+		inid_t n;			///< number of allocated temperature inputs
+		inid_t last;			///< id of last free slot
 		struct s_temperature * all;	///< pointer to dynamically allocated array of temperature inputs
 	} temps;	///< temperature inputs
 	//hygros, wind, etc;
@@ -33,9 +33,9 @@ struct s_inputs {
 int inputs_init(void);
 int inputs_online(void);
 int inputs_temperature_fbn(const char * name);
-const char * inputs_temperature_name(const itid_t tid);
-int inputs_temperature_get(const itid_t tid, temp_t * const tout) __attribute__((warn_unused_result));
-int inputs_temperature_time(const itid_t tid, timekeep_t * const stamp);
+const char * inputs_temperature_name(const inid_t tid);
+int inputs_temperature_get(const inid_t tid, temp_t * const tout) __attribute__((warn_unused_result));
+int inputs_temperature_time(const inid_t tid, timekeep_t * const stamp);
 int inputs_offline(void);
 void inputs_exit(void);
 
