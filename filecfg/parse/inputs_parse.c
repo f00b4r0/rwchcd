@@ -29,50 +29,6 @@
 
 extern struct s_inputs Inputs;
 
-static int inputs_switch_wrap_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_inputs * const i = priv;
-	struct s_switch * s;
-	int ret;
-
-	if (i->switches.last >= i->switches.n)
-		return (-EOOM);
-
-	if (-ENOTFOUND != inputs_fbn(INPUT_SWITCH, node->value.stringval))
-		return (-EEXISTS);
-
-	s = &i->switches.all[i->switches.last];
-
-	ret = filecfg_switch_parse(s, node);
-	if (ALL_OK == ret)
-		i->switches.last++;
-
-	return (ret);
-}
-
-static int inputs_switches_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
-{
-	struct s_inputs * const inputs = priv;
-	unsigned int n;
-
-	n = filecfg_parser_count_siblings(node->children, "switch");
-
-	if (!n)
-		return (-EEMPTY);
-
-	if (n >= INID_MAX)
-		return (-ETOOBIG);
-
-	inputs->switches.all = calloc(n, sizeof(inputs->switches.all[0]));
-	if (!inputs->switches.all)
-		return (-EOOM);
-
-	inputs->switches.n = (inid_t)n;
-
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "switch", inputs_switch_wrap_parse));
-}
-
-
 static int inputs_temperature_wrap_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_inputs * const i = priv;
@@ -94,12 +50,34 @@ static int inputs_temperature_wrap_parse(void * restrict const priv, const struc
 	return (ret);
 }
 
-static int inputs_temperatures_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+static int inputs_switch_wrap_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
+	struct s_inputs * const i = priv;
+	struct s_switch * s;
+	int ret;
+
+	if (i->switches.last >= i->switches.n)
+		return (-EOOM);
+
+	if (-ENOTFOUND != inputs_fbn(INPUT_SWITCH, node->value.stringval))
+		return (-EEXISTS);
+
+	s = &i->switches.all[i->switches.last];
+
+	ret = filecfg_switch_parse(s, node);
+	if (ALL_OK == ret)
+		i->switches.last++;
+
+	return (ret);
+}
+
+static int inputs_generic_parse(const enum e_input_type t, const char * name, void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	int (* wrap_parse)(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 	struct s_inputs * const inputs = priv;
 	unsigned int n;
 
-	n = filecfg_parser_count_siblings(node->children, "temperature");
+	n = filecfg_parser_count_siblings(node->children, name);
 
 	if (!n)
 		return (-EEMPTY);
@@ -107,14 +85,37 @@ static int inputs_temperatures_parse(void * restrict const priv, const struct s_
 	if (n >= INID_MAX)
 		return (-ETOOBIG);
 
-	inputs->temps.all = calloc(n, sizeof(inputs->temps.all[0]));
-	if (!inputs->temps.all)
-		return (-EOOM);
+	switch (t) {
+		case INPUT_TEMP:
+			inputs->temps.all = calloc(n, sizeof(inputs->temps.all[0]));
+			if (!inputs->temps.all)
+				return (-EOOM);
+			inputs->temps.n = (inid_t)n;
+			wrap_parse = inputs_temperature_wrap_parse;
+			break;
+		case INPUT_SWITCH:
+			inputs->switches.all = calloc(n, sizeof(inputs->switches.all[0]));
+			if (!inputs->switches.all)
+				return (-EOOM);
+			inputs->switches.n = (inid_t)n;
+			wrap_parse = inputs_switch_wrap_parse;
+			break;
+		case INPUT_NONE:
+		default:
+			return (-EINVALID);
+	}
 
-	inputs->temps.n = (inid_t)n;
-	//inputs->temps.last = 0;
+	return (filecfg_parser_parse_namedsiblings(priv, node->children, name, wrap_parse));
+}
 
-	return (filecfg_parser_parse_namedsiblings(priv, node->children, "temperature", inputs_temperature_wrap_parse));
+static int inputs_temperatures_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (inputs_generic_parse(INPUT_TEMP, "temperature", priv, node));
+}
+
+static int inputs_switches_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	return (inputs_generic_parse(INPUT_SWITCH, "switch", priv, node));
 }
 
 int filecfg_inputs_parse(void * restrict const priv __attribute__((unused)), const struct s_filecfg_parser_node * const node)

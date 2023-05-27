@@ -55,6 +55,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "lib.h"
 #include "filecfg_parser.h"
@@ -299,6 +300,8 @@ int filecfg_parser_parse_siblings(void * restrict const priv, const struct s_fil
 	const struct s_filecfg_parser_node *node;
 	const char * sname;
 	int ret = -EEMPTY;	// immediate return if nodelist is empty
+
+	assert(parser);
 
 	// by construction the bison parser creates a reverse-ordered list (wrt config file natural order): reverse it
 	for (nlist = nodelist; nlist && nlist->next; nlist = nlist->next);
