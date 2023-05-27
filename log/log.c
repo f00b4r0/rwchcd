@@ -9,7 +9,6 @@
 /**
  * @file
  * Log system implementation.
- * @todo REVIEW/CLEANUP
  */
 
 #include <stdlib.h>	// malloc
@@ -177,7 +176,6 @@ skip:
  * @warning XXX TODO no collision checks performed on basename/identifier
  * @param lsource the log source description
  * @return exec status
- * @todo create log file and log first entry at startup?
  */
 int log_register(const struct s_log_source * restrict const lsource)
 {

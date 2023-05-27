@@ -1,3 +1,20 @@
+1.2
+	* dhwt: perform anti-legionella charge only if set
+	* hcircuit: always compute ambient temperature
+	* dbus: support reading DHWT charge state
+	* dbus: provide hcircuit HasAmbientSensor property
+	* backend mqtt: allow setting subtopics
+	* log: report counters as unsigned integers
+	* filecfg: fix offset temperature parsing
+	* webapp: switch to Python 3, use icons in navbar
+	* webapp: improve formatting, add success feedback
+	* webapp: support DHWT
+	* webapp: support full temperature readings
+	* webapp: support per-entity runmode override
+	* webapp: improve PWA integration, fix relative links
+	* webapp: make every element configurable
+	* treewide: improve memory footprint
+	
 1.1
 	* rwchcd: implement config checking and using alternative config
 	* rwchcd: fix memory leaks on program exit path

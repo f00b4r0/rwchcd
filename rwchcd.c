@@ -11,7 +11,7 @@
  rwchcd: a weather compensated central heating controller daemon.
  
  @author Thibaut VARENE
- @date 2016-2022
+ @date 2016-2023
  @copyright Copyright (C) 2016-2022 Thibaut VARENE.
  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 
