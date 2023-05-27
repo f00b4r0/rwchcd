@@ -18,6 +18,7 @@
 		4F08256724859F9D0068FC22 /* valve_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F08256624859F9D0068FC22 /* valve_dump.c */; };
 		4F0E1D74220A16FD00DB5ACA /* timekeep.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F0E1D72220A16FD00DB5ACA /* timekeep.c */; };
 		4F15A85E1EBF74880000507A /* alarms.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F15A85C1EBF74880000507A /* alarms.c */; };
+		4F1AEDE52A220BC500E4DD48 /* switch.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F1AEDE42A220BC500E4DD48 /* switch.c */; };
 		4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8A218E1DBE009DCBC2 /* log_rrd.c */; };
 		4F299C8F218E4E2E009DCBC2 /* log_file.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C8D218E4E2E009DCBC2 /* log_file.c */; };
 		4F299C9221AABD2C009DCBC2 /* log.c in Sources */ = {isa = PBXBuildFile; fileRef = 4F299C9021AABD2C009DCBC2 /* log.c */; };
@@ -124,6 +125,8 @@
 		4F15163926E7BA5B00C16CDD /* plant_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = plant_priv.h; sourceTree = "<group>"; };
 		4F15A85C1EBF74880000507A /* alarms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = alarms.c; sourceTree = SOURCE_ROOT; };
 		4F15A85D1EBF74880000507A /* alarms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = alarms.h; sourceTree = SOURCE_ROOT; };
+		4F1AEDE32A220BC500E4DD48 /* switch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = switch.h; sourceTree = "<group>"; };
+		4F1AEDE42A220BC500E4DD48 /* switch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = switch.c; sourceTree = "<group>"; };
 		4F1C189F26E7EECF003C47F1 /* valve_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = valve_priv.h; sourceTree = "<group>"; };
 		4F1C18A026E7FB67003C47F1 /* dhwt_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dhwt_priv.h; sourceTree = "<group>"; };
 		4F1C18A126E7FDCB003C47F1 /* hcircuit_priv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hcircuit_priv.h; sourceTree = "<group>"; };
@@ -424,6 +427,8 @@
 		4F4D5C0C252A345B003130BC /* inputs */ = {
 			isa = PBXGroup;
 			children = (
+				4F1AEDE32A220BC500E4DD48 /* switch.h */,
+				4F1AEDE42A220BC500E4DD48 /* switch.c */,
 				4F01C2AB25220A74008AA53D /* temperature.h */,
 				4F01C2AC25220A74008AA53D /* temperature.c */,
 			);
@@ -690,6 +695,7 @@
 				4FE70C582486AA810066007D /* plant_dump.c in Sources */,
 				4F299C8C218E1DBE009DCBC2 /* log_rrd.c in Sources */,
 				4FA61C411E0955AA00B4D862 /* scheduler.c in Sources */,
+				4F1AEDE52A220BC500E4DD48 /* switch.c in Sources */,
 				4FCD55171D835D04003BB848 /* plant.c in Sources */,
 				4FC1132625239963009AA17D /* temperature_parse.c in Sources */,
 				4F43569C23157AE60030EB89 /* hw_lib.c in Sources */,

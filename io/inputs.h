@@ -24,6 +24,7 @@ typedef uint_fast8_t inid_t;	///< input id
 enum e_input_type {
 	INPUT_NONE = 0,		///< input type not configured
 	INPUT_TEMP,		///< temperature input
+	INPUT_SWITCH,		///< switch input
 };
 
 /** Inputs internal data */
@@ -33,6 +34,11 @@ struct s_inputs {
 		inid_t last;			///< id of last free slot
 		struct s_temperature * all;	///< pointer to dynamically allocated array of temperature inputs
 	} temps;	///< temperature inputs
+	struct {
+		inid_t n;			///< number of allocated switch inputs
+		inid_t last;			///< id of last free slot
+		struct s_switch * all;		///< pointer to dynamically allocated array of switch inputs
+	} switches;	///< switch inputs
 	//hygros, wind, etc;
 };
 

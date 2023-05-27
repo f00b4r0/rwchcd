@@ -17,6 +17,7 @@
  * - Logging of all input values
  * - Virtually unlimited number of inputs, of various types:
  *   - Temperatures
+ *   - Switches
  */
 
 #include <stdlib.h>
@@ -25,6 +26,7 @@
 
 #include "rwchcd.h"
 #include "inputs/temperature.h"
+#include "inputs/switch.h"
 #include "inputs.h"
 #include "log/log.h"
 #include "lib.h"
@@ -178,6 +180,14 @@ int inputs_fbn(const enum e_input_type t, const char * name)
 				}
 			}
 			break;
+		case INPUT_SWITCH:
+			for (id = 0; id < Inputs.switches.last; id++) {
+				if (!strcmp(Inputs.switches.all[id].name, name)) {
+					ret = (int)inputs_id_to_inid(id);
+					break;
+				}
+			}
+			break;
 		case INPUT_NONE:
 		default:
 			break;
@@ -200,6 +210,10 @@ const char * inputs_name(const enum e_input_type t, const inid_t inid)
 		case INPUT_TEMP:
 			if (likely(id < Inputs.temps.last))
 				name = Inputs.temps.all[id].name;
+			break;
+		case INPUT_SWITCH:
+			if (likely(id < Inputs.switches.last))
+				name = Inputs.switches.all[id].name;
 			break;
 		case INPUT_NONE:
 		default:
@@ -226,6 +240,10 @@ int inputs_get(const enum e_input_type t, const inid_t inid, void * const valout
 			if (likely(id < Inputs.temps.last))
 				ret = temperature_get(&Inputs.temps.all[id], valout);
 			break;
+		case INPUT_SWITCH:
+			if (likely(id < Inputs.switches.last))
+				ret = switch_get(&Inputs.switches.all[id], valout);
+			break;
 		case INPUT_NONE:
 		default:
 			break;
@@ -242,6 +260,7 @@ int inputs_get(const enum e_input_type t, const inid_t inid, void * const valout
  * @param stamp an optional pointer to store the result
  * @return exec status
  * @note this function will @b not request an update of the underlying input
+ * @note the underlying plumbing is not implemented for all input types.
  */
 int inputs_time(const enum e_input_type t, const inid_t inid, timekeep_t * const stamp)
 {
@@ -252,6 +271,9 @@ int inputs_time(const enum e_input_type t, const inid_t inid, timekeep_t * const
 		case INPUT_TEMP:
 			if (likely(id < Inputs.temps.last))
 				ret = temperature_time(&Inputs.temps.all[id], stamp);
+			break;
+		case INPUT_SWITCH:
+			ret = -ENOTIMPLEMENTED;
 			break;
 		case INPUT_NONE:
 		default:
@@ -283,6 +305,12 @@ void inputs_exit(void)
 	for (id = 0; id < Inputs.temps.last; id++)
 		temperature_clear(&Inputs.temps.all[id]);
 
+	// clean all registered switches
+	for (id = 0; id < Inputs.switches.last; id++)
+		switch_clear(&Inputs.switches.all[id]);
+
 	freeconst(Inputs.temps.all);
+	freeconst(Inputs.switches.all);
+
 	memset(&Inputs, 0x00, sizeof(Inputs));
 }
