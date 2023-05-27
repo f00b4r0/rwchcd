@@ -78,14 +78,14 @@ static int temperatures_parse(void * restrict const priv, const struct s_filecfg
 	if (!n)
 		return (-EINVALID);
 
-	if (n >= INID_MAX)
+	if (n >= HWINID_MAX)
 		return (-ETOOBIG);
 
 	hw->in.temps.all = calloc(n, sizeof(hw->in.temps.all[0]));
 	if (!hw->in.temps.all)
 		return (-EOOM);
 
-	hw->in.temps.n = (inid_t)n;
+	hw->in.temps.n = (hwinid_t)n;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "temperature", temperature_parse));
 }
@@ -126,14 +126,14 @@ static int switches_parse(void * restrict const priv, const struct s_filecfg_par
 	if (!n)
 		return (-EINVALID);
 
-	if (n >= INID_MAX)
+	if (n >= HWINID_MAX)
 		return (-ETOOBIG);
 
 	hw->in.switches.all = calloc(n, sizeof(hw->in.switches.all[0]));
 	if (!hw->in.switches.all)
 		return (-EOOM);
 
-	hw->in.switches.n = (inid_t)n;
+	hw->in.switches.n = (hwinid_t)n;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "switch", switch_parse));
 }
@@ -174,14 +174,14 @@ static int relays_parse(void * restrict const priv, const struct s_filecfg_parse
 	if (!n)
 		return (-EINVALID);
 
-	if (n >= OUTID_MAX)
+	if (n >= HWOUTID_MAX)
 		return (-ETOOBIG);
 
 	hw->out.rels.all = calloc(n, sizeof(hw->out.rels.all[0]));
 	if (!hw->out.rels.all)
 		return (-EOOM);
 
-	hw->out.rels.n = (outid_t)n;
+	hw->out.rels.n = (hwoutid_t)n;
 
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "relay", relay_parse));
 }

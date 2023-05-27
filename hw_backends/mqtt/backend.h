@@ -76,20 +76,20 @@ struct s_mqtt_pdata {
 	} run;		///< private runtime
 	struct {
 		struct {
-			inid_t n;	///< number of allocated temps
-			inid_t l;	///< last free temps slot
+			hwinid_t n;	///< number of allocated temps
+			hwinid_t l;	///< last free temps slot
 			struct s_mqtt_temperature * all;	///< pointer to array of temperatures size #n
 		} temps;
 		struct {
-			inid_t n;///< number of allocated switches
-			inid_t l;///< last free switch slot
+			hwinid_t n;///< number of allocated switches
+			hwinid_t l;///< last free switch slot
 			struct s_mqtt_switch * all;	///< pointer to array of input switches size #n
 		} switches;
 	} in;
 	struct {
 		struct {
-			outid_t n;	///< number of allocated relays
-			outid_t l;	///< last free relay slot
+			hwoutid_t n;	///< number of allocated relays
+			hwoutid_t l;	///< last free relay slot
 			struct s_mqtt_relay * all;	///< pointer to array of relays size #n
 		} rels;
 	} out;

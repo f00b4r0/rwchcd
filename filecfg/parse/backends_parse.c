@@ -89,7 +89,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 	if (!n)
 		return (-EEMPTY);
 
-	if (n >= BID_MAX)
+	if (n >= HWBID_MAX)
 		return (-ETOOBIG);
 
 	/* init hardware backend subsystem - clears data used by config */
@@ -108,7 +108,7 @@ int filecfg_backends_parse(void * restrict const priv, const struct s_filecfg_pa
 	if (!b->all)
 		return (-EOOM);
 
-	b->n = (bid_t)n;
+	b->n = (hwbid_t)n;
 
 	ret = filecfg_parser_parse_namedsiblings(priv, node->children, "backend", hardware_backend_parse);
 	if (ALL_OK != ret)
@@ -144,8 +144,8 @@ cleanup:
  */
 static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * tempid, const char * const bkend_name, const char * const input_name)
 {
-	bid_t bid;
-	inid_t inid;
+	hwbid_t bid;
+	hwinid_t inid;
 	int ret;
 
 	// input sanitization
@@ -157,7 +157,7 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * temp
 	if (ret < 0)
 		return (ret);
 
-	bid = (bid_t)ret;
+	bid = (hwbid_t)ret;
 
 	if (!HW_backends.all[bid].cb->input_ibn)
 		return (-ENOTIMPLEMENTED);
@@ -167,7 +167,7 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * temp
 	if (ret < 0)
 		return (ret);
 
-	inid = (inid_t)ret;
+	inid = (hwinid_t)ret;
 
 	// populate target
 	tempid->bid = bid;
@@ -188,8 +188,8 @@ static int hw_backends_input_fbn(const enum e_hw_input_type type, binid_t * temp
  */
 static int hw_backends_output_fbn(const enum e_hw_output_type type, boutid_t * relid, const char * const bkend_name, const char * const output_name)
 {
-	bid_t bid;
-	outid_t outid;
+	hwbid_t bid;
+	hwoutid_t outid;
 	int ret;
 
 	// input sanitization
@@ -201,7 +201,7 @@ static int hw_backends_output_fbn(const enum e_hw_output_type type, boutid_t * r
 	if (ret < 0)
 		return (ret);
 
-	bid = (bid_t)ret;
+	bid = (hwbid_t)ret;
 
 	if (!HW_backends.all[bid].cb->output_ibn)
 		return (-ENOTIMPLEMENTED);
@@ -211,7 +211,7 @@ static int hw_backends_output_fbn(const enum e_hw_output_type type, boutid_t * r
 	if (ret < 0)
 		return (ret);
 
-	outid = (outid_t)ret;
+	outid = (hwoutid_t)ret;
 
 	// populate target
 	relid->bid = bid;

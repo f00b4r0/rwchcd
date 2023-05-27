@@ -29,7 +29,7 @@ struct s_hw_backends HW_backends;	///<  hardware backends
  */
 int hw_backends_bid_by_name(const char * const name)
 {
-	bid_t id;
+	hwbid_t id;
 	int ret = -ENOTFOUND;
 
 	assert(name);
@@ -65,7 +65,7 @@ int hw_backends_init(void)
  */
 int hw_backends_register(const struct s_hw_callbacks * const callbacks, void * const priv, const char * const name)
 {
-	bid_t id;
+	hwbid_t id;
 	char * str = NULL;
 	struct s_hw_backend * bkend;
 

@@ -47,23 +47,23 @@ enum e_hw_output_type {
 	HW_OUTPUT_RELAY,	///< relay output
 } ATTRPACK;
 
-typedef uint_fast8_t	bid_t;	///< backend idex type - defines theoretical maximum number of backends
-typedef uint_fast8_t	inid_t;	///< hardware input index type - defines theoretical maximum number of inputs per backend
-typedef uint_fast8_t	outid_t;///< hardware output index type - defines theoretical maximum number of outputs per backend
+typedef uint_fast8_t	hwbid_t;	///< backend idex type - defines theoretical maximum number of backends
+typedef uint_fast8_t	hwinid_t;	///< hardware input index type - defines theoretical maximum number of inputs per backend
+typedef uint_fast8_t	hwoutid_t;	///< hardware output index type - defines theoretical maximum number of outputs per backend
 
-#define BID_MAX		UINT_FAST8_MAX
-#define INID_MAX	UINT_FAST8_MAX
-#define OUTID_MAX	UINT_FAST8_MAX
+#define HWBID_MAX	UINT_FAST8_MAX
+#define HWINID_MAX	UINT_FAST8_MAX
+#define HWOUTID_MAX	UINT_FAST8_MAX
 
 /** backend input id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
-	bid_t bid;	///< backend id
-	inid_t inid;	///< input id
+	hwbid_t bid;	///< backend id
+	hwinid_t inid;	///< input id
 } binid_t;
 /** backend output id. @note struct assignment is used in the code: must not embed pointers */
 typedef struct {
-	bid_t bid;	///< backend id
-	outid_t outid;	///< output id
+	hwbid_t bid;	///< backend id
+	hwoutid_t outid;///< output id
 } boutid_t;
 
 /**
@@ -145,7 +145,7 @@ struct s_hw_callbacks {
 	 * @param oid backend output id
 	 * @return target output name or NULL if error
 	 */
-	const char * (*output_name)(void * const priv, const enum e_hw_output_type type, const outid_t oid);
+	const char * (*output_name)(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid);
 
 	/**
 	 * Find backend output id by name.
@@ -155,7 +155,7 @@ struct s_hw_callbacks {
 	 * @param priv hardware backend private data
 	 * @param type the type of requested output
 	 * @param name target output name to look for
-	 * @return error if not found or backend output id (must fit outid_t)
+	 * @return error if not found or backend output id (must fit hwoutid_t)
 	 */
 	int (*output_ibn)(void * const priv, const enum e_hw_output_type type, const char * const name);
 
@@ -175,7 +175,7 @@ struct s_hw_callbacks {
 	 * @return exec status
 	 * @deprecated this callback probably doesn't make much sense in the current code, it isn't used anywhere and might be removed in the future
 	 */
-	int (*output_state_get)(void * const priv, const enum e_hw_output_type type, const outid_t oid, u_hw_out_state_t * const state);
+	int (*output_state_get)(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid, u_hw_out_state_t * const state);
 
 	/**
 	 * Set backend output state.
@@ -188,7 +188,7 @@ struct s_hw_callbacks {
 	 * @param state a pointer to a state suitable for the target output
 	 * @return exec status
 	 */
-	int (*output_state_set)(void * const priv, const enum e_hw_output_type type, const outid_t oid, const u_hw_out_state_t * const state);
+	int (*output_state_set)(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid, const u_hw_out_state_t * const state);
 
 	/**
 	 * Return a backend input name.
@@ -198,7 +198,7 @@ struct s_hw_callbacks {
 	 * @param inid backend input id
 	 * @return target input name or NULL if error
 	 */
-	const char * (*input_name)(void * const priv, const enum e_hw_input_type type, const inid_t inid);
+	const char * (*input_name)(void * const priv, const enum e_hw_input_type type, const hwinid_t inid);
 
 	/**
 	 * Find backend input id by name.
@@ -208,7 +208,7 @@ struct s_hw_callbacks {
 	 * @param priv hardware backend private data
 	 * @param type the type of requested input
 	 * @param name target input name to look for
-	 * @return error if not found or backend input id (must fit inid_t)
+	 * @return error if not found or backend input id (must fit hwinid_t)
 	 */
 	int (*input_ibn)(void * const priv, const enum e_hw_input_type type, const char * const name);
 
@@ -220,7 +220,7 @@ struct s_hw_callbacks {
 	 * @param value pointer to a value location suitable for the target input in which the current value of the input will be stored
 	 * @return exec status
 	 */
-	int (*input_value_get)(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value);
+	int (*input_value_get)(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, u_hw_in_value_t * const value);
 
 	/**
 	 * Clone sensor update time.
@@ -232,7 +232,7 @@ struct s_hw_callbacks {
 	 * @note This function must @b ALWAYS return successfully if the target
 	 * sensor is properly configured and the underlying hardware is online.
 	 */
-	int (*input_time_get)(void * const priv, const enum e_hw_input_type type, const inid_t inid, timekeep_t * const ctime);
+	int (*input_time_get)(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, timekeep_t * const ctime);
 
 	/**
 	 * Dump hardware backend configuration.
@@ -256,8 +256,8 @@ struct s_hw_backend {
 };
 
 struct s_hw_backends {
-	bid_t n;			///< number of allocated hw backends
-	bid_t last;			///< id of last free backend slot
+	hwbid_t n;			///< number of allocated hw backends
+	hwbid_t last;			///< id of last free backend slot
 	struct s_hw_backend * all;	///< pointer to array of hw backends of size n
 };
 

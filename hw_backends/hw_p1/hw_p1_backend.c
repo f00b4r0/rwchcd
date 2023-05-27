@@ -351,7 +351,7 @@ static void hw_p1_exit(void * priv)
  * @param oid id of the target internal output
  * @return target output name or NULL if error
  */
-static const char * hw_p1_output_name(void * const priv, const enum e_hw_output_type type, const outid_t oid)
+static const char * hw_p1_output_name(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	const char * str;
@@ -380,7 +380,7 @@ static const char * hw_p1_output_name(void * const priv, const enum e_hw_output_
  * @return exec status
  * @note actual (hardware) relay state will only be updated by a call to hw_p1_rwchcrelays_write()
  */
-static int hw_p1_output_state_set(void * const priv, const enum e_hw_output_type type, const outid_t oid, const u_hw_out_state_t * const state)
+static int hw_p1_output_state_set(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid, const u_hw_out_state_t * const state)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	struct s_hw_p1_relay * relay;
@@ -412,7 +412,7 @@ static int hw_p1_output_state_set(void * const priv, const enum e_hw_output_type
  * @param state pointer in which the current state of the output will be stored
  * @return exec status
  */
-static int hw_p1_output_state_get(void * const priv, const enum e_hw_output_type type, const outid_t oid, u_hw_out_state_t * const state)
+static int hw_p1_output_state_get(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid, u_hw_out_state_t * const state)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	struct s_hw_p1_relay * relay;
@@ -443,7 +443,7 @@ static int hw_p1_output_state_get(void * const priv, const enum e_hw_output_type
  * @param inid id of the target internal input
  * @return target input name or NULL if error
  */
-static const char * hw_p1_input_name(void * const priv, const enum e_hw_input_type type, const inid_t inid)
+static const char * hw_p1_input_name(void * const priv, const enum e_hw_input_type type, const hwinid_t inid)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	const char * str;
@@ -476,7 +476,7 @@ static const char * hw_p1_input_name(void * const priv, const enum e_hw_input_ty
  * @param value location to copy the current value of the input
  * @return exec status
  */
-int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value)
+int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, u_hw_in_value_t * const value)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 	const struct s_hw_p1_sensor * sensor;
@@ -533,7 +533,7 @@ int hw_p1_input_value_get(void * const priv, const enum e_hw_input_type type, co
  * @param ctime location to copy the input update time.
  * @return exec status
  */
-static int hw_p1_input_time_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, timekeep_t * const ctime)
+static int hw_p1_input_time_get(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, timekeep_t * const ctime)
 {
 	struct s_hw_p1_pdata * restrict const hw = priv;
 

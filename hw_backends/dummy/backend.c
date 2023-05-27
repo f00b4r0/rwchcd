@@ -120,7 +120,7 @@ static void dummy_exit(void * priv)
  * @param oid id of the target internal output
  * @return target output name or NULL if error
  */
-static const char * dummy_output_name(void * const priv, const enum e_hw_output_type type, const outid_t oid)
+static const char * dummy_output_name(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 	const char * str;
@@ -148,7 +148,7 @@ static const char * dummy_output_name(void * const priv, const enum e_hw_output_
  * @param state pointer to target state of the output
  * @return exec status
  */
-static int dummy_output_state_set(void * const priv, const enum e_hw_output_type type, const outid_t oid, const u_hw_out_state_t * const state)
+static int dummy_output_state_set(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid, const u_hw_out_state_t * const state)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 	union {
@@ -183,7 +183,7 @@ static int dummy_output_state_set(void * const priv, const enum e_hw_output_type
  * @param state pointer in which the current state of the output will be stored
  * @return exec status
  */
-static int dummy_output_state_get(void * const priv, const enum e_hw_output_type type, const outid_t oid, u_hw_out_state_t * const state)
+static int dummy_output_state_get(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid, u_hw_out_state_t * const state)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 	union {
@@ -216,7 +216,7 @@ static int dummy_output_state_get(void * const priv, const enum e_hw_output_type
  * @param inid id of the target internal input
  * @return target input name or NULL if error
  */
-static const char * dummy_input_name(void * const priv, const enum e_hw_input_type type, const inid_t inid)
+static const char * dummy_input_name(void * const priv, const enum e_hw_input_type type, const hwinid_t inid)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 	const char * str;
@@ -245,7 +245,7 @@ static const char * dummy_input_name(void * const priv, const enum e_hw_input_ty
  * @param value location to copy the current value of the input
  * @return exec status
  */
-int dummy_input_value_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value)
+int dummy_input_value_get(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, u_hw_in_value_t * const value)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 	union {
@@ -280,7 +280,7 @@ int dummy_input_value_get(void * const priv, const enum e_hw_input_type type, co
  * @param ctime location to copy the input update time.
  * @return exec status
  */
-static int dummy_input_time_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, timekeep_t * const ctime)
+static int dummy_input_time_get(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, timekeep_t * const ctime)
 {
 	struct s_dummy_pdata * restrict const hw = priv;
 
@@ -314,7 +314,7 @@ static int dummy_input_time_get(void * const priv, const enum e_hw_input_type ty
 int dummy_input_ibn(void * const priv, const enum e_hw_input_type type, const char * const name)
 {
 	const struct s_dummy_pdata * restrict const hw = priv;
-	inid_t id;
+	hwinid_t id;
 	int ret = -ENOTFOUND;
 
 	assert(hw);
@@ -353,7 +353,7 @@ int dummy_input_ibn(void * const priv, const enum e_hw_input_type type, const ch
 int dummy_output_ibn(void * const priv, const enum e_hw_output_type type, const char * const name)
 {
 	const struct s_dummy_pdata * restrict const hw = priv;
-	outid_t id;
+	hwoutid_t id;
 	int ret = -ENOTFOUND;
 
 	assert(hw);

@@ -159,7 +159,7 @@ static void mqtt_message_callback(struct mosquitto * mosq __attribute__((unused)
 	u_hw_in_value_t u;
 	const char *str;
 	unsigned int type;
-	inid_t id;
+	hwinid_t id;
 	float f;
 	int ret;
 
@@ -193,7 +193,7 @@ static void mqtt_message_callback(struct mosquitto * mosq __attribute__((unused)
 			ret = mqtt_input_ibn(hw, type, str);
 			if (ret < 0)
 				return;
-			id = (inid_t)ret;
+			id = (hwinid_t)ret;
 
 			// start with a sanity check:
 			f = strtof(message->payload, NULL);
@@ -219,7 +219,7 @@ static void mqtt_message_callback(struct mosquitto * mosq __attribute__((unused)
 			ret = mqtt_input_ibn(hw, type, str);
 			if (ret < 0)
 				return;
-			id = (inid_t)ret;
+			id = (hwinid_t)ret;
 
 			/// For switches we expect a string representing a boolean values compatible with mqtt_str_to_bool()
 			ret = mqtt_str_to_bool(message->payload);
@@ -442,7 +442,7 @@ static void mqtt_exit(void * priv)
  * @param oid id of the target internal output
  * @return target output name or NULL if error
  */
-static const char * mqtt_output_name(void * const priv, const enum e_hw_output_type type, const outid_t oid)
+static const char * mqtt_output_name(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 	const char * str;
@@ -470,7 +470,7 @@ static const char * mqtt_output_name(void * const priv, const enum e_hw_output_t
  * @param state pointer to target state of the output
  * @return exec status
  */
-static int mqtt_output_state_set(void * const priv, const enum e_hw_output_type type, const outid_t oid, const u_hw_out_state_t * const state)
+static int mqtt_output_state_set(void * const priv, const enum e_hw_output_type type, const hwoutid_t oid, const u_hw_out_state_t * const state)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 	union {
@@ -505,7 +505,7 @@ static int mqtt_output_state_set(void * const priv, const enum e_hw_output_type 
  * @param inid id of the target internal input
  * @return target input name or NULL if error
  */
-static const char * mqtt_input_name(void * const priv, const enum e_hw_input_type type, const inid_t inid)
+static const char * mqtt_input_name(void * const priv, const enum e_hw_input_type type, const hwinid_t inid)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 	const char * str;
@@ -536,7 +536,7 @@ static const char * mqtt_input_name(void * const priv, const enum e_hw_input_typ
  * @param value location to copy the current value of the input
  * @return exec status
  */
-int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, u_hw_in_value_t * const value)
+int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, u_hw_in_value_t * const value)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 	union {
@@ -579,7 +579,7 @@ int mqtt_input_value_get(void * const priv, const enum e_hw_input_type type, con
  * @param ctime location to copy the input update time.
  * @return exec status
  */
-static int mqtt_input_time_get(void * const priv, const enum e_hw_input_type type, const inid_t inid, timekeep_t * const ctime)
+static int mqtt_input_time_get(void * const priv, const enum e_hw_input_type type, const hwinid_t inid, timekeep_t * const ctime)
 {
 	struct s_mqtt_pdata * restrict const hw = priv;
 
@@ -618,7 +618,7 @@ static int mqtt_input_time_get(void * const priv, const enum e_hw_input_type typ
 int mqtt_input_ibn(void * const priv, const enum e_hw_input_type type, const char * const name)
 {
 	const struct s_mqtt_pdata * restrict const hw = priv;
-	inid_t id;
+	hwinid_t id;
 	int ret = -ENOTFOUND;
 
 	assert(hw);
@@ -666,7 +666,7 @@ int mqtt_input_ibn(void * const priv, const enum e_hw_input_type type, const cha
 int mqtt_output_ibn(void * const priv, const enum e_hw_output_type type, const char * const name)
 {
 	const struct s_mqtt_pdata * restrict const hw = priv;
-	outid_t id;
+	hwoutid_t id;
 	int ret = -ENOTFOUND;
 
 	assert(hw);

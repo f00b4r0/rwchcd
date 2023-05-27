@@ -22,7 +22,7 @@ extern struct s_hw_backends HW_backends;
  * @param bid target backend id
  * @return target backend name or NULL if error.
  */
-static const char * hw_backends_name(const bid_t bid)
+static const char * hw_backends_name(const hwbid_t bid)
 {
 	if (bid >= HW_backends.last)
 		return (NULL);
@@ -57,7 +57,7 @@ void filecfg_backends_dump()
  */
 static const char * hardware_input_name(const enum e_hw_input_type type, const binid_t binid)
 {
-	const bid_t bid = binid.bid;
+	const hwbid_t bid = binid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -74,7 +74,7 @@ static const char * hardware_input_name(const enum e_hw_input_type type, const b
  */
 static const char * hardware_output_name(const enum e_hw_output_type type, const boutid_t boutid)
 {
-	const bid_t bid = boutid.bid;
+	const hwbid_t bid = boutid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))

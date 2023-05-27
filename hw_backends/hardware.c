@@ -240,7 +240,7 @@ void hardware_exit(void)
  */
 int hardware_input_value_get(const binid_t binid, const enum e_hw_input_type type, u_hw_in_value_t * const value)
 {
-	const bid_t bid = binid.bid;
+	const hwbid_t bid = binid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -268,7 +268,7 @@ int hardware_input_value_get(const binid_t binid, const enum e_hw_input_type typ
  */
 int hardware_input_time_get(const binid_t binid, const enum e_hw_input_type type, timekeep_t * const clast)
 {
-	const bid_t bid = binid.bid;
+	const hwbid_t bid = binid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -296,7 +296,7 @@ int hardware_input_time_get(const binid_t binid, const enum e_hw_input_type type
  */
 int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type type, u_hw_out_state_t * const state)
 {
-	const bid_t bid = boutid.bid;
+	const hwbid_t bid = boutid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
@@ -324,7 +324,7 @@ int hardware_output_state_get(const boutid_t boutid, const enum e_hw_output_type
  */
 int hardware_output_state_set(const boutid_t boutid, const enum e_hw_output_type type, const u_hw_out_state_t * const state)
 {
-	const bid_t bid = boutid.bid;
+	const hwbid_t bid = boutid.bid;
 
 	// make sure bid is valid
 	if (unlikely(HW_backends.last <= bid))
