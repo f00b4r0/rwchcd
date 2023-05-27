@@ -103,18 +103,18 @@ int filecfg_inputs_parse(void * restrict const priv __attribute__((unused)), con
 	return (ret);
 }
 
-int filecfg_inputs_parse_helper_tid(inid_t *tid, const struct s_filecfg_parser_node * const node)
+int filecfg_inputs_parse_helper_inid(const enum e_input_type t, inid_t *inid, const struct s_filecfg_parser_node * const node)
 {
 	int ret;
 	const char *str = node->value.stringval;
 
 	assert(NODESTR == node->type);
 
-	ret = inputs_temperature_fbn(str);
+	ret = inputs_fbn(t, str);
 	if (ret < 0)
 		return (ret);
 
-	*tid = (inid_t)ret;
+	*inid = (inid_t)ret;
 
 	return (ALL_OK);
 }

@@ -20,6 +20,12 @@ typedef uint_fast8_t inid_t;	///< input id
 
 #define INID_MAX	UINT_FAST8_MAX
 
+/** Known input types */
+enum e_input_type {
+	INPUT_NONE = 0,		///< input type not configured
+	INPUT_TEMP,		///< temperature input
+};
+
 /** Inputs internal data */
 struct s_inputs {
 	struct {
@@ -32,11 +38,16 @@ struct s_inputs {
 
 int inputs_init(void);
 int inputs_online(void);
-int inputs_temperature_fbn(const char * name);
-const char * inputs_temperature_name(const inid_t tid);
-int inputs_temperature_get(const inid_t tid, temp_t * const tout) __attribute__((warn_unused_result));
-int inputs_temperature_time(const inid_t tid, timekeep_t * const stamp);
+int inputs_fbn(const enum e_input_type t, const char * name);
+const char * inputs_name(const enum e_input_type t, const inid_t inid);
+int inputs_get(const enum e_input_type t, const inid_t inid, void * const outval) __attribute__((warn_unused_result));
+int inputs_time(const enum e_input_type t, const inid_t tid, timekeep_t * const stamp);
 int inputs_offline(void);
 void inputs_exit(void);
+
+#define inputs_temperature_fbn(name)		inputs_fbn(INPUT_TEMP, name)
+#define inputs_temperature_name(tid)		inputs_name(INPUT_TEMP, tid)
+#define inputs_temperature_get(tid, tout)	inputs_get(INPUT_TEMP, tid, tout)
+#define inputs_temperature_time(tid, stamp)	inputs_time(INPUT_TEMP, tid, stamp)
 
 #endif /* inputs_h */

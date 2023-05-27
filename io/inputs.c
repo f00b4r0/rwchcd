@@ -2,7 +2,7 @@
 //  io/inputs.c
 //  rwchcd
 //
-//  (C) 2020 Thibaut VARENE
+//  (C) 2020,2023 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -156,11 +156,12 @@ int inputs_online(void)
 }
 
 /**
- * Find a temperature input by name.
+ * Find an input by name.
+ * @param t the type of input to look for
  * @param name the unique name to look for
- * @return the temperature input id or error status
+ * @return the input id or error status
  */
-int inputs_temperature_fbn(const char * name)
+int inputs_fbn(const enum e_input_type t, const char * name)
 {
 	inid_t id;
 	int ret = -ENOTFOUND;
@@ -168,60 +169,96 @@ int inputs_temperature_fbn(const char * name)
 	if (!name)
 		return (-EINVALID);
 
-	for (id = 0; id < Inputs.temps.last; id++) {
-		if (!strcmp(Inputs.temps.all[id].name, name)) {
-			ret = (int)inputs_id_to_inid(id);
+	switch (t) {
+		case INPUT_TEMP:
+			for (id = 0; id < Inputs.temps.last; id++) {
+				if (!strcmp(Inputs.temps.all[id].name, name)) {
+					ret = (int)inputs_id_to_inid(id);
+					break;
+				}
+			}
 			break;
-		}
+		case INPUT_NONE:
+		default:
+			break;
+	}
+	return (ret);
+}
+
+/**
+ * Return an input name.
+ * @param t the type of input to look for
+ * @param inid the input id
+ * @return input name or NULL on error
+ */
+const char * inputs_name(const enum e_input_type t, const inid_t inid)
+{
+	const inid_t id = inputs_inid_to_id(inid);
+	const char * name = NULL;
+
+	switch (t) {
+		case INPUT_TEMP:
+			if (likely(id < Inputs.temps.last))
+				name = Inputs.temps.all[id].name;
+			break;
+		case INPUT_NONE:
+		default:
+			break;
+	}
+
+	return (name);
+}
+
+/**
+ * Get an input value.
+ * @param t the type of input to look for
+ * @param inid the input id to read from
+ * @param valout an optional pointer to suitable memory area to store the result
+ * @return exec status
+ */
+int inputs_get(const enum e_input_type t, const inid_t inid, void * const valout)
+{
+	const inid_t id = inputs_inid_to_id(inid);
+	int ret = -EINVALID;
+
+	switch (t) {
+		case INPUT_TEMP:
+			if (likely(id < Inputs.temps.last))
+				ret = temperature_get(&Inputs.temps.all[id], valout);
+			break;
+		case INPUT_NONE:
+		default:
+			break;
+
 	}
 
 	return (ret);
 }
 
 /**
- * Return a temperature input name.
- */
-const char * inputs_temperature_name(const inid_t tid)
-{
-	const inid_t id = inputs_inid_to_id(tid);
-
-	if (unlikely(id >= Inputs.temps.last))
-		return (NULL);
-
-	return (Inputs.temps.all[id].name);
-}
-
-/**
- * Get a temperature input value.
- * @param tid the temperature input id to read from
- * @param tout an optional pointer to store the result
- * @return exec status
- */
-int inputs_temperature_get(const inid_t tid, temp_t * const tout)
-{
-	const inid_t id = inputs_inid_to_id(tid);
-
-	if (unlikely(id >= Inputs.temps.last))
-		return (-EINVALID);
-
-	return (temperature_get(&Inputs.temps.all[id], tout));
-}
-
-/**
- * Get a temperature input last update time.
- * @param tid the temperature input id to read from
+ * Get an input last update time.
+ * @param t the type of input to look for
+ * @param inid the input id to read from
  * @param stamp an optional pointer to store the result
  * @return exec status
- * @note this function will @b not request an update of the underlying temperature
+ * @note this function will @b not request an update of the underlying input
  */
-int inputs_temperature_time(const inid_t tid, timekeep_t * const stamp)
+int inputs_time(const enum e_input_type t, const inid_t inid, timekeep_t * const stamp)
 {
-	const inid_t id = inputs_inid_to_id(tid);
+	const inid_t id = inputs_inid_to_id(inid);
+	int ret = -EINVALID;
 
-	if (unlikely(id >= Inputs.temps.last))
-		return (-EINVALID);
+	switch (t) {
+		case INPUT_TEMP:
+			if (likely(id < Inputs.temps.last))
+				ret = temperature_time(&Inputs.temps.all[id], stamp);
+			break;
+		case INPUT_NONE:
+		default:
+			break;
+	}
 
-	return (temperature_time(&Inputs.temps.all[id], stamp));
+	return (ret);
 }
 
 /**
