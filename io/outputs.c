@@ -2,7 +2,7 @@
 //  io/outputs.c
 //  rwchcd
 //
-//  (C) 2020-2021 Thibaut VARENE
+//  (C) 2020-2021,2023 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -210,11 +210,12 @@ int outputs_online(void)
 }
 
 /**
- * Find a relay output by name.
+ * Find an output by name.
+ * @param t the type of output to look for
  * @param name the unique name to look for
- * @return the relay output id or error status
+ * @return the output id or error status
  */
-int outputs_relay_fbn(const char * name)
+int outputs_fbn(const enum e_output_type t, const char * name)
 {
 	outid_t id;
 	int ret = -ENOTFOUND;
@@ -222,90 +223,144 @@ int outputs_relay_fbn(const char * name)
 	if (!name)
 		return (-EINVALID);
 
-	for (id = 0; id < Outputs.relays.last; id++) {
-		if (!strcmp(Outputs.relays.all[id].name, name)) {
-			ret = (int)outputs_id_to_outid(id);
+	switch (t) {
+		case OUTPUT_RELAY:
+			for (id = 0; id < Outputs.relays.last; id++) {
+				if (!strcmp(Outputs.relays.all[id].name, name)) {
+					ret = (int)outputs_id_to_outid(id);
+					break;
+				}
+			}
 			break;
-		}
+		case OUTPUT_NONE:
+		default:
+			break;
 	}
 
 	return (ret);
 }
 
 /**
- * Return a relay output name.
+ * Return an output name.
+ * @param t the type of output to look for
+ * @param outid the output id
+ * @return name or NULL on error
  */
-const char * outputs_relay_name(const outid_t rid)
+const char * outputs_name(const enum e_output_type t, const outid_t outid)
 {
-	const outid_t id = outputs_outid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(outid);
+	const char * name = NULL;
 
-	if (unlikely(id >= Outputs.relays.last))
-		return (NULL);
+	switch (t) {
+		case OUTPUT_RELAY:
+			if (likely(id < Outputs.relays.last))
+				name = Outputs.relays.all[id].name;
+			break;
+		case OUTPUT_NONE:
+		default:
+			break;
+	}
 
-	return (Outputs.relays.all[id].name);
+	return (name);
 }
 
 /**
- * Grab an output relay for exclusive use.
+ * Grab an output for exclusive use.
  * This function must be called by every active user (i.e. a state-setting user) of a relay to ensure exclusive write-access to the underlying relay.
- * @param rid the relay output id to grab
+ * @param t type of output
+ * @param outid the output id to grab
  * @return exec status
  * @note This function should obviously be used only once, typically in online() call
  */
-int outputs_relay_grab(const outid_t rid)
+int outputs_grab(const enum e_output_type t, const outid_t outid)
 {
-	const outid_t id = outputs_outid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(outid);
+	int ret = -EINVALID;
 
-	if (unlikely(id >= Outputs.relays.last))
-		return (-EINVALID);
+	switch (t) {
+		case OUTPUT_RELAY:
+			if (likely(id < Outputs.relays.last))
+				ret = relay_grab(&Outputs.relays.all[id]);
+			break;
+		case OUTPUT_NONE:
+		default:
+			break;
+	}
 
-	return (relay_grab(&Outputs.relays.all[id]));
+	return (ret);
 }
 
 /**
  * Thaw an output relay that was previously grabbed.
- * @param rid the relay output id to grab
+ * @param t type of output
+ * @param outid the output id to thaw
  * @return exec status
  */
-int outputs_relay_thaw(const outid_t rid)
+int outputs_thaw(const enum e_output_type t, const outid_t outid)
 {
-	const outid_t id = outputs_outid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(outid);
+	int ret = -EINVALID;
 
-	if (unlikely(id >= Outputs.relays.last))
-		return (-EINVALID);
+	switch (t) {
+		case OUTPUT_RELAY:
+			if (likely(id < Outputs.relays.last))
+				ret = relay_thaw(&Outputs.relays.all[id]);
+			break;
+		case OUTPUT_NONE:
+		default:
+			break;
+	}
 
-	return (relay_thaw(&Outputs.relays.all[id]));
+	return (ret);
 }
 
 /**
- * Get a relay output value.
- * @param rid the relay output id to act on
- * @param turn_on the requested state for the relay
+ * Get an output value.
+ * @param t type of output
+ * @param outid the output id to act on
+ * @param value the requested state for the output
  * @return exec status
  */
-int outputs_relay_state_set(const outid_t rid, const bool turn_on)
+int outputs_state_set(const enum e_output_type t, const outid_t outid, const int value)
 {
-	const outid_t id = outputs_outid_to_id(rid);
+	const outid_t id = outputs_outid_to_id(outid);
+	int ret = -EINVALID;
 
-	if (unlikely(id >= Outputs.relays.last))
-		return (-EINVALID);
+	switch (t) {
+		case OUTPUT_RELAY:
+			if (likely(id < Outputs.relays.last))
+				ret = relay_state_set(&Outputs.relays.all[id], (bool)value);
+			break;
+		case OUTPUT_NONE:
+		default:
+			break;
+	}
 
-	return (relay_state_set(&Outputs.relays.all[id], turn_on));
+	return (ret);
 }
 
 /**
- * Get a relay output last update time.
- * @param rid the relay output id to read from
- * @return relay state or error
+ * Get an output value.
+ * @param t type of output
+ * @param outid the output id to read from
+ * @return state or error
  */
-int outputs_relay_state_get(const outid_t rid)
+int outputs_state_get(const enum e_output_type t, const outid_t rid)
 {
 	const outid_t id = outputs_outid_to_id(rid);
+	int ret = -EINVALID;
 
-	if (unlikely(id >= Outputs.relays.last))
-		return (-EINVALID);
+	switch (t) {
+		case OUTPUT_RELAY:
+			if (likely(id < Outputs.relays.last))
+				ret = relay_state_get(&Outputs.relays.all[id]);
+			break;
+		case OUTPUT_NONE:
+		default:
+			break;
+	}
 
-	return (relay_state_get(&Outputs.relays.all[id]));
+	return (ret);
 }
 
 /**

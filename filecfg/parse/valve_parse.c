@@ -217,13 +217,13 @@ FILECFG_PARSER_INTPOSMAX_PARSE_NEST_FUNC(1000, s_valve, set.mset.m3way., deadban
 static int fcp_rid_valve_m3way_rid_open(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_outputs_parse_helper_rid(&valve->set.mset.m3way.rid_open, node));
+	return (filecfg_outputs_parse_helper_outid(OUTPUT_RELAY, &valve->set.mset.m3way.rid_open, node));
 }
 
 static int fcp_rid_valve_m3way_rid_close(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_outputs_parse_helper_rid(&valve->set.mset.m3way.rid_close, node));
+	return (filecfg_outputs_parse_helper_outid(OUTPUT_RELAY, &valve->set.mset.m3way.rid_close, node));
 }
 
 static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -252,7 +252,7 @@ static int valve_m3way_parser(void * restrict const priv, const struct s_filecfg
 static int fcp_rid_valve_m2way_rid_trigger(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_valve * restrict const valve = priv;
-	return (filecfg_outputs_parse_helper_rid(&valve->set.mset.m2way.rid_trigger, node));
+	return (filecfg_outputs_parse_helper_outid(OUTPUT_RELAY, &valve->set.mset.m2way.rid_trigger, node));
 }
 
 static int fcp_bool_valve_m2way_trigger_opens(void * restrict const priv, const struct s_filecfg_parser_node * const node)

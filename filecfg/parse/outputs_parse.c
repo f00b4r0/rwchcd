@@ -103,18 +103,18 @@ int filecfg_outputs_parse(void * restrict const priv __attribute__((unused)), co
 	return (ret);
 }
 
-int filecfg_outputs_parse_helper_rid(outid_t *rid, const struct s_filecfg_parser_node * const node)
+int filecfg_outputs_parse_helper_outid(const enum e_output_type t, outid_t *outid, const struct s_filecfg_parser_node * const node)
 {
 	int ret;
 	const char *str = node->value.stringval;
 
 	assert(NODESTR == node->type);
 
-	ret = outputs_relay_fbn(str);
+	ret = outputs_fbn(t, str);
 	if (ret < 0)
 		return (ret);
 
-	*rid = (outid_t)ret;
+	*outid = (outid_t)ret;
 
 	return (ALL_OK);
 }
