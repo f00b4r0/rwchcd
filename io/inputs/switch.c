@@ -83,10 +83,10 @@ static int switch_update(struct s_switch * const s)
 	gotone = false;
 	new = (S_OP_AND == s->set.op);	// if we are going to AND all values, start from a logical 1
 	ret = -EGENERIC;
-	for (i = 0; i < s->slast; i++) {
-		ret = hardware_sensor_clone_time(s->slist[i], &tsens);
+	for (i = 0; i < s->last; i++) {
+		ret = hardware_sensor_clone_time(s->list[i], &tsens);
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("\"%s\": hw clone time %d/%d returned (%d)", s->name, s->slist[i].bid, s->slist[i].inid, ret);
+			dbgerr("\"%s\": hw clone time %d/%d returned (%d)", s->name, s->list[i].bid, s->list[i].inid, ret);
 			switch (s->set.missing) {
 				case S_MISS_IGN:
 					continue;
@@ -99,7 +99,7 @@ static int switch_update(struct s_switch * const s)
 			}
 		}
 
-		ret = hardware_sensor_clone_switch(s->slist[i], &sstate);
+		ret = hardware_sensor_clone_switch(s->list[i], &sstate);
 		if (likely(ALL_OK == ret)) {
 			// always weed out sensors for which the backend reports last update too far in the past (>4 periods).
 			// while the loop executes, "now" can already be in the past => check for that
@@ -108,7 +108,7 @@ static int switch_update(struct s_switch * const s)
 		}
 
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("\"%s\": hw clone switch %d/%d returned (%d)", s->name, s->slist[i].bid, s->slist[i].inid, ret);
+			dbgerr("\"%s\": hw clone switch %d/%d returned (%d)", s->name, s->list[i].bid, s->list[i].inid, ret);
 			switch (s->set.missing) {
 				case S_MISS_IGN:
 					if (gotone)
@@ -201,7 +201,7 @@ void switch_clear(struct s_switch * const s)
 		return;
 
 	freeconst(s->name);
-	freeconst(s->slist);
+	freeconst(s->list);
 
 	memset(s, 0x00, sizeof(*s));
 }

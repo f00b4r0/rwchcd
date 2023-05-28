@@ -82,10 +82,10 @@ static int temperature_update(struct s_temperature * const t)
 
 	new = 0;
 	ret = -EGENERIC;
-	for (i = 0; i < t->tlast; i++) {
-		ret = hardware_sensor_clone_time(t->tlist[i], &tsens);
+	for (i = 0; i < t->last; i++) {
+		ret = hardware_sensor_clone_time(t->list[i], &tsens);
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("\"%s\": hw clone time %d/%d returned (%d)", t->name, t->tlist[i].bid, t->tlist[i].inid, ret);
+			dbgerr("\"%s\": hw clone time %d/%d returned (%d)", t->name, t->list[i].bid, t->list[i].inid, ret);
 			switch (t->set.missing) {
 				case T_MISS_IGN:
 					continue;
@@ -99,7 +99,7 @@ static int temperature_update(struct s_temperature * const t)
 		}
 
 
-		ret = hardware_sensor_clone_temp(t->tlist[i], &stemp);
+		ret = hardware_sensor_clone_temp(t->list[i], &stemp);
 		if (likely(ALL_OK == ret)) {
 			// always weed out sensors for which the backend reports last update too far in the past (>4 periods).
 			// while the loop executes, "now" can already be in the past => check for that
@@ -111,7 +111,7 @@ static int temperature_update(struct s_temperature * const t)
 		}
 
 		if (unlikely(ALL_OK != ret)) {
-			dbgerr("\"%s\": hw clone temp %d/%d returned (%d)", t->name, t->tlist[i].bid, t->tlist[i].inid, ret);
+			dbgerr("\"%s\": hw clone temp %d/%d returned (%d)", t->name, t->list[i].bid, t->list[i].inid, ret);
 			switch (t->set.missing) {
 				case T_MISS_IGN:
 					if (new)
@@ -217,7 +217,7 @@ void temperature_clear(struct s_temperature * const t)
 		return;
 
 	freeconst(t->name);
-	freeconst(t->tlist);
+	freeconst(t->list);
 
 	memset(t, 0x00, sizeof(*t));
 }

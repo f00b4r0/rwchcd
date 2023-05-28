@@ -62,14 +62,14 @@ static int source_parse(void * restrict const priv, const struct s_filecfg_parse
 	struct s_switch * const s = priv;
 	int ret;
 
-	if (s->slast >= s->snum)
+	if (s->last >= s->num)
 		return (-EOOM);		// cannot happen
 
-	ret = filecfg_backends_sid_parse(&s->slist[s->slast], node);
+	ret = filecfg_backends_sid_parse(&s->list[s->last], node);
 	if (ALL_OK != ret)
 		return (ret);
 
-	s->slast++;
+	s->last++;
 
 	return (ALL_OK);
 }
@@ -84,14 +84,14 @@ static int sources_parse(void * restrict const priv, const struct s_filecfg_pars
 	if (!n)
 		return (-EEMPTY);	// XXX error message
 
-	if (n >= UINT_FAST8_MAX)	// t->tnum is uint_fast8_t
+	if (n >= UINT_FAST8_MAX)	// t->num is uint_fast8_t
 		return (-ETOOBIG);
 
-	s->slist = calloc(n, sizeof(s->slist[0]));
-	if (!s->slist)
+	s->list = calloc(n, sizeof(s->list[0]));
+	if (!s->list)
 		return (-EOOM);
 
-	s->snum = (uint_fast8_t)n;
+	s->num = (uint_fast8_t)n;
 
 	return (filecfg_parser_parse_listsiblings(priv, node->children, "source", source_parse));
 }

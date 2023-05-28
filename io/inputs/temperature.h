@@ -47,9 +47,9 @@ struct s_temperature {
 		_Atomic temp_t value;	///< current temperature value
 		_Atomic timekeep_t last_update;	///< last valid update
 	} run;		///< private runtime
-	uint_fast8_t tnum;		///< number of temperature sources allocated. Max 256
-	uint_fast8_t tlast;		///< last free source slot. if tlast == tnum, array is full.
-	binid_t * tlist;		///< an ordered array of temperature sources
+	uint_fast8_t num;		///< number of temperature sources allocated. Max 256
+	uint_fast8_t last;		///< last free source slot. if last == num, array is full.
+	binid_t * list;		///< an ordered array of temperature sources
 	const char * restrict name;	///< @b unique user-defined name for the temperature
 };
 

@@ -62,14 +62,14 @@ static int source_parse(void * restrict const priv, const struct s_filecfg_parse
 	struct s_temperature * const t = priv;
 	int ret;
 
-	if (t->tlast >= t->tnum)
+	if (t->last >= t->num)
 		return (-EOOM);		// cannot happen
 
-	ret = filecfg_backends_tid_parse(&t->tlist[t->tlast], node);
+	ret = filecfg_backends_tid_parse(&t->list[t->last], node);
 	if (ALL_OK != ret)
 		return (ret);
 
-	t->tlast++;
+	t->last++;
 
 	return (ALL_OK);
 }
@@ -84,14 +84,14 @@ static int sources_parse(void * restrict const priv, const struct s_filecfg_pars
 	if (!n)
 		return (-EEMPTY);	// XXX error message
 
-	if (n >= UINT_FAST8_MAX)	// t->tnum is uint_fast8_t
+	if (n >= UINT_FAST8_MAX)	// t->num is uint_fast8_t
 		return (-ETOOBIG);
 
-	t->tlist = calloc(n, sizeof(t->tlist[0]));
-	if (!t->tlist)
+	t->list = calloc(n, sizeof(t->list[0]));
+	if (!t->list)
 		return (-EOOM);
 
-	t->tnum = (uint_fast8_t)n;
+	t->num = (uint_fast8_t)n;
 
 	return (filecfg_parser_parse_listsiblings(priv, node->children, "source", source_parse));
 }

@@ -49,9 +49,9 @@ struct s_switch {
 		atomic_bool error;	///< true if switch state is invalid
 		_Atomic timekeep_t last_update;	///< last valid update
 	} run;		///< private runtime
-	uint_fast8_t snum;		///< number of switches sources allocated. Max 256
-	uint_fast8_t slast;		///< last free source slot. if slast == snum, array is full.
-	binid_t * slist;		///< an ordered array of switches sources
+	uint_fast8_t num;		///< number of switches sources allocated. Max 256
+	uint_fast8_t last;		///< last free source slot. if last == num, array is full.
+	binid_t * list;			///< an ordered array of switches sources
 	const char * restrict name;	///< @b unique user-defined name for the switch
 };
 

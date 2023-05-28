@@ -227,7 +227,7 @@ const char * inputs_name(const enum e_input_type t, const inid_t inid)
  * Get an input value.
  * @param t the type of input to look for
  * @param inid the input id to read from
- * @param valout an optional pointer to suitable memory area to store the result
+ * @param valout an optional pointer to suitable memory area to store the result, updated only on success
  * @return exec status
  */
 int inputs_get(const enum e_input_type t, const inid_t inid, void * const valout)
