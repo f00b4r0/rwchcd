@@ -25,6 +25,7 @@
 	 tid_bottom "boiler";
  	 tid_top "";
  	 tid_win "";
+	 sid_selfheatershed "";
  	 rid_selfheater "";
 	 params { ... };
  	 pump_feed "";
@@ -94,6 +95,7 @@ FILECFG_PARSER_RUNMODE_PARSE_SET_FUNC(s_dhwt, runmode)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_bottom)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_top)
 FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_win)
+FILECFG_INPUTS_PARSER_SWITCH_PARSE_SET_FUNC(s_dhwt, sid_selfheatershed)
 FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_dhwt, tthresh_dhwisol)
@@ -142,6 +144,7 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODESTR,	"tid_bottom",		false,	fcp_inputs_temperature_s_dhwt_tid_bottom,NULL, },
 		{ NODESTR,	"tid_top",		false,	fcp_inputs_temperature_s_dhwt_tid_top,	NULL, },
 		{ NODESTR,	"tid_win",		false,	fcp_inputs_temperature_s_dhwt_tid_win,	NULL, },
+		{ NODESTR,	"sid_selfheatershed",	false,	fcp_inputs_switch_s_dhwt_sid_selfheatershed,	NULL, },
 		{ NODESTR,	"rid_selfheater",	false,	fcp_outputs_relay_s_dhwt_rid_selfheater,NULL, },
 		{ NODEFLT|NODEINT, "tthresh_dhwisol",	false,	fcp_temp_s_dhwt_tthresh_dhwisol,	NULL, },
 		{ NODELST,	"params",		false,	fcp_dhwt_params,			NULL, },

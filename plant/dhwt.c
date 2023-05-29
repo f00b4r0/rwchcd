@@ -2,7 +2,7 @@
 //  plant/dhwt.c
 //  rwchcd
 //
-//  (C) 2017-2022 Thibaut VARENE
+//  (C) 2017-2023 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -13,6 +13,7 @@
  * The DHWT implementation supports:
  * - boiler-integrated tanks (by setting temp_inoffset to a near-zero value, assuming the boiler temp equals the DHWT temp; and making sure the chosen target temp and hysteresis align with the settings of the heatsource).
  * - automatic switch-over to (optional) integrated electric-heating (in summer or when heatsource failed).
+ * - electric load shedding upon request (via switch input).
  * - single and dual sensor operation (top/bottom) with adaptive hysteresis strategies.
  * - adaptive heatsource feed temperature management based on current DHWT temperature.
  * - timed feedpump cooldown at untrip with temperature discharge protection.
@@ -873,6 +874,11 @@ static inline void dhwt_update_charge(struct s_dhwt * restrict const dhwt, const
  @verbatim
   // attempt electric operation first if needed
   if try_electric && relay:
+	 // if electric active and load shedding, always kill charge and prevent further processing.
+	 if electric_mode && load-shedding request:
+		 if charge: cancel charge
+		 else: nothing - state unchanged, no further processing
+	 else:	// business as usual
 	 // switch on can only happen at trip, switch off happens at failure (!charge_on)
 	 if no charge:
 		 if trip point:
@@ -1012,7 +1018,16 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	// electric operation
 	rselfheater = dhwt->set.rid_selfheater;
 	if (try_electric && outputs_relay_name(rselfheater)) {
-		if (!charge_on) {		// heat_request is necessarily off here
+		// if electric_mode and load-shedding requested, prevent further action...
+		if (electric_mode && (ALL_OK == inputs_get(INPUT_SWITCH, dhwt->set.sid_selfheatershed, &test)) && test) {
+			if (charge_on) {  // ...and cancel charge if any
+				(void)!outputs_relay_state_set(rselfheater, OFF);
+				charge_on = false;
+				dhwt_update_charge(dhwt, charge_on, now);
+			}
+		}
+		// otherwise business as usual
+		else if (!charge_on) {		// heat_request is necessarily off here
 			electric_mode = true;	// immediately pretend we can do electric (to disable water-based processing)
 			if (curr_temp < trip_temp) {
 				if (ALL_OK == outputs_relay_state_set(rselfheater, ON)) {
