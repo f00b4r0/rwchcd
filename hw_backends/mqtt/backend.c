@@ -46,7 +46,7 @@ static const char * mqtt_intype_subtopics[] = {
 
 /**
  * Parse a string representing a bool value.
- * This function parses a lowercase string as follows:
+ * This function parses a case-insensitive string as follows:
  * - Valid "true" values: `1`, `on`, `true`
  * - Valid "false" values: `0`, `off`, `false`
  * @param str the string to parse
@@ -65,26 +65,31 @@ static int mqtt_str_to_bool(const char * str)
 			if ('\0' == str[1])
 				ret = (str[0] - '0');
 			break;
+		case 'O':
 		case 'o':
 			switch (str[1]) {
+				case 'N':
 				case 'n':
 					if ('\0' == str[2])
 						ret = 1;
 					break;
+				case 'F':
 				case 'f':
-					if (('f' == str[2]) && ('\0' == str[3]))
+					if ((('F' == str[2]) || ('f' == str[2])) && ('\0' == str[3]))
 						ret = 0;
 					break;
 				default:
 					break;
 			}
 			break;
+		case 'T':
 		case 't':
-			if (!strcmp(str, "true"))
+			if (!strcasecmp(str, "true"))
 				ret = 1;
 			break;
+		case 'F':
 		case 'f':
-			if (!strcmp(str, "false"))
+			if (!strcasecmp(str, "false"))
 				ret = 0;
 			break;
 		default:
