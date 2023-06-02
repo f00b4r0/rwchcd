@@ -412,6 +412,18 @@ int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_file
 	return (ALL_OK);
 }
 
+/**
+ * Placeholder that allows matching nodes but returns an error when invoked.
+ * This is primarily meant to avoid config warning when hw_backends are tested to match nodes.
+ * @param priv unused private data
+ * @return -ENOTIMPLEMENTED
+ */
+int filecfg_parser_unimplemented_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
+{
+	filecfg_parser_pr_err("\"%s\" parser not implemented!", node->name);
+	return (-ENOTIMPLEMENTED);
+}
+
 
 /**
  * Match an indidual node against a list of parsers.

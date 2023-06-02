@@ -84,6 +84,7 @@ int filecfg_parser_sysmode_parse(void * restrict const priv, const struct s_file
 int filecfg_parser_runmode_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_tid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 int filecfg_parser_rid_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
+int filecfg_parser_unimplemented_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node);
 
 int filecfg_parser_get_node_temp(bool positiveonly, bool delta, const struct s_filecfg_parser_node * const n, void *temp);
 
