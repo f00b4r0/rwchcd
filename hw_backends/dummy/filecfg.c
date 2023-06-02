@@ -163,6 +163,7 @@ int dummy_filecfg_parse(const struct s_filecfg_parser_node * const node)
 		{ NODESTR|NODESTC, "type",	true,	NULL,			NULL, },
 		{ NODELST,	"temperatures",	false,	temperatures_parse,	NULL, },
 		{ NODELST,	"relays",	false,	relays_parse,		NULL, },
+		{ NODELST,	"switches",	false,	filecfg_parser_unimplemented_parse,	NULL, },
 	};
 	struct s_dummy_pdata * hw;
 	int ret;

@@ -331,6 +331,7 @@ int hw_p1_filecfg_parse(const struct s_filecfg_parser_node * const node)
 		{ NODESTC, "type", true, parse_type, NULL, },
 		{ NODELST, "temperatures", false, sensors_parse, NULL, },
 		{ NODELST, "relays", false, relays_parse, NULL, },
+		{ NODELST, "switches", false, filecfg_parser_unimplemented_parse, NULL, },
 	};
 	void * hw;
 	int ret;
