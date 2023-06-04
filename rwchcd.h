@@ -145,7 +145,7 @@ enum e_systemmode {
 	SYS_COMFORT,	///< system is running in comfort mode. Config `comfort`
 	SYS_ECO,	///< system is running in eco mode. Config `eco`
 	SYS_FROSTFREE,	///< system is running in frostfree mode. Config `frostfree`
-	SYS_DHWONLY,	///< system is running in DHW only mode. Config `dhwonly`
+	SYS_DHWONLY,	///< system is running in DHW only mode. In this mode, scheduled states will only be applied to DHWTs, hcircuits will be placed in frostfree mode. Config `dhwonly`
 	SYS_TEST,	///< system is running in test mode, overrides every device runmode to RM_TEST (a.k.a "force everything on"). Config `test` (should not be used in permament config)
 	SYS_MANUAL,	///< system is running in manual mode: runtime runmode and dhwmode must be set manually. Config `manual`
 	SYS_UNKNOWN,	///< invalid past this value

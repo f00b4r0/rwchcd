@@ -431,7 +431,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 				schedid = schedid && aler(&dhwt->run.electric_mode) ? schedid : dhwt->set.schedid;	// use it in electric_mode
 				// if we have a schedule, use it, or global settings if unavailable
 				eparams = scheduler_get_schedparams(schedid);
-				if ((SYS_AUTO == sysmode) && eparams) {
+				if (((SYS_AUTO == sysmode) || (SYS_DHWONLY == sysmode)) && eparams) {
 					new_runmode = eparams->dhwmode;
 					aser(&dhwt->run.legionella_on, eparams->legionella);
 					// XXX REVISIT recycle can only be set via schedule for now
