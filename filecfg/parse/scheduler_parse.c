@@ -2,7 +2,7 @@
 //  filecfg/parse/scheduler_parse.c
 //  rwchcd
 //
-//  (C) 2020 Thibaut VARENE
+//  (C) 2020,2023 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -14,7 +14,7 @@
  scheduler {
 	 schedule "default" {
 		 entry {
-			 time { wday 0; hour 7; min 0; };
+			 time { wday 0; hour 7; min 0; };	// also acceptable: time { wday "all"; hour 7; min 0; };
 			 params { runmode "comfort"; dhwmode "comfort"; };
 		 };
 		 ...
@@ -32,41 +32,56 @@
 
 extern struct s_schedules Schedules;
 
+struct s_schent_wrap {
+	unsigned int bitdays;
+	struct s_schedule_e schent;
+};
+
 static int scheduler_fcp_entry_time_wday(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_schedule_e * restrict const schent = priv;
+	struct s_schent_wrap * restrict const swrap = priv;
 	int iv = node->value.intval;
 
-	if ((iv < 0) || (iv > 7))
-		return (-EINVALID);
-	// convert Sunday if necessary
-	if (7 == iv)
-		iv = 0;
-	schent->time.wday = iv;
+	// accept "all" catchall to set all days. Will be expanded later to support ranges
+	if (NODESTR == node->type) {
+		if (!strcmp("all", node->value.stringval))
+			swrap->bitdays = 0x7F;	// bits 0-6 - swrap->schent.time.wday is irrelevant
+		else
+			return (-EINVALID);
+	}
+	else {
+		if ((iv < 0) || (iv > 7))
+			return (-EINVALID);
+		// convert Sunday if necessary
+		if (7 == iv)
+			iv = 0;
+		swrap->bitdays = 0;
+		swrap->schent.time.wday = iv;
+	}
 	return (ALL_OK);
 }
 
 static int scheduler_fcp_entry_time_hour(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_schedule_e * restrict const schent = priv;
+	struct s_schent_wrap * restrict const swrap = priv;
 	int iv = node->value.intval;
 
 	if ((iv < 0) || (iv > 23))
 		return (-EINVALID);
 
-	schent->time.hour = iv;
+	swrap->schent.time.hour = iv;
 	return (ALL_OK);
 }
 
 static int scheduler_fcp_entry_time_min(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
-	struct s_schedule_e * restrict const schent = priv;
+	struct s_schent_wrap * restrict const swrap = priv;
 	int iv = node->value.intval;
 
 	if ((iv < 0) || (iv > 59))
 		return (-EINVALID);
 
-	schent->time.min = iv;
+	swrap->schent.time.min = iv;
 	return (ALL_OK);
 }
 
@@ -79,7 +94,7 @@ static int scheduler_fcp_entry_time_min(void * restrict const priv, const struct
 static int scheduler_entry_time_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_filecfg_parser_parsers parsers[] = {
-		{ NODEINT,	"wday",	true,	scheduler_fcp_entry_time_wday,	NULL, },
+		{ NODEINT|NODESTR,"wday",true,	scheduler_fcp_entry_time_wday,	NULL, },
 		{ NODEINT,	"hour",	true,	scheduler_fcp_entry_time_hour,	NULL, },
 		{ NODEINT,	"min",	true,	scheduler_fcp_entry_time_min,	NULL, },
 	};
@@ -131,21 +146,19 @@ static int scheduler_entry_params_parse(void * restrict const priv, const struct
 		{ NODEBOL,	"legionella",	false,	scheduler_fcp_entry_param_legionella,	NULL, },
 		{ NODEBOL,	"recycle",	false,	scheduler_fcp_entry_param_recycle,	NULL, },
 	};
-	struct s_schedule_e * const schent = priv;
+	struct s_schent_wrap * const swrap = priv;
 	int ret;
-
-	// we receive an 'entry' node
 
 	ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
 	// reset buffer and set mode defaults
-	memset(&schent->params, 0, sizeof(schent->params));
-	schent->params.runmode = RM_UNKNOWN;
-	schent->params.dhwmode = RM_UNKNOWN;
+	memset(&swrap->schent.params, 0, sizeof(swrap->schent.params));
+	swrap->schent.params.runmode = RM_UNKNOWN;
+	swrap->schent.params.dhwmode = RM_UNKNOWN;
 
-	return (filecfg_parser_run_parsers(schent, parsers, ARRAY_SIZE(parsers)));
+	return (filecfg_parser_run_parsers(&swrap->schent, parsers, ARRAY_SIZE(parsers)));
 }
 
 static int scheduler_entry_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
@@ -155,7 +168,8 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 		{ NODELST,	"params",	true,	scheduler_entry_params_parse,	NULL, },
 	};
 	struct s_schedule * const sched = priv;
-	struct s_schedule_e schent;
+	struct s_schent_wrap swrap;
+	unsigned int d;
 	int ret;
 
 	// we receive an 'entry' node
@@ -164,11 +178,24 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 	if (ALL_OK != ret)
 		return (ret);	// break if invalid config
 
-	ret = filecfg_parser_run_parsers(&schent, parsers, ARRAY_SIZE(parsers));
+	ret = filecfg_parser_run_parsers(&swrap, parsers, ARRAY_SIZE(parsers));
 	if (ALL_OK != ret)
 		return (ret);
 
-	ret = scheduler_add_entry(sched, &schent);
+	if (swrap.bitdays) {
+		for (d = 0; d < 7; d++) {
+			if (testbit(swrap.bitdays, d)) {
+				swrap.schent.time.wday = (int)d;
+				ret = scheduler_add_entry(sched, &swrap.schent);
+				if (ALL_OK != ret)
+					goto fail;
+			}
+		}
+	}
+	else
+		ret = scheduler_add_entry(sched, &swrap.schent);
+
+fail:
 	switch (ret) {
 		case -EEXISTS:
 			filecfg_parser_pr_err(_("Line %d: a schedule entry with the same time is already configured"), node->lineno);
@@ -188,7 +215,7 @@ static int scheduler_schedule_parse(void * restrict const priv, const struct s_f
 	int ret;
 
 	if (!node->children)
-		return (-EEMPTY);	// we only accept NODESTC backend node with children
+		return (-EEMPTY);
 
 	if (strlen(node->value.stringval) <= 0)
 		return (-EINVALID);
