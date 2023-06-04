@@ -14,6 +14,7 @@
  * - boiler-integrated tanks (by setting temp_inoffset to a near-zero value, assuming the boiler temp equals the DHWT temp; and making sure the chosen target temp and hysteresis align with the settings of the heatsource).
  * - automatic switch-over to (optional) integrated electric-heating (in summer or when heatsource failed).
  * - electric load shedding upon request (via switch input).
+ * - separate schedules for electric and non-electric operation.
  * - single and dual sensor operation (top/bottom) with adaptive hysteresis strategies.
  * - adaptive heatsource feed temperature management based on current DHWT temperature.
  * - timed feedpump cooldown at untrip with temperature discharge protection.
@@ -405,6 +406,7 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 	const enum e_systemmode sysmode = runtime_systemmode();
 	enum e_runmode prev_runmode, new_runmode;
 	temp_t target_temp, ltmin, ltmax;
+	schedid_t schedid;
 	bool recycle = false;
 	struct tm ltime;
 
@@ -425,8 +427,10 @@ static int dhwt_logic(struct s_dhwt * restrict const dhwt)
 			if (runtime_get_stopdhw())	// if killswitch is engaged, stop
 				new_runmode = RM_FROSTFREE;
 			else {
+				schedid = dhwt->set.electric_schedid;	// have an electric-specific schedule?
+				schedid = schedid && aler(&dhwt->run.electric_mode) ? schedid : dhwt->set.schedid;	// use it in electric_mode
 				// if we have a schedule, use it, or global settings if unavailable
-				eparams = scheduler_get_schedparams(dhwt->set.schedid);
+				eparams = scheduler_get_schedparams(schedid);
 				if ((SYS_AUTO == sysmode) && eparams) {
 					new_runmode = eparams->dhwmode;
 					aser(&dhwt->run.legionella_on, eparams->legionella);

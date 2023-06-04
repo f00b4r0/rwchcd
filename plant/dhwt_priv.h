@@ -33,6 +33,7 @@ struct s_dhwt {
 		bool electric_recycle;		///< if true, recycle pump will be turned on while the DHWT operates in electric self-heating. *Defaults to false*
 		uint_fast8_t prio;		///< priority: 0 (*default*) is highest prio, next positive. For cascading: DHWT with lower prio (higher value) will only be charged if @b none of the DHWTs with higer prio (lower value) are charging
 		schedid_t schedid;		///< schedule id for this DHWT. *Optional*
+		schedid_t electric_schedid;	///< schedule id for electric operation. *Optional*
 		enum e_runmode runmode;		///< dhwt set_runmode. *REQUIRED*
 		enum {
 			DHWTP_PARALMAX = 0,	///< no priority: parallel run with maximum selection. Config `paralmax`. *DEFAULT*.

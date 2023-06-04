@@ -20,6 +20,7 @@
     	 prio 0;
 	 runmode "auto";
 	 schedid "default";
+ *	 electric_schedid "";
 	 dhwt_cprio "paralmax";
 	 force_mode "never";
 	 tid_bottom "boiler";
@@ -98,6 +99,7 @@ FILECFG_INPUTS_PARSER_TEMPERATURE_PARSE_SET_FUNC(s_dhwt, tid_win)
 FILECFG_INPUTS_PARSER_SWITCH_PARSE_SET_FUNC(s_dhwt, sid_selfheatershed)
 FILECFG_OUTPUTS_PARSER_RELAY_PARSE_SET_FUNC(s_dhwt, rid_selfheater)
 FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, schedid)
+FILECFG_PARSER_SCHEDID_PARSE_SET_FUNC(s_dhwt, electric_schedid)
 FILECFG_PARSER_CELSIUS_PARSE_SET_FUNC(true, false, s_dhwt, tthresh_dhwisol)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_feed)
 FILECFG_PARSER_PLANT_PPUMP_PARSE_SET_FUNC(__dhwt_to_plant, s_dhwt, pump_dhwrecycle)
@@ -138,6 +140,7 @@ int filecfg_dhwt_parse(void * restrict const priv, const struct s_filecfg_parser
 		{ NODEBOL,	"electric_recycle",	false,	fcp_bool_s_dhwt_electric_recycle,	NULL, },
 		{ NODEINT,	"prio",			false,	fcp_prio_s_dhwt_prio,			NULL, },
 		{ NODESTR,	"schedid",		false,	fcp_schedid_s_dhwt_schedid,		NULL, },
+		{ NODESTR,	"electric_schedid",	false,	fcp_schedid_s_dhwt_electric_schedid,	NULL, },
 		{ NODESTR,	"runmode",		true,	fcp_runmode_s_dhwt_runmode,		NULL, },
 		{ NODESTR,	"dhwt_cprio",		false,	fcp_enum_s_dhwt_dhwt_cprio,		NULL, },
 		{ NODESTR,	"force_mode",		false,	fcp_enum_s_dhwt_force_mode,		NULL, },
