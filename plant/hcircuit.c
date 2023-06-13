@@ -525,6 +525,12 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	if (circuit->pdata->run.dhwc_absolute)
 		new_runmode = RM_DHWONLY;
 
+	// if summer_maint is on, by definition the hcircuit has been and still is inactive, regardless of actual runmode
+	if (circuit->pdata->run.summer_maint) {
+		aser(&circuit->run.runmode, RM_SUMMAINT);
+		return (ALL_OK);	// bypass everything
+	}
+
 	// depending on circuit run mode, assess circuit target temp
 	switch (new_runmode) {
 		case RM_OFF:
@@ -549,10 +555,6 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		case RM_FROSTFREE:
 			fastcool_mode = (circuit->set.fast_cooldown & FCM_FROSTFREE);
 			request_temp = SETorDEF(circuit->set.params.t_frostfree, circuit->pdata->set.def_hcircuit.t_frostfree);
-			if (circuit->pdata->run.summer_maint) {
-				aser(&circuit->run.runmode, RM_SUMMAINT);
-				return (ALL_OK);	// bypass everything
-			}
 			break;
 	}
 
