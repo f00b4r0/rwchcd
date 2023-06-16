@@ -614,11 +614,10 @@ static int dhwt_run_testsummaint(struct s_dhwt * restrict const dhwt, enum e_run
 	if (dhwt->set.p.pump_feed)
 		(void)!pump_set_state(dhwt->set.p.pump_feed, test, NOFORCE);	// don't force off (for shared pumps)
 
-	if (dhwt->set.p.valve_dhwisol) {
-		(void)!valve_isol_trigger(dhwt->set.p.valve_dhwisol, false);
-		// if we have a dhw isolation valve, it must be open before turning on the recycle pump
+	// if we have a dhw isolation valve, we won't be touching it: this DHWT could be in parallel with hot ones.
+	// in this case, we process the dwh recycle pump if the valve is open (which should not be the case anyway).
+	if (dhwt->set.p.valve_dhwisol)
 		test = valve_is_open(dhwt->set.p.valve_dhwisol) ? ON : OFF;
-	}
 	else
 		test = ON;
 	if (dhwt->set.p.pump_dhwrecycle)
