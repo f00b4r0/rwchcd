@@ -986,7 +986,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 	curr_temp = valid_tbottom ? bottom_temp : top_temp;
 	trip_temp = SETorDEF(dhwt->set.params.limit_tmax, dhwt->pdata->set.def_dhwt.limit_tmax);
 	if (unlikely(dhwt->run.overtemp)) {
-		if (curr_temp <= (trip_temp - deltaK_to_temp(-1))) {
+		if (curr_temp <= (trip_temp - deltaK_to_temp(1))) {
 			dhwt->run.overtemp = false;
 			pr_err(_("DHWT \"%s\": overtemp condition ended."), dhwt->name);
 		}
