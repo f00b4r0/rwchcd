@@ -13,6 +13,7 @@
 \verbatim
  inputs {
   	temperatures { ... };
+  	switches { ... };
  };
 \endverbatim
  */

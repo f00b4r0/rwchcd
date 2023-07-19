@@ -227,6 +227,9 @@ static void mqtt_message_callback(struct mosquitto * mosq __attribute__((unused)
 				return;
 			u.inswitch = !!ret;
 
+			if (hw->in.switches.all[id].set.invert)
+				u.inswitch = !u.inswitch;
+
 			aser(&hw->in.switches.all[id].run.state, u.inswitch);
 			aser(&hw->in.switches.all[id].run.tstamp, timekeep_now());
 			break;

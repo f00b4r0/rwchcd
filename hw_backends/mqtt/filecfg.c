@@ -2,7 +2,7 @@
 //  hw_backends/mqtt/filecfg.c
 //  rwchcd
 //
-//  (C) 2020 Thibaut VARENE
+//  (C) 2020,2023 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -25,6 +25,7 @@ backend "toto" {
  	};
 	switches {
 		switch "in";
+		switch "in2" { invert yes };
 		...
 	};
  	relays {
@@ -90,13 +91,17 @@ static int temperatures_parse(void * restrict const priv, const struct s_filecfg
 	return (filecfg_parser_parse_namedsiblings(priv, node->children, "temperature", temperature_parse));
 }
 
+FILECFG_PARSER_BOOL_PARSE_SET_FUNC(s_mqtt_switch, invert)
+
 static int switch_parse(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
+	struct s_filecfg_parser_parsers parsers[] = {
+		{ NODEBOL,	"invert",	false,	fcp_bool_s_mqtt_switch_invert,	NULL, },
+	};
+
 	struct s_mqtt_pdata * const hw = priv;
 	struct s_mqtt_switch * s;
-
-	if (node->children)
-		return(-ENOTWANTED);
+	int ret;
 
 	if (hw->in.switches.l >= hw->in.switches.n)
 		return (-EOOM);
@@ -105,6 +110,17 @@ static int switch_parse(void * restrict const priv, const struct s_filecfg_parse
 		return (-EEXISTS);
 
 	s = &hw->in.switches.all[hw->in.switches.l];
+
+	if (node->children) {
+		// match children
+		ret = filecfg_parser_match_nodechildren(node, parsers, ARRAY_SIZE(parsers));
+		if (ALL_OK != ret)
+			return (ret);	// break if invalid config
+
+		ret = filecfg_parser_run_parsers(s, parsers, ARRAY_SIZE(parsers));
+		if (ALL_OK != ret)
+			return (ret);
+	}
 
 	s->name = strdup(node->value.stringval);
 	if (!s->name)

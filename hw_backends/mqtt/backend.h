@@ -35,6 +35,7 @@ struct s_mqtt_temperature {
 struct s_mqtt_switch {
 	struct {
 		bool configured;	///< true if properly configured
+		bool invert;		///< invert value if true
 	} set;		///< settings
 	struct {
 		_Atomic bool state;	///< switch state: `true`, `1`, `on`, or `false`, `0`, `off`
