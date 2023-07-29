@@ -10,6 +10,8 @@ import json
 from web import form
 from pydbus import SystemBus
 from os import system
+from time import sleep
+import paho.mqtt.publish as publish
 
 CFG_FILE = 'cfg.json'
 
@@ -39,7 +41,9 @@ bus = SystemBus()
 # "temperatures": [0, 1, ...],
 # "toutdoor": N,
 # "tindoor": N,
-# "webapptitle": "title"
+# "webapptitle": "title",
+# "mqtthost": "hostname",
+# "mqtttopicbase: "rwchcd"
 # }
 def loadcfg():
 	config = {}
@@ -194,6 +198,14 @@ formDhwRunMode = BootGrpForm(
 	GroupClose('', help='Cocher la case pour forcer un mode différent du réglage actuel'),
 	)
 
+def mqtt_pub_mode(mode):
+	host = cfg.get('mqtthost')
+	if not host:
+		return
+
+	topicbase = cfg.get('mqtttopicbase')
+	publish.single(topicbase + "/system", payload=mode, retain=True, hostname=host)
+
 class rwchcd:
 	def get_rwchruntime(self):
 		return bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)[RWCHCD_DBUS_IFACE_RUNTIME]
@@ -238,6 +250,7 @@ class rwchcd:
 			mode = int(fr.sysmode.value)
 			rwchcd_Runtime.StopDhw = mode & 0x80
 			rwchcd_Runtime.SystemMode = mode & 0x7F
+			mqtt_pub_mode(mode)
 			system("/usr/bin/sudo /sbin/fh-sync >/dev/null 2>&1")	# XXX dirty hack
 			return render.valid(web.ctx.path)
 
@@ -416,6 +429,23 @@ class manifest:
 		web.header('Content-Type', 'application/manifest+json')
 		return tplmanifest()
 
+
+# publish current state at startup
+def startup():
+	if cfg.get('modes'):
+		while True:
+			try:
+				rwchcd_Runtime = bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)[RWCHCD_DBUS_IFACE_RUNTIME]
+			except:	# rwchcd may not be started yet
+				sleep(1)
+			else:
+				break
+		currmode = rwchcd_Runtime.SystemMode
+		if rwchcd_Runtime.StopDhw:
+			currmode |= 0x80
+		mqtt_pub_mode(currmode)
+
+startup()
 
 if __name__ == "__main__":
 	app = web.application(urls, globals())
