@@ -91,7 +91,7 @@ end:
 static void scheduler_update_schedule(struct s_schedule * const sched)
 {
 	const time_t now = time(NULL);
-	const struct s_schedule_e * schent, * schent_start, * schent_curr;
+	const struct s_schedule_e * schent, * schent_start, * schent_curr, * schent_found = NULL;
 	struct tm ltime;
 
 	localtime_r(&now, &ltime);	// localtime handles DST and TZ for us
@@ -112,18 +112,18 @@ restart:
 
 	// special case first entry which may be the only one
 	if (scheduler_ent_past_today(schent_start, &ltime))
-		aser(&sched->current, schent_start);
+		schent_found = schent_start;
 
 	// loop over other entries, stop if/when back at first entry
 	for (schent = schent_start->next; schent_start != schent; schent = schent->next) {
-		if (unlikely(scheduler_ent_past_today(schent, &ltime)))
-			aser(&sched->current, schent);
-		else if (likely(schent_curr))
+		if (scheduler_ent_past_today(schent, &ltime))
+			schent_found = schent;
+		else if (schent_found)
 			break;	// if we already have a valid schedule entry ('synced'), first future entry stops search
 	}
 
 	// if we aren't already synced, try harder
-	if (unlikely(!aler(&sched->current))) {
+	if (unlikely(!schent_found)) {
 		/* we never synced and today's list didn't contain a single past schedule,
 		 we must roll back through the week until we find one.
 		 Set tm_hour and tm_min to last hh:mm of the (previous) day(s)
@@ -134,6 +134,11 @@ restart:
 			ltime.tm_wday = 6;
 		goto restart;
 	}
+
+	dbgmsg(1, schent_found && (schent_curr != schent_found), "updating schedule \"%s\"", sched->name);
+
+	if (schent_found && (schent_curr != schent_found))
+		aser(&sched->current, schent_found);
 }
 
 /**
