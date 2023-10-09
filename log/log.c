@@ -398,7 +398,7 @@ int log_online(void)
 	if (Log.bkend->log_online) {
 		ret = Log.bkend->log_online();
 		if (ALL_OK != ret)
-			return (ret);
+			return (-EIGNORE);
 	}
 
 	Log.run.online = true;

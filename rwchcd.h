@@ -101,6 +101,7 @@ enum e_execs {
 	ETOOBIG,	///< entity is too large
 	ERSTALE,	///< data is stale
 	ENOTWANTED,	///< extra data not wanted
+	EIGNORE,	///< non-critical error that can be safely ignored
 	EGENERIC,
 };
 

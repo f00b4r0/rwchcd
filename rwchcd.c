@@ -252,7 +252,8 @@ static int online_subsystems(void)
 			if (ALL_OK != ret) {
 				if (cbs->name)
 					pr_err(_("Failed to bring subsystem \"%s\" online (%d)"), cbs->name, ret);
-				return (ret);	// fail if any subsystem fails to come online
+				if (-EIGNORE != ret)
+					return (ret);	// fail if any subsystem fails to come online
 			}
 		}
 	}
