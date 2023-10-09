@@ -326,7 +326,7 @@ static const char * hw_p1_lcd_disp_sysmode(enum e_systemmode sysmode)
 			msg = _("Eco ");
 			break;
 		case SYS_FROSTFREE:
-			msg = _("Prot");
+			msg = _("HGel");
 			break;
 		case SYS_DHWONLY:
 			msg = _("ECS ");
