@@ -450,3 +450,4 @@ startup()
 if __name__ == "__main__":
 	app = web.application(urls, globals())
 	app.run()
+	mqtt_pub_mode(0)
