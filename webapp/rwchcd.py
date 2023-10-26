@@ -178,10 +178,10 @@ formHcTemps = BootForm(
 	)
 
 formHcRunMode = BootGrpForm(
-	GroupOpen('', label='Mode Forcé'),
+	GroupOpen('', label='Mode Actuel'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
 	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select'),
-	GroupClose('', help='Cocher la case pour forcer un mode différent du réglage actuel'),
+	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard'),
 	)
 
 formDhwProps = BootForm(
@@ -192,10 +192,10 @@ formDhwProps = BootForm(
 
 
 formDhwRunMode = BootGrpForm(
-	GroupOpen('', label='Mode Forcé'),
+	GroupOpen('', label='Mode Actuel'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
 	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select'),
-	GroupClose('', help='Cocher la case pour forcer un mode différent du réglage actuel'),
+	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard'),
 	)
 
 def mqtt_pub_mode(mode):
