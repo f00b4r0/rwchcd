@@ -206,6 +206,11 @@ def mqtt_pub_mode(mode):
 	topicbase = cfg.get('mqtttopicbase')
 	publish.single(topicbase + "/system", payload=mode, retain=True, hostname=host)
 
+def match_runmode(mode, modelist):
+	for m in modelist:
+		if m[0] == mode:
+			return m[1]
+
 class rwchcd:
 	def get_rwchruntime(self):
 		return bus.get(RWCHCD_DBUS_NAME, RWCHCD_DBUS_OBJ_BASE)[RWCHCD_DBUS_IFACE_RUNTIME]
@@ -217,6 +222,21 @@ class rwchcd:
 			data["temps"].append(("Température Extérieure", gettemp(getcfg('toutdoor'))))
 		if getcfg('tindoor') is not None:
 			data["temps"].append(("Température Intérieure", gettemp(getcfg('tindoor'))))
+
+		data["hcircuits"] = []
+		if cfg.get('hcircuits') and cfg.get('hcircrunmodes'):
+			for id in cfg.get('hcircuits'):
+				obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
+				hcirc = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_HCIRC]
+				data["hcircuits"].append((hcirc.Name, match_runmode(hcirc.RunMode, cfg.get('hcircrunmodes')), hcirc.RunModeOverride))
+
+		data["dhwts"] = []
+		if cfg.get('dhwts') and cfg.get('dhwtrunmodes'):
+			for id in cfg.get('dhwts'):
+				obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_DHWTS, id)
+				dhwt = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_DHWT]
+				data["dhwts"].append((dhwt.Name, match_runmode(dhwt.RunMode, cfg.get('dhwtrunmodes')), dhwt.RunModeOverride))
+
 		data["forms"] = []
 		return data
 

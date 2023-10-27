@@ -9,6 +9,15 @@ $for (tname, tval) in data["temps"]:
 </ul>
 </p>
 
+$for d in (data["hcircuits"], data["dhwts"]):
+  <p>
+  <ul class="list-group">
+  $for (name, mode, override) in d:
+    $ bg = "bg-warning" if override else "bg-primary"
+    <li class="list-group-item d-flex justify-content-between align-items-center">$name <span class="badge $bg rounded-pill">$mode</span></li>
+  </ul>
+  </p>
+
 $if data["forms"]:
   <form method="post">
   $for form in data["forms"]:
