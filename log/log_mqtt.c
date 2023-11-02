@@ -73,17 +73,18 @@ static int log_mqtt_online(void)
 		goto fail;
 	}
 
-	ret = mosquitto_connect(Log_mqtt.mosq, Log_mqtt.set.host, Log_mqtt.set.port, 60);
-	if (ret) {
-		pr_err("MQTT log connect error: \"%s\"", mosquitto_strerror(ret));
-		return (-EGENERIC);
-	}
-
 
 	// start the network background task
 	ret = mosquitto_loop_start(Log_mqtt.mosq);
 	if (ret) {
 		pr_err("MQTT log loop start failed: \"%s\"", mosquitto_strerror(ret));
+		ret = -EGENERIC;
+		goto fail;
+	}
+
+	ret = mosquitto_connect_async(Log_mqtt.mosq, Log_mqtt.set.host, Log_mqtt.set.port, 60);
+	if (ret) {
+		pr_err("MQTT log connect error: \"%s\"", mosquitto_strerror(ret));
 		ret = -EGENERIC;
 		goto fail;
 	}

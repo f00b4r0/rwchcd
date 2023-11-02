@@ -313,16 +313,17 @@ static int mqtt_online(void * priv)
 	if (!hw->run.initialized)
 		return (-EINIT);
 
-	ret = mosquitto_connect(hw->mosq, hw->set.host, hw->set.port, 60);
-	if (ret) {
-		pr_err("MQTT backend \"%s\": connect error: \"%s\"", hw->name, mosquitto_strerror(ret));
-		return (-EGENERIC);
-	}
-
 	// start the network background task
 	ret = mosquitto_loop_start(hw->mosq);
 	if (ret) {
 		pr_err("MQTT backend \"%s\": loop start failed: \"%s\"", hw->name, mosquitto_strerror(ret));
+		ret = -EGENERIC;
+		goto fail;
+	}
+
+	ret = mosquitto_connect_async(hw->mosq, hw->set.host, hw->set.port, 60);
+	if (ret) {
+		pr_err("MQTT backend \"%s\": connect error: \"%s\"", hw->name, mosquitto_strerror(ret));
 		ret = -EGENERIC;
 		goto fail;
 	}
