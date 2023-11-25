@@ -95,6 +95,9 @@ static const gchar dbus_introspection_xml[] =
 "  <property name='RunMode' access='read' type='y'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
+"  <property name='RunModeOrig' access='read' type='y'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
 "  <property name='TempComfort' access='read' type='d'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='const' />"
 "  </property>"
@@ -165,6 +168,9 @@ static const gchar dbus_introspection_xml[] =
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
 "  <property name='RunMode' access='read' type='y'>"
+"   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
+"  </property>"
+"  <property name='RunModeOrig' access='read' type='y'>"
 "   <annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false' />"
 "  </property>"
 "  <property name='TempComfort' access='read' type='d'>"
@@ -433,6 +439,8 @@ hcircuit_get_property(GDBusConnection  *connection,
 		const enum e_runmode runmode = aler(&hcircuit->overrides.o_runmode) ? aler(&hcircuit->overrides.runmode) : hcircuit->set.runmode;
 		var = g_variant_new_byte((guchar)runmode);
 	}
+	else if (g_strcmp0(property_name, "RunModeOrig") == 0)
+		var = g_variant_new_byte((guchar)hcircuit->set.runmode);
 	else if (g_strcmp0(property_name, "RunModeOverride") == 0)
 		var = g_variant_new_boolean((gboolean)aler(&hcircuit->overrides.o_runmode));
 	else if (g_strcmp0(property_name, "TempOffsetOverride") == 0) {
@@ -601,6 +609,8 @@ dhwt_get_property(GDBusConnection  *connection,
 		const enum e_runmode runmode = aler(&dhwt->overrides.o_runmode) ? aler(&dhwt->overrides.runmode) : dhwt->set.runmode;
 		var = g_variant_new_byte((guchar)runmode);
 	}
+	else if (g_strcmp0(property_name, "RunModeOrig") == 0)
+		var = g_variant_new_byte((guchar)dhwt->set.runmode);
 	else if (g_strcmp0(property_name, "RunModeOverride") == 0)
 		var = g_variant_new_boolean((gboolean)aler(&dhwt->overrides.o_runmode));
 	else if (g_strcmp0(property_name, "ChargeOn") == 0)
