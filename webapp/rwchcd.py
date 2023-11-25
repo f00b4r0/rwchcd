@@ -181,7 +181,7 @@ formHcRunMode = BootGrpForm(
 	GroupOpen('', label='Mode Actuel'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
 	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select'),
-	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard'),
+	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard, décocher pour y revenir'),
 	)
 
 formDhwProps = BootForm(
@@ -195,7 +195,7 @@ formDhwRunMode = BootGrpForm(
 	GroupOpen('', label='Mode Actuel'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
 	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select'),
-	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard'),
+	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard, décocher pour y revenir'),
 	)
 
 def mqtt_pub_mode(mode):
@@ -300,6 +300,9 @@ class hcircuit:
 		]
 		if hcirc.HasAmbientSensor:
 			data["temps"].append(("T° Ambiante Actuelle", ftemp(hcirc.AmbientActual)))
+		data["settings"] = []
+		if cfg.get('hcircrunmodes'):
+			data["settings"].append(("Réglage standard", match_runmode(hcirc.RunModeOrig, cfg.get('hcircrunmodes'))))
 		data["forms"] = []
 		return data
 
@@ -374,6 +377,9 @@ class dhwt:
 			("T° Consigne Actuelle", ftemp(dhwt.TempTarget)),
 			("T° Actuelle", ftemp(dhwt.TempCurrent)),
 		]
+		data["settings"] = []
+		if cfg.get('dhwtrunmodes'):
+			data["settings"].append(("Réglage standard", match_runmode(dhwt.RunModeOrig, cfg.get('dhwtrunmodes'))))
 		data["forms"] = []
 		return data
 

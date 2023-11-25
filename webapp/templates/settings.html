@@ -7,6 +7,8 @@ $var title: $data["title"] $data["name"]
 <ul class="list-group">
 $for (tname, tval) in data["temps"]:
   <li class="list-group-item d-flex justify-content-between align-items-center">$tname <span class="badge bg-primary rounded-pill">$tval °C</span></li>
+$for (tname, tval) in data["settings"]:
+  <li class="list-group-item d-flex justify-content-between align-items-center">$tname <span class="badge bg-primary rounded-pill">$tval</span></li>
 </ul>
 </p>
 
