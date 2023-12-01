@@ -589,11 +589,12 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 		dtmin = expw_mavg_dtmin(3*bmodel->set.tau);
 		trans_thrsh = deltaK_to_temp(1);
 
+		if (unlikely(!ambient_temp))	// startup: ambient = outdoor in RM_OFF, request otherwise
+			ambient_temp = (RM_OFF == new_runmode) ? aler(&bmodel->run.t_out_mix) : request_temp;
+
 		// if circuit is OFF (due to outhoff()) apply moving average based on outdoor temp
 		if (RM_OFF == prev_runmode) {	// use prev_runmode to capture TRANS_DOWN && can_fastcool - this delays "correct" computation by one cycle
-			if (unlikely(!ambient_temp))	// startup in RM_OFF
-				ambient_temp = aler(&bmodel->run.t_out_mix);
-			else if (elapsed_time > dtmin) {
+			if (elapsed_time > dtmin) {
 				ambient_temp = temp_expw_mavg(ambient_temp, aler(&bmodel->run.t_out_mix), 3*bmodel->set.tau, elapsed_time); // we converge toward low_temp
 				circuit->run.ambient_update_time = now;
 			}
