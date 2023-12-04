@@ -94,7 +94,7 @@ int filecfg_hcircuit_params_dump(const struct s_hcircuit_params * restrict const
 	if (FCD_Exhaustive || params->t_frostfree)
 		filecfg_dump_celsius("t_frostfree", params->t_frostfree);
 	if (FCD_Exhaustive || params->t_offset)
-		filecfg_dump_deltaK("t_offset", params->t_offset);
+		filecfg_dump_deltaK("t_offset", (tempdiff_t)params->t_offset);
 
 	if (FCD_Exhaustive || params->outhoff_comfort)
 		filecfg_dump_celsius("outhoff_comfort", params->outhoff_comfort);
