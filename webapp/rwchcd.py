@@ -346,7 +346,7 @@ class hcircuit:
 		else:
 			hcirc.SetTempOffsetOverride(float(ft.overridetemp.value))
 			if cfg.get('hcircrunmodes'):
-				if frm.overriderunmode.checked:
+				if frm.overriderunmode.checked and (int(frm.runmode.value) != hcirc.RunModeOrig):
 					hcirc.SetRunmodeOverride(int(frm.runmode.value))
 				else:
 					hcirc.DisableRunmodeOverride()
@@ -425,7 +425,7 @@ class dhwt:
 		else:
 			dhwt.ForceChargeOn = fp.forcecharge.checked
 			if cfg.get('dhwtrunmodes'):
-				if frm.overriderunmode.checked:
+				if frm.overriderunmode.checked and (int(frm.runmode.value) != dhwt.RunModeOrig):
 					dhwt.SetRunmodeOverride(int(frm.runmode.value))
 				else:
 					dhwt.DisableRunmodeOverride()
