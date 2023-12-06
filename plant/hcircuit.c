@@ -259,9 +259,13 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 		ret = -EMISCONFIGURED;
 	}
 	// if pump exists check it's available
-	if (circuit->set.p.pump_feed && !pump_is_online(circuit->set.p.pump_feed)) {
-		pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), circuit->name, pump_name(circuit->set.p.pump_feed));
-		ret = -EMISCONFIGURED;
+	if (circuit->set.p.pump_feed) {
+		if (!pump_is_online(circuit->set.p.pump_feed)) {
+			pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), circuit->name, pump_name(circuit->set.p.pump_feed));
+			ret = -EMISCONFIGURED;
+		}
+		else	// set pump startup state
+			pump_shutdown(circuit->set.p.pump_feed);
 	}
 
 	// if mix valve exists check it's correctly configured
@@ -274,6 +278,8 @@ int hcircuit_online(struct s_hcircuit * const circuit)
 			pr_err(_("\"%s\": Invalid type for valve_mix \"%s\" (mixing valve expected)"), circuit->name, valve_name(circuit->set.p.valve_mix));
 			ret = -EMISCONFIGURED;
 		}
+		else	// set valve startup state
+			valve_shutdown(circuit->set.p.valve_mix);
 	}
 
 	if (circuit->set.wtemp_rorh) {

@@ -316,6 +316,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 			pr_err(_("\"%s\": Invalid type for valve_ret \"%s\" (mixing valve expected)"), heat->name, valve_name(boiler->set.p.valve_ret));
 			ret = -EMISCONFIGURED;
 		}
+		else	// set valve startup state
+			valve_shutdown(boiler->set.p.valve_ret);
 	}
 
 	if (boiler->set.limit_treturnmin) {
@@ -337,6 +339,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 			pr_err(_("\"%s\": rid_burner1 is unavailable"), heat->name);
 			ret = -EMISCONFIGURED;
 		}
+		else	// set startup state
+			(void)!outputs_relay_state_set(boiler->set.rid_burner_1, OFF);
 	}
 
 	if (outputs_relay_name(boiler->set.rid_burner_2)) {
@@ -344,6 +348,8 @@ static int boiler_hscb_online(struct s_heatsource * const heat)
 			pr_err(_("\"%s\": rid_burner2 is unavailable"), heat->name);
 			ret = -EMISCONFIGURED;
 		}
+		else	// set startup state
+			(void)!outputs_relay_state_set(boiler->set.rid_burner_2, OFF);
 	}
 
 	return (ret);

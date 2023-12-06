@@ -259,6 +259,8 @@ int dhwt_online(struct s_dhwt * const dhwt)
 			pr_err(_("\"%s\": pump_feed \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_feed));
 			ret = -EMISCONFIGURED;
 		}
+		else	// set startup state
+			pump_shutdown(dhwt->set.p.pump_feed);
 		// make sure we have win sensor
 		if (inputs_temperature_get(dhwt->set.tid_win, NULL) != ALL_OK) {
 			pr_err(_("\"%s\": tid_win failed or missing: needed with feed pump!"), dhwt->name);
@@ -266,9 +268,13 @@ int dhwt_online(struct s_dhwt * const dhwt)
 		}
 	}
 
-	if (dhwt->set.p.pump_dhwrecycle && !pump_is_online(dhwt->set.p.pump_dhwrecycle)) {
-		pr_err(_("\"%s\": pump_dhwrecycle \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_dhwrecycle));
-		ret = -EMISCONFIGURED;
+	if (dhwt->set.p.pump_dhwrecycle) {
+		if (!pump_is_online(dhwt->set.p.pump_dhwrecycle)) {
+			pr_err(_("\"%s\": pump_dhwrecycle \"%s\" is set but not online"), dhwt->name, pump_name(dhwt->set.p.pump_dhwrecycle));
+			ret = -EMISCONFIGURED;
+		}
+		else	// set startup state
+			pump_shutdown(dhwt->set.p.pump_dhwrecycle);
 	}
 
 	if (dhwt->set.p.valve_feedisol) {
@@ -280,6 +286,8 @@ int dhwt_online(struct s_dhwt * const dhwt)
 			pr_err(_("\"%s\": Invalid type for valve_feedisol \"%s\" (isolation valve expected)"), dhwt->name, valve_name(dhwt->set.p.valve_feedisol));
 			ret = -EMISCONFIGURED;
 		}
+		else	// set startup state
+			(void)!valve_isol_trigger(dhwt->set.p.valve_feedisol, true);
 	}
 
 	if (dhwt->set.p.valve_dhwisol) {
@@ -291,6 +299,8 @@ int dhwt_online(struct s_dhwt * const dhwt)
 			pr_err(_("\"%s\": Invalid type for valve_dhwisol \"%s\" (isolation valve expected)"), dhwt->name, valve_name(dhwt->set.p.valve_dhwisol));
 			ret = -EMISCONFIGURED;
 		}
+		else	// set startup state
+			(void)!valve_isol_trigger(dhwt->set.p.valve_dhwisol, true);
 	}
 
 	// warn on unenforceable configuration
@@ -305,6 +315,8 @@ int dhwt_online(struct s_dhwt * const dhwt)
 			pr_err(_("\"%s\": Relay for self-heater is unavailable"), dhwt->name);
 			ret = -EMISCONFIGURED;
 		}
+		else	// set startup state
+			(void)!outputs_relay_state_set(dhwt->set.rid_selfheater, OFF);
 	}
 
 	if (ALL_OK == ret) {
