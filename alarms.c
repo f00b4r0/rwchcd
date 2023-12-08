@@ -34,6 +34,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <unistd.h>	// fork()/execv()
+#include <err.h> 
 
 #include "alarms.h"
 #include "timekeep.h"
@@ -190,7 +191,7 @@ int alarms_run(void)
 			switch (fork()) {
 				case 0:	// child
 					execv(Alarms.notifier, (char *const *)(uintptr_t)argv);	// we have fork()ed so it doesn't matter if execv(const char *__path, char *const __argv[]) thinks it can write the arguments (it cannot anyway)
-					perror("Alarm notifier execution failed");	// execv() only returns on error
+					err(-1, "Alarm notifier execution failed");	// execv() only returns on error
 					break;
 				case -1: // error - most likely ENOMEM
 					perror(NULL);
