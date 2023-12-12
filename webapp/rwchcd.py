@@ -32,13 +32,20 @@ bus = SystemBus()
 # config JSON:
 # {
 # "dhwts": [0, 1, ...],
-# "dhwtrunmodes": [[1, "Mode Général"], [2, "Confort"], [3, "Réduit"], [4, "Hors-Gel"]],
+# "goddhwts: [0, 1, ...],
+# "dhwtrunmodes": [[1, "Mode Général"], [4, "Hors-Gel"]],
+# "dhwtgodmodes": [[1, "Mode Général"], [2, "Confort"], [3, "Réduit"], [4, "Hors-Gel"]],
 # "hcircuits": [0, 1, ...],
-# "modes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Réduit"], [5, "Hors-Gel"], [6, "ECS"]],	# add 128 for disabling DHW
+# "godhcircuits:" [0, 1, ...],
+# "modes": [[2, "Auto"], [4, "Réduit"], [5, "Hors-Gel"], [6, "ECS"]],			# add 128 for disabling DHW
+# "godmodes": [[1, "Off"], [2, "Auto"], [3, "Confort"], [4, "Réduit"], [5, "Hors-Gel"], [6, "ECS"], [7, "Test"]],	# add 128 for disabling DHW
+# "godname": "admin",	# login name of administrator, with access to "god" variables
 # "graphurl": "url",
 # "homeurl": "url",
-# "hcircrunmodes": [[1, "Mode Général"], [2, "Confort"], [3, "Réduit"], [4, "Hors-Gel"]],
+# "hcircrunmodes": [[1, "Mode Général"], [4, "Hors-Gel"]],
+# "hcircgodmodes": [[1, "Mode Général"], [2, "Confort"], [3, "Réduit"], [4, "Hors-Gel"]],
 # "temperatures": [0, 1, ...],
+# "godtemperatures": [0, 1, ...],
 # "toutdoor": N,
 # "tindoor": N,
 # "webapptitle": "title",
@@ -68,6 +75,14 @@ def getobjname(type, id):
 		dhwt = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_DHWT]
 		return dhwt.Name
 
+def get_godalt(cfggod, cfgdef):
+	god = cfg.get('godname') and (web.ctx.env.get('REMOTE_USER') == cfg.get('godname'))
+	if god:
+		alt = cfg.get(cfggod) or cfg.get(cfgdef)
+	else:
+		alt = cfg.get(cfgdef)
+	return alt
+
 def ftemp(t):
 	if t == -273:
 		return "--.-"
@@ -86,6 +101,7 @@ def gettemp(id):
 template_globals = {
 	'getcfg': getcfg,
 	'getobjname': getobjname,
+	'get_godalt': get_godalt,
 	'app_path': lambda p: web.ctx.homepath + p
 }
 
@@ -170,7 +186,7 @@ class GroupClose(form.Input):
 # NB: https://kzar.co.uk/blog/2010/10/01/web.py-checkboxes
 
 formRwchcd = BootForm(
-	form.Dropdown('sysmode', cfg.get('modes'), description='Mode Général', class_='form-select', help='Règle le mode de fonctionnement général de l\'installation'),
+	form.Dropdown('sysmode', None, description='Mode Général', class_='form-select', help='Règle le mode de fonctionnement général de l\'installation'),
 	)
 
 formHcTemps = BootForm(
@@ -180,7 +196,7 @@ formHcTemps = BootForm(
 formHcRunMode = BootGrpForm(
 	GroupOpen('', label='Mode Actuel'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
-	form.Dropdown('runmode', cfg.get('hcircrunmodes'), class_='form-select'),
+	form.Dropdown('runmode', None, class_='form-select'),
 	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard, décocher pour y revenir'),
 	)
 
@@ -194,7 +210,7 @@ formDhwProps = BootForm(
 formDhwRunMode = BootGrpForm(
 	GroupOpen('', label='Mode Actuel'),
 	form.Checkbox('overriderunmode', value='y', onchange='document.getElementById("runmode").disabled = !this.checked;', pre='<div class="input-group-text">', post='</div>', class_='form-check-input mt-0'),
-	form.Dropdown('runmode', cfg.get('dhwtrunmodes'), class_='form-select'),
+	form.Dropdown('runmode', None, class_='form-select'),
 	GroupClose('', help='Cocher la case pour choisir et forcer un mode différent du réglage standard, décocher pour y revenir'),
 	)
 
@@ -243,22 +259,26 @@ class rwchcd:
 	def GET(self):
 		data = self.prep_rwchdata()
 		rwchcd_Runtime = self.get_rwchruntime()
-		if cfg.get('modes'):
+		modes = get_godalt('godmodes', 'modes')
+		if modes:
 			currmode = rwchcd_Runtime.SystemMode
 			if rwchcd_Runtime.StopDhw:
 				currmode |= 0x80
 
 			fr = formRwchcd()
+			fr.sysmode.args = modes
 			fr.sysmode.value = currmode
 			data["forms"].append(fr)
 
 		return render.rwchcd(data)
 
 	def POST(self):
-		if not cfg.get('modes'):
+		modes = get_godalt('godmodes', 'modes')
+		if not modes:
 			raise web.badrequest()
 
 		fr = formRwchcd()
+		fr.sysmode.args = modes
 		rwchcd_Runtime = self.get_rwchruntime()
 
 		if not fr.validates():
@@ -278,7 +298,7 @@ class rwchcd:
 class hcircuit:
 	def get_hcirc(self, id):
 		try:
-			notfound = int(id) not in cfg.get('hcircuits')
+			notfound = int(id) not in get_godalt('godhcircuits', 'hcircuits')
 		except:
 			raise web.badrequest()
 		if notfound:
@@ -301,8 +321,9 @@ class hcircuit:
 		if hcirc.HasAmbientSensor:
 			data["temps"].append(("T° Ambiante Actuelle", ftemp(hcirc.AmbientActual)))
 		data["settings"] = []
-		if cfg.get('hcircrunmodes'):
-			data["settings"].append(("Réglage standard", match_runmode(hcirc.RunModeOrig, cfg.get('hcircrunmodes'))))
+		runmodes = get_godalt('hcircgodmodes', 'hcircrunmodes')
+		if runmodes:
+			data["settings"].append(("Réglage standard", match_runmode(hcirc.RunModeOrig, runmodes)))
 		data["forms"] = []
 		return data
 
@@ -314,11 +335,13 @@ class hcircuit:
 		ft.overridetemp.value = ftemp(hcirc.TempOffsetOverride)
 		data["forms"].append(ft)
 
-		if cfg.get('hcircrunmodes'):
+		runmodes = get_godalt('hcircgodmodes', 'hcircrunmodes')
+		if runmodes:
 			frm = formHcRunMode()
 			frm.overriderunmode.checked = hcirc.RunModeOverride
 			if not frm.overriderunmode.checked:
 				frm.runmode.attrs["disabled"] = 'true'
+			frm.runmode.args = runmodes
 			frm.runmode.value = hcirc.RunMode
 			data["forms"].append(frm)
 
@@ -332,8 +355,10 @@ class hcircuit:
 
 		frm = None
 		vfrm = True
-		if cfg.get('hcircrunmodes'):
+		runmodes = get_godalt('hcircgodmodes', 'hcircrunmodes')
+		if runmodes:
 			frm = formHcRunMode()
+			frm.runmode.args = runmodes
 			vfrm = frm.validates()
 			if not frm.overriderunmode.checked:
 				frm.runmode.attrs["disabled"] = 'true'
@@ -345,7 +370,7 @@ class hcircuit:
 			return render.settings(data)
 		else:
 			hcirc.SetTempOffsetOverride(float(ft.overridetemp.value))
-			if cfg.get('hcircrunmodes'):
+			if runmodes:
 				if frm.overriderunmode.checked and (int(frm.runmode.value) != hcirc.RunModeOrig):
 					hcirc.SetRunmodeOverride(int(frm.runmode.value))
 				else:
@@ -356,7 +381,7 @@ class hcircuit:
 class dhwt:
 	def get_dhwt(self, id):
 		try:
-			notfound = int(id) not in cfg.get('dhwts')
+			notfound = int(id) not in get_godalt('goddhwts', 'dhwts')
 		except:
 			raise web.badrequest()
 		if notfound:
@@ -378,8 +403,9 @@ class dhwt:
 			("T° Actuelle", ftemp(dhwt.TempCurrent)),
 		]
 		data["settings"] = []
-		if cfg.get('dhwtrunmodes'):
-			data["settings"].append(("Réglage standard", match_runmode(dhwt.RunModeOrig, cfg.get('dhwtrunmodes'))))
+		runmodes = get_godalt('dhwtgodmodes', 'dhwtrunmodes')
+		if runmodes:
+			data["settings"].append(("Réglage standard", match_runmode(dhwt.RunModeOrig, runmodes)))
 		data["forms"] = []
 		return data
 
@@ -393,8 +419,10 @@ class dhwt:
 		fp.forcecharge.checked = dhwt.ForceChargeOn
 		data["forms"].append(fp)
 
-		if cfg.get('dhwtrunmodes'):
+		runmodes = get_godalt('dhwtgodmodes', 'dhwtrunmodes')
+		if runmodes:
 			frm = formDhwRunMode()
+			frm.runmode.args = runmodes
 			frm.overriderunmode.checked = dhwt.RunModeOverride
 			if not frm.overriderunmode.checked:
 				frm.runmode.attrs["disabled"] = 'true'
@@ -411,8 +439,10 @@ class dhwt:
 
 		frm = None
 		vfrm = True
-		if cfg.get('dhwtrunmodes'):
+		runmodes = get_godalt('dhwtgodmodes', 'dhwtrunmodes')
+		if runmodes:
 			frm = formDhwRunMode()
+			frm.runmode.args = runmodes
 			vfrm = frm.validates()
 			if not frm.overriderunmode.checked:
 				frm.runmode.attrs["disabled"] = 'true'
@@ -424,7 +454,7 @@ class dhwt:
 			return render.settings(data)
 		else:
 			dhwt.ForceChargeOn = fp.forcecharge.checked
-			if cfg.get('dhwtrunmodes'):
+			if runmodes:
 				if frm.overriderunmode.checked and (int(frm.runmode.value) != dhwt.RunModeOrig):
 					dhwt.SetRunmodeOverride(int(frm.runmode.value))
 				else:
@@ -434,12 +464,13 @@ class dhwt:
 
 class temperatures:
 	def GET(self):
-		if not cfg.get('temperatures'):
+		temperatures = get_godalt('godtemperatures', 'temperatures')
+		if not temperatures:
 			raise web.notfound()
 
 		tlist = []
 
-		for id in cfg.get('temperatures'):
+		for id in temperatures:
 			obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_TEMPS, id)
 			temp = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_TEMP]
 

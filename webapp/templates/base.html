@@ -25,7 +25,8 @@ $def with (content)
 	  <!-- could use https://icons.getbootstrap.com/icons/house-gear/ -->
 	  <a class="nav-link" href="$app_path('/')">Général</a>
 	</li>
-	$if getcfg('hcircuits'):
+	$ hcircuits = get_godalt('godhcircuits', 'hcircuits')
+	$if hcircuits:
   	  <li class="nav-item dropdown">
 	    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 	      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-fire" viewBox="0 0 16 16">
@@ -33,11 +34,12 @@ $def with (content)
 	      </svg>
 	    </a>
 	    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-	    $for i in getcfg('hcircuits'):
+	    $for i in hcircuits:
 	      <li><a class="dropdown-item" href="$app_path('/hcircuit')/$i">$getobjname("hcircuit",i)</a></li>
 	    </ul>
 	  </li>
-	$if getcfg('dhwts'):
+	$ dhwts = get_godalt('goddhwts', 'dhwts')
+	$if dhwts:
 	  <li class="nav-item dropdown">
 	    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 	      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-droplet-half" viewBox="0 0 16 16">
@@ -46,11 +48,11 @@ $def with (content)
 	      </svg>
 	    </a>
 	    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-	    $for i in getcfg('dhwts'):
+	    $for i in dhwts:
 	      <li><a class="dropdown-item" href="$app_path('/dhwt')/$i">$getobjname("dhwt",i)</a></li>
 	    </ul>
 	  </li>
-	$if getcfg('temperatures'):
+	$if get_godalt('godtemperatures', 'temperatures'):
 	  <li class="nav-item">
 	    <a class="nav-link" href="$app_path('/temperatures')">
 	      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-thermometer-half" viewBox="0 0 16 16">
