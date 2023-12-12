@@ -504,7 +504,7 @@ int main(int argc, char **argv)
 			case 'V':
 				printf("%s %s\n"
 				       "License GPLv2: GNU GPL version 2 <https://gnu.org/licenses/gpl-2.0.html>.\n"
-				       "Copyright (C) 2016-2022 Thibaut Varène.\n", progname, Version);
+				       "Copyright (C) 2016-2023 Thibaut Varène.\n", progname, Version);
 				return 0;
 			default:
 				usage(progname);
