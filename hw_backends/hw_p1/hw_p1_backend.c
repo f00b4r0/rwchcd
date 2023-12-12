@@ -254,6 +254,10 @@ static int hw_p1_output(void * priv)
 	else
 		hw->run.systout--;
 
+	// keep display illuminated in test mode
+	if (SYS_TEST == runtime_systemmode())
+		hw->run.count = 2;
+
 	// trigger timed backlight
 	if (hw->run.count) {
 		hw->peripherals.o_LCDbl = 1;
