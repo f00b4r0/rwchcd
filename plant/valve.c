@@ -86,9 +86,9 @@ int valve_request_pth(struct s_valve * const valve, int_least16_t perth)
 	if ((VA_M_2WAY == valve->set.motor) && (VALVE_REQMAXPTH != tcourse))
 		return (-ENOTIMPLEMENTED);
 
-	// jacket course to 100%
-	if (tcourse >= 1000)
-		tcourse = 1000;
+	// jacket course to VALVE_REQMAXPTH
+	if (tcourse > VALVE_REQMAXPTH)
+		tcourse = VALVE_REQMAXPTH;
 
 	// deadband only applies to 3way motors
 	if ((VA_M_3WAY == valve->set.motor) && (tcourse < valve->set.mset.m3way.deadband))
