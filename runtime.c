@@ -406,6 +406,7 @@ bool runtime_get_stopdhw(void)
 
 /**
  * Set the global DHW kill switch state.
+ * @param state the intended kill switch state: true to engage
  * @return exec status
  */
 int runtime_set_stopdhw(bool state)

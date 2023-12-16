@@ -245,6 +245,7 @@ static int hw_p1_output(void * priv)
 		if (hw->run.syschg && (hw->run.cursysmode != runtime_systemmode())) {
 			// change system mode
 			runtime_set_systemmode(hw->run.cursysmode);
+			runtime_set_stopdhw(false);
 			// hw_p1_beep()
 			hw->peripherals.o_buzz = 1;
 		}
