@@ -1,4 +1,4 @@
-TARGETOBJS := filecfg_parser.tab.o filecfg_parser.lex.o
+EXTRAOBJS := filecfg_parser.tab.o filecfg_parser.lex.o
 
 %.lex.c: %.l %.tab.h
 	$(FLEX) -s -P$*_ -o$@ $<
@@ -6,7 +6,7 @@ TARGETOBJS := filecfg_parser.tab.o filecfg_parser.lex.o
 %.tab.h %.tab.c: %.y
 	$(BISON) -b $* -p $*_ -d $<
 
-include $(SRCROOT)/Makefile.sub
+$(TARGET): $(EXTRAOBJS)
 
 distclean:
 	$(RM) *.output *.tab.h

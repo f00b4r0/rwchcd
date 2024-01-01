@@ -33,6 +33,16 @@ ifeq ($(HOST_OS),Linux)
  endif
 endif
 
+ifeq ($(V),)
+ QUIET := @
+else
+ ifeq ($(V),0)
+  QUIET := @
+ else
+  QUIET :=
+ endif
+endif
+
 CFLAGS += $(CONFIG)
 
 SRCS := $(wildcard *.c)
@@ -81,12 +91,14 @@ TOPTARGETS := all clean distclean install uninstall doc
 SUBDIRBIN := _payload.o
 SRCROOT := $(CURDIR)
 
-export SUBDIRBIN CC LD CFLAGS WFLAGS CONFIG SRCROOT FLEX BISON
+MAKEFILES := $(CURDIR)/Makefile.sub
+
+export SUBDIRBIN CC LD CFLAGS WFLAGS CONFIG SRCROOT FLEX BISON QUIET
 
 $(TOPTARGETS): $(SUBDIRS)
 
 $(SUBDIRS):
-	$(MAKE) -C $@ $(MAKECMDGOALS)
+	$(QUIET)$(MAKE) -C $@ $(MAKECMDGOALS)
 
 SUBDIRS_OBJS := $(SUBDIRS:/=/$(SUBDIRBIN))
 MAINOBJS += $(SUBDIRS_OBJS)
@@ -96,10 +108,12 @@ all:	$(SUBDIRS) $(MAIN)
 	@echo	Done
 
 $(MAIN): $(MAINOBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
+	$(info CC $@)
+	$(QUIET)$(CC) -o $@ $^ $(CFLAGS) $(WFLAGS) $(LDLIBS)
 
 .c.o:
-	$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
+	$(info CC $@)
+	$(QUIET)$(CC) $(CFLAGS) $(WFLAGS) -MMD -c $< -o $@
 
 clean:
 	$(RM) *.o *.d *~ $(MAIN)
