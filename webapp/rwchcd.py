@@ -240,18 +240,18 @@ class rwchcd:
 			data["temps"].append(("Température Intérieure", gettemp(getcfg('tindoor'))))
 
 		data["hcircuits"] = []
-		if cfg.get('hcircuits') and cfg.get('hcircrunmodes'):
-			for id in cfg.get('hcircuits'):
+		if get_godalt('godhcircuits', 'hcircuits') and get_godalt('hcircgodmodes','hcircrunmodes'):
+			for id in get_godalt('godhcircuits','hcircuits'):
 				obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_HCIRCS, id)
 				hcirc = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_HCIRC]
-				data["hcircuits"].append((hcirc.Name, match_runmode(hcirc.RunMode, cfg.get('hcircrunmodes')), hcirc.RunModeOverride))
+				data["hcircuits"].append((hcirc.Name, match_runmode(hcirc.RunMode, get_godalt('hcircgodmodes','hcircrunmodes')), hcirc.RunModeOverride))
 
 		data["dhwts"] = []
-		if cfg.get('dhwts') and cfg.get('dhwtrunmodes'):
-			for id in cfg.get('dhwts'):
+		if get_godalt('goddhwts','dhwts') and get_godalt('dhwtgodmodes','dhwtrunmodes'):
+			for id in get_godalt('goddhwts','dhwts'):
 				obj = "{0}/{1}".format(RWCHCD_DBUS_OBJ_DHWTS, id)
 				dhwt = bus.get(RWCHCD_DBUS_NAME, obj)[RWCHCD_DBUS_IFACE_DHWT]
-				data["dhwts"].append((dhwt.Name, match_runmode(dhwt.RunMode, cfg.get('dhwtrunmodes')), dhwt.RunModeOverride))
+				data["dhwts"].append((dhwt.Name, match_runmode(dhwt.RunMode, get_godalt('dhwtgodmodes','dhwtrunmodes')), dhwt.RunModeOverride))
 
 		data["forms"] = []
 		return data
