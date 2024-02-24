@@ -104,7 +104,7 @@ int storage_dump(const char * restrict const identifier, const storage_version_t
 		goto faildb;
 	}
 
-	dbgmsg(1, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
+	dbgmsg(3, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
 
 	ret = ALL_OK;
 
@@ -176,7 +176,7 @@ int storage_fetch(const char * restrict const identifier, storage_version_t * re
 		goto faildb;
 	}
 
-	dbgmsg(1, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
+	dbgmsg(3, 1, "identifier: \"%s\", v: %d, sz: %zu", identifier, *version, size);
 
 	ret = ALL_OK;
 
