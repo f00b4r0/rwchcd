@@ -2,7 +2,7 @@
 //  filecfg/parse/scheduler_parse.c
 //  rwchcd
 //
-//  (C) 2020,2023 Thibaut VARENE
+//  (C) 2020,2023-2024 Thibaut VARENE
 //  License: GPLv2 - http://www.gnu.org/licenses/gpl-2.0.html
 //
 
@@ -14,7 +14,7 @@
  scheduler {
 	 schedule "default" {
 		 entry {
-			 time { wday 0; hour 7; min 0; };	// also acceptable: time { wday "all"; hour 7; min 0; };
+			 time { wday 0; hour 7; min 0; };	// wday can be a single digit, a quoted range "B-E" (B first day E last day) or quoted "all" for the entire week.
 			 params { runmode "comfort"; dhwmode "comfort"; };
 		 };
 		 ...
@@ -30,21 +30,45 @@
 #include "scheduler.h"
 #include "filecfg_parser.h"
 
+/** Contiguous 8-bit mask ranging from l to h  */
+#define GEN8MASK(l, h)	(uint8_t)(((~0U) - (1U << (l)) + 1) & (~0U >> (31 - (h))))
+
 extern struct s_schedules Schedules;
 
 struct s_schent_wrap {
-	unsigned int bitdays;
 	struct s_schedule_e schent;
+	uint8_t bitdays;
 };
 
 static int scheduler_fcp_entry_time_wday(void * restrict const priv, const struct s_filecfg_parser_node * const node)
 {
 	struct s_schent_wrap * restrict const swrap = priv;
-	int iv = node->value.intval;
+	const char * restrict const sv = node->value.stringval;
+	int iv = node->value.intval, b, e;
 
-	// accept "all" catchall to set all days. Will be expanded later to support ranges
 	if (NODESTR == node->type) {
-		if (!strcmp("all", node->value.stringval))
+		if (strlen(sv) != 3)
+			return (-EINVALID);
+
+		// accept "B-E" range of days
+		if ('-' == sv[1]) {
+			b = sv[0] - '0';
+			e = sv[2] - '0';
+
+			// sanity check
+			if ((b < 0) || (e < 0) || (b > 7) || (e > 7))
+				return (-EINVALID);
+
+			// convert Sunday
+			if (7 == b)
+				b = 0;
+			if (7 == e)
+				e = 0;
+
+			swrap->bitdays = (b <= e) ? GEN8MASK(b, e) : (uint8_t)(GEN8MASK(b, 6) | GEN8MASK(0, e));
+		}
+		// accept "all" catchall to set all days
+		else if (!strcmp("all", sv))
 			swrap->bitdays = 0x7F;	// bits 0-6 - swrap->schent.time.wday is irrelevant
 		else
 			return (-EINVALID);
@@ -198,7 +222,7 @@ static int scheduler_entry_parse(void * restrict const priv, const struct s_file
 fail:
 	switch (ret) {
 		case -EEXISTS:
-			filecfg_parser_pr_err(_("Line %d: a schedule entry with the same time is already configured"), node->lineno);
+			filecfg_parser_pr_err(_("Line %d: a schedule entry covering the same time is already configured"), node->lineno);
 			break;
 		default:
 			break;
