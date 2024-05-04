@@ -38,7 +38,7 @@ static void scheduler_entry_dump(const struct s_schedule_e * const schent)
 	if (RM_UNKNOWN != schent->params.runmode)
 		filecfg_dump_nodestr("runmode", filecfg_runmode_str(schent->params.runmode));
 	if (RM_UNKNOWN != schent->params.dhwmode)
-		filecfg_dump_nodestr("dhwmode", filecfg_runmode_str(schent->params.runmode));
+		filecfg_dump_nodestr("dhwmode", filecfg_runmode_str(schent->params.dhwmode));
 	if (schent->params.legionella)
 		filecfg_dump_nodebool("legionella", schent->params.legionella);
 	if (schent->params.recycle)
