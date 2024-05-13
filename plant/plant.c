@@ -652,6 +652,12 @@ static void plant_collect_hrequests(struct s_plant * restrict const plant)
 		}
 	}
 
+	// if a DHWT did not respond to plant_could_sleep then it will keep using heatsource: restart delay (only if plant_could_sleep was first asserted)
+	if (dhwt_charge && plant->pdata.run.plant_could_sleep) {
+		plant->run.last_creqtime = now;
+		plant->pdata.run.plant_could_sleep = false;
+	}
+
 	// if no heatsource-based DHWT charge is in progress, increase prio threshold (up to max)
 	if (!dhwt_charge && (plant->pdata.run.dhwt_currprio < plant->run.dhwt_maxprio))
 		plant->pdata.run.dhwt_currprio++;
