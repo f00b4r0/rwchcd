@@ -896,7 +896,7 @@ static inline void dhwt_update_charge(struct s_dhwt * restrict const dhwt, const
 	 else:	// business as usual
 	 // switch on can only happen at trip, switch off happens at failure (!charge_on)
 	 if no charge:
-		 if trip point:
+		 if skip_untrip || trip point:
 			 if electric relay set successful: set electric_mode / signal charge / shutdown water
 			 else: set no electric_mode
 		 else: nothing - state unchanged
@@ -962,6 +962,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 			return (dhwt_shutdown(dhwt));
 		case RM_COMFORT:
 		case RM_ECO:
+			// in these modes if hasthermostat delegate electric charge control to thermostat
 			skip_untrip = dhwt->set.electric_hasthermostat;
 			break;
 		case RM_FROSTFREE:
@@ -1044,7 +1045,7 @@ int dhwt_run(struct s_dhwt * const dhwt)
 		// otherwise business as usual
 		else if (!charge_on) {		// heat_request is necessarily off here
 			electric_mode = true;	// immediately pretend we can do electric (to disable water-based processing)
-			if (curr_temp < trip_temp) {
+			if (skip_untrip || (curr_temp < trip_temp)) {	// always trigger charge if skip_untrip is set
 				if (ALL_OK == outputs_relay_state_set(rselfheater, ON)) {
 					// the plant is sleeping and we have a configured self heater: use it
 					charge_on = true;
