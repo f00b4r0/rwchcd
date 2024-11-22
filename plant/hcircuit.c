@@ -169,8 +169,8 @@ static int hcircuit_log_deregister(const struct s_hcircuit * const circuit)
  * Most of these calculations are empirical "industry proven practices".
  *
  * - https://pompe-a-chaleur.ooreka.fr/astuce/voir/111578/le-regulateur-loi-d-eau-pour-pompe-a-chaleur
- * - http://www.energieplus-lesite.be/index.php?id=10959
- * - http://herve.silve.pagesperso-orange.fr/regul.htm
+ * - https://energieplus-lesite.be/techniques/chauffage10/chauffage-a-eau-chaude/regulateurs-climatiques-et-reglage-des-courbes-de-chauffe/
+ * - https://apalis.fr/herve.silve/regul.htm
  *
  * @param circuit self
  * @param source_temp outdoor temperature to consider
