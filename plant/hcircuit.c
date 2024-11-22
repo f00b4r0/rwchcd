@@ -586,7 +586,7 @@ int hcircuit_logic(struct s_hcircuit * restrict const circuit)
 	ambient_temp = aler(&circuit->run.actual_ambient);
 	if (inputs_temperature_get(circuit->set.tid_ambient, &ambient_temp) == ALL_OK) {	// we have an ambient sensor
 												// calculate ambient shift based on measured ambient temp influence in percent
-		target_ambient += circuit->set.ambient_factor * (tempdiff_t)(target_ambient - ambient_temp) / 100;
+		target_ambient += (RM_FROSTFREE == new_runmode ? 200 : circuit->set.ambient_factor) * (tempdiff_t)(target_ambient - ambient_temp) / 100;
 		circuit->run.ambient_update_time = now;
 		trans_thrsh = deltaK_to_temp(0.5);	// apply a tight threshold for end-of-transition
 	}
