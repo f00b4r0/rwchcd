@@ -510,6 +510,12 @@ __attribute__((warn_unused_result)) int hw_p1_rwchcrelays_write(struct s_hw_p1_p
 	if (ALL_OK == ret)
 		hw->relays.ALL = rWCHC_relays.ALL;
 
+	dbgmsg(2, 1, "R1 R2 R3 R4 R5 R6 R7 R8 R9 R10 R11 R12 R13 R14");
+	dbgmsg(2, 1, "%u  %u  %u  %u  %u  %u  %u  %u  %u  %u   %u   %u   %u   %u",
+	       rWCHC_relays.RL1, rWCHC_relays.RL2, rWCHC_relays.T1, rWCHC_relays.T2, rWCHC_relays.T3, rWCHC_relays.T4,
+	       rWCHC_relays.T5, rWCHC_relays.T6, rWCHC_relays.T7, rWCHC_relays.T8, rWCHC_relays.T9, rWCHC_relays.T10,
+	       rWCHC_relays.T11, rWCHC_relays.T12);
+
 	return (ret);
 }
 
