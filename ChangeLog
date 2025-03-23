@@ -1,3 +1,27 @@
+1.3
+	* io: implement switch inputs
+	* dhwt: implement electric load shedding
+	* dhwt: support separate schedule for electric mode
+	* dhwt: enable schedules in SYS_DHWONLY mode
+	* dhwt: engage electric charge immediately when electric mode is active with embedded thermostat
+	* dhwt: don't process DHW isol valve in summer maintenance
+	* hcircuit: perform summer maintenance in all modes
+	* hcircuit: use tighter feedback loop in FROSTFREE mode when ambient sensors is available
+	* hcircuit: improve ambient temp initialization
+	* plant: set actuators startup state
+	* plant: fix autosleep when DHWT cannot sleep
+	* dbus: provide RunModeOrig
+	* mqtt: use Mosquitto async API
+	* scheduler: fix schedule search
+	* scheduler_parse: accept 'wday "all"' and 'wday B-E' ranges
+	* webapp: implement "god mode"
+	* webapp: disable override when forced == setting
+	* webapp: show original runmode
+	* webapp: show entities state on main page
+	* webapp: signal shutdown on MQTT topic
+	* webapp: MQTT publish system mode
+	* treewide: improve build system
+
 1.2
 	* dhwt: perform anti-legionella charge only if set
 	* hcircuit: always compute ambient temperature

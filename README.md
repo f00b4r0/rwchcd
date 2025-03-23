@@ -11,7 +11,7 @@ this software is now completely standalone and hardware-independent.
 
 GPLv2-only - http://www.gnu.org/licenses/gpl-2.0.html
 
-Copyright: (C) 2016-2023 Thibaut VARENE
+Copyright: (C) 2016-2024 Thibaut VARENE
 
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License
